@@ -131,7 +131,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	}
 	commitmentToZeroRecomputed := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], sumRand)
 	match := privacy.IsPointEqual(commitmentToZeroRecomputed, commitmentToZero)
-	if !match{
+	if !match {
 		return nil, utils.NewTransactionErr(utils.SignTxError, errors.New("Error : asset tag sum or commitment sum mismatch"))
 	}
 	privKeyMlsag[len(inputCoins)] = sumRand
@@ -183,8 +183,8 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 	ringSize := privacy.RingSize
 
 	// Generate Ring
-	piBig,piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
-	if piErr!=nil{
+	piBig, piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
+	if piErr != nil {
 		return piErr
 	}
 	var pi int = int(piBig.Int64())
@@ -250,10 +250,10 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	if tx.GetMetadata() != nil {
 		if err := tx.GetMetadata().Sign(params.SenderSK, tx); err != nil {
 			utils.Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
-				return err
+			return err
 		}
 	}
-	
+
 	err = tx.signOnMessage(inputCoins, outputCoins, params, tx.Hash()[:])
 	return err
 }
@@ -312,7 +312,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 		return nil, nil, nil, err
 	}
 	outputCoinsAsGeneric := make([]privacy.Coin, len(outputCoins))
-	for i:=0;i<len(outputCoins);i++{
+	for i := 0; i < len(outputCoins); i++ {
 		outputCoinsAsGeneric[i] = outputCoins[i]
 	}
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(outputCoinsAsGeneric, params.Fee)
@@ -353,7 +353,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 			}
 		}
 		row = append(row, sumInputs)
-		if i==pi{
+		if i == pi {
 			commitmentToZero = sumInputs
 		}
 		ring[i] = row
@@ -391,7 +391,7 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 	inputCoins := tx.Proof.GetInputCoins()
 	keyImages := make([]*privacy.Point, len(inputCoins)+1)
 	for i := 0; i < len(inputCoins); i++ {
-		if inputCoins[i].GetKeyImage()==nil {
+		if inputCoins[i].GetKeyImage() == nil {
 			utils.Logger.Log.Errorf("Error when reconstructing mlsagSignature: missing keyImage")
 			return false, err
 		}
@@ -417,7 +417,7 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 		return false, err
 	}
 	proofAsV2, ok := tx.GetProof().(*privacy.ProofV2)
-	if !ok{
+	if !ok {
 		utils.Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have proofs of any other version - %v", tx.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
@@ -428,14 +428,14 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 	}
 
 	isConfAsset, err := proofAsV2.IsConfidentialAsset()
-	if err!=nil{
+	if err != nil {
 		utils.Logger.Log.Errorf("Error in tx %s : proof is invalid due to inconsistent asset tags - %v", tx.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
-	if isConfAsset{
+	if isConfAsset {
 		utils.Logger.Log.Infof("Verifying transaction with assetTag\n")
 		valid, err = tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction)
-	}else{
+	} else {
 		utils.Logger.Log.Infof("Verifying transaction without assetTag\n")
 		valid, err = tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}
@@ -496,7 +496,7 @@ func (tx Tx) IsSalaryTx() bool {
 	if len(proof.GetInputCoins()) != 0 {
 		return false
 	}
-	if len(proof.GetOutputCoins()) != 1{
+	if len(proof.GetOutputCoins()) != 1 {
 		return false
 	}
 
@@ -509,7 +509,7 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
 		return utils.NewTransactionErr(utils.TokenIDInvalidError, err, tokenID.String())
 	}
-	found, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS())	
+	found, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
 		return errors.New(errStr)
@@ -598,7 +598,7 @@ func (tx Tx) Hash() *common.Hash {
 	tx.Sig = []byte{}
 	tx.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(tx)
-	if err!=nil{
+	if err != nil {
 		return nil
 	}
 	hash := common.HashH(inBytes)
@@ -612,7 +612,7 @@ func (tx Tx) HashWithoutMetadataSig() *common.Hash {
 	mdHash := md.HashWithoutSig()
 	tx.SetMetadata(nil)
 	txHash := tx.Hash()
-	if mdHash==nil || txHash==nil{
+	if mdHash == nil || txHash == nil {
 		return nil
 	}
 	// tx.SetMetadata(md)
@@ -643,9 +643,13 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 
 // ========== SHARED FUNCTIONS ============
 
-func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
+func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) {
+	return tx_generic.GetTxMintData(&tx, &common.PRVCoinID)
+}
 
-func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
+func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) {
+	return tx_generic.GetTxBurnData(&tx)
+}
 
 func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
 	isBurn, burnedCoin, burnedToken, err := tx.GetTxBurnData()
@@ -654,7 +658,7 @@ func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	return tx.TxBase.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
@@ -672,7 +676,7 @@ func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB 
 		return valid, nil, err
 	case common.TxConversionType:
 		valid, err := validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
-		return valid, nil ,err
+		return valid, nil, err
 	default:
 		valid, err := tx.Verify(boolParams, transactionStateDB, bridgeStateDB, shardID, tokenID)
 		resultProofs := []privacy.Proof{}
@@ -680,8 +684,8 @@ func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB 
 		if !ok {
 			isBatch = false
 		}
-		if isBatch{
-			if tx.GetProof()!=nil{
+		if isBatch {
+			if tx.GetProof() != nil {
 				resultProofs = append(resultProofs, tx.GetProof())
 			}
 		}
@@ -716,7 +720,7 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 // It is the length of its JSON form.
 func (tx Tx) GetTxActualSize() uint64 {
 	jsb, err := json.Marshal(tx)
-	if err!=nil{
+	if err != nil {
 		return 0
 	}
 	return uint64(math.Ceil(float64(len(jsb)) / 1024))
@@ -727,7 +731,7 @@ func (tx Tx) ListOTAHashH() []common.Hash {
 	if tx.Proof != nil {
 		for _, outputCoin := range tx.Proof.GetOutputCoins() {
 			// Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -748,7 +752,7 @@ func (tx Tx) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Has
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range tx.Proof.GetOutputCoins() {
 		// Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -807,4 +811,3 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	}
 	return nil
 }
-

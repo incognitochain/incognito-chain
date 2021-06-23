@@ -29,13 +29,12 @@ func (t TxRandom) GetTxConcealRandomPoint() (*operation.Point, error) {
 	return new(operation.Point).FromBytesS(t[operation.Ed25519KeySize+4:])
 }
 
-
 func (t TxRandom) GetTxOTARandomPoint() (*operation.Point, error) {
 	return new(operation.Point).FromBytesS(t[:operation.Ed25519KeySize])
 }
 
 func (t TxRandom) GetIndex() (uint32, error) {
-	return common.BytesToUint32(t[operation.Ed25519KeySize:operation.Ed25519KeySize + 4])
+	return common.BytesToUint32(t[operation.Ed25519KeySize : operation.Ed25519KeySize+4])
 }
 
 func (t *TxRandom) SetTxConcealRandomPoint(txConcealRandom *operation.Point) {
@@ -113,7 +112,7 @@ func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar
 		return nil, err
 	}
 	rK := new(operation.Point).ScalarMult(txRandomOTAPoint, keySet.OTAKey.GetOTASecretKey()) // (r_ota*G) * k = r_ota * K
-	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))     // Hash(r_ota*K, index)
+	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))       // Hash(r_ota*K, index)
 
 	k := new(operation.Scalar).FromBytesS(privKey)
 	return new(operation.Scalar).Add(H, k), nil // Hash(rK, index) + privSpend
@@ -139,7 +138,7 @@ func (c *CoinV2) ConcealOutputCoin(additionalData interface{}) error {
 		return nil
 	}
 	publicView, ok := additionalData.(*operation.Point)
-	if !ok{
+	if !ok {
 		return errors.New("Cannot conceal CoinV2 without receiver view key")
 	}
 
@@ -194,7 +193,7 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 
-	if viewKey.GetPrivateView()!= nil {
+	if viewKey.GetPrivateView() != nil {
 		txConcealRandomPoint, err := c.GetTxRandom().GetTxConcealRandomPoint()
 		if err != nil {
 			return nil, err
@@ -212,9 +211,9 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 
 		commitment := operation.PedCom.CommitAtIndex(value, randomness, operation.PedersenValueIndex)
 		// for `confidential asset` coin, we commit differently
-		if c.GetAssetTag() != nil{
+		if c.GetAssetTag() != nil {
 			com, err := ComputeCommitmentCA(c.GetAssetTag(), randomness, value)
-			if err!=nil{
+			if err != nil {
 				err := errors.New("Cannot recompute commitment when decrypting")
 				return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 			}
@@ -251,11 +250,11 @@ func (c *CoinV2) Init() *CoinV2 {
 func (c CoinV2) GetSNDerivator() *operation.Scalar { return nil }
 
 func (c CoinV2) IsEncrypted() bool {
-	if c.mask == nil || c.amount == nil{
+	if c.mask == nil || c.amount == nil {
 		return true
 	}
 	tempCommitment := operation.PedCom.CommitAtIndex(c.amount, c.mask, operation.PedersenValueIndex)
-	if c.GetAssetTag() != nil{
+	if c.GetAssetTag() != nil {
 		// err is only for nil parameters, which we already checked, so here it is ignored
 		com, _ := c.ComputeCommitmentCA()
 		tempCommitment = com
@@ -263,28 +262,28 @@ func (c CoinV2) IsEncrypted() bool {
 	return !operation.IsPointEqual(tempCommitment, c.commitment)
 }
 
-func (c CoinV2) GetVersion() uint8                { return 2 }
-func (c CoinV2) GetRandomness() *operation.Scalar { return c.mask }
-func (c CoinV2) GetAmount() *operation.Scalar       { return c.amount }
-func (c CoinV2) GetSharedRandom() *operation.Scalar { return c.sharedRandom }
+func (c CoinV2) GetVersion() uint8                         { return 2 }
+func (c CoinV2) GetRandomness() *operation.Scalar          { return c.mask }
+func (c CoinV2) GetAmount() *operation.Scalar              { return c.amount }
+func (c CoinV2) GetSharedRandom() *operation.Scalar        { return c.sharedRandom }
 func (c CoinV2) GetSharedConcealRandom() *operation.Scalar { return c.sharedConcealRandom }
-func (c CoinV2) GetPublicKey() *operation.Point  { return c.publicKey }
-func (c CoinV2) GetCommitment() *operation.Point { return c.commitment }
-func (c CoinV2) GetKeyImage() *operation.Point { return c.keyImage }
-func (c CoinV2) GetInfo() []byte               { return c.info }
-func (c CoinV2) GetAssetTag() *operation.Point { return c.assetTag }
+func (c CoinV2) GetPublicKey() *operation.Point            { return c.publicKey }
+func (c CoinV2) GetCommitment() *operation.Point           { return c.commitment }
+func (c CoinV2) GetKeyImage() *operation.Point             { return c.keyImage }
+func (c CoinV2) GetInfo() []byte                           { return c.info }
+func (c CoinV2) GetAssetTag() *operation.Point             { return c.assetTag }
 func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
 		return 0
 	}
 	return c.amount.ToUint64Little()
 }
-func (c CoinV2) GetTxRandom() *TxRandom {return c.txRandom}
+func (c CoinV2) GetTxRandom() *TxRandom { return c.txRandom }
 func (c CoinV2) GetTxRandomDetail() (*operation.Point, *operation.Point, uint32, error) {
 	txRandomOTAPoint, err1 := c.txRandom.GetTxOTARandomPoint()
 	txRandomConcealPoint, err2 := c.txRandom.GetTxConcealRandomPoint()
 	index, err3 := c.txRandom.GetIndex()
-	if err1 != nil || err2 != nil || err3 != nil{
+	if err1 != nil || err2 != nil || err3 != nil {
 		return nil, nil, 0, errors.New("Cannot Get TxRandom: point or index is wrong")
 	}
 	return txRandomConcealPoint, txRandomOTAPoint, index, nil
@@ -302,12 +301,13 @@ func (c CoinV2) GetCoinDetailEncrypted() []byte {
 	return c.GetAmount().ToBytesS()
 }
 
-
 func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)           { c.mask = mask }
 func (c *CoinV2) SetAmount(amount *operation.Scalar)             { c.amount = amount }
 func (c *CoinV2) SetSharedRandom(sharedRandom *operation.Scalar) { c.sharedRandom = sharedRandom }
-func (c *CoinV2) SetSharedConcealRandom(sharedConcealRandom *operation.Scalar) { c.sharedConcealRandom = sharedConcealRandom }
+func (c *CoinV2) SetSharedConcealRandom(sharedConcealRandom *operation.Scalar) {
+	c.sharedConcealRandom = sharedConcealRandom
+}
 func (c *CoinV2) SetTxRandom(txRandom *TxRandom) {
 	if txRandom == nil {
 		c.txRandom = nil
@@ -332,7 +332,7 @@ func (c *CoinV2) SetInfo(b []byte) {
 	c.info = make([]byte, len(b))
 	copy(c.info, b)
 }
-func (c *CoinV2) SetAssetTag(at *operation.Point)     { c.assetTag = at }
+func (c *CoinV2) SetAssetTag(at *operation.Point) { c.assetTag = at }
 
 func (c CoinV2) Bytes() []byte {
 	coinBytes := []byte{c.GetVersion()}
@@ -477,10 +477,10 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		return errors.New("SetBytes CoinV2 amount error: " + err.Error())
 	}
 
-	if offset >=len(coinBytes){
+	if offset >= len(coinBytes) {
 		// for parsing old serialization, which does not have assetTag field
 		c.assetTag = nil
-	}else{
+	} else {
 		c.assetTag, err = parsePointForSetBytes(&coinBytes, &offset)
 		if err != nil {
 			return errors.New("SetBytes CoinV2 assetTag error: " + err.Error())
@@ -526,12 +526,12 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 	}
 
 	publicOTA := paymentAdd.GetOTAPublicKey()
-	if publicOTA == nil  {
+	if publicOTA == nil {
 		return false
 	}
 	rK := new(operation.Point).ScalarMult(publicOTA, r)
-	_, txOTARandomPoint, index,  err := c.GetTxRandomDetail()
-	if err  != nil {
+	_, txOTARandomPoint, index, err := c.GetTxRandomDetail()
+	if err != nil {
 		return false
 	}
 	if !operation.IsPointEqual(new(operation.Point).ScalarMultBase(r), txOTARandomPoint) {
@@ -546,7 +546,7 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 
 // Check whether the utxo is from this keyset
 func (c *CoinV2) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point) {
-	_, txOTARandomPoint, index, err1 :=  c.GetTxRandomDetail()
+	_, txOTARandomPoint, index, err1 := c.GetTxRandomDetail()
 	if err1 != nil {
 		return false, nil
 	}

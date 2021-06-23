@@ -272,8 +272,8 @@ func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation
 		return nil, err
 	}
 
-	c[(mlsag.pi + 1) % n] = firstC
-	for i := (mlsag.pi + 1) % n; i != mlsag.pi; i = (i+1) %n {
+	c[(mlsag.pi+1)%n] = firstC
+	for i := (mlsag.pi + 1) % n; i != mlsag.pi; i = (i + 1) % n {
 		next := (i + 1) % n
 		nextC, err := calculateNextC(message, r[i], c[i], mlsag.R.keys[i], mlsag.keyImages)
 		if err != nil {
@@ -294,7 +294,7 @@ func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation
 // check l*KI = 0 by checking KI is a valid point
 func verifyKeyImages(keyImages []*operation.Point) bool {
 	for i := 0; i < len(keyImages); i++ {
-		if keyImages[i]==nil{
+		if keyImages[i] == nil {
 			return false
 		}
 		lKI := new(operation.Point).ScalarMult(keyImages[i], CurveOrder)
@@ -308,7 +308,7 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 func verifyRing(sig *Sig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
-	if len(R.keys) != len(sig.r){
+	if len(R.keys) != len(sig.r) {
 		return false, errors.New("MLSAG Error : Malformed Ring")
 	}
 	for i := 0; i < len(sig.r); i++ {

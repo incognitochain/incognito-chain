@@ -12,10 +12,10 @@ import (
 var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
 
 // CopyPedersenCommitmentScheme is called upon package initialization to make a clone of generators.
-func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.PedersenCommitment{
+func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.PedersenCommitment {
 	var result operation.PedersenCommitment
 	var generators []*operation.Point
-	for _, gen := range sch.G{
+	for _, gen := range sch.G {
 		generators = append(generators, new(operation.Point).Set(gen))
 	}
 	result.G = generators
@@ -24,12 +24,12 @@ func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.Pe
 
 // GetFirstAssetTag is a helper that returns the asset tag field of the first coin from the input.
 // That will be used as base when proving.
-func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point,error){
-	if len(coins)==0{
+func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point, error) {
+	if len(coins) == 0 {
 		return nil, errors.New("Cannot get asset tag from empty input")
 	}
 	result := coins[0].GetAssetTag()
-	if result==nil{
+	if result == nil {
 		return nil, errors.New("The coin does not have an asset tag")
 	}
 	return result, nil
@@ -549,13 +549,13 @@ func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Po
 //
 // Confidential Asset transfers use G_r = G_at, which is a blinded asset tag.
 // This function will return a suitable witness for Bulletproof(G_at).
-func TransformWitnessToCAWitness(wit *AggregatedRangeWitness, assetTagBlinders []*operation.Scalar) (*AggregatedRangeWitness,error){
-	if len(assetTagBlinders)!=len(wit.values) || len(assetTagBlinders)!=len(wit.rands){
+func TransformWitnessToCAWitness(wit *AggregatedRangeWitness, assetTagBlinders []*operation.Scalar) (*AggregatedRangeWitness, error) {
+	if len(assetTagBlinders) != len(wit.values) || len(assetTagBlinders) != len(wit.rands) {
 		return nil, errors.New("Cannot transform witness. Parameter lengths mismatch")
 	}
 	newRands := make([]*operation.Scalar, len(wit.values))
 
-	for i := range wit.values{
+	for i := range wit.values {
 		temp := new(operation.Scalar).Sub(assetTagBlinders[i], assetTagBlinders[0])
 		temp.Mul(temp, new(operation.Scalar).FromUint64(wit.values[i]))
 		temp.Add(temp, wit.rands[i])

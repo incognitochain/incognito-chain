@@ -134,7 +134,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	// Amount, Randomness, SharedRandom are transparency until we call concealData
 	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
 	c.SetRandomness(operation.RandomScalar())
-	c.SetSharedRandom(operation.RandomScalar()) // shared randomness for creating one-time-address
+	c.SetSharedRandom(operation.RandomScalar())        // shared randomness for creating one-time-address
 	c.SetSharedConcealRandom(operation.RandomScalar()) // shared randomness for concealing amount and blinding asset tag
 	c.SetInfo(info.Message)
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
@@ -189,7 +189,7 @@ func CoinV2ArrayToCoinArray(coinArray []*CoinV2) []Coin {
 	return res
 }
 
-func NewOTAFromReceiver( receiver key.PaymentAddress) (*operation.Point, *TxRandom, error) {
+func NewOTAFromReceiver(receiver key.PaymentAddress) (*operation.Point, *TxRandom, error) {
 	paymentInfo := key.InitPaymentInfo(receiver, 0, []byte{})
 	coin, err := NewCoinFromPaymentInfo(paymentInfo)
 	if err != nil {
@@ -202,18 +202,18 @@ func ParseOTAInfoToString(pubKey *operation.Point, txRandom *TxRandom) (string, 
 	return base58.Base58Check{}.Encode(pubKey.ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte)
 }
 
-func ParseOTAInfoFromString (pubKeyStr, txRandomStr string) (*operation.Point, *TxRandom, error) {
+func ParseOTAInfoFromString(pubKeyStr, txRandomStr string) (*operation.Point, *TxRandom, error) {
 	publicKeyB, version, err := base58.Base58Check{}.Decode(pubKeyStr)
-	if err!= nil || version != common.ZeroByte {
+	if err != nil || version != common.ZeroByte {
 		return nil, nil, errors.New("ParseOTAInfoFromString Cannot decode base58check string")
 	}
-	pubKey, err :=  new(operation.Point).FromBytesS(publicKeyB)
+	pubKey, err := new(operation.Point).FromBytesS(publicKeyB)
 	if err != nil {
 		return nil, nil, errors.New("ParseOTAInfoFromString Cannot set Point from bytes")
 	}
 
-	txRandomB, version,  err := base58.Base58Check{}.Decode(txRandomStr)
-	if err != nil || version != common.ZeroByte{
+	txRandomB, version, err := base58.Base58Check{}.Decode(txRandomStr)
+	if err != nil || version != common.ZeroByte {
 		return nil, nil, errors.New("ParseOTAInfoFromString Cannot decode base58check string")
 	}
 	txRandom := new(TxRandom)

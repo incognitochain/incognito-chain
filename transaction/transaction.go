@@ -19,23 +19,23 @@ import (
 // Logger is the logger instance for this package
 var Logger = &utils.Logger
 
-type TxVersion1 		= tx_ver1.Tx
-type TxVersion2 		= tx_ver2.Tx
-type TxTokenVersion1 	= tx_ver1.TxToken
-type TxTokenVersion2	= tx_ver2.TxToken
-type TransactionToken 	= tx_generic.TransactionToken
-type TokenParam 		= tx_generic.TokenParam
-type TxTokenParams 		= tx_generic.TxTokenParams
-type TxTokenData 		= tx_generic.TxTokenData
-type TxSigPubKeyVer2	= tx_ver2.SigPubKey
+type TxVersion1 = tx_ver1.Tx
+type TxVersion2 = tx_ver2.Tx
+type TxTokenVersion1 = tx_ver1.TxToken
+type TxTokenVersion2 = tx_ver2.TxToken
+type TransactionToken = tx_generic.TransactionToken
+type TokenParam = tx_generic.TokenParam
+type TxTokenParams = tx_generic.TxTokenParams
+type TxTokenData = tx_generic.TxTokenData
+type TxSigPubKeyVer2 = tx_ver2.SigPubKey
 
-// BuildCoinBaseTxByCoinID is used to create a salary transaction. 
+// BuildCoinBaseTxByCoinID is used to create a salary transaction.
 // It must take its own defined parameter struct.
 // Deprecated: this is not used in v2 code
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
 	paymentInfo := &privacy.PaymentInfo{
 		PaymentAddress: *params.payToAddress,
-		Amount: params.amount,
+		Amount:         params.amount,
 	}
 	otaCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo)
 	if err != nil {
@@ -64,47 +64,47 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 // TxSalaryOutputParams is a helper struct for "mint"-type transactions.
 // It first tries to create a TX in version 2; if that fails, it falls back to the older version.
 // The receiver is defined by either the ReceiverAddress field (for non-privacy use), or the fields PublicKey & TxRandom combined.
-type TxSalaryOutputParams struct{
-	Amount 				uint64
-	ReceiverAddress 	*privacy.PaymentAddress
-	PublicKey 			*privacy.Point
-	TxRandom 			*privacy.TxRandom
-	TokenID 			*common.Hash
-	Info 				[]byte
-	Type 				string
+type TxSalaryOutputParams struct {
+	Amount          uint64
+	ReceiverAddress *privacy.PaymentAddress
+	PublicKey       *privacy.Point
+	TxRandom        *privacy.TxRandom
+	TokenID         *common.Hash
+	Info            []byte
+	Type            string
 }
 
-func (pr TxSalaryOutputParams) getVersion() int{
+func (pr TxSalaryOutputParams) getVersion() int {
 	// can create mint TX iff the version is 1 or 2
-	if pr.PublicKey!=nil && pr.TxRandom!=nil{
+	if pr.PublicKey != nil && pr.TxRandom != nil {
 		return 2
 	}
-	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 2); err == nil{
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 2); err == nil {
 		return 2
 	}
-	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err != nil{
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err != nil {
 		Logger.Log.Errorf("AssertPaymentAddressAndTxVersion error: %v\n", err)
 		return 0
 	}
 	return 1
 }
 
-func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
+func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error) {
 	var err error
 	var outputCoin *privacy.CoinV2
-	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
-	if pr.ReceiverAddress==nil{
+	isPRV := (pr.TokenID == nil) || (*pr.TokenID == common.PRVCoinID)
+	if pr.ReceiverAddress == nil {
 		outputCoin = privacy.NewCoinFromAmountAndTxRandomBytes(pr.Amount, pr.PublicKey, pr.TxRandom, pr.Info)
-	}else{
+	} else {
 		outputCoin, err = privacy.NewCoinFromPaymentInfo(&privacy.PaymentInfo{Amount: pr.Amount, PaymentAddress: *pr.ReceiverAddress})
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 	}
 	// for salary TX, tokenID is never blinded; so when making coin for token transactions, we set an unblinded asset tag
-	if !isPRV{
+	if !isPRV {
 		err := outputCoin.SetPlainTokenID(pr.TokenID)
-		if err!=nil{
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -118,10 +118,10 @@ func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
 //  - metadata maker (optional): a closure that returns a metadata object (this allows making the metadata based on the output coin)
 func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, mdMaker func(privacy.Coin) metadata.Metadata) (metadata.Transaction, error) {
 	var res metadata.Transaction
-	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
-	switch pr.getVersion(){
+	isPRV := (pr.TokenID == nil) || (*pr.TokenID == common.PRVCoinID)
+	switch pr.getVersion() {
 	case 1:
-		if isPRV{
+		if isPRV {
 			temp := new(TxVersion1)
 			err := temp.InitTxSalary(pr.Amount, pr.ReceiverAddress, privateKey, stateDB, mdMaker(nil))
 			if err != nil {
@@ -129,11 +129,11 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 				return nil, err
 			}
 			// handle for "return staking" TX; need to set the transaction type
-			if pr.Type==common.TxReturnStakingType{
+			if pr.Type == common.TxReturnStakingType {
 				temp.Type = common.TxReturnStakingType
 			}
 			res = temp
-		}else{
+		} else {
 			shardID := common.GetShardIDFromLastByte(pr.ReceiverAddress.Pk[len(pr.ReceiverAddress.Pk)-1])
 			tokenParams := &tx_generic.TokenParam{
 				PropertyID:     pr.TokenID.String(),
@@ -141,7 +141,7 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 				PropertySymbol: "",
 				Amount:         pr.Amount,
 				TokenTxType:    CustomTokenInit,
-				Receiver:       []*privacy.PaymentInfo{&privacy.PaymentInfo{PaymentAddress: *pr.ReceiverAddress, Amount: pr.Amount}},
+				Receiver:       []*privacy.PaymentInfo{{PaymentAddress: *pr.ReceiverAddress, Amount: pr.Amount}},
 				TokenInput:     []privacy.PlainCoin{},
 				Mintable:       true,
 			}
@@ -173,8 +173,8 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 			return nil, err
 		}
 		md := mdMaker(otaCoin)
-		
-		if isPRV{
+
+		if isPRV {
 			temp := new(TxVersion2)
 			err = temp.InitTxSalary(otaCoin, privateKey, stateDB, md)
 			if err != nil {
@@ -182,7 +182,7 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 				return nil, err
 			}
 			// handle for "return staking" TX; need to set the transaction type
-			if pr.Type==common.TxReturnStakingType{
+			if pr.Type == common.TxReturnStakingType {
 				temp.Type = common.TxReturnStakingType
 				temp.Sig = nil
 				temp.SigPubKey = nil
@@ -193,7 +193,7 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 				// Logger.Log.Debugf("Verify Salary TX for return staking : %v, %v", valid, err)
 			}
 			res = temp
-		}else{
+		} else {
 			temp := new(TxTokenVersion2)
 			err = temp.InitTxTokenSalary(otaCoin, privateKey, stateDB, md, pr.TokenID, "")
 			if err != nil {
@@ -221,13 +221,13 @@ type txJsonDataVersion struct {
 // This is a legacy function; it will be replaced by DeserializeTransactionJSON.
 func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 	choices, err := DeserializeTransactionJSON(data)
-	if err!=nil{
+	if err != nil {
 		return nil, err
 	}
-	if choices.Version1!=nil{
+	if choices.Version1 != nil {
 		return choices.Version1, nil
 	}
-	if choices.Version2!=nil{
+	if choices.Version2 != nil {
 		return choices.Version2, nil
 	}
 	return nil, errors.New("Cannot parse TX as PRV transaction")
@@ -269,13 +269,13 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 // This is a legacy function; it will be replaced by DeserializeTransactionJSON.
 func NewTransactionTokenFromJsonBytes(data []byte) (tx_generic.TransactionToken, error) {
 	choices, err := DeserializeTransactionJSON(data)
-	if err!=nil{
+	if err != nil {
 		return nil, err
 	}
-	if choices.TokenVersion1!=nil{
+	if choices.TokenVersion1 != nil {
 		return choices.TokenVersion1, nil
 	}
-	if choices.TokenVersion2!=nil{
+	if choices.TokenVersion2 != nil {
 		return choices.TokenVersion2, nil
 	}
 	return nil, errors.New("Cannot parse TX as token transaction")
@@ -317,40 +317,42 @@ func NewTransactionTokenFromJsonBytes(data []byte) (tx_generic.TransactionToken,
 // TxChoice is a helper struct for parsing transactions of all types from JSON.
 // After parsing succeeds, one of its fields will have the TX object; others will be nil.
 // This can be used to assert the transaction type.
-type TxChoice struct{
-	Version1 		*TxVersion1 		`json:"TxVersion1,omitempty"`
-	TokenVersion1 	*TxTokenVersion1 	`json:"TxTokenVersion1,omitempty"`
-	Version2 		*TxVersion2 		`json:"TxVersion2,omitempty"`
-	TokenVersion2 	*TxTokenVersion2 	`json:"TxTokenVersion2,omitempty"`
+type TxChoice struct {
+	Version1      *TxVersion1      `json:"TxVersion1,omitempty"`
+	TokenVersion1 *TxTokenVersion1 `json:"TxTokenVersion1,omitempty"`
+	Version2      *TxVersion2      `json:"TxVersion2,omitempty"`
+	TokenVersion2 *TxTokenVersion2 `json:"TxTokenVersion2,omitempty"`
 }
+
 // ToTx returns a generic transaction from a TxChoice object.
 // Use this when the underlying TX type is irrelevant.
-func (ch *TxChoice) ToTx() metadata.Transaction{
-	if ch==nil{
+func (ch *TxChoice) ToTx() metadata.Transaction {
+	if ch == nil {
 		return nil
 	}
 	// `choice` struct only ever contains 1 non-nil field
-	if ch.Version1!=nil{
+	if ch.Version1 != nil {
 		return ch.Version1
 	}
-	if ch.Version2!=nil{
+	if ch.Version2 != nil {
 		return ch.Version2
 	}
-	if ch.TokenVersion1!=nil{
+	if ch.TokenVersion1 != nil {
 		return ch.TokenVersion1
 	}
-	if ch.TokenVersion2!=nil{
+	if ch.TokenVersion2 != nil {
 		return ch.TokenVersion2
 	}
 	return nil
 }
+
 // DeserializeTransactionJSON parses a transaction from raw JSON into a TxChoice object.
 // It covers all transaction types.
-func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
+func DeserializeTransactionJSON(data []byte) (*TxChoice, error) {
 	result := &TxChoice{}
 	holder := make(map[string]interface{})
 	err := json.Unmarshal(data, &holder)
-	if err!=nil{
+	if err != nil {
 		return nil, err
 	}
 	_, isTokenTx := holder["TxTokenPrivacyData"]
@@ -359,9 +361,9 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 	// unmarshalling error here corresponds to the `else` block below
 	_ = json.Unmarshal(data, &verHolder)
 	if hasVersionOutside {
-		switch verHolder.Version{
+		switch verHolder.Version {
 		case utils.TxVersion1Number:
-			if isTokenTx{
+			if isTokenTx {
 				// token ver 1
 				result.TokenVersion1 = &TxTokenVersion1{}
 				err := json.Unmarshal(data, result.TokenVersion1)
@@ -372,7 +374,7 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 			err := json.Unmarshal(data, result.Version1)
 			return result, err
 		case utils.TxVersion2Number: // the same as utils.TxConversionVersion12Number
-			if isTokenTx{
+			if isTokenTx {
 				// rejected
 				return nil, errors.New("Error unmarshalling TX from JSON : misplaced version")
 			}
@@ -383,8 +385,8 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 		default:
 			return nil, fmt.Errorf("Error unmarshalling TX from JSON : wrong version of %d", verHolder.Version)
 		}
-	}else{
-		if isTokenTx{
+	} else {
+		if isTokenTx {
 			// token ver 2
 			result.TokenVersion2 = &TxTokenVersion2{}
 			err := json.Unmarshal(data, result.TokenVersion2)
@@ -496,16 +498,16 @@ func GetTxTokenDataFromTransaction(tx metadata.Transaction) *tx_generic.TxTokenD
 // Returned values beyond the first will contain the coins (PRV or pToken) being burnt and its token ID.
 func GetFullBurnData(tx metadata.Transaction) (bool, coin.Coin, coin.Coin, *common.Hash, error) {
 
-	switch  tx.GetType() {
+	switch tx.GetType() {
 	case common.TxNormalType:
-		isBurned, burnPrv, _, err :=  tx.GetTxBurnData()
+		isBurned, burnPrv, _, err := tx.GetTxBurnData()
 		if err != nil || !isBurned {
 			return false, nil, nil, nil, err
 		}
 		return true, burnPrv, nil, nil, err
 	case common.TxCustomTokenPrivacyType:
 		if txTmp, ok := tx.(TransactionToken); ok {
-			isBurnToken, burnToken, burnedTokenID, err1 :=  txTmp.GetTxBurnData()
+			isBurnToken, burnToken, burnedTokenID, err1 := txTmp.GetTxBurnData()
 			isBurnPrv, burnPrv, _, err2 := txTmp.GetTxBase().GetTxBurnData()
 
 			if err1 != nil && err2 != nil {

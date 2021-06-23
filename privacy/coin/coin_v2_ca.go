@@ -11,30 +11,30 @@ import (
 
 const MaxTriesOTA int = 50000
 
-func (coin *CoinV2) ComputeCommitmentCA() (*operation.Point,error){
-	if coin==nil || coin.GetRandomness()==nil || coin.GetAmount()==nil{
+func (coin *CoinV2) ComputeCommitmentCA() (*operation.Point, error) {
+	if coin == nil || coin.GetRandomness() == nil || coin.GetAmount() == nil {
 		return nil, errors.New("missing arguments for committing")
 	}
 	// must not change gRan
 	gRan := operation.PedCom.G[operation.PedersenRandomnessIndex]
-	commitment := new(operation.Point).ScalarMult(coin.GetAssetTag(),coin.GetAmount())
-	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan,coin.GetRandomness()))
-	return commitment,nil
+	commitment := new(operation.Point).ScalarMult(coin.GetAssetTag(), coin.GetAmount())
+	commitment.Add(commitment, new(operation.Point).ScalarMult(gRan, coin.GetRandomness()))
+	return commitment, nil
 }
 
-func ComputeCommitmentCA(assetTag *operation.Point, r, v *operation.Scalar) (*operation.Point,error){
-	if assetTag==nil || r==nil || v==nil{
+func ComputeCommitmentCA(assetTag *operation.Point, r, v *operation.Scalar) (*operation.Point, error) {
+	if assetTag == nil || r == nil || v == nil {
 		return nil, errors.New("missing arguments for committing to CA coin")
 	}
 	// must not change gRan
 	gRan := operation.PedCom.G[operation.PedersenRandomnessIndex]
-	commitment := new(operation.Point).ScalarMult(assetTag,v)
-	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan,r))
-	return commitment,nil
+	commitment := new(operation.Point).ScalarMult(assetTag, v)
+	commitment.Add(commitment, new(operation.Point).ScalarMult(gRan, r))
+	return commitment, nil
 }
 
-func ComputeAssetTagBlinder(sharedSecret *operation.Point) (*operation.Scalar,error){
-	if sharedSecret==nil{
+func ComputeAssetTagBlinder(sharedSecret *operation.Point) (*operation.Scalar, error) {
+	if sharedSecret == nil {
 		return nil, errors.New("Missing arguments for asset tag blinder")
 	}
 	blinder := operation.HashToScalar(append(sharedSecret.ToBytesS(), []byte("assettag")...))
@@ -42,7 +42,7 @@ func ComputeAssetTagBlinder(sharedSecret *operation.Point) (*operation.Scalar,er
 }
 
 // this should be an input coin
-func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point,error){
+func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point, error) {
 	// sk := new(operation.Scalar).FromBytesS(privateKey)
 	var privOTA []byte = key.GeneratePrivateOTAKey(privateKey)[:]
 	sk := new(operation.Scalar).FromBytesS(privOTA)
@@ -55,20 +55,20 @@ func (coin *CoinV2) RecomputeSharedSecret(privateKey []byte) (*operation.Point,e
 	return sharedSecret, nil
 }
 
-func (coin *CoinV2) ValidateAssetTag(sharedSecret *operation.Point, tokenID *common.Hash) (bool, error){
-	if coin.GetAssetTag()==nil{
-		if tokenID==nil || *tokenID==common.PRVCoinID{
+func (coin *CoinV2) ValidateAssetTag(sharedSecret *operation.Point, tokenID *common.Hash) (bool, error) {
+	if coin.GetAssetTag() == nil {
+		if tokenID == nil || *tokenID == common.PRVCoinID {
 			// a valid PRV coin
 			return true, nil
 		}
 		return false, errors.New("CA coin must have asset tag")
 	}
-	if tokenID==nil || *tokenID==common.PRVCoinID{
+	if tokenID == nil || *tokenID == common.PRVCoinID {
 		// invalid
 		return false, errors.New("PRV coin cannot have asset tag")
 	}
 	recomputedAssetTag := operation.HashToPoint(tokenID[:])
-	if operation.IsPointEqual(recomputedAssetTag, coin.GetAssetTag()){
+	if operation.IsPointEqual(recomputedAssetTag, coin.GetAssetTag()) {
 		return true, nil
 	}
 
@@ -76,19 +76,19 @@ func (coin *CoinV2) ValidateAssetTag(sharedSecret *operation.Point, tokenID *com
 	if err != nil {
 		return false, err
 	}
-	
+
 	recomputedAssetTag.Add(recomputedAssetTag, new(operation.Point).ScalarMult(operation.PedCom.G[PedersenRandomnessIndex], blinder))
-	if operation.IsPointEqual(recomputedAssetTag, coin.GetAssetTag()){
+	if operation.IsPointEqual(recomputedAssetTag, coin.GetAssetTag()) {
 		return true, nil
 	}
 	return false, nil
 }
 
-func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error{
+func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error {
 	assetTag := operation.HashToPoint(tokenID[:])
 	coin.SetAssetTag(assetTag)
 	com, err := coin.ComputeCommitmentCA()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	coin.SetCommitment(com)
@@ -121,7 +121,7 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 		}
 		c.SetPublicKey(publicKey)
 		err = c.SetPlainTokenID(tokenID)
-		if err!=nil{
+		if err != nil {
 			return nil, nil, err
 		}
 		return c, nil, nil
@@ -137,7 +137,7 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 	// publicView := info.PaymentAddress.GetPublicView() // For generating asset tag and concealing output coin
 
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
-	for i:=MaxTriesOTA;i>0;i--{
+	for i := MaxTriesOTA; i > 0; i-- {
 		index++
 
 		// Get publickey
@@ -156,22 +156,22 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 			c.SetTxRandomDetail(concealSharedRandomPoint, otaSharedRandomPoint, index)
 
 			rAsset := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
-			blinder,_ := ComputeAssetTagBlinder(rAsset)
+			blinder, _ := ComputeAssetTagBlinder(rAsset)
 			if tokenID == nil {
 				return nil, nil, errors.New("Cannot create coin without tokenID")
 			}
 			assetTag := operation.HashToPoint(tokenID[:])
-			assetTag.Add(assetTag,new(operation.Point).ScalarMult(operation.PedCom.G[PedersenRandomnessIndex],blinder))
+			assetTag.Add(assetTag, new(operation.Point).ScalarMult(operation.PedCom.G[PedersenRandomnessIndex], blinder))
 			c.SetAssetTag(assetTag)
 			// fmt.Printf("Shared secret is %s\n", string(rK.MarshalText()))
 			// fmt.Printf("Blinder is %s\n", string(blinder.MarshalText()))
 			// fmt.Printf("Asset tag is %s\n", string(assetTag.MarshalText()))
 			com, err := c.ComputeCommitmentCA()
-			if err != nil{
+			if err != nil {
 				return nil, nil, errors.New("Cannot compute commitment for confidential asset")
 			}
 			c.SetCommitment(com)
-			
+
 			return c, rAsset, nil
 		}
 	}

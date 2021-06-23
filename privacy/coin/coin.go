@@ -79,7 +79,7 @@ type PlainCoin interface {
 
 func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 	version := byte(CoinVersion2)
-	if len(b)>=1{
+	if len(b) >= 1 {
 		version = b[0]
 	}
 	var c PlainCoin

@@ -3,8 +3,8 @@
 package mlsag
 
 import (
-	"errors"
 	"bytes"
+	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -187,14 +187,13 @@ func (mlsag *Mlsag) calculateCCA(message [common.HashSize]byte, alpha []*operati
 		r[mlsag.pi][i] = new(operation.Scalar).Sub(alpha[i], ck)
 	}
 
-
 	return c, nil
 }
 
 func verifyRingCA(sig *Sig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
-	if len(R.keys) != len(sig.r){
+	if len(R.keys) != len(sig.r) {
 		return false, errors.New("MLSAG Error : Malformed Ring")
 	}
 	for i := 0; i < len(sig.r); i += 1 {

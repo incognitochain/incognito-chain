@@ -190,7 +190,6 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 				continue
 			}
 
-
 			for otaStr, idxParam := range idxParams {
 				if height < idxParam.FromHeight || height > idxParam.ToHeight {
 					continue
@@ -228,7 +227,7 @@ func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 		res[byte(i)] = 0
 	}
 
-	numForEach := totalWorker/common.MaxShardNumber
+	numForEach := totalWorker / common.MaxShardNumber
 	if totalWorker == 0 {
 		return res
 	}

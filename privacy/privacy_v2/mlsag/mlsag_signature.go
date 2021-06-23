@@ -13,7 +13,7 @@ type Sig struct {
 }
 
 func NewMlsagSig(c *operation.Scalar, keyImages []*operation.Point, r [][]*operation.Scalar) (*Sig, error) {
-	if len(r)==0 {
+	if len(r) == 0 {
 		return nil, errors.New("Cannot create new mlsag signature, length of r is not correct")
 	}
 	if len(keyImages) != len(r[0]) {
@@ -68,8 +68,8 @@ func (sig *Sig) ToBytes() ([]byte, error) {
 		if n > MaxSizeByte || m > MaxSizeByte {
 			return nil, errors.New("Length of R of mlsagSig is too large > 255")
 		}
-		b = append(b, byte(n & 0xFF))
-		b = append(b, byte(m & 0xFF))
+		b = append(b, byte(n&0xFF))
+		b = append(b, byte(m&0xFF))
 		for i := 0; i < n; i++ {
 			if m != len(sig.r[i]) {
 				return []byte{}, errors.New("Error in MLSAG MlsagSig ToBytes: the signature is broken (size of keyImages and r differ)")
@@ -100,11 +100,11 @@ func (sig *Sig) FromBytes(b []byte) (*Sig, error) {
 		return nil, errors.New("Cannot parse value C, byte length of C is wrong")
 	}
 	offset++
-	if offset + operation.Ed25519KeySize > len(b) {
+	if offset+operation.Ed25519KeySize > len(b) {
 		return nil, errors.New("Cannot parse value C, byte is too small")
 	}
 	C := new(operation.Scalar).FromBytesS(b[offset : offset+operation.Ed25519KeySize])
-	if !C.ScalarValid(){
+	if !C.ScalarValid() {
 		return nil, errors.New("Cannot parse value C, invalid scalar")
 	}
 	offset += operation.Ed25519KeySize
@@ -116,7 +116,7 @@ func (sig *Sig) FromBytes(b []byte) (*Sig, error) {
 	offset++
 	keyImages := make([]*operation.Point, lenKeyImages)
 	for i := 0; i < lenKeyImages; i++ {
-		if offset + operation.Ed25519KeySize > len(b) {
+		if offset+operation.Ed25519KeySize > len(b) {
 			return nil, errors.New("Cannot parse keyimage of mlsagSig, byte is too small")
 		}
 		var err error
@@ -127,22 +127,22 @@ func (sig *Sig) FromBytes(b []byte) (*Sig, error) {
 		offset += operation.Ed25519KeySize
 	}
 
-	if offset + 2 > len(b) {
+	if offset+2 > len(b) {
 		return nil, errors.New("Cannot parse length of R, byte is too small")
 	}
 	n := int(b[offset])
-	m := int(b[offset + 1])
+	m := int(b[offset+1])
 	offset += 2
 
 	R := make([][]*operation.Scalar, n)
 	for i := 0; i < n; i++ {
 		R[i] = make([]*operation.Scalar, m)
 		for j := 0; j < m; j++ {
-			if offset + operation.Ed25519KeySize > len(b) {
+			if offset+operation.Ed25519KeySize > len(b) {
 				return nil, errors.New("Cannot parse R of mlsagSig, byte is too small")
 			}
 			sc := new(operation.Scalar).FromBytesS(b[offset : offset+operation.Ed25519KeySize])
-			if !sc.ScalarValid(){
+			if !sc.ScalarValid() {
 				return nil, errors.New("Cannot parse R of mlsagSig, invalid scalar")
 			}
 			R[i][j] = sc

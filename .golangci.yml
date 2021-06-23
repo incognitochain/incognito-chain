@@ -18,7 +18,7 @@ linters:
         - forcetypeassert
         - godox
         - revive
-        # - gofmt
+        - gofmt
         # - goimports
         # - lll
     disable:

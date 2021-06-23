@@ -25,11 +25,12 @@ type PaymentProofV2 struct {
 	outputCoins          []*coin.CoinV2
 }
 
-func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
+func (proof *PaymentProofV2) SetVersion()       { proof.Version = 2 }
 func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
 
 // GetInputCoins is the getter for input coins.
 func (proof PaymentProofV2) GetInputCoins() []coin.PlainCoin { return proof.inputCoins }
+
 // GetOutputCoins is the getter for output coins.
 func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 	res := make([]coin.Coin, len(proof.outputCoins))
@@ -38,6 +39,7 @@ func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 	}
 	return res
 }
+
 // GetAggregatedRangeProof returns the Bulletproof in this, but as a generic range proof object.
 func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
 	return proof.aggregatedRangeProof
@@ -85,7 +87,9 @@ func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) error {
 	return nil
 }
 
-func (proof *PaymentProofV2) SetAggregatedRangeProof(aggregatedRangeProof *bulletproofs.AggregatedRangeProof){proof.aggregatedRangeProof = aggregatedRangeProof}
+func (proof *PaymentProofV2) SetAggregatedRangeProof(aggregatedRangeProof *bulletproofs.AggregatedRangeProof) {
+	proof.aggregatedRangeProof = aggregatedRangeProof
+}
 
 // Init allocates and zeroes all fields in this proof.
 func (proof *PaymentProofV2) Init() {
@@ -104,6 +108,7 @@ func (proof PaymentProofV2) MarshalJSON() ([]byte, error) {
 	temp := base64.StdEncoding.EncodeToString(data)
 	return json.Marshal(temp)
 }
+
 // UnmarshalJSON implements JSON Unmarshaller
 func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	Logger.Log.Infof("Unmarshalling PaymentProofV2: %v\n", string(data))
@@ -126,6 +131,7 @@ func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
 // Bytes does byte serialization for this payment proof
 func (proof PaymentProofV2) Bytes() []byte {
 	var bytes []byte
@@ -170,6 +176,7 @@ func (proof PaymentProofV2) Bytes() []byte {
 
 	return bytes
 }
+
 // SetBytes does byte deserialization for this payment proof
 func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
 	if len(proofbytes) == 0 {
@@ -314,35 +321,35 @@ func (proof *PaymentProofV2) IsPrivacy() bool {
 
 // IsConfidentialAsset returns true if this is a Confidential Asset transaction (all coins in it must have asset tag field).
 // An error means the proof is simply invalid. After this function returns, check the error first.
-func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error){
+func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error) {
 	// asset tag consistency check
 	assetTagCount := 0
 	inputCoins := proof.GetInputCoins()
-	for _,c := range inputCoins{
+	for _, c := range inputCoins {
 		coinSpecific, ok := c.(*coin.CoinV2)
-		if !ok{
-			Logger.Log.Errorf("Cannot cast a coin to v2 : %v",c.Bytes())
+		if !ok {
+			Logger.Log.Errorf("Cannot cast a coin to v2 : %v", c.Bytes())
 			return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Casting error : CoinV2"))
 		}
-		if coinSpecific.GetAssetTag()!=nil{
+		if coinSpecific.GetAssetTag() != nil {
 			assetTagCount++
 		}
 	}
 	outputCoins := proof.GetOutputCoins()
-	for _,c := range outputCoins{
+	for _, c := range outputCoins {
 		coinSpecific, ok := c.(*coin.CoinV2)
-		if !ok{
+		if !ok {
 			Logger.Log.Errorf("Cannot cast a coin to v2 : %v", c.Bytes())
 			return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Casting error : CoinV2"))
 		}
-		if coinSpecific.GetAssetTag()!=nil{
+		if coinSpecific.GetAssetTag() != nil {
 			assetTagCount++
 		}
 	}
 
-	if assetTagCount==len(inputCoins)+len(outputCoins){
+	if assetTagCount == len(inputCoins)+len(outputCoins) {
 		return true, nil
-	}else if assetTagCount==0{
+	} else if assetTagCount == 0 {
 		return false, nil
 	}
 	return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Error : TX contains both confidential asset & non-CA coins"))
@@ -368,7 +375,7 @@ func (proof PaymentProofV2) ValidateSanity(additionalData interface{}) (bool, er
 	outputCoins := proof.GetOutputCoins()
 	// cmsValues := proof.aggregatedRangeProof.GetCommitments()
 	for i, outputCoin := range outputCoins {
-		if outputCoin.GetPublicKey()==nil || !outputCoin.GetPublicKey().PointValid() {
+		if outputCoin.GetPublicKey() == nil || !outputCoin.GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity Public key of output coin failed")
 		}
 
@@ -385,22 +392,22 @@ func (proof PaymentProofV2) ValidateSanity(additionalData interface{}) (bool, er
 
 		// re-compute the commitment if the output coin's address is the burning address
 		// burn TX cannot use confidential asset
-		if wallet.IsPublicKeyBurningAddress(outputCoins[i].GetPublicKey().ToBytesS()){
+		if wallet.IsPublicKeyBurningAddress(outputCoins[i].GetPublicKey().ToBytesS()) {
 			value := outputCoin.GetValue()
 			rand := outputCoin.GetRandomness()
 			commitment := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(value), rand, coin.PedersenValueIndex)
 			outputCoinSpecific, ok := outputCoin.(*coin.CoinV2)
-			if !ok{
+			if !ok {
 				return false, errors.New("Validate sanity - Cannot cast a coin to v2")
 			}
-			if outputCoinSpecific.GetAssetTag()!=nil{
+			if outputCoinSpecific.GetAssetTag() != nil {
 				com, err := outputCoinSpecific.ComputeCommitmentCA()
-				if err != nil{
+				if err != nil {
 					return false, errors.New("Cannot compute commitment for confidential asset")
 				}
 				commitment = com
 			}
-			if !operation.IsPointEqual(commitment, outputCoin.GetCommitment()){
+			if !operation.IsPointEqual(commitment, outputCoin.GetCommitment()) {
 				return false, errors.New("validate sanity Coin commitment of burned coin failed")
 			}
 		}
@@ -440,12 +447,12 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
 	wit.Set(outputValues, outputRands)
-	if hasConfidentialAsset{
+	if hasConfidentialAsset {
 		blinders := make([]*operation.Scalar, len(sharedSecrets))
-		for i := range sharedSecrets{
-			if sharedSecrets[i]==nil{
+		for i := range sharedSecrets {
+			if sharedSecrets[i] == nil {
 				blinders[i] = new(operation.Scalar).FromUint64(0)
-			}else{
+			} else {
 				blinders[i], err = coin.ComputeAssetTagBlinder(sharedSecrets[i])
 				if err != nil {
 					return nil, err
@@ -464,10 +471,10 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 		}
 		proof.aggregatedRangeProof, err = wit.ProveUsingBase(theBase)
 
-		outputCommitments 	:= make([]*operation.Point, n)
+		outputCommitments := make([]*operation.Point, n)
 		for i := 0; i < n; i++ {
 			com, err := outputCoins[i].ComputeCommitmentCA()
-			if err!=nil{
+			if err != nil {
 				return nil, err
 			}
 			outputCommitments[i] = com
@@ -476,7 +483,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 		if err != nil {
 			return nil, err
 		}
-	}else{
+	} else {
 		proof.aggregatedRangeProof, err = wit.Prove()
 		if err != nil {
 			return nil, err
@@ -485,7 +492,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 
 	// After Prove, we should hide all information in coin details.
 	for i, outputCoin := range proof.outputCoins {
-		if !wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+		if !wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			if err = outputCoin.ConcealOutputCoin(paymentInfo[i].PaymentAddress.GetPublicView()); err != nil {
 				return nil, err
 			}
@@ -497,7 +504,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 
 	}
 
-	for _, inputCoin := range proof.GetInputCoins(){
+	for _, inputCoin := range proof.GetInputCoins() {
 		c, ok := inputCoin.(*coin.CoinV2)
 		if !ok {
 			return nil, errors.New("Input c of PaymentProofV2 must be CoinV2")
@@ -510,7 +517,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 
 func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, error) {
 	cmsValues := proof.aggregatedRangeProof.GetCommitments()
-	if len(proof.GetOutputCoins())!=len(cmsValues){
+	if len(proof.GetOutputCoins()) != len(cmsValues) {
 		return false, errors.New("Commitment length mismatch")
 	}
 	// Verify the proof that output values and sum of them do not exceed v_max
@@ -523,7 +530,7 @@ func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, erro
 			return false, errors.New("Verify has privacy should have every coin encrypted")
 		}
 		// check if output coins' commitment is the same as in the proof
-		if !operation.IsPointEqual(cmsValues[i], proof.outputCoins[i].GetCommitment()){
+		if !operation.IsPointEqual(cmsValues[i], proof.outputCoins[i].GetCommitment()) {
 			return false, errors.New("Coin & Proof Commitments mismatch")
 		}
 	}
@@ -542,7 +549,7 @@ func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, erro
 
 func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 	cmsValues := proof.aggregatedRangeProof.GetCommitments()
-	if len(proof.GetOutputCoins())!=len(cmsValues){
+	if len(proof.GetOutputCoins()) != len(cmsValues) {
 		return false, errors.New("Commitment length mismatch")
 	}
 	// Verify the proof that output values and sum of them do not exceed v_max
@@ -555,7 +562,7 @@ func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 			return false, errors.New("Verify has privacy should have every coin encrypted")
 		}
 		// check if output coins' commitment is the same as in the proof
-		if !operation.IsPointEqual(cmsValues[i], proof.outputCoins[i].GetCommitment()){
+		if !operation.IsPointEqual(cmsValues[i], proof.outputCoins[i].GetCommitment()) {
 			return false, errors.New("Coin & Proof Commitments mismatch")
 		}
 	}
@@ -606,19 +613,18 @@ func (proof PaymentProofV2) Verify(boolParams map[string]bool, pubKey key.Public
 		isBatch = false
 	}
 
-
 	inputCoins := proof.GetInputCoins()
 	dupMap := make(map[string]bool)
-	for _,coin := range inputCoins{
+	for _, coin := range inputCoins {
 		identifier := base64.StdEncoding.EncodeToString(coin.GetKeyImage().ToBytesS())
 		_, exists := dupMap[identifier]
-		if exists{
+		if exists {
 			return false, errors.New("Duplicate input coin in PaymentProofV2")
 		}
 		dupMap[identifier] = true
 	}
 
-	if !hasConfidentialAsset{
+	if !hasConfidentialAsset {
 		return proof.verifyHasNoCA(isBatch)
 	}
 	return proof.verifyHasConfidentialAsset(isBatch)

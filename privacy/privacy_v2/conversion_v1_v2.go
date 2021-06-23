@@ -321,19 +321,19 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{
 	}
 	// check input coins without privacy
 	for _, c := range proof.inputCoins {
-		if c.GetCommitment()==nil || !c.GetCommitment().PointValid() {
+		if c.GetCommitment() == nil || !c.GetCommitment().PointValid() {
 			return false, errors.New("validate sanity CoinCommitment of input coin failed")
 		}
-		if c.GetPublicKey()==nil || !c.GetPublicKey().PointValid() {
+		if c.GetPublicKey() == nil || !c.GetPublicKey().PointValid() {
 			return false, errors.New("validate sanity PublicKey of input coin failed")
 		}
-		if c.GetKeyImage()==nil || !c.GetKeyImage().PointValid() {
+		if c.GetKeyImage() == nil || !c.GetKeyImage().PointValid() {
 			return false, errors.New("validate sanity Serial number of input coin failed")
 		}
-		if c.GetRandomness()==nil || !c.GetRandomness().ScalarValid() {
+		if c.GetRandomness() == nil || !c.GetRandomness().ScalarValid() {
 			return false, errors.New("validate sanity Randomness of input coin failed")
 		}
-		if c.GetSNDerivator()==nil || !c.GetSNDerivator().ScalarValid() {
+		if c.GetSNDerivator() == nil || !c.GetSNDerivator().ScalarValid() {
 			return false, errors.New("validate sanity SNDerivator of input coin failed")
 		}
 		if c.IsEncrypted() {
@@ -343,13 +343,13 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{
 
 	// check output coins without privacy
 	c := proof.outputCoins[0]
-	if c.GetCommitment()==nil || !c.GetCommitment().PointValid() {
+	if c.GetCommitment() == nil || !c.GetCommitment().PointValid() {
 		return false, errors.New("validate sanity CoinCommitment of output coin failed")
 	}
-	if c.GetPublicKey()==nil || !c.GetPublicKey().PointValid() {
+	if c.GetPublicKey() == nil || !c.GetPublicKey().PointValid() {
 		return false, errors.New("validate sanity PublicKey of output coin failed")
 	}
-	if c.GetRandomness()==nil || !c.GetRandomness().ScalarValid() {
+	if c.GetRandomness() == nil || !c.GetRandomness().ScalarValid() {
 		return false, errors.New("validate sanity Randomness of output coin failed")
 	}
 	if c.IsEncrypted() {
@@ -389,14 +389,14 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 		if err != nil {
 			return false, err
 		}
-		if !bytes.Equal(commitment.ToBytesS(), proof.inputCoins[i].GetCommitment().ToBytesS()){
+		if !bytes.Equal(commitment.ToBytesS(), proof.inputCoins[i].GetCommitment().ToBytesS()) {
 			return false, errors.New("ConversionProof inputCoins.commitment is not correct")
 		}
 
 		// Check input overflow (not really necessary)
 		inputValue := proof.inputCoins[i].GetValue()
 		tmpInputSum := sumInput + inputValue
-		if tmpInputSum < sumInput || tmpInputSum < inputValue{
+		if tmpInputSum < sumInput || tmpInputSum < inputValue {
 			return false, errors.New("Overflown sumOutput")
 		}
 		sumInput += inputValue
@@ -427,7 +427,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 
 		// Check output overflow
 		tmpOutputSum := sumOutput + outputValue
-		if tmpOutputSum < sumOutput || tmpOutputSum < outputValue{
+		if tmpOutputSum < sumOutput || tmpOutputSum < outputValue {
 			return false, errors.New("Overflown sumOutput")
 		}
 		sumOutput += outputValue

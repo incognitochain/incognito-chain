@@ -223,7 +223,7 @@ func GetTxActualSizeInBytes(tx metadata.Transaction) uint64 {
 		sizeTx += uint64(len(txTokenBase.TxTokenData.PropertySymbol))
 		sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyID))
 		sizeTx += 4 // Type
-		sizeTx++ // Mintable
+		sizeTx++    // Mintable
 		sizeTx += 8 // Amount
 		meta := txTokenBase.GetMetadata()
 		if meta != nil {
@@ -231,8 +231,8 @@ func GetTxActualSizeInBytes(tx metadata.Transaction) uint64 {
 		}
 
 		return sizeTx
-	} 
-	
+	}
+
 	// TxBase
 	sizeTx += uint64(1)                     // version
 	sizeTx += uint64(len(tx.GetType()) + 1) // type string

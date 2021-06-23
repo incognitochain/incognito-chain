@@ -122,7 +122,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectTxMedataWithBlockChain:                  {-1039, "Reject invalid metadata with blockchain"},
 	BatchTxProofVerifyFailError:                   {-1040, "Can not verify proof of batch txs %s"},
 	VerifyOneOutOfManyProofFailedErr:              {-1041, "Verify one out of many proof failed"},
-	GetShardIDByPublicKeyError:						{-1042, "Cannot get shard id from public key of input coin"},
+	GetShardIDByPublicKeyError:                    {-1042, "Cannot get shard id from public key of input coin"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
@@ -136,19 +136,19 @@ var ErrCodeMessage = map[int]struct {
 	PrivacyTokenInitPRVError:            {-3004, "Init tx for PRV error"},
 	PrivacyTokenTxTypeNotHandleError:    {-3005, "Can not handle this tx type for privacy token"},
 	PrivacyTokenInitTokenDataError:      {-3006, "Can not init data for privacy token tx"},
-	PrivacyTokenInitFeeParamsError: 		 {-3007, "Init tx token fee params error"},
+	PrivacyTokenInitFeeParamsError:      {-3007, "Init tx token fee params error"},
 
 	// for normal token
 	NormalTokenPRVJsonError: {-4000, "Json data error"},
 	NormalTokenJsonError:    {-4001, "Json data error"},
 
 	GetCommitmentsInDatabaseError: {-5000, "Get commitments from database got error"},
-	InvalidPaymentAddressError: {-5001, "Payment address is null"},
-	OnetimeAddressAlreadyExists: { -5002, "OnetimeAddress is already exists in database"},
+	InvalidPaymentAddressError:    {-5001, "Payment address is null"},
+	OnetimeAddressAlreadyExists:   {-5002, "OnetimeAddress is already exists in database"},
 
 	// For tx conversion
-	SumInputCoinsAndOutputCoinsError:			   {-6000, "Sum input coins and output coins are not the same"},
-	InvalidInputCoinVersionErr:					   {-6001, "Input coins version is invalid"},
+	SumInputCoinsAndOutputCoinsError: {-6000, "Sum input coins and output coins are not the same"},
+	InvalidInputCoinVersionErr:       {-6001, "Input coins version is invalid"},
 }
 
 type TransactionError struct {

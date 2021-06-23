@@ -25,11 +25,11 @@ var ErrCodeMessage = errhandler.ErrCodeMessage
 
 // Public Constants
 const (
-	CStringBurnAddress    	= "burningaddress"
-	Ed25519KeySize        	= operation.Ed25519KeySize
-	CStringBulletProof    	= operation.CStringBulletProof
-	CommitmentRingSize    	= privacy_util.CommitmentRingSize
-	CommitmentRingSizeExp 	= privacy_util.CommitmentRingSizeExp
+	CStringBurnAddress    = "burningaddress"
+	Ed25519KeySize        = operation.Ed25519KeySize
+	CStringBulletProof    = operation.CStringBulletProof
+	CommitmentRingSize    = privacy_util.CommitmentRingSize
+	CommitmentRingSizeExp = privacy_util.CommitmentRingSizeExp
 
 	PedersenSndIndex        = operation.PedersenSndIndex
 	PedersenValueIndex      = operation.PedersenValueIndex
@@ -37,9 +37,9 @@ const (
 	PedersenPrivateKeyIndex = operation.PedersenPrivateKeyIndex
 	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
 
-	RingSize 				= privacy_util.RingSize
-	MaxTriesOTA 			= coin.MaxTriesOTA
-	TxRandomGroupSize		= coin.TxRandomGroupSize
+	RingSize          = privacy_util.RingSize
+	MaxTriesOTA       = coin.MaxTriesOTA
+	TxRandomGroupSize = coin.TxRandomGroupSize
 )
 
 var PedCom = operation.PedCom
@@ -74,7 +74,6 @@ type PrivateKey = key.PrivateKey
 type OTAKey = key.OTAKey
 type PaymentInfo = key.PaymentInfo
 type PaymentAddress = key.PaymentAddress
-
 
 func GeneratePrivateKey(seed []byte) PrivateKey {
 	return key.GeneratePrivateKey(seed)
@@ -161,33 +160,32 @@ func CheckDuplicateScalarArray(arr []*Scalar) bool {
 	return operation.CheckDuplicateScalarArray(arr)
 }
 
-func RandomPoint() *Point{
+func RandomPoint() *Point {
 	return operation.RandomPoint()
 }
 func IsPointEqual(pa *Point, pb *Point) bool {
-	return operation.IsPointEqual(pa,pb)
+	return operation.IsPointEqual(pa, pb)
 }
 func IsScalarEqual(pa *Scalar, pb *Scalar) bool {
-	return operation.IsScalarEqual(pa,pb)
+	return operation.IsScalarEqual(pa, pb)
 }
 
 func NewCoinFromPaymentInfo(info *PaymentInfo) (*CoinV2, error) {
 	return coin.NewCoinFromPaymentInfo(info)
 }
 
-func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point, txRandom *TxRandom, info []byte) (*CoinV2){
+func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point, txRandom *TxRandom, info []byte) *CoinV2 {
 	return coin.NewCoinFromAmountAndTxRandomBytes(amount, publicKey, txRandom, info)
 }
 
-func ProveV2(inputCoins []PlainCoin, outputCoins []*CoinV2, sharedSecrets []*Point, hasPrivacy bool, paymentInfo []*PaymentInfo) (*ProofV2, error){
+func ProveV2(inputCoins []PlainCoin, outputCoins []*CoinV2, sharedSecrets []*Point, hasPrivacy bool, paymentInfo []*PaymentInfo) (*ProofV2, error) {
 	return privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, hasPrivacy, paymentInfo)
 }
 
-func ComputeAssetTagBlinder(sharedSecret *Point) (*Scalar,error){
+func ComputeAssetTagBlinder(sharedSecret *Point) (*Scalar, error) {
 	return coin.ComputeAssetTagBlinder(sharedSecret)
 }
 
-func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error){
+func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error) {
 	return coin.NewCoinCA(info, tokenID)
 }
-
