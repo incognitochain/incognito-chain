@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -209,8 +210,9 @@ func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand 
 // calculateCandidatePosition calculate reverse shardID for candidate
 // randomPosition = sum(hash(candidate+rand)) % total, if randomPosition == 0 then randomPosition = 1
 // randomPosition in range (1, total)
-func calculateCandidatePosition(candidate string, rand int64, total int) (pos int) {
-	seed := candidate + fmt.Sprintf("%v", rand)
+func calculateCandidatePosition(candidate string, randomNumber int64, total int) (pos int) {
+	rand.Seed(randomNumber)
+	seed := candidate + fmt.Sprintf("%v", randomNumber)
 	hash := common.HashB([]byte(seed))
 	data := 0
 	for _, v := range hash {
@@ -273,7 +275,7 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 type AssignRuleV3 struct {
 }
 
-func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
+func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
 
 	sum := 0
 	for _, v := range numberOfValidators {
@@ -306,11 +308,12 @@ func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rand 
 	}
 
 	assignedCandidates := make(map[byte][]string)
+	rand.Seed(randomNumber)
 	for _, candidate := range candidates {
-		randomPosition := calculateCandidatePosition(candidate, rand, totalDiff)
+		randomPosition := calculateCandidatePositionV2(totalDiff)
 		position := 0
 		tempPosition := diff[position]
-		for randomPosition > tempPosition {
+		for randomPosition >= tempPosition {
 			position++
 			tempPosition += diff[position]
 		}
@@ -328,6 +331,10 @@ func getOrderedLowerSet(mean int, numberOfValidators []int) []int {
 	sortedShardIDs := sortShardIDByIncreaseOrder(numberOfValidators)
 
 	halfOfShard := totalShard / 2
+	if halfOfShard == 0 {
+		halfOfShard = 1
+	}
+
 	for _, shardID := range sortedShardIDs {
 		if numberOfValidators[shardID] < mean && len(lowerSet) < halfOfShard {
 			lowerSet = append(lowerSet, int(shardID))
@@ -345,4 +352,9 @@ func getOrderedLowerSet(mean int, numberOfValidators []int) []int {
 	}
 
 	return lowerSet
+}
+
+// calculateCandidatePositionV2 random a position in total
+func calculateCandidatePositionV2(total int) (pos int) {
+	return rand.Intn(total)
 }

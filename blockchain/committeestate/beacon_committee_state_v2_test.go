@@ -3259,7 +3259,7 @@ func TestBeaconCommitteeStateV2_clone(t *testing.T) {
 				hashes:                     NewBeaconCommitteeStateHash(),
 			},
 			args: args{
-				newB: NewBeaconCommitteeStateV2(),
+				newB: NewBeaconCommitteeStateV2(AssignRuleV2{}),
 			},
 		},
 	}
