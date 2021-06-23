@@ -17,22 +17,6 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func TestUtilsRandBytes(t *testing.T) {
-	data := []int{
-		0,
-		10,
-		45,
-		100,
-		1000,
-	}
-
-	for _, item := range data {
-		res := RandBytes(item)
-		fmt.Printf("Res: %v\n", res)
-		assert.Equal(t, item, len(res))
-	}
-}
-
 func TestUtilsConvertIntToBinary(t *testing.T) {
 	data := []struct {
 		number int
@@ -65,22 +49,6 @@ func TestUtilsConvertIntToBinary(t *testing.T) {
 // 		assert.Equal(t, item.binary, res)
 // 	}
 // }
-
-func TestUtilsAddPaddingBigInt(t *testing.T) {
-	data := []struct {
-		number *big.Int
-		size   int
-	}{
-		{new(big.Int).SetBytes(RandBytes(12)), common.BigIntSize},
-		{new(big.Int).SetBytes(RandBytes(42)), 50},
-		{new(big.Int).SetBytes(RandBytes(0)), 10},
-	}
-
-	for _, item := range data {
-		res := common.AddPaddingBigInt(item.number, item.size)
-		assert.Equal(t, item.size, len(res))
-	}
-}
 
 func TestUtilsIntToByteArr(t *testing.T) {
 	data := []struct {

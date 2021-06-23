@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-// TEST DURATION NOTE : 100 iterations of 1-to-12 coins = 15sec
+
 var (
-	numOfLoops = 100
+	numOfLoops = 3
 	minOutCoinCount = 1
 	maxOutCoinCount = 12
 
@@ -23,6 +23,7 @@ var (
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init() starting payment v2 logger for test !")
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	common.MaxShardNumber = 1
 	return
 }()
 
@@ -64,7 +65,7 @@ func TestPaymentV2InitAndMarshalling(t *testing.T) {
 		}
 	// prove and verify without privacy (no bulletproof)
 	// also marshal to byte and back
-		proof, err := Prove(inputCoins, outputCoins, false, paymentInfo)
+		proof, err := Prove(inputCoins, outputCoins, nil, false, paymentInfo)
 		assert.Equal(t, nil, err)
 		b := proof.Bytes()
 
@@ -126,17 +127,20 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 				fmt.Println(err)
 			}
 		}
+		boolParams := make(map[string]bool)
+		boolParams["isNewTransaction"] = true
+		boolParams["hasConfidentialAsset"] = false
 		// prove and verify with privacy using bulletproof
 		// note that bulletproofs only assure each outcoin amount is in uint64 range
 		// while the equality suminput = suminput + sumfee must be checked using mlsag later
 		// here our mock scenario has out+fee>in but passes anyway
-		proof, err := Prove(inputCoins, outputCoins, true, paymentInfo)
+		proof, err := Prove(inputCoins, outputCoins, nil, false, paymentInfo)
 		assert.Equal(t, nil, err)
-		isSane, err := proof.ValidateSanity()
+		isSane, err := proof.ValidateSanity(nil)
 		assert.Equal(t,nil,err)
 		assert.Equal(t,true,isSane)
 
-		isValid,err := proof.Verify(true, nil, uint64(200*outCoinCount), byte(0), nil, false, nil)
+		isValid,err := proof.Verify(boolParams, nil, uint64(200*outCoinCount), byte(0), nil, nil)
 		assert.Equal(t, nil, err)
 		assert.Equal(t,true,isValid)
 
@@ -155,11 +159,11 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 			if err != nil{
 				continue
 			}
-			isSane, err = reconstructedProof.ValidateSanity()
+			isSane, err = reconstructedProof.ValidateSanity(nil)
 			if !isSane{
 				continue
 			}
-			isValid,err = reconstructedProof.Verify(true, nil, uint64(200*outCoinCount), byte(0), nil, false, nil)
+			isValid,err = reconstructedProof.Verify(boolParams, nil, uint64(200*outCoinCount), byte(0), nil, nil)
 			if !isValid{
 				continue
 			}
@@ -181,11 +185,11 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 			if err != nil{
 				continue
 			}
-			isSane, err = reconstructedProof.ValidateSanity()
+			isSane, err = reconstructedProof.ValidateSanity(nil)
 			if !isSane{
 				continue
 			}
-			isValid,err = reconstructedProof.Verify(true, nil, uint64(200*outCoinCount), byte(0), nil, false, nil)
+			isValid,err = reconstructedProof.Verify(boolParams, nil, uint64(200*outCoinCount), byte(0), nil, nil)
 			if !isValid{
 				continue
 			}
