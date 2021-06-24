@@ -1,22 +1,23 @@
 package transaction
 
-import(
+import (
+	"fmt"
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	"io/ioutil"
 	"math/rand"
-	"testing"
-	"time"
 	"os"
 	"strconv"
-	"fmt"
-	"io/ioutil"
+	"testing"
+	"time"
 	// "encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/trie"
 
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -64,7 +65,7 @@ var (
 	dummyDB *statedb.StateDB
 	chainStorage incdb.Database
 	featureStorage incdb.Database
-	coinReindexer *utils.CoinIndexer
+	coinReindexer *coin_indexer.CoinIndexer
 	bridgeDB *statedb.StateDB
 	activeLogger common.Logger
 	inactiveLogger common.Logger
@@ -88,6 +89,7 @@ var _ = func() (_ struct{}) {
 	
 	// bridgeDB  = dummyDB.Copy()
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	common.MaxShardNumber = 2
 	return
 }()
 
@@ -109,7 +111,7 @@ func setup() {
 		panic(err)
 	}
 	// use only 1 worker for benchmark
-	coinReindexer, err = utils.NewOutcoinReindexer(1, featureStorage)
+	coinReindexer, err = coin_indexer.NewOutCoinIndexer(1, featureStorage, "")
 	if err != nil {
 		panic(err)
 	}
@@ -236,7 +238,7 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 		ks := keySets[chosenIndex]
 		// fmt.Printf("Get coin by key %x\n", ks.PaymentAddress.Pk)
 		// pubKey, _ := new(operation.Point).FromBytesS(ks.PaymentAddress.Pk)
-		results, err := utils.QueryDbCoinVer1(ks.PaymentAddress.Pk, shardID, &common.PRVCoinID, coinDB)
+		results, err := coin_indexer.QueryDbCoinVer1(ks.PaymentAddress.Pk, shardID, &common.PRVCoinID, coinDB)
 		if err != nil {
 			panic(err)
 		}
@@ -297,7 +299,7 @@ func prepareKeysAndPaymentsV2(count int) ([]*incognitokey.KeySet, []*key.Payment
 	return keySets, paymentInfos
 }
 
-func getCoinFilterByOTAKey() utils.CoinMatcher{
+func getCoinFilterByOTAKey() coin_indexer.CoinMatcher {
     return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool{
         entry, exists := kvargs["otaKey"]
         if !exists{
@@ -368,7 +370,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[chosenIndex]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			results, err := utils.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
+			results, err := coin_indexer.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
 			assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)
@@ -386,7 +388,15 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			err := coinReindexer.ReindexOutcoin(uint64(0), maxHeight, otaKey, coinDB, shardID, false)
+			idxParam := coin_indexer.IndexParam{
+				FromHeight: uint64(0),
+				ToHeight:   maxHeight,
+				OTAKey:     otaKey,
+				TxDb:       coinDB,
+				ShardID:    shardID,
+				IsReset:    false,
+			}
+			coinReindexer.ReIndexOutCoin(idxParam)
 			// assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)
@@ -402,7 +412,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			results, _, err := coinReindexer.GetReindexedOutcoin(otaKey, &common.PRVCoinID, coinDB, shardID)
+			results, _, err := coinReindexer.GetIndexedOutCoin(otaKey, &common.PRVCoinID, coinDB, shardID)
 			assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)
@@ -467,7 +477,15 @@ func BenchmarkReindexCoinV2(b *testing.B) {
 		ks := keySets[(chosenIndex + loop) % numOfPrivateKeys]
 		// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 		otaKey := ks.OTAKey
-		err := coinReindexer.ReindexOutcoin(uint64(0), uint64(1), otaKey, coinDB, shardID, false)
+		idxParam := coin_indexer.IndexParam{
+			FromHeight: uint64(0),
+			ToHeight:   1,
+			OTAKey:     otaKey,
+			TxDb:       coinDB,
+			ShardID:    shardID,
+			IsReset:    false,
+		}
+		coinReindexer.ReIndexOutCoin(idxParam)
 		// assert.Equal(b, len(results), numOfCoinsPerKey)
 		if err != nil {
 			panic(err)
