@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"math"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -1459,4 +1460,104 @@ func calMaxDifferent(numberOfValidators []int) int {
 		return arr[i] < arr[j]
 	})
 	return arr[len(arr)-1] - arr[0]
+}
+
+func TestAssignRuleV3_ProcessDistribution(t *testing.T) {
+	genRandomString := func(strLen int) string {
+		characters := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		res := ""
+		for i := 0; i < strLen; i++ {
+			u := string(characters[rand.Int()%len(characters)])
+			res = res + u
+		}
+		return res
+	}
+	for testTime := 0; testTime < 100; testTime++ {
+		fmt.Println("Test Distribution ", testTime+1)
+		initialNumberOfValidators := []int{472, 470, 474, 168, 121, 73, 309, 437}
+		candidates := make(map[int][]string)
+		for sid, v := range initialNumberOfValidators {
+			for i := 0; i < v; i++ {
+				candidates[sid] = append(candidates[sid], genRandomString(128))
+			}
+		}
+
+		numberOfValidators := []int{}
+		candidateAssignStat := make(map[string][8]int)
+		assignTimeList := []int{}
+		for { //loop until there is 1 candidate is assign 8000 times (expect ~1000 for each shard, and other candidate also are assigned ~ 8000 times)
+			reach8000Times := false
+			swapCandidate := []string{}
+			numberOfValidators = []int{}
+			for sid := 0; sid < len(candidates); sid++ {
+				numberOfValidators = append(numberOfValidators, len(candidates[sid]))
+			}
+			for sid, candidate := range candidates {
+				candidates[sid] = candidate[5:len(candidate)]
+				swapCandidate = append(swapCandidate, candidate[:5]...)
+			}
+			rand.Seed(time.Now().UnixNano())
+			randomNumber := rand.Int63()
+			assignedCandidates := AssignRuleV3{}.Process(swapCandidate, numberOfValidators, randomNumber)
+			for shardID, newValidators := range assignedCandidates {
+				candidates[int(shardID)] = append(candidates[int(shardID)], newValidators...)
+
+				for _, v := range newValidators {
+					stat := candidateAssignStat[v]
+					stat[shardID] = stat[shardID] + 1
+					candidateAssignStat[v] = stat
+
+					candidateTotalAssignTime := 0
+					for _, sv := range stat {
+						candidateTotalAssignTime += sv
+					}
+					if candidateTotalAssignTime > 8000 {
+						reach8000Times = true
+					}
+				}
+			}
+
+			if reach8000Times {
+				break
+			}
+		}
+
+		//check our expectation
+		for k, v := range candidateAssignStat {
+			//check if each candidate, it is assign to shard ID uniformly
+			if !isUniformDistribution(v[:], 0.2) { // allow diff of 20% from mean
+				fmt.Printf("%v %v", k, v)
+				t.FailNow()
+			}
+
+			candidateTotalAssignTime := 0
+			for _, sv := range v {
+				candidateTotalAssignTime += sv
+			}
+			assignTimeList = append(assignTimeList, candidateTotalAssignTime)
+		}
+
+		//check if all candidate has the same number of assign time (uniform distribution)
+		if !isUniformDistribution(assignTimeList, 0.1) { // allow diff of 10% from mean
+			fmt.Printf("diff: %v", calMaxDifferent(assignTimeList))
+			t.FailNow()
+		}
+	}
+}
+
+func isUniformDistribution(arr []int, diffPercentage float64) bool {
+	sum := 0
+	for _, v := range arr {
+		sum += v
+	}
+	mean := float64(sum) / float64(len(arr))
+	allowDif := mean * diffPercentage
+	//fmt.Println(mean, allowDif)
+	for _, v := range arr {
+		if math.Abs(mean-float64(v)) > allowDif {
+			fmt.Println(mean, v, allowDif, math.Abs(mean-float64(v)))
+			return false
+		}
+	}
+	return true
 }
