@@ -1,25 +1,35 @@
-name: "local"
-net: 0x02
+name: "testnet"
+net: 0x22
 genesis_param:
+  initial_incognito:
+    - Version: 1
+      Type: "s"
+      LockTime: 1570159128
+      SigPubKey: "5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA="
+      Fee: 0
+      Sig: "oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA=="
+      Proof: "AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA="
+      PubKeyLastByteSender: 0
   fee_per_tx_kb: 0
   consensus_algorithm: "bls"
   block_timestamp: "2019-11-29T00:00:00.000Z"
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
+
 committee_size:
-  max_shard_committee_size: 5
+  max_shard_committee_size: 6
   min_shard_committee_size: 4
   min_beacon_committee_size: 4
-  max_beacon_committee_size: 7
+  max_beacon_committee_size: 4
   init_shard_committee_size: 4
   init_beacon_committee_size: 4
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
 block_time:
-  min_beacon_block_interval: 10s
-  max_beacon_block_creation: 8s
-  min_shard_block_interval: 10s
-  max_shard_block_creation: 6s
+  min_beacon_block_interval: 8s
+  max_beacon_block_creation: 5s
+  min_shard_block_interval: 8s
+  max_shard_block_creation: 5s
 staking_amount_shard: 1750000000000
 active_shards: 2
 basic_reward: 400000000
@@ -29,7 +39,8 @@ epoch_param:
   epoch_v2_break_point: 1000000000000
   random_time: 5
   random_time_v2: 1000000000000
-eth_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
+eth_contract_address: "0x7bebc8445C6223b41B7BB4b0aE9742e2Fd2f47F3"
+bsc_contract_address: "0x2f601ba66187b003036ae4d5aeaeec10e113f9c2"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
 centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 swap_committee_param:
@@ -42,20 +53,22 @@ consensus_param:
   enable_slashing_height: 1
   assign_rule_v3_height: 1
   timeslot: 10
-  epoch_break_point_swap_new_key:
-    - 1000000000
-beacon_height_break_point_burn_addr: 1
+  epoch_break_point_swap_new_key: # read from file key list v2
+    - 7000000
+beacon_height_break_point_burn_addr: 2
 eth_remove_bridge_sig_epoch: 0
 replace_staking_tx_height: 1
-bc_height_break_point_new_zkp: 1148608
-bc_height_break_point_privacy_v2: 300
-coin_v2_lowest_height: 8640
+bc_height_break_point_new_zkp: 2
+bc_height_break_point_privacy_v2: 52300
+coin_v2_lowest_height: 1
 enable_feature_flags:
   - 0: 1
   - 1: 0
-portal_v3_height: 1000000000000
+portal_v3_height: 30158
 tx_pool_version: 0
 geth_param:
   host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
   protocol: "https"
   port: ""
+bsc_param:
+  host: "https://data-seed-prebsc-1-s1.binance.org:8545"

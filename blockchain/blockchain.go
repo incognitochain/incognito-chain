@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -30,7 +31,6 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
-	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/pkg/errors"
 )
@@ -68,7 +68,9 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
-	OutcoinByOTAKeyDb *incdb.Database
+	OutCoinByOTAKeyDb *incdb.Database
+	IndexerWorkers    int64
+	IndexerToken      string
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
@@ -115,8 +117,13 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb != nil)
 	if EnableIndexingCoinByOTAKey {
 		var err error
-		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
-		return err
+		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
+		if err != nil {
+			return err
+		}
+		if config.IndexerWorkers > 0 {
+			go outcoinIndexer.Start()
+		}
 	}
 	return nil
 }

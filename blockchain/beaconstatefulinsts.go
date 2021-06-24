@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/config"
 	"math/big"
 	"sort"
 	"strconv"
@@ -40,6 +41,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		case metadata.InitTokenRequestMeta,
 			metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
+			metadata.IssuingBSCRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -120,6 +122,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
+		UniqBSCTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
 	}
@@ -161,9 +164,41 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
+			case metadata.IssuingETHRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqETHTxsUsed,
+					config.Param().EthContractAddressStr,
+					"",
+					statedb.IsETHTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqBSCTxsUsed,
+					config.Param().BscContractAddressStr,
+					common.BSCPrefix,
+					statedb.IsBSCTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
+				}
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
 					pdeContributionActionsByShardID,
@@ -500,24 +535,27 @@ func (blockchain *BlockChain) handlePDEInsts(
 		}
 	}
 
-	// handle trade
-	sortedTradesActions := sortPDETradeInstsByFee(
-		beaconHeight,
-		currentPDEState,
-		pdeTradeActionsByShardID,
-	)
-	for _, tradeAction := range sortedTradesActions {
-		actionContentBytes, _ := json.Marshal(tradeAction)
-		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-		newInst, err := blockchain.buildInstructionsForPDETrade(actionContentBase64Str, tradeAction.ShardID, metadata.PDETradeRequestMeta, currentPDEState, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			continue
-		}
-		if len(newInst) > 0 {
-			instructions = append(instructions, newInst...)
+	if !blockchain.IsAfterPrivacyV2CheckPoint(beaconHeight) { // disable old pDEX trades after privacy V2 break point
+		// handle trade
+		sortedTradesActions := sortPDETradeInstsByFee(
+			beaconHeight,
+			currentPDEState,
+			pdeTradeActionsByShardID,
+		)
+		for _, tradeAction := range sortedTradesActions {
+			actionContentBytes, _ := json.Marshal(tradeAction)
+			actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+			newInst, err := blockchain.buildInstructionsForPDETrade(actionContentBase64Str, tradeAction.ShardID, metadata.PDETradeRequestMeta, currentPDEState, beaconHeight)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
 		}
 	}
+
 
 	// handle cross pool trade
 	sortedTradableActions, untradableActions := categorizeNSortPDECrossPoolTradeInstsByFee(
@@ -558,27 +596,30 @@ func (blockchain *BlockChain) handlePDEInsts(
 		}
 	}
 
-	// handle contribution
-	var ctKeys []int
-	for k := range pdeContributionActionsByShardID {
-		ctKeys = append(ctKeys, int(k))
-	}
-	sort.Ints(ctKeys)
-	for _, value := range ctKeys {
-		shardID := byte(value)
-		actions := pdeContributionActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
+	if !blockchain.IsAfterPrivacyV2CheckPoint(beaconHeight) { // disable old pDEX contribution after privacy V2 break point
+		// handle contribution
+		var ctKeys []int
+		for k := range pdeContributionActionsByShardID {
+			ctKeys = append(ctKeys, int(k))
+		}
+		sort.Ints(ctKeys)
+		for _, value := range ctKeys {
+			shardID := byte(value)
+			actions := pdeContributionActionsByShardID[shardID]
+			for _, action := range actions {
+				contentStr := action[1]
+				newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				if len(newInst) > 0 {
+					instructions = append(instructions, newInst...)
+				}
 			}
 		}
 	}
+
 
 	// handle prv required contribution
 	var prvRequiredContribKeys []int
