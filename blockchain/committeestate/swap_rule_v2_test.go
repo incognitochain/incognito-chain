@@ -1462,7 +1462,7 @@ func calMaxDifferent(numberOfValidators []int) int {
 	return arr[len(arr)-1] - arr[0]
 }
 
-func TestAssignRuleV3_ProcessDistribution(t *testing.T) {
+func BenchmarkAssignRuleV3_ProcessDistribution(b *testing.B) {
 	genRandomString := func(strLen int) string {
 		characters := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 		res := ""
@@ -1527,7 +1527,7 @@ func TestAssignRuleV3_ProcessDistribution(t *testing.T) {
 			//check if each candidate, it is assign to shard ID uniformly
 			if !isUniformDistribution(v[:], 0.2) { // allow diff of 20% from mean
 				fmt.Printf("%v %v", k, v)
-				t.FailNow()
+				b.FailNow()
 			}
 
 			candidateTotalAssignTime := 0
@@ -1540,7 +1540,7 @@ func TestAssignRuleV3_ProcessDistribution(t *testing.T) {
 		//check if all candidate has the same number of assign time (uniform distribution)
 		if !isUniformDistribution(assignTimeList, 0.1) { // allow diff of 10% from mean
 			fmt.Printf("diff: %v", calMaxDifferent(assignTimeList))
-			t.FailNow()
+			b.FailNow()
 		}
 	}
 }
