@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -144,6 +145,9 @@ func LoadParam() *param {
 	initTx := new(initTx)
 	initTx.load()
 	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+
+	b, _ := json.Marshal(p)
+	log.Printf("chainParam: %v\n", string(b))
 
 	return p
 }
