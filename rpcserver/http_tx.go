@@ -318,6 +318,44 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 	return httpServer.txService.GetTransactionByHash(txHashStr)
 }
 
+// handleGetTransactionByHash gets encoded transactions by their hashes.
+func (httpServer *HttpServer) handleGetEncodedTransactionsByHashes(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("there is no param to proceed"))
+	}
+
+	paramList, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	//Get txHashList
+	txListKey := "TxHashList"
+	if _, ok = paramList[txListKey]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("%v not found in %v", txListKey, paramList))
+	}
+	txHashListInterface, ok := paramList[txListKey].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, not a []interface{}: %v", paramList[txListKey]))
+	}
+
+	txHashList := make([]string, 0)
+	for _, sn := range txHashListInterface {
+		if tmp, ok := sn.(string); !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, %v is not a string", sn))
+		} else {
+			txHashList = append(txHashList, tmp)
+		}
+	}
+
+	if len(txHashList) > 100 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("support at most 100 txs, got %v", len(txHashList)))
+	}
+
+	return httpServer.txService.GetEncodedTransactionsByHashes(txHashList)
+}
+
 //Get transaction by serial numbers
 func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error

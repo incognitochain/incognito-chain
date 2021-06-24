@@ -70,6 +70,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:                  (*HttpServer).handleCreateAndSendTx,
 	createAndSendTransactionV2:                (*HttpServer).handleCreateAndSendTxV2,
 	getTransactionByHash:                      (*HttpServer).handleGetTransactionByHash,
+	getEncodedTransactionsByHashes:            (*HttpServer).handleGetEncodedTransactionsByHashes,
 	gettransactionhashbyreceiver:              (*HttpServer).handleGetTransactionHashByReceiver,
 	gettransactionhashbyreceiverv2:            (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                  (*HttpServer).handleGetTransactionByReceiver,

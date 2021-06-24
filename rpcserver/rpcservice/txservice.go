@@ -1021,6 +1021,42 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
+func (txService TxService) GetEncodedTransactionsByHashes(txHashList []string) (map[string]string, *RPCError) {
+	res := make(map[string]string)
+	for _, txHashStr := range txHashList {
+		txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
+		if err != nil {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("tx hash %v is invalid", txHashStr))
+		}
+		Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
+
+		_, _, _, _, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
+		if err != nil {
+			if txService.BlockChain.UsingNewPool() {
+				pM := txService.BlockChain.GetPoolManager()
+				if pM != nil {
+					tx, err = pM.GetTransactionByHash(txHashStr)
+				} else {
+					err = errors.New("PoolManager is nil")
+				}
+			} else {
+				tx, err = txService.TxMemPool.GetTx(txHash)
+			}
+			if err != nil {
+				return nil, NewRPCError(TxNotExistedInMemAndBLockError, fmt.Errorf("tx %v is not existed in block or mempool", txHashStr))
+			}
+		}
+
+		txBytes, err := json.Marshal(tx)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, fmt.Errorf("cannot marshal tx %v", txHashStr))
+		}
+		res[txHashStr] = base58.Base58Check{}.Encode(txBytes, common.ZeroByte)
+	}
+
+	return res, nil
+}
+
 func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) (map[string]string, *RPCError) {
 	txList := make(map[string]string)
 	if int(shardID) >= common.MaxShardNumber {//If the shardID is not provided, just retrieve with all shards

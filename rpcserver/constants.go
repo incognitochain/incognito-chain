@@ -73,6 +73,7 @@ const (
 	listUnspentCustomToken                       = "listunspentcustomtoken"
 	getBalanceCustomToken                        = "getbalancecustomtoken"
 	getTransactionByHash                         = "gettransactionbyhash"
+	getEncodedTransactionsByHashes               = "getencodedtransactionsbyhashes"
 	gettransactionhashbyreceiver                 = "gettransactionhashbyreceiver"
 	gettransactionhashbyreceiverv2               = "gettransactionhashbyreceiverv2"
 	gettransactionbyreceiver                     = "gettransactionbyreceiver"
