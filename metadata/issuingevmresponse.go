@@ -13,81 +13,79 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type IssuingETHResponse struct {
+type IssuingEVMResponse struct {
 	MetadataBase
-	RequestedTxID   common.Hash
-	UniqETHTx       []byte
-	ExternalTokenID []byte
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	RequestedTxID   common.Hash `json:"RequestedTxID"`
+	UniqTx          []byte      `json:"UniqETHTx"`
+	ExternalTokenID []byte      `json:"ExternalTokenID"`
+	SharedRandom    []byte `json:"SharedRandom,omitempty"`
 }
 
-type IssuingETHResAction struct {
-	Meta       *IssuingETHResponse `json:"meta"`
+type IssuingEVMResAction struct {
+	Meta       *IssuingEVMResponse `json:"meta"`
 	IncTokenID *common.Hash        `json:"incTokenID"`
 }
 
-func NewIssuingETHResponse(
+func NewIssuingEVMResponse(
 	requestedTxID common.Hash,
-	uniqETHTx []byte,
+	uniqTx []byte,
 	externalTokenID []byte,
 	metaType int,
-) *IssuingETHResponse {
+) *IssuingEVMResponse {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	return &IssuingETHResponse{
+	return &IssuingEVMResponse{
 		RequestedTxID:   requestedTxID,
-		UniqETHTx:       uniqETHTx,
+		UniqTx:          uniqTx,
 		ExternalTokenID: externalTokenID,
 		MetadataBase:    metadataBase,
 	}
 }
 
-func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes IssuingEVMResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes IssuingETHResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iRes IssuingEVMResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (iRes IssuingETHResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iRes IssuingEVMResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes IssuingETHResponse) ValidateMetadataByItself() bool {
+func (iRes IssuingEVMResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
 
-func (iRes IssuingETHResponse) Hash() *common.Hash {
+func (iRes IssuingEVMResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
-	record += string(iRes.UniqETHTx)
+	record += string(iRes.UniqTx)
 	record += string(iRes.ExternalTokenID)
 	record += iRes.MetadataBase.Hash().String()
-	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
-		record += string(iRes.SharedRandom)
-	}
+
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (iRes *IssuingETHResponse) CalculateSize() uint64 {
+func (iRes *IssuingEVMResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not IssuingETHRequest instruction
+		if len(inst) < 4 { // this is not IssuingEVMRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
+			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta)) {
 			continue
 		}
 
@@ -96,7 +94,7 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
-		var issuingETHAcceptedInst IssuingETHAcceptedInst
+		var issuingETHAcceptedInst IssuingEVMAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 		if err != nil {
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
@@ -104,7 +102,7 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		}
 
 		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHAcceptedInst.TxReqID[:]) ||
-			!bytes.Equal(iRes.UniqETHTx, issuingETHAcceptedInst.UniqETHTx) ||
+			!bytes.Equal(iRes.UniqTx, issuingETHAcceptedInst.UniqTx) ||
 			!bytes.Equal(iRes.ExternalTokenID, issuingETHAcceptedInst.ExternalTokenID) ||
 			shardID != issuingETHAcceptedInst.ShardID {
 			continue
@@ -116,24 +114,22 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-
-		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted || coinID.String() != issuingETHAcceptedInst.IncTokenID.String() {
-			continue
-		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingETHAcceptedInst.IssuingAmount); !ok {
+		_, pk, paidAmount, assetID := tx.GetTransferData()
+		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+			issuingETHAcceptedInst.IssuingAmount != paidAmount ||
+			!bytes.Equal(issuingETHAcceptedInst.IncTokenID[:], assetID[:]) {
 			continue
 		}
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String()))
+		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingEVMResponse tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil
 }
 
-func (iRes *IssuingETHResponse) SetSharedRandom(r []byte) {
+func (iRes *IssuingEVMResponse) SetSharedRandom(r []byte) {
 	iRes.SharedRandom = r
 }
