@@ -1,6 +1,8 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+)
 
 type State interface {
 	Version() uint

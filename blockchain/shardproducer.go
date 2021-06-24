@@ -435,35 +435,15 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 			case metadata.IssuingETHRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildETHIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDETradeRequestMeta:
-				if len(inst) >= 4 {
-					newTx, err = blockGenerator.buildPDETradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDECrossPoolTradeRequestMeta:
-				if len(inst) >= 4 {
-					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEWithdrawalRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PDEWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEFeeWithdrawalRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-				if len(inst) >= 4 {
-					if inst[2] == common.PDEContributionRefundChainStatus {
-						newTx, err = blockGenerator.buildPDERefundContributionTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-					} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
-						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-					}
 				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
@@ -528,7 +508,20 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			default:
-				continue
+				newTx, err = curView.pdeTxBuilder.Build(
+					metaType,
+					inst,
+					producerPrivateKey,
+					shardID,
+					curView.GetCopiedTransactionStateDB(),
+					featureStateDB,
+				)
+				if err != nil {
+					return nil, nil, err
+				}
+				if newTx == nil {
+					continue
+				}
 			}
 			if err != nil {
 				return nil, nil, err

@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -39,6 +40,7 @@ func collectStatefulActions(
 		case metadata.InitTokenRequestMeta,
 			metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
+			metadata.IssuingBSCRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -105,6 +107,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
+		UniqBSCTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
 	}
@@ -154,13 +157,41 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					Logger.log.Error(err)
 					continue
 				}
-			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-				if err != nil {
-					Logger.log.Error(err)
-					continue
-				}
 
+			case metadata.IssuingETHRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqETHTxsUsed,
+					config.Param().EthContractAddressStr,
+					"",
+					statedb.IsETHTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqBSCTxsUsed,
+					config.Param().BscContractAddressStr,
+					common.BSCPrefix,
+					statedb.IsBSCTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
+				}
 			case metadata.PDEContributionMeta:
 				pdeContributionActions = append(pdeContributionActions, action)
 			case metadata.PDEPRVRequiredContributionRequestMeta:

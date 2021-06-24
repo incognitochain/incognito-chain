@@ -12,6 +12,7 @@ const (
 	GethHostKey       = "GETH_NAME"
 	GethPortKey       = "GETH_PORT"
 	GethProtocolKey   = "GETH_PROTOCOL"
+	BSCHostKey        = "BSC_HOST"
 )
 
 // default config
@@ -74,6 +75,7 @@ const (
 	KeyListFileName       = "keylist.json"
 	KeyListV2FileName     = "keylist-v2.json"
 	DefaultOutcoinDirname = "_coins_"
+	DefaultNumCIWorkers   = 0
 )
 
 var (
