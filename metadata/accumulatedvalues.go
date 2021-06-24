@@ -8,6 +8,7 @@ import (
 
 type AccumulatedValues struct {
 	UniqETHTxsUsed   [][]byte
+	UniqBSCTxsUsed   [][]byte
 	DBridgeTokenPair map[string][]byte
 	CBridgeTokens    []*common.Hash
 	InitTokens       []*common.Hash

@@ -11,28 +11,31 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
 )
 
 func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
-	ethHeader, err := GetETHHeader(blockHash)
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
+	ethHeader, err := GetEVMHeader(blockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
 	if ethHeader == nil {
-		Logger.log.Info("WARNING: Could not find out the ETH block header with the hash: ", blockHash)
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", blockHash.String()))
+		Logger.log.Info("WARNING: Could not find out the EVM block header with the hash: ", blockHash)
+		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", blockHash.String()))
 	}
 
-	mostRecentBlkNum, err := GetMostRecentETHBlockHeight()
+	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
 
-	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(ETHConfirmationBlocks))) == -1 {
+	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(EVMConfirmationBlocks))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", ethHeader.Number.String(), mostRecentBlkNum.String())
 		Logger.log.Info(errMsg)
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.New(errMsg))
@@ -90,10 +93,10 @@ func PickAndParseLogMapFromReceiptByContractAddr(
 		Logger.log.Errorf("WARNING: logData is empty.")
 		return nil, nil
 	}
-	return ParseETHLogDataByEventName(logData, eventName)
+	return ParseEVMLogDataByEventName(logData, eventName)
 }
 
-func ParseETHLogDataByEventName(data []byte, name string) (map[string]interface{}, error) {
+func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{}, error) {
 	abiIns, err := abi.JSON(strings.NewReader(common.AbiJson))
 	if err != nil {
 		return nil, err
