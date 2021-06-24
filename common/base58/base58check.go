@@ -42,14 +42,15 @@ func ChecksumFirst4Bytes(data []byte, isNewCheckSum bool) (ckSum []byte) {
 type Base58Check struct {
 }
 
-var base58Cache, _ = lru.New(10000)
+var oldBase58Cache, _ = lru.New(10000)
+var newBase58Cache, _ = lru.New(10000)
 
 // Encode prepends a version byte and appends a four byte checksum.
 func (self Base58Check) Encode(input []byte, version byte) string {
 	/*if len(input) == 0 {
 		return ""
 	}*/
-	value, exist := base58Cache.Get(string(input))
+	value, exist := oldBase58Cache.Get(string(input))
 	if exist {
 		return value.(string)
 	}
@@ -60,7 +61,7 @@ func (self Base58Check) Encode(input []byte, version byte) string {
 	cksum := ChecksumFirst4Bytes(b, false)
 	b = append(b, cksum[:]...)
 	encodeData := Base58{}.Encode(b)
-	base58Cache.Add(string(input), encodeData)
+	oldBase58Cache.Add(string(input), encodeData)
 	return encodeData
 }
 
@@ -71,7 +72,7 @@ func (self Base58Check) NewEncode(input []byte, version byte) string {
 	/*if len(input) == 0 {
 		return ""
 	}*/
-	value, exist := base58Cache.Get(string(input))
+	value, exist := newBase58Cache.Get(string(input))
 	if exist {
 		return value.(string)
 	}
@@ -82,7 +83,7 @@ func (self Base58Check) NewEncode(input []byte, version byte) string {
 	cksum := ChecksumFirst4Bytes(b, true)
 	b = append(b, cksum[:]...)
 	encodeData := Base58{}.Encode(b)
-	base58Cache.Add(string(input), encodeData)
+	newBase58Cache.Add(string(input), encodeData)
 	return encodeData
 }
 
