@@ -1024,6 +1024,9 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 func (txService TxService) GetEncodedTransactionsByHashes(txHashList []string) (map[string]string, *RPCError) {
 	res := make(map[string]string)
 	for _, txHashStr := range txHashList {
+		if _, ok := res[txHashStr]; ok {
+			continue
+		}
 		txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
 		if err != nil {
 			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("tx hash %v is invalid", txHashStr))
