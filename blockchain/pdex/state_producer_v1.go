@@ -607,9 +607,6 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 			res = append(res, inst)
 			continue
 		}
-		Logger.log.Info("[pdex] poolPairs 0:", poolPairs)
-		Logger.log.Info("[pdex] shares 0:", shares)
-		Logger.log.Info("[pdex] waitingContributions 0:", waitingContributions)
 
 		if waitingContribution.TokenIDStr == meta.TokenIDStr ||
 			waitingContribution.ContributorAddressStr != meta.ContributorAddressStr ||
@@ -637,10 +634,6 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 			TxReqID:               contributionAction.TxReqID,
 		}
 
-		Logger.log.Info("[pdex] poolPairs 1:", poolPairs)
-		Logger.log.Info("[pdex] shares 1:", shares)
-		Logger.log.Info("[pdex] waitingContributions 1:", waitingContributions)
-
 		if !found || poolPair == nil {
 			delete(waitingContributions, waitingContribPairKey)
 			err := updateWaitingContributionPairToPool(
@@ -667,10 +660,6 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 			incomingWaitingContribution,
 			poolPair,
 		)
-
-		Logger.log.Info("[pdex] poolPairs 2:", poolPairs)
-		Logger.log.Info("[pdex] shares 2:", shares)
-		Logger.log.Info("[pdex] waitingContributions 2:", waitingContributions)
 
 		if actualWaitingContribAmt == 0 || actualIncomingWaitingContribAmt == 0 {
 			delete(waitingContributions, waitingContribPairKey)
@@ -707,10 +696,6 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 			poolPairs,
 			shares,
 		)
-
-		Logger.log.Info("[pdex] poolPairs 3:", poolPairs)
-		Logger.log.Info("[pdex] shares 3:", shares)
-		Logger.log.Info("[pdex] waitingContributions 3:", waitingContributions)
 
 		matchedAndReturnedInst1 := buildMatchedAndReturnedContributionInst(
 			meta.PDEContributionPairID,

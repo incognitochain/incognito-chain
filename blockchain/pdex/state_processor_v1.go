@@ -29,7 +29,9 @@ func (sp *stateProcessorV1) processContribution(
 		return err
 	}
 	contributionStatus := inst[2]
-	if contributionStatus == common.PDEContributionWaitingChainStatus {
+
+	switch contributionStatus {
+	case common.PDEContributionWaitingChainStatus:
 		var waitingContribution metadata.PDEWaitingContribution
 		err := json.Unmarshal([]byte(inst[3]), &waitingContribution)
 		if err != nil {
@@ -59,8 +61,7 @@ func (sp *stateProcessorV1) processContribution(
 			Logger.log.Errorf("ERROR: an error occured while tracking pde waiting contribution status: %+v", err)
 			return err
 		}
-
-	} else if contributionStatus == common.PDEContributionRefundChainStatus {
+	case common.PDEContributionRefundChainStatus:
 		var refundContribution metadata.PDERefundContribution
 		err := json.Unmarshal([]byte(inst[3]), &refundContribution)
 		if err != nil {
@@ -87,8 +88,7 @@ func (sp *stateProcessorV1) processContribution(
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund contribution status: %+v", err)
 			return err
 		}
-
-	} else if contributionStatus == common.PDEContributionMatchedChainStatus {
+	case common.PDEContributionMatchedChainStatus:
 		var matchedContribution metadata.PDEMatchedContribution
 		err := json.Unmarshal([]byte(inst[3]), &matchedContribution)
 		if err != nil {
@@ -131,8 +131,7 @@ func (sp *stateProcessorV1) processContribution(
 			Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
 			return err
 		}
-
-	} else if contributionStatus == common.PDEContributionMatchedNReturnedChainStatus {
+	case common.PDEContributionMatchedNReturnedChainStatus:
 		var matchedNReturnedContrib metadata.PDEMatchedNReturnedContribution
 		err := json.Unmarshal([]byte(inst[3]), &matchedNReturnedContrib)
 		if err != nil {
