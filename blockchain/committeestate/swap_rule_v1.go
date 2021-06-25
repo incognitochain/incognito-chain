@@ -221,6 +221,7 @@ func SwapValidator(
 func removeValidatorV1(validators []string, removedValidators []string) ([]string, error) {
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if len(removedValidators) > len(validators) {
+		Logger.log.Errorf("BUGLOG trying to remove too many validators: %v/%v\n", len(removedValidators), len(validators))
 		return validators, errors.New("trying to remove too many validators")
 	}
 	remainingValidators := []string{}
