@@ -1,0 +1,65 @@
+data_dir: "data" # database directory
+database_dir: "block" # persistent directory
+mempool_dir: "mempool" # mempool directory
+log_dir: "logs" # log directory
+log_file_name: "log.log" # log file
+log_level: "debug" # log level
+add_peers: "" #TODO: add info here
+connect_peers: "" #TODO: add info here
+disable_listen: false #
+listener: "0.0.0.0:9876" #
+max_peers: 1000 #
+max_out_peers: 1000 #
+max_in_peers: 1000 #
+discover_peers: true #
+discover_peers_address: "127.0.0.1:9330" #
+max_peers_same_shard: 300 #
+max_pmax_peers_other_shard: 600 #
+max_peers_other: 300 #
+max_peers_no_shard: 200 #
+max_peers_beacon: 500 #
+external_address: "0.0.0.0:8765" #
+rpc_disable_auth: true #
+rpc_user: "" #
+rpc_pass: "" #
+rpc_limit_user: "" #
+rpc_limit_pass: "" #
+rpc_listeners: "0.0.0.0:9334" #
+rpc_ws_listeners: "0.0.0.0:9335" #
+rpc_cert: "rpc.cert" #
+rpc_key: "rpc.key" #
+rpc_limit_request_per_day: 0 #
+rpc_limit_request_error_per_hour: 0 #
+rpc_max_clients: 500 #
+rpc_max_ws_clients: 200 #
+rpc_quirks: false #
+disable_rpc: false #
+disable_tls: true #
+proxy: "" #
+relay_shards: "all" #
+enable_wallet: "false" #
+wallet_name: "wallet" #
+wallet_passphrase: "123456" #
+wallet_auto_init: false #
+wallet_shard_id: -1 #
+fast_start_up: true #
+tx_pool_ttl: 900 #
+tx_pool_max_tx: 100000 #
+limit_fee: 1 #
+is_load_from_mem_pool: true #
+is_persist_mem_pool: false #
+enable_mining: true #
+mining_keys: "" #
+private_key: "" #
+accelerator: false #
+p2p_private_key: "" #
+force_backup: false #
+is_full_validation: false
+
+coin_data_pre: "__coins__"
+use_coin_data:
+  - true
+num_indexer_workers: 0
+indexer_access_token: "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
+
+
