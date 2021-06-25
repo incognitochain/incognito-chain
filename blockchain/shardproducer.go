@@ -89,7 +89,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	beaconProcessView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	beaconProcessHeight := beaconProcessView.GetHeight()
-	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+	if beaconProcessHeight > shardBestState.BeaconHeight && beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
