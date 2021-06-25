@@ -246,7 +246,7 @@ func (tx *TxToken) ValidateTxCorrectness(
 		return ok, err
 	}
 
-	utils.Logger.Log.Debugf("Validate tx correctness %v, normal tx %v, embeded tx %v", tx.Hash().String(), tx.GetTxNormal().Hash().String(), tx.Tx.Hash().String())
+	utils.Logger.Log.Infof("VALIDATING TX %v; Env: Beacon %v, shard %v, confirmedTime %v\n", tx.Hash().String(), tx.GetValidationEnv().BeaconHeight(), tx.GetValidationEnv().ShardHeight(), tx.GetValidationEnv().ConfirmedTime())
 	ok, err := tx.GetTxNormal().ValidateTxCorrectness()
 	if (!ok) || (err != nil) {
 		return ok, err

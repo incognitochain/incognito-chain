@@ -26,9 +26,6 @@ const (
 	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
-	MaxOutcoinQueryInterval            = 8640 // 1 day worth of blocks
-	OutcoinReindexerTimeout            = 90   // seconds
-	OutcoinReindexerRoutines           = 2
 )
 
 // burning addresses

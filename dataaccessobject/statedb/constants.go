@@ -65,6 +65,9 @@ const (
 	PortalProcessedUnshieldRequestBatchObjectType
 
 	SlashingCommitteeObjectType
+
+	// bsc bridge
+	BridgeBSCTxObjectType
 )
 
 // Prefix length

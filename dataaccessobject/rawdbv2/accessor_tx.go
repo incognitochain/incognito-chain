@@ -126,9 +126,9 @@ func GetTxByPublicKeyV2(
 }
 
 
-func StoreReindexedOutputCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
+func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	for _, outputCoin := range outputCoins {
-		key := generateReindexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
+		key := generateIndexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
 		value := outputCoin
 		err := db.Put(key, value)
 		if err != nil {
@@ -138,19 +138,8 @@ func StoreReindexedOutputCoins(db incdb.Database, tokenID common.Hash, publicKey
 	return nil
 }
 
-func StoreReindexedOTAkey(db incdb.Database, theKey []byte) error {
-	key := generateReindexedOTAKeyObjectKey(theKey)
-	// only care about `PublicKey` field
-	value := theKey
-	err := db.Put(key, value)
-	if err != nil {
-		return NewRawdbError(StoreOutcoinByOTAKeyError, err)
-	}
-	return nil
-}
-
-func GetOutcoinsByReindexedOTAKey(db incdb.Database, tokenID common.Hash, shardID byte, publicKey []byte) ([][]byte, error) {
-	it := db.NewIteratorWithPrefix(getReindexedOutputCoinPrefix(tokenID, shardID, publicKey))
+func GetOutCoinsByIndexedOTAKey(db incdb.Database, tokenID common.Hash, shardID byte, publicKey []byte) ([][]byte, error) {
+	it := db.NewIteratorWithPrefix(getIndexedOutputCoinPrefix(tokenID, shardID, publicKey))
 	var outputCoins [][]byte
 	for it.Next() {
 		value := it.Value()
@@ -161,8 +150,51 @@ func GetOutcoinsByReindexedOTAKey(db incdb.Database, tokenID common.Hash, shardI
 	return outputCoins, nil
 }
 
-func GetReindexedOTAkeys(db incdb.Database) ([][]byte,error) {
-	it := db.NewIteratorWithPrefix(getReindexedKeysPrefix())
+func StoreIndexedOTAKey(db incdb.Database, theKey []byte) error {
+	key := generateIndexedOTAKeyObjectKey(theKey)
+	// only care about `PublicKey` field
+	value := theKey
+	err := db.Put(key, value)
+	if err != nil {
+		return NewRawdbError(StoreOTAKeyError, err)
+	}
+	return nil
+}
+
+func DeleteIndexedOTAKey(db incdb.Database, theKey []byte) error {
+	key := generateIndexedOTAKeyObjectKey(theKey)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(DeleteOTAKeyError, err)
+	}
+	return nil
+}
+
+func GetIndexedOTAKeys(db incdb.Database) ([][]byte,error) {
+	it := db.NewIteratorWithPrefix(getIndexedKeysPrefix())
+	var otaKeys [][]byte
+	for it.Next() {
+		value := it.Value()
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		otaKeys = append(otaKeys, newValue)
+	}
+	return otaKeys, nil
+}
+
+func StoreCachedCoinHash(db incdb.Database, theCoinHash []byte) error {
+	key := generateCachedCoinHashObjectKey(theCoinHash)
+	value := theCoinHash
+	err := db.Put(key, value)
+	if err != nil {
+		return NewRawdbError(StoreCoinHashError, err)
+	}
+
+	return nil
+}
+
+func GetCachedCoinHashes(db incdb.Database) ([][]byte, error) {
+	it := db.NewIteratorWithPrefix(getCoinHashKeysPrefix())
 	var otaKeys [][]byte
 	for it.Next() {
 		value := it.Value()

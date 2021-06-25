@@ -148,6 +148,7 @@ var HttpHandler = map[string]httpHandler{
 	getETHHeaderByHash:                (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:            (*HttpServer).handleGetBridgeReqWithStatus,
 	generateTokenID:                   (*HttpServer).handleGenerateTokenID,
+	checkBSCHashIssued:                (*HttpServer).handleCheckBSCHashIssued,
 
 	// wallet
 	getPublicKeyFromPaymentAddress:     (*HttpServer).handleGetPublicKeyFromPaymentAddress,
@@ -161,6 +162,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningRequestV2:      (*HttpServer).handleCreateAndSendBurningRequestV2,
 	createAndSendTxWithIssuingETHReq:   (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 	createAndSendTxWithIssuingETHReqV2: (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
+	createAndSendTxWithIssuingBSCReq:   (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
+	createAndSendBurningBSCRequest:     (*HttpServer).handleCreateAndSendBurningBSCRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -168,6 +171,7 @@ var HttpHandler = map[string]httpHandler{
 	getBridgeSwapProof:       (*HttpServer).handleGetBridgeSwapProof,
 	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
 	getBurnProof:             (*HttpServer).handleGetBurnProof,
+	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -329,6 +333,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 	submitKey:                        (*HttpServer).handleSubmitKey,
+	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
 }
 
 var WsHandler = map[string]wsHandler{

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"log"
 	"net"
 	"os"
@@ -194,6 +193,8 @@ func (serverObj *Server) NewServer(
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
 	dboc *incdb.Database,
+	indexerWorkers int64,
+	indexerToken string,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -313,12 +314,14 @@ func (serverObj *Server) NewServer(
 		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		// NodeMode:        cfg.NodeMode,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsubManager,
-		ConsensusEngine: serverObj.consensusEngine,
-		Highway:         serverObj.highway,
-		OutcoinByOTAKeyDb: dboc,
-		PoolManager:     poolManager,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:     pubsubManager,
+		ConsensusEngine:   serverObj.consensusEngine,
+		Highway:           serverObj.highway,
+		OutCoinByOTAKeyDb: dboc,
+		IndexerWorkers:    indexerWorkers,
+		IndexerToken:      indexerToken,
+		PoolManager:       poolManager,
 	})
 	if err != nil {
 		return err
@@ -616,6 +619,12 @@ func (serverObj *Server) Stop() error {
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
+	//Stop the output coin indexer
+	if blockchain.GetCoinIndexer() != nil {
+		blockchain.GetCoinIndexer().Stop()
+	}
+
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -994,13 +1003,6 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 	Logger.log.Debug("Receive a getcrossshard END")
 }
 
-func updateTxEnvWithSView(sView *blockchain.ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
-	valEnv := tx_generic.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
-	valEnv = tx_generic.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
-	valEnv = tx_generic.WithConfirmedTime(valEnv, sView.GetBlockTime())
-	return valEnv
-}
-
 // OnTx is invoked when a peer receives a tx message.  It blocks
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
@@ -1009,7 +1011,7 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Debug("Receive a new transaction START")
 	tx := msg.Transaction
 	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	valEnv := updateTxEnvWithSView(serverObj.blockChain.GetBestStateShard(sID), tx)
+	valEnv := blockchain.UpdateTxEnvWithSView(serverObj.blockChain.GetBestStateShard(sID), tx)
 	tx.SetValidationEnv(valEnv)
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueTx(nil, msg, txProcessed)
@@ -1024,14 +1026,14 @@ func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.Message
 	tx := msg.Transaction
 	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	sView := serverObj.blockChain.GetBestStateShard(sID)
-	valEnv := updateTxEnvWithSView(sView, tx)
+	valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 	tx.SetValidationEnv(valEnv)
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		txCustom, ok := tx.(transaction.TransactionToken)
 		if !ok {
 			return
 		}
-		valEnvCustom := updateTxEnvWithSView(sView, txCustom.GetTxNormal())
+		valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, txCustom.GetTxNormal())
 		txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
 	}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)

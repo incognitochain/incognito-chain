@@ -33,6 +33,7 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -237,6 +238,10 @@ const (
 	StorePortalSubmitConfirmedTxRequestStatusError
 	StorePortalV4ConvertVaultRequestStatusError
 	GetPortalV4ConvertVaultRequestStatusError
+
+	// bsc bridge
+	BridgeInsertBSCTxHashIssuedError
+	IsBSCTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -399,6 +404,10 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalSubmitConfirmedTxRequestStatusError:           {-15020, "Store portal submit confirmed tx request status error"},
 	StorePortalV4StatusError:                                 {-15021, "Store portal v4 status error"},
 	GetPortalV4StatusError:                                   {-15022, "Get portal v4 status error"},
+
+	// bsc bridge
+	BridgeInsertBSCTxHashIssuedError: {-15100, "Bridge Insert BSC Tx Hash Issued Error"},
+	IsBSCTxHashIssuedError:           {-15101, "Is BSC Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

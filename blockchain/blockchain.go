@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
 
@@ -28,7 +30,6 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
-	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/pkg/errors"
 )
@@ -66,7 +67,9 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
-	OutcoinByOTAKeyDb *incdb.Database
+	OutCoinByOTAKeyDb *incdb.Database
+	IndexerWorkers    int64
+	IndexerToken      string
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
@@ -110,11 +113,17 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb != nil)
+	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
 	if EnableIndexingCoinByOTAKey {
+		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
-		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
-		return err
+		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
+		if err != nil {
+			return err
+		}
+		if config.IndexerWorkers > 0 {
+			go outcoinIndexer.Start()
+		}
 	}
 	return nil
 }

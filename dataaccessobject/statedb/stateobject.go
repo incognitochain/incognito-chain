@@ -65,6 +65,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPDEStatusObjectWithValue(db, hash, value)
 	case BridgeEthTxObjectType:
 		return newBridgeEthTxObjectWithValue(db, hash, value)
+	case BridgeBSCTxObjectType:
+		return newBridgeBSCTxObjectWithValue(db, hash, value)
 	case BridgeTokenInfoObjectType:
 		return newBridgeTokenInfoObjectWithValue(db, hash, value)
 	case BridgeStatusObjectType:
@@ -158,6 +160,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPDEStatusObject(db, hash)
 	case BridgeEthTxObjectType:
 		return newBridgeEthTxObject(db, hash)
+	case BridgeBSCTxObjectType:
+		return newBridgeBSCTxObject(db, hash)
 	case BridgeTokenInfoObjectType:
 		return newBridgeTokenInfoObject(db, hash)
 	case BridgeStatusObjectType:
