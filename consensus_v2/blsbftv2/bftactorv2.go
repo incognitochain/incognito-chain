@@ -459,7 +459,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			validVote++
 		}
 	}
-	//e.Logger.Debug(validVote, len(view.GetCommittee()), errVote)
+	e.Logger.Infof("Valid Vote %+v, Committee size %+v, err vote %+v", validVote, len(view.GetCommittee()), errVote)
 	v.hasNewVote = false
 	if validVote > 2*len(view.GetCommittee())/3 {
 		e.Logger.Infof("%v Commit block %v , height: %v", e.ChainKey, blockHash, v.block.GetHeight())
