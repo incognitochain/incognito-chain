@@ -1561,3 +1561,45 @@ func isUniformDistribution(arr []int, diffPercentage float64) bool {
 	}
 	return true
 }
+
+func assignCandidate(lowerSet []int, randomPosition int, diff []int) byte {
+	position := 0
+	tempPosition := diff[0]
+	for randomPosition >= tempPosition && position < len(diff)-1 {
+		position++
+		tempPosition += diff[position]
+	}
+	shardID := lowerSet[position]
+
+	return byte(shardID)
+}
+
+func Test_assignCandidate(t *testing.T) {
+	type args struct {
+		lowerSet       []int
+		randomPosition int
+		diff           []int
+	}
+	tests := []struct {
+		name string
+		args args
+		want byte
+	}{
+		{
+			name: "assign at last position",
+			args: args{
+				lowerSet:       []int{1, 3, 0, 5},
+				diff:           []int{300, 160, 89, 1},
+				randomPosition: 549,
+			},
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := assignCandidate(tt.args.lowerSet, tt.args.randomPosition, tt.args.diff); got != tt.want {
+				t.Errorf("assignCandidate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

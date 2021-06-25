@@ -313,7 +313,7 @@ func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rando
 		randomPosition := calculateCandidatePositionV2(totalDiff)
 		position := 0
 		tempPosition := diff[position]
-		for randomPosition >= tempPosition {
+		for randomPosition >= tempPosition && position < len(diff)-1 {
 			position++
 			tempPosition += diff[position]
 		}
