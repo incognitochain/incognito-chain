@@ -55,10 +55,11 @@ func (s *stateV1) Version() uint {
 }
 
 func (s *stateV1) Clone() State {
-	res := &stateV1{}
+	res := newStateV1()
 	res.stateBase = *s.stateBase.Clone().(*stateBase)
 	res.producer = s.producer
 	res.processor = s.processor
+
 	return res
 }
 

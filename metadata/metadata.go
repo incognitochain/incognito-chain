@@ -334,7 +334,10 @@ func ConvertPrivacyTokenToNativeToken(
 }
 
 func IsPDETx(metadata Metadata) bool {
-	return IsPDEType(metadata.GetType())
+	if metadata != nil {
+		return IsPDEType(metadata.GetType())
+	}
+	return false
 }
 
 func IsPDEType(metadataType int) bool {

@@ -48,7 +48,6 @@ type param struct {
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
-	GethParam                        gethParam          `mapstructure:"geth_param"`
 	PDEV3Height                      uint64             `mapstructure:"pde_v3_height"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	IsBackup                         bool
@@ -218,24 +217,6 @@ func (p *param) LoadKey() {
 		}
 	}
 
-}
-
-type gethParam struct {
-	Host     string `mapstructure:"host"`
-	Protocol string `mapstructure:"protocol"`
-	Port     string `mapstructure:"port"`
-}
-
-func (gethPram *gethParam) GetFromEnv() {
-	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
-	}
-	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
-	}
-	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
-	}
 }
 
 type bscParam struct {

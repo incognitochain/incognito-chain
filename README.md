@@ -53,6 +53,21 @@ You can simply build and run the code with a few simple command with make packag
 1. Build with command: `make build`
 1. Run with command: `make mainnet`
 
+**Optional** 
+
+When running Incognito node with docker environment you can update image by a third party. we recommend https://github.com/containrrr/watchtower by running below command
+
+```
+docker run -d \
+    --name watchtower \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    containrrr/watchtower \
+    --cleanup \
+    --remove-volumes \
+    --include-restarting \
+    incognito-mainnet
+```
+
 ## Read the code
 
 There is more than 1 million lines of code in the Incognito codebase. Below is a quick overview of Incognito architecture and its key components that will help you navigate through the code.

@@ -50,7 +50,7 @@ func (s *stateBase) Version() uint {
 }
 
 func (s *stateBase) Clone() State {
-	res := &stateBase{}
+	res := newStateBase()
 	res.waitingContributions = make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
 	res.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
 	res.poolPairs = make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
@@ -58,15 +58,16 @@ func (s *stateBase) Clone() State {
 	res.tradingFees = make(map[string]uint64, len(s.tradingFees))
 
 	for k, v := range s.waitingContributions {
-		*res.waitingContributions[k] = *v
+		res.waitingContributions[k] = v
 	}
 
 	for k, v := range s.deletedWaitingContributions {
-		*res.deletedWaitingContributions[k] = *v
+		res.deletedWaitingContributions[k] = v
 	}
 
 	for k, v := range s.poolPairs {
-		*res.poolPairs[k] = *v
+		res.poolPairs[k] = new(rawdbv2.PDEPoolForPair)
+		res.poolPairs[k] = v
 	}
 
 	for k, v := range s.shares {
@@ -223,6 +224,7 @@ func (s *stateBase) GetDiff(compareState State) (State, error) {
 func (s *stateBase) WaitingContributions() map[string]*rawdbv2.PDEContribution {
 	res := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
 	for k, v := range s.waitingContributions {
+		res[k] = new(rawdbv2.PDEContribution)
 		*res[k] = *v
 	}
 	return res
@@ -231,6 +233,7 @@ func (s *stateBase) WaitingContributions() map[string]*rawdbv2.PDEContribution {
 func (s *stateBase) DeletedWaitingContributions() map[string]*rawdbv2.PDEContribution {
 	res := make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
 	for k, v := range s.deletedWaitingContributions {
+		res[k] = new(rawdbv2.PDEContribution)
 		*res[k] = *v
 	}
 	return res
@@ -239,6 +242,7 @@ func (s *stateBase) DeletedWaitingContributions() map[string]*rawdbv2.PDEContrib
 func (s *stateBase) PoolPairs() map[string]*rawdbv2.PDEPoolForPair {
 	res := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
 	for k, v := range s.poolPairs {
+		res[k] = new(rawdbv2.PDEPoolForPair)
 		*res[k] = *v
 	}
 	return res

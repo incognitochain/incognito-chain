@@ -54,9 +54,5 @@ enable_feature_flags:
   - 1: 0
 portal_v3_height: 10000000
 tx_pool_version: 0
-geth_param:
-  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
-  protocol: "https"
-  port: ""
 bsc_param:
   host: "https://bsc-dataseed.binance.org"

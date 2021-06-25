@@ -112,10 +112,11 @@ type config struct {
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 
 	// Optional : db to store coin by OTA key (for v2)
-	OutcoinDatabaseDir  string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
-	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
-	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
-	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
+	OutcoinDatabaseDir  string    `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
+	NumIndexerWorkers   int64     `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
+	IndexerAccessTokens string    `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
+	UseOutcoinDatabase  []bool    `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
+	GethParam           gethParam `mapstructure:"geth_param"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -397,5 +398,24 @@ func (c *config) loadConfig() {
 	_, err := parser.Parse()
 	if err != nil {
 		panic(err)
+	}
+	c.GethParam.GetFromEnv()
+}
+
+type gethParam struct {
+	Host     string `mapstructure:"host"`
+	Protocol string `mapstructure:"protocol"`
+	Port     string `mapstructure:"port"`
+}
+
+func (gethPram *gethParam) GetFromEnv() {
+	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
+	}
+	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
+	}
+	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
 	}
 }
