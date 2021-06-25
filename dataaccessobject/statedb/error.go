@@ -33,6 +33,7 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -211,6 +212,10 @@ const (
 	GetWithdrawCollateralConfirmError
 	StorePortalUnlockOverRateCollateralsError
 	GetPortalUnlockOverRateCollateralsStatusError
+
+	// bsc bridge
+	BridgeInsertBSCTxHashIssuedError
+	IsBSCTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -354,6 +359,10 @@ var ErrCodeMessage = map[int]struct {
 	GetAllRewardFeatureError:             {-15002, "Get all reward feature state error"},
 	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 	InvalidStakerInfoTypeError:           {-15005, "Staker info invalid"},
+
+	// bsc bridge
+	BridgeInsertBSCTxHashIssuedError: {-15100, "Bridge Insert BSC Tx Hash Issued Error"},
+	IsBSCTxHashIssuedError:           {-15101, "Is BSC Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

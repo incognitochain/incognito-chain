@@ -9,13 +9,13 @@ import (
 const (
 	UnexpectedError = iota
 
-	IssuingEthRequestDecodeInstructionError
-	IssuingEthRequestUnmarshalJsonError
-	IssuingEthRequestNewIssuingETHRequestFromMapEror
-	IssuingEthRequestValidateTxWithBlockChainError
-	IssuingEthRequestValidateSanityDataError
-	IssuingEthRequestBuildReqActionsError
-	IssuingEthRequestVerifyProofAndParseReceipt
+	IssuingEvmRequestDecodeInstructionError
+	IssuingEvmRequestUnmarshalJsonError
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError
+	IssuingEvmRequestValidateTxWithBlockChainError
+	IssuingEvmRequestValidateSanityDataError
+	IssuingEvmRequestBuildReqActionsError
+	IssuingEvmRequestVerifyProofAndParseReceipt
 
 	IssuingRequestDecodeInstructionError
 	IssuingRequestUnmarshalJsonError
@@ -88,13 +88,13 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedError: {-1, "Unexpected error"},
 
 	// -1xxx issuing eth request
-	IssuingEthRequestDecodeInstructionError:          {-1001, "Can not decode instruction"},
-	IssuingEthRequestUnmarshalJsonError:              {-1002, "Can not unmarshall json"},
-	IssuingEthRequestNewIssuingETHRequestFromMapEror: {-1003, "Can no new issuing eth request from map"},
-	IssuingEthRequestValidateTxWithBlockChainError:   {-1004, "Validate tx with block chain error"},
-	IssuingEthRequestValidateSanityDataError:         {-1005, "Validate sanity data error"},
-	IssuingEthRequestBuildReqActionsError:            {-1006, "Build request action error"},
-	IssuingEthRequestVerifyProofAndParseReceipt:      {-1007, "Verify proof and parse receipt"},
+	IssuingEvmRequestDecodeInstructionError:           {-1001, "Can not decode instruction"},
+	IssuingEvmRequestUnmarshalJsonError:               {-1002, "Can not unmarshall json"},
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError: {-1003, "Can no new issuing evm request from map"},
+	IssuingEvmRequestValidateTxWithBlockChainError:    {-1004, "Validate tx with block chain error"},
+	IssuingEvmRequestValidateSanityDataError:          {-1005, "Validate sanity data error"},
+	IssuingEvmRequestBuildReqActionsError:             {-1006, "Build request action error"},
+	IssuingEvmRequestVerifyProofAndParseReceipt:       {-1007, "Verify proof and parse receipt"},
 
 	// -2xxx issuing eth request
 	IssuingRequestDecodeInstructionError:        {-2001, "Can not decode instruction"},

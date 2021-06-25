@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -30,7 +31,6 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
-	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/pkg/errors"
 )
@@ -68,7 +68,9 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
-	OutcoinByOTAKeyDb *incdb.Database
+	OutCoinByOTAKeyDb *incdb.Database
+	IndexerWorkers    int64
+	IndexerToken      string
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
@@ -112,11 +114,17 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
-	if EnableIndexingCoinByOTAKey{
+	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
+	if EnableIndexingCoinByOTAKey {
+		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
-		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
-		return err
+		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
+		if err != nil {
+			return err
+		}
+		if config.IndexerWorkers > 0 {
+			go outcoinIndexer.Start()
+		}
 	}
 	return nil
 }
@@ -386,7 +394,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	var hasAssetTags bool = true
-	for i:=0;i<numOutputs;i++{
+	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
 		if err != nil {
@@ -394,7 +402,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 		coinDB := new(coin.CoinV2)
 		if err := coinDB.SetBytes(coinBytes); err != nil {
-			return nil, nil, nil, nil , err
+			return nil, nil, nil, nil, err
 		}
 		publicKey := coinDB.GetPublicKey()
 		commitment := coinDB.GetCommitment()
@@ -403,11 +411,11 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())
 
-		if hasAssetTags{
+		if hasAssetTags {
 			assetTag := coinDB.GetAssetTag()
-			if assetTag!=nil{
+			if assetTag != nil {
 				assetTags = append(assetTags, assetTag.ToBytesS())
-			}else{
+			} else {
 				hasAssetTags = false
 			}
 		}

@@ -81,10 +81,9 @@ func (pc PDETradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetrieve
 }
 
 func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	// if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
-	// 	return true, true, nil
-	// }
+	if chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight) {
+		return false, false, fmt.Errorf("metadata type %v is no longer supported, consider using %v instead", PDETradeRequestMeta, PDECrossPoolTradeRequestMeta)
+	}
 
 	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
