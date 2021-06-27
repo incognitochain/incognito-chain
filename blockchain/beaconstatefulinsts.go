@@ -91,7 +91,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalParams portal.PortalParams,
 	shardStates map[byte][]types.ShardState,
 ) ([][]string, error) {
-	beaconBestState.pdeState = beaconBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconHeight - 1)
+	// transfrom beacon height for pdex process
+	beaconBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconHeight - 1)
 
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(featureStateDB)
@@ -223,6 +224,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
+		BuildBeaconHeight(beaconHeight - 1).
 		BuildContributionActions(pdeContributionActions).
 		BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
 		BuildTradeActions(pdeTradeActions).

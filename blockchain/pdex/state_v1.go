@@ -230,10 +230,8 @@ func (s *stateV1) Upgrade(env StateEnvironment) State {
 	return state
 }
 
-func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
-	res := &stateV1{}
-	res.stateBase = *s.stateBase.TransformKeyWithNewBeaconHeight(beaconHeight).(*stateBase)
-	return res
+func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
+	s.stateBase.TransformKeyWithNewBeaconHeight(beaconHeight)
 }
 
 //GetDiff need to use 2 state same version

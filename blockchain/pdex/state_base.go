@@ -58,16 +58,18 @@ func (s *stateBase) Clone() State {
 	res.tradingFees = make(map[string]uint64, len(s.tradingFees))
 
 	for k, v := range s.waitingContributions {
-		res.waitingContributions[k] = v
+		res.waitingContributions[k] = new(rawdbv2.PDEContribution)
+		*res.waitingContributions[k] = *v
 	}
 
 	for k, v := range s.deletedWaitingContributions {
-		res.deletedWaitingContributions[k] = v
+		res.deletedWaitingContributions[k] = new(rawdbv2.PDEContribution)
+		*res.deletedWaitingContributions[k] = *v
 	}
 
 	for k, v := range s.poolPairs {
 		res.poolPairs[k] = new(rawdbv2.PDEPoolForPair)
-		res.poolPairs[k] = v
+		*res.poolPairs[k] = *v
 	}
 
 	for k, v := range s.shares {
@@ -130,7 +132,7 @@ func (s *stateBase) Upgrade(StateEnvironment) State {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
+func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
 	time1 := time.Now()
 	sameHeight := false
 	//transform pdex key prefix-<beaconheight>-id1-id2 (if same height, no transform)
@@ -156,7 +158,8 @@ func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
 	for k, v := range s.waitingContributions {
 		newState.waitingContributions[transformKey(k, beaconHeight)] = v
 		if sameHeight {
-			return s
+			s = newState
+			return
 		}
 	}
 	for k, v := range s.deletedWaitingContributions {
@@ -172,7 +175,7 @@ func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
 		newState.tradingFees[transformKey(k, beaconHeight)] = v
 	}
 	Logger.log.Infof("Time spent for transforming keys: %f", time.Since(time1).Seconds())
-	return newState
+	s = newState
 }
 
 func (s *stateBase) ClearCache() {

@@ -11,7 +11,7 @@ type State interface {
 	StoreToDB(StateEnvironment) error
 	BuildInstructions(StateEnvironment) ([][]string, error)
 	Upgrade(StateEnvironment) State
-	TransformKeyWithNewBeaconHeight(beaconHeight uint64) State
+	TransformKeyWithNewBeaconHeight(beaconHeight uint64)
 	ClearCache()
 	GetDiff(State) (State, error)
 	WaitingContributions() map[string]*rawdbv2.PDEContribution

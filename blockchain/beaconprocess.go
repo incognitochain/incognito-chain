@@ -839,12 +839,15 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 
 	// execute, store PDE instruction
-	newBestState.pdeState = newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
+
+	// transfrom beacon height for pdex process
+	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconInstructions(beaconBlock.Body.Instructions).
 		BuildStateDB(newBestState.featureStateDB).
+		BuildBeaconHeight(beaconBlock.Header.Height - 1).
 		Build()
 	err = newBestState.pdeState.Process(pdeStateEnv)
 	if err != nil {
@@ -868,7 +871,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	//clear DeletedWaitingPDEContributions
 	newBestState.pdeState.ClearCache()
 	//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
-	newBestState.pdeState = newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+
+	// transfrom beacon height for pdex process
+	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
 
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
