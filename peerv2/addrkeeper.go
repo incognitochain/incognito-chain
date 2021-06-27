@@ -279,7 +279,6 @@ func (keeper *AddrKeeper) Start(
 
 func (keeper *AddrKeeper) GetHighway(selfPeerID *peer.ID) (*rpcclient.HighwayAddr, error) {
 	var cst *consistent.Consistent
-	cst.NumberOfReplicas = 2000
 	cstA := consistent.New()
 	cstA.NumberOfReplicas = 2000
 	cstB := consistent.New()
@@ -288,10 +287,11 @@ func (keeper *AddrKeeper) GetHighway(selfPeerID *peer.ID) (*rpcclient.HighwayAdd
 	cstC.NumberOfReplicas = 2000
 	for rpcUrl, addr := range keeper.addrsByRPCUrl {
 		if _, ok := keeper.ignoreHW.Get(rpcUrl); !ok {
-			if keeper.lastRTT[*addr].avgRTT < 500*time.Millisecond {
-				cstA.Add(rpcUrl)
-			} else {
+			rttInfo, ok := keeper.lastRTT[*addr]
+			if (!ok) || (rttInfo.avgRTT > 500*time.Millisecond) {
 				cstB.Add(rpcUrl)
+			} else {
+				cstA.Add(rpcUrl)
 			}
 		} else {
 			cstC.Add(rpcUrl)
