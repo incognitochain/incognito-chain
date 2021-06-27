@@ -59,16 +59,10 @@ func NewConnManager(
 		rttService: nil,
 	}
 	cm.notifiee.DisconnectedF = cm.disconnectAction
+	cm.LocalHost.Host.Network().Notify(cm.notifiee)
 	cm.rttService = ping.NewPingService(cm.LocalHost.Host)
 	return cm
 }
-
-// rttService *ping.PingService
-// notifiee   *network.NotifyBundle
-// currentHW  *rpcclient.HighwayAddr
-// newHighway chan *rpcclient.HighwayAddr
-// reqPickHW  chan interface{}
-// requ       chan interface{}
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
@@ -198,9 +192,8 @@ type ConnManager struct {
 	DiscoverPeersAddress []string
 	IsMasterNode         bool
 
-	ps       *pubsub.PubSub
-	messages chan *pubsub.Message // queue messages from all topics
-	//Note: Remove this
+	ps               *pubsub.PubSub
+	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan peer.ID
 
 	keeper     *AddrKeeper
