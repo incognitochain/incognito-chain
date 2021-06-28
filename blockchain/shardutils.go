@@ -2,9 +2,8 @@ package blockchain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"sort"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -13,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"sort"
 )
 
 func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
@@ -36,28 +36,38 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 	return beaconBlocks, nil
 }
 
-func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
+func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) ([]byte, error) {
 	crossIDs := []byte{}
 	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {
-		if tx.GetProof() != nil {
-			for _, outCoin := range tx.GetProof().GetOutputCoins() {
-				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-				shardID := common.GetShardIDFromLastByte(lastByte)
-				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-			}
-		}
-
+		var prvProof privacy.Proof
 		switch tx.GetType() {
-		case common.TxCustomTokenPrivacyType:
+		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
-				customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-				if customTokenTx.TxPrivacyTokenData.TxNormal.GetProof() != nil {
-					for _, outCoin := range customTokenTx.TxPrivacyTokenData.TxNormal.GetProof().GetOutputCoins() {
-						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
-						shardID := common.GetShardIDFromLastByte(lastByte)
-						byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				customTokenTx, ok := tx.(transaction.TransactionToken)
+				if !ok {
+					return nil, errors.New("Cannot cast transaction")
+				}
+				prvProof = customTokenTx.GetTxBase().GetProof()
+				proof := customTokenTx.GetTxTokenData().TxNormal.GetProof()
+				if proof != nil {
+					for _, outCoin := range proof.GetOutputCoins() {
+						if shardID, err := outCoin.GetShardID(); err != nil {
+							panic("Cannot get shardID")
+						} else {
+							byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+						}
 					}
+				}
+			}
+		default:
+			prvProof = tx.GetProof()
+		}
+		if prvProof != nil {
+			for _, outCoin := range prvProof.GetOutputCoins() {
+				shardID, err := outCoin.GetShardID()
+				if err == nil {
+					byteMap[common.GetShardIDFromLastByte(shardID)] = 1
 				}
 			}
 		}
@@ -68,7 +78,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 			crossIDs = append(crossIDs, byte(k))
 		}
 	}
-	return crossIDs
+	return crossIDs, nil
 }
 
 func checkReturnStakingTxExistence(txId string, shardBlock *types.ShardBlock) bool {
@@ -181,4 +191,11 @@ func updateCommitteesWithAddedAndRemovedListValidator(
 	newShardPendingValidator = append(newShardPendingValidator, addedCommittees...)
 
 	return newShardPendingValidator, nil
+}
+
+func UpdateTxEnvWithSView(sView *ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
+	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
+	valEnv = transaction.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
+	valEnv = transaction.WithConfirmedTime(valEnv, sView.GetBlockTime())
+	return valEnv
 }

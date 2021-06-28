@@ -295,6 +295,10 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
+func (shardBestState ShardBestState) GetBeaconHash() common.Hash {
+	return shardBestState.BestBeaconHash
+}
+
 func (shardBestState ShardBestState) GetShardID() byte {
 	return shardBestState.ShardID
 }

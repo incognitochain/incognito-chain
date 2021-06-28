@@ -9,13 +9,13 @@ import (
 const (
 	UnexpectedError = iota
 
-	IssuingEthRequestDecodeInstructionError
-	IssuingEthRequestUnmarshalJsonError
-	IssuingEthRequestNewIssuingETHRequestFromMapEror
-	IssuingEthRequestValidateTxWithBlockChainError
-	IssuingEthRequestValidateSanityDataError
-	IssuingEthRequestBuildReqActionsError
-	IssuingEthRequestVerifyProofAndParseReceipt
+	IssuingEvmRequestDecodeInstructionError
+	IssuingEvmRequestUnmarshalJsonError
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError
+	IssuingEvmRequestValidateTxWithBlockChainError
+	IssuingEvmRequestValidateSanityDataError
+	IssuingEvmRequestBuildReqActionsError
+	IssuingEvmRequestVerifyProofAndParseReceipt
 
 	IssuingRequestDecodeInstructionError
 	IssuingRequestUnmarshalJsonError
@@ -64,6 +64,16 @@ const (
 	// eth utils
 	VerifyProofAndParseReceiptError
 
+	// init privacy custom token
+	InitTokenRequestDecodeInstructionError
+	InitTokenRequestUnmarshalJsonError
+	InitTokenRequestNewInitPTokenRequestFromMapError
+	InitTokenRequestValidateTxWithBlockChainError
+	InitTokenRequestValidateSanityDataError
+	InitTokenRequestBuildReqActionsError
+
+	InitTokenResponseValidateSanityDataError
+
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError
 	PortalCustodianDepositV3ValidateSanityDataError
@@ -78,13 +88,13 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedError: {-1, "Unexpected error"},
 
 	// -1xxx issuing eth request
-	IssuingEthRequestDecodeInstructionError:          {-1001, "Can not decode instruction"},
-	IssuingEthRequestUnmarshalJsonError:              {-1002, "Can not unmarshall json"},
-	IssuingEthRequestNewIssuingETHRequestFromMapEror: {-1003, "Can no new issuing eth request from map"},
-	IssuingEthRequestValidateTxWithBlockChainError:   {-1004, "Validate tx with block chain error"},
-	IssuingEthRequestValidateSanityDataError:         {-1005, "Validate sanity data error"},
-	IssuingEthRequestBuildReqActionsError:            {-1006, "Build request action error"},
-	IssuingEthRequestVerifyProofAndParseReceipt:      {-1007, "Verify proof and parse receipt"},
+	IssuingEvmRequestDecodeInstructionError:           {-1001, "Can not decode instruction"},
+	IssuingEvmRequestUnmarshalJsonError:               {-1002, "Can not unmarshall json"},
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError: {-1003, "Can no new issuing evm request from map"},
+	IssuingEvmRequestValidateTxWithBlockChainError:    {-1004, "Validate tx with block chain error"},
+	IssuingEvmRequestValidateSanityDataError:          {-1005, "Validate sanity data error"},
+	IssuingEvmRequestBuildReqActionsError:             {-1006, "Build request action error"},
+	IssuingEvmRequestVerifyProofAndParseReceipt:       {-1007, "Verify proof and parse receipt"},
 
 	// -2xxx issuing eth request
 	IssuingRequestDecodeInstructionError:        {-2001, "Can not decode instruction"},
@@ -132,6 +142,16 @@ var ErrCodeMessage = map[int]struct {
 
 	// eth utils
 	VerifyProofAndParseReceiptError: {-8001, "Verify proof and parse receipt eth error"},
+
+	// init privacy custom token
+	InitTokenRequestDecodeInstructionError:           {-8002, "Cannot decode instruction"},
+	InitTokenRequestUnmarshalJsonError:               {-8003, "Cannot unmarshall json"},
+	InitTokenRequestNewInitPTokenRequestFromMapError: {-8004, "Cannot new InitPToken eth request from map"},
+	InitTokenRequestValidateTxWithBlockChainError:    {-8005, "Validate tx with block chain error"},
+	InitTokenRequestValidateSanityDataError:          {-8006, "Validate sanity data error"},
+	InitTokenRequestBuildReqActionsError:             {-8007, "Build request action error"},
+
+	InitTokenResponseValidateSanityDataError: {-8008, "Validate sanity data error"},
 
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError:     {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},

@@ -2,10 +2,10 @@ package wire
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/utils"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -70,8 +70,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageCrossShard{}
 		break
 	case CmdPrivacyCustomToken:
+		var tx metadata.Transaction
 		msg = &MessageTxPrivacyToken{
-			Transaction: &transaction.TxCustomTokenPrivacy{},
+			Transaction: tx,
 		}
 		break
 	case CmdGetBlockBeacon:
@@ -83,8 +84,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageGetBlockShard{}
 		break
 	case CmdTx:
+		var tx metadata.Transaction
 		msg = &MessageTx{
-			Transaction: &transaction.Tx{},
+			Transaction: tx,
 		}
 		break
 	case CmdVersion:

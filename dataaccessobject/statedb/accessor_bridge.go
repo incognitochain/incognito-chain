@@ -35,6 +35,31 @@ func IsETHTxHashIssued(stateDB *StateDB, uniqueEthTx []byte) (bool, error) {
 	return has, nil
 }
 
+func InsertBSCTxHashIssued(stateDB *StateDB, uniqueBSCTx []byte) error {
+	key := GenerateBridgeBSCTxObjectKey(uniqueBSCTx)
+	value := NewBridgeBSCTxStateWithValue(uniqueBSCTx)
+	err := stateDB.SetStateObject(BridgeBSCTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertBSCTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsBSCTxHashIssued(stateDB *StateDB, uniqueBSCTx []byte) (bool, error) {
+	key := GenerateBridgeBSCTxObjectKey(uniqueBSCTx)
+	bscTxState, has, err := stateDB.getBridgeBSCTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsBSCTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(bscTxState.UniqueBSCTx(), uniqueBSCTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {
@@ -130,6 +155,7 @@ func CanProcessTokenPair(stateDB *StateDB, externalTokenID []byte, incTokenID co
 }
 
 func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmount uint64, updateType string) error {
+	dataaccessobject.Logger.Log.Infof("Update bridge token %v, isCentralized %v, amount %v\n", incTokenID.String(), isCentralized, updatingAmount)
 	bridgeTokenInfoState, has, err := getBridgeTokenByType(stateDB, incTokenID, isCentralized)
 	if err != nil {
 		return NewStatedbError(UpdateBridgeTokenInfoError, err)

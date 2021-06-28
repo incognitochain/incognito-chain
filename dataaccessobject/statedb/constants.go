@@ -19,6 +19,10 @@ const (
 	CommitmentLengthObjectType
 	SNDerivatorObjectType
 	OutputCoinObjectType
+	OTACoinObjectType
+	OTACoinIndexObjectType
+	OTACoinLengthObjectType
+	OnetimeAddressObjectType
 	TokenObjectType
 	WaitingPDEContributionObjectType
 	PDEPoolPairObjectType
@@ -49,7 +53,6 @@ const (
 
 	// Committee State
 	StakerObjectType
-	CommitteeTermObjectType
 
 	// Portal v3
 	PortalExternalTxObjectType
@@ -57,7 +60,8 @@ const (
 	PortalUnlockOverRateCollaterals
 
 	SlashingCommitteeObjectType
-	ValidatorsObjectType
+	// bsc bridge
+	BridgeBSCTxObjectType
 )
 
 // Prefix length

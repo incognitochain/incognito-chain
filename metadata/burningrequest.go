@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/config"
@@ -50,69 +49,67 @@ func NewBurningRequest(
 }
 
 func (bReq BurningRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
-	if err != nil {
-		return false, err
-	}
-	if !bridgeTokenExisted {
-		return false, errors.New("the burning token is not existed in bridge tokens")
-	}
+	//bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
+	//if err != nil {
+	//	return false, err
+	//}
+	//if !bridgeTokenExisted {
+	//	return false, errors.New("the burning token is not existed in bridge tokens")
+	//}
 	return true, nil
 }
 
 func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
 		return false, false, err
 	}
-	if len(bReq.BurnerAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's burner address")
-	}
 	if bReq.BurningAmount == 0 {
-		return false, false, errors.New("Wrong request info's burned amount")
+		return false, false, errors.New("wrong request info's burned amount")
 	}
 
-	//if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-	//	return false, false, errors.New("Must send coin to burning address")
-	//}
-	//if bReq.BurningAmount != tx.CalculateTxValue() {
-	//	return false, false, errors.New("BurningAmount incorrect")
-	//}
-
-	// check burning value
-	isBurning, burningAmount := tx.CalculateBurningTxValue(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
-	if !isBurning {
-		return false, false, errors.New("Must send coin to burning address")
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, fmt.Errorf("it is not transaction burn. Error %v", err)
 	}
-	if burningAmount == 0 || bReq.BurningAmount != burningAmount {
-		return false, false, errors.New("BurningAmount incorrect")
+	if !bytes.Equal(burnedTokenID[:], bReq.TokenID[:]) {
+		return false, false, fmt.Errorf("wrong request info's token id and token burned")
 	}
-
-	if !bytes.Equal(tx.GetSigPubKey()[:], bReq.BurnerAddress.Pk[:]) {
-		return false, false, errors.New("BurnerAddress incorrect")
-	}
-	if !bytes.Equal(tx.GetTokenID()[:], bReq.TokenID[:]) {
-		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
+	burnAmount := burnCoin.GetValue()
+	if burnAmount != bReq.BurningAmount || burnAmount == 0 {
+		return false, false, fmt.Errorf("burn amount is incorrect %v", burnAmount)
 	}
 
 	if shardViewRetriever.GetEpoch() >= config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is deprecated", bReq.Type)
 	}
-	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2) {
+	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 	return true, true, nil
 }
 
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2
+	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {
+	record := bReq.MetadataBase.Hash().String()
+	record += bReq.BurnerAddress.String()
+	record += bReq.TokenID.String()
+	record += strconv.FormatUint(bReq.BurningAmount, 10)
+	record += bReq.TokenName
+	record += bReq.RemoteAddress
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (bReq BurningRequest) HashWithoutSig() *common.Hash {
 	record := bReq.MetadataBase.Hash().String()
 	record += bReq.BurnerAddress.String()
 	record += bReq.TokenID.String()

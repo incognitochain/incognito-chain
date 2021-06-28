@@ -1,11 +1,15 @@
 package committeestate
 
 import (
-	"reflect"
-	"testing"
-
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"math"
+	"math/rand"
+	"reflect"
+	"sort"
+	"testing"
+	"time"
 )
 
 var samplePenalty = signaturecounter.Penalty{
@@ -969,6 +973,865 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
 				t.Errorf("swapRuleV2.swapInAfterSwapOut() got2 = %v, want %v", got2, tt.want2)
+			}
+		})
+	}
+}
+
+func Test_createSwapShardInstructionV3(t *testing.T) {
+	type args struct {
+		shardID                byte
+		substitutes            []string
+		committees             []string
+		minCommitteeSize       int
+		maxCommitteeSize       int
+		typeIns                int
+		numberOfFixedValidator int
+		penalty                map[string]signaturecounter.Penalty
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  *instruction.SwapShardInstruction
+		want1 []string
+		want2 []string
+		want3 []string
+		want4 []string
+	}{
+		{
+			name: "max committee size 8, one slash, spare one slash in fixed nodes, one normal swap",
+			args: args{
+				shardID: 0,
+				committees: []string{
+					key0, key, key2, key3, key4, key5,
+				},
+				substitutes: []string{
+					key6, key7, key8, key9,
+				},
+				minCommitteeSize:       4,
+				maxCommitteeSize:       8,
+				typeIns:                instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidator: 4,
+				penalty: map[string]signaturecounter.Penalty{
+					key5: samplePenalty,
+					key:  samplePenalty,
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{
+					key6, key7, key8, key9,
+				},
+				[]string{
+					key5, key4,
+				},
+				0,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			want1: []string{key0, key, key2, key3, key6, key7, key8, key9},
+			want2: []string{},
+			want3: []string{key5},
+			want4: []string{key4},
+		},
+		{
+			name: "max committee size 6, one slash, spare one slash in fixed nodes, one normal swap",
+			args: args{
+				shardID: 0,
+				committees: []string{
+					key0, key, key2, key3, key4, key5,
+				},
+				substitutes: []string{
+					key6, key7, key8, key9,
+				},
+				minCommitteeSize:       4,
+				maxCommitteeSize:       6,
+				typeIns:                instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidator: 4,
+				penalty: map[string]signaturecounter.Penalty{
+					key5: samplePenalty,
+					key:  samplePenalty,
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{
+					key6, key7,
+				},
+				[]string{
+					key5, key4,
+				},
+				0,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			want1: []string{
+				key0, key, key2, key3, key6, key7,
+			},
+			want2: []string{
+				key8, key9,
+			},
+			want3: []string{key5},
+			want4: []string{key4},
+		},
+		{
+			name: "max committee size 9, two slash, spare one slash in fixed nodes, no normal swap",
+			args: args{
+				shardID: 0,
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key8,
+				},
+				substitutes: []string{
+					key6, key7, key9, key10, key11, key12,
+				},
+				minCommitteeSize:       4,
+				maxCommitteeSize:       9,
+				typeIns:                instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidator: 4,
+				penalty: map[string]signaturecounter.Penalty{
+					key5: samplePenalty,
+					key:  samplePenalty,
+					key8: samplePenalty,
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{
+					key6, key7, key9, key10,
+				},
+				[]string{
+					key5, key8,
+				},
+				0,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			want1: []string{
+				key0, key, key2, key3, key4, key6, key7, key9, key10,
+			},
+			want2: []string{key11, key12},
+			want3: []string{key5, key8},
+			want4: []string{},
+		},
+		{
+			name: "max committee size 12, swap offset 4 - 1, two slash, spare one slash in fixed nodes, one normal swap",
+			args: args{
+				shardID: 0,
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+				},
+				substitutes: []string{
+					key12,
+				},
+				minCommitteeSize:       10,
+				maxCommitteeSize:       12,
+				typeIns:                instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidator: 4,
+				penalty: map[string]signaturecounter.Penalty{
+					key5: samplePenalty,
+					key:  samplePenalty,
+					key8: samplePenalty,
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{
+					key12,
+				},
+				[]string{
+					key5, key8, key4,
+				},
+				0,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			want1: []string{
+				key0, key, key2, key3, key6, key7, key9, key10, key11, key12,
+			},
+			want2: []string{},
+			want3: []string{key5, key8},
+			want4: []string{key4},
+		},
+		{
+			name: "max committee size 12, swap offset 4, two slash, spare one slash in fixed nodes, two normal swap",
+			args: args{
+				shardID: 0,
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+				},
+				substitutes: []string{
+					key12, key13,
+				},
+				minCommitteeSize:       10,
+				maxCommitteeSize:       12,
+				typeIns:                instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidator: 4,
+				penalty: map[string]signaturecounter.Penalty{
+					key5: samplePenalty,
+					key:  samplePenalty,
+					key8: samplePenalty,
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{
+					key12, key13,
+				},
+				[]string{
+					key5, key8, key4, key6,
+				},
+				0,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			want1: []string{
+				key0, key, key2, key3, key7, key9, key10, key11, key12, key13,
+			},
+			want2: []string{},
+			want3: []string{key5, key8},
+			want4: []string{key4, key6},
+		},
+		{
+			name: "max committee size 12, swap offset 4 (push max), two slash, spare one slash in fixed nodes, two normal swap",
+			args: args{
+				shardID: 0,
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+				},
+				substitutes: []string{
+					key12, key13, key14, key15, key16, key17,
+				},
+				minCommitteeSize:       10,
+				maxCommitteeSize:       12,
+				typeIns:                instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidator: 4,
+				penalty: map[string]signaturecounter.Penalty{
+					key5: samplePenalty,
+					key:  samplePenalty,
+					key8: samplePenalty,
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{
+					key12, key13, key14, key15,
+				},
+				[]string{
+					key5, key8, key4, key6,
+				},
+				0,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			want1: []string{
+				key0, key, key2, key3, key7, key9, key10, key11, key12, key13, key14, key15,
+			},
+			want2: []string{key16, key17},
+			want3: []string{key5, key8},
+			want4: []string{key4, key6},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2, got3, got4 := createSwapShardInstructionV3(tt.args.shardID, tt.args.substitutes, tt.args.committees, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidator, tt.args.penalty)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("createSwapShardInstructionV3() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("createSwapShardInstructionV3() got1 = %v, want %v", got1, tt.want2)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("createSwapShardInstructionV3() got2 = %v, want %v", got2, tt.want2)
+			}
+			if !reflect.DeepEqual(got3, tt.want3) {
+				t.Errorf("createSwapShardInstructionV3() got3 = %v, want %v", got3, tt.want3)
+			}
+			if !reflect.DeepEqual(got4, tt.want4) {
+				t.Errorf("createSwapShardInstructionV3() got4 = %v, want %v", got4, tt.want4)
+			}
+		})
+	}
+}
+
+func Test_getOrderedLowerSet(t *testing.T) {
+	type args struct {
+		mean               int
+		numberOfValidators []int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []int
+	}{
+		{
+			name: "numberOfValidators > 0, mean == all shard (equal committee_size among all shard)",
+			args: args{
+				mean:               10,
+				numberOfValidators: []int{10, 10, 10, 10, 10, 10, 10, 10},
+			},
+			want: []int{0, 1, 2, 3},
+		},
+		{
+			name: "numberOfValidators > 0, mean > numberOfValidators of only 1 shard (in 8 shard)",
+			args: args{
+				mean:               8,
+				numberOfValidators: []int{1, 8, 8, 8, 9, 9, 10, 10},
+			},
+			want: []int{0},
+		},
+		{
+			name: "only 1 shard",
+			args: args{
+				mean:               8,
+				numberOfValidators: []int{8},
+			},
+			want: []int{0},
+		},
+		{
+			name: "assign max half shard while possible more shard is belong to lower half",
+			args: args{
+				mean:               20,
+				numberOfValidators: []int{1, 9, 9, 8, 9, 8, 10, 100},
+			},
+			want: []int{0, 3, 5, 1},
+		},
+		{
+			name: "normal case, lower set < half of shard",
+			args: args{
+				mean:               12,
+				numberOfValidators: []int{1, 9, 15, 12, 5, 17, 12, 20},
+			},
+			want: []int{0, 4, 1},
+		},
+		{
+			name: "normal case, numberOfValidator are slightly different",
+			args: args{
+				mean:               15,
+				numberOfValidators: []int{10, 9, 15, 12, 18, 17, 12, 20},
+			},
+			want: []int{1, 0, 3, 6},
+		},
+		{
+			name: "normal case, 2 shard is much lower than other shard",
+			args: args{
+				mean:               292,
+				numberOfValidators: []int{440, 438, 442, 136, 89, 41, 309, 437},
+			},
+			want: []int{5, 4, 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getOrderedLowerSet(tt.args.mean, tt.args.numberOfValidators); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getOrderedLowerSet() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAssignRuleV3_Process(t *testing.T) {
+	type args struct {
+		candidates         []string
+		numberOfValidators []int
+		rand               int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[byte][]string
+	}{
+		{
+			name: "numberOfValidators > 0, mean == all shard (equal committee_size among all shard)",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{10, 10, 10, 10, 10, 10, 10, 10},
+				rand:               1001,
+			},
+			want: map[byte][]string{
+				0: []string{
+					"121VhftSAygpEJZ6i9jGk9drax2iDha73FtSVnju8AYxEHLxLqrgcB5ocJPiJ3BBRcRgZ1TmTQxnEsSpSm3wEdaRd98Y7YEHBwrMsQdaPsA66MJeTxy9ZDpyAD82sWfYzHNA7Q8pjpBvCrvxKHQTz6NBRZXspvCtxozStN6mJMJWoMUyMBccZLgRMTN7dDXArcJVPtTVQWqjT15DToLbzY3qdnc1vdZDTq916qNdQ9PbCVwbswdqtdCxEwCoYo9uLS9gdkvJaJdU1wNuYFYvFgiAQFa6mgjNZWiDnLyYBtVX3VyfVGe4K8fRgG9bgj15ZG7UypBoQTjxxJJHDmMy23VHV3qSDr8bjLnhLVYgHmkpuHfhxFX2B9KXXhkc4XMgxxyC83HWaz2XvS1eNuTMVbKUd3tjCBkZQJszBDsKa5R7gJqH",
+				},
+				1: []string{
+					"121VhftSAygpEJZ6i9jGk9dnzbXovyLBfFHs6cuMcjFEAB6FphEtuXPXCCNga16A1LkSHHSgLq9rFGQ496VnxHxDL8Ar6duhJxpEdcr75rkRFBzEvPNTkRYVbVcBUMtWd5PugsB6QjYt5CJQyUtzzbctC15AeX64aHrK1QwHJjFz8hnMz3eh8P8SPqKQ6zXhByqHm7YrcCY5uKZUn7CqM9RTwwJaqUhtqsHKyozBkfw26XhfkwvFh4vvL6McE5Ty1ztgiygUp8tt7haPEjVNGCqnwpPEB76oPVFTiKGePY1XqHy6aAFvuUBdmnNFEXrQPnh5xz5ULpq6PMJjVFvpu5kXcnaJbFBRZJcsJm1y69n56zUFKSg4LiNwqymf84U2SiPKT12cFehJedwfJkBMwnGpDAfaEZZvqcNRD9nVRUG4no9X",
+					"121VhftSAygpEJZ6i9jGk9a1qL1ZjK3QhzqpDT4uJop7tnEfahvCVRVbKPsuH94uGMqj1a1nLQSAcQypiUP3yc1s3t4jCRae8Kf6VXJRyHngt9X9iT2yJexKgRhnjzTfJYU4VkXV3w3xwiFCp5pGnDdocA8aq1SUCVMwfKAnhxjDHQDDWMMaxSLvjU56ZqaNZtsCQGTaySZLxc2RmCgMUeC5JQkF4t3P2NbTaZzz9JreLtZqSL3DVLacPwXy2enu3QMQYcPbZRVbz2Rxuf8e3hHYwjbAqvDJayCk9iasJnmZKP2gVRQhHUcX7cED4U22TMzi2rE6FoVMebThoDB2Dp21BW21qthS26Rkxe7UbxTesss9Xk1LSQsh8tRV1yxyGJ3DgtY2csBicRmT5PxQ3j9FwdSViKX82M1u9qv7ZcQSnvrJ",
+					"121VhftSAygpEJZ6i9jGk9a5oQvgecAms7BtyyjGxpySigmDAdo8af26UKNmXYjNUhFVp4NN6RpRJFTGn57w7evPi3HkaF8ToXsCJ7ceaZ5p6hrCHLN6tKm5sjBEo3yusZZayurNMsrLGRhBE2i8Xhxkns8uN8c9WY5kcwSVsyD9f7399fMzRqtMB7TjyE4ad2KWDmteZZWuZB79jYB5wHWcxRyUxYaQ761gT8oMJ6FKr7wdPYAeuJ7Pai71Xi9YdPUDNQ1dZ7Uq1m7wxavKKax14Tuf9onu9oZDTeat7SNK1PDxjvf2uwkEmcHAp7qzp8c7igm8X6VjC6685gdThcdEHPxiwDsu3UxQyXK1fqwSHDHx3Ff7w5xKeDK8zJNghCLBbZ3HowQbT7hAKqu3N5puMKw5cjQJndA4trRw5yuzXxbf",
+				},
+				2: []string{
+					"121VhftSAygpEJZ6i9jGk9dTsGQVZNEnYLWhjXjomneDCT9XC6zGjeTW8ENTJVPooNnQBRuRdpwe9DoNVdLF4j3iy6Ld2p1eNLK8ek1bNSNrHFVjtsHaQVpcoHBy6nGghA9y7pr6ne6W7MRdAXLPHEDgpAodnRVxFSc2zyUbA48XKQVRtSVUneKjcdhDHP1hY9gC1EYLWtqn4weLzHKA84w77rHFhwwV2sbseHDqsmtQa4k5aiTCcXoUdmMpEuvadtSmKR33wciA3FNr5h125ce9ge1eSFPznvXNsCy7sA1rc4YJxipgwGoDDWSftUfnh5vY37WbwwNLhmMRvxtjHP7WBkSrLrKdamr8TdUu93cQyrykYRxbCben7pK1N75NknsSqLSihBnMTLo8gcFDGaDtQixPiJxMkefZ3qfHHwdvaL27",
+					"121VhftSAygpEJZ6i9jGk9dXXyF2XfP9G56ZoZ8hAtLMc3i33FWSqa3FJgMkc7pTs5qdaeJHAFfJpwjoGWazHWzknPSh8d319L9xMoz2TsLCefqPeP8Kqf24C8fuY9RCTCvnAmecnXL6SJyiVTP6Vjjhcvvdk8cQHVUSnnXxbuufgRckyw9Mc7VrgpG3qzBfeYCfWkurDmdVnyjh7jPsZQM1sBjRFiNSjQQo7HQgaMi2YQp9WGpE4kJfF265eqXySrT8BycKLnjunED9B1TU6WNs2e9aFB2u82tMzwoRwTHWbAgc9rixwM3UiAAnhiEhx56nkidGRsqo2LR5AQASHEUP6aHtnz1wcwovEPthXXChDhRuDAa5PHvfz57LQpWZANf9HV26J5wYFysJb4bN9vRcxTJdijRzDAt5QbBJs5DJo64N",
+				},
+				3: []string{
+					"121VhftSAygpEJZ6i9jGk9a5Kfw77TTKCB5FhKUBU1JJKrvogDS3g9JhfQXY4PP9xEzfnTRB43MhcpxmbR7qempyNsRu7k3oY59xphaP843bUnZWk17LiedGSaDUfc7xEB2jNt94rpm1FXF9hjPRijDqeqyyBhFV3uyqhmfCdnH1xxYpJW8XLk45Jhpf5vGZpy2qFn3vVUtmxk2TMdW68AsBvkT2PkFGQDqiWYRMBXStV1Npzxu3CUKamd74ZXA66tSY7rP1QE4vSFDCLX23rJE9tjVZuty74Edbin4ZzgG2PhLqvv7s3gpNzaY6oaaxRSbon7JWujnF3uv8o6DvdraGkWiJa1VhXrJjVDzNs5WVNtETGMPy58uUPkemv8oto6yCJzxiDgjUR9Yjy3mfnY3eNWV89BocWjNkBT4Y9JU8HMD8",
+					"121VhftSAygpEJZ6i9jGk9dPK5DE41KmqUhp2EFJXyyHNrQomEh7QW7icEh2zymM5953C2HN2kYYCbepkL37Qny6mgyxGiAxxqEEkCHnqK4FsNBDbGwojMmVCgURwmS1oRqpfoFYhKwFUTzjyYduxBNegdgUw9VEYXJe3xSMBib24oBRhjbmK7LZ5qxRqKMsV7Lp49rPi2QGiizqiVKSsaAD2QMHEaC5ZBsGJvtRRMdGarHfe6yLtWAvcPLpsuSkYHfNni5Nh61LT1LwYLqSwDqNVKC3ew6RfRvmFfFTPhBGUcbhRKog6djipwKW9RZ7jvpgSiwifLriiz8h25ziR3Guh7k1cgyYm6TxQHrrLBRUgXKGvLkeAEi9ThrCsuQnbE61re6UmjwCcbPd9j53fzVmm4JJ19kMsyGUL2m7obSsdxvM",
+					"121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4",
+					"121VhftSAygpEJZ6i9jGk9ZogHDZ369maVpypAooJmsxv3QK9apuYCZxe5iM61B1W8CgRRNuQuBEwBpjMM1bMBeL1buAa2LpokfP8FCKA2gfiLn9QCLew61SQYeTAgRG9rqouR5zph6ECxDbU7qYTytd5f8QFw2jedB9Y7C9eBCRgg6XHiKgaRK7WFN9iNYB3L4KGYGQCJZUTW7zLNxX2uQrpR3sPsERnsQYSfar2dLhH2d7R8Avywn1aZPH2hDLp1ytjv8kgbUM74fT7Dton9dCVm3AV4zgc39eX9j42kx2U7mXWeG7MKDZUBiAVAfWyxvecjpMt5juzuXvzRmiN5qkZJ8QVFAQ2XLSpszFZtuPJET5pSbfYn1StqvALbGKM5jU4n6oSGuQdFmSehMbkjZwZJ5oNBf1X77ax9hXigt3ejqh",
+					"121VhftSAygpEJZ6i9jGk9a4wsKYVdTBhFsvZ4jwhzaWjFsondoUtyYpqF3hjWmPEUvMJF1Wh9NMhRVGaLYW8JtmS2JcP3Zq1L2AvYjYJaWm5CRqoYPz3DUEeJFSbUDdZPcp5YAL3FizX3J192zR3kWA967p6cZUgVP6e9LbHBdQBFGCQYRYKw8DNRCUzophTmoFeFwjWJF3EuXAWX2gv5ASj2Nem9YytNtjhZHCRS7Vz8pvgLdMJVa7B9fpS6oBV7nS4LWdeZc8NPC9VGKbTa1MCy7YkXfjbHfKpowEArnB9CLaLpWmSiaZruTiRxtZQZkU9z3YCMZW2dW5SHmwMGEseu6WwPPqgLz32tazKzNzHgiAJp561pxfCm7HF4r6VxtTqPKe8gjwLfDZqw3X2ew6rQ8Vo2csnjWrSQJAxYuMeinW",
+				},
+			},
+		},
+		{
+			name: "numberOfValidators > 0, mean > numberOfValidators of only 1 shard (in 8 shard)",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{1, 8, 8, 8, 9, 9, 10, 10},
+				rand:               1000,
+			},
+			want: map[byte][]string{
+				0: candidates,
+			},
+		},
+		{
+			name: "only 1 shard",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{8},
+				rand:               1000,
+			},
+			want: map[byte][]string{
+				0: candidates,
+			},
+		},
+		{
+			name: "assign max half shard while possible more shard is belong to lower half",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{1, 9, 9, 8, 9, 8, 10, 100},
+				rand:               1000,
+			},
+			want: map[byte][]string{
+				0: []string{
+					"121VhftSAygpEJZ6i9jGk9dnzbXovyLBfFHs6cuMcjFEAB6FphEtuXPXCCNga16A1LkSHHSgLq9rFGQ496VnxHxDL8Ar6duhJxpEdcr75rkRFBzEvPNTkRYVbVcBUMtWd5PugsB6QjYt5CJQyUtzzbctC15AeX64aHrK1QwHJjFz8hnMz3eh8P8SPqKQ6zXhByqHm7YrcCY5uKZUn7CqM9RTwwJaqUhtqsHKyozBkfw26XhfkwvFh4vvL6McE5Ty1ztgiygUp8tt7haPEjVNGCqnwpPEB76oPVFTiKGePY1XqHy6aAFvuUBdmnNFEXrQPnh5xz5ULpq6PMJjVFvpu5kXcnaJbFBRZJcsJm1y69n56zUFKSg4LiNwqymf84U2SiPKT12cFehJedwfJkBMwnGpDAfaEZZvqcNRD9nVRUG4no9X",
+					"121VhftSAygpEJZ6i9jGk9a1qL1ZjK3QhzqpDT4uJop7tnEfahvCVRVbKPsuH94uGMqj1a1nLQSAcQypiUP3yc1s3t4jCRae8Kf6VXJRyHngt9X9iT2yJexKgRhnjzTfJYU4VkXV3w3xwiFCp5pGnDdocA8aq1SUCVMwfKAnhxjDHQDDWMMaxSLvjU56ZqaNZtsCQGTaySZLxc2RmCgMUeC5JQkF4t3P2NbTaZzz9JreLtZqSL3DVLacPwXy2enu3QMQYcPbZRVbz2Rxuf8e3hHYwjbAqvDJayCk9iasJnmZKP2gVRQhHUcX7cED4U22TMzi2rE6FoVMebThoDB2Dp21BW21qthS26Rkxe7UbxTesss9Xk1LSQsh8tRV1yxyGJ3DgtY2csBicRmT5PxQ3j9FwdSViKX82M1u9qv7ZcQSnvrJ",
+					"121VhftSAygpEJZ6i9jGk9dXXyF2XfP9G56ZoZ8hAtLMc3i33FWSqa3FJgMkc7pTs5qdaeJHAFfJpwjoGWazHWzknPSh8d319L9xMoz2TsLCefqPeP8Kqf24C8fuY9RCTCvnAmecnXL6SJyiVTP6Vjjhcvvdk8cQHVUSnnXxbuufgRckyw9Mc7VrgpG3qzBfeYCfWkurDmdVnyjh7jPsZQM1sBjRFiNSjQQo7HQgaMi2YQp9WGpE4kJfF265eqXySrT8BycKLnjunED9B1TU6WNs2e9aFB2u82tMzwoRwTHWbAgc9rixwM3UiAAnhiEhx56nkidGRsqo2LR5AQASHEUP6aHtnz1wcwovEPthXXChDhRuDAa5PHvfz57LQpWZANf9HV26J5wYFysJb4bN9vRcxTJdijRzDAt5QbBJs5DJo64N",
+					"121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4",
+					"121VhftSAygpEJZ6i9jGk9a4wsKYVdTBhFsvZ4jwhzaWjFsondoUtyYpqF3hjWmPEUvMJF1Wh9NMhRVGaLYW8JtmS2JcP3Zq1L2AvYjYJaWm5CRqoYPz3DUEeJFSbUDdZPcp5YAL3FizX3J192zR3kWA967p6cZUgVP6e9LbHBdQBFGCQYRYKw8DNRCUzophTmoFeFwjWJF3EuXAWX2gv5ASj2Nem9YytNtjhZHCRS7Vz8pvgLdMJVa7B9fpS6oBV7nS4LWdeZc8NPC9VGKbTa1MCy7YkXfjbHfKpowEArnB9CLaLpWmSiaZruTiRxtZQZkU9z3YCMZW2dW5SHmwMGEseu6WwPPqgLz32tazKzNzHgiAJp561pxfCm7HF4r6VxtTqPKe8gjwLfDZqw3X2ew6rQ8Vo2csnjWrSQJAxYuMeinW",
+				},
+				1: []string{
+					"121VhftSAygpEJZ6i9jGk9a5Kfw77TTKCB5FhKUBU1JJKrvogDS3g9JhfQXY4PP9xEzfnTRB43MhcpxmbR7qempyNsRu7k3oY59xphaP843bUnZWk17LiedGSaDUfc7xEB2jNt94rpm1FXF9hjPRijDqeqyyBhFV3uyqhmfCdnH1xxYpJW8XLk45Jhpf5vGZpy2qFn3vVUtmxk2TMdW68AsBvkT2PkFGQDqiWYRMBXStV1Npzxu3CUKamd74ZXA66tSY7rP1QE4vSFDCLX23rJE9tjVZuty74Edbin4ZzgG2PhLqvv7s3gpNzaY6oaaxRSbon7JWujnF3uv8o6DvdraGkWiJa1VhXrJjVDzNs5WVNtETGMPy58uUPkemv8oto6yCJzxiDgjUR9Yjy3mfnY3eNWV89BocWjNkBT4Y9JU8HMD8",
+					"121VhftSAygpEJZ6i9jGk9dPK5DE41KmqUhp2EFJXyyHNrQomEh7QW7icEh2zymM5953C2HN2kYYCbepkL37Qny6mgyxGiAxxqEEkCHnqK4FsNBDbGwojMmVCgURwmS1oRqpfoFYhKwFUTzjyYduxBNegdgUw9VEYXJe3xSMBib24oBRhjbmK7LZ5qxRqKMsV7Lp49rPi2QGiizqiVKSsaAD2QMHEaC5ZBsGJvtRRMdGarHfe6yLtWAvcPLpsuSkYHfNni5Nh61LT1LwYLqSwDqNVKC3ew6RfRvmFfFTPhBGUcbhRKog6djipwKW9RZ7jvpgSiwifLriiz8h25ziR3Guh7k1cgyYm6TxQHrrLBRUgXKGvLkeAEi9ThrCsuQnbE61re6UmjwCcbPd9j53fzVmm4JJ19kMsyGUL2m7obSsdxvM",
+					"121VhftSAygpEJZ6i9jGk9dTsGQVZNEnYLWhjXjomneDCT9XC6zGjeTW8ENTJVPooNnQBRuRdpwe9DoNVdLF4j3iy6Ld2p1eNLK8ek1bNSNrHFVjtsHaQVpcoHBy6nGghA9y7pr6ne6W7MRdAXLPHEDgpAodnRVxFSc2zyUbA48XKQVRtSVUneKjcdhDHP1hY9gC1EYLWtqn4weLzHKA84w77rHFhwwV2sbseHDqsmtQa4k5aiTCcXoUdmMpEuvadtSmKR33wciA3FNr5h125ce9ge1eSFPznvXNsCy7sA1rc4YJxipgwGoDDWSftUfnh5vY37WbwwNLhmMRvxtjHP7WBkSrLrKdamr8TdUu93cQyrykYRxbCben7pK1N75NknsSqLSihBnMTLo8gcFDGaDtQixPiJxMkefZ3qfHHwdvaL27",
+				},
+				3: []string{
+					"121VhftSAygpEJZ6i9jGk9drax2iDha73FtSVnju8AYxEHLxLqrgcB5ocJPiJ3BBRcRgZ1TmTQxnEsSpSm3wEdaRd98Y7YEHBwrMsQdaPsA66MJeTxy9ZDpyAD82sWfYzHNA7Q8pjpBvCrvxKHQTz6NBRZXspvCtxozStN6mJMJWoMUyMBccZLgRMTN7dDXArcJVPtTVQWqjT15DToLbzY3qdnc1vdZDTq916qNdQ9PbCVwbswdqtdCxEwCoYo9uLS9gdkvJaJdU1wNuYFYvFgiAQFa6mgjNZWiDnLyYBtVX3VyfVGe4K8fRgG9bgj15ZG7UypBoQTjxxJJHDmMy23VHV3qSDr8bjLnhLVYgHmkpuHfhxFX2B9KXXhkc4XMgxxyC83HWaz2XvS1eNuTMVbKUd3tjCBkZQJszBDsKa5R7gJqH",
+					"121VhftSAygpEJZ6i9jGk9a5oQvgecAms7BtyyjGxpySigmDAdo8af26UKNmXYjNUhFVp4NN6RpRJFTGn57w7evPi3HkaF8ToXsCJ7ceaZ5p6hrCHLN6tKm5sjBEo3yusZZayurNMsrLGRhBE2i8Xhxkns8uN8c9WY5kcwSVsyD9f7399fMzRqtMB7TjyE4ad2KWDmteZZWuZB79jYB5wHWcxRyUxYaQ761gT8oMJ6FKr7wdPYAeuJ7Pai71Xi9YdPUDNQ1dZ7Uq1m7wxavKKax14Tuf9onu9oZDTeat7SNK1PDxjvf2uwkEmcHAp7qzp8c7igm8X6VjC6685gdThcdEHPxiwDsu3UxQyXK1fqwSHDHx3Ff7w5xKeDK8zJNghCLBbZ3HowQbT7hAKqu3N5puMKw5cjQJndA4trRw5yuzXxbf",
+				},
+				5: []string{
+					"121VhftSAygpEJZ6i9jGk9ZogHDZ369maVpypAooJmsxv3QK9apuYCZxe5iM61B1W8CgRRNuQuBEwBpjMM1bMBeL1buAa2LpokfP8FCKA2gfiLn9QCLew61SQYeTAgRG9rqouR5zph6ECxDbU7qYTytd5f8QFw2jedB9Y7C9eBCRgg6XHiKgaRK7WFN9iNYB3L4KGYGQCJZUTW7zLNxX2uQrpR3sPsERnsQYSfar2dLhH2d7R8Avywn1aZPH2hDLp1ytjv8kgbUM74fT7Dton9dCVm3AV4zgc39eX9j42kx2U7mXWeG7MKDZUBiAVAfWyxvecjpMt5juzuXvzRmiN5qkZJ8QVFAQ2XLSpszFZtuPJET5pSbfYn1StqvALbGKM5jU4n6oSGuQdFmSehMbkjZwZJ5oNBf1X77ax9hXigt3ejqh",
+				},
+			},
+		},
+		{
+			name: "normal case, lower set < half of shard",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{1, 9, 15, 12, 5, 17, 12, 20},
+				rand:               1001,
+			},
+			want: map[byte][]string{
+				0: []string{
+					"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",
+				},
+				4: []string{
+					"121VhftSAygpEJZ6i9jGk9dPK5DE41KmqUhp2EFJXyyHNrQomEh7QW7icEh2zymM5953C2HN2kYYCbepkL37Qny6mgyxGiAxxqEEkCHnqK4FsNBDbGwojMmVCgURwmS1oRqpfoFYhKwFUTzjyYduxBNegdgUw9VEYXJe3xSMBib24oBRhjbmK7LZ5qxRqKMsV7Lp49rPi2QGiizqiVKSsaAD2QMHEaC5ZBsGJvtRRMdGarHfe6yLtWAvcPLpsuSkYHfNni5Nh61LT1LwYLqSwDqNVKC3ew6RfRvmFfFTPhBGUcbhRKog6djipwKW9RZ7jvpgSiwifLriiz8h25ziR3Guh7k1cgyYm6TxQHrrLBRUgXKGvLkeAEi9ThrCsuQnbE61re6UmjwCcbPd9j53fzVmm4JJ19kMsyGUL2m7obSsdxvM",
+					"121VhftSAygpEJZ6i9jGk9drax2iDha73FtSVnju8AYxEHLxLqrgcB5ocJPiJ3BBRcRgZ1TmTQxnEsSpSm3wEdaRd98Y7YEHBwrMsQdaPsA66MJeTxy9ZDpyAD82sWfYzHNA7Q8pjpBvCrvxKHQTz6NBRZXspvCtxozStN6mJMJWoMUyMBccZLgRMTN7dDXArcJVPtTVQWqjT15DToLbzY3qdnc1vdZDTq916qNdQ9PbCVwbswdqtdCxEwCoYo9uLS9gdkvJaJdU1wNuYFYvFgiAQFa6mgjNZWiDnLyYBtVX3VyfVGe4K8fRgG9bgj15ZG7UypBoQTjxxJJHDmMy23VHV3qSDr8bjLnhLVYgHmkpuHfhxFX2B9KXXhkc4XMgxxyC83HWaz2XvS1eNuTMVbKUd3tjCBkZQJszBDsKa5R7gJqH",
+					"121VhftSAygpEJZ6i9jGk9dTsGQVZNEnYLWhjXjomneDCT9XC6zGjeTW8ENTJVPooNnQBRuRdpwe9DoNVdLF4j3iy6Ld2p1eNLK8ek1bNSNrHFVjtsHaQVpcoHBy6nGghA9y7pr6ne6W7MRdAXLPHEDgpAodnRVxFSc2zyUbA48XKQVRtSVUneKjcdhDHP1hY9gC1EYLWtqn4weLzHKA84w77rHFhwwV2sbseHDqsmtQa4k5aiTCcXoUdmMpEuvadtSmKR33wciA3FNr5h125ce9ge1eSFPznvXNsCy7sA1rc4YJxipgwGoDDWSftUfnh5vY37WbwwNLhmMRvxtjHP7WBkSrLrKdamr8TdUu93cQyrykYRxbCben7pK1N75NknsSqLSihBnMTLo8gcFDGaDtQixPiJxMkefZ3qfHHwdvaL27",
+					"121VhftSAygpEJZ6i9jGk9dXXyF2XfP9G56ZoZ8hAtLMc3i33FWSqa3FJgMkc7pTs5qdaeJHAFfJpwjoGWazHWzknPSh8d319L9xMoz2TsLCefqPeP8Kqf24C8fuY9RCTCvnAmecnXL6SJyiVTP6Vjjhcvvdk8cQHVUSnnXxbuufgRckyw9Mc7VrgpG3qzBfeYCfWkurDmdVnyjh7jPsZQM1sBjRFiNSjQQo7HQgaMi2YQp9WGpE4kJfF265eqXySrT8BycKLnjunED9B1TU6WNs2e9aFB2u82tMzwoRwTHWbAgc9rixwM3UiAAnhiEhx56nkidGRsqo2LR5AQASHEUP6aHtnz1wcwovEPthXXChDhRuDAa5PHvfz57LQpWZANf9HV26J5wYFysJb4bN9vRcxTJdijRzDAt5QbBJs5DJo64N",
+				},
+				1: []string{
+					"121VhftSAygpEJZ6i9jGk9dnzbXovyLBfFHs6cuMcjFEAB6FphEtuXPXCCNga16A1LkSHHSgLq9rFGQ496VnxHxDL8Ar6duhJxpEdcr75rkRFBzEvPNTkRYVbVcBUMtWd5PugsB6QjYt5CJQyUtzzbctC15AeX64aHrK1QwHJjFz8hnMz3eh8P8SPqKQ6zXhByqHm7YrcCY5uKZUn7CqM9RTwwJaqUhtqsHKyozBkfw26XhfkwvFh4vvL6McE5Ty1ztgiygUp8tt7haPEjVNGCqnwpPEB76oPVFTiKGePY1XqHy6aAFvuUBdmnNFEXrQPnh5xz5ULpq6PMJjVFvpu5kXcnaJbFBRZJcsJm1y69n56zUFKSg4LiNwqymf84U2SiPKT12cFehJedwfJkBMwnGpDAfaEZZvqcNRD9nVRUG4no9X",
+				},
+			},
+		},
+		{
+			name: "normal case, numberOfValidator are slightly different",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{10, 9, 15, 12, 18, 17, 12, 20},
+				rand:               1000,
+			},
+			want: map[byte][]string{
+				0: []string{
+					"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",
+				},
+				6: []string{
+					"121VhftSAygpEJZ6i9jGk9a5oQvgecAms7BtyyjGxpySigmDAdo8af26UKNmXYjNUhFVp4NN6RpRJFTGn57w7evPi3HkaF8ToXsCJ7ceaZ5p6hrCHLN6tKm5sjBEo3yusZZayurNMsrLGRhBE2i8Xhxkns8uN8c9WY5kcwSVsyD9f7399fMzRqtMB7TjyE4ad2KWDmteZZWuZB79jYB5wHWcxRyUxYaQ761gT8oMJ6FKr7wdPYAeuJ7Pai71Xi9YdPUDNQ1dZ7Uq1m7wxavKKax14Tuf9onu9oZDTeat7SNK1PDxjvf2uwkEmcHAp7qzp8c7igm8X6VjC6685gdThcdEHPxiwDsu3UxQyXK1fqwSHDHx3Ff7w5xKeDK8zJNghCLBbZ3HowQbT7hAKqu3N5puMKw5cjQJndA4trRw5yuzXxbf",
+				},
+				3: []string{
+					"121VhftSAygpEJZ6i9jGk9ZogHDZ369maVpypAooJmsxv3QK9apuYCZxe5iM61B1W8CgRRNuQuBEwBpjMM1bMBeL1buAa2LpokfP8FCKA2gfiLn9QCLew61SQYeTAgRG9rqouR5zph6ECxDbU7qYTytd5f8QFw2jedB9Y7C9eBCRgg6XHiKgaRK7WFN9iNYB3L4KGYGQCJZUTW7zLNxX2uQrpR3sPsERnsQYSfar2dLhH2d7R8Avywn1aZPH2hDLp1ytjv8kgbUM74fT7Dton9dCVm3AV4zgc39eX9j42kx2U7mXWeG7MKDZUBiAVAfWyxvecjpMt5juzuXvzRmiN5qkZJ8QVFAQ2XLSpszFZtuPJET5pSbfYn1StqvALbGKM5jU4n6oSGuQdFmSehMbkjZwZJ5oNBf1X77ax9hXigt3ejqh",
+				},
+				1: []string{
+					"121VhftSAygpEJZ6i9jGk9a1qL1ZjK3QhzqpDT4uJop7tnEfahvCVRVbKPsuH94uGMqj1a1nLQSAcQypiUP3yc1s3t4jCRae8Kf6VXJRyHngt9X9iT2yJexKgRhnjzTfJYU4VkXV3w3xwiFCp5pGnDdocA8aq1SUCVMwfKAnhxjDHQDDWMMaxSLvjU56ZqaNZtsCQGTaySZLxc2RmCgMUeC5JQkF4t3P2NbTaZzz9JreLtZqSL3DVLacPwXy2enu3QMQYcPbZRVbz2Rxuf8e3hHYwjbAqvDJayCk9iasJnmZKP2gVRQhHUcX7cED4U22TMzi2rE6FoVMebThoDB2Dp21BW21qthS26Rkxe7UbxTesss9Xk1LSQsh8tRV1yxyGJ3DgtY2csBicRmT5PxQ3j9FwdSViKX82M1u9qv7ZcQSnvrJ",
+					"121VhftSAygpEJZ6i9jGk9dTsGQVZNEnYLWhjXjomneDCT9XC6zGjeTW8ENTJVPooNnQBRuRdpwe9DoNVdLF4j3iy6Ld2p1eNLK8ek1bNSNrHFVjtsHaQVpcoHBy6nGghA9y7pr6ne6W7MRdAXLPHEDgpAodnRVxFSc2zyUbA48XKQVRtSVUneKjcdhDHP1hY9gC1EYLWtqn4weLzHKA84w77rHFhwwV2sbseHDqsmtQa4k5aiTCcXoUdmMpEuvadtSmKR33wciA3FNr5h125ce9ge1eSFPznvXNsCy7sA1rc4YJxipgwGoDDWSftUfnh5vY37WbwwNLhmMRvxtjHP7WBkSrLrKdamr8TdUu93cQyrykYRxbCben7pK1N75NknsSqLSihBnMTLo8gcFDGaDtQixPiJxMkefZ3qfHHwdvaL27",
+					"121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4",
+					"121VhftSAygpEJZ6i9jGk9a4wsKYVdTBhFsvZ4jwhzaWjFsondoUtyYpqF3hjWmPEUvMJF1Wh9NMhRVGaLYW8JtmS2JcP3Zq1L2AvYjYJaWm5CRqoYPz3DUEeJFSbUDdZPcp5YAL3FizX3J192zR3kWA967p6cZUgVP6e9LbHBdQBFGCQYRYKw8DNRCUzophTmoFeFwjWJF3EuXAWX2gv5ASj2Nem9YytNtjhZHCRS7Vz8pvgLdMJVa7B9fpS6oBV7nS4LWdeZc8NPC9VGKbTa1MCy7YkXfjbHfKpowEArnB9CLaLpWmSiaZruTiRxtZQZkU9z3YCMZW2dW5SHmwMGEseu6WwPPqgLz32tazKzNzHgiAJp561pxfCm7HF4r6VxtTqPKe8gjwLfDZqw3X2ew6rQ8Vo2csnjWrSQJAxYuMeinW",
+				},
+			},
+		},
+		{
+			name: "case: 8 shard, 2 shard is much lower than other shard",
+			args: args{
+				candidates:         candidates,
+				numberOfValidators: []int{440, 438, 442, 136, 89, 41, 309, 437},
+				rand:               1000,
+			},
+			want: map[byte][]string{
+				5: []string{
+					"121VhftSAygpEJZ6i9jGk9a5Kfw77TTKCB5FhKUBU1JJKrvogDS3g9JhfQXY4PP9xEzfnTRB43MhcpxmbR7qempyNsRu7k3oY59xphaP843bUnZWk17LiedGSaDUfc7xEB2jNt94rpm1FXF9hjPRijDqeqyyBhFV3uyqhmfCdnH1xxYpJW8XLk45Jhpf5vGZpy2qFn3vVUtmxk2TMdW68AsBvkT2PkFGQDqiWYRMBXStV1Npzxu3CUKamd74ZXA66tSY7rP1QE4vSFDCLX23rJE9tjVZuty74Edbin4ZzgG2PhLqvv7s3gpNzaY6oaaxRSbon7JWujnF3uv8o6DvdraGkWiJa1VhXrJjVDzNs5WVNtETGMPy58uUPkemv8oto6yCJzxiDgjUR9Yjy3mfnY3eNWV89BocWjNkBT4Y9JU8HMD8",
+					"121VhftSAygpEJZ6i9jGk9a5oQvgecAms7BtyyjGxpySigmDAdo8af26UKNmXYjNUhFVp4NN6RpRJFTGn57w7evPi3HkaF8ToXsCJ7ceaZ5p6hrCHLN6tKm5sjBEo3yusZZayurNMsrLGRhBE2i8Xhxkns8uN8c9WY5kcwSVsyD9f7399fMzRqtMB7TjyE4ad2KWDmteZZWuZB79jYB5wHWcxRyUxYaQ761gT8oMJ6FKr7wdPYAeuJ7Pai71Xi9YdPUDNQ1dZ7Uq1m7wxavKKax14Tuf9onu9oZDTeat7SNK1PDxjvf2uwkEmcHAp7qzp8c7igm8X6VjC6685gdThcdEHPxiwDsu3UxQyXK1fqwSHDHx3Ff7w5xKeDK8zJNghCLBbZ3HowQbT7hAKqu3N5puMKw5cjQJndA4trRw5yuzXxbf",
+				},
+				4: []string{
+					"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",
+				},
+				3: []string{
+					"121VhftSAygpEJZ6i9jGk9dnzbXovyLBfFHs6cuMcjFEAB6FphEtuXPXCCNga16A1LkSHHSgLq9rFGQ496VnxHxDL8Ar6duhJxpEdcr75rkRFBzEvPNTkRYVbVcBUMtWd5PugsB6QjYt5CJQyUtzzbctC15AeX64aHrK1QwHJjFz8hnMz3eh8P8SPqKQ6zXhByqHm7YrcCY5uKZUn7CqM9RTwwJaqUhtqsHKyozBkfw26XhfkwvFh4vvL6McE5Ty1ztgiygUp8tt7haPEjVNGCqnwpPEB76oPVFTiKGePY1XqHy6aAFvuUBdmnNFEXrQPnh5xz5ULpq6PMJjVFvpu5kXcnaJbFBRZJcsJm1y69n56zUFKSg4LiNwqymf84U2SiPKT12cFehJedwfJkBMwnGpDAfaEZZvqcNRD9nVRUG4no9X",
+					"121VhftSAygpEJZ6i9jGk9a1qL1ZjK3QhzqpDT4uJop7tnEfahvCVRVbKPsuH94uGMqj1a1nLQSAcQypiUP3yc1s3t4jCRae8Kf6VXJRyHngt9X9iT2yJexKgRhnjzTfJYU4VkXV3w3xwiFCp5pGnDdocA8aq1SUCVMwfKAnhxjDHQDDWMMaxSLvjU56ZqaNZtsCQGTaySZLxc2RmCgMUeC5JQkF4t3P2NbTaZzz9JreLtZqSL3DVLacPwXy2enu3QMQYcPbZRVbz2Rxuf8e3hHYwjbAqvDJayCk9iasJnmZKP2gVRQhHUcX7cED4U22TMzi2rE6FoVMebThoDB2Dp21BW21qthS26Rkxe7UbxTesss9Xk1LSQsh8tRV1yxyGJ3DgtY2csBicRmT5PxQ3j9FwdSViKX82M1u9qv7ZcQSnvrJ",
+					"121VhftSAygpEJZ6i9jGk9drax2iDha73FtSVnju8AYxEHLxLqrgcB5ocJPiJ3BBRcRgZ1TmTQxnEsSpSm3wEdaRd98Y7YEHBwrMsQdaPsA66MJeTxy9ZDpyAD82sWfYzHNA7Q8pjpBvCrvxKHQTz6NBRZXspvCtxozStN6mJMJWoMUyMBccZLgRMTN7dDXArcJVPtTVQWqjT15DToLbzY3qdnc1vdZDTq916qNdQ9PbCVwbswdqtdCxEwCoYo9uLS9gdkvJaJdU1wNuYFYvFgiAQFa6mgjNZWiDnLyYBtVX3VyfVGe4K8fRgG9bgj15ZG7UypBoQTjxxJJHDmMy23VHV3qSDr8bjLnhLVYgHmkpuHfhxFX2B9KXXhkc4XMgxxyC83HWaz2XvS1eNuTMVbKUd3tjCBkZQJszBDsKa5R7gJqH",
+					"121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := AssignRuleV3{}
+			if got := a.Process(tt.args.candidates, tt.args.numberOfValidators, tt.args.rand); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Process() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+//TestAssignRuleV3_SimulationBalanceNumberOfValidator case 1
+// assume no new candidates
+// 1. re-assign 40
+// 2. swap out each shard 5 => 40
+// repeat until numberOfValidator among all shard is slightly different
+func TestAssignRuleV3_SimulationBalanceNumberOfValidator_1(t *testing.T) {
+
+	numberOfValidators := []int{472, 470, 474, 168, 121, 73, 309, 437}
+	counter := 0
+	isBalanced := false
+
+	for {
+		time.Sleep(10 * time.Millisecond)
+		counter++
+		randomNumber := rand.Int63()
+		threshold := 10
+		numberOfValidators, isBalanced = simulateAssignRuleV3(
+			numberOfValidators,
+			5,
+			0,
+			40,
+			randomNumber,
+			threshold)
+		if isBalanced {
+			break
+		}
+	}
+	t.Log(counter, numberOfValidators)
+}
+
+//TestAssignRuleV3_SimulationBalanceNumberOfValidator case 2
+// 1. 5 new candidates
+// 2. re-assign 40
+// 3. swap out each shard 5 => 40
+// repeat until numberOfValidator among all shard is slightly different
+func TestAssignRuleV3_SimulationBalanceNumberOfValidator_2(t *testing.T) {
+
+	numberOfValidators := []int{472, 470, 474, 168, 121, 73, 309, 437}
+	counter := 0
+	isBalanced := false
+
+	for {
+		time.Sleep(10 * time.Millisecond)
+		counter++
+		randomNumber := rand.Int63()
+		threshold := 10
+		numberOfValidators, isBalanced = simulateAssignRuleV3(
+			numberOfValidators,
+			5,
+			5,
+			40,
+			randomNumber,
+			threshold)
+		if isBalanced {
+			break
+		}
+	}
+	t.Log(counter, numberOfValidators)
+}
+
+//BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 1
+// 1. NO new candidates
+// 2. re-assign 40
+// 3. swap out each shard 5 => 40
+// repeat until numberOfValidator among all shard is slightly different
+// Report:
+// Threshold 10: roundly 40 times to balanced NumberOfValidators between shards
+// Threshold 20: roundly 30 times to balanced NumberOfValidators between shards
+// Threshold 20 -> 40: roundly 25 times to balanced NumberOfValidators between shards
+func BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator_1(b *testing.B) {
+
+	initialNumberOfValidators := []int{472, 470, 474, 168, 121, 73, 309, 437}
+	counters := []int{}
+	maxCounter := 0
+	for i := 0; i < 1000; i++ {
+		counter := 0
+		isBalanced := false
+		numberOfValidators := make([]int, len(initialNumberOfValidators))
+		copy(numberOfValidators, initialNumberOfValidators)
+		for {
+			//time.Sleep(1 * time.Millisecond)
+			counter++
+			rand.Seed(time.Now().UnixNano())
+			randomNumber := rand.Int63()
+			threshold := 10
+			numberOfValidators, isBalanced = simulateAssignRuleV3(numberOfValidators,
+				5,
+				0,
+				40,
+				randomNumber,
+				threshold)
+			if isBalanced {
+				break
+			}
+		}
+		counters = append(counters, counter)
+		//b.Log(counter, numberOfValidators)
+	}
+
+	sum := 0
+	for i := 0; i < len(counters); i++ {
+		if counters[i] > maxCounter {
+			maxCounter = counters[i]
+		}
+		sum += counters[i]
+	}
+	b.Log(sum/len(counters), maxCounter)
+}
+
+//BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 2
+// 1. 5 new candidates
+// 2. re-assign 40
+// 3. swap out each shard 5 => 40
+// repeat until numberOfValidator among all shard is slightly different
+// Report:
+// Threshold 10: roundly 40 times to balanced NumberOfValidators between shards
+// Threshold 20: roundly 30 times to balanced NumberOfValidators between shards
+// Threshold 20 -> 40: roundly 25 times to balanced NumberOfValidators between shards
+func BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator_2(b *testing.B) {
+
+	initialNumberOfValidators := []int{472, 470, 474, 168, 121, 73, 309, 437}
+	counters := []int{}
+	maxCounter := 0
+	for i := 0; i < 100; i++ {
+		counter := 0
+		isBalanced := false
+		numberOfValidators := make([]int, len(initialNumberOfValidators))
+		copy(numberOfValidators, initialNumberOfValidators)
+		for {
+			//time.Sleep(1 * time.Millisecond)
+			counter++
+			rand.Seed(time.Now().UnixNano())
+			randomNumber := rand.Int63()
+			threshold := 10
+			numberOfValidators, isBalanced = simulateAssignRuleV3(numberOfValidators,
+				5,
+				5,
+				40,
+				randomNumber, threshold)
+			if isBalanced {
+				break
+			}
+		}
+		counters = append(counters, counter)
+		//b.Log(counter, numberOfValidators)
+	}
+
+	sum := 0
+	for i := 0; i < len(counters); i++ {
+		if counters[i] > maxCounter {
+			maxCounter = counters[i]
+		}
+		sum += counters[i]
+	}
+	b.Log(sum/len(counters), maxCounter)
+}
+
+func simulateAssignRuleV3(numberOfValidators []int, swapOffSet int, newCandidates int, totalAssignBack int, randomNumber int64, threshold int) ([]int, bool) {
+
+	for i := 0; i < len(numberOfValidators); i++ {
+		numberOfValidators[i] -= swapOffSet
+	}
+
+	candidates := []string{}
+	for i := 0; i < totalAssignBack+newCandidates; i++ {
+		candidate := fmt.Sprintf("%+v", rand.Uint64())
+		candidates = append(candidates, candidate)
+	}
+
+	assignedCandidates := AssignRuleV3{}.Process(candidates, numberOfValidators, randomNumber)
+
+	for shardID, newValidators := range assignedCandidates {
+		numberOfValidators[int(shardID)] += len(newValidators)
+	}
+
+	maxDiff := calMaxDifferent(numberOfValidators)
+	if maxDiff < threshold {
+		return numberOfValidators, true
+	}
+
+	return numberOfValidators, false
+}
+
+func calMaxDifferent(numberOfValidators []int) int {
+	arr := make([]int, len(numberOfValidators))
+	copy(arr, numberOfValidators)
+	sort.Slice(arr, func(i, j int) bool {
+		return arr[i] < arr[j]
+	})
+	return arr[len(arr)-1] - arr[0]
+}
+
+func BenchmarkAssignRuleV3_ProcessDistribution(b *testing.B) {
+	genRandomString := func(strLen int) string {
+		characters := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		res := ""
+		for i := 0; i < strLen; i++ {
+			u := string(characters[rand.Int()%len(characters)])
+			res = res + u
+		}
+		return res
+	}
+	for testTime := 0; testTime < 100; testTime++ {
+		fmt.Println("Test Distribution ", testTime+1)
+		initialNumberOfValidators := []int{472, 470, 474, 168, 121, 73, 309, 437}
+		candidates := make(map[int][]string)
+		for sid, v := range initialNumberOfValidators {
+			for i := 0; i < v; i++ {
+				candidates[sid] = append(candidates[sid], genRandomString(128))
+			}
+		}
+
+		numberOfValidators := []int{}
+		candidateAssignStat := make(map[string][8]int)
+		assignTimeList := []int{}
+		for { //loop until there is 1 candidate is assign 8000 times (expect ~1000 for each shard, and other candidate also are assigned ~ 8000 times)
+			reach8000Times := false
+			swapCandidate := []string{}
+			numberOfValidators = []int{}
+			for sid := 0; sid < len(candidates); sid++ {
+				numberOfValidators = append(numberOfValidators, len(candidates[sid]))
+			}
+			for sid, candidate := range candidates {
+				candidates[sid] = candidate[5:len(candidate)]
+				swapCandidate = append(swapCandidate, candidate[:5]...)
+			}
+			rand.Seed(time.Now().UnixNano())
+			randomNumber := rand.Int63()
+			assignedCandidates := AssignRuleV3{}.Process(swapCandidate, numberOfValidators, randomNumber)
+			for shardID, newValidators := range assignedCandidates {
+				candidates[int(shardID)] = append(candidates[int(shardID)], newValidators...)
+
+				for _, v := range newValidators {
+					stat := candidateAssignStat[v]
+					stat[shardID] = stat[shardID] + 1
+					candidateAssignStat[v] = stat
+
+					candidateTotalAssignTime := 0
+					for _, sv := range stat {
+						candidateTotalAssignTime += sv
+					}
+					if candidateTotalAssignTime > 8000 {
+						reach8000Times = true
+					}
+				}
+			}
+
+			if reach8000Times {
+				break
+			}
+		}
+
+		//check our expectation
+		for k, v := range candidateAssignStat {
+			//check if each candidate, it is assign to shard ID uniformly
+			if !isUniformDistribution(v[:], 0.2) { // allow diff of 20% from mean
+				fmt.Printf("%v %v", k, v)
+				b.FailNow()
+			}
+
+			candidateTotalAssignTime := 0
+			for _, sv := range v {
+				candidateTotalAssignTime += sv
+			}
+			assignTimeList = append(assignTimeList, candidateTotalAssignTime)
+		}
+
+		//check if all candidate has the same number of assign time (uniform distribution)
+		if !isUniformDistribution(assignTimeList, 0.1) { // allow diff of 10% from mean
+			fmt.Printf("diff: %v", calMaxDifferent(assignTimeList))
+			b.FailNow()
+		}
+	}
+}
+
+func isUniformDistribution(arr []int, diffPercentage float64) bool {
+	sum := 0
+	for _, v := range arr {
+		sum += v
+	}
+	mean := float64(sum) / float64(len(arr))
+	allowDif := mean * diffPercentage
+	//fmt.Println(mean, allowDif)
+	for _, v := range arr {
+		if math.Abs(mean-float64(v)) > allowDif {
+			fmt.Println(mean, v, allowDif, math.Abs(mean-float64(v)))
+			return false
+		}
+	}
+	return true
+}
+
+func assignCandidate(lowerSet []int, randomPosition int, diff []int) byte {
+	position := 0
+	tempPosition := diff[0]
+	for randomPosition >= tempPosition && position < len(diff)-1 {
+		position++
+		tempPosition += diff[position]
+	}
+	shardID := lowerSet[position]
+
+	return byte(shardID)
+}
+
+func Test_assignCandidate(t *testing.T) {
+	type args struct {
+		lowerSet       []int
+		randomPosition int
+		diff           []int
+	}
+	tests := []struct {
+		name string
+		args args
+		want byte
+	}{
+		{
+			name: "assign at last position",
+			args: args{
+				lowerSet:       []int{1, 3, 0, 5},
+				diff:           []int{300, 160, 89, 1},
+				randomPosition: 549,
+			},
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := assignCandidate(tt.args.lowerSet, tt.args.randomPosition, tt.args.diff); got != tt.want {
+				t.Errorf("assignCandidate() = %v, want %v", got, tt.want)
 			}
 		})
 	}

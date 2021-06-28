@@ -77,12 +77,13 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 			return nil, fmt.Errorf("payment info %+v is invalid", paymentAddressStr)
 		}
 
-		amountParam, ok := amount.(float64)
-		if !ok {
-			return nil, errors.New("amount payment address is invalid")
+		amountParam, err := common.AssertAndConvertNumber(amount)
+		if err != nil {
+			return nil, err
 		}
+
 		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amountParam),
+			Amount:         amountParam,
 			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)

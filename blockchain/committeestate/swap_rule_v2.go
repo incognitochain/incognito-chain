@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -241,4 +242,91 @@ func (s *swapRuleV2) clone() SwapRuleProcessor {
 
 func (s *swapRuleV2) Version() int {
 	return swapRuleSlashingVersion
+}
+
+type AssignRuleV3 struct {
+}
+
+func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
+
+	sum := 0
+	for _, v := range numberOfValidators {
+		sum += v
+	}
+
+	totalShard := len(numberOfValidators)
+	tempMean := float64(sum) / float64(totalShard)
+	mean := int(tempMean)
+	if tempMean > float64(mean) {
+		mean += 1
+	}
+
+	lowerSet := getOrderedLowerSet(mean, numberOfValidators)
+
+	diff := []int{}
+	totalDiff := 0
+	for _, shardID := range lowerSet {
+		shardDiff := mean - numberOfValidators[shardID]
+
+		// special case: mean == numberOfValidators[shardID] ||
+		// shard committee size is equal among all shard ||
+		// len(numberOfValidators) == 1
+		if shardDiff == 0 {
+			shardDiff = 1
+		}
+
+		diff = append(diff, shardDiff)
+		totalDiff += shardDiff
+	}
+
+	assignedCandidates := make(map[byte][]string)
+	rand.Seed(randomNumber)
+	for _, candidate := range candidates {
+		randomPosition := calculateCandidatePositionV2(totalDiff)
+		position := 0
+		tempPosition := diff[position]
+		for randomPosition >= tempPosition && position < len(diff)-1 {
+			position++
+			tempPosition += diff[position]
+		}
+		shardID := lowerSet[position]
+		assignedCandidates[byte(shardID)] = append(assignedCandidates[byte(shardID)], candidate)
+	}
+
+	return assignedCandidates
+}
+
+func getOrderedLowerSet(mean int, numberOfValidators []int) []int {
+
+	lowerSet := []int{}
+	totalShard := len(numberOfValidators)
+	sortedShardIDs := sortShardIDByIncreaseOrder(numberOfValidators)
+
+	halfOfShard := totalShard / 2
+	if halfOfShard == 0 {
+		halfOfShard = 1
+	}
+
+	for _, shardID := range sortedShardIDs {
+		if numberOfValidators[shardID] < mean && len(lowerSet) < halfOfShard {
+			lowerSet = append(lowerSet, int(shardID))
+		}
+	}
+
+	//special case: mean == 0 || shard committee size is equal among all shard || len(numberOfValidators) == 1
+	if len(lowerSet) == 0 {
+		for i, _ := range numberOfValidators {
+			if i == halfOfShard {
+				break
+			}
+			lowerSet = append(lowerSet, i)
+		}
+	}
+
+	return lowerSet
+}
+
+// calculateCandidatePositionV2 random a position in total
+func calculateCandidatePositionV2(total int) (pos int) {
+	return rand.Intn(total)
 }

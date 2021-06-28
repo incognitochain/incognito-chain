@@ -4,20 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/config"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -69,7 +69,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		newShardBlock                     = types.NewShardBlock()
 		shardInstructions                 = [][]string{}
 		isOldBeaconHeight                 = false
-		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset(start)
+		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset()
 		shardBestState                    = NewShardBestState()
 		shardID                           = curView.ShardID
 		currentCommitteePublicKeys        = []string{}
@@ -243,7 +243,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	// producer key
 	producerKey := proposer
 	producerPubKeyStr := proposer
-	totalTxsFee := shardBestState.shardCommitteeState.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
+	totalTxsFee := shardBestState.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
+	crossShards, err := CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID)
+	if err != nil {
+		return nil, err
+	}
 
 	newShardBlock.Header = types.ShardHeader{
 		Producer:           producerKey, //committeeMiningKeys[producerPosition],
@@ -254,7 +258,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		Height:             shardBestState.ShardHeight + 1,
 		Round:              round,
 		Epoch:              epoch,
-		CrossShardBitMap:   CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		CrossShardBitMap:   crossShards,
 		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconHash,
 		TotalTxsFee:        totalTxsFee,
@@ -423,9 +427,17 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			}
 			var newTx metadata.Transaction
 			switch metaType {
+			case metadata.InitTokenRequestMeta:
+				if len(inst) == 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildTokenInitAcceptedTx(inst[3], producerPrivateKey, shardID, curView)
+				}
 			case metadata.IssuingETHRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildETHIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
@@ -674,7 +686,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardProducer from shard %v: %v", toShard, sid, heightList)
 	}
 
-	// allCrossShardBlock => already sort
+	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {
 		for _, blk := range crossShardBlock {
 			crossTransaction := types.CrossTransaction{
@@ -684,6 +696,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 				BlockHeight:      blk.Header.Height,
 			}
 			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
+			fmt.Println("Check cross shard data", crossTransaction.OutputCoin)
 		}
 	}
 	return crossTransactions
@@ -780,11 +793,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockGenerator *BlockGenerator) createTempKeyset(seedNumber int64) privacy.PrivateKey {
-	rand.Seed(seedNumber)
-	seed := make([]byte, 16)
-	rand.Read(seed)
-	return privacy.GeneratePrivateKey(seed)
+func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
+	b := common.RandBytes(common.HashSize)
+	return privacy.GeneratePrivateKey(b)
 }
 
 func createShardSwapActionForKeyListV2(

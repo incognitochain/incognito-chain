@@ -3,18 +3,15 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"strconv"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/privacy"
-
-	"github.com/pkg/errors"
-
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/pkg/errors"
+	"math/big"
+	"strconv"
+	"time"
 )
 
 // StateDBs within the incognito protocol are used to store anything
@@ -542,7 +539,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	nextEpochBeaconCandidate []*CommitteeState,
 	currentEpochBeaconCandidate []*CommitteeState,
 	syncingValidators map[byte][]*CommitteeState,
-	rewardReceiver map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
 ) {
@@ -552,7 +549,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentEpochShardCandidate = []*CommitteeState{}
 	nextEpochBeaconCandidate = []*CommitteeState{}
 	currentEpochBeaconCandidate = []*CommitteeState{}
-	rewardReceiver = make(map[string]privacy.PaymentAddress)
+	rewardReceiver = make(map[string]key.PaymentAddress)
 	autoStake = make(map[string]bool)
 	stakingTx = map[string]common.Hash{}
 	syncingValidators = make(map[byte][]*CommitteeState)
@@ -1291,6 +1288,68 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 	return outputCoins
 }
 
+// ================================= OnetimeAddress OBJECT =======================================
+
+func (stateDB *StateDB) getOnetimeAddressState(key common.Hash) (*OnetimeAddressState, bool, error) {
+	onetimeAddressState, err := stateDB.getStateObject(OnetimeAddressObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if onetimeAddressState != nil {
+		return onetimeAddressState.GetValue().(*OnetimeAddressState), true, nil
+	}
+	return NewOnetimeAddressState(), false, nil
+}
+
+func (stateDB *StateDB) getOTACoinIndexState(key common.Hash) (*OTACoinState, bool, error) {
+	otaCoinIndexState, err := stateDB.getStateObject(OTACoinIndexObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if otaCoinIndexState != nil {
+		tempKey, ok := otaCoinIndexState.GetValue().(common.Hash)
+		if !ok {
+			panic("wrong expected type")
+		}
+		otaCoinState, err := stateDB.getDeletedStateObject(OTACoinObjectType, tempKey)
+		if err != nil || otaCoinState == nil {
+			return NewOTACoinState(), false, nil
+		}
+		return otaCoinState.GetValue().(*OTACoinState), true, nil
+	}
+	return NewOTACoinState(), false, nil
+}
+
+func (stateDB *StateDB) getOTACoinLengthState(key common.Hash) (*big.Int, bool, error) {
+	otaCoinLengthState, err := stateDB.getStateObject(OTACoinLengthObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if otaCoinLengthState != nil {
+		return otaCoinLengthState.GetValue().(*big.Int), true, nil
+	}
+	return new(big.Int), false, nil
+}
+
+func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OTACoinState {
+	temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
+	it := trie.NewIterator(temp)
+	onetimeAddresses := make([]*OTACoinState, 0)
+
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newOnetimeAddress := NewOTACoinState()
+		err := json.Unmarshal(newValue, newOnetimeAddress)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		onetimeAddresses = append(onetimeAddresses, newOnetimeAddress)
+	}
+	return onetimeAddresses
+}
+
 // ================================= SNDerivator OBJECT =======================================
 func (stateDB *StateDB) getSNDerivatorState(key common.Hash) (*SNDerivatorState, bool, error) {
 	sndState, err := stateDB.getStateObject(SNDerivatorObjectType, key)
@@ -1859,4 +1918,16 @@ func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConf
 		return portalConfirmProofState.GetValue().(*PortalConfirmProofState), true, nil
 	}
 	return NewPortalConfirmProofState(), false, nil
+}
+
+// ================================= BSC bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState, bool, error) {
+	bscTxState, err := stateDB.getStateObject(BridgeBSCTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bscTxState != nil {
+		return bscTxState.GetValue().(*BridgeBSCTxState), true, nil
+	}
+	return NewBridgeBSCTxState(), false, nil
 }

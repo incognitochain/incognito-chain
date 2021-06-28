@@ -1,26 +1,26 @@
 package privacy_util
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
 
-func ScalarToBigInt(sc *privacy.Scalar) *big.Int {
-	keyR := privacy.Reverse(sc.GetKey())
+func ScalarToBigInt(sc *operation.Scalar) *big.Int {
+	keyR := operation.Reverse(sc.GetKey())
 	keyRByte := keyR.ToBytes()
 	bi := new(big.Int).SetBytes(keyRByte[:])
 	return bi
 }
 
-func BigIntToScalar(bi *big.Int) *privacy.Scalar {
-	biByte := common.AddPaddingBigInt(bi, privacy.Ed25519KeySize)
+func BigIntToScalar(bi *big.Int) *operation.Scalar {
+	biByte := common.AddPaddingBigInt(bi, operation.Ed25519KeySize)
 	var key curve25519.Key
 	key.FromBytes(SliceToArray(biByte))
-	keyR := privacy.Reverse(key)
-	sc, err := new(privacy.Scalar).SetKey(&keyR)
+	keyR := operation.Reverse(key)
+	sc, err := new(operation.Scalar).SetKey(&keyR)
 	if err != nil {
 		return nil
 	}
@@ -40,19 +40,19 @@ func ConvertIntToBinary(inum int, n int) []byte {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertUint64ToBinary(number uint64, n int) []*privacy.Scalar {
+func ConvertUint64ToBinary(number uint64, n int) []*operation.Scalar {
 	if number == 0 {
-		res := make([]*privacy.Scalar, n)
+		res := make([]*operation.Scalar, n)
 		for i := 0; i < n; i++ {
-			res[i] = new(privacy.Scalar).FromUint64(0)
+			res[i] = new(operation.Scalar).FromUint64(0)
 		}
 		return res
 	}
 
-	binary := make([]*privacy.Scalar, n)
+	binary := make([]*operation.Scalar, n)
 
 	for i := 0; i < n; i++ {
-		binary[i] = new(privacy.Scalar).FromUint64(number % 2)
+		binary[i] = new(operation.Scalar).FromUint64(number % 2)
 		number = number / 2
 	}
 	return binary
@@ -80,24 +80,24 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
-func ConvertScalarArrayToBigIntArray(scalarArr []*privacy.Scalar) []*big.Int {
+func ConvertScalarArrayToBigIntArray(scalarArr []*operation.Scalar) []*big.Int {
 	res := make([]*big.Int, len(scalarArr))
 
 	for i := 0; i < len(res); i++ {
-		tmp := privacy.Reverse(scalarArr[i].GetKey())
+		tmp := operation.Reverse(scalarArr[i].GetKey())
 		res[i] = new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
 	}
 
 	return res
 }
 
-func SliceToArray(slice []byte) [privacy.Ed25519KeySize]byte {
-	var array [privacy.Ed25519KeySize]byte
+func SliceToArray(slice []byte) [operation.Ed25519KeySize]byte {
+	var array [operation.Ed25519KeySize]byte
 	copy(array[:], slice)
 	return array
 }
 
-func ArrayToSlice(array [privacy.Ed25519KeySize]byte) []byte {
+func ArrayToSlice(array [operation.Ed25519KeySize]byte) []byte {
 	var slice []byte
 	slice = array[:]
 	return slice

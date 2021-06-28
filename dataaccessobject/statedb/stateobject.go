@@ -45,6 +45,14 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newCommitmentLengthObjectWithValue(db, hash, value)
 	case OutputCoinObjectType:
 		return newOutputCoinObjectWithValue(db, hash, value)
+	case OTACoinObjectType:
+		return newOTACoinObjectWithValue(db, hash, value)
+	case OTACoinIndexObjectType:
+		return newOTACoinIndexObjectWithValue(db, hash, value)
+	case OTACoinLengthObjectType:
+		return newOTACoinLengthObjectWithValue(db, hash, value)
+	case OnetimeAddressObjectType:
+		return newOnetimeAddressObjectWithValue(db, hash, value)
 	case SNDerivatorObjectType:
 		return newSNDerivatorObjectWithValue(db, hash, value)
 	case WaitingPDEContributionObjectType:
@@ -59,6 +67,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPDEStatusObjectWithValue(db, hash, value)
 	case BridgeEthTxObjectType:
 		return newBridgeEthTxObjectWithValue(db, hash, value)
+	case BridgeBSCTxObjectType:
+		return newBridgeBSCTxObjectWithValue(db, hash, value)
 	case BridgeTokenInfoObjectType:
 		return newBridgeTokenInfoObjectWithValue(db, hash, value)
 	case BridgeStatusObjectType:
@@ -124,6 +134,14 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newCommitmentLengthObject(db, hash)
 	case SNDerivatorObjectType:
 		return newSNDerivatorObject(db, hash)
+	case OTACoinObjectType:
+		return newOTACoinObject(db, hash)
+	case OTACoinIndexObjectType:
+		return newOTACoinIndexObject(db, hash)
+	case OTACoinLengthObjectType:
+		return newOTACoinLengthObject(db, hash)
+	case OnetimeAddressObjectType:
+		return newOnetimeAddressObject(db, hash)
 	case WaitingPDEContributionObjectType:
 		return newWaitingPDEContributionObject(db, hash)
 	case PDEPoolPairObjectType:
@@ -136,6 +154,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPDEStatusObject(db, hash)
 	case BridgeEthTxObjectType:
 		return newBridgeEthTxObject(db, hash)
+	case BridgeBSCTxObjectType:
+		return newBridgeBSCTxObject(db, hash)
 	case BridgeTokenInfoObjectType:
 		return newBridgeTokenInfoObject(db, hash)
 	case BridgeStatusObjectType:

@@ -3,13 +3,16 @@ package jsonresult
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"time"
 )
 
 type TransactionDetail struct {
@@ -22,15 +25,17 @@ type TransactionDetail struct {
 	Version     int8   `json:"Version"`
 	Type        string `json:"Type"` // Transaction type
 	LockTime    string `json:"LockTime"`
+	RawLockTime int64  `json:"RawLockTime,omitempty"`
 	Fee         uint64 `json:"Fee"` // Fee applies: always consant
 	Image       string `json:"Image"`
 
-	IsPrivacy       bool              `json:"IsPrivacy"`
-	Proof           *zkp.PaymentProof `json:"Proof"`
-	ProofDetail     ProofDetail       `json:"ProofDetail"`
-	InputCoinPubKey string            `json:"InputCoinPubKey"`
-	SigPubKey       string            `json:"SigPubKey,omitempty"` // 64 bytes
-	Sig             string            `json:"Sig,omitempty"`       // 64 bytes
+	IsPrivacy       bool          `json:"IsPrivacy"`
+	Proof           privacy.Proof `json:"Proof"`
+	ProofDetail     ProofDetail   `json:"ProofDetail"`
+	InputCoinPubKey string        `json:"InputCoinPubKey"`
+	SigPubKey       string        `json:"SigPubKey,omitempty"` // 64 bytes
+	RawSigPubKey    []byte        `json:"RawSigPubKey,omitempty"`
+	Sig             string        `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata                      string      `json:"Metadata"`
 	CustomTokenData               string      `json:"CustomTokenData"`
@@ -54,10 +59,33 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 	if blockHash != nil {
 		blockHashStr = blockHash.String()
 	}
+	var info string
+	if tx.GetInfo() == nil {
+		info = "null"
+	} else {
+		info = string(tx.GetInfo())
+	}
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 		{
-			tempTx := tx.(*transaction.Tx)
+			var sigPubKeyStr string
+			txVersion := tx.GetVersion()
+			if txVersion == 1 {
+				sigPubKeyStr = base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0)
+			} else {
+				sigPubKey := new(transaction.TxSigPubKeyVer2)
+				if err := sigPubKey.SetBytes(tx.GetSigPubKey()); err != nil {
+					sigPubKeyStr = "[]"
+				} else {
+					if temp, err := json.Marshal(sigPubKey); err != nil {
+						sigPubKeyStr = "[]"
+					} else {
+						sigPubKeyStr = string(temp)
+					}
+				}
+			}
+
+
 			result = &TransactionDetail{
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
@@ -65,66 +93,84 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				TxSize:      tx.GetTxActualSize(),
 				ShardID:     shardID,
 				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				IsPrivacy:   tempTx.IsPrivacy(),
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
+				Version:     tx.GetVersion(),
+				Type:        tx.GetType(),
+				LockTime:    time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				RawLockTime: tx.GetLockTime(),
+				Fee:         tx.GetTxFee(),
+				IsPrivacy:   tx.IsPrivacy(),
+				Proof:       tx.GetProof(),
+				SigPubKey:   sigPubKeyStr,
+				RawSigPubKey: tx.GetSigPubKey(),
+				Sig:         base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
+				Info:        info,
 			}
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
+			if result.Proof != nil {
+				inputCoins := result.Proof.GetInputCoins()
+				if len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
+					result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
+				}
 			}
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+			meta := tx.GetMetadata()
+			if meta != nil {
+				metaData, _ := json.MarshalIndent(meta, "", "\t")
 				result.Metadata = string(metaData)
 			}
 			if result.Proof != nil {
 				result.ProofDetail.ConvertFromProof(result.Proof)
 			}
 		}
-	case common.TxCustomTokenPrivacyType:
+	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
-			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			txToken, ok := tx.(transaction.TransactionToken)
+			if !ok {
+				return nil, errors.New("cannot detect transaction type")
+			}
+			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
 			result = &TransactionDetail{
 				BlockHash:                blockHashStr,
 				BlockHeight:              blockHeight,
 				Index:                    uint64(index),
-				TxSize:                   tempTx.GetTxActualSize(),
+				TxSize:                   tx.GetTxActualSize(),
 				ShardID:                  shardID,
 				Hash:                     tx.Hash().String(),
-				Version:                  tempTx.Version,
-				Type:                     tempTx.Type,
-				LockTime:                 time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:                      tempTx.Fee,
-				Proof:                    tempTx.Proof,
-				SigPubKey:                base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:                      base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:                     string(tempTx.Info),
-				IsPrivacy:                tempTx.IsPrivacy(),
-				PrivacyCustomTokenSymbol: tempTx.TxPrivacyTokenData.PropertySymbol,
-				PrivacyCustomTokenName:   tempTx.TxPrivacyTokenData.PropertyName,
-				PrivacyCustomTokenID:     tempTx.TxPrivacyTokenData.PropertyID.String(),
-				PrivacyCustomTokenFee:    tempTx.TxPrivacyTokenData.TxNormal.Fee,
+				Version:                  tx.GetVersion(),
+				Type:                     tx.GetType(),
+				LockTime:                 time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				RawLockTime: 			  tx.GetLockTime(),
+				Fee:                      tx.GetTxFee(),
+				Proof:                    txToken.GetTxBase().GetProof(),
+				SigPubKey:                base58.Base58Check{}.Encode(txToken.GetTxBase().GetSigPubKey(), 0x0),
+				RawSigPubKey:             txToken.GetTxBase().GetSigPubKey(),
+				Sig:                      base58.Base58Check{}.Encode(txToken.GetTxBase().GetSig(), 0x0),
+				Info:                     info,
+				IsPrivacy:                tx.IsPrivacy(),
+				PrivacyCustomTokenSymbol: txTokenData.PropertySymbol,
+				PrivacyCustomTokenName:   txTokenData.PropertyName,
+				PrivacyCustomTokenID:     txTokenData.PropertyID.String(),
+				PrivacyCustomTokenFee:    txTokenData.TxNormal.GetTxFee(),
 			}
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
+
+			if result.Proof != nil {
+				inputCoins := result.Proof.GetInputCoins()
+				if len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
+					result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
+				}
 			}
-			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
+
+
+			tokenData, _ := json.MarshalIndent(txTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+			if tx.GetMetadata() != nil {
+				metaData, _ := json.MarshalIndent(tx.GetMetadata(), "", "\t")
 				result.Metadata = string(metaData)
 			}
 			if result.Proof != nil {
 				result.ProofDetail.ConvertFromProof(result.Proof)
 			}
-			result.PrivacyCustomTokenIsPrivacy = tempTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
-			if tempTx.TxPrivacyTokenData.TxNormal.Proof != nil {
-				result.PrivacyCustomTokenProofDetail.ConvertFromProof(tempTx.TxPrivacyTokenData.TxNormal.Proof)
+			result.PrivacyCustomTokenIsPrivacy = txTokenData.TxNormal.IsPrivacy()
+			if txTokenData.TxNormal.GetProof() != nil {
+				result.PrivacyCustomTokenProofDetail.ConvertFromProof(txTokenData.TxNormal.GetProof())
 			}
 		}
 	default:
@@ -136,79 +182,145 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 }
 
 type ProofDetail struct {
-	InputCoins  []*CoinDetail
-	OutputCoins []*CoinDetail
+	InputCoins  []CoinRPC
+	OutputCoins []CoinRPC
 }
 
-func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
-	proofDetail.InputCoins = make([]*CoinDetail, 0)
-	for _, input := range proof.GetInputCoins() {
-		in := CoinDetail{
-			CoinDetails: Coin{},
-		}
-		if input.CoinDetails != nil {
-			in.CoinDetails.Value = input.CoinDetails.GetValue()
-			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.GetInfo(), 0x0)
-			if input.CoinDetails.GetCoinCommitment() != nil {
-				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
-			}
-			if input.CoinDetails.GetRandomness() != nil {
-				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
-			}
-			if input.CoinDetails.GetSNDerivator() != nil {
-				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
-			}
-			if input.CoinDetails.GetSerialNumber() != nil {
-				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
-			}
-			if input.CoinDetails.GetPublicKey() != nil {
-				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
-			}
-		}
-		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
+func (proofDetail *ProofDetail) ConvertFromProof(proof privacy.Proof) {
+	inputCoins := proof.GetInputCoins()
+	outputCoins := proof.GetOutputCoins()
+
+	proofDetail.InputCoins = make([]CoinRPC, len(inputCoins))
+	for i, input := range inputCoins {
+		proofDetail.InputCoins[i] = ParseCoinRPCInput(input)
 	}
 
-	for _, output := range proof.GetOutputCoins() {
-		out := CoinDetail{
-			CoinDetails: Coin{},
-		}
-		if output.CoinDetails != nil {
-			out.CoinDetails.Value = output.CoinDetails.GetValue()
-			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.GetInfo(), 0x0)
-			if output.CoinDetails.GetCoinCommitment() != nil {
-				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
-			}
-			if output.CoinDetails.GetRandomness() != nil {
-				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
-			}
-			if output.CoinDetails.GetSNDerivator() != nil {
-				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
-			}
-			if output.CoinDetails.GetSerialNumber() != nil {
-				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
-			}
-			if output.CoinDetails.GetPublicKey() != nil {
-				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
-			}
-			if output.CoinDetailsEncrypted != nil {
-				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)
-			}
-		}
-		proofDetail.OutputCoins = append(proofDetail.OutputCoins, &out)
+	proofDetail.OutputCoins = make([]CoinRPC, len(outputCoins))
+	for i, output := range outputCoins {
+		proofDetail.OutputCoins[i] = ParseCoinRPCOutput(output)
 	}
 }
 
-type CoinDetail struct {
-	CoinDetails          Coin
+func ParseCoinRPCInput(inputCoin coin.PlainCoin) CoinRPC {
+	var coinrpc CoinRPC
+	if inputCoin.GetVersion() == 1 {
+		coinrpc = new(CoinRPCV1)
+	} else {
+		coinrpc = new(CoinRPCV2)
+	}
+	return coinrpc.SetInputCoin(inputCoin)
+}
+
+func ParseCoinRPCOutput(outputCoin coin.Coin) CoinRPC {
+	var coinrpc CoinRPC
+	if outputCoin.GetVersion() == 1 {
+		coinrpc = new(CoinRPCV1)
+	} else {
+		coinrpc = new(CoinRPCV2)
+	}
+	return coinrpc.SetOutputCoin(outputCoin)
+}
+
+type CoinRPC interface {
+	SetInputCoin(coin.PlainCoin) CoinRPC
+	SetOutputCoin(coin.Coin) CoinRPC
+}
+
+func EncodeBase58Check(b []byte) string {
+	if b == nil || len(b) == 0 {
+		return ""
+	}
+	return base58.Base58Check{}.Encode(b, 0x0)
+}
+
+func OperationPointPtrToBase58(point *operation.Point) string {
+	if point == nil || point.IsIdentity()  {
+		return ""
+	} else {
+		return EncodeBase58Check(point.ToBytesS())
+	}
+}
+
+func OperationScalarPtrToBase58(scalar *operation.Scalar) string {
+	if scalar == nil {
+		return ""
+	} else {
+		return EncodeBase58Check(scalar.ToBytesS())
+	}
+}
+
+type CoinRPCV1 struct {
+	Version              uint8
+	PublicKey            string
+	Commitment           string
+	SNDerivator          string
+	KeyImage             string
+	Randomness           string
+	Value                uint64
+	Info                 string
 	CoinDetailsEncrypted string
 }
 
-type Coin struct {
-	PublicKey      string
-	CoinCommitment string
-	SNDerivator    privacy.Scalar
-	SerialNumber   string
-	Randomness     privacy.Scalar
-	Value          uint64
-	Info           string
+func (c *CoinRPCV1) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
+	coinv1 := inputCoin.(*coin.PlainCoinV1)
+
+	c.Version = coinv1.GetVersion()
+	c.PublicKey = OperationPointPtrToBase58(coinv1.GetPublicKey())
+	c.Commitment = OperationPointPtrToBase58(coinv1.GetCommitment())
+	c.SNDerivator = OperationScalarPtrToBase58(coinv1.GetSNDerivator())
+	c.KeyImage = OperationPointPtrToBase58(coinv1.GetKeyImage())
+	c.Randomness = OperationScalarPtrToBase58(coinv1.GetRandomness())
+	c.Value = coinv1.GetValue()
+	c.Info = EncodeBase58Check([]byte{})
+	return c
+}
+
+func (c *CoinRPCV1) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
+	coinv1 := inputCoin.(*coin.CoinV1)
+
+	c.Version = coinv1.GetVersion()
+	c.PublicKey = OperationPointPtrToBase58(coinv1.GetPublicKey())
+	c.Commitment = OperationPointPtrToBase58(coinv1.GetCommitment())
+	c.SNDerivator = OperationScalarPtrToBase58(coinv1.GetSNDerivator())
+	c.KeyImage = OperationPointPtrToBase58(coinv1.GetKeyImage())
+	c.Randomness = OperationScalarPtrToBase58(coinv1.GetRandomness())
+	c.Value = coinv1.CoinDetails.GetValue()
+	c.Info = EncodeBase58Check([]byte{})
+	if coinv1.CoinDetailsEncrypted != nil {
+		c.CoinDetailsEncrypted = EncodeBase58Check(coinv1.CoinDetailsEncrypted.Bytes())
+	} else {
+		c.CoinDetailsEncrypted = ""
+	}
+	return c
+}
+
+type CoinRPCV2 struct {
+	Version    uint8
+	Index      uint32
+	Info       string
+	PublicKey  string
+	Commitment string
+	KeyImage   string
+	TxRandom   string
+	Value 		 string
+	Randomness   string
+}
+
+func (c *CoinRPCV2) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
+	return c.SetOutputCoin(inputCoin.(coin.Coin))
+}
+
+func (c *CoinRPCV2) SetOutputCoin(outputCoin coin.Coin) CoinRPC {
+	coinv2 := outputCoin.(*coin.CoinV2)
+
+	c.Version = coinv2.GetVersion()
+	c.Info = EncodeBase58Check(coinv2.GetInfo())
+	c.PublicKey = OperationPointPtrToBase58(coinv2.GetPublicKey())
+	c.Commitment = OperationPointPtrToBase58(coinv2.GetCommitment())
+	c.KeyImage = OperationPointPtrToBase58(coinv2.GetKeyImage())
+	c.TxRandom = EncodeBase58Check(coinv2.GetTxRandom().Bytes())
+	c.Value = strconv.FormatUint(coinv2.GetValue(), 10)
+	c.Randomness = OperationScalarPtrToBase58(coinv2.GetRandomness())
+
+	return c
 }

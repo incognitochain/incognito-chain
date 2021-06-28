@@ -24,7 +24,6 @@ var HttpHandler = map[string]httpHandler{
 	getInOutMessageCount:     (*HttpServer).handleGetInOutMessageCount,
 	getAllPeers:              (*HttpServer).handleGetAllPeers,
 	estimateFee:              (*HttpServer).handleEstimateFee,
-	estimateFeeV2:            (*HttpServer).handleEstimateFeeV2,
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
 	getActiveShards:          (*HttpServer).handleGetActiveShards,
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
@@ -35,7 +34,6 @@ var HttpHandler = map[string]httpHandler{
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
 	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
 	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getMempoolInfoDetails:   (*HttpServer).handleGetMempoolInfoDetails,
 	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
@@ -65,28 +63,36 @@ var HttpHandler = map[string]httpHandler{
 	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 	getBlocksFromHeight:         (*HttpServer).handleGetBlocksFromHeight,
 	// transaction
-	listOutputCoins:                           (*HttpServer).handleListOutputCoins,
-	createRawTransaction:                      (*HttpServer).handleCreateRawTransaction,
-	sendRawTransaction:                        (*HttpServer).handleSendRawTransaction,
-	createAndSendTransaction:                  (*HttpServer).handleCreateAndSendTx,
+	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
+	listOutputCoinsFromCache:                (*HttpServer).handleListOutputCoinsFromCache,
+	listOutputTokens:                        (*HttpServer).handleListOutputCoins,
+	createRawTransaction:                    (*HttpServer).handleCreateRawTransaction,
+	sendRawTransaction:                      (*HttpServer).handleSendRawTransaction,
+	createConvertCoinVer1ToVer2Transaction:  (*HttpServer).handleCreateConvertCoinVer1ToVer2Transaction,
+	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
+	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
+	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
+	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
+	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
+	gettransactionbyreceiverv2:              (*HttpServer).handleGetTransactionByReceiverV2,
+	gettransactionbyserialnumber:            (*HttpServer).handleGetTransactionBySerialNumber,
+	gettransactionbypublickey:               (*HttpServer).handleGetTransactionHashPublicKey,
+	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
+	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
+	createAndSendTokenInitTransaction:       (*HttpServer).handleCreateAndSendTokenInitTx,
+	randomCommitments:                       (*HttpServer).handleRandomCommitments,
+	hasSerialNumbers:                        (*HttpServer).handleHasSerialNumbers,
+	hasSnDerivators:                         (*HttpServer).handleHasSnDerivators,
+	listSerialNumbers:                       (*HttpServer).handleListSerialNumbers,
+	listCommitments:                         (*HttpServer).handleListCommitments,
+	listCommitmentIndices:                   (*HttpServer).handleListCommitmentIndices,
+	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
+	randomCommitmentsAndPublicKeys:          (*HttpServer).handleRandomCommitmentsAndPublicKeys,
+
 	createAndSendTransactionV2:                (*HttpServer).handleCreateAndSendTxV2,
-	getTransactionByHash:                      (*HttpServer).handleGetTransactionByHash,
-	gettransactionhashbyreceiver:              (*HttpServer).handleGetTransactionHashByReceiver,
-	gettransactionhashbyreceiverv2:            (*HttpServer).handleGetTransactionHashByReceiverV2,
-	gettransactionbyreceiver:                  (*HttpServer).handleGetTransactionByReceiver,
-	gettransactionbyreceiverv2:                (*HttpServer).handleGetTransactionByReceiverV2,
-	createAndSendStakingTransaction:           (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStakingTransactionV2:         (*HttpServer).handleCreateAndSendStakingTxV2,
-	createAndSendStopAutoStakingTransaction:   (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
-	randomCommitments:                         (*HttpServer).handleRandomCommitments,
-	hasSerialNumbers:                          (*HttpServer).handleHasSerialNumbers,
 	hasSerialNumbersInMempool:                 (*HttpServer).handleHasSerialNumbersInMempool,
-	hasSnDerivators:                           (*HttpServer).handleHasSnDerivators,
-	listSerialNumbers:                         (*HttpServer).handleListSerialNumbers,
-	listCommitments:                           (*HttpServer).handleListCommitments,
-	listCommitmentIndices:                     (*HttpServer).handleListCommitmentIndices,
-	decryptoutputcoinbykeyoftransaction:       (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
@@ -95,12 +101,12 @@ var HttpHandler = map[string]httpHandler{
 	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
+	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
 	getDetailBlocksOfEpoch:     (*HttpServer).handleGetDetailBlocksOfEpoch,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
-	getRewardAmountByEpoch:     (*HttpServer).handleGetRewardAmountByEpoch,
 
 	//=================================
 
@@ -118,16 +124,18 @@ var HttpHandler = map[string]httpHandler{
 	getTotalTransaction: (*HttpServer).handleGetTotalTransaction,
 
 	// custom token which support privacy
-	createRawPrivacyCustomTokenTransaction:       (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
-	sendRawPrivacyCustomTokenTransaction:         (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
-	createAndSendPrivacyCustomTokenTransaction:   (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
-	createAndSendPrivacyCustomTokenTransactionV2: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransactionV2,
-	listPrivacyCustomToken:                       (*HttpServer).handleListPrivacyCustomToken,
-	getPrivacyCustomToken:                        (*HttpServer).handleGetPrivacyCustomToken,
-	listPrivacyCustomTokenByShard:                (*HttpServer).handleListPrivacyCustomTokenByShard,
-	privacyCustomTokenTxs:                        (*HttpServer).handlePrivacyCustomTokenDetail,
-	getListPrivacyCustomTokenBalance:             (*HttpServer).handleGetListPrivacyCustomTokenBalance,
-	getBalancePrivacyCustomToken:                 (*HttpServer).handleGetBalancePrivacyCustomToken,
+	createConvertCoinVer1ToVer2TxToken:         (*HttpServer).handleCreateConvertCoinVer1ToVer2TxToken,
+	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
+	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
+	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
+	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
+	getPrivacyCustomToken:                      (*HttpServer).handleGetPrivacyCustomToken,
+	listPrivacyCustomTokenByShard:              (*HttpServer).handleListPrivacyCustomTokenByShard,
+	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
+	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
+	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
+	listUnspentOutputTokens:                    (*HttpServer).handleListUnspentOutputTokens,
+	getOTACoinsByIndices:                       (*HttpServer).handleGetOTACoinsByIndices,
 
 	// Bridge
 	createIssuingRequest:              (*HttpServer).handleCreateIssuingRequest,
@@ -138,9 +146,11 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendContractingRequestV2: (*HttpServer).handleCreateAndSendContractingRequestV2,
 	checkETHHashIssued:                (*HttpServer).handleCheckETHHashIssued,
 	getAllBridgeTokens:                (*HttpServer).handleGetAllBridgeTokens,
+	getAllBridgeTokensByHeight:        (*HttpServer).handleGetAllBridgeTokensByHeight,
 	getETHHeaderByHash:                (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:            (*HttpServer).handleGetBridgeReqWithStatus,
 	generateTokenID:                   (*HttpServer).handleGenerateTokenID,
+	checkBSCHashIssued:                (*HttpServer).handleCheckBSCHashIssued,
 
 	// wallet
 	getPublicKeyFromPaymentAddress:     (*HttpServer).handleGetPublicKeyFromPaymentAddress,
@@ -154,6 +164,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningRequestV2:      (*HttpServer).handleCreateAndSendBurningRequestV2,
 	createAndSendTxWithIssuingETHReq:   (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 	createAndSendTxWithIssuingETHReqV2: (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
+	createAndSendTxWithIssuingBSCReq:   (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
+	createAndSendBurningBSCRequest:     (*HttpServer).handleCreateAndSendBurningBSCRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -161,6 +173,7 @@ var HttpHandler = map[string]httpHandler{
 	getBridgeSwapProof:       (*HttpServer).handleGetBridgeSwapProof,
 	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
 	getBurnProof:             (*HttpServer).handleGetBurnProof,
+	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -297,6 +310,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	importAccount:                    (*HttpServer).handleImportAccount,
 	removeAccount:                    (*HttpServer).handleRemoveAccount,
 	listUnspentOutputCoins:           (*HttpServer).handleListUnspentOutputCoins,
+	listUnspentOutputCoinsFromCache:  (*HttpServer).handleListUnspentOutputCoinsFromCache,
 	getBalance:                       (*HttpServer).handleGetBalance,
 	getBalanceByPrivatekey:           (*HttpServer).handleGetBalanceByPrivatekey,
 	getBalanceByPaymentAddress:       (*HttpServer).handleGetBalanceByPaymentAddress,
@@ -304,6 +318,8 @@ var LimitedHttpHandler = map[string]httpHandler{
 	setTxFee:                         (*HttpServer).handleSetTxFee,
 	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
+	submitKey:                        (*HttpServer).handleSubmitKey,
+	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
 }
 
 var WsHandler = map[string]wsHandler{

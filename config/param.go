@@ -34,6 +34,7 @@ type param struct {
 	BasicReward                      uint64             `mapstructure:"basic_reward"`
 	EpochParam                       epochParam         `mapstructure:"epoch_param"`
 	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
+	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
 	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
@@ -42,10 +43,13 @@ type param struct {
 	ReplaceStakingTxHeight           uint64             `mapstructure:"replace_staking_tx_height"`
 	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
 	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
+	BCHeightBreakPointPrivacyV2		 uint64				`mapstructure:"bc_height_break_point_privacy_v2"`
+	CoinVersion2LowestHeight		 uint64				`mapstructure:"coin_v2_lowest_height"`
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	GethParam                        gethParam          `mapstructure:"geth_param"`
+	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 }
@@ -232,5 +236,15 @@ func (gethPram *gethParam) GetFromEnv() {
 	}
 	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
 		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
+	}
+}
+
+type bscParam struct {
+	Host string `mapstructure:"host"`
+}
+
+func (bschParam *bscParam) GetFromEnv() {
+	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
+		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
 	}
 }

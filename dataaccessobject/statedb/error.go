@@ -11,7 +11,6 @@ const (
 	ErrInvalidHashType                        = "invalid hash type"
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
-	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
 	ErrInvalidCommitteeTermType               = "invalid committee term type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
@@ -23,6 +22,8 @@ const (
 	ErrInvalidCommitmentStateType             = "invalid commitment state type"
 	ErrInvalidSNDerivatorStateType            = "invalid snderivator state type"
 	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
+	ErrInvalidOTACoinStateType                = "invalid ota coin state type"
+	ErrInvalidOnetimeAddressStateType         = "invalid onetime address state type"
 	ErrInvalidTokenStateType                  = "invalid token state type"
 	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
 	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
@@ -33,6 +34,7 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -46,10 +48,9 @@ const (
 	ErrInvalidRewardFeatureStateType             = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
+	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
-	ErrInvalidBlockHashType                      = "invalid block hash type"
-	ErrInvalidValidators                         = "invalid validators type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -78,6 +79,12 @@ const (
 	GetCommitmentLengthError
 	StoreOutputCoinError
 	GetOutputCoinError
+	StoreOTACoinError
+	GetOTACoinIndexError
+	StoreOTACoinIndexError
+	StoreOTACoinLengthError
+	GetOTACoinLengthError
+	StoreOnetimeAddressError
 	StoreSNDerivatorError
 	GetSNDerivatorError
 	StorePrivacyTokenError
@@ -206,6 +213,10 @@ const (
 	GetWithdrawCollateralConfirmError
 	StorePortalUnlockOverRateCollateralsError
 	GetPortalUnlockOverRateCollateralsStatusError
+
+	// bsc bridge
+	BridgeInsertBSCTxHashIssuedError
+	IsBSCTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -350,6 +361,10 @@ var ErrCodeMessage = map[int]struct {
 	GetAllRewardFeatureError:             {-15002, "Get all reward feature state error"},
 	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 	InvalidStakerInfoTypeError:           {-15005, "Staker info invalid"},
+
+	// bsc bridge
+	BridgeInsertBSCTxHashIssuedError: {-15100, "Bridge Insert BSC Tx Hash Issued Error"},
+	IsBSCTxHashIssuedError:           {-15101, "Is BSC Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
