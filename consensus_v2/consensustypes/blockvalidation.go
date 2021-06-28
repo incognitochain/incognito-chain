@@ -2,6 +2,8 @@ package consensustypes
 
 import (
 	"encoding/json"
+
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 type ValidationData struct {
@@ -10,6 +12,7 @@ type ValidationData struct {
 	ValidatiorsIdx []int
 	AggSig         []byte
 	BridgeSig      [][]byte
+	PortalSig      []*portalprocessv4.PortalSig
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
 type ShardChain struct {
@@ -364,6 +365,10 @@ func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, commit
 
 func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
 //CommitteesV2 get committees by block for shardChain

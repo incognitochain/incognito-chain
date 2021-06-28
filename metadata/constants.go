@@ -1,5 +1,7 @@
 package metadata
 
+import "github.com/incognitochain/incognito-chain/common"
+
 const (
 	InvalidMeta = 1
 
@@ -114,6 +116,16 @@ const (
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
 
+	// PORTAL V4
+	PortalV4ShieldingRequestMeta      = 260
+	PortalV4ShieldingResponseMeta     = 261
+	PortalV4UnshieldingRequestMeta    = 262
+	PortalV4UnshieldingResponseMeta   = 263
+	PortalV4UnshieldBatchingMeta      = 264
+	PortalV4FeeReplacementRequestMeta = 265
+	PortalV4SubmitConfirmedTxMeta     = 266
+	PortalV4ConvertVaultRequestMeta   = 267
+
 	InitTokenRequestMeta  = 244
 	InitTokenResponseMeta = 245
 
@@ -149,6 +161,8 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingResponseMeta,
 	InitTokenResponseMeta,
 }
 
@@ -229,4 +243,21 @@ var portalMetaTypesV3 = []int{
 var portalRelayingMetaTypes = []int{
 	RelayingBNBHeaderMeta,
 	RelayingBTCHeaderMeta,
+}
+
+var portalV4MetaTypes = []int{
+	PortalV4ShieldingRequestMeta,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingRequestMeta,
+	PortalV4UnshieldBatchingMeta,
+	PortalV4FeeReplacementRequestMeta,
+	PortalV4SubmitConfirmedTxMeta,
+	PortalV4ConvertVaultRequestMeta,
+}
+
+// NOTE: add new records when add new feature flags
+var FeatureFlagWithMetaTypes = map[string][]int{
+	common.PortalRelayingFlag: portalRelayingMetaTypes,
+	common.PortalV3Flag:       portalMetaTypesV3,
+	common.PortalV4Flag:       portalV4MetaTypes,
 }

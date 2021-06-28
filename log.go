@@ -6,13 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
-	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
-	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
-	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
-	"github.com/incognitochain/incognito-chain/txpool"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -29,7 +22,17 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
+	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/txpool"
+
+	// privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
@@ -39,7 +42,6 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 var (
@@ -84,7 +86,11 @@ var (
 	portalV3CommonLogger  = backendLog.Logger("Portal v3 common log ", false)
 	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
 	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
-	txPoolLogger          = backendLog.Logger("Txpool log ", false)
+
+	portalV4ProcessLogger = backendLog.Logger("Portal v4 process log ", false)
+	portalV4TokenLogger   = backendLog.Logger("Portal v4 token log ", false)
+
+	txPoolLogger = backendLog.Logger("Txpool log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -138,6 +144,9 @@ func init() {
 	portalprocessv3.Logger.Init(portalV3ProcessLogger)
 	portaltokensv3.Logger.Init(portalV3TokenLogger)
 
+	portalprocessv4.Logger.Init(portalV4ProcessLogger)
+	portaltokensv4.Logger.Init(portalV4TokenLogger)
+
 	txpool.Logger.Init(txPoolLogger)
 }
 
@@ -175,6 +184,8 @@ var subsystemLoggers = map[string]common.Logger{
 	"PORTALV3COMMON":    portalV3CommonLogger,
 	"PORTALV3PROCESS":   portalV3ProcessLogger,
 	"PORTALV3TOKENS":    portalV3TokenLogger,
+	"PORTALV4PROCESS":   portalV4ProcessLogger,
+	"PORTALV4TOKENS":    portalV4TokenLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

@@ -140,7 +140,7 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 	}
 
 	// validate amount register
-	minAmount, err := chainRetriever.GetMinAmountPortalToken(portalUserRegister.PTokenId, beaconHeight)
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(portalUserRegister.PTokenId, beaconHeight, common.PortalVersion3)
 	if err != nil {
 		return false, false, err
 	}

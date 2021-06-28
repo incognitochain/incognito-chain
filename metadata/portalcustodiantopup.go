@@ -100,10 +100,10 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(cha
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
-	if !chainRetriever.IsPortalToken(beaconHeight, custodianDeposit.PTokenId) {
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, custodianDeposit.PTokenId, common.PortalVersion3)
+	if !isPortalToken || err != nil {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
-
 	return true, true, nil
 }
 

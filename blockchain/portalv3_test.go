@@ -408,8 +408,10 @@ func buildPortalRelayExchangeRateAction(
 	shardID byte,
 ) []string {
 	data := metadata.PortalExchangeRates{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalExchangeRatesMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				Type: metadata.PortalExchangeRatesMeta,
+			},
 		},
 		SenderAddress: incAddressStr,
 		Rates:         rates,
@@ -661,8 +663,10 @@ func buildPortalRequestMatchingWRedeemActionV3(
 	shardID byte,
 ) []string {
 	data := metadata.PortalReqMatchingRedeem{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalReqMatchingRedeemMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				Type: metadata.PortalReqMatchingRedeemMeta,
+			},
 		},
 		CustodianAddressStr: custodianIncAddress,
 		RedeemID:            uniqueRedeemID,

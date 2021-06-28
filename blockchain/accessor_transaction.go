@@ -400,7 +400,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 
 	otaBytes := coin_indexer.OTAKeyToRaw(otaKey)
 	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
-	if keyExists && !isReset {
+	if keyExists && !isReset && processing != 2 {
 		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
 	}
 

@@ -85,7 +85,7 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return false, false, fmt.Errorf("metadata type %v is no longer supported, consider using %v instead", PDETradeRequestMeta, PDECrossPoolTradeRequestMeta)
 	}
 
-	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
+	_, err, ver := checkIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
 		return false, false, err
 	}

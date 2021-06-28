@@ -9,17 +9,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/tendermint/tendermint/types"
 )
-
-func (httpServer *HttpServer) isPortalRelayingRPC(methodName string) bool {
-	result, _ := common.SliceExists(PortalRelayingRPCs, methodName)
-	return result
-}
 
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateRawTxWithRelayingHeader(
@@ -136,7 +132,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithRelayingBTCHeader(params 
 
 func (httpServer *HttpServer) handleGetRelayingBNBHeaderState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	bc := httpServer.config.BlockChain
-	relayingState, err := bc.InitRelayingHeaderChainStateFromDB()
+	relayingState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(bc.GetBNBHeaderChain(), bc.GetBTCHeaderChain())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
@@ -169,7 +165,7 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	block, err := httpServer.config.BlockChain.GetBNBBlockByHeight(int64(blockHeight))
+	block, err := httpServer.config.BlockChain.GetBNBHeaderChain().GetBNBBlockByHeight(int64(blockHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
 	}
@@ -188,7 +184,7 @@ func (httpServer *HttpServer) handleGetBTCRelayingBestState(params interface{}, 
 
 func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	bc := httpServer.config.BlockChain
-	result, err := bc.GetLatestBNBBlockHeight()
+	result, err := portalrelaying.GetLatestBNBBlockHeight(bc.GetBNBHeaderChain())
 	if err != nil {
 		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(portal.GetPortalParams().RelayingParam.BTCRelayingHeaderChainID)
 	}
