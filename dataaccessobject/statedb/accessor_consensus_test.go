@@ -343,7 +343,7 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 	shardSubstitute := committeePublicKeys[:number]
 	spareIncognitoKey, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys[number:limit])
 	wantShardSubstitute1, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstitute)
-	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	rewardReceiver := make(map[string]key.PaymentAddress)
 	autoStaking := make(map[string]bool)
 	stakingTx := make(map[string]common.Hash)
 	for index, v := range wantShardSubstitute1 {

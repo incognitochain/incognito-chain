@@ -319,7 +319,7 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	}
 
 	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
-		return types.SLASHING_VERSION
+		return types.SHARD_SFV2_VERSION
 	}
 
 	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {

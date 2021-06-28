@@ -229,6 +229,22 @@ func (_m *BeaconViewRetriever) GetBeaconSlashStateDB() *statedb.StateDB {
 	return r0
 }
 
+// GetCandidateShardWaitingForCurrentRandom provides a mock function with given fields:
+func (_m *BeaconViewRetriever) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	ret := _m.Called()
+
+	var r0 []incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(0).(func() []incognitokey.CommitteePublicKey); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]incognitokey.CommitteePublicKey)
+		}
+	}
+
+	return r0
+}
+
 // GetHeight provides a mock function with given fields:
 func (_m *BeaconViewRetriever) GetHeight() uint64 {
 	ret := _m.Called()

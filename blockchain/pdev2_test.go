@@ -159,7 +159,7 @@ func buildPDEFeeWithdrawalRequestAction(
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 		WithdrawalFeeAmt:      withdrawalFeeAmt,
-		MetadataBase: metadata.MetadataBase{
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
 			Type: metadata.PDEFeeWithdrawalRequestMeta,
 		},
 	}

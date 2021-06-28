@@ -216,36 +216,36 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 	}
 }
 
-func TestStateDB_StoreCommitments(t *testing.T) {
-	tokenID := common.PRVCoinID
-	shardID := byte(0)
-	commitments := testGenerateCommitmentList(20)
-	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = StoreCommitments(sDB, tokenID, []byte{}, commitments, shardID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rootHash, err := sDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	res, err := GetCommitmentLength(tempStateDB, tokenID, shardID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Uint64() != 20 {
-		t.Fatalf("want 20 but got %+v", res.Uint64())
-	}
-}
+//func TestStateDB_StoreCommitments(t *testing.T) {
+//	tokenID := common.PRVCoinID
+//	shardID := byte(0)
+//	commitments := testGenerateCommitmentList(20)
+//	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	err = StoreCommitments(sDB, tokenID, []byte{}, commitments, shardID)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	rootHash, err := sDB.Commit(true)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	err = sDB.Database().TrieDB().Commit(rootHash, false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	res, err := GetCommitmentLength(tempStateDB, tokenID, shardID)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	if res.Uint64() != 20 {
+//		t.Fatalf("want 20 but got %+v", res.Uint64())
+//	}
+//}

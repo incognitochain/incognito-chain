@@ -10,8 +10,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	privacy "github.com/incognitochain/incognito-chain/privacy"
-
 	time "time"
 )
 
@@ -124,22 +122,6 @@ func (_m *ChainRetriever) GetCentralizedWebsitePaymentAddress(_a0 uint64) string
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
-// GetFixedRandomForShardIDCommitment provides a mock function with given fields: beaconHeight
-func (_m *ChainRetriever) GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar {
-	ret := _m.Called(beaconHeight)
-
-	var r0 *privacy.Scalar
-	if rf, ok := ret.Get(0).(func(uint64) *privacy.Scalar); ok {
-		r0 = rf(beaconHeight)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*privacy.Scalar)
-		}
 	}
 
 	return r0
@@ -289,6 +271,34 @@ func (_m *ChainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, common.Ha
 	}
 
 	return r0, r1, r2, r3, r4, r5
+}
+
+// IsAfterNewZKPCheckPoint provides a mock function with given fields: beaconHeight
+func (_m *ChainRetriever) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
+	ret := _m.Called(beaconHeight)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(uint64) bool); ok {
+		r0 = rf(beaconHeight)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// IsAfterPrivacyV2CheckPoint provides a mock function with given fields: beaconHeight
+func (_m *ChainRetriever) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool {
+	ret := _m.Called(beaconHeight)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(uint64) bool); ok {
+		r0 = rf(beaconHeight)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
 }
 
 // IsEnableFeature provides a mock function with given fields: featureFlag, epoch

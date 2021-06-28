@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"log"
 	"net"
 	"os"
@@ -18,6 +16,7 @@ import (
 	"time"
 
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
+	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -39,6 +38,7 @@ import (
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -50,8 +50,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-
-	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 )
 
 type Server struct {
