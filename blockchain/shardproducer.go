@@ -243,7 +243,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	// producer key
 	producerKey := proposer
 	producerPubKeyStr := proposer
-	totalTxsFee := shardBestState.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
+	totalTxsFee := shardBestState.shardCommitteeState.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
 	crossShards, err := CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID)
 	if err != nil {
 		return nil, err
