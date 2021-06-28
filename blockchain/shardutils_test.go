@@ -117,8 +117,10 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx1 := &mocks.Transaction{}
 	var stopStakeTx1Meta metadata.Metadata
 	stopStakeTx1Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[0],
 	}
@@ -130,8 +132,10 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx2 := &mocks.Transaction{}
 	var stopStakeTx2Meta metadata.Metadata
 	stopStakeTx2Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[1],
 	}
@@ -143,8 +147,10 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx3 := &mocks.Transaction{}
 	var stopStakeTx3Meta metadata.Metadata
 	stopStakeTx3Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[2],
 	}
@@ -212,8 +218,10 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx4 := &mocks.Transaction{}
 	var stopStakeTx4Meta metadata.Metadata
 	stopStakeTx4Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[0],
 	}
@@ -225,8 +233,10 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx5 := &mocks.Transaction{}
 	var stopStakeTx5Meta metadata.Metadata
 	stopStakeTx5Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[1],
 	}
@@ -238,8 +248,10 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx6 := &mocks.Transaction{}
 	var stopStakeTx6Meta metadata.Metadata
 	stopStakeTx6Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[2],
 	}

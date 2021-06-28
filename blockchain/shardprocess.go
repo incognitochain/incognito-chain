@@ -1019,7 +1019,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
 	}
 
-
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
@@ -1371,10 +1370,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 			if len(l) < 4 {
 				continue
 			}
-			switch l[0] {
-			case instruction.SWAP_SHARD_ACTION, instruction.SWAP_ACTION, instruction.RANDOM_ACTION, instruction.STAKE_ACTION,
-				instruction.ASSIGN_ACTION, instruction.STOP_AUTO_STAKE_ACTION, instruction.SET_ACTION, instruction.RETURN_ACTION,
-				instruction.UNSTAKE_ACTION, instruction.SHARD_INST, instruction.BEACON_INST:
+			if instruction.IsConsensusInstruction(l[0]) {
 				continue
 			}
 
