@@ -299,8 +299,8 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 		return nil, errors.New("cannot issue prv in bridge")
 	}
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
-	makeMD := func (c privacy.Coin) metadata.Metadata{
-		if c!=nil && c.GetSharedRandom()!=nil{
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
 			issuingRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
 		return issuingRes
@@ -357,7 +357,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
-	makeMD := func (c privacy.Coin) metadata.Metadata {
+	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {
 			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
