@@ -32,7 +32,7 @@ import (
 var (
 	// num of private keys
 	maxPrivateKeys = 10
-	minPrivateKeys = 1
+	minPrivateKeys = 2
 	maxInputs      = 10
 	minInputs      = 1
 	maxTries       = 100
@@ -190,6 +190,7 @@ func TestTxV2Salary(t *testing.T) {
 		Convey("prepare keys", func() {
 			dummyPrivateKeys, keySets, paymentInfo = preparePaymentKeys(numOfPrivateKeys)
 		})
+
 		Convey("create salary coins", func() {
 			// create 2 otaCoins, the second one will already be stored in the db
 			for i, _ := range theCoins {
@@ -249,7 +250,7 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 	Convey("Tx PRV Main Test", t, func() {
 		numOfPrivateKeys = RandInt()%(maxPrivateKeys-minPrivateKeys+1) + minPrivateKeys
 		numOfInputs = RandInt()%(maxInputs-minInputs+1) + minInputs
-		Convey("prepare keys", func(){
+		Convey("prepare keys", func() {
 			dummyPrivateKeys, keySets, paymentInfo = preparePaymentKeys(numOfPrivateKeys)
 		})
 
