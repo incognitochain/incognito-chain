@@ -469,6 +469,9 @@ func (tx *TxBase) IsNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 }
 
 func (tx TxBase) IsSalaryTx() bool {
+	if tx.Proof == nil {
+		return false
+	}
 	if tx.GetType() != common.TxRewardType {
 		return false
 	}
