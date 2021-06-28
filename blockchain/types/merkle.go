@@ -2,6 +2,8 @@ package types
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"math"
 	"sort"
 
@@ -367,7 +369,7 @@ func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merkl
 //		2. TxTokenDataVoutFinalHash
 //	TxTokenOut DataStructure
 //	- Use Only One TxNormalTokenData for one TokenID
-//	- Vots of one tokenID from many transaction will be compress into One Vouts List
+//	- Vouts of one tokenID from many transaction will be compress into One Vouts List
 //	- Using Key-Value structure for accessing one token ID data:
 //	  key: token ID
 //	  value: TokenData of that token
@@ -444,6 +446,26 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	return combinedHash
 }
 
+func calHashOutCoinCrossShard(outCoins []coin.Coin) common.Hash {
+	tmpByte := []byte{}
+	var outputCoinHash common.Hash
+	if len(outCoins) != 0 {
+		for _, outCoin := range outCoins {
+			if outCoin == nil {
+				for i := 0; i < len(outCoins); i++ {
+					fmt.Println("Outcoin ", i, outCoins[i])
+				}
+				fmt.Println("Number of outcoins: ", len(outCoins))
+			}
+			tmpByte = append(tmpByte, outCoin.Bytes()...)
+		}
+		outputCoinHash = common.HashH(tmpByte)
+	} else {
+		outputCoinHash = common.HashH([]byte(""))
+	}
+	return outputCoinHash
+}
+
 func calHashTxTokenDataHashFromMap() common.Hash {
 	return common.HashH([]byte(""))
 }
@@ -460,4 +482,22 @@ func calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap map[common.Hash]
 		return txTokenPrivacyDataList[i].PropertyID.String() < txTokenPrivacyDataList[j].PropertyID.String()
 	})
 	return calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
+}
+
+func calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []ContentCrossShardTokenPrivacyData) common.Hash {
+	tmpByte := []byte{}
+	if len(txTokenPrivacyDataList) != 0 {
+		for _, txTokenPrivacyData := range txTokenPrivacyDataList {
+			tempHash := txTokenPrivacyData.Hash()
+			tmpByte = append(tmpByte, tempHash.GetBytes()...)
+
+		}
+	} else {
+		return common.HashH([]byte(""))
+	}
+	return common.HashH(tmpByte)
+}
+
+func calHashTxTokenDataHashList() common.Hash {
+	return common.HashH([]byte(""))
 }

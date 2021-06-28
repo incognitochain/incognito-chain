@@ -112,6 +112,29 @@ func reqTableFromReqTxs(
 	return txRequestTable
 }
 
+func filterReqTxs(
+	transactions []metadata.Transaction,
+	txRequestTable map[string]metadata.Transaction,
+) []metadata.Transaction {
+	res := []metadata.Transaction{}
+	for _, tx := range transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
+			txReq, ok := txRequestTable[key]
+			if !ok {
+				continue
+			}
+			cmp, err := txReq.Hash().Cmp(tx.Hash())
+			if (err != nil) || (cmp != 0) {
+				continue
+			}
+		}
+		res = append(res, tx)
+	}
+	return res
+}
+
 func CreateMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransaction) (*common.Hash, error) {
 	if len(crossTransactions) == 0 {
 		res, err := generateZeroValueHash()

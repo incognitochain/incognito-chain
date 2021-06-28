@@ -156,6 +156,8 @@ func (c *config) loadNetwork() {
 	switch utils.GetEnv(NetworkKey, MainnetNetwork) {
 	case LocalNetwork:
 		c.IsLocal = true
+	case LocalDCSNetwork:
+		c.IsLocal = true
 	case TestNetNetwork:
 		c.IsTestNet = true
 		testnetVersion := utils.GetEnv(NetworkVersionKey, TestNetVersion1)

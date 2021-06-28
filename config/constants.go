@@ -60,6 +60,7 @@ const (
 
 const (
 	LocalNetwork          = "local"
+	LocalDCSNetwork       = "local-dcs"
 	TestNetNetwork        = "testnet"
 	MainnetNetwork        = "mainnet"
 	TestNetVersion1       = "1"

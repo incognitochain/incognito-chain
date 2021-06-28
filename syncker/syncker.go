@@ -259,14 +259,20 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
 			if err != nil {
+				Logger.Errorf("Get beacon block by hash %v failed\n", beaconHash.String())
 				break
 			}
 
 			beaconBlock := new(types.BeaconBlock)
-			json.Unmarshal(beaconBlockBytes, beaconBlock)
+			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
+			if err != nil {
+				Logger.Errorf("Cannot unmarshal beaconBlock %v at syncker\n", beaconBlock.GetHeight()-1)
+				return nil
+			}
 
 			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 
+			Logger.Infof("beaconFinalView: %v\n", beaconFinalView.Hash().String())
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
