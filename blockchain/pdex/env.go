@@ -16,6 +16,7 @@ type StateEnvBuilder interface {
 	BuildTxHashes([]common.Hash) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
+	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -34,6 +35,12 @@ type stateEnvironment struct {
 	beaconInstructions             [][]string
 	txHashes                       []common.Hash
 	stateDB                        *statedb.StateDB
+	bcHeightBreakPointPrivacyV2    uint64
+}
+
+func (env *stateEnvironment) BuildBCHeightBreakPointPrivacyV2(beaconHeight uint64) StateEnvBuilder {
+	env.bcHeightBreakPointPrivacyV2 = beaconHeight
+	return env
 }
 
 func (env *stateEnvironment) BuildContributionActions(actions [][]string) StateEnvBuilder {
@@ -101,6 +108,7 @@ type StateEnvironment interface {
 	BeaconInstructions() [][]string
 	TxHashes() []common.Hash
 	StateDB() *statedb.StateDB
+	BCHeightBreakPointPrivacyV2() uint64
 }
 
 func (env *stateEnvironment) ContributionActions() [][]string {
@@ -141,4 +149,8 @@ func (env *stateEnvironment) BeaconInstructions() [][]string {
 
 func (env *stateEnvironment) StateDB() *statedb.StateDB {
 	return env.stateDB
+}
+
+func (env *stateEnvironment) BCHeightBreakPointPrivacyV2() uint64 {
+	return env.bcHeightBreakPointPrivacyV2
 }

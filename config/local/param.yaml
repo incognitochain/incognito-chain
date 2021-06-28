@@ -65,6 +65,6 @@ enable_feature_flags:
   - 1: 0
 portal_v3_height: 30158
 tx_pool_version: 0
-pde_v3_height: 1000000000000
+pde_v2_height: 1000000000000
 bsc_param:
   host: "https://data-seed-prebsc-1-s1.binance.org:8545"

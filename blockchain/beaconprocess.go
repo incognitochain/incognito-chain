@@ -848,6 +848,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		BuildBeaconInstructions(beaconBlock.Body.Instructions).
 		BuildStateDB(newBestState.featureStateDB).
 		BuildBeaconHeight(beaconBlock.Header.Height - 1).
+		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		Build()
 	err = newBestState.pdeState.Process(pdeStateEnv)
 	if err != nil {

@@ -232,6 +232,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildWithdrawalActions(pdeWithdrawalActions).
 		BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
 		BuildTxHashes(txHashes).
+		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		Build()
 
 	pdeInstructions, err := beaconBestState.pdeState.BuildInstructions(pdeStateEnv)

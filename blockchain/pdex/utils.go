@@ -564,13 +564,11 @@ func InitStateFromDB(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (State, error) {
-	var state State
-	if beaconHeight < config.Param().PDEV3Height {
-		if beaconHeight == 1 || beaconHeight == 0 {
-			return newStateV1(), nil
-		}
-		return newStateV1WithValue(stateDB, beaconHeight)
+	if beaconHeight >= config.Param().PDEV2Height {
+		// Init pde v2 here
 	}
-
-	return state, nil
+	if beaconHeight == 1 || beaconHeight == 0 {
+		return newStateV1(), nil
+	}
+	return initStateV1(stateDB, beaconHeight)
 }

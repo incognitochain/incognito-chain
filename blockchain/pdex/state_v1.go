@@ -2,19 +2,53 @@ package pdex
 
 import (
 	"errors"
+	"reflect"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
+type stateV1 struct {
+	waitingContributions        map[string]*rawdbv2.PDEContribution
+	deletedWaitingContributions map[string]*rawdbv2.PDEContribution
+	poolPairs                   map[string]*rawdbv2.PDEPoolForPair
+	shares                      map[string]uint64
+	tradingFees                 map[string]uint64
+	producer                    stateProducerV1
+	processor                   stateProcessorV1
+}
+
 func newStateV1() *stateV1 {
-	res := &stateV1{}
-	res.stateBase = *newStateBase()
+	res := &stateV1{
+		waitingContributions:        make(map[string]*rawdbv2.PDEContribution),
+		deletedWaitingContributions: make(map[string]*rawdbv2.PDEContribution),
+		poolPairs:                   make(map[string]*rawdbv2.PDEPoolForPair),
+		shares:                      make(map[string]uint64),
+		tradingFees:                 make(map[string]uint64),
+	}
 	return res
 }
 
 func newStateV1WithValue(
+	waitingContributions map[string]*rawdbv2.PDEContribution,
+	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+	shares map[string]uint64,
+	tradingFees map[string]uint64,
+) *stateV1 {
+	return &stateV1{
+		waitingContributions:        waitingContributions,
+		deletedWaitingContributions: make(map[string]*rawdbv2.PDEContribution),
+		poolPairs:                   poolPairs,
+		shares:                      shares,
+		tradingFees:                 tradingFees,
+	}
+}
+
+func initStateV1(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (*stateV1, error) {
@@ -34,20 +68,12 @@ func newStateV1WithValue(
 	if err != nil {
 		return nil, err
 	}
-	return &stateV1{
-		stateBase: *newStateBaseWithValue(
-			waitingContributions,
-			poolPairs,
-			shares,
-			tradingFees,
-		),
-	}, nil
-}
-
-type stateV1 struct {
-	stateBase
-	producer  stateProducerV1
-	processor stateProcessorV1
+	return newStateV1WithValue(
+		waitingContributions,
+		poolPairs,
+		shares,
+		tradingFees,
+	), nil
 }
 
 func (s *stateV1) Version() uint {
@@ -56,7 +82,34 @@ func (s *stateV1) Version() uint {
 
 func (s *stateV1) Clone() State {
 	res := newStateV1()
-	res.stateBase = *s.stateBase.Clone().(*stateBase)
+	res.waitingContributions = make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
+	res.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
+	res.poolPairs = make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
+	res.shares = make(map[string]uint64, len(s.shares))
+	res.tradingFees = make(map[string]uint64, len(s.tradingFees))
+
+	for k, v := range s.waitingContributions {
+		res.waitingContributions[k] = new(rawdbv2.PDEContribution)
+		*res.waitingContributions[k] = *v
+	}
+
+	for k, v := range s.deletedWaitingContributions {
+		res.deletedWaitingContributions[k] = new(rawdbv2.PDEContribution)
+		*res.deletedWaitingContributions[k] = *v
+	}
+
+	for k, v := range s.poolPairs {
+		res.poolPairs[k] = new(rawdbv2.PDEPoolForPair)
+		*res.poolPairs[k] = *v
+	}
+
+	for k, v := range s.shares {
+		res.shares[k] = v
+	}
+
+	for k, v := range s.tradingFees {
+		res.tradingFees[k] = v
+	}
 	res.producer = s.producer
 	res.processor = s.processor
 
@@ -77,6 +130,9 @@ func (s *stateV1) Process(env StateEnvironment) error {
 		}
 		switch metadataType {
 		case metadata.PDEContributionMeta:
+			if env.BeaconHeight() >= env.BCHeightBreakPointPrivacyV2() {
+				continue
+			}
 			err = s.processor.processContribution(
 				env.StateDB(),
 				env.BeaconHeight(),
@@ -97,6 +153,9 @@ func (s *stateV1) Process(env StateEnvironment) error {
 				s.shares,
 			)
 		case metadata.PDETradeRequestMeta:
+			if env.BeaconHeight() >= env.BCHeightBreakPointPrivacyV2() {
+				continue
+			}
 			err = s.processor.processTrade(
 				env.StateDB(),
 				env.BeaconHeight(),
@@ -147,7 +206,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 
 	// handle fee withdrawal
-	tempInstructions, err := s.producer.buildInstructionsForFeeWithdrawal(
+	feeWithdrawalInstructions, err := s.producer.buildInstructionsForFeeWithdrawal(
 		env.FeeWithdrawalActions(),
 		env.BeaconHeight(),
 		s.tradingFees,
@@ -155,21 +214,23 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, tempInstructions...)
+	instructions = append(instructions, feeWithdrawalInstructions...)
 
-	// handle trade
-	tempInstructions, err = s.producer.buildInstructionsForTrade(
-		env.TradeActions(),
-		env.BeaconHeight(),
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
+	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
+		// handle trade
+		tradeInstructions, err := s.producer.buildInstructionsForTrade(
+			env.TradeActions(),
+			env.BeaconHeight(),
+			s.poolPairs,
+		)
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, tradeInstructions...)
 	}
-	instructions = append(instructions, tempInstructions...)
 
 	// handle cross pool trade
-	tempInstructions, err = s.producer.buildInstructionsForCrossPoolTrade(
+	crossPoolTradeInstructions, err := s.producer.buildInstructionsForCrossPoolTrade(
 		env.CrossPoolTradeActions(),
 		env.BeaconHeight(),
 		s.poolPairs,
@@ -178,10 +239,10 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, tempInstructions...)
+	instructions = append(instructions, crossPoolTradeInstructions...)
 
 	// handle withdrawal
-	tempInstructions, err = s.producer.buildInstructionsForWithdrawal(
+	withdrawalInstructions, err := s.producer.buildInstructionsForWithdrawal(
 		env.WithdrawalActions(),
 		env.BeaconHeight(),
 		s.poolPairs,
@@ -190,25 +251,27 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, tempInstructions...)
+	instructions = append(instructions, withdrawalInstructions...)
 
-	// handle contribution
-	tempInstructions, err = s.producer.buildInstructionsForContribution(
-		env.ContributionActions(),
-		env.BeaconHeight(),
-		false,
-		metadata.PDEContributionMeta,
-		s.waitingContributions,
-		s.poolPairs,
-		s.shares,
-	)
-	if err != nil {
-		return instructions, err
+	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
+		// handle contribution
+		contributionInstructions, err := s.producer.buildInstructionsForContribution(
+			env.ContributionActions(),
+			env.BeaconHeight(),
+			false,
+			metadata.PDEContributionMeta,
+			s.waitingContributions,
+			s.poolPairs,
+			s.shares,
+		)
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, contributionInstructions...)
 	}
-	instructions = append(instructions, tempInstructions...)
 
 	// handle prv required contribution
-	tempInstructions, err = s.producer.buildInstructionsForContribution(
+	contributionInstructions, err := s.producer.buildInstructionsForContribution(
 		env.PRVRequiredContributionActions(),
 		env.BeaconHeight(),
 		true,
@@ -220,7 +283,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, tempInstructions...)
+	instructions = append(instructions, contributionInstructions...)
 
 	return instructions, nil
 }
@@ -230,24 +293,166 @@ func (s *stateV1) Upgrade(env StateEnvironment) State {
 	return state
 }
 
-func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
-	s.stateBase.TransformKeyWithNewBeaconHeight(beaconHeight)
+func (s *stateV1) StoreToDB(env StateEnvironment) error {
+	var err error
+	statedb.DeleteWaitingPDEContributions(
+		env.StateDB(),
+		s.deletedWaitingContributions,
+	)
+	err = statedb.StoreWaitingPDEContributions(
+		env.StateDB(),
+		s.waitingContributions,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDEPoolPairs(
+		env.StateDB(),
+		s.poolPairs,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDEShares(
+		env.StateDB(),
+		s.shares,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDETradingFees(
+		env.StateDB(),
+		s.tradingFees,
+	)
+	if err != nil {
+		return err
+	}
+	return err
 }
 
-//GetDiff need to use 2 state same version
+func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
+	time1 := time.Now()
+	sameHeight := false
+	//transform pdex key prefix-<beaconheight>-id1-id2 (if same height, no transform)
+	transformKey := func(key string, beaconHeight uint64) string {
+		if sameHeight {
+			return key
+		}
+		keySplit := strings.Split(key, "-")
+		if keySplit[1] == strconv.Itoa(int(beaconHeight)) {
+			sameHeight = true
+		}
+		keySplit[1] = strconv.Itoa(int(beaconHeight))
+		return strings.Join(keySplit, "-")
+	}
+
+	newState := newStateV1()
+
+	for k, v := range s.waitingContributions {
+		newState.waitingContributions[transformKey(k, beaconHeight)] = v
+		if sameHeight {
+			s = newState
+			return
+		}
+	}
+	for k, v := range s.deletedWaitingContributions {
+		newState.deletedWaitingContributions[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range s.poolPairs {
+		newState.poolPairs[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range s.shares {
+		newState.shares[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range s.tradingFees {
+		newState.tradingFees[transformKey(k, beaconHeight)] = v
+	}
+	Logger.log.Infof("Time spent for transforming keys: %f", time.Since(time1).Seconds())
+	*s = *newState
+}
+
+func (s *stateV1) ClearCache() {
+	s.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution)
+}
+
 func (s *stateV1) GetDiff(compareState State) (State, error) {
 	if compareState == nil {
 		return nil, errors.New("compareState is nil")
 	}
 
-	res := &stateV1{}
+	res := newStateV1()
 	compareStateV1 := compareState.(*stateV1)
 
-	diffStateBase, err := s.stateBase.GetDiff(&compareStateV1.stateBase)
-	if err != nil {
-		return nil, err
+	for k, v := range s.waitingContributions {
+		if m, ok := compareStateV1.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.waitingContributions[k] = new(rawdbv2.PDEContribution)
+			*res.waitingContributions[k] = *v
+		}
 	}
-	res.stateBase = *diffStateBase.(*stateBase)
-
+	for k, v := range s.deletedWaitingContributions {
+		if m, ok := compareStateV1.deletedWaitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.deletedWaitingContributions[k] = new(rawdbv2.PDEContribution)
+			*res.deletedWaitingContributions[k] = *v
+		}
+	}
+	for k, v := range s.poolPairs {
+		if m, ok := compareStateV1.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.poolPairs[k] = new(rawdbv2.PDEPoolForPair)
+			*res.poolPairs[k] = *v
+		}
+	}
+	for k, v := range s.shares {
+		if m, ok := compareStateV1.shares[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.shares[k] = v
+		}
+	}
+	for k, v := range s.tradingFees {
+		if m, ok := compareStateV1.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.tradingFees[k] = v
+		}
+	}
 	return res, nil
+}
+
+func (s *stateV1) WaitingContributions() map[string]*rawdbv2.PDEContribution {
+	res := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
+	for k, v := range s.waitingContributions {
+		res[k] = new(rawdbv2.PDEContribution)
+		*res[k] = *v
+	}
+	return res
+}
+
+func (s *stateV1) DeletedWaitingContributions() map[string]*rawdbv2.PDEContribution {
+	res := make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
+	for k, v := range s.deletedWaitingContributions {
+		res[k] = new(rawdbv2.PDEContribution)
+		*res[k] = *v
+	}
+	return res
+}
+
+func (s *stateV1) PoolPairs() map[string]*rawdbv2.PDEPoolForPair {
+	res := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
+	for k, v := range s.poolPairs {
+		res[k] = new(rawdbv2.PDEPoolForPair)
+		*res[k] = *v
+	}
+	return res
+}
+
+func (s *stateV1) Shares() map[string]uint64 {
+	res := make(map[string]uint64, len(s.shares))
+	for k, v := range s.shares {
+		res[k] = v
+	}
+	return res
+}
+
+func (s *stateV1) TradingFees() map[string]uint64 {
+	res := make(map[string]uint64, len(s.tradingFees))
+	for k, v := range s.tradingFees {
+		res[k] = v
+	}
+	return res
 }

@@ -48,7 +48,7 @@ type param struct {
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
-	PDEV3Height                      uint64             `mapstructure:"pde_v3_height"`
+	PDEV2Height                      uint64             `mapstructure:"pde_v2_height"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	IsBackup                         bool
 }
