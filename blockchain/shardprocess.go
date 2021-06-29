@@ -928,17 +928,17 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
 
-	isRelatedCommittee := false
-	for _, tx := range txs {
-		if tx.GetMetadata() != nil {
-			switch tx.GetMetadata().GetType() {
-			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
-				isRelatedCommittee = true
-				break
-			}
-		}
-	}
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, isRelatedCommittee)
+	//isRelatedCommittee := false
+	//for _, tx := range txs {
+	//	if tx.GetMetadata() != nil {
+	//		switch tx.GetMetadata().GetType() {
+	//		case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+	//			isRelatedCommittee = true
+	//			break
+	//		}
+	//	}
+	//}
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, true)
 	if err != nil {
 		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
 		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
