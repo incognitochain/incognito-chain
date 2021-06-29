@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	privateKey := "112t8rtt9Kd5LUcfXNmd7aMnQehCnKabArVB3BUk2RHVjeh88x5MJnJY4okB8JdFm4JNm4A2WjSe58qWNVkJPEFjpLHNYfKHpWfRdqyfDD9f"
+	privateKey := "112t8rna7M8BYBfNjNHmw3Tie6Yir9mQgp5rSRgUngTqn6A6iSRvAPex4sXsmGxVzXcpUUDfnRfRys3QrPnTHauiipdUNtj7Ef6t3mHUwiC3"
 	paymentAddress := PrivateKeyToPaymentAddress(privateKey, -1)
 	privateOTA := PrivateKeyToPrivateOTAKey(privateKey)
 	fmt.Println(paymentAddress)
