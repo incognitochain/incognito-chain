@@ -41,14 +41,20 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
 	case IssuingETHRequestMeta:
-		md = &IssuingETHRequest{}
+		md = &IssuingEVMRequest{}
+	case IssuingBSCRequestMeta:
+		md = &IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
-		md = &IssuingETHResponse{}
+		md = &IssuingEVMResponse{}
+	case IssuingBSCResponseMeta:
+		md = &IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 	case BurningRequestMeta:
 		md = &BurningRequest{}
 	case BurningRequestMetaV2:
+		md = &BurningRequest{}
+	case BurningPBSCRequestMeta:
 		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
@@ -177,6 +183,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningConfirmMetaV2),
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
+	strconv.Itoa(BurningBSCConfirmMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {
@@ -233,6 +240,7 @@ func buildMetaInfo() {
 		ReturnStakingMeta,
 
 		IssuingETHResponseMeta,
+		IssuingBSCResponseMeta,
 		IssuingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -258,6 +266,7 @@ func buildMetaInfo() {
 
 		BurningRequestMeta,
 		BurningRequestMetaV2,
+		BurningPBSCRequestMeta,
 		BurningForDepositToSCRequestMeta,
 		BurningForDepositToSCRequestMetaV2,
 		ContractingRequestMeta,
@@ -333,6 +342,7 @@ func buildMetaInfo() {
 
 		IssuingRequestMeta,
 		IssuingETHRequestMeta,
+		IssuingBSCRequestMeta,
 		ContractingRequestMeta,
 
 		ShardStakingMeta,
@@ -422,7 +432,9 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingResponseMeta,
 		IssuingETHRequestMeta,
+		IssuingBSCRequestMeta,
 		IssuingETHResponseMeta,
+		IssuingBSCResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,

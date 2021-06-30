@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
-	"strconv"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -462,7 +464,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 					Logger.log.Debugf("handleGetBlocks resultShard: %+v, err: %+v", nil, errD)
 					return nil, NewRPCError(GetShardBlockByHashError, errD)
 				}
-				blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
+				blockResult := jsonresult.NewGetBlockResult(block, size, utils.EmptyString)
 				resultShard = append(resultShard, *blockResult)
 				previousHash = &block.Header.PreviousBlockHash
 				if previousHash.String() == (common.Hash{}).String() {
@@ -495,7 +497,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 				if errD != nil {
 					return nil, NewRPCError(GetBeaconBlockByHashError, errD)
 				}
-				blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
+				blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, utils.EmptyString)
 				resultBeacon = append(resultBeacon, *blockResult)
 				previousHash = &block.Header.PreviousBlockHash
 				if previousHash.String() == (common.Hash{}).String() {
@@ -925,6 +927,24 @@ func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, bo
 		}
 	}
 	return 0, false, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
+}
+
+func (blockService BlockService) CheckBSCHashIssued(data map[string]interface{}) (bool, error) {
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
+	uniqBSCTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	issued, err := statedb.IsBSCTxHashIssued(bridgeStateDB, uniqBSCTx)
+	return issued, err
 }
 
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {

@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -348,14 +349,14 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
 
@@ -1766,14 +1767,14 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.txParam.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.txParam.hasPrivacy, string(jsonParam))
 	}
 
