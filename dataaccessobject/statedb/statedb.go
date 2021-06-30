@@ -1805,3 +1805,15 @@ func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConf
 	}
 	return NewPortalConfirmProofState(), false, nil
 }
+
+// ================================= BSC bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState, bool, error) {
+	bscTxState, err := stateDB.getStateObject(BridgeBSCTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bscTxState != nil {
+		return bscTxState.GetValue().(*BridgeBSCTxState), true, nil
+	}
+	return NewBridgeBSCTxState(), false, nil
+}

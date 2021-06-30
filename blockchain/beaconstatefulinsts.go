@@ -3,13 +3,15 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/config"
+	"math/big"
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
-	"math/big"
-	"sort"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -38,6 +40,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		switch metaType {
 		case metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
+			metadata.IssuingBSCRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -118,6 +121,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
+		UniqBSCTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
 	}
@@ -158,8 +162,39 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqETHTxsUsed,
+					config.Param().EthContractAddressStr,
+					"",
+					statedb.IsETHTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqBSCTxsUsed,
+					config.Param().BscContractAddressStr,
+					common.BSCPrefix,
+					statedb.IsBSCTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
+				}
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
 					pdeContributionActionsByShardID,

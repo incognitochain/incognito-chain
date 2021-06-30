@@ -2,12 +2,12 @@ package netsync
 
 import (
 	"errors"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -45,7 +45,6 @@ type NetSync struct {
 type NetSyncConfig struct {
 	Syncker          *syncker.SynckerManager
 	BlockChain       *blockchain.BlockChain
-	ChainParam       *blockchain.Params
 	TxMemPool        *mempool.TxPool
 	PubSubManager    *pubsub.PubSubManager
 	TransactionEvent pubsub.EventChannel // transaction event
@@ -86,11 +85,11 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 		blockCache: blockCache,
 	}
 
-	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "1" {
-		netSync.usingNewPool = true
-	} else {
+	txPoolVersion := config.Param().TxPoolVersion
+	if txPoolVersion == 0 {
 		netSync.usingNewPool = false
+	} else {
+		netSync.usingNewPool = true
 	}
 
 	// register pubsub channel

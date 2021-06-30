@@ -10,11 +10,13 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -34,7 +36,7 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 		return nil, err
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, txBytes, txShardID)
 	return result, nil
 }
 
@@ -72,7 +74,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	return result, nil
 }
 
@@ -110,7 +112,7 @@ func (httpServer *HttpServer) handleCreateRawTransactionV2(params interface{}, c
 		return nil, err
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, txBytes, txShardID)
 	return result, nil
 }
 
@@ -889,7 +891,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 
 	stakingMetadata, err := metadata.NewStakingMetadata(
 		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
-		httpServer.config.ChainParams.StakingAmountShard,
+		config.Param().StakingAmountShard,
 		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1004,7 +1006,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransactionV2(params interfa
 
 	stakingMetadata, err := metadata.NewStakingMetadata(
 		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
-		httpServer.config.ChainParams.StakingAmountShard,
+		config.Param().StakingAmountShard,
 		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
