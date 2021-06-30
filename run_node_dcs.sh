@@ -114,26 +114,38 @@ if [ "$1" == "fullnode-mainnet" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --testnet true --nodemode "relay" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../mainnet/fullnode" --usecoindata --coindatapre="__coins__" --discoverpeersaddress "mainnet-bootnode.incognito.org:9330"
 fi
 ######
-if [ "$1" == "shard-candidate0-1" ]; then
+if [ "$1" == "shard-candidate-1" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f"  --datadir "data/shard-stake" --listen "127.0.0.1:9455" --externaladdress "127.0.0.1:9455" --norpcauth --rpclisten "127.0.0.1:9355"
 fi
-if [ "$1" == "shard-candidate0-2" ]; then
+if [ "$1" == "shard-candidate-2" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rrEW3NPNgU8xzbeqE7cr4WTT8JvyaQqSZyczA5hBJVvpQMTBVqNfcCdzhvquWCHH11jHihZtgyJqbdWPhWYbmmsw5aV29WSXBEsgbVX"  --datadir "data/shard-stake-2" --listen "127.0.0.1:9456" --externaladdress "127.0.0.1:9456" --norpcauth --rpclisten "127.0.0.1:9356"
 fi
-if [ "$1" == "shard-candidate0-3" ]; then
+if [ "$1" == "shard-candidate-3" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnY15HgjpbJn1es84ysseB6q9UQ5SwB6Eb82yejEQ3yzhd1dm5ShEiezdfMoEzBgvkuKcFdP5TY3SuWNHXKa1Krprsfxnk5wy7wZ6Dg"  --datadir "data/shard-stake-6" --listen "0.0.0.0:9460" --externaladdress "0.0.0.0:9460" --norpcauth --rpclisten "0.0.0.0:9360"
 fi
-if [ "$1" == "shard-candidate1-1" ]; then
+if [ "$1" == "shard-candidate-4" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roHikeAFyuBpdCU76kXurEqrC9VYWyRyfFb6PwX6nip9KGYbwpXL78H92mUoWK2GWkA2WysgXbHqwSxnC6XCkmtxBVb3zJeCXgfcYyL"  --datadir "data/shard-stake-3" --listen "0.0.0.0:9457" --externaladdress "0.0.0.0:9457" --norpcauth --rpclisten "0.0.0.0:9357"
 fi
-if [ "$1" == "shard-candidate1-2" ]; then
+if [ "$1" == "shard-candidate-5" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rr4sE2L8WzsVNEN9WsiGcMTDCmEH9TC1ZK8517cxURRFNoWoStYQTgqXpiAMU4gzmkmnWahHdGvQqFaY1JTVsn3nHfD5Ppgz8hQDiVC"  --datadir "data/shard-stake-4" --listen "0.0.0.0:9458" --externaladdress "0.0.0.0:9458" --norpcauth --rpclisten "0.0.0.0:9358"
 fi
-if [ "$1" == "shard-candidate1-3" ]; then
+if [ "$1" == "shard-candidate-6" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtt9Kd5LUcfXNmd7aMnQehCnKabArVB3BUk2RHVjeh88x5MJnJY4okB8JdFm4JNm4A2WjSe58qWNVkJPEFjpLHNYfKHpWfRdqyfDD9f"  --datadir "data/shard-stake-5" --listen "0.0.0.0:9459" --externaladdress "0.0.0.0:9459" --norpcauth --rpclisten "0.0.0.0:9359"
 fi
-if [ "$1" == "shard-candidate1-4" ]; then
+if [ "$1" == "shard-candidate-7" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rna7M8BYBfNjNHmw3Tie6Yir9mQgp5rSRgUngTqn6A6iSRvAPex4sXsmGxVzXcpUUDfnRfRys3QrPnTHauiipdUNtj7Ef6t3mHUwiC3"  --datadir "data/shard-stake-7" --listen "0.0.0.0:9461" --externaladdress "0.0.0.0:9461" --norpcauth --rpclisten "0.0.0.0:9361"
+fi
+if [ "$1" == "shard-candidate-8" ]; then
+INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sSj637mhpaJUboUEjkXsEUQm8q82T6kND3mWtNwig71qX2aFeZegWYsLVtyxBWdiZMBoNkdJ1MZYAcWetUP8DjYFnUac4vW7kzHfYsc"  --datadir "data/shard-stake-8" --listen "0.0.0.0:9462" --externaladdress "0.0.0.0:9462" --norpcauth --rpclisten "0.0.0.0:9362"
+fi
+if [ "$1" == "shard-candidate-9" ]; then
+INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sSjSEck5J5RKWGWurVfigruYDxEzjjVPqHaTRJ57YFNo7gXBH8onUQxtdpoyFnBZrLhfGWQ4k4MNadwa6F7qYwcuFLW9R1VxTfN7q4d"  --datadir "data/shard-stake-9" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363"
+fi
+if [ "$1" == "shard-candidate-10" ]; then
+INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sSijugr8azxAiHMWS9rA22grKDv5o7AEXQ9datpT1V7N5FLHiJMjvfVnXcitL3fpj35Xt5DNnBq8iFq618X31nCgn2RjrYx5tZZWCtj"  --datadir "data/shard-stake-10" --listen "0.0.0.0:9464" --externaladdress "0.0.0.0:9464" --norpcauth --rpclisten "0.0.0.0:9364"
+fi
+if [ "$1" == "shard-candidate-11" ]; then
+INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sSjkAqVJi4KkbCS75GYrsag7QZYP7FTPRfZ63D1AJgzfmdHnE9sbpdJV4Kx5tN9MgbqbRYDgzER2xpgsxrHvWxNgTHHrghYwLJLfe2R"  --datadir "data/shard-stake-11" --listen "0.0.0.0:9465" --externaladdress "0.0.0.0:9465" --norpcauth --rpclisten "0.0.0.0:9365"
 fi
 #if [ "$1" == "shard-stake-9" ]; then
 #INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnaLC8yRN5im7BgETP2y6nDbWrxfn2sfQaJvDqV7siRoLLaYnaehad7dY4L7n3dTd4XbYFfbr867vFq2uqCm36PmTq9usop6oH3MKQf"  --datadir "data/shard-stake-9" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363"

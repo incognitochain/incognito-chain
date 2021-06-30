@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -10,11 +11,29 @@ import (
 )
 
 func main() {
-	privateKey := "112t8roHikeAFyuBpdCU76kXurEqrC9VYWyRyfFb6PwX6nip9KGYbwpXL78H92mUoWK2GWkA2WysgXbHqwSxnC6XCkmtxBVb3zJeCXgfcYyL"
-	paymentAddress := PrivateKeyToPaymentAddress(privateKey, -1)
-	privateOTA := PrivateKeyToPrivateOTAKey(privateKey)
-	fmt.Println(paymentAddress)
-	fmt.Println(privateOTA)
+	privateKeys := []string{
+		"112t8sSj637mhpaJUboUEjkXsEUQm8q82T6kND3mWtNwig71qX2aFeZegWYsLVtyxBWdiZMBoNkdJ1MZYAcWetUP8DjYFnUac4vW7kzHfYsc",
+		"112t8sSjSEck5J5RKWGWurVfigruYDxEzjjVPqHaTRJ57YFNo7gXBH8onUQxtdpoyFnBZrLhfGWQ4k4MNadwa6F7qYwcuFLW9R1VxTfN7q4d",
+		"112t8sSijugr8azxAiHMWS9rA22grKDv5o7AEXQ9datpT1V7N5FLHiJMjvfVnXcitL3fpj35Xt5DNnBq8iFq618X31nCgn2RjrYx5tZZWCtj",
+		"112t8sSjkAqVJi4KkbCS75GYrsag7QZYP7FTPRfZ63D1AJgzfmdHnE9sbpdJV4Kx5tN9MgbqbRYDgzER2xpgsxrHvWxNgTHHrghYwLJLfe2R",
+	}
+	//privateKey := "112t8roHikeAFyuBpdCU76kXurEqrC9VYWyRyfFb6PwX6nip9KGYbwpXL78H92mUoWK2GWkA2WysgXbHqwSxnC6XCkmtxBVb3zJeCXgfcYyL"
+	for _, privateKey := range privateKeys {
+		paymentAddress := PrivateKeyToPaymentAddress(privateKey, -1)
+		privateOTA := PrivateKeyToPrivateOTAKey(privateKey)
+		wl, _ := wallet.Base58CheckDeserialize(privateKey)
+		wl.KeySet.InitFromPrivateKey(&wl.KeySet.PrivateKey)
+		miningSeed := base58.Base58Check{}.Encode(common.HashB(common.HashB(wl.KeySet.PrivateKey)), common.ZeroByte)
+		committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
+		res, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKey})
+		fmt.Println(privateKey)
+		fmt.Println("Mining Seed", miningSeed)
+		fmt.Println("Committee Public Key", res)
+		fmt.Println("ShardID", wl.KeySet.PaymentAddress.Pk[len(wl.KeySet.PaymentAddress.Pk)-1])
+		fmt.Println("Payment Address", paymentAddress)
+		fmt.Println("Private OTA", privateOTA)
+		fmt.Println("---------------------")
+	}
 }
 
 // PrivateKeyToPaymentAddress returns the payment address for its private key corresponding to the key type.

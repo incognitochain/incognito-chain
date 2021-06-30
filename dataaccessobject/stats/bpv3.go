@@ -80,8 +80,9 @@ func GetShardHeightBPV3Stats(db incdb.Database, shardID byte, epoch uint64) (map
 	m := make(map[uint64]*DetailBlockInOneEpochStats)
 	prefix := getShardHeightBPV3StatsPrefix(shardID, epoch)
 	iterator := db.NewIteratorWithPrefix(prefix)
-	if iterator.Next() {
-		temp := iterator.Value()
+	for iterator.Next() {
+		temp := make([]byte, len(iterator.Value()))
+		copy(temp, iterator.Value())
 		detailBlockInOneEpochStats := &DetailBlockInOneEpochStats{}
 		err := json.Unmarshal(temp, detailBlockInOneEpochStats)
 		if err != nil {
