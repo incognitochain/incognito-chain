@@ -725,3 +725,46 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 
 	return res, nil
 }
+
+func (sp *stateProducerV1) buildInstructionsForTrade(
+	actions [][]string,
+	beaconHeight uint64,
+	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+) ([][]string, error) {
+	res := [][]string{}
+
+	// handle trade
+	sortedTradesActions := sp.sortTradeInstsByFee(
+		actions,
+		beaconHeight,
+		poolPairs,
+	)
+	for _, tradeAction := range sortedTradesActions {
+		should, receiveAmount, err := sp.shouldRefundTradeAction(tradeAction, beaconHeight, poolPairs)
+		if err != nil {
+			return utils.EmptyStringMatrix, err
+		}
+		if should {
+			actionContentBytes, err := json.Marshal(tradeAction)
+			if err != nil {
+				return utils.EmptyStringMatrix, err
+			}
+			actionStr := base64.StdEncoding.EncodeToString(actionContentBytes)
+			inst := []string{
+				strconv.Itoa(metadata.PDETradeRequestMeta),
+				strconv.Itoa(int(tradeAction.ShardID)),
+				common.PDETradeRefundChainStatus,
+				actionStr,
+			}
+			res = append(res, inst)
+			continue
+		}
+		inst, err := sp.buildAcceptedTradeInstruction(tradeAction, beaconHeight, receiveAmount, poolPairs)
+		if err != nil {
+			return utils.EmptyStringMatrix, err
+		}
+		res = append(res, inst)
+	}
+
+	return res, nil
+}

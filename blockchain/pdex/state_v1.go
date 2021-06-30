@@ -13,6 +13,7 @@ import (
 )
 
 type stateV1 struct {
+	stateBase
 	waitingContributions        map[string]*rawdbv2.PDEContribution
 	deletedWaitingContributions map[string]*rawdbv2.PDEContribution
 	poolPairs                   map[string]*rawdbv2.PDEPoolForPair
