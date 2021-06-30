@@ -27,13 +27,13 @@ func (sp *stateProducerBase) feeWithdrawal(
 		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
-			return utils.EmptyStringMatrix, nil
+			return utils.EmptyStringMatrix, err
 		}
 		var feeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
 		err = json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
-			return utils.EmptyStringMatrix, nil
+			return utils.EmptyStringMatrix, err
 		}
 		wdMeta := feeWithdrawalRequestAction.Meta
 		tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(

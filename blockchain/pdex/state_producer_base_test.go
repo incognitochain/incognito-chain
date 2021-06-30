@@ -6,6 +6,7 @@ import (
 )
 
 func Test_stateProducerBase_feeWithdrawal(t *testing.T) {
+	initLog()
 	type args struct {
 		actions      [][]string
 		beaconHeight uint64
@@ -18,13 +19,34 @@ func Test_stateProducerBase_feeWithdrawal(t *testing.T) {
 		want    [][]string
 		wantErr bool
 	}{
-		/*{*/
-		//name:    "",
-		//sp:      &stateProducerBase{},
-		//args:    args{},
-		//want:    [][]string{},
-		//wantErr: false,
-		/*},*/
+		{
+			name: "Invalid action content format",
+			sp:   &stateProducerBase{},
+			args: args{
+				actions: [][]string{
+					[]string{
+						"",
+						"12312",
+					},
+				},
+			},
+			want:    [][]string{},
+			wantErr: true,
+		},
+		{
+			name: "Invalid action content type",
+			sp:   &stateProducerBase{},
+			args: args{
+				actions: [][]string{
+					[]string{
+						"",
+						"12312",
+					},
+				},
+			},
+			want:    [][]string{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
