@@ -40,7 +40,12 @@ func Test_stateProducerBase_feeWithdrawal(t *testing.T) {
 				actions: [][]string{
 					[]string{
 						"",
-						"12312",
+						buildFeeWithdrawalRequestActionForTest(
+							"contributorAddress2",
+							"tokenID1",
+							"tokenID2",
+							10,
+						)[1],
 					},
 				},
 			},

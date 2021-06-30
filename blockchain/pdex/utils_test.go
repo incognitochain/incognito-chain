@@ -1,11 +1,15 @@
 package pdex
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -45,4 +49,31 @@ func initLog() {
 	initLogRotator("./test-pdex.log")
 	pdexLogger := common.NewBackend(logWriter{}).Logger("PDEX log ", false)
 	Logger.Init(pdexLogger)
+}
+
+func buildFeeWithdrawalRequestActionForTest(
+	withdrawerAddressStr string,
+	withdrawalToken1IDStr string,
+	withdrawalToken2IDStr string,
+	withdrawalFeeAmt uint64,
+) []string {
+	feeWithdrawalRequest := metadata.PDEFeeWithdrawalRequest{
+		WithdrawerAddressStr:  withdrawerAddressStr,
+		WithdrawalToken1IDStr: withdrawalToken1IDStr,
+		WithdrawalToken2IDStr: withdrawalToken2IDStr,
+		WithdrawalFeeAmt:      withdrawalFeeAmt,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				Type: metadata.PDEFeeWithdrawalRequestMeta,
+			},
+		},
+	}
+	actionContent := metadata.PDEFeeWithdrawalRequestAction{
+		Meta:    feeWithdrawalRequest,
+		TxReqID: common.Hash{},
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta), actionContentBase64Str}
+	return action
 }
