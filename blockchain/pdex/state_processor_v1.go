@@ -15,7 +15,7 @@ type stateProcessorV1 struct {
 	stateProcessorBase
 }
 
-func (sp *stateProcessorV1) processContribution(
+func (sp *stateProcessorV1) contribution(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	inst []string,
@@ -23,10 +23,16 @@ func (sp *stateProcessorV1) processContribution(
 	deletedWaitingContributions map[string]*rawdbv2.PDEContribution,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-) error {
+) (
+	map[string]*rawdbv2.PDEContribution,
+	map[string]*rawdbv2.PDEContribution,
+	map[string]*rawdbv2.PDEPoolForPair,
+	map[string]uint64,
+	error,
+) {
 	if len(inst) != 4 {
 		err := fmt.Errorf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
-		return err
+		return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 	}
 	contributionStatus := inst[2]
 
@@ -36,7 +42,7 @@ func (sp *stateProcessorV1) processContribution(
 		err := json.Unmarshal([]byte(inst[3]), &waitingContribution)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde waiting contribution instruction: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, waitingContribution.PDEContributionPairID))
 		waitingContributions[waitingContribPairKey] = &rawdbv2.PDEContribution{
@@ -59,14 +65,15 @@ func (sp *stateProcessorV1) processContribution(
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde waiting contribution status: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
+
 	case common.PDEContributionRefundChainStatus:
 		var refundContribution metadata.PDERefundContribution
 		err := json.Unmarshal([]byte(inst[3]), &refundContribution)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde refund contribution instruction: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, refundContribution.PDEContributionPairID))
 		existingWaitingContribution, found := waitingContributions[waitingContribPairKey]
@@ -86,21 +93,22 @@ func (sp *stateProcessorV1) processContribution(
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund contribution status: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
+
 	case common.PDEContributionMatchedChainStatus:
 		var matchedContribution metadata.PDEMatchedContribution
 		err := json.Unmarshal([]byte(inst[3]), &matchedContribution)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde matched contribution instruction: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, matchedContribution.PDEContributionPairID))
 		existingWaitingContribution, found := waitingContributions[waitingContribPairKey]
 		if !found || existingWaitingContribution == nil {
 			err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", matchedContribution.PDEContributionPairID)
 			Logger.log.Error(err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 		incomingWaitingContribution := &rawdbv2.PDEContribution{
 			ContributorAddressStr: matchedContribution.ContributorAddressStr,
@@ -129,14 +137,15 @@ func (sp *stateProcessorV1) processContribution(
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
+
 	case common.PDEContributionMatchedNReturnedChainStatus:
 		var matchedNReturnedContrib metadata.PDEMatchedNReturnedContribution
 		err := json.Unmarshal([]byte(inst[3]), &matchedNReturnedContrib)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde matched and returned contribution instruction: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, matchedNReturnedContrib.PDEContributionPairID))
 		waitingContribution, found := waitingContributions[waitingContribPairKey]
@@ -170,17 +179,17 @@ func (sp *stateProcessorV1) processContribution(
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while getting pde contribution status: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 		if len(pdeStatusContentBytes) == 0 {
-			return nil
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, nil
 		}
 
 		var contribStatus metadata.PDEContributionStatus
 		err = json.Unmarshal(pdeStatusContentBytes, &contribStatus)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution status: %+v", err)
-			return err
+			return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 		}
 
 		if contribStatus.Status != byte(common.PDEContributionMatchedNReturnedStatus) {
@@ -199,14 +208,14 @@ func (sp *stateProcessorV1) processContribution(
 			)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
-				return err
+				return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 			}
 		} else {
 			var contribStatus metadata.PDEContributionStatus
 			err := json.Unmarshal(pdeStatusContentBytes, &contribStatus)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution status: %+v", err)
-				return err
+				return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 			}
 			contribStatus.TokenID2Str = matchedNReturnedContrib.TokenIDStr
 			contribStatus.Contributed2Amount = matchedNReturnedContrib.ActualContributedAmount
@@ -220,34 +229,34 @@ func (sp *stateProcessorV1) processContribution(
 			)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
-				return err
+				return waitingContributions, deletedWaitingContributions, poolPairs, shares, err
 			}
 		}
 	}
-	return nil
+	return waitingContributions, deletedWaitingContributions, poolPairs, shares, nil
 }
 
-func (sp *stateProcessorV1) processTrade(
+func (sp *stateProcessorV1) trade(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	inst []string,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-) error {
+) (map[string]*rawdbv2.PDEPoolForPair, error) {
 	if len(inst) != 4 {
 		err := fmt.Errorf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
-		return err
+		return poolPairs, err
 	}
 	if inst[2] == common.PDETradeRefundChainStatus {
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade instruction: %+v", err)
-			return err
+			return poolPairs, err
 		}
 		var pdeTradeReqAction metadata.PDETradeRequestAction
 		err = json.Unmarshal(contentBytes, &pdeTradeReqAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade instruction: %+v", err)
-			return err
+			return poolPairs, err
 		}
 		err = statedb.TrackPDEStatus(
 			stateDB,
@@ -258,13 +267,13 @@ func (sp *stateProcessorV1) processTrade(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund trade status: %+v", err)
 		}
-		return err
+		return poolPairs, err
 	}
 	var tradeAcceptedContent metadata.PDETradeAcceptedContent
 	err := json.Unmarshal([]byte(inst[3]), &tradeAcceptedContent)
 	if err != nil {
 		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDETradeAcceptedContent: %+v", err)
-		return err
+		return poolPairs, err
 	}
 
 	poolForPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeAcceptedContent.Token1IDStr, tradeAcceptedContent.Token2IDStr))
@@ -272,7 +281,7 @@ func (sp *stateProcessorV1) processTrade(
 	if !found || poolForPair == nil {
 		err := fmt.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", tradeAcceptedContent.Token1IDStr, tradeAcceptedContent.Token2IDStr)
 		Logger.log.Error(err)
-		return err
+		return poolPairs, err
 	}
 
 	if tradeAcceptedContent.Token1PoolValueOperation.Operator == "+" {
@@ -291,18 +300,18 @@ func (sp *stateProcessorV1) processTrade(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted trade status: %+v", err)
 	}
-	return err
+	return poolPairs, err
 }
 
-func (sp *stateProcessorV1) processCrossPoolTrade(
+func (sp *stateProcessorV1) crossPoolTrade(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	inst []string,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-) error {
+) (map[string]*rawdbv2.PDEPoolForPair, error) {
 	if len(inst) != 4 {
 		err := fmt.Errorf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
-		return err
+		return poolPairs, err
 	}
 	if inst[2] == common.PDECrossPoolTradeFeeRefundChainStatus ||
 		inst[2] == common.PDECrossPoolTradeSellingTokenRefundChainStatus {
@@ -312,7 +321,7 @@ func (sp *stateProcessorV1) processCrossPoolTrade(
 		if err != nil {
 			err := fmt.Errorf("ERROR: an error occured while unmarshaling pde refund cross pool trade instruction: %+v", err)
 			Logger.log.Error(err)
-			return err
+			return poolPairs, err
 		}
 		err = statedb.TrackPDEStatus(
 			stateDB,
@@ -323,7 +332,7 @@ func (sp *stateProcessorV1) processCrossPoolTrade(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund trade status: %+v", err)
 		}
-		return err
+		return poolPairs, err
 	}
 	// trade accepted
 	var tradeAcceptedContents []metadata.PDECrossPoolTradeAcceptedContent
@@ -331,12 +340,12 @@ func (sp *stateProcessorV1) processCrossPoolTrade(
 	if err != nil {
 		err := fmt.Errorf("WARNING: an error occured while unmarshaling PDETradeAcceptedContents: %+v", err)
 		Logger.log.Error(err)
-		return err
+		return poolPairs, err
 	}
 
 	if len(tradeAcceptedContents) == 0 {
 		Logger.log.Error("WARNING: There is no pde cross pool trade accepted content.")
-		return nil
+		return poolPairs, nil
 	}
 
 	for _, tradeAcceptedContent := range tradeAcceptedContents {
@@ -345,7 +354,7 @@ func (sp *stateProcessorV1) processCrossPoolTrade(
 		if !found || poolForPair == nil {
 			err := fmt.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", tradeAcceptedContent.Token1IDStr, tradeAcceptedContent.Token2IDStr)
 			Logger.log.Error(err)
-			return err
+			return poolPairs, err
 		}
 
 		if tradeAcceptedContent.Token1PoolValueOperation.Operator == "+" {
@@ -365,31 +374,35 @@ func (sp *stateProcessorV1) processCrossPoolTrade(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted trade status: %+v", err)
 	}
-	return err
+	return poolPairs, err
 }
 
-func (sp *stateProcessorV1) processWithdrawal(
+func (sp *stateProcessorV1) withdrawal(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	inst []string,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-) error {
+) (
+	map[string]*rawdbv2.PDEPoolForPair,
+	map[string]uint64,
+	error,
+) {
 	if len(inst) != 4 {
 		err := fmt.Errorf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
-		return err
+		return poolPairs, shares, err
 	}
 	if inst[2] == common.PDEWithdrawalRejectedChainStatus {
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
-			return err
+			return poolPairs, shares, err
 		}
 		var withdrawalRequestAction metadata.PDEWithdrawalRequestAction
 		err = json.Unmarshal(contentBytes, &withdrawalRequestAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
-			return err
+			return poolPairs, shares, err
 		}
 		err = statedb.TrackPDEStatus(
 			stateDB,
@@ -400,14 +413,14 @@ func (sp *stateProcessorV1) processWithdrawal(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 		}
-		return err
+		return poolPairs, shares, err
 	}
 
 	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
 	err := json.Unmarshal([]byte(inst[3]), &wdAcceptedContent)
 	if err != nil {
 		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDEWithdrawalAcceptedContent: %+v", err)
-		return err
+		return poolPairs, shares, err
 	}
 
 	// update pde pool pair
@@ -419,7 +432,7 @@ func (sp *stateProcessorV1) processWithdrawal(
 	poolForPair, found := poolPairs[poolForPairKey]
 	if !found || poolForPair == nil {
 		Logger.log.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr)
-		return err
+		return poolPairs, shares, err
 	}
 	if poolForPair.Token1IDStr == wdAcceptedContent.WithdrawalTokenIDStr {
 		poolForPair.Token1PoolValue -= wdAcceptedContent.DeductingPoolValue
@@ -428,7 +441,7 @@ func (sp *stateProcessorV1) processWithdrawal(
 	}
 
 	// update pde shares
-	sp.deductSharesForWithdrawal(
+	shares = sp.deductSharesForWithdrawal(
 		beaconHeight,
 		wdAcceptedContent.PairToken1IDStr,
 		wdAcceptedContent.PairToken2IDStr,
@@ -446,30 +459,30 @@ func (sp *stateProcessorV1) processWithdrawal(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted withdrawal status: %+v", err)
 	}
-	return err
+	return poolPairs, shares, err
 }
 
-func (sp *stateProcessorV1) processFeeWithdrawal(
+func (sp *stateProcessorV1) feeWithdrawal(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	inst []string,
 	tradingFees map[string]uint64,
-) error {
+) (map[string]uint64, error) {
 	if len(inst) != 4 {
 		err := fmt.Errorf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
-		return err
+		return tradingFees, err
 	}
 	contentStr := inst[3]
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde fee withdrawal action: %+v", err)
-		return err
+		return tradingFees, err
 	}
 	var feeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
 	err = json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
-		return err
+		return tradingFees, err
 	}
 
 	if inst[2] == common.PDEFeeWithdrawalRejectedChainStatus {
@@ -482,7 +495,7 @@ func (sp *stateProcessorV1) processFeeWithdrawal(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 		}
-		return err
+		return tradingFees, err
 	}
 	// fee withdrawal accepted
 	wdMeta := feeWithdrawalRequestAction.Meta
@@ -494,7 +507,7 @@ func (sp *stateProcessorV1) processFeeWithdrawal(
 	)
 	if err != nil {
 		Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
-		return err
+		return tradingFees, err
 	}
 
 	tradingFeeKey := string(tradingFeeKeyBytes)
@@ -510,7 +523,7 @@ func (sp *stateProcessorV1) processFeeWithdrawal(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 		}
-		return err
+		return tradingFees, err
 	}
 	tradingFees[tradingFeeKey] -= wdMeta.WithdrawalFeeAmt
 	err = statedb.TrackPDEStatus(
@@ -522,25 +535,25 @@ func (sp *stateProcessorV1) processFeeWithdrawal(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 	}
-	return err
+	return tradingFees, err
 }
 
-func (sp *stateProcessorV1) processTradingFeesDistribution(
+func (sp *stateProcessorV1) tradingFeesDistribution(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	inst []string,
 	tradingFees map[string]uint64,
-) error {
+) (map[string]uint64, error) {
 	if len(inst) != 4 {
 		err := fmt.Errorf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
-		return err
+		return tradingFees, err
 	}
 	var feesForContributorsByPair []*tradingFeeForContributorByPair
 	err := json.Unmarshal([]byte(inst[3]), &feesForContributorsByPair)
 	if err != nil {
 		err := fmt.Errorf("ERROR: an error occured while unmarshaling trading fees for contribution by pair: %+v", err)
 		Logger.log.Error(err)
-		return err
+		return tradingFees, err
 	}
 
 	for _, item := range feesForContributorsByPair {
@@ -552,11 +565,34 @@ func (sp *stateProcessorV1) processTradingFeesDistribution(
 		)
 		if err != nil {
 			Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", item.ContributorAddressStr, err)
-			return err
+			return tradingFees, err
 		}
 
 		tradingFeeKey := string(tradingFeeKeyBytes)
 		tradingFees[tradingFeeKey] += item.FeeAmt
 	}
-	return nil
+	return tradingFees, nil
+}
+
+func (sp *stateProcessorV1) deductSharesForWithdrawal(
+	beaconHeight uint64,
+	token1IDStr string,
+	token2IDStr string,
+	withdrawerAddressStr string,
+	amt uint64,
+	shares map[string]uint64,
+) map[string]uint64 {
+	pdeShareKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr)
+	if err != nil {
+		Logger.log.Errorf("cannot find pdeShareKey for address: %v. Error: %v\n", withdrawerAddressStr, err)
+		return shares
+	}
+	pdeShareKey := string(pdeShareKeyBytes)
+	adjustingAmt := uint64(0)
+	currentAmt, found := shares[pdeShareKey]
+	if found && amt <= currentAmt {
+		adjustingAmt = currentAmt - amt
+	}
+	shares[pdeShareKey] = adjustingAmt
+	return shares
 }

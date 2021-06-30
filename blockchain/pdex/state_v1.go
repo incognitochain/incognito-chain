@@ -134,7 +134,11 @@ func (s *stateV1) Process(env StateEnvironment) error {
 			if env.BeaconHeight() >= env.BCHeightBreakPointPrivacyV2() {
 				continue
 			}
-			err = s.processor.processContribution(
+			s.waitingContributions,
+				s.deletedWaitingContributions,
+				s.poolPairs,
+				s.shares,
+				err = s.processor.contribution(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
@@ -144,7 +148,11 @@ func (s *stateV1) Process(env StateEnvironment) error {
 				s.shares,
 			)
 		case metadata.PDEPRVRequiredContributionRequestMeta:
-			err = s.processor.processContribution(
+			s.waitingContributions,
+				s.deletedWaitingContributions,
+				s.poolPairs,
+				s.shares,
+				err = s.processor.contribution(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
@@ -157,21 +165,21 @@ func (s *stateV1) Process(env StateEnvironment) error {
 			if env.BeaconHeight() >= env.BCHeightBreakPointPrivacyV2() {
 				continue
 			}
-			err = s.processor.processTrade(
+			s.poolPairs, err = s.processor.trade(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
 				s.poolPairs,
 			)
 		case metadata.PDECrossPoolTradeRequestMeta:
-			err = s.processor.processCrossPoolTrade(
+			s.poolPairs, err = s.processor.crossPoolTrade(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
 				s.poolPairs,
 			)
 		case metadata.PDEWithdrawalRequestMeta:
-			err = s.processor.processWithdrawal(
+			s.poolPairs, s.shares, err = s.processor.withdrawal(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
@@ -179,14 +187,14 @@ func (s *stateV1) Process(env StateEnvironment) error {
 				s.shares,
 			)
 		case metadata.PDEFeeWithdrawalRequestMeta:
-			err = s.processor.processFeeWithdrawal(
+			s.tradingFees, err = s.processor.feeWithdrawal(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
 				s.tradingFees,
 			)
 		case metadata.PDETradingFeesDistributionMeta:
-			err = s.processor.processTradingFeesDistribution(
+			s.tradingFees, err = s.processor.tradingFeesDistribution(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
@@ -207,7 +215,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 
 	// handle fee withdrawal
-	feeWithdrawalInstructions, err := s.producer.buildInstructionsForFeeWithdrawal(
+	feeWithdrawalInstructions, err := s.producer.feeWithdrawal(
 		env.FeeWithdrawalActions(),
 		env.BeaconHeight(),
 		s.tradingFees,
@@ -219,7 +227,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
 		// handle trade
-		tradeInstructions, err := s.producer.buildInstructionsForTrade(
+		tradeInstructions, err := s.producer.trade(
 			env.TradeActions(),
 			env.BeaconHeight(),
 			s.poolPairs,
@@ -231,7 +239,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	// handle cross pool trade
-	crossPoolTradeInstructions, err := s.producer.buildInstructionsForCrossPoolTrade(
+	crossPoolTradeInstructions, err := s.producer.crossPoolTrade(
 		env.CrossPoolTradeActions(),
 		env.BeaconHeight(),
 		s.poolPairs,
@@ -243,7 +251,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, crossPoolTradeInstructions...)
 
 	// handle withdrawal
-	withdrawalInstructions, err := s.producer.buildInstructionsForWithdrawal(
+	withdrawalInstructions, err := s.producer.withdrawal(
 		env.WithdrawalActions(),
 		env.BeaconHeight(),
 		s.poolPairs,
@@ -256,7 +264,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
 		// handle contribution
-		contributionInstructions, err := s.producer.buildInstructionsForContribution(
+		contributionInstructions, err := s.producer.contribution(
 			env.ContributionActions(),
 			env.BeaconHeight(),
 			false,
@@ -272,7 +280,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	// handle prv required contribution
-	contributionInstructions, err := s.producer.buildInstructionsForContribution(
+	contributionInstructions, err := s.producer.contribution(
 		env.PRVRequiredContributionActions(),
 		env.BeaconHeight(),
 		true,

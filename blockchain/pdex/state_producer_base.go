@@ -16,7 +16,7 @@ import (
 type stateProducerBase struct {
 }
 
-func (sp *stateProducerBase) buildInstructionsForFeeWithdrawal(
+func (sp *stateProducerBase) feeWithdrawal(
 	actions [][]string,
 	beaconHeight uint64,
 	tradingFees map[string]uint64,
@@ -68,95 +68,6 @@ func (sp *stateProducerBase) buildInstructionsForFeeWithdrawal(
 		res = append(res, acceptedInst)
 	}
 	return res, nil
-}
-
-func (sp *stateProducerBase) buildAcceptedTradeInstruction(
-	action metadata.PDETradeRequestAction,
-	beaconHeight, receiveAmount uint64,
-	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-) ([]string, error) {
-
-	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, action.Meta.TokenIDToBuyStr, action.Meta.TokenIDToSellStr))
-	poolPair := poolPairs[pairKey]
-
-	tradeAcceptedContent := metadata.PDETradeAcceptedContent{
-		TraderAddressStr: action.Meta.TraderAddressStr,
-		TxRandomStr:      action.Meta.TxRandomStr,
-		TokenIDToBuyStr:  action.Meta.TokenIDToBuyStr,
-		ReceiveAmount:    receiveAmount,
-		Token1IDStr:      poolPair.Token1IDStr,
-		Token2IDStr:      poolPair.Token2IDStr,
-		ShardID:          action.ShardID,
-		RequestedTxID:    action.TxReqID,
-	}
-	tradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
-		Operator: "-",
-		Value:    receiveAmount,
-	}
-	tradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
-		Operator: "+",
-		Value:    action.Meta.SellAmount + action.Meta.TradingFee,
-	}
-	if poolPair.Token1IDStr == action.Meta.TokenIDToSellStr {
-		tradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
-			Operator: "+",
-			Value:    action.Meta.SellAmount + action.Meta.TradingFee,
-		}
-		tradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
-			Operator: "-",
-			Value:    receiveAmount,
-		}
-	}
-	tradeAcceptedContentBytes, err := json.Marshal(tradeAcceptedContent)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContent: %+v", err)
-		return utils.EmptyStringArray, err
-	}
-	return []string{
-		strconv.Itoa(metadata.PDETradeRequestMeta),
-		strconv.Itoa(int(action.ShardID)),
-		common.PDETradeAcceptedChainStatus,
-		string(tradeAcceptedContentBytes),
-	}, nil
-}
-
-func (sp *stateProducerBase) shouldRefundTradeAction(
-	action metadata.PDETradeRequestAction,
-	beaconHeight uint64,
-	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-) (bool, uint64, error) {
-
-	if len(poolPairs) == 0 || poolPairs == nil {
-		return true, 0, nil
-	}
-
-	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, action.Meta.TokenIDToBuyStr, action.Meta.TokenIDToSellStr))
-	poolPair, found := poolPairs[pairKey]
-	if !found || poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
-		return true, 0, nil
-	}
-
-	receiveAmt, newTokenPoolValueToBuy, tempNewTokenPoolValueToSell, err := calcTradeValue(poolPair, action.Meta.TokenIDToSellStr, action.Meta.SellAmount)
-	if err != nil {
-		return true, 0, nil
-	}
-	if action.Meta.MinAcceptableAmount > receiveAmt {
-		return true, 0, nil
-	}
-
-	// update current pde state on mem
-	newTokenPoolValueToSell := new(big.Int).SetUint64(tempNewTokenPoolValueToSell)
-	fee := action.Meta.TradingFee
-	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, new(big.Int).SetUint64(fee))
-
-	poolPair.Token1PoolValue = newTokenPoolValueToBuy
-	poolPair.Token2PoolValue = newTokenPoolValueToSell.Uint64()
-	if poolPair.Token1IDStr == action.Meta.TokenIDToSellStr {
-		poolPair.Token1PoolValue = newTokenPoolValueToSell.Uint64()
-		poolPair.Token2PoolValue = newTokenPoolValueToBuy
-	}
-
-	return false, receiveAmt, nil
 }
 
 func (sp *stateProducerBase) sortTradeInstsByFee(
@@ -219,4 +130,93 @@ func (sp *stateProducerBase) sortTradeInstsByFee(
 		sortedExistingPairTradeActions = append(sortedExistingPairTradeActions, tradeActions...)
 	}
 	return append(sortedExistingPairTradeActions, notExistingPairTradeActions...)
+}
+
+func buildAcceptedTradeInstruction(
+	action metadata.PDETradeRequestAction,
+	beaconHeight, receiveAmount uint64,
+	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+) ([]string, error) {
+
+	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, action.Meta.TokenIDToBuyStr, action.Meta.TokenIDToSellStr))
+	poolPair := poolPairs[pairKey]
+
+	tradeAcceptedContent := metadata.PDETradeAcceptedContent{
+		TraderAddressStr: action.Meta.TraderAddressStr,
+		TxRandomStr:      action.Meta.TxRandomStr,
+		TokenIDToBuyStr:  action.Meta.TokenIDToBuyStr,
+		ReceiveAmount:    receiveAmount,
+		Token1IDStr:      poolPair.Token1IDStr,
+		Token2IDStr:      poolPair.Token2IDStr,
+		ShardID:          action.ShardID,
+		RequestedTxID:    action.TxReqID,
+	}
+	tradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
+		Operator: "-",
+		Value:    receiveAmount,
+	}
+	tradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
+		Operator: "+",
+		Value:    action.Meta.SellAmount + action.Meta.TradingFee,
+	}
+	if poolPair.Token1IDStr == action.Meta.TokenIDToSellStr {
+		tradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
+			Operator: "+",
+			Value:    action.Meta.SellAmount + action.Meta.TradingFee,
+		}
+		tradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
+			Operator: "-",
+			Value:    receiveAmount,
+		}
+	}
+	tradeAcceptedContentBytes, err := json.Marshal(tradeAcceptedContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContent: %+v", err)
+		return utils.EmptyStringArray, err
+	}
+	return []string{
+		strconv.Itoa(metadata.PDETradeRequestMeta),
+		strconv.Itoa(int(action.ShardID)),
+		common.PDETradeAcceptedChainStatus,
+		string(tradeAcceptedContentBytes),
+	}, nil
+}
+
+func shouldRefundTradeAction(
+	action metadata.PDETradeRequestAction,
+	beaconHeight uint64,
+	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+) (bool, uint64, error) {
+
+	if len(poolPairs) == 0 || poolPairs == nil {
+		return true, 0, nil
+	}
+
+	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, action.Meta.TokenIDToBuyStr, action.Meta.TokenIDToSellStr))
+	poolPair, found := poolPairs[pairKey]
+	if !found || poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
+		return true, 0, nil
+	}
+
+	receiveAmt, newTokenPoolValueToBuy, tempNewTokenPoolValueToSell, err := calcTradeValue(poolPair, action.Meta.TokenIDToSellStr, action.Meta.SellAmount)
+	if err != nil {
+		return true, 0, nil
+	}
+	if action.Meta.MinAcceptableAmount > receiveAmt {
+		return true, 0, nil
+	}
+
+	// update current pde state on mem
+	newTokenPoolValueToSell := new(big.Int).SetUint64(tempNewTokenPoolValueToSell)
+	fee := action.Meta.TradingFee
+	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, new(big.Int).SetUint64(fee))
+
+	poolPair.Token1PoolValue = newTokenPoolValueToBuy
+	poolPair.Token2PoolValue = newTokenPoolValueToSell.Uint64()
+	if poolPair.Token1IDStr == action.Meta.TokenIDToSellStr {
+		poolPair.Token1PoolValue = newTokenPoolValueToSell.Uint64()
+		poolPair.Token2PoolValue = newTokenPoolValueToBuy
+	}
+
+	return false, receiveAmt, nil
 }

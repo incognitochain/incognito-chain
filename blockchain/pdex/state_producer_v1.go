@@ -18,7 +18,7 @@ type stateProducerV1 struct {
 	stateProducerBase
 }
 
-func (sp *stateProducerV1) buildInstructionsForCrossPoolTrade(
+func (sp *stateProducerV1) crossPoolTrade(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
@@ -409,7 +409,7 @@ func (sp *stateProducerV1) prepareInfoForSorting(
 	return tradingFee, sellAmount
 }
 
-func (sp *stateProducerV1) buildInstructionsForWithdrawal(
+func (sp *stateProducerV1) withdrawal(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
@@ -566,7 +566,7 @@ func (sp *stateProducerV1) deductAmounts(
 	return res
 }
 
-func (sp *stateProducerV1) buildInstructionsForContribution(
+func (sp *stateProducerV1) contribution(
 	actions [][]string,
 	beaconHeight uint64,
 	isPRVRequired bool,
@@ -726,7 +726,7 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 	return res, nil
 }
 
-func (sp *stateProducerV1) buildInstructionsForTrade(
+func (sp *stateProducerV1) trade(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
@@ -740,7 +740,7 @@ func (sp *stateProducerV1) buildInstructionsForTrade(
 		poolPairs,
 	)
 	for _, tradeAction := range sortedTradesActions {
-		should, receiveAmount, err := sp.shouldRefundTradeAction(tradeAction, beaconHeight, poolPairs)
+		should, receiveAmount, err := shouldRefundTradeAction(tradeAction, beaconHeight, poolPairs)
 		if err != nil {
 			return utils.EmptyStringMatrix, err
 		}
@@ -759,7 +759,7 @@ func (sp *stateProducerV1) buildInstructionsForTrade(
 			res = append(res, inst)
 			continue
 		}
-		inst, err := sp.buildAcceptedTradeInstruction(tradeAction, beaconHeight, receiveAmount, poolPairs)
+		inst, err := buildAcceptedTradeInstruction(tradeAction, beaconHeight, receiveAmount, poolPairs)
 		if err != nil {
 			return utils.EmptyStringMatrix, err
 		}
