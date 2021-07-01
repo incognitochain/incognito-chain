@@ -52,6 +52,48 @@ func Test_stateProducerBase_feeWithdrawal(t *testing.T) {
 			want:    [][]string{},
 			wantErr: true,
 		},
+		/*{*/
+		//name: "Reject",
+		//sp:   &stateProducerBase{},
+		//args: args{
+		//beaconHeight: 10,
+		//actions: [][]string{
+		//[]string{
+		//"",
+		//buildFeeWithdrawalRequestActionForTest(
+		//paymentAddress0,
+		//common.PRVCoinID.String(),
+		//tempPToken,
+		//10,
+		//)[1],
+		//},
+		//},
+		//tradingFees: map[string]uint64{},
+		//},
+		//want:    [][]string{},
+		//wantErr: false,
+		//},
+		//{
+		//name: "Accept",
+		//sp:   &stateProducerBase{},
+		//args: args{
+		//beaconHeight: 10,
+		//actions: [][]string{
+		//[]string{
+		//"",
+		//buildFeeWithdrawalRequestActionForTest(
+		//paymentAddress0,
+		//common.PRVCoinID.String(),
+		//tempPToken,
+		//10,
+		//)[1],
+		//},
+		//},
+		//tradingFees: map[string]uint64{},
+		//},
+		//want:    [][]string{},
+		//wantErr: false,
+		/*},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

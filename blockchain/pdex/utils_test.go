@@ -14,6 +14,11 @@ import (
 	"github.com/jrick/logrotate/rotator"
 )
 
+const (
+	paymentAddress0 = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
+	tempPToken      = "41fe8c2f89cce24c0b798ec0fa10ac9cd6f0d273249922e92cb26412df989830"
+)
+
 // initLogRotator initializes the logging rotater to write logs to logFile and
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
