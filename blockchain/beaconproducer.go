@@ -80,7 +80,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
-
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
@@ -192,6 +191,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	}
 	sort.Ints(keys)
 	//Shard block is a map ShardId -> array of shard block
+
 	for _, v := range keys {
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
@@ -218,14 +218,20 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	}
 
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(
+	statefulInsts, err := blockchain.buildStatefulInstructions(
 		curView,
 		curView.featureStateDB,
 		statefulActionsByShardID,
 		newBeaconBlock.Header.Height,
 		rewardForCustodianByEpoch,
 		portalParams,
+		shardStates,
 	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	shardInstruction.compose()
@@ -238,7 +244,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(bridgeInstructions) > 0 {
+	if len(instructions) > 0 {
 		BLogger.log.Infof("Producer instructions: %+v", instructions)
 	}
 
@@ -286,7 +292,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.CrossShardBitMap,
 	)
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(
-		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
+		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
@@ -324,8 +330,15 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
 
 	// Collect stateful actions
-	statefulActions := blockchain.collectStatefulActions(instructions)
+	statefulActions := collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
+
+	for _, tx := range shardBlock.Body.Transactions {
+		if metadata.IsPDETx(tx.GetMetadata()) {
+			shardState := shardStates[shardID]
+			shardState.AddPDETxHash(*tx.Hash())
+		}
+	}
 
 	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions
 }
@@ -371,7 +384,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 			instructions = append(instructions, tempSwapInstruction.ToString())
 		}
 	}
-
 
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {

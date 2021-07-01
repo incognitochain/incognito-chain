@@ -87,7 +87,6 @@ func ParseEVMIssuingInstAcceptedContent(instAcceptedContentStr string) (*Issuing
 	return &issuingETHAcceptedInst, nil
 }
 
-
 func NewIssuingEVMRequest(
 	blockHash rCommon.Hash,
 	txIndex uint,
@@ -211,8 +210,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		evmParam.GetFromEnv()
 		host = evmParam.Host
 	} else if iReq.Type == IssuingETHRequestMeta {
-		evmParam := config.Param().GethParam
-		evmParam.GetFromEnv()
+		evmParam := config.Config().GethParam
 		protocol = evmParam.Protocol
 		host = evmParam.Host
 		port = evmParam.Port

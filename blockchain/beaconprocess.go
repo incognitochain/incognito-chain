@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -302,19 +303,21 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 
-	//check previous pdestate state consistency
-	dbPDEState, err := InitCurrentPDEStateFromDB(curView.featureStateDB, nil, beaconBlock.Header.Height-1) //get from db
-	if err != nil {
-		return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
-	}
-	if curView.pdeState != nil && !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
-		mem, _ := json.Marshal(curView.pdeState)
-		db, _ := json.Marshal(dbPDEState)
-		Logger.log.Errorf("Last Beacon Block Instruction %+v", curView.BestBlock.Body.Instructions)
-		Logger.log.Error("Mem", string(mem))
-		Logger.log.Error("DB", string(db))
-		return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
-	}
+	//TODO: @0xkumi and @tin check here again
+	/*//check previous pdestate state consistency*/
+	//dbPDEState, err := pdex.InitStateFromDB(curView.featureStateDB, beaconBlock.Header.Height-1) //get from db
+	//if err != nil {
+	//return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
+	//}
+
+	//if !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
+	//mem, _ := json.Marshal(curView.pdeState)
+	//db, _ := json.Marshal(dbPDEState)
+	//Logger.log.Errorf("Last Beacon Block Instruction %+v", curView.BestBlock.Body.Instructions)
+	//Logger.log.Error("Mem", string(mem))
+	//Logger.log.Error("DB", string(db))
+	//return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
+	/*}*/
 
 	portalParams := portal.GetPortalParams()
 
@@ -486,8 +489,13 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
-	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
+func (curView *BeaconBestState) updateBeaconBestState(
+	beaconBlock *types.BeaconBlock, blockchain *BlockChain,
+) (
+	*BeaconBestState, *committeestate.BeaconCommitteeStateHash,
+	*committeestate.CommitteeChange, [][]string,
+	error,
+) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
@@ -574,6 +582,7 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 		}
 	}
+
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
@@ -626,11 +635,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.SlashStateDBRootHash = common.EmptyRoot
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
-
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false))
-
+	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	beaconBestState.Epoch = 1
-	return nil
+	return err
 }
 
 func (curView *BeaconBestState) countMissingSignature(
@@ -829,27 +837,44 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	// execute, store token init instructions
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
+
 	// execute, store PDE instruction
-	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
+
+	// transfrom beacon height for pdex process
+	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
+
+	pdeStateEnv := pdex.
+		NewStateEnvBuilder().
+		BuildBeaconInstructions(beaconBlock.Body.Instructions).
+		BuildStateDB(newBestState.featureStateDB).
+		BuildBeaconHeight(beaconBlock.Header.Height - 1).
+		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
+		Build()
+	err = newBestState.pdeState.Process(pdeStateEnv)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
 	}
-	if newBestState.pdeState != nil {
-		if !reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
-			//check updated field in currentPDEState and store these field into statedb
-			diffState := getDiffPDEState(curView.pdeState, newBestState.pdeState)
-			err = storePDEStateToDB(newBestState.featureStateDB, diffState)
-			if err != nil {
-				Logger.log.Error(err)
-				return err
-			}
-		}
-		//clear DeletedWaitingPDEContributions
-		newBestState.pdeState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
-		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
-		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+
+	diffState, err := newBestState.pdeState.GetDiff(curView.pdeState)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
 	}
+	if diffState != nil {
+		err = diffState.StoreToDB(pdeStateEnv)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+	}
+
+	//clear DeletedWaitingPDEContributions
+	newBestState.pdeState.ClearCache()
+	//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
+
+	// transfrom beacon height for pdex process
+	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
 
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)

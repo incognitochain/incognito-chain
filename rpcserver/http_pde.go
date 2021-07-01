@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -701,11 +703,10 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, nil, uint64(beaconHeight))
+	pdeState, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-
 
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
@@ -714,10 +715,10 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	beaconBlock := beaconBlocks[0]
 	result := jsonresult.CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
-		PDEPoolPairs:            pdeState.PDEPoolPairs,
-		PDEShares:               pdeState.PDEShares,
-		WaitingPDEContributions: pdeState.WaitingPDEContributions,
-		PDETradingFees:          pdeState.PDETradingFees,
+		PDEPoolPairs:            pdeState.PoolPairs(),
+		PDEShares:               pdeState.Shares(),
+		WaitingPDEContributions: pdeState.WaitingContributions(),
+		PDETradingFees:          pdeState.TradingFees(),
 	}
 	return result, nil
 }
@@ -1245,11 +1246,11 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, nil, latestBeaconHeight)
+	pdeState, err := pdex.InitStateFromDB(beaconFeatureStateDB, latestBeaconHeight)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdePoolPairs := pdeState.PDEPoolPairs
+	pdePoolPairs := pdeState.PoolPairs()
 	results := []*ConvertedPrice{}
 	if toTokenIDStr != "all" {
 		convertedPrice := convertPrice(
@@ -1614,7 +1615,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
 		}
 	}
-
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)

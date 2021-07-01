@@ -5,11 +5,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
@@ -83,7 +84,6 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.IsTest = isTest
 	bc.beaconViewCache, _ = lru.New(100)
 	bc.cQuitSync = make(chan struct{})
-	bc.GetBeaconBestState().Params = make(map[string]string)
 	return bc
 }
 
@@ -114,9 +114,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
+	EnableIndexingCoinByOTAKey = (config.OutCoinByOTAKeyDb != nil)
 	if EnableIndexingCoinByOTAKey {
-		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
 		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
 		if err != nil {

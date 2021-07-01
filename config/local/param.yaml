@@ -58,16 +58,13 @@ beacon_height_break_point_burn_addr: 2
 eth_remove_bridge_sig_epoch: 0
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 2
-bc_height_break_point_privacy_v2: 52300
+bc_height_break_point_privacy_v2: 1
 coin_v2_lowest_height: 1
 enable_feature_flags:
   - 0: 1
   - 1: 0
 portal_v3_height: 30158
 tx_pool_version: 0
-geth_param:
-  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
-  protocol: "https"
-  port: ""
+pde_v2_height: 1000000000000
 bsc_param:
   host: "https://data-seed-prebsc-1-s1.binance.org:8545"

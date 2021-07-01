@@ -112,10 +112,11 @@ type config struct {
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 
 	// Optional : db to store coin by OTA key (for v2)
-	OutcoinDatabaseDir  string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
-	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
-	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
-	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
+	OutcoinDatabaseDir  string    `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
+	NumIndexerWorkers   int64     `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
+	IndexerAccessTokens string    `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
+	UseOutcoinDatabase  []bool    `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
+	GethParam           gethParam `mapstructure:"geth_param"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -359,45 +360,7 @@ func (c *config) verify() {
 }
 
 func LoadConfig() *config {
-	c = &config{
-		LogLevel:                    DefaultLogLevel,
-		MaxOutPeers:                 DefaultMaxPeers,
-		MaxInPeers:                  DefaultMaxPeers,
-		MaxPeers:                    DefaultMaxPeers,
-		MaxPeersSameShard:           DefaultMaxPeersSameShard,
-		MaxPeersOtherShard:          DefaultMaxPeersOtherShard,
-		MaxPeersOther:               DefaultMaxPeersOther,
-		MaxPeersNoShard:             DefaultMaxPeersNoShard,
-		MaxPeersBeacon:              DefaultMaxPeersBeacon,
-		RPCMaxClients:               DefaultMaxRPCClients,
-		RPCMaxWSClients:             DefaultMaxRPCWsClients,
-		RPCLimitRequestPerDay:       DefaultRPCLimitRequestPerDay,
-		RPCLimitRequestErrorPerHour: DefaultRPCLimitErrorRequestPerHour,
-		DataDir:                     defaultDataDir,
-		DatabaseDir:                 DefaultDatabaseDirname,
-		MempoolDir:                  DefaultMempoolDirname,
-		LogDir:                      defaultLogDir,
-		RPCKey:                      defaultRPCKeyFile,
-		RPCCert:                     defaultRPCCertFile,
-		WalletShardID:               -1,
-		WalletName:                  DefaultWalletName,
-		DisableTLS:                  DefaultDisableRpcTLS,
-		DisableRPC:                  false,
-		RPCDisableAuth:              false,
-		DiscoverPeers:               true,
-		DiscoverPeersAddress:        "127.0.0.1:9330", //"35.230.8.182:9339",
-		MiningKeys:                  utils.EmptyString,
-		PrivateKey:                  utils.EmptyString,
-		FastStartup:                 DefaultFastStartup,
-		TxPoolTTL:                   DefaultTxPoolTTL,
-		TxPoolMaxTx:                 DefaultTxPoolMaxTx,
-		IsPersistMempool:            DefaultPersistMempool,
-		LimitFee:                    DefaultLimitFee,
-		EnableMining:                DefaultEnableMining,
-		LogFileName:                 DefaultLogFilename,
-		OutcoinDatabaseDir:          DefaultOutcoinDirname,
-		NumIndexerWorkers:           DefaultNumCIWorkers,
-	}
+	c = &config{}
 
 	//get network
 	c.loadNetwork()
@@ -410,36 +373,49 @@ func LoadConfig() *config {
 }
 
 func (c *config) loadConfig() {
-	mode := utils.GetEnv(ConfigModeKey, FlagConfigMode)
-	switch mode {
-	case FileConfigMode:
-		network := c.Network()
-		//read config from file
-		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
-		viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType)) // REQUIRED if the config file does not have the extension in the name
-		path := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
-		fmt.Println(path)
-		viper.AddConfigPath(path) // optionally look for config in the working directory
-		if err := viper.ReadInConfig(); err != nil {
-			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-				// Config file was found but another error was produced
-				if err != nil {
-					panic(err)
-				}
-			}
-		} else {
-			err = viper.Unmarshal(&c)
+	network := c.Network()
+	//read config from file
+	viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
+	viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType)) // REQUIRED if the config file does not have the extension in the name
+	path := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
+	fmt.Println(path)
+	viper.AddConfigPath(path) // optionally look for config in the working directory
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			// Config file was found but another error was produced
 			if err != nil {
 				panic(err)
 			}
 		}
-
-	case FlagConfigMode:
-		parser := flags.NewParser(c, flags.Default)
-		_, err := parser.Parse()
+	} else {
+		err = viper.Unmarshal(&c)
 		if err != nil {
 			panic(err)
 		}
+	}
 
+	parser := flags.NewParser(c, flags.Default)
+	_, err := parser.Parse()
+	if err != nil {
+		panic(err)
+	}
+	c.GethParam.GetFromEnv()
+}
+
+type gethParam struct {
+	Host     string `mapstructure:"host"`
+	Protocol string `mapstructure:"protocol"`
+	Port     string `mapstructure:"port"`
+}
+
+func (gethPram *gethParam) GetFromEnv() {
+	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
+	}
+	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
+	}
+	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
 	}
 }

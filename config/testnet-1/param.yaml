@@ -65,10 +65,6 @@ enable_feature_flags:
   - 1: 0
 portal_v3_height: 1328816
 tx_pool_version: 0
-geth_param:
-  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
-  protocol: "https"
-  port: ""
 bsc_param:
   host: "https://data-seed-prebsc-2-s1.binance.org:8545"
-
+pde_v2_height: 1000000000000

@@ -7,7 +7,6 @@ const (
 	ConfigFileKey     = "INCOGNITO_CONFIG_FILE_KEY"
 	ConfigDirKey      = "INCOGNITO_CONFIG_DIR_KEY"
 	ConfigFileTypeKey = "INCOGNITO_CONFIG_FILE_TYPE_KEY"
-	ConfigModeKey     = "INCOGNITO_CONFIG_MODE_KEY"
 	ParamFileKey      = "INCOGNITO_PARAM_FILE_KEY"
 	InitTxFileKey     = "INCOGNITO_INIT_TX_FILE_KEY"
 	GethHostKey       = "GETH_NAME"
@@ -69,8 +68,6 @@ const (
 	DefaultPort           = "9444"
 	DefaultRPCPort        = "9344"
 	DefaultWSPort         = "19444"
-	FlagConfigMode        = "flag"
-	FileConfigMode        = "file"
 	LocalNet              = 0x02
 	Testnet2Net           = 0x32
 	TestnetNet            = 0x16

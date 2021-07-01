@@ -332,3 +332,41 @@ func ConvertPrivacyTokenToNativeToken(
 		stateDB,
 	)
 }
+
+func IsPDETx(metadata Metadata) bool {
+	if metadata != nil {
+		return IsPDEType(metadata.GetType())
+	}
+	return false
+}
+
+func IsPDEType(metadataType int) bool {
+	switch metadataType {
+	case PDEContributionMeta:
+		return true
+	case PDETradeRequestMeta:
+		return true
+	case PDETradeResponseMeta:
+		return true
+	case PDEWithdrawalRequestMeta:
+		return true
+	case PDEWithdrawalResponseMeta:
+		return true
+	case PDEContributionResponseMeta:
+		return true
+	case PDEPRVRequiredContributionRequestMeta:
+		return true
+	case PDECrossPoolTradeRequestMeta:
+		return true
+	case PDECrossPoolTradeResponseMeta:
+		return true
+	case PDEFeeWithdrawalRequestMeta:
+		return true
+	case PDEFeeWithdrawalResponseMeta:
+		return true
+	case PDETradingFeesDistributionMeta:
+		return true
+	default:
+		return false
+	}
+}

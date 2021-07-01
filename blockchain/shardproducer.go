@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/config"
 
@@ -283,7 +284,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -444,30 +445,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
 				}
-			case metadata.PDETradeRequestMeta:
-				if len(inst) >= 4 {
-					newTx, err = blockGenerator.buildPDETradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDECrossPoolTradeRequestMeta:
-				if len(inst) >= 4 {
-					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEWithdrawalRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PDEWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEFeeWithdrawalRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-				if len(inst) >= 4 {
-					if inst[2] == common.PDEContributionRefundChainStatus {
-						newTx, err = blockGenerator.buildPDERefundContributionTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-					} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
-						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-					}
-				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
 				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestRejectedChainStatus {
@@ -531,7 +508,20 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			default:
-				continue
+				newTx, err = curView.pdeTxBuilder.Build(
+					metaType,
+					inst,
+					producerPrivateKey,
+					shardID,
+					curView.GetCopiedTransactionStateDB(),
+					featureStateDB,
+				)
+				if err != nil {
+					return nil, nil, err
+				}
+				if newTx == nil {
+					continue
+				}
 			}
 			if err != nil {
 				return nil, nil, err
@@ -810,7 +800,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 
 			switch l[0] {
 			case instruction.STAKE_ACTION:
-
 				if l[2] == "shard" {
 					shard := strings.Split(l[1], ",")
 					newShardCandidates := []string{}
@@ -831,7 +820,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 						instructions = append(instructions, l)
 					}
 				}
-
 				if l[2] == "beacon" {
 					beacon := strings.Split(l[1], ",")
 					newBeaconCandidates := []string{}
@@ -887,7 +875,10 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
 func CreateShardInstructionsFromTransactionAndInstruction(
-	transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -899,12 +890,14 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
-			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-			if err == nil {
-				instructions = append(instructions, actionPairs...)
-			} else {
-				Logger.log.Errorf("Build Request Action Error %+v", err)
+			if beaconHeight < config.Param().PDEV2Height || !metadata.IsPDETx(metadataValue) {
+				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
+				if err == nil {
+					instructions = append(instructions, actionPairs...)
+				} else {
+					Logger.log.Errorf("Build Request Action Error %+v", err)
+				}
 			}
 		}
 		switch tx.GetMetadataType() {

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/config"
 )
 
@@ -43,5 +44,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		}
 	}
 
-	return nil
+	//TODO: @tin optimize here later
+	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
+	return err
 }
