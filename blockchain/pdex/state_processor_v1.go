@@ -53,7 +53,9 @@ func (sp *stateProcessorV1) contribution(
 		}
 
 		contribStatus := metadata.PDEContributionStatus{
-			Status: byte(common.PDEContributionWaitingStatus),
+			Contributed1Amount: waitingContribution.ContributedAmount,
+			TokenID1Str:        waitingContribution.TokenIDStr,
+			Status:             byte(common.PDEContributionWaitingStatus),
 		}
 
 		contribStatusBytes, _ := json.Marshal(contribStatus)
@@ -82,7 +84,9 @@ func (sp *stateProcessorV1) contribution(
 			delete(waitingContributions, waitingContribPairKey)
 		}
 		contribStatus := metadata.PDEContributionStatus{
-			Status: byte(common.PDEContributionRefundStatus),
+			TokenID2Str:     refundContribution.TokenIDStr,
+			Returned2Amount: refundContribution.ContributedAmount,
+			Status:          byte(common.PDEContributionRefundStatus),
 		}
 		contribStatusBytes, _ := json.Marshal(contribStatus)
 		err = statedb.TrackPDEContributionStatus(
@@ -126,7 +130,9 @@ func (sp *stateProcessorV1) contribution(
 		deletedWaitingContributions[waitingContribPairKey] = existingWaitingContribution
 		delete(waitingContributions, waitingContribPairKey)
 		contribStatus := metadata.PDEContributionStatus{
-			Status: byte(common.PDEContributionAcceptedStatus),
+			TokenID2Str:        matchedContribution.TokenIDStr,
+			Contributed2Amount: matchedContribution.ContributedAmount,
+			Status:             byte(common.PDEContributionAcceptedStatus),
 		}
 		contribStatusBytes, _ := json.Marshal(contribStatus)
 		err = statedb.TrackPDEContributionStatus(

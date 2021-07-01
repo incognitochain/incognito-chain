@@ -255,21 +255,26 @@ func buildWaitingContributionInst(
 }
 
 func buildRefundContributionInst(
-	action metadata.PDEContributionAction,
+	pdeContributionPairID string,
+	contributorAddressStr string,
+	contributedAmount uint64,
+	tokenIDStr string,
 	metaType int,
+	shardID byte,
+	txReqID common.Hash,
 ) []string {
 	refundContribution := metadata.PDERefundContribution{
-		PDEContributionPairID: action.Meta.PDEContributionPairID,
-		ContributorAddressStr: action.Meta.ContributorAddressStr,
-		ContributedAmount:     action.Meta.ContributedAmount,
-		TokenIDStr:            action.Meta.TokenIDStr,
-		TxReqID:               action.TxReqID,
-		ShardID:               action.ShardID,
+		PDEContributionPairID: pdeContributionPairID,
+		ContributorAddressStr: contributorAddressStr,
+		ContributedAmount:     contributedAmount,
+		TokenIDStr:            tokenIDStr,
+		TxReqID:               txReqID,
+		ShardID:               shardID,
 	}
 	refundContributionBytes, _ := json.Marshal(refundContribution)
 	return []string{
 		strconv.Itoa(metaType),
-		strconv.Itoa(int(action.ShardID)),
+		strconv.Itoa(int(shardID)),
 		common.PDEContributionRefundChainStatus,
 		string(refundContributionBytes),
 	}
@@ -296,7 +301,7 @@ func buildMatchedContributionInst(
 }
 
 func buildMatchedAndReturnedContributionInst(
-	pdeContributionPairID string,
+	contributionPairID string,
 	contributorAddressStr string,
 	actualContributedAmount uint64,
 	returnedContributedAmount uint64,
@@ -307,7 +312,7 @@ func buildMatchedAndReturnedContributionInst(
 	actualWaitingContribAmount uint64,
 ) []string {
 	matchedNReturnedContribution := metadata.PDEMatchedNReturnedContribution{
-		PDEContributionPairID:      pdeContributionPairID,
+		PDEContributionPairID:      contributionPairID,
 		ContributorAddressStr:      contributorAddressStr,
 		ActualContributedAmount:    actualContributedAmount,
 		ReturnedContributedAmount:  returnedContributedAmount,

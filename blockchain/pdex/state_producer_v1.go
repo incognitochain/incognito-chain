@@ -612,14 +612,26 @@ func (sp *stateProducerV1) contribution(
 			waitingContribution.ContributorAddressStr != meta.ContributorAddressStr ||
 			(isPRVRequired && waitingContribution.TokenIDStr != common.PRVIDStr && meta.TokenIDStr != common.PRVIDStr) {
 			delete(waitingContributions, waitingContribPairKey)
+
 			refundInst1 := buildRefundContributionInst(
-				contributionAction,
+				meta.PDEContributionPairID,
+				meta.ContributorAddressStr,
+				meta.ContributedAmount,
+				meta.TokenIDStr,
 				metaType,
+				contributionAction.ShardID,
+				contributionAction.TxReqID,
 			)
 			refundInst2 := buildRefundContributionInst(
-				contributionAction,
+				meta.PDEContributionPairID,
+				waitingContribution.ContributorAddressStr,
+				waitingContribution.Amount,
+				waitingContribution.TokenIDStr,
 				metaType,
+				contributionAction.ShardID,
+				waitingContribution.TxReqID,
 			)
+
 			res = append(res, refundInst1)
 			res = append(res, refundInst2)
 			continue
@@ -664,12 +676,22 @@ func (sp *stateProducerV1) contribution(
 		if actualWaitingContribAmt == 0 || actualIncomingWaitingContribAmt == 0 {
 			delete(waitingContributions, waitingContribPairKey)
 			refundInst1 := buildRefundContributionInst(
-				contributionAction,
+				meta.PDEContributionPairID,
+				meta.ContributorAddressStr,
+				meta.ContributedAmount,
+				meta.TokenIDStr,
 				metaType,
+				contributionAction.ShardID,
+				contributionAction.TxReqID,
 			)
 			refundInst2 := buildRefundContributionInst(
-				contributionAction,
+				meta.PDEContributionPairID,
+				waitingContribution.ContributorAddressStr,
+				waitingContribution.Amount,
+				waitingContribution.TokenIDStr,
 				metaType,
+				contributionAction.ShardID,
+				waitingContribution.TxReqID,
 			)
 			res = append(res, refundInst1)
 			res = append(res, refundInst2)
