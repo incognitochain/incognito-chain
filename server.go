@@ -193,6 +193,8 @@ func (serverObj *Server) NewServer(
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
 	dboc *incdb.Database,
+	indexerWorkers int64,
+	indexerToken string,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -312,12 +314,14 @@ func (serverObj *Server) NewServer(
 		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		// NodeMode:        cfg.NodeMode,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsubManager,
-		ConsensusEngine: serverObj.consensusEngine,
-		Highway:         serverObj.highway,
-		OutcoinByOTAKeyDb: dboc,
-		PoolManager:     poolManager,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:     pubsubManager,
+		ConsensusEngine:   serverObj.consensusEngine,
+		Highway:           serverObj.highway,
+		OutCoinByOTAKeyDb: dboc,
+		IndexerWorkers:    indexerWorkers,
+		IndexerToken:      indexerToken,
+		PoolManager:       poolManager,
 	})
 	if err != nil {
 		return err
@@ -615,6 +619,12 @@ func (serverObj *Server) Stop() error {
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
+	//Stop the output coin indexer
+	if blockchain.GetCoinIndexer() != nil {
+		blockchain.GetCoinIndexer().Stop()
+	}
+
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil

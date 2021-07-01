@@ -6,6 +6,7 @@ import (
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -203,7 +204,9 @@ func NewBurningRequestMetadata(
 }
 
 func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
-	return metadata.GetETHHeader(rCommon.HexToHash(ethBlockHash))
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
+	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string

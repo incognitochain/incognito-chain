@@ -933,6 +933,24 @@ func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, bo
 	return 0, false, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
 }
 
+func (blockService BlockService) CheckBSCHashIssued(data map[string]interface{}) (bool, error) {
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
+	uniqBSCTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	issued, err := statedb.IsBSCTxHashIssued(bridgeStateDB, uniqBSCTx)
+	return issued, err
+}
+
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
 	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(pdexStateDB, pdePrefix, pdeSuffix)
