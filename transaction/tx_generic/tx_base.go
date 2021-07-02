@@ -29,8 +29,8 @@ type TxBase struct {
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 	Info     []byte // 512 bytes
 	// Sign and Privacy proof, required
-	SigPubKey            []byte `json:"SigPubKey,omitempty"` // 33 bytes
-	Sig                  []byte `json:"Sig,omitempty"`       //
+	SigPubKey            []byte `json:"SigPubKey"` // 33 bytes
+	Sig                  []byte `json:"Sig"`       //
 	Proof                privacy.Proof
 	PubKeyLastByteSender byte
 	// Metadata, optional
