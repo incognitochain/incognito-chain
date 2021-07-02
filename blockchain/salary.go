@@ -1,8 +1,8 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/transaction"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -21,9 +21,6 @@ import (
 func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB) error {
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
-			continue
-		}
-		if instruction.IsConsensusInstruction(inst[0]) || inst[0] == instruction.SHARD_RECEIVE_REWARD_V3_ACTION {
 			continue
 		}
 		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_V3_ACTION {
@@ -46,6 +43,9 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 					}
 				}
 			}
+			continue
+		}
+		if instruction.IsConsensusInstruction(inst[0]) {
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])
@@ -88,12 +88,11 @@ func (blockchain *BlockChain) processSalaryInstructions(
 	cInfos := make(map[int][]*statedb.StakerInfo)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
+
 			if len(l) <= 2 {
 				continue
 			}
-			if instruction.IsConsensusInstruction(l[0]) {
-				continue
-			}
+
 			if l[0] == instruction.SHARD_RECEIVE_REWARD_V3_ACTION {
 				shardReceiveRewardV3, err := instruction.ValidateAndImportShardReceiveRewardV3InstructionFromString(l)
 				if err != nil {
@@ -118,8 +117,14 @@ func (blockchain *BlockChain) processSalaryInstructions(
 				if err != nil {
 					return err
 				}
+
 				continue
 			}
+
+			if instruction.IsConsensusInstruction(l[0]) {
+				continue
+			}
+
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err != nil {
 				continue
@@ -251,7 +256,7 @@ func calculateRewardV3(
 	map[common.Hash]uint64,
 	map[common.Hash]uint64, error,
 ) {
-	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
+	allCoinID := statedb.GetAllTokenIDForRewardV3(rewardStateDB, epoch)
 	blocksPerYear := getNoBlkPerYear(maxBeaconBlockCreation)
 	percentForIncognitoDAO := getPercentForIncognitoDAO(beaconHeight, blocksPerYear)
 	totalRewardForShardSubset := make([][]map[common.Hash]uint64, numberOfActiveShards)
@@ -530,8 +535,8 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 		return nil, err
 	}
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &requestDetail.PaymentAddress, TokenID: &requestDetail.TokenID}
-	makeMD := func (c privacy.Coin) metadata.Metadata {
-		if c != nil && c.GetSharedRandom() != nil{
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
 			responseMeta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
 		return responseMeta

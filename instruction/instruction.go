@@ -38,6 +38,7 @@ func IsConsensusInstruction(action string) bool {
 		action == SWAP_SHARD_ACTION ||
 		action == UNSTAKE_ACTION ||
 		action == ACCEPT_BLOCK_REWARD_V3_ACTION ||
+		action == SHARD_RECEIVE_REWARD_V3_ACTION ||
 		action == FINISH_SYNC_ACTION ||
 		action == SHARD_INST ||
 		action == BEACON_INST ||

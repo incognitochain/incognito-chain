@@ -1082,6 +1082,30 @@ func (stateDB *StateDB) getAllRewardRequestState(epoch uint64) ([]common.Hash, [
 	return keys, m
 }
 
+func (stateDB *StateDB) getAllRewardRequestStateV3(epoch uint64) ([]common.Hash, []*RewardRequestStateV3) {
+	m := []*RewardRequestStateV3{}
+	keys := []common.Hash{}
+	prefix := GetRewardRequestPrefix(epoch)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		keys = append(keys, common.BytesToHash(newKey))
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardRequestState := NewRewardRequestStateV3()
+		err := json.Unmarshal(newValue, rewardRequestState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m = append(m, rewardRequestState)
+	}
+	return keys, m
+}
+
 // ================================= Black List Producer OBJECT =======================================
 func (stateDB *StateDB) getBlackListProducerState(key common.Hash) (*BlackListProducerState, bool, error) {
 	blackListProducerState, err := stateDB.getStateObject(BlackListProducerObjectType, key)

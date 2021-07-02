@@ -83,7 +83,7 @@ func main() {
 		convertShard1_2()
 		convertShard1_3()
 	}
-	if os.Args[1] == "send-tx" || os.Args[1] == "all" {
+	if os.Args[1] == "send-tx" {
 		sendTransactionFromTestnetGenesisKeyFromShard0_0()
 		sendTransactionFromTestnetGenesisKeyFromShard0_1()
 		sendTransactionFromTestnetGenesisKeyFromShard1_0()

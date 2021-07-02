@@ -31,6 +31,36 @@ func AddShardRewardRequestV3(
 	return nil
 }
 
+func GetRewardOfShardByEpochV3(
+	stateDB *StateDB,
+	epoch uint64,
+	shardID, subsetID byte,
+	tokenID common.Hash,
+) (uint64, error) {
+	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	amount, has, err := stateDB.getRewardRequestAmountV3(key)
+	if err != nil {
+		return 0, NewStatedbError(GetRewardRequestError, err)
+	}
+	if !has {
+		return 0, nil
+	}
+	return amount, nil
+}
+
+func GetAllTokenIDForRewardV3(stateDB *StateDB, epoch uint64) []common.Hash {
+	_, rewardRequestStates := stateDB.getAllRewardRequestStateV3(epoch)
+	m := make(map[common.Hash]struct{})
+	tokenIDs := []common.Hash{}
+	for _, rewardRequestState := range rewardRequestStates {
+		m[rewardRequestState.TokenID()] = struct{}{}
+	}
+	for k, _ := range m {
+		tokenIDs = append(tokenIDs, k)
+	}
+	return tokenIDs
+}
+
 // Reward in Beacon
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
@@ -47,23 +77,6 @@ func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID
 		return NewStatedbError(StoreRewardRequestError, err)
 	}
 	return nil
-}
-
-func GetRewardOfShardByEpochV3(
-	stateDB *StateDB,
-	epoch uint64,
-	shardID, subsetID byte,
-	tokenID common.Hash,
-) (uint64, error) {
-	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
-	amount, has, err := stateDB.getRewardRequestAmountV3(key)
-	if err != nil {
-		return 0, NewStatedbError(GetRewardRequestError, err)
-	}
-	if !has {
-		return 0, nil
-	}
-	return amount, nil
 }
 
 func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash) (uint64, error) {

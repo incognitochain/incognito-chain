@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var (
@@ -230,6 +231,25 @@ var (
      }
    ],
    "id":1
+}`), strings.NewReader(`{
+   "jsonrpc":"1.0",
+   "method":"createandsendstakingtransaction",
+   "params":[
+      "112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f",
+      {
+         "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA":1750000000000
+      },
+     10,
+     0,
+    {
+    "StakingType": 63,
+	"CandidatePaymentAddress": "12snQLH2TcATCiZhre6fTKphX2Di86mAEsS1pKzfq58ZVk3fqqhMt4K6gw8y9BdHd11Z9efe56bRQoyYmDiMJHM6d8sc6vqXetdFQzLyKBRv9ntw8fpyho78UqRvcbvrdRrL3c4k6ypii6LLQwNb",
+    "PrivateSeed": "12rtQu37z9bhDRL3ERZFm383jjrZ3cZTVB1rpgzhfog3o3KjviV",
+    "RewardReceiverPaymentAddress": "12snQLH2TcATCiZhre6fTKphX2Di86mAEsS1pKzfq58ZVk3fqqhMt4K6gw8y9BdHd11Z9efe56bRQoyYmDiMJHM6d8sc6vqXetdFQzLyKBRv9ntw8fpyho78UqRvcbvrdRrL3c4k6ypii6LLQwNb",
+    "AutoReStaking":true
+     }
+   ],
+   "id":1
 }`),
 	}
 )
@@ -237,6 +257,7 @@ var (
 func stake(numberOfKey int) {
 	i := 0
 	for i < numberOfKey {
+		time.Sleep(5 * time.Second)
 		fmt.Println("Try stake key ", i)
 		payload := stakePayloads[i]
 		url := "http://localhost:9334"
