@@ -527,12 +527,14 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	if defaultFee == 0 {
 		return uint64(defaultFee), nil
 	}
-	unitFee := uint64(0)
+	unitFee := uint64(1)
 	if defaultFee == -1 {
 		// estimate fee on the blocks before (in native token or in pToken)
 		if _, ok := txService.FeeEstimator[shardID]; ok {
 			temp, _ := txService.FeeEstimator[shardID].EstimateFee(numBlock, tokenId)
-			unitFee = uint64(temp)
+			if temp > 0 {
+				unitFee = temp
+			}
 		}
 	} else {
 		// get default fee (in native token or in ptoken)
