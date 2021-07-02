@@ -31,7 +31,7 @@ func (txBuilder *TxBuilder) Build(
 
 	switch metaType {
 	case metadata.PDETradeRequestMeta:
-		if len(inst) >= 4 {
+		if len(inst) == 4 {
 			tx, err = buildTradeIssuanceTx(
 				inst[2],
 				inst[3],
@@ -44,7 +44,7 @@ func (txBuilder *TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	case metadata.PDECrossPoolTradeRequestMeta:
-		if len(inst) >= 4 {
+		if len(inst) == 4 {
 			tx, err = buildCrossPoolTradeIssuanceTx(
 				inst[2],
 				inst[3],
@@ -57,7 +57,7 @@ func (txBuilder *TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	case metadata.PDEWithdrawalRequestMeta:
-		if len(inst) >= 4 {
+		if len(inst) == 4 {
 			if inst[2] == common.PDEWithdrawalAcceptedChainStatus {
 				tx, err = buildWithdrawalTx(
 					inst[3],
@@ -71,7 +71,7 @@ func (txBuilder *TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	case metadata.PDEFeeWithdrawalRequestMeta:
-		if len(inst) >= 4 && inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
+		if len(inst) == 4 {
 			if inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
 				tx, err = buildFeeWithdrawalTx(
 					inst[3],
@@ -85,7 +85,7 @@ func (txBuilder *TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-		if len(inst) >= 4 {
+		if len(inst) == 4 {
 			if inst[2] == common.PDEContributionRefundChainStatus {
 				tx, err = buildRefundContributionTx(
 					inst[3],
@@ -103,6 +103,8 @@ func (txBuilder *TxBuilder) Build(
 					featureStateDB,
 				)
 			}
+		} else {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	}
 
