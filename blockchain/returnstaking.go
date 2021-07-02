@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/config"
 	"strings"
@@ -108,13 +109,21 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			if coinID.String() != common.PRVIDStr {
 				return errors.Errorf("return staking tx only mints prv. Error token %v", coinID.String())
 			}
-			h, _ := common.Hash{}.NewHashFromStr(returnMeta.TxID)
+			h, err := common.Hash{}.NewHashFromStr(returnMeta.TxID)
+			if err != nil {
+				Logger.log.Errorf("returnStaking hash %v error: %v\n", returnMeta.TxID)
+				return err
+			}
 			mReturnStakingInfoGot[*h] = returnStakingInfo{
 				FunderAddress: returnMeta.StakerAddress,
 				StakingAmount: mintCoin.GetValue(),
 			}
 		}
 	}
+	jsb, _ := json.Marshal(mReturnStakingInfoGot)
+	Logger.log.Infof("mReturnStakingInfoGot: %v\n", string(jsb))
+
+
 	mReturnStakingInfoWanted, _, err := blockchain.getReturnStakingInfoFromBeaconInstructions(
 		curView,
 		beaconBlocks,
@@ -123,6 +132,9 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	if err != nil {
 		return err
 	}
+	jsb, _ = json.Marshal(mReturnStakingInfoWanted)
+	Logger.log.Infof("mReturnStakingInfoWanted: %v\n", string(jsb))
+	
 	if len(mReturnStakingInfoGot) != len(mReturnStakingInfoWanted) {
 		return errors.Errorf("List return staking tx of producer (len %v) and validator (len %v) not match", len(mReturnStakingInfoGot), len(mReturnStakingInfoWanted))
 	}
