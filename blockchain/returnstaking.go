@@ -53,6 +53,8 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 		return nil, nil, err
 	}
 	for txStakingHash, returnInfo := range mReturnStakingInfo {
+		Logger.log.Infof("Building ReturnStaking for txStakingHash %v, with returnInfo %v\n", txStakingHash.String(),
+			returnInfo)
 		txReturn, returnAmount, err := blockchain.buildReturnStakingAmountTx(
 			curView,
 			&returnInfo,
@@ -134,7 +136,7 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	}
 	jsb, _ = json.Marshal(mReturnStakingInfoWanted)
 	Logger.log.Infof("mReturnStakingInfoWanted: %v\n", string(jsb))
-	
+
 	if len(mReturnStakingInfoGot) != len(mReturnStakingInfoWanted) {
 		return errors.Errorf("List return staking tx of producer (len %v) and validator (len %v) not match", len(mReturnStakingInfoGot), len(mReturnStakingInfoWanted))
 	}
