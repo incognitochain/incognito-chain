@@ -53,7 +53,7 @@ type GetShardBlockResult struct {
 	CrossShardBitMap   []int              `json:"CrossShardBitMap"`
 	ProposeTime        int64              `json:"ProposeTime"`
 	SubsetID           int                `json:"SubsetID"`
-	Committee          []string           `json:"Committee"`
+	SigningCommittee   []string           `json:"SigningCommittee"`
 }
 
 type GetBlockTxResult struct {

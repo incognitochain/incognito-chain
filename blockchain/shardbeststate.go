@@ -643,14 +643,30 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 //GetSubsetIDFromProposerTime for block producing v3 only
 func GetSubsetIDFromProposerTime(proposerTime int64, validators int) int {
 	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), validators)
-	subsetID := proposerIndex % MaxSubsetCommittees
+	subsetID := GetSubsetID(proposerIndex)
 	return subsetID
+}
+
+func GetSubsetID(proposerIndex int) int {
+	return proposerIndex % +MaxSubsetCommittees
+}
+
+func FilterSigningCommitteeV3StringValue(fullCommittees []string, proposerIndex int) []string {
+	signingCommittees := []string{}
+	subsetID := GetSubsetID(proposerIndex)
+	for i, v := range fullCommittees {
+		if (i % MaxSubsetCommittees) == subsetID {
+			signingCommittees = append(signingCommittees, v)
+		}
+	}
+	return signingCommittees
 }
 
 func FilterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerIndex int) []incognitokey.CommitteePublicKey {
 	signingCommittees := []incognitokey.CommitteePublicKey{}
+	subsetID := GetSubsetID(proposerIndex)
 	for i, v := range fullCommittees {
-		if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
+		if (i % MaxSubsetCommittees) == subsetID {
 			signingCommittees = append(signingCommittees, v)
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -194,6 +195,25 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			}
 			result.Txs = append(result.Txs, transactionResult)
 		}
+		if shardBlock.Header.Version == types.DCS_VERSION {
+			temp, err := blockService.BlockChain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
+			if err != nil {
+				return nil, NewRPCError(RestoreShardCommittee, err)
+			}
+			fullCommittees, err := incognitokey.CommitteeKeyListToString(temp)
+			if err != nil {
+				return nil, NewRPCError(RestoreShardCommittee, err)
+			}
+			proposeIndex := common.IndexOfStr(shardBlock.Header.Proposer, fullCommittees)
+			if proposeIndex < -1 {
+				return nil, NewRPCError(RestoreShardCommittee, fmt.Errorf("Proposer %+v, committee from db %+v",
+					shardBlock.Header.Proposer, fullCommittees))
+			}
+			subsetID := blockchain.GetSubsetID(proposeIndex)
+			signingCommittees := blockchain.FilterSigningCommitteeV3StringValue(fullCommittees, subsetID)
+			result.SubsetID = subsetID
+			result.SigningCommittee = signingCommittees
+		}
 	}
 	return &result, nil
 }
@@ -315,6 +335,25 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 					transactionT.Locktime = tx.GetLockTime()
 				}
 				res.Txs = append(res.Txs, transactionT)
+			}
+			if shardBlock.Header.Version == types.DCS_VERSION {
+				temp, err := blockService.BlockChain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
+				if err != nil {
+					return nil, NewRPCError(RestoreShardCommittee, err)
+				}
+				fullCommittees, err := incognitokey.CommitteeKeyListToString(temp)
+				if err != nil {
+					return nil, NewRPCError(RestoreShardCommittee, err)
+				}
+				proposeIndex := common.IndexOfStr(shardBlock.Header.Proposer, fullCommittees)
+				if proposeIndex < -1 {
+					return nil, NewRPCError(RestoreShardCommittee, fmt.Errorf("Proposer %+v, committee from db %+v",
+						shardBlock.Header.Proposer, fullCommittees))
+				}
+				subsetID := blockchain.GetSubsetID(proposeIndex)
+				signingCommittees := blockchain.FilterSigningCommitteeV3StringValue(fullCommittees, subsetID)
+				res.SubsetID = subsetID
+				res.SigningCommittee = signingCommittees
 			}
 		}
 		result = append(result, &res)
@@ -893,8 +932,6 @@ func (blockService BlockService) GetAllBridgeTokensByHeight(height uint64) ([]*r
 	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokensByHeight(height)
 	return bridgeTokenInfos, err
 }
-
-
 
 func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
 	blockHashParam, ok := data["BlockHash"].(string)
