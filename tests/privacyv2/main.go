@@ -112,11 +112,11 @@ func main() {
 		var numberOfStaker int
 		var err error
 		if len(os.Args) == 2 {
-			numberOfStaker = len(stakePayloads)
+			numberOfStaker = len(stopAutoStakePayloads)
 		} else {
 			numberOfStaker, err = strconv.Atoi(os.Args[2])
 			if err != nil {
-				numberOfStaker = len(stakePayloads)
+				numberOfStaker = len(stopAutoStakePayloads)
 			}
 		}
 		stopAutoStake(numberOfStaker)
@@ -125,14 +125,26 @@ func main() {
 		var numberOfStaker int
 		var err error
 		if len(os.Args) == 2 {
-			numberOfStaker = len(stakePayloads)
+			numberOfStaker = len(unstakePayloads)
 		} else {
 			numberOfStaker, err = strconv.Atoi(os.Args[2])
 			if err != nil {
-				numberOfStaker = len(stakePayloads)
+				numberOfStaker = len(unstakePayloads)
 			}
 		}
 		unstake(numberOfStaker)
+	}
+
+	if os.Args[1] == "consensus_interval" {
+		numberOfStaker := len(stakePayloads)
+		stake(numberOfStaker)
+		time.Sleep(5 * time.Minute)
+		numberOfUnstake := len(unstakePayloads)
+		unstake(numberOfUnstake)
+		time.Sleep(1 * time.Minute)
+		numberOfStopAutoStake := len(stopAutoStakePayloads)
+		stopAutoStake(numberOfStopAutoStake)
+		time.Sleep(5 * time.Minute)
 	}
 }
 

@@ -527,12 +527,14 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	if defaultFee == 0 {
 		return uint64(defaultFee), nil
 	}
-	unitFee := uint64(0)
+	unitFee := uint64(1)
 	if defaultFee == -1 {
 		// estimate fee on the blocks before (in native token or in pToken)
 		if _, ok := txService.FeeEstimator[shardID]; ok {
 			temp, _ := txService.FeeEstimator[shardID].EstimateFee(numBlock, tokenId)
-			unitFee = uint64(temp)
+			if temp > 0 {
+				unitFee = temp
+			}
 		}
 	} else {
 		// get default fee (in native token or in ptoken)
@@ -1484,6 +1486,43 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	result.IsInBlock = true
 	Logger.log.Debugf("handleGetTransactionByHash result: %+v", result)
 	return result, nil
+}
+
+// GetEncodedTransactionsByHashes returns a list of base58-encoded transactions given their hashes.
+func (txService TxService) GetEncodedTransactionsByHashes(txHashList []string) (map[string]string, *RPCError) {
+	res := make(map[string]string)
+	for _, txHashStr := range txHashList {
+		if _, ok := res[txHashStr]; ok {
+			continue
+		}
+		txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
+		if err != nil {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("tx hash %v is invalid", txHashStr))
+		}
+		Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
+		_, _, _, _, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
+		if err != nil {
+			if txService.BlockChain.UsingNewPool() {
+				pM := txService.BlockChain.GetPoolManager()
+				if pM != nil {
+					tx, err = pM.GetTransactionByHash(txHashStr)
+				} else {
+					err = errors.New("PoolManager is nil")
+				}
+			} else {
+				tx, err = txService.TxMemPool.GetTx(txHash)
+			}
+			if err != nil {
+				return nil, NewRPCError(TxNotExistedInMemAndBLockError, fmt.Errorf("tx %v is not existed in block or mempool", txHashStr))
+			}
+		}
+		txBytes, err := json.Marshal(tx)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, fmt.Errorf("cannot marshal tx %v", txHashStr))
+		}
+		res[txHashStr] = base58.Base58Check{}.Encode(txBytes, common.ZeroByte)
+	}
+	return res, nil
 }
 
 func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) (map[string]string, *RPCError) {

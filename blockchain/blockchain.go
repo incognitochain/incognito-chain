@@ -119,7 +119,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if EnableIndexingCoinByOTAKey {
 		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
-		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
+		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
 		if err != nil {
 			return err
 		}

@@ -25,10 +25,10 @@ import (
 
 var(
 	EnableIndexingCoinByOTAKey bool
-	outcoinIndexer *coin_indexer.CoinIndexer
+	outcoinIndexer *coinIndexer.CoinIndexer
 )
 
-func GetCoinIndexer() *coin_indexer.CoinIndexer {
+func GetCoinIndexer() *coinIndexer.CoinIndexer {
 	return outcoinIndexer
 }
 
@@ -317,7 +317,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 	if versionsIncluded[1]{
-		results, err := coin_indexer.QueryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
+		results, err := coinIndexer.QueryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -334,20 +334,20 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		if upToHeight > latest || upToHeight==0{
 			upToHeight = latest
 		}
-		fromHeight = coin_indexer.GetNextLowerHeight(upToHeight, lowestHeightForV2)
-		results, err := coin_indexer.QueryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, coin_indexer.GetCoinFilterByOTAKeyAndToken())
+		fromHeight = coinIndexer.GetNextLowerHeight(upToHeight, lowestHeightForV2)
+		results, err := coinIndexer.QueryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, coinIndexer.GetCoinFilterByOTAKeyAndToken())
 		if err != nil {
 			return nil, nil, 0, err
 		}
 		// if this is a submitted OTA key and indexing is enabled, "cache" the coins
-		if coinIndexer := GetCoinIndexer(); coinIndexer != nil  && keyset.OTAKey.GetOTASecretKey() != nil {
+		if cInd := GetCoinIndexer(); cInd != nil  && keyset.OTAKey.GetOTASecretKey() != nil {
 			var coinsToStore []privacy.Coin
-			if hasKey, _ := coinIndexer.HasOTAKey(coin_indexer.OTAKeyToRaw(keyset.OTAKey)); hasKey {
+			if hasKey, _ := cInd.HasOTAKey(coinIndexer.OTAKeyToRaw(keyset.OTAKey)); hasKey {
 				for _, c := range results {
 					//indexer supports v2 only
 					coinsToStore = append(coinsToStore, c)
 				}
-				coinIndexer.StoreIndexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
+				cInd.StoreIndexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
 			}
 		}
 		outCoins = append(outCoins, results...)
@@ -398,7 +398,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 		return fmt.Errorf("OTA key submission not supported by this node configuration")
 	}
 
-	otaBytes := coin_indexer.OTAKeyToRaw(otaKey)
+	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
 	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
 	if keyExists && !isReset {
 		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
@@ -430,7 +430,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 			return fmt.Errorf("fromHeight (%v) is larger than the current shard height (%v)", heightToSyncFrom, bss.ShardHeight)
 		}
 
-		idxParams := coin_indexer.IndexParam{
+		idxParams := coinIndexer.IndexParam{
 			FromHeight: heightToSyncFrom,
 			ToHeight:   bss.ShardHeight,
 			OTAKey:     otaKey,
@@ -735,7 +735,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						if processing == 0 {
 							return false
 						}
-						otaKey := coin_indexer.OTAKeyFromRaw(vkArr)
+						otaKey := coinIndexer.OTAKeyFromRaw(vkArr)
 						ks := &incognitokey.KeySet{}
 						ks.OTAKey = otaKey
 						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)

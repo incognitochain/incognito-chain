@@ -79,7 +79,7 @@ type PlainCoin interface {
 
 func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 	version := byte(CoinVersion2)
-	if len(b)>=1{
+	if len(b) >= 1 {
 		version = b[0]
 	}
 	var c PlainCoin
@@ -102,26 +102,23 @@ func NewCoinFromByte(b []byte) (Coin, error) {
 			if version == CoinVersion2 {
 				err := coinV2.SetBytes(b)
 				return coinV2, err
-			} else {
-				err := coinV1.SetBytes(b)
-				return coinV1, err
 			}
-		} else {
-			return coinV1, nil
+			err := coinV1.SetBytes(b)
+			return coinV1, err
 		}
-	} else {
-		return coinV2, nil
+		return coinV1, nil
 	}
+	return coinV2, nil
 }
 
 func ParseCoinsFromBytes(data []json.RawMessage) ([]Coin, error) {
 	coinList := make([]Coin, len(data))
 	for i := 0; i < len(data); i++ {
-		if coin, err := NewCoinFromByte(data[i]); err != nil {
+		coin, err := NewCoinFromByte(data[i])
+		if err != nil {
 			return nil, err
-		} else {
-			coinList[i] = coin
 		}
+		coinList[i] = coin
 	}
 	return coinList, nil
 }
