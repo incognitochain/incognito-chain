@@ -1,10 +1,6 @@
 package portaltokens
 
 import (
-	"encoding/base64"
-	"encoding/json"
-
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -47,31 +43,4 @@ type BroadcastTx struct {
 type OutputTx struct {
 	ReceiverAddress string
 	Amount          uint64
-}
-
-func (p PortalToken) GetExpectedMemoForShielding(incAddress string) string {
-	type shieldingMemoStruct struct {
-		IncAddress string `json:"ShieldingIncAddress"`
-	}
-	memoShielding := shieldingMemoStruct{IncAddress: incAddress}
-	memoShieldingBytes, _ := json.Marshal(memoShielding)
-	memoShieldingHashBytes := common.HashB(memoShieldingBytes)
-	memoShieldingStr := base64.StdEncoding.EncodeToString(memoShieldingHashBytes)
-	return memoShieldingStr
-}
-
-func (p PortalToken) GetExpectedMemoForRedeem(redeemID string, custodianAddress string) string {
-	type redeemMemoStruct struct {
-		RedeemID                  string `json:"RedeemID"`
-		CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
-	}
-
-	redeemMemo := redeemMemoStruct{
-		RedeemID:                  redeemID,
-		CustodianIncognitoAddress: custodianAddress,
-	}
-	redeemMemoBytes, _ := json.Marshal(redeemMemo)
-	redeemMemoHashBytes := common.HashB(redeemMemoBytes)
-	redeemMemoStr := base64.StdEncoding.EncodeToString(redeemMemoHashBytes)
-	return redeemMemoStr
 }
