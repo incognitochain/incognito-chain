@@ -961,6 +961,7 @@ func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
 	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
 		if beaconBestState.beaconCommitteeEngine.AssignRuleVersion() == committeestate.ASSIGN_RULE_V2 {
 			beaconBestState.beaconCommitteeEngine.UpgradeAssignRuleV3()
+			Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Assign Rule from V2 to V3", beaconBestState.BeaconHeight)
 
 		}
 	}
