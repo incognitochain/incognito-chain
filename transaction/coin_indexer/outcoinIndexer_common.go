@@ -1,4 +1,4 @@
-package coin_indexer
+package coinIndexer
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
@@ -10,7 +10,7 @@ import (
 
 const (
 	NumWorkers         = 100
-	DefaultAccessToken = "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
+	DefaultAccessToken = "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" //nolint:gosec // DEV access token
 	BatchWaitingTime   = float64(30)
 	IndexingBatchSize  = 10
 )
@@ -127,7 +127,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	if shardHeight == 0 {
 		start = 0
 	}
-	for height := start; height <= destHeight; height += 1 {
+	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
 			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
@@ -166,12 +166,12 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 	}
 
 	res := make(map[string][]privacy.Coin)
-	for otaStr, _ := range idxParams {
+	for otaStr := range idxParams {
 		res[otaStr] = make([]privacy.Coin, 0)
 	}
 
 	countSkipped := 0
-	for height := start; height <= destHeight; height += 1 {
+	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
 			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
@@ -189,7 +189,6 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 				countSkipped++
 				continue
 			}
-
 
 			for otaStr, idxParam := range idxParams {
 				if height < idxParam.FromHeight || height > idxParam.ToHeight {
@@ -220,6 +219,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 	return res, nil
 }
 
+//nolint:gocritic
 // splitWorkers chooses the number of workers for each shard queue based on the current size.
 func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 	res := make(map[byte]int)
@@ -227,7 +227,7 @@ func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 		res[byte(i)] = 0
 	}
 
-	numForEach := totalWorker/common.MaxShardNumber
+	numForEach := totalWorker / common.MaxShardNumber
 	if totalWorker == 0 {
 		return res
 	}
@@ -236,7 +236,7 @@ func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 	remaining := totalWorker
 	for shard := 0; shard < common.MaxShardNumber; shard++ {
 		shardID := byte(shard)
-		tmpNumForShard := numForEach
+		tmpNumForShard := numForEach //nolint:ineffassign
 		if totalWorker > ci.queueSize {
 			tmpNumForShard = len(ci.idxQueue[shardID])
 		} else if numForEach <= len(ci.idxQueue[shardID]) {
