@@ -178,6 +178,10 @@ func swapInAfterSwapOut(committees, substitutes []string, maxCommitteeSize int) 
 type AssignRuleV2 struct {
 }
 
+func NewAssignRuleV2() *AssignRuleV2 {
+	return &AssignRuleV2{}
+}
+
 // Process assign unassignedCommonPool into shard pool with random number
 func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 	total := 0

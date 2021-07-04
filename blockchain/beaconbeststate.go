@@ -878,6 +878,16 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
+func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule(beaconBlock *types.BeaconBlock) {
+	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height {
+		beaconBestState.upgradeCommitteeEngineV2()
+	}
+
+	if beaconBlock.Header.Height == config.Param().ConsensusParam.AssignRuleV3Height {
+		beaconBestState.upgradeAssignRuleV3()
+	}
+}
+
 func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2() {
 	if beaconBestState.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 		return
@@ -947,8 +957,12 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2() {
 }
 
 func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
-	if beaconBestState.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
-		return
+
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.beaconCommitteeEngine.AssignRuleVersion() == committeestate.ASSIGN_RULE_V2 {
+			beaconBestState.beaconCommitteeEngine.UpgradeAssignRuleV3()
+
+		}
 	}
-	beaconBestState.beaconCommitteeEngine.UpgradeAssignRuleV3()
+
 }

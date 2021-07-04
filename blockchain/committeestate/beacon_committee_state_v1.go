@@ -195,6 +195,11 @@ func (engine BeaconCommitteeEngineV1) Version() uint {
 	return SELF_SWAP_SHARD_VERSION
 }
 
+//Version :
+func (engine BeaconCommitteeEngineV1) AssignRuleVersion() uint {
+	return ASSIGN_RULE_V1
+}
+
 //GetBeaconHeight :
 func (engine BeaconCommitteeEngineV1) GetBeaconHeight() uint64 {
 	return engine.beaconHeight

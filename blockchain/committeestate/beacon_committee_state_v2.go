@@ -181,6 +181,21 @@ func (engine BeaconCommitteeEngineV2) Version() uint {
 	return SLASHING_VERSION
 }
 
+//Version :
+func (engine BeaconCommitteeEngineV2) AssignRuleVersion() uint {
+	_, ok := engine.finalBeaconCommitteeStateV2.assignRule.(*AssignRuleV2)
+	if ok {
+		return ASSIGN_RULE_V2
+	}
+
+	_, ok = engine.finalBeaconCommitteeStateV2.assignRule.(*AssignRuleV3)
+	if ok {
+		return ASSIGN_RULE_V3
+	}
+
+	panic("unknown version")
+}
+
 //GetBeaconHeight :
 func (engine BeaconCommitteeEngineV2) GetBeaconHeight() uint64 {
 	return engine.beaconHeight
@@ -1083,11 +1098,19 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 
 //VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func SFV2VersionAssignRule(beaconHeight, assignRuleV2, assignRuleV3 uint64) AssignRuleProcessor {
+
 	if beaconHeight >= assignRuleV3 {
+		Logger.log.Infof("Beacon Height %+v, using Assign Rule V3", beaconHeight)
 		return AssignRuleV3{}
+
 	}
+
+	Logger.log.Infof("Beacon Height %+v, using Assign Rule V2", beaconHeight)
+
 	if beaconHeight >= assignRuleV2 {
+
 		return AssignRuleV2{}
 	}
+
 	return AssignRuleV2{}
 }

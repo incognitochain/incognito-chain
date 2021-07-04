@@ -11,6 +11,7 @@ import (
 //BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
 	Version() uint
+	AssignRuleVersion() uint
 	Clone() BeaconCommitteeEngine
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
