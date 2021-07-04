@@ -5,11 +5,12 @@ import (
 	"encoding/gob"
 	"encoding/json"
 
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
+
 	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 )
 
 type CurrentPortalStateV4 struct {
@@ -40,6 +41,7 @@ func (s *CurrentPortalStateV4) Copy() *CurrentPortalStateV4 {
 func InitCurrentPortalStateV4FromDB(
 	stateDB *statedb.StateDB,
 	lastState *CurrentPortalStateV4,
+	portalParamV4 portalv4.PortalParams,
 ) (*CurrentPortalStateV4, error) {
 	var err error
 	if lastState != nil {
@@ -52,7 +54,7 @@ func InitCurrentPortalStateV4FromDB(
 
 	// load list of UTXOs
 	utxos := map[string]map[string]*statedb.UTXO{}
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		utxos[tokenID], err = statedb.GetUTXOsByTokenID(stateDB, tokenID)
 		if err != nil {
 			return nil, err
@@ -61,7 +63,7 @@ func InitCurrentPortalStateV4FromDB(
 
 	// load list of waiting unshielding requests
 	waitingUnshieldRequests := map[string]map[string]*statedb.WaitingUnshieldRequest{}
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		waitingUnshieldRequests[tokenID], err = statedb.GetWaitingUnshieldRequestsByTokenID(stateDB, tokenID)
 		if err != nil {
 			return nil, err
@@ -70,7 +72,7 @@ func InitCurrentPortalStateV4FromDB(
 
 	// load list of processed unshielding requests batch
 	processedUnshieldRequestsBatch := map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		processedUnshieldRequestsBatch[tokenID], err = statedb.GetListProcessedBatchUnshieldRequestsByTokenID(stateDB, tokenID)
 		if err != nil {
 			return nil, err
@@ -92,27 +94,28 @@ func InitCurrentPortalStateV4FromDB(
 func StorePortalV4StateToDB(
 	stateDB *statedb.StateDB,
 	currentPortalState *CurrentPortalStateV4,
+	portalParamV4 portalv4.PortalParams,
 ) error {
 	var err error
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		err = statedb.StoreUTXOs(stateDB, currentPortalState.UTXOs[tokenID])
 		if err != nil {
 			return err
 		}
 	}
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		err = statedb.StoreShieldingRequests(stateDB, currentPortalState.ShieldingExternalTx[tokenID])
 		if err != nil {
 			return err
 		}
 	}
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		err = statedb.StoreWaitingUnshieldRequests(stateDB, currentPortalState.WaitingUnshieldRequests[tokenID])
 		if err != nil {
 			return err
 		}
 	}
-	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+	for _, tokenID := range portalParamV4.PortalV4TokenIDs {
 		err = statedb.StoreProcessedBatchUnshieldRequests(stateDB, currentPortalState.ProcessedUnshieldRequests[tokenID])
 		if err != nil {
 			return err

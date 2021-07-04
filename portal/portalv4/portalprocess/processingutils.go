@@ -159,7 +159,7 @@ func ProcessPortalInstsV4(
 		return lastState, nil
 	}
 
-	currentPortalState, err := InitCurrentPortalStateV4FromDB(portalStateDB, lastState)
+	currentPortalState, err := InitCurrentPortalStateV4FromDB(portalStateDB, lastState, portalParams)
 	if err != nil {
 		Logger.log.Error(err)
 		return currentPortalState, nil

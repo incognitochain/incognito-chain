@@ -3,10 +3,11 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/config"
 	"math/big"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -125,7 +126,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(featureStateDB, beaconBestState.portalStateV4)
+	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(
+		featureStateDB,
+		beaconBestState.portalStateV4,
+		portalParams.GetPortalParamsV4(beaconHeight))
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -566,7 +570,6 @@ func (blockchain *BlockChain) handlePDEInsts(
 		}
 	}
 
-
 	// handle cross pool trade
 	sortedTradableActions, untradableActions := categorizeNSortPDECrossPoolTradeInstsByFee(
 		beaconHeight,
@@ -629,7 +632,6 @@ func (blockchain *BlockChain) handlePDEInsts(
 			}
 		}
 	}
-
 
 	// handle prv required contribution
 	var prvRequiredContribKeys []int

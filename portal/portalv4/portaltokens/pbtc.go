@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/portal/portalv4/common"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -25,7 +23,12 @@ import (
 
 type PortalBTCTokenProcessor struct {
 	*PortalToken
-	ChainParam *chaincfg.Params
+	ChainParam    *chaincfg.Params
+	PortalTokenID string
+}
+
+func (p PortalBTCTokenProcessor) GetPortalTokenID() string {
+	return p.PortalTokenID
 }
 
 func (p PortalBTCTokenProcessor) ConvertExternalToIncAmount(externalAmt uint64) uint64 {
@@ -366,7 +369,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	// calculate the change output
 	if totalInputAmount > totalOutputAmount {
 		// adding the output to tx
-		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(common.PortalBTCIDStr, 0)
+		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(p.GetPortalTokenID(), 0)
 		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, p.ChainParam)
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 )
 
@@ -25,10 +24,12 @@ type PortalParams struct {
 	PortalReplacementAddress    string
 	MaxFeePercentageForEachStep uint
 	TimeSpaceForFeeReplacement  time.Duration
+
+	PortalV4TokenIDs []string
 }
 
 func (p PortalParams) IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := common.SliceExists(portalcommonv4.PortalV4SupportedIncTokenIDs, tokenIDStr)
+	isExisted, _ := common.SliceExists(p.PortalV4TokenIDs, tokenIDStr)
 	return isExisted
 }
 func (p PortalParams) GetMinAmountPortalToken(tokenIDStr string) (uint64, error) {

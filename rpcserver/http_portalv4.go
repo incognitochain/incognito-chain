@@ -44,7 +44,8 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 
 	// init Portal State from PortalStateDB
-	portalState, err := portalprocessv4.InitCurrentPortalStateV4FromDB(beaconFeatureStateDB, nil)
+	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(beaconHeight)
+	portalState, err := portalprocessv4.InitCurrentPortalStateV4FromDB(beaconFeatureStateDB, nil, portalParamV4)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}

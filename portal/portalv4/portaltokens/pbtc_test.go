@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/incognitochain/incognito-chain/wallet"
-
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func insertUnshieldIDIntoStateDB(waitingUnshieldState map[string]*statedb.WaitingUnshieldRequest,
@@ -47,7 +46,8 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 			ExternalOutputSize:  1,
 			ExternalTxMaxSize:   6,
 		},
-		ChainParam: &chaincfg.TestNet3Params,
+		ChainParam:    &chaincfg.TestNet3Params,
+		PortalTokenID: "4584d5e9b2fc0337dfb17f4b5bb025e5b82c38cfa4f54e8a3d4fcdd03954ff82",
 	}
 
 	tokenID := "btc"
@@ -164,7 +164,8 @@ func TestGenerateMasterPubKeysFromSeeds(t *testing.T) {
 			MinTokenAmount:      0,
 			MultipleTokenAmount: 10,
 		},
-		ChainParam: &chaincfg.TestNet3Params,
+		ChainParam:    &chaincfg.TestNet3Params,
+		PortalTokenID: "4584d5e9b2fc0337dfb17f4b5bb025e5b82c38cfa4f54e8a3d4fcdd03954ff82",
 	}
 
 	masterPubKeys := [][]byte{}
@@ -232,7 +233,8 @@ func TestMultiSigAddressDerivation(t *testing.T) {
 
 func TestGenerateOTMultisigAddress(t *testing.T) {
 	p := &PortalBTCTokenProcessor{
-		ChainParam: &chaincfg.TestNet3Params,
+		ChainParam:    &chaincfg.TestNet3Params,
+		PortalTokenID: "4584d5e9b2fc0337dfb17f4b5bb025e5b82c38cfa4f54e8a3d4fcdd03954ff82",
 	}
 
 	seeds := [][]byte{

@@ -877,7 +877,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if !reflect.DeepEqual(curView.portalStateV4, newBestState.portalStateV4) {
 			// check updated field in portalStateV4 and store these field into statedb
 			diffState := getDiffPortalStateV4(curView.portalStateV4, newBestState.portalStateV4)
-			err = portalprocessv4.StorePortalV4StateToDB(newBestState.featureStateDB, diffState)
+			err = portalprocessv4.StorePortalV4StateToDB(
+				newBestState.featureStateDB,
+				diffState,
+				blockchain.GetPortalParamsV4(beaconBlock.Header.Height))
 			if err != nil {
 				Logger.log.Error(err)
 				return err
