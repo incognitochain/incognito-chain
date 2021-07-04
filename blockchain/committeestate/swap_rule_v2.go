@@ -279,6 +279,10 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 type AssignRuleV3 struct {
 }
 
+func NewAssignRuleV3() *AssignRuleV3 {
+	return &AssignRuleV3{}
+}
+
 func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
 
 	sum := 0

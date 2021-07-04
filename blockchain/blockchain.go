@@ -271,8 +271,8 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
 		assignRule := committeestate.SFV2VersionAssignRule(
 			1,
-			config.Param().ConsensusParam.AssignRuleV3Height,
-			config.Param().ConsensusParam.StakingFlowV2Height)
+			config.Param().ConsensusParam.StakingFlowV2Height,
+			config.Param().ConsensusParam.AssignRuleV3Height)
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV2(assignRule))

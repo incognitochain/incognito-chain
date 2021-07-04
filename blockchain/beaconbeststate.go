@@ -809,8 +809,8 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 
 	assignRule := committeestate.SFV2VersionAssignRule(
 		beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.AssignRuleV3Height,
-		config.Param().ConsensusParam.StakingFlowV2Height)
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.AssignRuleV3Height)
 	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,
@@ -923,8 +923,8 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2() {
 
 	assignRule := committeestate.SFV2VersionAssignRule(
 		beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.AssignRuleV3Height,
-		config.Param().ConsensusParam.StakingFlowV2Height)
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.AssignRuleV3Height)
 	newBeaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,

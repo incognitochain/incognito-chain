@@ -321,6 +321,7 @@ func (engine *BeaconCommitteeEngineV2) UpgradeAssignRuleV3() {
 	engine.finalBeaconCommitteeStateV2.mu.Lock()
 	defer engine.finalBeaconCommitteeStateV2.mu.Unlock()
 	engine.finalBeaconCommitteeStateV2.assignRule = AssignRuleV3{}
+	engine.uncommittedBeaconCommitteeStateV2.assignRule = AssignRuleV3{}
 }
 
 func (engine *BeaconCommitteeEngineV2) compareHashes(hash1, hash2 *BeaconCommitteeStateHash) error {
@@ -1101,7 +1102,7 @@ func SFV2VersionAssignRule(beaconHeight, assignRuleV2, assignRuleV3 uint64) Assi
 
 	if beaconHeight >= assignRuleV3 {
 		Logger.log.Infof("Beacon Height %+v, using Assign Rule V3", beaconHeight)
-		return AssignRuleV3{}
+		return NewAssignRuleV3()
 
 	}
 
@@ -1109,8 +1110,8 @@ func SFV2VersionAssignRule(beaconHeight, assignRuleV2, assignRuleV3 uint64) Assi
 
 	if beaconHeight >= assignRuleV2 {
 
-		return AssignRuleV2{}
+		return NewAssignRuleV2()
 	}
 
-	return AssignRuleV2{}
+	return NewAssignRuleV2()
 }
