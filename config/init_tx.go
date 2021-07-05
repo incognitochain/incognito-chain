@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"path/filepath"
 
 	"github.com/incognitochain/incognito-chain/utils"
@@ -24,7 +25,7 @@ type initTx struct {
 	InitialIncognito []initialIncognito `mapstructure:"initial_incognito" description:"fee per tx calculate by kb"`
 }
 
-func (initTx *initTx) load() {
+func (initTx *initTx) load(data []byte) {
 	network := c.Network()
 	//read config from file
 	viper.SetConfigName(utils.GetEnv(InitTxFileKey, DefaultInitTxFile))                       // name of config file (without extension)
@@ -36,8 +37,8 @@ func (initTx *initTx) load() {
 			if err != nil {
 				panic(err)
 			}
-		} else {
-			panic(err)
+		} else { //if file not found
+			log.Println("Using default init tx for " + network)
 		}
 	} else {
 		err = viper.Unmarshal(&initTx)
