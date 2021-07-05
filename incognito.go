@@ -89,10 +89,6 @@ func mainMaster(serverChan chan<- *Server) error {
 	common.TIMESLOT = param.ConsensusParam.Timeslot
 	common.MaxShardNumber = param.ActiveShards
 
-	//load keys from file
-	param.LoadKey()
-	portal.SetupParam()
-
 	//create genesis block
 	blockchain.CreateGenesisBlocks()
 
