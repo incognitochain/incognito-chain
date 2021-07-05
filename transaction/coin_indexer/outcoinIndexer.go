@@ -1,4 +1,4 @@
-package coin_indexer
+package coinIndexer
 
 import (
 	"context"
@@ -34,6 +34,7 @@ type CoinIndexer struct {
 	IdxChan        chan IndexParam
 }
 
+//nolint:gocritic
 // NewOutCoinIndexer creates a new full node's caching instance for faster output coin retrieval.
 func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) (*CoinIndexer, error) {
 	// view key :-> indexing status
@@ -115,68 +116,68 @@ func (ci *CoinIndexer) IsAuthorizedRunning() bool {
 	return ci.isAuthorizedRunning
 }
 
-//// IsValidAdminSignature checks if data is signed by a valid admin privateKey.
-//func (ci *CoinIndexer) IsValidAdminSignature(data []byte, sig []byte) (bool, error) {
-//	hashedSig := fmt.Sprintf("%x", sha3.Sum256(sig))
-//	if usedSig[hashedSig] {
-//		return false, fmt.Errorf("cannot relay an already used signature")
-//	} else {
-//		usedSig[hashedSig] = true
-//	}
-//
-//	if len(sig) != 64 {
-//		return false, fmt.Errorf("signature length invalid: %v", len(sig))
-//	}
-//
-//	r := new(big.Int).SetBytes(sig[:32])
-//	s := new(big.Int).SetBytes(sig[32:])
-//
-//	hashedMsg := sha3.Sum256(data)
-//
-//	isValid := ecdsa.Verify(ci.idxPublicKey, hashedMsg[:], r, s)
-//
-//	return isValid, nil
-//}
-//
-//// AddAccessToken adds an access token to the list.
-//func (ci *CoinIndexer) AddAccessToken(accessToken string, signature []byte) error {
-//	isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
-//	if err != nil || !isValid {
-//		Logger.Log.Errorf("Cannot add access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
-//		return fmt.Errorf("cannot add access token")
-//	}
-//
-//	accessTokenBytes, err := hex.DecodeString(accessToken)
-//	if err != nil {
-//		return err
-//	}
-//	if len(accessTokenBytes) != 32 {
-//		return fmt.Errorf("access token is invalid")
-//	}
-//
-//	ci.accessTokens[accessToken] = true
-//
-//	return nil
-//}
+// // IsValidAdminSignature checks if data is signed by a valid admin privateKey.
+// func (ci *CoinIndexer) IsValidAdminSignature(data []byte, sig []byte) (bool, error) {
+// 	hashedSig := fmt.Sprintf("%x", sha3.Sum256(sig))
+// 	if usedSig[hashedSig] {
+// 		return false, fmt.Errorf("cannot relay an already used signature")
+// 	} else {
+// 		usedSig[hashedSig] = true
+// 	}
 
-//// DeleteAccessToken deletes an access token from the list.
-//func (ci *CoinIndexer) DeleteAccessToken(accessToken string, signature []byte) error {
-//	//isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
-//	//if err != nil || !isValid {
-//	//	Logger.Log.Errorf("Cannot delete access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
-//	//	return fmt.Errorf("cannot delete access token")
-//	//}
-//
-//	if ci.accessTokens[accessToken] {
-//		delete(ci.accessTokens, accessToken)
-//	}
-//
-//	return nil
-//}
+// 	if len(sig) != 64 {
+// 		return false, fmt.Errorf("signature length invalid: %v", len(sig))
+// 	}
+
+// 	r := new(big.Int).SetBytes(sig[:32])
+// 	s := new(big.Int).SetBytes(sig[32:])
+
+// 	hashedMsg := sha3.Sum256(data)
+
+// 	isValid := ecdsa.Verify(ci.idxPublicKey, hashedMsg[:], r, s)
+
+// 	return isValid, nil
+// }
+
+// // AddAccessToken adds an access token to the list.
+// func (ci *CoinIndexer) AddAccessToken(accessToken string, signature []byte) error {
+// 	isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
+// 	if err != nil || !isValid {
+// 		Logger.Log.Errorf("Cannot add access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
+// 		return fmt.Errorf("cannot add access token")
+// 	}
+
+// 	accessTokenBytes, err := hex.DecodeString(accessToken)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if len(accessTokenBytes) != 32 {
+// 		return fmt.Errorf("access token is invalid")
+// 	}
+
+// 	ci.accessTokens[accessToken] = true
+
+// 	return nil
+// }
+
+// // DeleteAccessToken deletes an access token from the list.
+// func (ci *CoinIndexer) DeleteAccessToken(accessToken string, signature []byte) error {
+// 	//isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
+// 	//if err != nil || !isValid {
+// 	//	Logger.Log.Errorf("Cannot delete access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
+// 	//	return fmt.Errorf("cannot delete access token")
+// 	//}
+
+// 	if ci.accessTokens[accessToken] {
+// 		delete(ci.accessTokens, accessToken)
+// 	}
+
+// 	return nil
+// }
 
 // RemoveOTAKey removes an OTAKey from the cached database.
 //
-// TODO: remove cached output coins, access token.
+//nolint // TODO: remove cached output coins, access token.
 func (ci *CoinIndexer) RemoveOTAKey(otaKey privacy.OTAKey) error {
 	keyBytes := OTAKeyToRaw(otaKey)
 	err := rawdbv2.DeleteIndexedOTAKey(ci.db, keyBytes[:])
@@ -329,7 +330,6 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
 
 	status.err = nil
 	ci.statusChan <- status
-	return
 }
 
 // ReIndexOutCoinBatch re-scans all output coins for a list of indexing params of the same shardID.
@@ -339,7 +339,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	if len(idxParams) == 0 {
 		return
 	}
-	//create some map instances and necessary params
+	// create some map instances and necessary params
 	mapIdxParams := make(map[string]IndexParam)
 	mapStatuses := make(map[string]JobStatus)
 	mapOutputCoins := make(map[string][]privacy.Coin)
@@ -405,7 +405,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	}
 	if minHeight > maxHeight {
 		err := fmt.Errorf("minHeight (%v) > maxHeight (%v) when re-indexing outcoins", minHeight, maxHeight)
-		for otaStr, _ := range mapStatuses {
+		for otaStr := range mapStatuses {
 			status := mapStatuses[otaStr]
 			status.err = err
 			ci.statusChan <- status
@@ -416,13 +416,13 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		return
 	}
 
-	//Clone the current cachedCoinPubKeys to avoid collisions
+	// Clone the current cachedCoinPubKeys to avoid collisions
 	cachedCoins := ci.cloneCachedCoins()
 	utils.Logger.Log.Infof("len(clonedCachedCoins) = %v\n", len(cachedCoins))
 
 	start := time.Now()
 	for height := minHeight; height <= maxHeight; {
-		tmpStart := time.Now() //measure time for each round
+		tmpStart := time.Now() // measure time for each round
 		nextHeight := height + utils.MaxOutcoinQueryInterval
 
 		ctx, cancel := context.WithTimeout(context.Background(), utils.OutcoinReindexerTimeout*time.Second)
@@ -432,7 +432,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		if err != nil {
 			utils.Logger.Log.Errorf("[CoinIndexer] semaphore acquiring error: %v\n", err)
 
-			for otaStr, _ := range mapStatuses {
+			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
 				status.err = err
 				ci.statusChan <- status
@@ -448,7 +448,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		if err != nil {
 			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v\n", err)
 
-			for otaStr, _ := range mapStatuses {
+			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
 				status.err = err
 				ci.statusChan <- status
@@ -464,7 +464,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		if err != nil {
 			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
 
-			for otaStr, _ := range mapStatuses {
+			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
 				status.err = err
 				ci.statusChan <- status
@@ -477,7 +477,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 
 		ci.sem.Release(1)
 
-		//Add output coins to maps
+		// Add output coins to maps
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsPRV[otaStr]...)
@@ -528,8 +528,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		delete(mapStatuses, otaStr)
 		delete(mapOutputCoins, otaStr)
 	}
-
-	return
 }
 
 func (ci *CoinIndexer) GetIndexedOutCoin(otaKey privacy.OTAKey, tokenID *common.Hash, txDb *statedb.StateDB, shardID byte) ([]privacy.Coin, int, error) {
@@ -647,7 +645,8 @@ func (ci *CoinIndexer) Start() {
 			return
 		default:
 			if numWorking < ci.numWorkers && ci.queueSize > 0 {
-				if time.Since(start).Seconds() < BatchWaitingTime { //collect indexing params by intervals to (possibly) reduce the number of go routines
+				// collect indexing params by intervals to (possibly) reduce the number of go routines
+				if time.Since(start).Seconds() < BatchWaitingTime {
 					continue
 				}
 				remainingWorker := ci.numWorkers - numWorking
