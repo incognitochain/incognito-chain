@@ -85,6 +85,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	param := config.LoadParam()
+	portal.SetupParam()
 
 	common.TIMESLOT = param.ConsensusParam.Timeslot
 	common.MaxShardNumber = param.ActiveShards
