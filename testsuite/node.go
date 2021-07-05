@@ -142,6 +142,16 @@ func (sim *NodeEngine) Init() {
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.param
 	if !sim.config.AppNode {
+		config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = []string{}
+		config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = []string{}
+		config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = []string{}
+		config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress = []string{}
+
+		config.Param().GenesisParam.SelectBeaconNodeSerializedPubkeyV2 = map[uint64][]string{}
+		config.Param().GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2 = map[uint64][]string{}
+		config.Param().GenesisParam.SelectShardNodeSerializedPubkeyV2 = map[uint64][]string{}
+		config.Param().GenesisParam.SelectShardNodeSerializedPaymentAddressV2 = map[uint64][]string{}
+
 		sim.GenesisAccount = sim.NewAccount()
 		for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
 			acc := sim.NewAccountFromShard(-1)
@@ -160,7 +170,6 @@ func (sim *NodeEngine) Init() {
 		initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
 		config.Param().GenesisParam.InitialIncognito = initTxs
 	} else {
-		config.Param().LoadKey()
 		sim.GenesisAccount = sim.NewAccountFromPrivateKey("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
 		oldTestnet := []string{
 			"112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL",
@@ -288,23 +297,26 @@ func (sim *NodeEngine) Init() {
 		ps,
 		time.Duration(15*60)*time.Second,
 	)
-	otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
+	//otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
 	err = bc.Init(&blockchain.Config{
-		BTCChain:          btcChain,
-		BNBChainState:     bnbChainState,
-		DataBase:          db,
-		OutcoinByOTAKeyDb: &otadb,
-		MemCache:          memcache.New(),
-		BlockGen:          blockgen,
-		TxPool:            &txpoolV1,
-		TempTxPool:        &temppool,
-		Server:            &server,
-		Syncker:           sync,
-		PubSubManager:     ps,
-		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
-		ConsensusEngine:   &cs,
-		PoolManager:       poolManager,
+		BTCChain:      btcChain,
+		BNBChainState: bnbChainState,
+		DataBase:      db,
+		//OutcoinByOTAKeyDb: &otadb,
+		MemCache:        memcache.New(),
+		BlockGen:        blockgen,
+		TxPool:          &txpoolV1,
+		TempTxPool:      &temppool,
+		Server:          &server,
+		Syncker:         sync,
+		PubSubManager:   ps,
+		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
+		ConsensusEngine: &cs,
+		PoolManager:     poolManager,
 	})
+
+	fmt.Println(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey)
+	sim.Pause()
 	if err != nil {
 		panic(err)
 	}

@@ -14,6 +14,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+const defaultTxFee = float64(5)
+
 type RPCClient struct {
 	Client ClientInterface
 }
@@ -60,7 +62,7 @@ func (r *RPCClient) API_SendTxCreateCustomToken(privateKey string, receiverPayme
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.Client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, nil, -1, privacyTx, map[string]interface{}{
+	result, err := r.Client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, nil, defaultTxFee, privacyTx, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     "",
 		"TokenName":   tokenName,
@@ -139,6 +141,7 @@ func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(acount account.Account
 		"MinAcceptableAmount": strconv.Itoa(miniumBuyAmount),
 		"TradingFee":          "1",
 		"TraderAddressStr":    acount.PaymentAddress,
+		"TxVersion":           float64(1),
 	}
 	result, err := r.Client.CreateAndSendTxWithPTokenCrossPoolTradeReq(acount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, reqInfo, "", 0)
 	return &result, err
@@ -163,6 +166,7 @@ func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, 
 		"MinAcceptableAmount": strconv.Itoa(miniumBuyAmount),
 		"TradingFee":          "0",
 		"TraderAddressStr":    account.PaymentAddress,
+		"TxVersion":           float64(1),
 	}
 	result, err := r.Client.CreateAndSendTxWithPRVCrossPoolTradeReq(account.PrivateKey, map[string]interface{}{
 		burnAddr: strconv.Itoa(sellAmount),
@@ -170,7 +174,7 @@ func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, 
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, tokenID string, tokenAmount int, pairID string) (*jsonresult.CreateTransactionTokenResult, error) {
-	burnAddr, err := r.Client.GetBurningAddress(float64(0))
+	burnAddr, err := r.Client.GetBurningAddress(float64(1))
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +193,9 @@ func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, 
 		"ContributorAddressStr": account.PaymentAddress,
 		"ContributedAmount":     strconv.Itoa(tokenAmount),
 		"TokenIDStr":            tokenID,
+		"TxVersion":             float64(1),
 	}
-	result, err := r.Client.CreateAndSendTxWithPTokenContributionV2(account.PrivateKey, nil, -1, 0, reqInfo, "", 0)
+	result, err := r.Client.CreateAndSendTxWithPTokenContributionV2(account.PrivateKey, nil, defaultTxFee, 0, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVContributionV2(account account.Account, prvAmount int, pairID string) (*jsonresult.CreateTransactionResult, error) {

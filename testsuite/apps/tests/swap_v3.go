@@ -24,7 +24,6 @@ func InitSimMainnet() *testsuite.NodeEngine {
 	config.Param().ConsensusParam.StakingFlowV2Height = 1
 	config.Param().EpochParam.NumberOfBlockInEpoch = 20
 	config.Param().EpochParam.RandomTime = 10
-
 	node.Init()
 
 	for i := 0; i < 10; i++ {
@@ -45,6 +44,8 @@ func InitSimTestnet() *testsuite.NodeEngine {
 	config.Param().ConsensusParam.StakingFlowV2Height = 1
 	config.Param().EpochParam.NumberOfBlockInEpoch = 20
 	config.Param().EpochParam.RandomTime = 10
+	config.Config().LimitFee = 0
+	config.Param().BCHeightBreakPointPrivacyV2 = 1e9
 	node.Init()
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
@@ -63,7 +64,7 @@ func InitSimTestnetv2() *testsuite.NodeEngine {
 	config.Param().ConsensusParam.StakingFlowV2Height = 1
 	config.Param().EpochParam.NumberOfBlockInEpoch = 20
 	config.Param().EpochParam.RandomTime = 10
-
+	config.Config().LimitFee = 0
 	node.Init()
 
 	for i := 0; i < 10; i++ {
@@ -220,7 +221,7 @@ func Test_PDE() {
 	sim.GenerateBlock().NextRound()
 	sim.RPC.ShowBalance(sim.GenesisAccount)
 	sim.RPC.ShowBalance(acc1)
-	sim.Pause()
+
 	// }
 	// blx, _ := sim.RPC.API_GetBalance(acc1)
 	// fmt.Println("ACC1", blx)

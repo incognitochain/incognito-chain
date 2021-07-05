@@ -11,12 +11,13 @@ import (
 )
 
 type Account struct {
-	Name string
+	Name                string
 	PublicKey           string
 	PrivateKey          string
 	MiningKey           string
 	MiningPubkey        string
 	PaymentAddress      string
+	PaymentAddressv2    string
 	Keyset              *incognitokey.KeySet
 	SelfCommitteePubkey string
 }
@@ -77,7 +78,14 @@ func NewAccountFromPrivatekey(privateKey string) (Account, error) {
 	}
 	acc.PrivateKey = privateKey
 	acc.PublicKey = wl.KeySet.GetPublicKeyInBase58CheckEncode()
-	acc.PaymentAddress = wl.Base58CheckSerialize(wallet.PaymentAddressType)
+	paymentv2 := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+	paymentv1, err := wallet.GetPaymentAddressV1(paymentv2, false)
+	if err != nil {
+		return Account{}, err
+	}
+	acc.PaymentAddress = paymentv1
+	acc.PaymentAddressv2 = paymentv2
+
 	validatorKeyBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
 	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
@@ -87,7 +95,7 @@ func NewAccountFromPrivatekey(privateKey string) (Account, error) {
 	return acc, nil
 }
 
-func GenerateAccountByShard(shardID int, keyID int, seed string) (acc Account,err error) {
+func GenerateAccountByShard(shardID int, keyID int, seed string) (acc Account, err error) {
 	key, _ := wallet.NewMasterKey([]byte(fmt.Sprintf("%v-%v", seed, shardID)))
 	var i int
 	var k = 0
@@ -96,7 +104,7 @@ func GenerateAccountByShard(shardID int, keyID int, seed string) (acc Account,er
 		child, _ := key.NewChildKey(uint32(i))
 		privAddr := child.Base58CheckSerialize(wallet.PriKeyType)
 		if child.KeySet.PaymentAddress.Pk[common.PublicKeySize-1] == byte(shardID) {
-			acc,err = NewAccountFromPrivatekey(privAddr)
+			acc, err = NewAccountFromPrivatekey(privAddr)
 			if err != nil {
 				panic(err)
 			}

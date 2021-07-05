@@ -53,6 +53,5 @@ func NewStandaloneSimulation(name string, conf Config) *NodeEngine {
 
 	config.LoadParam()
 	portal.SetupParam()
-
 	return sim
 }
