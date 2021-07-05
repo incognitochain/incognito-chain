@@ -576,3 +576,8 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule
 }
+
+//ActiveShards ...
+func (engine *BeaconCommitteeEngineV1) UpgradeAssignRuleV3() {
+	panic("not implement")
+}

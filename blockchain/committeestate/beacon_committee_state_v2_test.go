@@ -2283,9 +2283,13 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 		want               *CommitteeChange
 	}{
 		{
-			name:               "Not Found In List Subtitutes",
-			fields:             fields{},
-			fieldsAfterProcess: fields{},
+			name: "Not Found In List Subtitutes",
+			fields: fields{
+				assignRule: AssignRuleV2{},
+			},
+			fieldsAfterProcess: fields{
+				assignRule: AssignRuleV2{},
+			},
 			args: args{
 				stopAutoStakeInstruction: &instruction.StopAutoStakeInstruction{
 					CommitteePublicKeys: []string{key},

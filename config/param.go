@@ -43,8 +43,8 @@ type param struct {
 	ReplaceStakingTxHeight           uint64             `mapstructure:"replace_staking_tx_height"`
 	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
 	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
-	BCHeightBreakPointPrivacyV2		 uint64				`mapstructure:"bc_height_break_point_privacy_v2"`
-	CoinVersion2LowestHeight		 uint64				`mapstructure:"coin_v2_lowest_height"`
+	BCHeightBreakPointPrivacyV2      uint64             `mapstructure:"bc_height_break_point_privacy_v2"`
+	CoinVersion2LowestHeight         uint64             `mapstructure:"coin_v2_lowest_height"`
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
@@ -106,6 +106,7 @@ type swapCommitteeParam struct {
 type consensusParam struct {
 	ConsensusV2Epoch          uint64   `mapstructure:"consensus_v2_epoch"`
 	StakingFlowV2Height       uint64   `mapstructure:"staking_flow_v2_height"`
+	AssignRuleV3Height        uint64   `mapstructure:"assign_rule_v3_height"`
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	StakingFlowV3Height       uint64   `mapstructure:"staking_flow_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`

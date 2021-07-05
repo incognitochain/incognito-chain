@@ -779,6 +779,11 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 			)
 		}
 	}
+
+	assignRule := committeestate.SFV2VersionAssignRule(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.AssignRuleV3Height)
 	committeeState := committeestate.NewBeaconCommitteeState(
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
@@ -835,6 +840,16 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 		return 0, fmt.Errorf("init beacon consensus statedb return error %v", err)
 	}
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
+}
+
+func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule(beaconBlock *types.BeaconBlock) {
+	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height {
+		beaconBestState.upgradeCommitteeEngineV2()
+	}
+
+	if beaconBlock.Header.Height == config.Param().ConsensusParam.AssignRuleV3Height {
+		beaconBestState.upgradeAssignRuleV3()
+	}
 }
 
 // tryUpgradeCommitteeState only allow
@@ -916,6 +931,10 @@ func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
 			beaconBestState.MinShardCommitteeSize, SFV3_MinShardCommitteeSize)
 	}
 
+	assignRule := committeestate.SFV2VersionAssignRule(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.AssignRuleV3Height)
 	if beaconBestState.MaxShardCommitteeSize < SFV3_MinShardCommitteeSize {
 		beaconBestState.MaxShardCommitteeSize = SFV3_MinShardCommitteeSize
 		Logger.log.Infof("BEACON | Set beaconBestState.MaxShardCommitteeSize from %+v to %+v ",
@@ -950,4 +969,16 @@ func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeCh
 	for shardID, finishSyncValidators := range committeeChange.FinishedSyncValidators {
 		beaconBestState.FinishSyncManager.RemoveValidators(finishSyncValidators, byte(shardID))
 	}
+}
+
+func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
+
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.beaconCommitteeEngine.AssignRuleVersion() == committeestate.ASSIGN_RULE_V2 {
+			beaconBestState.beaconCommitteeEngine.UpgradeAssignRuleV3()
+			Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Assign Rule from V2 to V3", beaconBestState.BeaconHeight)
+
+		}
+	}
+
 }

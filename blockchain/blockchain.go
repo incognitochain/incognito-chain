@@ -115,9 +115,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
+	EnableIndexingCoinByOTAKey = (config.OutCoinByOTAKeyDb != nil)
 	if EnableIndexingCoinByOTAKey {
-		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
 		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
 		if err != nil {

@@ -32,3 +32,9 @@ const (
 	committeeTerm = 259200 //30 days with block time = 10s
 
 )
+
+const (
+	ASSIGN_RULE_V1 = 1
+	ASSIGN_RULE_V2 = 2
+	ASSIGN_RULE_V3 = 3
+)
