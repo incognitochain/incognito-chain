@@ -85,6 +85,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	param := config.LoadParam()
+	portal.SetupParam()
 
 	common.TIMESLOT = param.ConsensusParam.Timeslot
 	common.MaxShardNumber = param.ActiveShards
@@ -171,11 +172,11 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
-	useOutcoinDb := len(cfg.UseOutcoinDatabase)>=1
+	useOutcoinDb := len(cfg.UseOutcoinDatabase) >= 1
 	var outcoinDb *incdb.Database = nil
-	if useOutcoinDb{
+	if useOutcoinDb {
 		temp, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.OutcoinDatabaseDir))
-		if err!=nil{
+		if err != nil {
 			Logger.log.Error("could not open leveldb instance for coin storing")
 		}
 		outcoinDb = &temp
