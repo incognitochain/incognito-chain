@@ -151,7 +151,7 @@ var localPortalParam = PortalParams{
 			GeneralMultiSigAddresses: map[string]string{
 				TestnetPortalV4BTCID: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
 			},
-			PortalTokens: initPortalTokensV4ForTestNet(),
+			PortalTokens: initPortalTokensV4ForLocal(),
 			DefaultFeeUnshields: map[string]uint64{
 				TestnetPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
 			},
@@ -439,6 +439,23 @@ func getSupportedPortalCollateralsTestnet2() []portalv3.PortalCollateral {
 	}
 }
 
+func initPortalTokensV4ForLocal() map[string]portaltokensv4.PortalTokenProcessor {
+	return map[string]portaltokensv4.PortalTokenProcessor{
+		LocalPortalV4BTCID: portaltokensv4.PortalBTCTokenProcessor{
+			PortalToken: &portaltokensv4.PortalToken{
+				ChainID:             TestnetBTCChainID,
+				MinTokenAmount:      10,
+				MultipleTokenAmount: 10,
+				ExternalInputSize:   130,
+				ExternalOutputSize:  43,
+				ExternalTxMaxSize:   2048,
+			},
+			ChainParam:    &chaincfg.TestNet3Params,
+			PortalTokenID: LocalPortalV4BTCID,
+		},
+	}
+}
+
 func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcessor {
 	return map[string]portaltokensv4.PortalTokenProcessor{
 		TestnetPortalV4BTCID: portaltokensv4.PortalBTCTokenProcessor{
@@ -526,6 +543,7 @@ const (
 
 	// @@NOTE: should update tokenID before deploying
 	// portal token v4
+	LocalPortalV4BTCID    = "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b"
 	TestnetPortalV4BTCID  = "4584d5e9b2fc0337dfb17f4b5bb025e5b82c38cfa4f54e8a3d4fcdd03954ff82"
 	Testnet2PortalV4BTCID = "4584d5e9b2fc0337dfb17f4b5bb025e5b82c38cfa4f54e8a3d4fcdd03954ff82"
 	MainnetPortalV4BTCID  = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
