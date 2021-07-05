@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/incognitochain/incognito-chain/portal"
 	"time"
 )
 
@@ -249,6 +248,5 @@ func NewDefaultParam(network string) *param {
 	default:
 		panic("Cannot recognize network")
 	}
-	portal.SetupParam()
 	return p
 }
