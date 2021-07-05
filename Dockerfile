@@ -51,7 +51,7 @@ RUN chmod +x /incognito
 
 COPY ./priv2.json /
 COPY ./whitelist.json /
-COPY ./config/ /config
+
 COPY ./run_incognito.sh /
 
 RUN mkdir /utility

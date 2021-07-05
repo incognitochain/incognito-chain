@@ -2,6 +2,7 @@ package netsync
 
 import (
 	"errors"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -151,6 +152,9 @@ out:
 		case msgChan := <-netSync.cMessage:
 			{
 				go func(msgC interface{}) {
+					if os.Getenv("FULLNODE") != "" {
+						return
+					}
 					// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 					// 	metrics.Measurement:      metrics.HandleAllMessage,
 					// 	metrics.MeasurementValue: float64(1),
@@ -163,6 +167,7 @@ out:
 					// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
 					switch msg := msgC.(type) {
 					case *wire.MessageTx, *wire.MessageTxPrivacyToken:
+
 						{
 							beaconHeight := netSync.config.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 							var tx metadata.Transaction

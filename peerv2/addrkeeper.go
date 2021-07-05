@@ -187,7 +187,9 @@ func getNonIgnoredAddrs(addrs addresses, ignoreUntil map[rpcclient.HighwayAddr]t
 	valids := addresses{}
 	for _, addr := range addrs {
 		if deadline, ok := ignoreUntil[addr]; !ok || now.After(deadline) {
-			valids = append(valids, addr)
+			if addr.RPCUrl == "54.39.19.128:9330" {
+				valids = append(valids, addr)
+			}
 		}
 	}
 	return valids
