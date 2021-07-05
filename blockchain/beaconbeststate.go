@@ -704,6 +704,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  config.Param().ConsensusParam.StakingFlowV3Height,
+		StakingV2Height:                  config.Param().ConsensusParam.StakingFlowV2Height,
+		AssignRuleV3Height:               config.Param().ConsensusParam.AssignRuleV3Height,
 	}
 }
 
@@ -737,13 +739,15 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
 	var swapRule committeestate.SwapRuleProcessor
+	assignRule := committeestate.GetAssignRuleVersion(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.AssignRuleV3Height,
+	)
 
 	if version >= committeestate.SLASHING_VERSION {
 		shardCommonPool = nextEpochShardCandidate
-		swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
-			beaconBestState.BeaconHeight, config.Param().ConsensusParam.StakingFlowV3Height,
-		)
-		swapRule = committeestate.SwapRuleByEnv(swapRuleEnv)
+		swapRule = committeestate.GetSwapRuleVersion(beaconBestState.BeaconHeight, config.Param().ConsensusParam.StakingFlowV3Height)
 
 		if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 			var err error
@@ -780,17 +784,13 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		}
 	}
 
-	assignRule := committeestate.SFV2VersionAssignRule(
-		beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.StakingFlowV2Height,
-		config.Param().ConsensusParam.AssignRuleV3Height)
 	committeeState := committeestate.NewBeaconCommitteeState(
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
-		swapRule, nextEpochShardCandidate, currentEpochShardCandidate,
+		swapRule, nextEpochShardCandidate, currentEpochShardCandidate, assignRule,
 	)
 	beaconBestState.beaconCommitteeState = committeeState
-	if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
+	if err := beaconBestState.tryUpgradeConsensusRule(); err != nil {
 		return err
 	}
 	return nil
@@ -842,14 +842,19 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule(beaconBlock *types.BeaconBlock) {
-	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height {
-		beaconBestState.upgradeCommitteeEngineV2()
+func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
+
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
+		if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
+			return err
+		}
 	}
 
-	if beaconBlock.Header.Height == config.Param().ConsensusParam.AssignRuleV3Height {
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.AssignRuleV3Height {
 		beaconBestState.upgradeAssignRuleV3()
 	}
+
+	return nil
 }
 
 // tryUpgradeCommitteeState only allow
@@ -931,10 +936,6 @@ func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
 			beaconBestState.MinShardCommitteeSize, SFV3_MinShardCommitteeSize)
 	}
 
-	assignRule := committeestate.SFV2VersionAssignRule(
-		beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.StakingFlowV2Height,
-		config.Param().ConsensusParam.AssignRuleV3Height)
 	if beaconBestState.MaxShardCommitteeSize < SFV3_MinShardCommitteeSize {
 		beaconBestState.MaxShardCommitteeSize = SFV3_MinShardCommitteeSize
 		Logger.log.Infof("BEACON | Set beaconBestState.MaxShardCommitteeSize from %+v to %+v ",
@@ -973,9 +974,9 @@ func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeCh
 
 func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
 
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
-		if beaconBestState.beaconCommitteeEngine.AssignRuleVersion() == committeestate.ASSIGN_RULE_V2 {
-			beaconBestState.beaconCommitteeEngine.UpgradeAssignRuleV3()
+	if beaconBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.beaconCommitteeState.AssignRuleVersion() == committeestate.ASSIGN_RULE_V2 {
+			beaconBestState.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2).UpgradeAssignRuleV3()
 			Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Assign Rule from V2 to V3", beaconBestState.BeaconHeight)
 
 		}

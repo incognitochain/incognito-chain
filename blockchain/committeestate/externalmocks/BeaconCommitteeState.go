@@ -18,6 +18,20 @@ type BeaconCommitteeState struct {
 	mock.Mock
 }
 
+// AssignRuleVersion provides a mock function with given fields:
+func (_m *BeaconCommitteeState) AssignRuleVersion() int {
+	ret := _m.Called()
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
 // Clone provides a mock function with given fields:
 func (_m *BeaconCommitteeState) Clone() committeestate.BeaconCommitteeState {
 	ret := _m.Called()

@@ -211,10 +211,6 @@ func calculateNewSubstitutePosition(candidate string, rand int64, total int) (po
 	return pos
 }
 
-func (s *swapRuleV3) clone() SwapRuleProcessor {
-	return &swapRuleV3{}
-}
-
 func (s *swapRuleV3) Version() int {
 	return swapRuleDCSVersion
 }

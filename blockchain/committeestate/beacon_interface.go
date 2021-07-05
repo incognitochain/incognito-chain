@@ -27,6 +27,7 @@ type BeaconCommitteeState interface {
 	GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 
 	Version() int
+	AssignRuleVersion() int
 	Clone() BeaconCommitteeState
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,

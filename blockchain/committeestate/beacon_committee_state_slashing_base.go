@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,6 +19,7 @@ type beaconCommitteeStateSlashingBase struct {
 	shardCommonPool            []string
 	numberOfAssignedCandidates int
 	swapRule                   SwapRuleProcessor
+	assignRule                 AssignRuleProcessor
 }
 
 func newBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
@@ -36,6 +38,7 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 	shardCommonPool []string,
 	numberOfAssignedCandidates int,
 	swapRule SwapRuleProcessor,
+	assignRule AssignRuleProcessor,
 ) *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBaseWithValue(
@@ -45,11 +48,16 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 		shardCommonPool:            shardCommonPool,
 		numberOfAssignedCandidates: numberOfAssignedCandidates,
 		swapRule:                   swapRule,
+		assignRule:                 assignRule,
 	}
 }
 
 func (b *beaconCommitteeStateSlashingBase) Version() int {
 	panic("implement me")
+}
+
+func (b beaconCommitteeStateSlashingBase) AssignRuleVersion() int {
+	return b.assignRule.Version()
 }
 
 func (b beaconCommitteeStateSlashingBase) shallowCopy(newB *beaconCommitteeStateSlashingBase) {
@@ -71,7 +79,8 @@ func (b *beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashing
 
 	res.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	res.shardCommonPool = common.DeepCopyString(b.shardCommonPool)
-	res.swapRule = cloneSwapRuleByVersion(b.swapRule)
+	res.swapRule = b.swapRule
+	res.assignRule = b.assignRule
 
 	return res
 }
@@ -151,7 +160,8 @@ func (b beaconCommitteeStateSlashingBase) getAllSubstituteCommittees() ([]string
 
 func (b *beaconCommitteeStateSlashingBase) initCommitteeState(env *BeaconCommitteeStateEnvironment) {
 	b.beaconCommitteeStateBase.initCommitteeState(env)
-	b.swapRule = SwapRuleByEnv(env)
+	b.swapRule = GetSwapRuleVersion(env.BeaconHeight, config.Param().ConsensusParam.StakingFlowV3Height)
+	b.assignRule = GetAssignRuleVersion(env.BeaconHeight, config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.AssignRuleV3Height)
 }
 
 func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
@@ -247,7 +257,7 @@ func (b *beaconCommitteeStateSlashingBase) assignCandidates(
 	rand int64,
 	numberOfValidator []int,
 ) map[byte][]string {
-	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
+	assignedCandidates := b.assignRule.Process(candidates, numberOfValidator, rand)
 	return assignedCandidates
 }
 

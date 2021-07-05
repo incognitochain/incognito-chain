@@ -48,6 +48,10 @@ func (b *BeaconCommitteeStateV1) Version() int {
 	return SELF_SWAP_SHARD_VERSION
 }
 
+func (b *BeaconCommitteeStateV1) AssignRuleVersion() int {
+	return ASSIGN_RULE_V1
+}
+
 func (b BeaconCommitteeStateV1) shallowCopy(newB *BeaconCommitteeStateV1) {
 	newB.beaconCommitteeStateBase = b.beaconCommitteeStateBase
 	newB.currentEpochShardCandidate = b.currentEpochShardCandidate
@@ -512,7 +516,7 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 	defer b.mu.RUnlock()
 	beaconCommittee, shardCommittee, shardSubstitute,
 		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule := b.getDataForUpgrading(env)
+		autoStake, rewardReceiver, stakingTx, swapRule, assignRule := b.getDataForUpgrading(env)
 
 	committeeStateV2 := NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
@@ -524,6 +528,7 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		rewardReceiver,
 		stakingTx,
 		swapRule,
+		assignRule,
 	)
 	return committeeStateV2
 }
@@ -538,6 +543,7 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]privacy.PaymentAddress,
 	map[string]common.Hash,
 	SwapRuleProcessor,
+	AssignRuleProcessor,
 ) {
 	beaconCommittee := make([]string, len(b.beaconCommittee))
 	shardCommittee := make(map[byte][]string)
@@ -571,13 +577,8 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 		stakingTx[k] = v
 	}
 
-	swapRuleEnv := NewBeaconCommitteeStateEnvironmentForSwapRule(env.BeaconHeight, env.StakingV3Height)
-	swapRule := SwapRuleByEnv(swapRuleEnv)
+	swapRule := GetSwapRuleVersion(env.BeaconHeight, env.StakingV3Height)
+	assignRule := GetAssignRuleVersion(env.BeaconHeight, env.StakingV2Height, env.AssignRuleV3Height)
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule
-}
-
-//ActiveShards ...
-func (engine *BeaconCommitteeEngineV1) UpgradeAssignRuleV3() {
-	panic("not implement")
+		autoStake, rewardReceiver, stakingTx, swapRule, assignRule
 }

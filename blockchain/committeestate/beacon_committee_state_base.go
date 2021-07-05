@@ -58,7 +58,9 @@ func NewBeaconCommitteeState(
 	swapRule SwapRuleProcessor,
 	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
 	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
+	assignRule AssignRuleProcessor,
 ) BeaconCommitteeState {
+
 	var committeeState BeaconCommitteeState
 	tempBeaconCommittee, _ := incognitokey.CommitteeKeyListToString(beaconCommittee)
 	tempNextEpochShardCandidate, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
@@ -76,6 +78,7 @@ func NewBeaconCommitteeState(
 	for shardID, v := range syncPool {
 		tempSyncPool[shardID], _ = incognitokey.CommitteeKeyListToString(v)
 	}
+
 	switch version {
 	case SELF_SWAP_SHARD_VERSION:
 		committeeState = NewBeaconCommitteeStateV1WithValue(
@@ -99,6 +102,7 @@ func NewBeaconCommitteeState(
 			rewardReceivers,
 			stakingTx,
 			swapRule,
+			assignRule,
 		)
 	case DCS_VERSION:
 		committeeState = NewBeaconCommitteeStateV3WithValue(
@@ -112,8 +116,10 @@ func NewBeaconCommitteeState(
 			stakingTx,
 			tempSyncPool,
 			swapRule,
+			assignRule,
 		)
 	}
+
 	return committeeState
 }
 
@@ -161,6 +167,10 @@ func newBeaconCommitteeStateBaseWithValue(
 }
 
 func (b beaconCommitteeStateBase) Version() int {
+	panic("do not use function of beaconCommitteeStateBase struct")
+}
+
+func (b beaconCommitteeStateBase) AssignRuleVersion() int {
 	panic("do not use function of beaconCommitteeStateBase struct")
 }
 

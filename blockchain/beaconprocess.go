@@ -975,7 +975,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	err2 := newBestState.tryUpgradeCommitteeState()
+	err2 := newBestState.tryUpgradeConsensusRule()
 	if err2 != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err2)
 	}

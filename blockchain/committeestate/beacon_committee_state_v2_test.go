@@ -73,6 +73,7 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 			name: "Valid Input",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee:  map[byte][]string{},
 						shardSubstitute: map[byte][]string{},
@@ -109,6 +110,7 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 			},
 			wantSideEffect: &fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee:  map[byte][]string{},
 						shardSubstitute: map[byte][]string{},
@@ -132,6 +134,7 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &BeaconCommitteeStateV2{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: tt.fields.beaconCommitteeStateSlashingBase.beaconCommitteeStateBase.beaconCommittee,
 						shardCommittee:  tt.fields.beaconCommitteeStateSlashingBase.beaconCommitteeStateBase.shardCommittee,
@@ -213,6 +216,7 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 			name: "Valid Input",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -239,6 +243,7 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 			},
 			wantSideEffect: &fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -267,6 +272,7 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 		t.Run(tt.name, func(t *testing.T) {
 			b := &BeaconCommitteeStateV2{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: tt.fields.beaconCommittee,
 						shardCommittee:  tt.fields.shardCommittee,
@@ -518,6 +524,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			fields: fields{
 				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]string{
 								0: []string{},
@@ -544,6 +551,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			fields: fields{
 				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]string{
 								0: []string{
@@ -614,6 +622,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			fields: fields{
 				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]string{
 								0: []string{
@@ -671,6 +680,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			fields: fields{
 				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]string{
 								0: []string{
@@ -874,6 +884,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Swap Out Not Valid In List Committees Public Key",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -938,6 +949,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Swap In Not Valid In List Substitutes Public Key",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1002,6 +1014,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Valid Input [Back To Common Pool And Re-assign]",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1073,6 +1086,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Valid Input [Back To Common Pool And Re-assign], Data in 2 Shard",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1160,6 +1174,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Valid Input [Swap Out]",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1231,6 +1246,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Valid Input [Swap Out], Data in 2 Shards",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1322,6 +1338,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "Valid Input [Slashing Force Swap Out]",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1394,6 +1411,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			name: "[Valid input] swapruleV3 - slash + normal + swap in",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1600,6 +1618,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			name: "[Back To Substitute] Not Found Staker Info",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1625,6 +1644,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1667,6 +1687,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			name: "[Swap Out] Return Staking Amount",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1694,6 +1715,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1739,6 +1761,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			name: "[Swap Out] Not Found Staker Info",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1763,6 +1786,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1804,6 +1828,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			name: "[Back To Substitute] Valid Input",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1829,6 +1854,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1883,6 +1909,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			name: "[Back To Substitute] Valid Input 2",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1909,6 +1936,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1968,6 +1996,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &BeaconCommitteeStateV2{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: tt.fields.beaconCommittee,
 						shardCommittee:  tt.fields.shardCommittee,
@@ -2088,6 +2117,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			name: "Valid Input Key In Candidates List",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						autoStake: map[string]bool{
 							key: true,
@@ -2128,6 +2158,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			name: "Valid Input Key In Validators List",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key},
@@ -2159,6 +2190,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			name: "Remove 4 keys in shard common pool",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{},
@@ -2230,6 +2262,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &BeaconCommitteeStateV2{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: tt.fields.beaconCommittee,
 						shardCommittee:  tt.fields.shardCommittee,
@@ -2285,17 +2318,31 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 		{
 			name: "Not Found In List Subtitutes",
 			fields: fields{
-				assignRule: AssignRuleV2{},
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						autoStake: map[string]bool{
+							key: true,
+						},
+					},
+					assignRule: NewAssignRuleV2(),
+				},
 			},
 			fieldsAfterProcess: fields{
-				assignRule: AssignRuleV2{},
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						autoStake: map[string]bool{
+							key: true,
+						},
+					},
+					assignRule: NewAssignRuleV2(),
+				},
 			},
 			args: args{
 				stopAutoStakeInstruction: &instruction.StopAutoStakeInstruction{
-					CommitteePublicKeys: []string{key},
+					CommitteePublicKeys: []string{key2},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newAllRoles: []string{key2},
+					newAllRoles: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
 			},
@@ -2305,6 +2352,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 			name: "Found In List Subtitutes",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						autoStake: map[string]bool{
 							key: true,
@@ -2314,6 +2362,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						autoStake: map[string]bool{
 							key: false,
@@ -2339,6 +2388,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &BeaconCommitteeStateV2{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: tt.fields.beaconCommittee,
 						shardCommittee:  tt.fields.shardCommittee,
@@ -2370,964 +2420,974 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 
 	// @NOTICE: No use split rule reward v2
 	/*
-		initLog()
-		initTestParams()
+			initLog()
+			initTestParams()
 
-		type fields struct {
-			beaconCommitteeStateSlashingBase
-		}
-		type args struct {
-			env *SplitRewardEnvironment
-		}
-		tests := []struct {
-			name    string
-			fields  fields
-			args    args
-			want    map[common.Hash]uint64
-			want1   map[common.Hash]uint64
-			want2   map[common.Hash]uint64
-			want3   map[common.Hash]uint64
-			wantErr bool
-		}{
-			{
-				name: "Year 1",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+			type fields struct {
+				beaconCommitteeStateSlashingBase
+			}
+			type args struct {
+				env *SplitRewardEnvironment
+			}
+			tests := []struct {
+				name    string
+				fields  fields
+				args    args
+				want    map[common.Hash]uint64
+				want1   map[common.Hash]uint64
+				want2   map[common.Hash]uint64
+				want3   map[common.Hash]uint64
+				wantErr bool
+			}{
+				{
+					name: "Year 1",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                10,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 1093996,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                10,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 1093996,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 51054,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 933543,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 109399,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 51054,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 933543,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 109399,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 2",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 2",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                9,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 995536,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                9,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 995536,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 46975,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 858963,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 89598,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 46975,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 858963,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 89598,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 3",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 3",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                8,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 905938,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                8,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 905938,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 43217,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 790246,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 72475,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 43217,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 790246,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 72475,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 4",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 4",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                7,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 824403,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                7,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 824403,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 39755,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 726940,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 57708,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 39755,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 726940,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 57708,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 5",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 5",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                6,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 750207,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                6,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 750207,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 36566,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 668629,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 45012,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 36566,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 668629,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 45012,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 6",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 6",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                5,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 682688,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                5,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 682688,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 33629,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 614925,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 34134,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 33629,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 614925,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 34134,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 7",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 7",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                4,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 621246,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                4,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 621246,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 30925,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 565472,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 24849,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 30925,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 565472,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 24849,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 8",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 8",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                3,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 565334,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                3,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 565334,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 28435,
 					},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 519939,
+					},
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 16960,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
 				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 28435,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 519939,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 16960,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-			{
-				name: "Year 9",
-				fields: fields{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{
-								key0, key, key2, key3, key, key2, key3,
+				{
+					name: "Year 9",
+					fields: fields{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: []string{
+									key0, key, key2, key3, key, key2, key3,
+								},
+								shardCommittee: map[byte][]string{
+									0: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									1: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									2: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									3: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									4: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									5: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									6: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+									7: []string{
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key0, key, key2, key3, key4, key5,
+										key4, key5,
+									},
+								},
+								mu: &sync.RWMutex{},
 							},
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								1: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								2: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								3: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								4: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								5: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								6: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
-								7: []string{
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key0, key, key2, key3, key4, key5,
-									key4, key5,
-								},
+						},
+					},
+					args: args{
+						env: &SplitRewardEnvironment{
+							DAOPercent:                3,
+							ActiveShards:              8,
+							IsSplitRewardForCustodian: false,
+							PercentCustodianReward:    0,
+							TotalReward: map[common.Hash]uint64{
+								common.PRVCoinID: 514454,
 							},
-							mu: &sync.RWMutex{},
 						},
 					},
-				},
-				args: args{
-					env: &SplitRewardEnvironment{
-						DAOPercent:                3,
-						ActiveShards:              8,
-						IsSplitRewardForCustodian: false,
-						PercentCustodianReward:    0,
-						TotalReward: map[common.Hash]uint64{
-							common.PRVCoinID: 514454,
-						},
+					want: map[common.Hash]uint64{
+						common.PRVCoinID: 25876,
 					},
-				},
-				want: map[common.Hash]uint64{
-					common.PRVCoinID: 25876,
-				},
-				want1: map[common.Hash]uint64{
-					common.PRVCoinID: 473145,
-				},
-				want2: map[common.Hash]uint64{
-					common.PRVCoinID: 15433,
-				},
-				want3:   map[common.Hash]uint64{},
-				wantErr: false,
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				b := &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: tt.fields.beaconCommittee,
-							shardCommittee:  tt.fields.shardCommittee,
-						},
+					want1: map[common.Hash]uint64{
+						common.PRVCoinID: 473145,
 					},
-				}
-				got, got1, got2, got3, err := b.SplitReward(tt.args.env)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("BeaconCommitteeStateV2.Process() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("BeaconCommitteeStateV2.Process() got = %v, want %v", got, tt.want)
-				}
-				if !reflect.DeepEqual(got1, tt.want1) {
-					t.Errorf("BeaconCommitteeStateV2.Process() got1 = %v, want %v", got1, tt.want1)
-				}
-				if !reflect.DeepEqual(got2, tt.want2) {
-					t.Errorf("BeaconCommitteeStateV2.Process() got2 = %v, want %v", got2, tt.want2)
-				}
-				if !reflect.DeepEqual(got3, tt.want3) {
-					t.Errorf("BeaconCommitteeStateV2.Process() got3 = %v, want %v", got3, tt.want3)
-				}
-			})
-		}
+					want2: map[common.Hash]uint64{
+						common.PRVCoinID: 15433,
+					},
+					want3:   map[common.Hash]uint64{},
+					wantErr: false,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					b := &BeaconCommitteeStateV2{
+						beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+		assignRuleNewAssignRuleV2()
+							beaconCommitteeStateBase: beaconCommitteeStateBase{
+								beaconCommittee: tt.fields.beaconCommittee,
+								shardCommittee:  tt.fields.shardCommittee,
+							},
+						},
+					}
+					got, got1, got2, got3, err := b.SplitReward(tt.args.env)
+					if (err != nil) != tt.wantErr {
+						t.Errorf("BeaconCommitteeStateV2.Process() error = %v, wantErr %v", err, tt.wantErr)
+						return
+					}
+					if !reflect.DeepEqual(got, tt.want) {
+						t.Errorf("BeaconCommitteeStateV2.Process() got = %v, want %v", got, tt.want)
+					}
+					if !reflect.DeepEqual(got1, tt.want1) {
+						t.Errorf("BeaconCommitteeStateV2.Process() got1 = %v, want %v", got1, tt.want1)
+					}
+					if !reflect.DeepEqual(got2, tt.want2) {
+						t.Errorf("BeaconCommitteeStateV2.Process() got2 = %v, want %v", got2, tt.want2)
+					}
+					if !reflect.DeepEqual(got3, tt.want3) {
+						t.Errorf("BeaconCommitteeStateV2.Process() got3 = %v, want %v", got3, tt.want3)
+					}
+				})
+			}
 	*/
 
 	initLog()
@@ -3553,6 +3613,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3576,6 +3637,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3632,6 +3694,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3657,6 +3720,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3705,6 +3769,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3728,6 +3793,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3774,6 +3840,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3804,6 +3871,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3854,6 +3922,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3885,6 +3954,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3944,6 +4014,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -3976,6 +4047,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4028,6 +4100,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4062,6 +4135,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4122,6 +4196,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4154,6 +4229,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4216,6 +4292,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4250,6 +4327,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4308,6 +4386,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4342,6 +4421,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4677,6 +4757,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4708,6 +4789,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4771,6 +4853,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4802,6 +4885,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4865,6 +4949,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4900,6 +4985,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4962,6 +5048,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -4997,6 +5084,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5059,6 +5147,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5091,6 +5180,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5149,6 +5239,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5181,6 +5272,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5239,6 +5331,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5273,6 +5366,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5339,6 +5433,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5373,6 +5468,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5439,6 +5535,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5469,6 +5566,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5518,6 +5616,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5550,6 +5649,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5603,6 +5703,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5633,6 +5734,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5683,6 +5785,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5717,6 +5820,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5783,6 +5887,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5817,6 +5922,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5883,6 +5989,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5917,6 +6024,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -5983,6 +6091,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -6017,6 +6126,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -6083,6 +6193,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -6126,6 +6237,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -6205,6 +6317,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
@@ -6254,6 +6367,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{

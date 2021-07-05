@@ -3,10 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -79,75 +77,6 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 		}
 	}
 	return crossIDs, nil
-}
-
-func createShardSwapActionForKeyListV2(
-	shardCommittees []string,
-	minCommitteeSize int,
-	activeShard int,
-	shardID byte,
-	epoch uint64,
-) ([]string, []string) {
-	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(epoch, minCommitteeSize, activeShard)
-	remainShardCommittees := shardCommittees[minCommitteeSize:]
-	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
-}
-
-func checkReturnStakingTxExistence(txId string, shardBlock *types.ShardBlock) bool {
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadata() != nil {
-			if tx.GetMetadata().GetType() == metadata.ReturnStakingMeta {
-				if returnStakingMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata); ok {
-					if returnStakingMeta.TxID == txId {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
-func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string {
-	requester := base58.Base58Check{}.Encode(pk, common.Base58Version)
-	return fmt.Sprintf("%s-%s", requester, coinID.String())
-}
-
-func reqTableFromReqTxs(
-	transactions []metadata.Transaction,
-) map[string]metadata.Transaction {
-	txRequestTable := map[string]metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
-			txRequestTable[key] = tx
-		}
-	}
-	return txRequestTable
-}
-
-func filterReqTxs(
-	transactions []metadata.Transaction,
-	txRequestTable map[string]metadata.Transaction,
-) []metadata.Transaction {
-	res := []metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
-			txReq, ok := txRequestTable[key]
-			if !ok {
-				continue
-			}
-			cmp, err := txReq.Hash().Cmp(tx.Hash())
-			if (err != nil) || (cmp != 0) {
-				continue
-			}
-		}
-		res = append(res, tx)
-	}
-	return res
 }
 
 func CreateMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransaction) (*common.Hash, error) {

@@ -17,29 +17,17 @@ type SwapRuleProcessor interface {
 	Version() int
 }
 
-func cloneSwapRuleByVersion(swapRule SwapRuleProcessor) SwapRuleProcessor {
-	var res SwapRuleProcessor
-	if swapRule != nil {
-		switch swapRule.Version() {
-		case swapRuleSlashingVersion:
-			res = swapRule.(*swapRuleV2).clone()
-		case swapRuleDCSVersion:
-			res = swapRule.(*swapRuleV3).clone()
-		case swapRuleTestVersion:
-			res = swapRule
-		default:
-			panic("Not implement this version yet")
-		}
-	}
-	return res
-}
+func GetSwapRuleVersion(beaconHeight, stakingFlowV3Height uint64) SwapRuleProcessor {
 
-func SwapRuleByEnv(env *BeaconCommitteeStateEnvironment) SwapRuleProcessor {
 	var swapRule SwapRuleProcessor
-	if env.BeaconHeight >= env.StakingV3Height {
+
+	if beaconHeight >= stakingFlowV3Height {
+		Logger.log.Infof("Beacon Height %+v, using Swap Rule V3", beaconHeight)
 		swapRule = NewSwapRuleV3()
 	} else {
+		Logger.log.Infof("Beacon Height %+v, using Swap Rule V2", beaconHeight)
 		swapRule = NewSwapRuleV2()
 	}
+
 	return swapRule
 }

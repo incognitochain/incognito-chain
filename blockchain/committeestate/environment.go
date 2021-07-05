@@ -41,6 +41,8 @@ type BeaconCommitteeStateEnvironment struct {
 	DAOPercent                       int
 	NumberOfFixedShardBlockValidator int
 	MissingSignaturePenalty          map[string]signaturecounter.Penalty
+	StakingV2Height                  uint64
+	AssignRuleV3Height               uint64
 	StakingV3Height                  uint64
 	shardCommittee                   map[byte][]string
 	shardSubstitute                  map[byte][]string
@@ -118,35 +120,6 @@ func isNilOrAutoStakeHash(h *BeaconCommitteeStateHash) bool {
 	return false
 }
 
-func isNilOrShardSyncValidatorsHash(h *BeaconCommitteeStateHash) bool {
-	if h == nil {
-		return true
-	}
-	if h.ShardSyncValidatorsHash.IsEqual(&common.Hash{}) {
-		return true
-	}
-	return false
-}
-
-func NewBeaconCommitteeStateEnvironmentForUpdateDB(
-	statedb *statedb.StateDB,
-) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		ConsensusStateDB: statedb,
-	}
-}
-
-func NewBeaconCommitteeStateEnvironment() *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{}
-}
-
-func NewBeaconCommitteeStateEnvironmentForSwapRule(beaconHeight, stakingV3Height uint64) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		StakingV3Height: stakingV3Height,
-		BeaconHeight:    beaconHeight,
-	}
-}
-
 func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber int64, assignOffset int, beaconHeight uint64) *BeaconCommitteeStateEnvironment {
 	return &BeaconCommitteeStateEnvironment{
 		RandomNumber: randomNumber,
@@ -183,10 +156,6 @@ type ShardCommitteeStateEnvironment struct {
 	NumberOfFixedBlockValidators int
 	CommitteesFromBlock          common.Hash
 	CommitteesFromBeaconView     []string
-}
-
-func NewShardCommitteeStateEnvironment(shardHeight uint64, shardID byte, maxShardCommitteeSize int, minShardCommitteeSize int, offset int, swapOffset int, numberOfFixedBlockValidators int) *ShardCommitteeStateEnvironment {
-	return &ShardCommitteeStateEnvironment{ShardHeight: shardHeight, ShardID: shardID, MaxShardCommitteeSize: maxShardCommitteeSize, MinShardCommitteeSize: minShardCommitteeSize, Offset: offset, SwapOffset: swapOffset, NumberOfFixedBlockValidators: numberOfFixedBlockValidators}
 }
 
 func NewShardCommitteeStateEnvironmentForAssignInstruction(

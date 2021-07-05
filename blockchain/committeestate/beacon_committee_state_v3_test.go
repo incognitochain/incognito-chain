@@ -101,6 +101,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			name: "3 Slashing, 5 Normal Swap Out, 7 Swap In, 3 Back to Sub, 5 Return Inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -161,6 +162,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -263,6 +265,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			name: "8 Slashing, 0 Normal Swap Out, 7 Swap In, 0 Back to Sub, 8 Return Inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -323,6 +326,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -427,6 +431,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			name: "0 Slashing, 8 Normal Swap Out, 8 Swap In, 6 Back to Sub, 2 Return Inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -487,6 +492,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -589,6 +595,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			name: "0 Slashing, 0 Normal Swap Out, 7 Swap In, 0 Back to Sub, 0 Return Inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -649,6 +656,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -746,6 +754,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			name: "max 21 Slashing, 0 Normal Swap Out, 0 Swap In, 0 Back to Sub, 21 Return Inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -815,6 +824,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -911,6 +921,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			name: "0 Slashing, 0 Normal Swap Out (max committee), 0 Swap In, 0 Back to Sub, 0 Return Inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -968,6 +979,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1100,6 +1112,7 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 			name: "valid input",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1127,6 +1140,7 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
@@ -1223,6 +1237,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			name: "substitute list is empty",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{},
@@ -1234,6 +1249,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key2},
@@ -1256,6 +1272,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			name: "substitute list is not empty",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key3},
@@ -1267,6 +1284,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key2, key3},
@@ -1289,6 +1307,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			name: "substitute list is empty, > 1 candidate",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{},
@@ -1300,6 +1319,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key6, key4, key2},
@@ -1321,6 +1341,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			name: "substitute list is not empty, > 1 candidate",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key5},
@@ -1332,6 +1353,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key2, key6, key4, key5},
@@ -1391,7 +1413,9 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 		{
 			name: "not empty list candidates",
 			fields: fields{
-				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{},
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+				},
 				syncPool: map[byte][]string{
 					0: []string{
 						key0, key, key2, key3,
@@ -1402,7 +1426,9 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 				},
 			},
 			fieldsAfterProcess: fields{
-				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{},
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+				},
 				syncPool: map[byte][]string{
 					0: []string{
 						key0, key, key2, key3,
@@ -1469,6 +1495,7 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 			name: "[Valid input]",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3,
@@ -1535,6 +1562,7 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 			},
 			want: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3,
@@ -1677,6 +1705,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			name: "Unstake next candidate > 0, current candidate > 0, turn off auto stake flag > 0",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule:      NewAssignRuleV2(),
 					shardCommonPool: []string{key2, key, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
@@ -1728,6 +1757,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule:      NewAssignRuleV2(),
 					shardCommonPool: []string{key2},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
@@ -1792,6 +1822,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			name: "Unstake next candidate = 0, current candidate = 0, turn off auto stake flag > 0",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule:      NewAssignRuleV2(),
 					shardCommonPool: []string{key2, key, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
@@ -1843,6 +1874,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule:      NewAssignRuleV2(),
 					shardCommonPool: []string{key2, key, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
@@ -1908,6 +1940,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			name: "Unstake next candidate > 0, current candidate = 0, turn off auto stake flag = 0",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule:      NewAssignRuleV2(),
 					shardCommonPool: []string{key2, key, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
@@ -1959,6 +1992,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule:      NewAssignRuleV2(),
 					shardCommonPool: []string{key},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
@@ -2137,6 +2171,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:              finalMutex,
 							beaconCommittee: []string{},
@@ -2166,6 +2201,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:              finalMutex,
 							beaconCommittee: []string{},
@@ -2215,6 +2251,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							autoStake: map[string]bool{
@@ -2240,6 +2277,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:             finalMutex,
 							autoStake:      map[string]bool{},
@@ -2282,6 +2320,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:              finalMutex,
 							beaconCommittee: []string{},
@@ -2314,6 +2353,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:              finalMutex,
 							beaconCommittee: []string{},
@@ -2363,6 +2403,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:              finalMutex,
 							beaconCommittee: []string{},
@@ -2395,6 +2436,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu:              finalMutex,
 							beaconCommittee: []string{},
@@ -2442,6 +2484,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -2473,6 +2516,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -2536,6 +2580,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -2607,6 +2652,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -2836,6 +2882,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -2912,6 +2959,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3020,6 +3068,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3097,6 +3146,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3210,6 +3260,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3281,6 +3332,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3398,6 +3450,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3466,6 +3519,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3575,6 +3629,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3650,6 +3705,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3767,6 +3823,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3843,6 +3900,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -3956,6 +4014,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fields: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -4031,6 +4090,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			fieldsAfterProcess: fields{
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						assignRule: NewAssignRuleV2(),
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
@@ -4191,6 +4251,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			name: "remove one validator, sync pool not empty => assign to pending",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key},
@@ -4203,6 +4264,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key4, key},
@@ -4229,6 +4291,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			name: "remove one validator, sync pool is empty => assign to pending",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key},
@@ -4241,6 +4304,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key4, key},
@@ -4267,6 +4331,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			name: "remove multiple validator, sync pool is empty => assign to pending",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key},
@@ -4281,6 +4346,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key3, key0, key4, key5, key},
@@ -4315,6 +4381,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			name: "remove multiple validator, sync pool not empty => assign to pending",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key},
@@ -4329,6 +4396,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key3, key0, key4, key},
@@ -4360,6 +4428,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			name: "remove multiple validator, sync pool not empty => pending is empty before assign",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{},
@@ -4374,6 +4443,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key3, key5, key4},
@@ -4613,6 +4683,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			name: "1 stop auto stake = false, 1 return stake, no assign back",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						stakingTx: map[string]common.Hash{
 							key6: *hash,
@@ -4629,6 +4700,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						stakingTx:      map[string]common.Hash{},
 						rewardReceiver: map[string]privacy.PaymentAddress{},
@@ -4655,6 +4727,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			name: "stop auto stake = true, no return stake, assign back",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key},
@@ -4675,6 +4748,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key, key2},
@@ -4711,6 +4785,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			name: "both stop auto stake = true, false, has assign back and return inst",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key},
@@ -4740,6 +4815,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key, key2, key0},
@@ -4824,6 +4900,7 @@ func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
 			name: "one candidate, empty committee change",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: make(map[byte][]string),
 					},
@@ -4842,6 +4919,7 @@ func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
 			name: "two candidate, empty committee change",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: make(map[byte][]string),
 					},
@@ -4860,6 +4938,7 @@ func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
 			name: "two candidate, not empty committee change",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: make(map[byte][]string),
 					},
@@ -4914,6 +4993,7 @@ func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 			name: "Year 1",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3, key, key2, key3,
@@ -4973,6 +5053,7 @@ func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 			name: "Year 2, Subset 0",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3, key, key2, key3,
@@ -5032,6 +5113,7 @@ func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 			name: "Year 2, Subset 1",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3, key, key2, key3,
@@ -5091,6 +5173,7 @@ func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 			name: "Year 3, Subset 0, shard committee size = 61",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3, key, key2, key3,
@@ -5150,6 +5233,7 @@ func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 			name: "Year 3, Subset 1, shard committee size = 61",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
 							key0, key, key2, key3, key, key2, key3,

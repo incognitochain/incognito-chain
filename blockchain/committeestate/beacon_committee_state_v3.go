@@ -33,11 +33,12 @@ func NewBeaconCommitteeStateV3WithValue(
 	stakingTx map[string]common.Hash,
 	syncPool map[byte][]string,
 	swapRule SwapRuleProcessor,
+	assignRule AssignRuleProcessor,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBaseWithValue(
 			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
-			shardCommonPool, numberOfAssignedCandidates, swapRule,
+			shardCommonPool, numberOfAssignedCandidates, swapRule, assignRule,
 		),
 		syncPool: syncPool,
 	}

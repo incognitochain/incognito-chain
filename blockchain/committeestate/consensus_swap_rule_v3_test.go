@@ -2443,7 +2443,7 @@ func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 
 func TestGetNewSyncPoolPosition(t *testing.T) {
 	keys := []string{key90, key91, key92, key93, key94, key95, key96, key97, key98}
-	assignShardCandidateV2(keys, []int{2, 2}, 1000)
+	NewAssignRuleV2().Process(keys, []int{2, 2}, 1000)
 }
 
 func TestCalculateNewSubstitutePosition(t *testing.T) {

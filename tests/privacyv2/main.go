@@ -136,15 +136,17 @@ func main() {
 	}
 
 	if os.Args[1] == "consensus_interval" {
-		numberOfStaker := len(stakePayloads)
-		stake(numberOfStaker)
-		time.Sleep(5 * time.Minute)
-		numberOfUnstake := len(unstakePayloads)
-		unstake(numberOfUnstake)
-		time.Sleep(1 * time.Minute)
-		numberOfStopAutoStake := len(stopAutoStakePayloads)
-		stopAutoStake(numberOfStopAutoStake)
-		time.Sleep(5 * time.Minute)
+		ticker := time.Tick(10 * time.Minute)
+		for _ = range ticker {
+			numberOfStaker := len(stakePayloads)
+			stake(numberOfStaker)
+			time.Sleep(5 * time.Minute)
+			numberOfUnstake := len(unstakePayloads)
+			unstake(numberOfUnstake)
+			time.Sleep(1 * time.Minute)
+			numberOfStopAutoStake := len(stopAutoStakePayloads)
+			stopAutoStake(numberOfStopAutoStake)
+		}
 	}
 }
 
