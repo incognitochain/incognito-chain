@@ -140,7 +140,7 @@ var localPortalParam = PortalParams{
 	PortalParamsV4: map[uint64]portalv4.PortalParams{
 		0: {
 			MasterPubKeys: map[string][][]byte{
-				TestnetPortalV4BTCID: [][]byte{
+				LocalPortalV4BTCID: [][]byte{
 					[]byte{0x3, 0xb2, 0xd3, 0x16, 0x7d, 0x94, 0x9c, 0x25, 0x3, 0xe6, 0x9c, 0x9f, 0x29, 0x78, 0x7d, 0x9c, 0x8, 0x8d, 0x39, 0x17, 0x8d, 0xb4, 0x75, 0x40, 0x35, 0xf5, 0xae, 0x6a, 0xf0, 0x17, 0x12, 0x11, 0x0},
 					[]byte{0x3, 0x98, 0x7a, 0x87, 0xd1, 0x99, 0x13, 0xbd, 0xe3, 0xef, 0xf0, 0x55, 0x79, 0x2, 0xb4, 0x90, 0x57, 0xed, 0x1c, 0x9c, 0x8b, 0x32, 0xf9, 0x2, 0xbb, 0xbb, 0x85, 0x71, 0x3a, 0x99, 0x1f, 0xdc, 0x41},
 					[]byte{0x3, 0x73, 0x23, 0x5e, 0xb1, 0xc8, 0xf1, 0x84, 0xe7, 0x59, 0x17, 0x6c, 0xe3, 0x87, 0x37, 0xb7, 0x91, 0x19, 0x47, 0x1b, 0xba, 0x63, 0x56, 0xbc, 0xab, 0x8d, 0xcc, 0x14, 0x4b, 0x42, 0x99, 0x86, 0x1},
@@ -149,24 +149,24 @@ var localPortalParam = PortalParams{
 			},
 			NumRequiredSigs: 3,
 			GeneralMultiSigAddresses: map[string]string{
-				TestnetPortalV4BTCID: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
+				LocalPortalV4BTCID: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
 			},
 			PortalTokens: initPortalTokensV4ForLocal(),
 			DefaultFeeUnshields: map[string]uint64{
-				TestnetPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
+				LocalPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
 			},
 			MinUnshieldAmts: map[string]uint64{
-				TestnetPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
+				LocalPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
 			},
 			DustValueThreshold: map[string]uint64{
-				TestnetPortalV4BTCID: 1000000, // 1000000 nano pbtc = 100000 satoshi
+				LocalPortalV4BTCID: 1000000, // 1000000 nano pbtc = 100000 satoshi
 			},
 			BatchNumBlks:                15, // ~ 2.5 mins
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
 			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
 			PortalV4TokenIDs: []string{
-				TestnetPortalV4BTCID,
+				LocalPortalV4BTCID,
 			},
 		},
 	},
