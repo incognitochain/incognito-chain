@@ -214,7 +214,7 @@ func TestAddrKeeper_UpdateRTTData(t *testing.T) {
 	_ = ping.NewPingService(h2)
 
 	keeper := &AddrKeeper{
-		currentHW: rpcclient.HighwayAddr{Libp2pAddr: h1.Addrs()[0].String() + "/p2p/" + h1.ID().String() + "/"},
+		currentHW: &rpcclient.HighwayAddr{Libp2pAddr: h1.Addrs()[0].String() + "/p2p/" + h1.ID().String() + "/"},
 		addrs: addresses{
 			rpcclient.HighwayAddr{Libp2pAddr: h2.Addrs()[0].String() + "/p2p/" + h2.ID().String() + "/"},
 		},
@@ -230,7 +230,7 @@ func TestAddrKeeper_UpdateRTTData(t *testing.T) {
 		time.Sleep(10 * time.Second)
 		stopCh <- nil
 	}()
-	keeper.UpdateRTTData(&Host{Host: h1}, ps1, stopCh)
+	keeper.UpdateRTTData(&Host{Host: h1}, ps1)
 }
 
 func TestPing(t *testing.T) {
