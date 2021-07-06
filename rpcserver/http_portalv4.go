@@ -96,6 +96,7 @@ func (httpServer *HttpServer) handleGetPortalV4Params(params interface{}, closeC
 	}
 
 	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(beaconHeight)
+	portalParamV4.PortalTokens = nil
 
 	return portalParamV4, nil
 }
