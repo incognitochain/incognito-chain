@@ -116,6 +116,9 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		DefaultFeeUnshields: map[string]uint64{
 			portal.TestnetPortalV4BTCID: 100000, // in nano pBTC - 10000 satoshi
 		},
+		MinShieldAmts: map[string]uint64{
+			portal.TestnetPortalV4BTCID: 10, // in nano pBTC - 1 satoshi
+		},
 		MinUnshieldAmts: map[string]uint64{
 			portal.TestnetPortalV4BTCID: 1000000, // in nano pBTC - 100000 satoshi
 		},

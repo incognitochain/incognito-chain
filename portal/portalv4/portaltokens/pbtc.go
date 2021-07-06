@@ -40,7 +40,7 @@ func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint6
 }
 
 func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
-	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string, chainCodeSeed string) (bool, []*statedb.UTXO, error) {
+	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string, chainCodeSeed string, minShieldAmt uint64) (bool, []*statedb.UTXO, error) {
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
 		return false, nil, errors.New("BTC relaying chain should not be null")
@@ -76,6 +76,11 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 			continue
 		}
 
+		if p.ConvertExternalToIncAmount(uint64(out.Value)) < minShieldAmt {
+			Logger.log.Errorf("Shielding UTXO amount: %v is less than the minimum threshold: %v\n", out.Value, minShieldAmt)
+			continue
+		}
+
 		totalValue += uint64(out.Value)
 
 		listUTXO = append(listUTXO, statedb.NewUTXOWithValue(
@@ -87,19 +92,19 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		))
 	}
 
-	if len(listUTXO) == 0 || p.ConvertExternalToIncAmount(totalValue) < p.GetMinTokenAmount() {
-		Logger.log.Errorf("Shielding amount: %v is less than the minimum threshold: %v\n", totalValue, p.GetMinTokenAmount())
-		return false, nil, fmt.Errorf("Shielding amount: %v is less than the minimum threshold: %v", totalValue, p.GetMinTokenAmount())
+	if len(listUTXO) == 0 {
+		Logger.log.Errorf("Could not find any valid UTXO")
+		return false, nil, fmt.Errorf("Could not find any valid UTXO")
 	}
 
 	return true, listUTXO, nil
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string,
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, minShieldAmt uint64,
 ) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
-	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedReceivedMultisigAddress, chainCodeSeed)
+	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedReceivedMultisigAddress, chainCodeSeed, minShieldAmt)
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(

@@ -155,6 +155,9 @@ var localPortalParam = PortalParams{
 			DefaultFeeUnshields: map[string]uint64{
 				LocalPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
 			},
+			MinShieldAmts: map[string]uint64{
+				LocalPortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
+			},
 			MinUnshieldAmts: map[string]uint64{
 				LocalPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
 			},
@@ -220,6 +223,9 @@ var testnet1PortalParams = PortalParams{
 			PortalTokens: initPortalTokensV4ForTestNet(),
 			DefaultFeeUnshields: map[string]uint64{
 				TestnetPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
+			},
+			MinShieldAmts: map[string]uint64{
+				TestnetPortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
 			},
 			MinUnshieldAmts: map[string]uint64{
 				TestnetPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
@@ -287,6 +293,9 @@ var testnet2PortalParams = PortalParams{
 			DefaultFeeUnshields: map[string]uint64{
 				Testnet2PortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
 			},
+			MinShieldAmts: map[string]uint64{
+				Testnet2PortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
+			},
 			MinUnshieldAmts: map[string]uint64{
 				Testnet2PortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
 			},
@@ -346,6 +355,9 @@ var mainnetPortalParam = PortalParams{
 			PortalTokens: initPortalTokensV4ForMainNet(),
 			DefaultFeeUnshields: map[string]uint64{
 				MainnetPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
+			},
+			MinShieldAmts: map[string]uint64{
+				MainnetPortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
 			},
 			MinUnshieldAmts: map[string]uint64{
 				MainnetPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
