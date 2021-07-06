@@ -20,8 +20,8 @@ var MainnetParam = &param{
 	CommitteeSize: committeeSize{
 		MaxShardCommitteeSize:            32,
 		MinShardCommitteeSize:            22,
-		MaxBeaconCommitteeSize:           7,
-		MinBeaconCommitteeSize:           32,
+		MaxBeaconCommitteeSize:           32,
+		MinBeaconCommitteeSize:           7,
 		InitShardCommitteeSize:           22,
 		InitBeaconCommitteeSize:          7,
 		ShardCommitteeSizeKeyListV2:      22,
