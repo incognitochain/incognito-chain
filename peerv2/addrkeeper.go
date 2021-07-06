@@ -324,6 +324,7 @@ func (keeper *AddrKeeper) GetHighway(selfPeerID *peer.ID) (*rpcclient.HighwayAdd
 	return nil, errors.Errorf("Can not get new HW")
 }
 
+// updateRTT update metric rtt when received info from lastcall.
 func (keeper *AddrKeeper) updateRTT(
 	lastCallRTT time.Duration,
 	hwAddr rpcclient.HighwayAddr,
@@ -331,6 +332,10 @@ func (keeper *AddrKeeper) updateRTT(
 	if info, ok := keeper.lastRTT[hwAddr]; ok {
 		firstId := (info.lastIdx + 1) % MAX_RTT_STORE
 		if info.lastNcall[firstId] == 0 {
+			// If info at firstID is 0, it mean we just call < fistId times
+			// and info.lastIdx < MAX_RTT_STORE - 1.
+			// So newSum = oldAvg*(info.lastIdx+1) + lastCallRTT
+			// newAvg = newSum/(firstID + 1)
 			avgNano := ((info.lastIdx+1)*int(info.avgRTT.Nanoseconds()) + int(lastCallRTT.Nanoseconds())) / (info.lastIdx + 2)
 			avg, errParse := time.ParseDuration(fmt.Sprintf("%vns", avgNano))
 			if errParse == nil {
@@ -342,6 +347,8 @@ func (keeper *AddrKeeper) updateRTT(
 				info.lastNcall[info.lastIdx] = info.avgRTT
 			}
 		} else {
+			// avgNew = avgOld - infor at first index/MAX_RTT_STORE + new infor/MAX_RTT_STORE
+			// <==> avgNew = (avgOld*MAX_RTT_STORE - first call + last call)/MAX_RTT_STORE
 			info.avgRTT = info.avgRTT - info.lastNcall[firstId]/MAX_RTT_STORE + lastCallRTT/MAX_RTT_STORE
 		}
 		info.lastNcall[firstId] = lastCallRTT
