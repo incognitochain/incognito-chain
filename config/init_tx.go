@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
 	"path/filepath"
 
@@ -39,6 +40,9 @@ func (initTx *initTx) load(data []byte) {
 			}
 		} else { //if file not found
 			log.Println("Using default init tx for " + network)
+			initTxs := []initialIncognito{}
+			json.Unmarshal(data, &initTxs)
+			initTx.InitialIncognito = initTxs
 		}
 	} else {
 		err = viper.Unmarshal(&initTx)
