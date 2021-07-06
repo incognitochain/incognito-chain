@@ -1,10 +1,15 @@
 package peerv2
 
 import (
+	"context"
+	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 )
@@ -148,4 +153,26 @@ func batchingRangeBlkForSync(
 func genUUID() string {
 	randUUID, _ := uuid.NewRandom()
 	return randUUID.String()
+}
+
+func getAvgRTT(
+	ctx context.Context,
+	ts <-chan ping.Result,
+) (
+	time.Duration,
+	error,
+) {
+	s := time.Duration(0)
+	for i := 0; i < PingTimes; i++ {
+		select {
+		case res := <-ts:
+			if res.Error != nil {
+				log.Fatal(res.Error)
+			}
+			s += res.RTT
+		case <-time.After(PingTimeout):
+			return 0, errors.Errorf("Ping timeout!! %v", ctx.Value("UUID"))
+		}
+	}
+	return s / PingTimes, nil
 }

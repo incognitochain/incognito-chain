@@ -276,7 +276,17 @@ func (engine *Engine) Start() error {
 		if err != nil {
 			panic(err)
 		}
-		engine.validators = []*consensus.Validator{&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey}}
+		engine.validators = []*consensus.Validator{
+			&consensus.Validator{
+				PrivateSeed: privateSeed,
+				MiningKey:   *miningKey,
+				State: consensus.MiningState{
+					Role:    "",
+					Layer:   "",
+					ChainID: -2,
+				},
+			},
+		}
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
 		engine.validators = []*consensus.Validator{}
@@ -285,7 +295,18 @@ func (engine *Engine) Start() error {
 			if err != nil {
 				panic(err)
 			}
-			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
+			engine.validators = append(
+				engine.validators,
+				&consensus.Validator{
+					PrivateSeed: key,
+					MiningKey:   *miningKey,
+					State: consensus.MiningState{
+						Role:    "",
+						Layer:   "",
+						ChainID: -2,
+					},
+				},
+			)
 		}
 		engine.validators = engine.validators[:1] //allow only 1 key
 

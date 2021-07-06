@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -284,9 +285,11 @@ func (serverObj *Server) NewServer(
 	monitor.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
 	monitor.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
+	backupDisPeers := strings.Split(cfg.DiscoverPeersAddress, ";")
+	Logger.log.Infof("[newpeerv2] backup discovery peer %v", backupDisPeers)
 	serverObj.highway = peerv2.NewConnManager(
 		host,
-		cfg.DiscoverPeersAddress,
+		backupDisPeers,
 		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
@@ -694,7 +697,7 @@ func (serverObj Server) Start() {
 
 	serverObj.netSync.Start()
 
-	go serverObj.highway.Start(serverObj.blockChain)
+	go serverObj.highway.StartV2(serverObj.blockChain)
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
