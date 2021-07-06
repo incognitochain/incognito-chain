@@ -170,7 +170,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 
 	// verify shielding proof
 	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(
-		meta.ConvertProof, bc, expectedReceivedMultisigAddress, portalcommonv4.PortalConvertVaultChainCode)
+		meta.ConvertProof, bc, expectedReceivedMultisigAddress, portalcommonv4.PortalConvertVaultChainCode, 0)
 	if !isValid || err != nil {
 		Logger.log.Error("Converting Request: Parse proof and verify converting proof failed - Error: %v", err)
 		return [][]string{rejectInst}, nil

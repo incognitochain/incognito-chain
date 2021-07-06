@@ -16,6 +16,7 @@ type PortalParams struct {
 
 	// for unshielding
 	DefaultFeeUnshields map[string]uint64 // in nano ptokens
+	MinShieldAmts       map[string]uint64 // in nano ptokens
 	MinUnshieldAmts     map[string]uint64 // in nano ptokens
 	BatchNumBlks        uint
 	DustValueThreshold  map[string]uint64 // in nano ptokens
