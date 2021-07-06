@@ -308,6 +308,7 @@ var HttpHandler = map[string]httpHandler{
 	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
 	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
 	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
+	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

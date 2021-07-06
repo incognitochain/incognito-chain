@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 	// get PortalStateDB
 	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4StateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 
@@ -47,13 +47,13 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(beaconHeight)
 	portalState, err := portalprocessv4.InitCurrentPortalStateV4FromDB(beaconFeatureStateDB, nil, portalParamV4)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4StateError, err)
 	}
 
 	// get beacon block to get timestamp
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4StateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
 
@@ -73,6 +73,31 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 		ProcessedUnshieldRequests: portalState.ProcessedUnshieldRequests,
 	}
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalV4Params(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// parse params
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one element"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	_, err = httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4ParamsError, err)
+	}
+
+	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(beaconHeight)
+
+	return portalParamV4, nil
 }
 
 /*

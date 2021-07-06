@@ -318,6 +318,7 @@ const (
 
 	// portal v4
 	getPortalV4State                           = "getportalv4state"
+	getPortalV4Params                          = "getportalv4params"
 	createAndSendTxWithShieldingRequest        = "createandsendtxshieldingrequest"
 	getPortalShieldingRequestStatus            = "getportalshieldingrequeststatus"
 	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"

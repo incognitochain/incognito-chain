@@ -133,6 +133,8 @@ const (
 	GetTotalStakerError
 
 	// Portal v4
+	GetPortalV4StateError
+	GetPortalV4ParamsError
 	GetPortalV4ShieldReqStatusError
 	GetPortalV4UnshieldReqStatusError
 	GetPortalV4BatchUnshieldReqStatusError
