@@ -311,7 +311,8 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 // inputs: UTXO state of beacon, unit of amount in btc
 // outputs: unit of amount in pbtc ~ unshielding amount
 // feePerOutput: unit in pbtc
-func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, bc metadata.ChainRetriever) (string, string, error) {
+func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64,
+	bc metadata.ChainRetriever, beaconHeight uint64) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
 	// convert feePerOutput from inc unit to external unit
@@ -369,7 +370,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	// calculate the change output
 	if totalInputAmount > totalOutputAmount {
 		// adding the output to tx
-		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(p.GetPortalTokenID(), 0)
+		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(p.GetPortalTokenID(), beaconHeight)
 		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, p.ChainParam)
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)

@@ -150,7 +150,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 			// create raw tx
 			hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(
-				bcTx.UTXOs, outputTxs, feeUnshield, bc)
+				bcTx.UTXOs, outputTxs, feeUnshield, bc, beaconHeight)
 			if err != nil {
 				Logger.log.Errorf("[BatchUnshieldRequest]: Error when creating raw external tx %v", err)
 				continue
@@ -422,7 +422,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 	hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(
-		unshieldBatch.GetUTXOs(), optionalData["outputs"].([]*portaltokens.OutputTx), uint64(meta.Fee), bc)
+		unshieldBatch.GetUTXOs(), optionalData["outputs"].([]*portaltokens.OutputTx), uint64(meta.Fee), bc, beaconHeight)
 	if err != nil {
 		Logger.log.Errorf("[ReplaceFeeRequest]: an error occured create new raw transaction portal replacement fee: %+v", err)
 		return nil, fmt.Errorf("[ReplaceFeeRequest]: an error occured create new raw transaction portal replacement fee: %+v", err)
