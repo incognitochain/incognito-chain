@@ -34,7 +34,7 @@ var MainnetParam = &param{
 		MinBeaconBlockInterval: 40 * time.Second,
 		MaxBeaconBlockCreation: 10 * time.Second,
 	},
-	StakingAmountShard: 1750,
+	StakingAmountShard: 1750000000000,
 	ActiveShards:       8,
 	BasicReward:        1386666000,
 	EpochParam: epochParam{
@@ -108,7 +108,7 @@ var Testnet1Param = &param{
 		MinBeaconBlockInterval: 10 * time.Second,
 		MaxBeaconBlockCreation: 6 * time.Second,
 	},
-	StakingAmountShard: 1750,
+	StakingAmountShard: 1750000000000,
 	ActiveShards:       8,
 	BasicReward:        400000000,
 	EpochParam: epochParam{
@@ -182,7 +182,7 @@ var Tesnet2Param = &param{
 		MinBeaconBlockInterval: 10 * time.Second,
 		MaxBeaconBlockCreation: 6 * time.Second,
 	},
-	StakingAmountShard: 1750,
+	StakingAmountShard: 1750000000000,
 	ActiveShards:       8,
 	BasicReward:        400000000,
 	EpochParam: epochParam{
