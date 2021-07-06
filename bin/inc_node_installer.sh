@@ -19,7 +19,7 @@
 if [ $(whoami) != root ]; then
 cat << EOF
 	!!! Please run with sudo or su, otherwise it won't work
-	!!! Script now exit exits
+	!!! Script now exits
 EOF
 	exit 1
 fi
@@ -31,7 +31,7 @@ PORT_NODE="9433"  # change this if you prefer other port
 VALIDATOR_K="xxx"  # mandatory if you want to run a validator node
 GETH_NAME="https://mainnet.infura.io/v3/xxxyyy"  # infura link (*) (follow step 3 on this thread to setup infura https://we.incognito.org/t/194)
 CHECK_INTERVAL="3600" # 1 hour
-FULLNODE=0  # set to 1 to run as a full node, 0 or empty to run as normal node
+FULLNODE=""  # set to 1 to run as a full node, empty to run as normal node
 
 # Do not edit lines below unless you know what you're doing
 USER="incognito"
@@ -145,7 +145,6 @@ cat << 'EOF' >> $SCRIPT
     rpc_port="9334";
   fi
 
-  docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
   echo "Remove old container"
   docker rm -f inc_mainnet
 
@@ -175,7 +174,7 @@ cat << 'EOF' >> $SCRIPT
 
 current_latest_tag=$(cat $TMP)
 echo "Getting Incognito docker tags"
-tags=$(curl -s -X GET https://registry.hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  \
+tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  \
 	| sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g')
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
 latest_tag=${sorted_tags[0]}

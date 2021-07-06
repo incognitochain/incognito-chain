@@ -81,6 +81,9 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 	if (curBestView != nil) && (added) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()
+			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
+				return
+			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
 				bcHash := sBestView.GetBeaconHash()
 				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true)
