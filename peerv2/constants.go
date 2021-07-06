@@ -10,15 +10,21 @@ const (
 	blockbeacon        = 3
 	MaxCallRecvMsgSize = 50 << 20 // 50 MBs per gRPC response
 	MaxConnectionRetry = 6        // connect to new highway after 6 failed retries
+	PingTimes          = 10
+	MaxTimeIgnoreHW    = 1 * time.Minute
 )
 
 var (
-	RegisterTimestep          = 2 * time.Second  // Re-register to highway
-	ReconnectHighwayTimestep  = 1 * time.Second  // Check libp2p connection
+	RegisterTimestep          = 2 * time.Second // Re-register to highway
+	CheckSubsTimestep         = 5 * time.Second // Re-register to highway
+	ReconnectHighwayTimestep  = 1 * time.Second // Check libp2p connection
+	ReEstimatedRTTTimestep    = 5 * time.Minute
 	UpdateHighwayListTimestep = 10 * time.Minute // RPC to update list of highways
 	RequesterDialTimestep     = 10 * time.Second // Check gRPC connection
 	MaxTimePerRequest         = 30 * time.Second // Time per request
 	DialTimeout               = 5 * time.Second  // Timeout for dialing's context
+	PingTimeout               = 4 * time.Second  // Timeout for dialing's context
+
 	RequesterKeepaliveTime    = 10 * time.Minute
 	RequesterKeepaliveTimeout = 30 * time.Second
 	defaultMaxBlkReqPerPeer   = 900

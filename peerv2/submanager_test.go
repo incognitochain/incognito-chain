@@ -14,43 +14,43 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestGetShardIDsNormalAutoMode(t *testing.T) {
-	role := userRole{shardID: -2}
-	nodeMode := common.NodeModeAuto
-	relayShard := []byte{}
-	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
+// func TestGetShardIDsNormalAutoMode(t *testing.T) {
+// 	role := userRole{shardID: -2}
+// 	// nodeMode := common.NodeModeAuto
+// 	relayShard := []byte{}
+// 	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
 
-	// Must return shardID 255 to be able to get beacon's topics
-	assert.Equal(t, []byte{255}, shardIDs, "incorrect shardIDs")
-}
+// 	// Must return shardID 255 to be able to get beacon's topics
+// 	assert.Equal(t, []byte{255}, shardIDs, "incorrect shardIDs")
+// }
 
-func TestGetShardIDsValidatorAutoMode(t *testing.T) {
-	role := userRole{shardID: 3}
-	nodeMode := common.NodeModeAuto
-	relayShard := []byte{}
-	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
+// func TestGetShardIDsValidatorAutoMode(t *testing.T) {
+// 	role := userRole{shardID: 3}
+// 	nodeMode := common.NodeModeAuto
+// 	relayShard := []byte{}
+// 	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
 
-	// shardID = 3 is enough when we want msg blockbeacon
-	assert.Equal(t, []byte{3}, shardIDs, "incorrect shardIDs")
-}
+// 	// shardID = 3 is enough when we want msg blockbeacon
+// 	assert.Equal(t, []byte{3}, shardIDs, "incorrect shardIDs")
+// }
 
-func TestGetShardIDsRelayBeacon(t *testing.T) {
-	role := userRole{shardID: -2}
-	nodeMode := common.NodeModeRelay
-	relayShard := []byte{}
-	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
+// func TestGetShardIDsRelayBeacon(t *testing.T) {
+// 	role := userRole{shardID: -2}
+// 	nodeMode := common.NodeModeRelay
+// 	relayShard := []byte{}
+// 	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
 
-	assert.Equal(t, []byte{255}, shardIDs, "incorrect shardIDs")
-}
+// 	assert.Equal(t, []byte{255}, shardIDs, "incorrect shardIDs")
+// }
 
-func TestGetShardIDsRelayShards(t *testing.T) {
-	role := userRole{shardID: -2}
-	nodeMode := common.NodeModeRelay
-	relayShard := []byte{1, 2, 5, 7}
-	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
+// func TestGetShardIDsRelayShards(t *testing.T) {
+// 	role := userRole{shardID: -2}
+// 	nodeMode := common.NodeModeRelay
+// 	relayShard := []byte{1, 2, 5, 7}
+// 	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
 
-	assert.Equal(t, []byte{1, 2, 5, 7, 255}, shardIDs, "incorrect shardIDs")
-}
+// 	assert.Equal(t, []byte{1, 2, 5, 7, 255}, shardIDs, "incorrect shardIDs")
+// }
 
 func TestSubscribeNoChange(t *testing.T) {
 	role := userRole{
@@ -61,8 +61,8 @@ func TestSubscribeNoChange(t *testing.T) {
 	consensusData := &mocks.ConsensusData{}
 	consensusData.On("GetUserRole").Return(role.layer, role.role, role.shardID)
 	sub := &SubManager{
-		info: info{consensusData: consensusData},
-		role: role,
+		info:     info{consensusData: consensusData},
+		rolehash: "",
 	}
 	forced := false
 	err := sub.Subscribe(forced)
@@ -70,11 +70,11 @@ func TestSubscribeNoChange(t *testing.T) {
 }
 
 func TestSubscribeRoleChanged(t *testing.T) {
-	role := userRole{
-		layer:   "",
-		role:    "",
-		shardID: -2,
-	}
+	// role := userRole{
+	// 	layer:   "",
+	// 	role:    "",
+	// 	shardID: -2,
+	// }
 	registerer := &mocks.Registerer{}
 	var pairs []*proto.MessageTopicPair
 	err := fmt.Errorf("error preventing further advance")
@@ -84,10 +84,10 @@ func TestSubscribeRoleChanged(t *testing.T) {
 	sub := &SubManager{
 		info: info{
 			consensusData: consensusData,
-			syncMode:      common.NodeModeAuto,
+			syncMode:      "",
 			relayShard:    []byte{},
 		},
-		role:       role,
+		rolehash:   "",
 		registerer: registerer,
 	}
 	forced := false
@@ -110,10 +110,10 @@ func TestSubscribeForced(t *testing.T) {
 	sub := &SubManager{
 		info: info{
 			consensusData: consensusData,
-			syncMode:      common.NodeModeAuto,
+			syncMode:      "",
 			relayShard:    []byte{},
 		},
-		role:       role,
+		rolehash:   "",
 		registerer: registerer,
 	}
 	forced := true
@@ -131,20 +131,20 @@ func TestGetMessage(t *testing.T) {
 	}{
 		{
 			desc:  "Nodemode auto, normal role",
-			mode:  common.NodeModeAuto,
+			mode:  "",
 			layer: "",
 			out:   []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
 		},
 		{
 			desc:    "Nodemode relay beacon",
-			mode:    common.NodeModeRelay,
+			mode:    "",
 			layer:   "",
 			shardID: []byte{255},
 			out:     []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
 		},
 		{
 			desc:    "Nodemode relay shards",
-			mode:    common.NodeModeRelay,
+			mode:    "",
 			layer:   "",
 			shardID: []byte{1, 2, 3},
 			out:     []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdTx, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
@@ -153,7 +153,7 @@ func TestGetMessage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			msgs := getMessagesForLayer(tc.mode, tc.layer, tc.shardID)
+			msgs := getMessagesForLayer(tc.layer, tc.shardID)
 			compareMsgs(t, tc.out, msgs)
 		})
 	}
@@ -293,7 +293,7 @@ func TestRegisterToProxy(t *testing.T) {
 
 	sub := &SubManager{
 		info: info{
-			syncMode: common.NodeModeAuto,
+			syncMode: "",
 			peerID:   peer.ID(""),
 		},
 		registerer: registerer,
