@@ -433,5 +433,7 @@ var FeatureFlagWithMethodNames = map[string][]string{
 		getPortalSubmitConfirmedTx,
 		getSignedRawReplaceFeeTransaction,
 		createAndSendTxPortalConvertVaultRequest,
+		getPortalConvertVaultTxStatus,
+		getPortalV4Params,
 	},
 }
