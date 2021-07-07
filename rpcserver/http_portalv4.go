@@ -89,12 +89,6 @@ func (httpServer *HttpServer) handleGetPortalV4Params(params interface{}, closeC
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
-	_, err = httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4ParamsError, err)
-	}
-
 	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(beaconHeight)
 	portalParamV4.PortalTokens = nil
 
