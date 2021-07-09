@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"reflect"
@@ -903,7 +904,21 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 	if len(userKeySet) == 0 {
-		a.logger.Debug("Not in round for voting")
+		a.logger.Infof("HandleProposeMsg, Block Hash %+v, Block Height %+v, round %+v, NOT in round for voting",
+			*block.Hash(), block.GetHeight(), block.GetRound())
+		// Log only
+		if !a.chain.IsBeaconChain() {
+			_, proposerIndex, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(
+				common.CalculateTimeSlot(block.GetProposeTime()),
+				committees,
+			)
+			subsetID := blockchain.GetSubsetID(proposerIndex)
+			userKeySet := a.userKeySet[0].GetPublicKey().GetMiningKeyBase58(a.GetConsensusName())
+			userKeySetIndex, userKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, userKeySet, a.GetConsensusName())
+			a.logger.Infof("HandleProposeMsg, Block Proposer Index %+v, Block Subset ID %+v, "+
+				"UserKeyIndex %+v , UserKeySubsetID %+v",
+				proposerIndex, subsetID, userKeySetIndex, userKeySetSubsetID)
+		}
 	}
 
 	if v, ok := a.receiveBlockByHash[blkHash]; !ok {
