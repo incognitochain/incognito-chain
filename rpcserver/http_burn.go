@@ -33,13 +33,27 @@ func (httpServer *HttpServer) handleGetBurnProof(
 func (httpServer *HttpServer) handleGetBSCBurnProof(
 	params interface{},
 	closeChan <-chan struct{},
+	confirmMeta int,
 ) (interface{}, *rpcservice.RPCError) {
 	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningBSCConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+func (httpServer *HttpServer) handleGetBSCBurnWithdrawProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleGetBSCBurnProof(params, closeChan, metadata.BurningBSCConfirmMeta)
+}
+
+func (httpServer *HttpServer) handleGetBSCBurnWithdrawToDepositSCProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleGetBSCBurnProof(params, closeChan, metadata.BurningPBSCForDepositToSCConfirmMeta)
 }
 
 // handleGetBurnProofForDepositToSC returns a proof of a tx burning pETH to deposit to SC

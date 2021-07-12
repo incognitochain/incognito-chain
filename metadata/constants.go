@@ -118,10 +118,12 @@ const (
 	InitTokenResponseMeta = 245
 
 	// incognito mode for bsc
-	IssuingBSCRequestMeta  = 250
-	IssuingBSCResponseMeta = 251
-	BurningPBSCRequestMeta = 252
-	BurningBSCConfirmMeta  = 253
+	IssuingBSCRequestMeta                = 250
+	IssuingBSCResponseMeta               = 251
+	BurningPBSCRequestMeta               = 252
+	BurningBSCConfirmMeta                = 253
+	BurningPBSCForDepositToSCRequestMeta = 254
+	BurningPBSCForDepositToSCConfirmMeta = 255
 )
 
 var minerCreatedMetaTypes = []int{

@@ -37,8 +37,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 
 	var md Metadata
-	typeFloat,ok := mtTemp["Type"].(float64)
-	if !ok{
+	typeFloat, ok := mtTemp["Type"].(float64)
+	if !ok {
 		return nil, errors.Errorf("Could not parse metadata with type: %v", mtTemp["Type"])
 	}
 	theType := int(typeFloat)
@@ -68,6 +68,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BurningRequestMetaV2:
 		md = &BurningRequest{}
 	case BurningPBSCRequestMeta:
+		md = &BurningRequest{}
+	case BurningPBSCForDepositToSCRequestMeta:
 		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
@@ -186,7 +188,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return md, nil
 }
 
@@ -198,6 +200,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmMetaV2),
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
 	strconv.Itoa(BurningBSCConfirmMeta),
+	strconv.Itoa(BurningPBSCForDepositToSCConfirmMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {
@@ -283,6 +286,7 @@ func buildMetaInfo() {
 		BurningPBSCRequestMeta,
 		BurningForDepositToSCRequestMeta,
 		BurningForDepositToSCRequestMetaV2,
+		BurningPBSCForDepositToSCRequestMeta,
 		ContractingRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -677,6 +681,6 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 }
 
 type OTADeclaration struct {
-	PublicKey 	[32]byte
-	TokenID 	common.Hash
+	PublicKey [32]byte
+	TokenID   common.Hash
 }

@@ -95,7 +95,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	if err != nil {
 		return nil, err
 	}
-	if txVersion == 1{
+	if txVersion == 1 {
 		meta.BurnerAddress.OTAPublic = nil
 	}
 
@@ -139,7 +139,6 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 func (httpServer *HttpServer) handleCreateAndSendContractingRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateAndSendContractingRequest(params, closeChan)
 }
-
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
@@ -232,10 +231,9 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReqV2 (params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateAndSendTxWithIssuingETHReq(params, closeChan)
 }
-
 
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -417,7 +415,6 @@ func processBurningReq(
 	return result, nil
 }
 
-
 func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
 		metadata.BurningForDepositToSCRequestMetaV2,
@@ -464,17 +461,17 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingBSCReq(params inte
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interface{}, closeChan <-chan struct{}, metadataType int) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
-		metadata.BurningPBSCRequestMeta,
+		metadataType,
 		params,
 		closeChan,
 		httpServer,
 	)
 }
 
-func (httpServer *HttpServer) handleCreateAndSendBurningBSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithBurningBSCReq(params, closeChan)
+func (httpServer *HttpServer) handleCreateAndSendBurningBSCRequest(params interface{}, closeChan <-chan struct{}, metadataType int) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningBSCReq(params, closeChan, metadataType)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -489,4 +486,12 @@ func (httpServer *HttpServer) handleCreateAndSendBurningBSCRequest(params interf
 	}
 
 	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningBSCToWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendBurningBSCRequest(params, closeChan, metadata.BurningPBSCRequestMeta)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningBSCToDepositWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendBurningBSCRequest(params, closeChan, metadata.BurningPBSCForDepositToSCRequestMeta)
 }
