@@ -14,7 +14,10 @@ type AssignRuleProcessor interface {
 
 //VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func GetAssignRuleVersion(beaconHeight, assignRuleV2, assignRuleV3 uint64) AssignRuleProcessor {
-
+	if beaconHeight < assignRuleV2 && beaconHeight < assignRuleV3 {
+		Logger.log.Infof("Beacon Height %+v, using Assign Rule V1 (Nil Assign Rule)", beaconHeight)
+		return NewNilAssignRule()
+	}
 	if beaconHeight >= assignRuleV3 {
 		Logger.log.Infof("Beacon Height %+v, using Assign Rule V3", beaconHeight)
 		return NewAssignRuleV3()
@@ -27,6 +30,21 @@ func GetAssignRuleVersion(beaconHeight, assignRuleV2, assignRuleV3 uint64) Assig
 	}
 
 	return NewAssignRuleV2()
+}
+
+type NilAssignRule struct {
+}
+
+func NewNilAssignRule() *NilAssignRule {
+	return &NilAssignRule{}
+}
+
+func (a NilAssignRule) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
+	panic("implement me")
+}
+
+func (a NilAssignRule) Version() int {
+	panic("implement me")
 }
 
 type AssignRuleV2 struct {
