@@ -1099,6 +1099,10 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 
 //VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func SFV2VersionAssignRule(beaconHeight, assignRuleV2, assignRuleV3 uint64) AssignRuleProcessor {
+	if beaconHeight < assignRuleV2 && beaconHeight < assignRuleV3 {
+		Logger.log.Infof("Beacon Height %+v, using Assign Rule V1", beaconHeight)
+		return NewNilAssignRule()
+	}
 
 	if beaconHeight >= assignRuleV3 {
 		Logger.log.Infof("Beacon Height %+v, using Assign Rule V3", beaconHeight)

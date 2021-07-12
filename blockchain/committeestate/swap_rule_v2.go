@@ -15,6 +15,17 @@ type AssignRuleProcessor interface {
 	Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string
 }
 
+type NilAssignRule struct {
+}
+
+func NewNilAssignRule() *NilAssignRule {
+	return &NilAssignRule{}
+}
+
+func (n NilAssignRule) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
+	panic("implement me")
+}
+
 // createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
 // return params
 // #1: swap instruction
