@@ -49,6 +49,7 @@ type actorV2 struct {
 	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //blockHeight -> blockInfo
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
+	//bodyHashes           map[uint64]map[string]bool
 	//votedTimeslot        map[int64]bool
 	blockVersion int
 }
@@ -97,6 +98,7 @@ func newActorV2WithValue(
 	a.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
 	a.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
 	a.voteHistory = make(map[uint64]types.BlockInterface)
+	//a.bodyHashes = make(map[uint64]map[string]bool)
 	//a.votedTimeslot = make(map[int64]bool)
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
@@ -1003,6 +1005,7 @@ func (a *actorV2) handleCleanMem() {
 	for h, _ := range a.receiveBlockByHeight {
 		if h <= a.chain.GetFinalView().GetHeight() {
 			delete(a.receiveBlockByHeight, h)
+			//delete(a.bodyHashes, h)
 		}
 	}
 
@@ -1111,9 +1114,22 @@ func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *Propo
 
 	//already validate and vote for this proposed block
 	if !proposeBlockInfo.isValid {
-		if err := a.validatePreSignBlock(proposeBlockInfo); err != nil {
+		//if _, ok := a.bodyHashes[proposeBlockInfo.block.GetHeight()][proposeBlockInfo.block.BodyHash().String()]; !ok {
+		//	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		//	defer cancel()
+		//
+		a.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
+		if err := a.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittees, proposeBlockInfo.committees); err != nil {
+			a.logger.Error(err)
 			return err
 		}
+
+		// Block is valid for commit
+		//if len(a.bodyHashes[proposeBlockInfo.block.GetHeight()]) == 0 {
+		//	a.bodyHashes[proposeBlockInfo.block.GetHeight()] = make(map[string]bool)
+		//}
+		//a.bodyHashes[proposeBlockInfo.block.GetHeight()][proposeBlockInfo.block.BodyHash().String()] = true
+		//}
 	}
 
 	proposeBlockInfo.isValid = true
