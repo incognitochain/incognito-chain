@@ -4,10 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"strconv"
 )
 
 type PortalSubmitConfirmedTxRequest struct {
@@ -83,9 +84,14 @@ func (r PortalSubmitConfirmedTxRequest) ValidateTxWithBlockChain(
 }
 
 func (r PortalSubmitConfirmedTxRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	// check tx type
+	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
 		return false, false, NewMetadataTxError(PortalV4SubmitConfirmedTxRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
+	}
+
+	if tx.GetVersion() != 2 {
+		return false, false, NewMetadataTxError(PortalV4SubmitConfirmedTxRequestMetaError,
+			errors.New("Tx submit confirmed tx request must be version 2"))
 	}
 
 	// validate tokenID

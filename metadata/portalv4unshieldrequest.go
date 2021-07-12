@@ -110,9 +110,14 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 			fmt.Errorf("payment address string or txrandom is not corrrect format %v", err))
 	}
 
+	// check tx version
 	if int8(ver) != tx.GetVersion() {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
 			fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion()))
+	}
+	if tx.GetVersion() != 2 {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
+			errors.New("Tx unshielding request must be version 2"))
 	}
 
 	// check tx burn or not

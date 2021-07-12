@@ -96,9 +96,14 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 		return false, false, errors.New("Sender is unauthorized")
 	}
 
-	// check tx type
+	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
 		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
+	}
+
+	if tx.GetVersion() != 2 {
+		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError,
+			errors.New("Tx replacement fee request must be version 2"))
 	}
 
 	// validate tokenID
