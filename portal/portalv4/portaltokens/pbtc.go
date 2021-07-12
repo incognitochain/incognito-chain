@@ -172,12 +172,13 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			return false, nil, "", 0, errors.New("BTC-TxProof is invalid")
 		}
 		if externalFee == 0 {
-			tmp := p.ConvertExternalToIncAmount(uint64(outputs[idx].Value))
-			if unshieldAmt <= tmp {
+			valueInExternal := uint64(outputs[idx].Value)
+			unshieldAmtInExternal := p.ConvertIncToExternalAmount(unshieldAmt)
+			if unshieldAmtInExternal <= valueInExternal {
 				Logger.log.Errorf("[portal] Calculate external fee error")
 				return false, nil, "", 0, fmt.Errorf("[portal] Calculate external fee error")
 			}
-			externalFee = unshieldAmt - tmp
+			externalFee = p.ConvertExternalToIncAmount(unshieldAmtInExternal - valueInExternal)
 		}
 	}
 

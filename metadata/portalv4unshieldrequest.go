@@ -144,12 +144,6 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("unshielding amount should be larger or equal to %v", minUnshieldAmount))
 	}
 
-	// check unshielding amount of pToken is divisible by the decimal difference between nano pToken and nano Token
-	multipleTokenAmount := chainRetriever.GetPortalV4MultipleTokenAmount(uReq.TokenID, beaconHeight)
-	if uReq.UnshieldAmount%multipleTokenAmount != 0 {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("PToken amount has to be divisible by %v", multipleTokenAmount))
-	}
-
 	// validate RemoteAddress
 	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(uReq.TokenID, uReq.RemoteAddress, beaconHeight, common.PortalVersion4)
 	if err != nil || !isValidRemoteAddress {

@@ -179,12 +179,6 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		return [][]string{refundInst}, nil
 	}
 
-	multipleTokenAmt := portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount()
-	if meta.UnshieldAmount%multipleTokenAmt != 0 {
-		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is not divisible by %v", meta.UnshieldAmount, multipleTokenAmt)
-		return [][]string{refundInst}, nil
-	}
-
 	// build accept instruction
 	newInst := buildUnshieldRequestInst(
 		meta.TokenID,
