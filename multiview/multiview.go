@@ -164,6 +164,12 @@ func (multiView *MultiView) updateViewState(newView View) {
 		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			multiView.finalView = prev1View
+			return
+		}
+		bestViewTimeSlot = common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProduceTime())
+		prev1TimeSlot = common.CalculateTimeSlot(prev1View.GetBlock().GetProduceTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
+			multiView.finalView = prev1View
 		}
 	} else {
 		fmt.Println("Block version is not correct")
