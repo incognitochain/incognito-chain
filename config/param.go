@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -138,7 +139,8 @@ func LoadParam() *param {
 			panic(err)
 		}
 	}
-
+	common.TIMESLOT = p.ConsensusParam.Timeslot
+	common.MaxShardNumber = p.ActiveShards
 	return p
 }
 
