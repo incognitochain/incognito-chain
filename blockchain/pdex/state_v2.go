@@ -99,7 +99,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadata.PDEContributionMeta:
+		case metadata.PDexV3ModifyParamsMeta:
 			s.params, err = s.processor.modifyParams(
 				env.StateDB(),
 				env.BeaconHeight(),
