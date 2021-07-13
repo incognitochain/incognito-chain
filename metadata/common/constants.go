@@ -1,5 +1,9 @@
 package metadata
 
+import(
+	"strconv"
+)
+
 const (
 	InvalidMeta = 1
 
@@ -232,4 +236,14 @@ var portalMetaTypesV3 = []int{
 var portalRelayingMetaTypes = []int{
 	RelayingBNBHeaderMeta,
 	RelayingBTCHeaderMeta,
+}
+
+var bridgeMetas = []string{
+	strconv.Itoa(BeaconSwapConfirmMeta),
+	strconv.Itoa(BridgeSwapConfirmMeta),
+	strconv.Itoa(BurningConfirmMeta),
+	strconv.Itoa(BurningConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningConfirmMetaV2),
+	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
+	strconv.Itoa(BurningBSCConfirmMeta),
 }

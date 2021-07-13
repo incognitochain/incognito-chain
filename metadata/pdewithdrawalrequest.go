@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // PDEWithdrawalRequest - privacy dex withdrawal request
@@ -19,7 +20,6 @@ type PDEWithdrawalRequest struct {
 	WithdrawalShareAmt    uint64
 	MetadataBaseWithSignature
 }
-
 
 type PDEWithdrawalRequestAction struct {
 	Meta    PDEWithdrawalRequest

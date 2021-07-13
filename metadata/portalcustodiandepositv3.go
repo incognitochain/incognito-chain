@@ -5,13 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	eCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
+
+	eCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // PortalCustodianDepositV3 - portal custodian deposit collaterals on SC (ETH/ERC20)
@@ -205,9 +207,9 @@ func (custodianDeposit PortalCustodianDepositV3) Hash() *common.Hash {
 
 func (custodianDeposit *PortalCustodianDepositV3) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalCustodianDepositActionV3{
-		Meta:             *custodianDeposit,
-		TxReqID:          *tx.Hash(),
-		ShardID:          shardID,
+		Meta:    *custodianDeposit,
+		TxReqID: *tx.Hash(),
+		ShardID: shardID,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
@@ -231,7 +233,7 @@ func ParseInfoFromLogMap(logMap map[string]interface{}) (string, string, uint64,
 	// the token might be ETH/ERC20
 	ethereumAddr, ok := logMap["token"].(eCommon.Address)
 	if !ok {
-		Logger.log.Info("WARNING: could not parse eth token id from log map.")
+		Logger.Log.Info("WARNING: could not parse eth token id from log map.")
 		return "", "", 0, errors.New("could not parse eth token id from log map")
 	}
 	ethereumAddrStr := strings.ToLower(ethereumAddr.String())
@@ -239,12 +241,12 @@ func ParseInfoFromLogMap(logMap map[string]interface{}) (string, string, uint64,
 	// custodian incognito address
 	addressStr, ok := logMap["incognitoAddress"].(string)
 	if !ok {
-		Logger.log.Info("WARNING: could not parse incognito address from eth log map.")
+		Logger.Log.Info("WARNING: could not parse incognito address from eth log map.")
 		return "", "", 0, errors.New("could not parse incognito address from eth log map")
 	}
 	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
-		Logger.log.Info("WARNING: could not parse amount from eth log map.")
+		Logger.Log.Info("WARNING: could not parse amount from eth log map.")
 		return "", "", 0, errors.New("could not parse amount from eth log map")
 	}
 	amount := uint64(0)

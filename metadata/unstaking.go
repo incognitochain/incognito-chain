@@ -3,12 +3,13 @@ package metadata
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 //UnStakingMetadata : unstaking metadata
@@ -30,13 +31,12 @@ func (meta *UnStakingMetadata) HashWithoutSig() *common.Hash {
 
 func (*UnStakingMetadata) ShouldSignMetaData() bool { return true }
 
-
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
 	metadataBase := NewMetadataBaseWithSignature(UnStakingMeta)
 	return &UnStakingMetadata{
-		MetadataBaseWithSignature:       *metadataBase,
-		CommitteePublicKey: committeePublicKey,
+		MetadataBaseWithSignature: *metadataBase,
+		CommitteePublicKey:        committeePublicKey,
 	}, nil
 }
 

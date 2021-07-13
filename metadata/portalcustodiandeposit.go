@@ -5,11 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PortalCustodianDeposit - portal custodian deposit collateral (PRV)
@@ -32,7 +34,7 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		Logger.log.Error("UnmarshalJSON PortalCustodianDeposit", string(data))
+		Logger.Log.Error("UnmarshalJSON PortalCustodianDeposit", string(data))
 		return errors.New("can not parse data for PortalCustodianDeposit")
 	}
 
@@ -50,7 +52,7 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 		tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
 		err1 := json.Unmarshal(tempJson, &tmpRemoteAddress)
 		if err1 != nil {
-			Logger.log.Error("Parse []RemoteAddress fail %+v err %+v", temp.RemoteAddresses, err)
+			Logger.Log.Error("Parse []RemoteAddress fail %+v err %+v", temp.RemoteAddresses, err)
 			return errors.New("can not parse data for PortalCustodianDeposit RemoteAddress")
 		} else {
 			remoteAddreses = make(map[string]string)
@@ -131,7 +133,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 	}
 
 	// validate amount deposit
-	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue(){
+	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
 	}
 

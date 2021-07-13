@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -69,7 +70,7 @@ func (iRes *PDECrossPoolTradeResponse) CalculateSize() uint64 {
 func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 
-	for i, inst := range mintData.Insts  {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDETradeRequest or PDECrossPoolTradeRequestMeta instruction
 			continue
 		}
@@ -98,7 +99,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(m
 			var pdeRefundCrossPoolTrade PDERefundCrossPoolTrade
 			err := json.Unmarshal(contentBytes, &pdeRefundCrossPoolTrade)
 			if err != nil {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing pde refund cross pool trade content: ", err)
+				Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing pde refund cross pool trade content: ", err)
 				continue
 			}
 			shardIDFromInst = pdeRefundCrossPoolTrade.ShardID
@@ -113,7 +114,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(m
 			err := json.Unmarshal(contentBytes, &pdeCrossPoolTradeAcceptedContents)
 			cLen := len(pdeCrossPoolTradeAcceptedContents)
 			if err != nil || cLen == 0 {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing pde cross pool trade accepted content: ", err)
+				Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing pde cross pool trade accepted content: ", err)
 				continue
 			}
 			lastPDETradeAcceptedContent := pdeCrossPoolTradeAcceptedContents[cLen-1]
@@ -132,11 +133,11 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(m
 
 		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
 		if err != nil {
-			Logger.log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
+			Logger.Log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
 			continue
 		}
 		if !isMinted {
-			Logger.log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
+			Logger.Log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
 			continue
 		}
 		pk := mintCoin.GetPublicKey().ToBytesS()
@@ -145,7 +146,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(m
 		if len(receiverTxRandomFromInst) > 0 {
 			publicKey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddrStrFromInst, receiverTxRandomFromInst)
 			if err != nil {
-				Logger.log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
+				Logger.Log.Errorf("Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
 				continue
 			}
 
@@ -159,7 +160,7 @@ func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(m
 		} else {
 			key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
 			if err != nil {
-				Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+				Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 				continue
 			}
 

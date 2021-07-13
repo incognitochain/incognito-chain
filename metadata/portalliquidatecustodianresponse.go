@@ -3,11 +3,13 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalLiquidateCustodianResponse struct {
@@ -16,7 +18,7 @@ type PortalLiquidateCustodianResponse struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom           []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalLiquidateCustodianResponse(
@@ -83,11 +85,11 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(PortalLiquidateCustodianMeta) &&
-			instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
+				instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
 			continue
 		}
 
-		Logger.log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verifying tx response for custodian liquidation instructions")
+		Logger.Log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verifying tx response for custodian liquidation instructions")
 
 		status := inst[2]
 		if status != pCommon.PortalProducerInstSuccessChainStatus {
@@ -104,7 +106,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		var liqCustodianContent PortalLiquidateCustodianContent
 		err := json.Unmarshal(contentBytes, &liqCustodianContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal liquidation custodian content: %v", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing portal liquidation custodian content: %v", err)
 			continue
 		}
 
@@ -114,40 +116,40 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		shardIDFromInst = liqCustodianContent.ShardID
 
 		if shardIDFromInst != shardID {
-			Logger.log.Error("WARNING - VALIDATION: shardID is incorrect: shardIDFromInst %v - shardID %v ", shardIDFromInst, shardID)
+			Logger.Log.Error("WARNING - VALIDATION: shardID is incorrect: shardIDFromInst %v - shardID %v ", shardIDFromInst, shardID)
 			continue
 		}
 
 		uniqueRedeemIDFromInst = liqCustodianContent.UniqueRedeemID
 		if uniqueRedeemIDFromInst != iRes.UniqueRedeemID {
-			Logger.log.Error("WARNING - VALIDATION: UniqueRedeemID is incorrect: uniqueRedeemIDFromInst %v - UniqueRedeemID in response %v ", uniqueRedeemIDFromInst, iRes.UniqueRedeemID)
+			Logger.Log.Error("WARNING - VALIDATION: UniqueRedeemID is incorrect: uniqueRedeemIDFromInst %v - UniqueRedeemID in response %v ", uniqueRedeemIDFromInst, iRes.UniqueRedeemID)
 			continue
 		}
 
 		_, err = wallet.Base58CheckDeserialize(custodianAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing custodian address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing custodian address string: ", err)
 			continue
 		}
 
 		redeemerKey, err := wallet.Base58CheckDeserialize(redeemerIncAddressStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing redeemer address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing redeemer address string: ", err)
 			continue
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
+			Logger.Log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
 			continue
 		}
 
 		if coinID.String() != common.PRVCoinID.String() {
-			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct. Must be PRV")
+			Logger.Log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct. Must be PRV")
 			continue
 		}
 		if ok := mintCoin.CheckCoinValid(redeemerKey.KeySet.PaymentAddress, iRes.SharedRandom, mintedCollateralAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
+			Logger.Log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
 			continue
 		}
 
@@ -158,7 +160,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidateCustodian instruction found for PortalLiquidateCustodianResponse tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
-	Logger.log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verify tx response for custodian liquidation instructions successfully")
+	Logger.Log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verify tx response for custodian liquidation instructions successfully")
 	return true, nil
 }
 

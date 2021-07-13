@@ -5,11 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 type InitTokenResponse struct {
@@ -87,13 +88,13 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
-	Logger.log.Infof("Number of instructions: %v\n", len(mintData.Insts))
+	Logger.Log.Infof("Number of instructions: %v\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not InitTokenRequest instruction
 			continue
 		}
 
-		Logger.log.Infof("Currently processing instruction: %v\n", inst)
+		Logger.Log.Infof("Currently processing instruction: %v\n", inst)
 
 		//Step 1
 		instMetaType := inst[0]
@@ -104,25 +105,25 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Errorf("an error occurred while parsing instruction content: %v\n", err)
+			Logger.Log.Errorf("an error occurred while parsing instruction content: %v\n", err)
 			continue
 		}
 		var acceptedInst InitTokenAcceptedInst
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
-			Logger.log.Errorf("an error occurred while parsing instruction content: %v\n", err)
+			Logger.Log.Errorf("an error occurred while parsing instruction content: %v\n", err)
 			continue
 		}
 
 		//Step 2
 		if iRes.RequestedTxID.String() != acceptedInst.RequestedTxID.String() {
-			Logger.log.Infof("txHash mismatch: %v != %v\n", iRes.RequestedTxID.String(), acceptedInst.RequestedTxID.String())
+			Logger.Log.Infof("txHash mismatch: %v != %v\n", iRes.RequestedTxID.String(), acceptedInst.RequestedTxID.String())
 			continue
 		}
 
 		//Step 3
 		if !ac.CanProcessTokenInit(acceptedInst.TokenID) {
-			Logger.log.Infof("tokenID %v has been added to accumulate values\n", acceptedInst.TokenID.String())
+			Logger.Log.Infof("tokenID %v has been added to accumulate values\n", acceptedInst.TokenID.String())
 			continue
 		}
 
@@ -137,23 +138,23 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 			return false, fmt.Errorf("cannot get minted data of txResp %v: %v", tx.Hash().String(), err)
 		}
 
-		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()){
-			Logger.log.Infof("public keys mismatch: %v != %v\n", mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS())
+		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()) {
+			Logger.Log.Infof("public keys mismatch: %v != %v\n", mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS())
 			continue
 		}
 
 		if !bytes.Equal(mintedCoin.GetTxRandom().Bytes(), txRandom.Bytes()) {
-			Logger.log.Infof("txRandoms mismatch: %v != %v\n", mintedCoin.GetTxRandom().Bytes(), txRandom.Bytes())
+			Logger.Log.Infof("txRandoms mismatch: %v != %v\n", mintedCoin.GetTxRandom().Bytes(), txRandom.Bytes())
 			continue
 		}
 
 		if mintedCoin.GetValue() != acceptedInst.Amount {
-			Logger.log.Infof("amounts mismatch: %v != %v\n", mintedCoin.GetValue(), acceptedInst.Amount)
+			Logger.Log.Infof("amounts mismatch: %v != %v\n", mintedCoin.GetValue(), acceptedInst.Amount)
 			continue
 		}
 
 		if mintedTokenID.String() != acceptedInst.TokenID.String() {
-			Logger.log.Infof("tokenID mismatch: %v != %v\n", mintedTokenID.String(), acceptedInst.TokenID.String())
+			Logger.Log.Infof("tokenID mismatch: %v != %v\n", mintedTokenID.String(), acceptedInst.TokenID.String())
 			continue
 		}
 

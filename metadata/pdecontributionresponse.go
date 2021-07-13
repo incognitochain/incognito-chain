@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -74,14 +75,14 @@ func (iRes *PDEContributionResponse) CalculateSize() uint64 {
 
 func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	Logger.log.Infof("Currently verifying ins: %v\n", iRes)
-	Logger.log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
+	Logger.Log.Infof("Currently verifying ins: %v\n", iRes)
+	Logger.Log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDEContribution instruction
 			continue
 		}
 
-		Logger.log.Infof("BUGLOG currently processing inst: %v\n", inst)
+		Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
 
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
@@ -92,7 +93,6 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 		if instContributionStatus != iRes.ContributionStatus || (instContributionStatus != common.PDEContributionRefundChainStatus && instContributionStatus != common.PDEContributionMatchedNReturnedChainStatus) {
 			continue
 		}
-
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
@@ -105,7 +105,7 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			var refundContribution PDERefundContribution
 			err := json.Unmarshal(contentBytes, &refundContribution)
 			if err != nil {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
+				Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
 				continue
 			}
 			shardIDFromInst = refundContribution.ShardID
@@ -119,7 +119,7 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			var matchedNReturnedContrib PDEMatchedNReturnedContribution
 			err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
 			if err != nil {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
+				Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
 				continue
 			}
 			shardIDFromInst = matchedNReturnedContrib.ShardID
@@ -131,13 +131,13 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 
 		if !bytes.Equal(iRes.RequestedTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
-			Logger.log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
+			Logger.Log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
 			continue
 		}
 
 		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
 
@@ -154,7 +154,7 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		Logger.log.Infof("BUGLOG Instruction not found for res: %v\n", iRes)
+		Logger.Log.Infof("BUGLOG Instruction not found for res: %v\n", iRes)
 		return false, fmt.Errorf(fmt.Sprintf("no PDEContribution or PDEPRVRequiredContributionRequestMeta instruction found for PDEContributionResponse tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1

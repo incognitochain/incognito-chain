@@ -5,11 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 // PortalLiquidationCustodianDepositV3 - custodian topup more token collaterals (ETH, ERC20) through the smart contract's bond
@@ -155,7 +157,7 @@ func (req PortalTopUpWaitingPortingRequestV3) ValidateSanityData(chainRetriever 
 	// validate amount deposit
 	if req.DepositAmount > 0 {
 		// validate deposit proof
-		if len(req.BlockHash.Bytes()) == 0 || bytes.Equal(req.BlockHash.Bytes(), eCommon.HexToHash("").Bytes()){
+		if len(req.BlockHash.Bytes()) == 0 || bytes.Equal(req.BlockHash.Bytes(), eCommon.HexToHash("").Bytes()) {
 			return false, false, errors.New("BlockHash should be not empty")
 		}
 		if len(req.ProofStrs) == 0 {

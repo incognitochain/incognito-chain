@@ -1,9 +1,11 @@
 package metadata
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"strconv"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // PortalRedeemRequest - portal user redeem requests to get public token by burning ptoken

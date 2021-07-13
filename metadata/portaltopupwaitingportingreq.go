@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -124,7 +125,7 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 	// validate amount deposit
-	if p.DepositedAmount == 0 || p.DepositedAmount != burnCoin.GetValue(){
+	if p.DepositedAmount == 0 || p.DepositedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
 	}
 	if p.DepositedAmount == 0 && p.FreeCollateralAmount == 0 {

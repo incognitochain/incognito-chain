@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -25,19 +26,19 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
 	if ethHeader == nil {
-		Logger.log.Info("WARNING: Could not find out the EVM block header with the hash: ", blockHash)
+		Logger.Log.Info("WARNING: Could not find out the EVM block header with the hash: ", blockHash)
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", blockHash.String()))
 	}
 
 	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
-		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
+		Logger.Log.Info("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
 
 	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(EVMConfirmationBlocks))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", ethHeader.Number.String(), mostRecentBlkNum.String())
-		Logger.log.Info(errMsg)
+		Logger.Log.Info(errMsg)
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.New(errMsg))
 	}
 
@@ -80,7 +81,7 @@ func PickAndParseLogMapFromReceiptByContractAddr(
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
-		Logger.log.Errorf("WARNING: LOG data is invalid.")
+		Logger.Log.Errorf("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {
@@ -90,7 +91,7 @@ func PickAndParseLogMapFromReceiptByContractAddr(
 		}
 	}
 	if len(logData) == 0 {
-		Logger.log.Errorf("WARNING: logData is empty.")
+		Logger.Log.Errorf("WARNING: logData is empty.")
 		return nil, nil
 	}
 	return ParseEVMLogDataByEventName(logData, eventName)

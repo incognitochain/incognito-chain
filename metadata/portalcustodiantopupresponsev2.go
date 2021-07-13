@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalLiquidationCustodianDepositResponseV2 struct {
@@ -17,7 +19,7 @@ type PortalLiquidationCustodianDepositResponseV2 struct {
 	ReqTxID          common.Hash
 	CustodianAddrStr string
 	DepositedAmount  uint64
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalLiquidationCustodianDepositResponseV2(
@@ -110,7 +112,7 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBefo
 		var custodianDepositContent PortalLiquidationCustodianDepositContentV2
 		err := json.Unmarshal(contentBytes, &custodianDepositContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal liquidation custodian deposit content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing portal liquidation custodian deposit content: ", err)
 			continue
 		}
 		shardIDFromInst = custodianDepositContent.ShardID
@@ -124,7 +126,7 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBefo
 		}
 		key, err := wallet.Base58CheckDeserialize(custodianAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occurred while deserializing custodian address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occurred while deserializing custodian address string: ", err)
 			continue
 		}
 

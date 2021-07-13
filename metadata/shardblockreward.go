@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
-	// "errors"
-
 	"github.com/incognitochain/incognito-chain/common"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 const (

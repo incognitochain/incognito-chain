@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -15,7 +16,7 @@ import (
 type PDEFeeWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPDEFeeWithdrawalResponse(
@@ -79,14 +80,14 @@ func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mi
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
 		var feeWithdrawalRequestAction PDEFeeWithdrawalRequestAction
 		err = json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
@@ -96,7 +97,7 @@ func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mi
 		}
 		key, err := wallet.Base58CheckDeserialize(feeWithdrawalRequestAction.Meta.WithdrawerAddressStr)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing withdrawer address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing withdrawer address string: ", err)
 			continue
 		}
 

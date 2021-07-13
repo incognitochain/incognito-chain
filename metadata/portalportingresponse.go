@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -16,7 +17,7 @@ type PortalFeeRefundResponse struct {
 	MetadataBase
 	PortingRequestStatus string
 	ReqTxID              common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom         []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalFeeRefundResponse(
@@ -76,7 +77,7 @@ func parsePortingRequest(contentBytes []byte, shardID string) (string, common.Ha
 	var portalPortingRequestContent PortalPortingRequestContent
 	err := json.Unmarshal(contentBytes, &portalPortingRequestContent)
 	if err != nil {
-		Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal porting request content: ", err)
+		Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing portal porting request content: ", err)
 		return "", common.Hash{}, "", uint64(0), err
 	}
 	return shardID, portalPortingRequestContent.TxReqID, portalPortingRequestContent.IncogAddressStr, portalPortingRequestContent.PortingFee, nil
@@ -115,17 +116,17 @@ func (iRes PortalFeeRefundResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 		}
 		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted || coinID.String() != common.PRVCoinID.String() {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while validate tx mint: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while validate tx mint: ", err)
 			continue
 		}
 		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, portingFeeFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while check tx mint. CheckCoinValid return false ")
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while check tx mint. CheckCoinValid return false ")
 			continue
 		}
 

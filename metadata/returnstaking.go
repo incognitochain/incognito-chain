@@ -3,6 +3,7 @@ package metadata
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -11,10 +12,10 @@ type ReturnStakingMetadata struct {
 	MetadataBase
 	TxID          string
 	StakerAddress privacy.PaymentAddress
-	SharedRandom []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
-func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int, ) *ReturnStakingMetadata {
+func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int) *ReturnStakingMetadata {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -77,4 +78,3 @@ func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 func (sbsRes *ReturnStakingMetadata) SetSharedRandom(r []byte) {
 	sbsRes.SharedRandom = r
 }
-

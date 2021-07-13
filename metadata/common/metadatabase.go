@@ -71,20 +71,20 @@ func (mbs *MetadataBaseWithSignature) VerifyMetadataSignature(publicKey []byte, 
 			sigPubKey := tx.GetSigPubKey()
 			return bytes.Equal(sigPubKey, publicKey), nil
 		} else {
-			Logger.log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
+			Logger.Log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
 			return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
 		}
 	}
 	verifyKey := new(privacy.SchnorrPublicKey)
 	metaSigPublicKey, err := new(privacy.Point).FromBytesS(publicKey)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return false, err
 	}
 	verifyKey.Set(metaSigPublicKey)
 	signature := new(privacy.SchnSignature)
 	if err := signature.SetBytes(mbs.Sig); err != nil {
-		Logger.log.Errorf("Invalid signature %v", err)
+		Logger.Log.Errorf("Invalid signature %v", err)
 		return false, err
 	}
 	return verifyKey.Verify(signature, hashForMd[:]), nil

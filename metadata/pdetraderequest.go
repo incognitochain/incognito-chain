@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
@@ -157,7 +158,6 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 		return [][]string{}, err
 	}
 
-	//Logger.log.Infof("BUGLOG4 actionContent: %v\n", string(actionContentBytes))
 
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(PDETradeRequestMeta), actionContentBase64Str}

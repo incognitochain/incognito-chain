@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalRedeemLiquidateExchangeRatesResponse struct {
@@ -19,7 +21,7 @@ type PortalRedeemLiquidateExchangeRatesResponse struct {
 	RedeemAmount     uint64
 	Amount           uint64
 	TokenID          string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemLiquidateExchangeRatesResponse(
@@ -84,7 +86,6 @@ func (iRes *PortalRedeemLiquidateExchangeRatesResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *MintData,
 	shardID byte,
@@ -106,12 +107,12 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		}
 		instReqStatus := inst[2]
 		if instReqStatus != iRes.RequestStatus {
-			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
+			Logger.Log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
 			continue
 		}
 		if (instReqStatus != pCommon.PortalProducerInstSuccessChainStatus) &&
 			(instReqStatus != pCommon.PortalRequestRejectedChainStatus) {
-			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
+			Logger.Log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
 			continue
 		}
 
@@ -126,7 +127,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		var redeemReqContent PortalRedeemLiquidateExchangeRatesContent
 		err := json.Unmarshal(contentBytes, &redeemReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing portal redeem liquidate exchange rates content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occurred while parsing portal redeem liquidate exchange rates content: ", err)
 			continue
 		}
 
@@ -143,23 +144,23 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		}
 
 		if requesterAddrStrFromInst != iRes.RequesterAddrStr {
-			Logger.log.Errorf("Error - VALIDATION: Requester address %v is not matching to Requester address in instruction %v", iRes.RequesterAddrStr, requesterAddrStrFromInst)
+			Logger.Log.Errorf("Error - VALIDATION: Requester address %v is not matching to Requester address in instruction %v", iRes.RequesterAddrStr, requesterAddrStrFromInst)
 			continue
 		}
 
 		if totalPTokenReceived != iRes.Amount {
-			Logger.log.Errorf("Error - VALIDATION:  totalPTokenReceived %v is not matching to  TotalPTokenReceived in instruction %v", iRes.Amount, redeemAmountFromInst)
+			Logger.Log.Errorf("Error - VALIDATION:  totalPTokenReceived %v is not matching to  TotalPTokenReceived in instruction %v", iRes.Amount, redeemAmountFromInst)
 			continue
 		}
 
 		if redeemAmountFromInst != iRes.RedeemAmount {
-			Logger.log.Errorf("Error - VALIDATION: Redeem amount %v is not matching to redeem amount in instruction %v", iRes.RedeemAmount, redeemAmountFromInst)
+			Logger.Log.Errorf("Error - VALIDATION: Redeem amount %v is not matching to redeem amount in instruction %v", iRes.RedeemAmount, redeemAmountFromInst)
 			continue
 		}
 
 		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occurred while deserializing requester address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occurred while deserializing requester address string: ", err)
 			continue
 		}
 

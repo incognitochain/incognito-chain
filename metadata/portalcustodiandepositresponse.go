@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalCustodianDepositResponse struct {
@@ -16,7 +18,7 @@ type PortalCustodianDepositResponse struct {
 	DepositStatus    string
 	ReqTxID          common.Hash
 	CustodianAddrStr string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalCustodianDepositResponse(
@@ -99,7 +101,7 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		var custodianDepositContent PortalCustodianDepositContent
 		err := json.Unmarshal(contentBytes, &custodianDepositContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal custodian deposit content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing portal custodian deposit content: ", err)
 			continue
 		}
 		shardIDFromInst = custodianDepositContent.ShardID
@@ -113,17 +115,17 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		}
 		key, err := wallet.Base58CheckDeserialize(custodianAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing custodian address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing custodian address string: ", err)
 			continue
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted || coinID.String() != common.PRVCoinID.String() {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while validate tx mint: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while validate tx mint: ", err)
 			continue
 		}
 		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, depositedAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while check tx mint. CheckCoinValid return false ")
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while check tx mint. CheckCoinValid return false ")
 			continue
 		}
 

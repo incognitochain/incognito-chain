@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 type StopAutoStakingMetadata struct {
@@ -35,8 +37,8 @@ func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) 
 	}
 	metadataBase := NewMetadataBaseWithSignature(stopStakingType)
 	return &StopAutoStakingMetadata{
-		MetadataBaseWithSignature:       *metadataBase,
-		CommitteePublicKey: committeePublicKey,
+		MetadataBaseWithSignature: *metadataBase,
+		CommitteePublicKey:        committeePublicKey,
 	}, nil
 }
 

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -19,7 +20,7 @@ type PortalRedeemRequestResponse struct {
 	RequesterAddrStr string
 	Amount           uint64
 	IncTokenID       string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemRequestResponse(
@@ -106,7 +107,7 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		var redeemReqContent PortalRedeemRequestContent
 		err := json.Unmarshal(contentBytes, &redeemReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal redeem request content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing portal redeem request content: ", err)
 			continue
 		}
 		shardIDFromInst = redeemReqContent.ShardID
@@ -120,32 +121,32 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 			continue
 		}
 		if requesterAddrStrFromInst != iRes.RequesterAddrStr {
-			Logger.log.Errorf("Error - VALIDATION: Requester address %v is not matching to Requester address in instruction %v", iRes.RequesterAddrStr, requesterAddrStrFromInst)
+			Logger.Log.Errorf("Error - VALIDATION: Requester address %v is not matching to Requester address in instruction %v", iRes.RequesterAddrStr, requesterAddrStrFromInst)
 			continue
 		}
 
 		if redeemAmountFromInst != iRes.Amount {
-			Logger.log.Errorf("Error - VALIDATION: Redeem amount %v is not matching to redeem amount in instruction %v", iRes.Amount, redeemAmountFromInst)
+			Logger.Log.Errorf("Error - VALIDATION: Redeem amount %v is not matching to redeem amount in instruction %v", iRes.Amount, redeemAmountFromInst)
 			continue
 		}
 
 		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing requester address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing requester address string: ", err)
 			continue
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
+			Logger.Log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
 			continue
 		}
 		if coinID.String() != tokenIDStrFromInst {
-			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct.")
+			Logger.Log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct.")
 			continue
 		}
 		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, redeemAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
+			Logger.Log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
 			continue
 		}
 

@@ -1,11 +1,13 @@
 package metadata
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type WithDrawRewardResponse struct {
@@ -91,7 +93,7 @@ func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRet
 
 func (withDrawRewardResponse WithDrawRewardResponse) ValidateMetadataByItself() bool {
 	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, withDrawRewardResponse.Version); !ok || err != nil {
-		Logger.log.Error(errors.Errorf("Invalid version %d", withDrawRewardResponse.Version))
+		Logger.Log.Error(errors.Errorf("Invalid version %d", withDrawRewardResponse.Version))
 		return false
 	}
 	return true

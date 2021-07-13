@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -16,7 +17,7 @@ type PortalTopUpWaitingPortingResponse struct {
 	MetadataBase
 	DepositStatus string
 	ReqTxID       common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalTopUpWaitingPortingResponse(
@@ -95,7 +96,7 @@ func (iRes PortalTopUpWaitingPortingResponse) VerifyMinerCreatedTxBeforeGettingI
 		var topUpWaitingPortingReqContent PortalTopUpWaitingPortingRequestContent
 		err := json.Unmarshal(contentBytes, &topUpWaitingPortingReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal top up waiting porting request content: ", err)
+			Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing portal top up waiting porting request content: ", err)
 			continue
 		}
 		shardIDFromInst = topUpWaitingPortingReqContent.ShardID
@@ -109,21 +110,21 @@ func (iRes PortalTopUpWaitingPortingResponse) VerifyMinerCreatedTxBeforeGettingI
 		}
 		key, err := wallet.Base58CheckDeserialize(depositorAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occurred while deserializing custodian address string: ", err)
+			Logger.Log.Info("WARNING - VALIDATION: an error occurred while deserializing custodian address string: ", err)
 			continue
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
+			Logger.Log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
 			continue
 		}
 		if coinID.String() != common.PRVCoinID.String() {
-			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct. Must be PRV")
+			Logger.Log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct. Must be PRV")
 			continue
 		}
 		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, depositedAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
+			Logger.Log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
 			continue
 		}
 

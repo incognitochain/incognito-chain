@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // TODO: Update error type to correct one

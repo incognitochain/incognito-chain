@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	. "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -25,7 +26,7 @@ func BuildInstForIncDAOReward(reward map[common.Hash]uint64, incDAOAddress strin
 
 	keyWalletDevAccount, err := wallet.Base58CheckDeserialize(incDAOAddress)
 	if err != nil {
-		Logger.log.Error(NewMetadataTxError(WrongIncognitoDAOPaymentAddressError, err))
+		Logger.Log.Error(NewMetadataTxError(WrongIncognitoDAOPaymentAddressError, err))
 		return nil, err
 	}
 	returnedInst := []string{
