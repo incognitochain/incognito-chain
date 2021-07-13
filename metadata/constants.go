@@ -48,6 +48,9 @@ const (
 	PDEFeeWithdrawalResponseMeta          = 208
 	PDETradingFeesDistributionMeta        = 209
 
+	// pDEX v3
+	PDexV3ModifyParamsMeta = 270
+
 	// portal
 	PortalCustodianDepositMeta                  = 100
 	PortalRequestPortingMeta                    = 101

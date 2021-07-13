@@ -370,3 +370,19 @@ func IsPDEType(metadataType int) bool {
 		return false
 	}
 }
+
+func IspDexV3Tx(metadata Metadata) bool {
+	if metadata != nil {
+		return IspDEXv3Type(metadata.GetType())
+	}
+	return false
+}
+
+func IspDEXv3Type(metadataType int) bool {
+	switch metadataType {
+	case PDexV3ModifyParamsMeta:
+		return true
+	default:
+		return false
+	}
+}

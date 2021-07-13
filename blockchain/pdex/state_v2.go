@@ -1,8 +1,11 @@
 package pdex
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type stateV2 struct {
@@ -10,6 +13,9 @@ type stateV2 struct {
 	waitingContributions        map[string]Contribution
 	deletedWaitingContributions map[string]Contribution
 	poolPairs                   map[string]PoolPair
+	params                      Params
+	producer                    stateProducerV2
+	processor                   stateProcessorV2
 }
 
 type Contribution struct {
@@ -49,6 +55,14 @@ type Tick struct {
 	Liquidity uint64
 }
 
+type Params struct {
+	FeeRateBPS               map[string]int // map: pool ID -> fee rate (0.1% ~ 10 BPS)
+	PRVDiscountPercent       int            // percent of fee that will be discounted if using PRV as the trading token fee (defaul: 25%)
+	ProtocolFeePercent       int            // percent of fees that is rewarded for the core team (default: 0%)
+	StakingPoolRewardPercent int            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 30%)
+	StakingPoolsShare        map[string]int // map: staking tokenID -> pool staking share weight (default: pDEX pool - 1000)
+}
+
 func newStateV2() *stateV2 {
 	return nil
 }
@@ -73,11 +87,51 @@ func (s *stateV2) Clone() State {
 }
 
 func (s *stateV2) Process(env StateEnvironment) error {
+	for _, inst := range env.BeaconInstructions() {
+		if len(inst) < 2 {
+			continue // Not error, just not PDE instructions
+		}
+		metadataType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			continue // Not error, just not PDE instructions
+		}
+		if !metadata.IspDEXv3Type(metadataType) {
+			continue // Not error, just not PDE instructions
+		}
+		switch metadataType {
+		case metadata.PDEContributionMeta:
+			s.params, err = s.processor.modifyParams(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.params,
+			)
+		default:
+			Logger.log.Debug("Can not process this metadata")
+		}
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
-	return nil, nil
+	instructions := [][]string{}
+
+	// handle modify params
+	modifyParamsInstructions, err := s.producer.modifyParams(
+		env.ModifyParamsActions(),
+		env.BeaconHeight(),
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, modifyParamsInstructions...)
+
+	return instructions, nil
 }
 
 func (s *stateV2) Upgrade(env StateEnvironment) State {
