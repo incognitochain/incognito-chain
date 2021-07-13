@@ -62,6 +62,7 @@ const (
 	LocalNetwork          = "local"
 	TestNetNetwork        = "testnet"
 	MainnetNetwork        = "mainnet"
+	DevNetNetwork         = "devnet"
 	TestNetVersion1       = "1"
 	TestNetVersion2       = "2"
 	TestNetVersion1Number = 1
