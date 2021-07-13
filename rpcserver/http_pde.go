@@ -712,13 +712,29 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
+	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
+	for k, v := range pdeState.Reader().PoolPairs() {
+		temp, ok := v.(*rawdbv2.PDEPoolForPair)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, errors.New("Wrong version of pde state"))
+		}
+		poolPairs[k] = temp
+	}
+	waitingContributions := make(map[string]*rawdbv2.PDEContribution)
+	for k, v := range pdeState.Reader().WaitingContributions() {
+		temp, ok := v.(*rawdbv2.PDEContribution)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, errors.New("Wrong version of pde state"))
+		}
+		waitingContributions[k] = temp
+	}
 	beaconBlock := beaconBlocks[0]
 	result := jsonresult.CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
-		PDEPoolPairs:            pdeState.PoolPairs(),
-		PDEShares:               pdeState.Shares(),
-		WaitingPDEContributions: pdeState.WaitingContributions(),
-		PDETradingFees:          pdeState.TradingFees(),
+		PDEPoolPairs:            poolPairs,
+		PDEShares:               pdeState.Reader().Shares(),
+		WaitingPDEContributions: waitingContributions,
+		PDETradingFees:          pdeState.Reader().TradingFees(),
 	}
 	return result, nil
 }
@@ -1250,7 +1266,14 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdePoolPairs := pdeState.PoolPairs()
+	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
+	for k, v := range pdeState.Reader().PoolPairs() {
+		temp, ok := v.(*rawdbv2.PDEPoolForPair)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, errors.New("Wrong version of pde state"))
+		}
+		poolPairs[k] = temp
+	}
 	results := []*ConvertedPrice{}
 	if toTokenIDStr != "all" {
 		convertedPrice := convertPrice(
@@ -1258,7 +1281,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 			toTokenIDStr,
 			fromTokenIDStr,
 			convertingAmt,
-			pdePoolPairs,
+			poolPairs,
 		)
 		if convertedPrice == nil {
 			return results, nil
@@ -1266,7 +1289,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 		return append(results, convertedPrice), nil
 	}
 	// compute price of "from" token against all tokens else
-	for poolPairKey, poolPair := range pdePoolPairs {
+	for poolPairKey, poolPair := range poolPairs {
 		if !strings.Contains(poolPairKey, fromTokenIDStr) {
 			continue
 		}
@@ -1277,7 +1300,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 				poolPair.Token2IDStr,
 				fromTokenIDStr,
 				convertingAmt,
-				pdePoolPairs,
+				poolPairs,
 			)
 		} else if poolPair.Token2IDStr == fromTokenIDStr {
 			convertedPrice = convertPrice(
@@ -1285,7 +1308,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 				poolPair.Token1IDStr,
 				fromTokenIDStr,
 				convertingAmt,
-				pdePoolPairs,
+				poolPairs,
 			)
 		}
 		if convertedPrice == nil {

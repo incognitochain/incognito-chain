@@ -1,9 +1,5 @@
 package pdex
 
-import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-)
-
 type State interface {
 	Version() uint
 	Clone() State
@@ -14,9 +10,13 @@ type State interface {
 	TransformKeyWithNewBeaconHeight(beaconHeight uint64)
 	ClearCache()
 	GetDiff(State) (State, error)
-	WaitingContributions() map[string]*rawdbv2.PDEContribution
-	DeletedWaitingContributions() map[string]*rawdbv2.PDEContribution
-	PoolPairs() map[string]*rawdbv2.PDEPoolForPair
+	Reader() StateReader
+}
+
+type StateReader interface {
+	WaitingContributions() map[string]interface{}
+	DeletedWaitingContributions() map[string]interface{}
+	PoolPairs() map[string]interface{}
 	Shares() map[string]uint64
 	TradingFees() map[string]uint64
 }
