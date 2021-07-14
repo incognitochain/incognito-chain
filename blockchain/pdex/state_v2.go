@@ -31,17 +31,21 @@ type Order struct {
 	tokenBuyAmount  uint64
 	tokenSellAmount uint64
 	ota             string
+	txRandom        string
 	fee             uint64
-	txReqID         string
+	reqTxID         string
 }
 
 type Contribution struct {
-	otaRefund   string // refund contributed token
-	otaReceive  string // receive nfct
-	tokenID     string
-	tokenAmount uint64
-	amplifier   uint // only set for the first contribution
-	txReqID     string
+	poolPairID     string // only "" for the first contribution of pool
+	otaRefund      string // refund contributed token
+	txRandomRefund string
+	otaReceive     string // receive nfct
+	txRandom       string
+	tokenID        string
+	tokenAmount    uint64
+	amplifier      uint // only set for the first contribution
+	reqTxID        string
 }
 
 type PoolPair struct {
