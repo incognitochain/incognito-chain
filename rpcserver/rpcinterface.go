@@ -210,6 +210,9 @@ var HttpHandler = map[string]httpHandler{
 	convertPDEPrices:                           (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 
+	// pDex v3
+	getPDexV3State: (*HttpServer).handleGetPDexV3State,
+
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
 	// portal

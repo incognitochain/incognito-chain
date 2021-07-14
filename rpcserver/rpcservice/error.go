@@ -133,6 +133,9 @@ const (
 	GetTotalStakerError
 
 	CacheQueueError
+
+	// pdex v3
+	GetPDexV3StateError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -169,7 +172,7 @@ var ErrCodeMessage = map[int]struct {
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
 	GetOutputCoinsVer1Error:               {-1022, "Get output coins of ver 1 in database error"},
-	GetOutputCoinsVer2Error:			   {-1023, "Get output coins of ver 2 in database error"},
+	GetOutputCoinsVer2Error:               {-1023, "Get output coins of ver 2 in database error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:        {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:          {-2001, "Get shard block by hash error"},
@@ -265,7 +268,10 @@ var ErrCodeMessage = map[int]struct {
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
 	GetTotalStakerError:                           {-12010, "Get total staker return error"},
 
-	CacheQueueError:                               {-13001, "Full node cache error"},
+	CacheQueueError: {-13001, "Full node cache error"},
+
+	// pDex v3
+	GetPDexV3StateError: {-14001, "Get PDE state error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
