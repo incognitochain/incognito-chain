@@ -3,7 +3,6 @@ package pdex
 import (
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -12,47 +11,54 @@ type stateV2 struct {
 	stateBase
 	waitingContributions        map[string]Contribution
 	deletedWaitingContributions map[string]Contribution
-	poolPairs                   map[string]PoolPair
+	poolPairs                   map[string]PoolPairState //
 	params                      Params
+	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
+	orders                      map[int64][]Order
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
 
+type StakingPoolState struct {
+	liquidity        uint64
+	stakers          map[string]uint64 // nfst -> amount staking
+	currentStakingID uint64
+}
+
+type Order struct {
+	tick            int64
+	tokenBuyID      string
+	tokenBuyAmount  uint64
+	tokenSellAmount uint64
+	ota             string
+	txRandom        string
+	fee             uint64
+	txReqID         string
+}
+
 type Contribution struct {
-	contributorAddressStr string // Can we replace this for privacy v2?
+	poolPairID     string // only "" for the first contribution of pool
+	otaRefund      string // refund contributed token
+	txRandomRefund string
+	otaReceive     string // receive nfct
+	txRandom       string
+	tokenID        string
+	tokenAmount    uint64
+	amplifier      uint // only set for the first contribution
+	txReqID        string
+}
+
+type PoolPairState struct {
+	token0ID              string
 	token1ID              string
-	token2ID              string
-	token1Amount          uint64
-	token2Amount          uint64
-	minPrice              float64 // Compare price between token 1 and token 2
-	maxPrice              float64
-	txReqID               common.Hash
-}
-
-type PoolPair struct {
-	token1ID        string
-	token1Liquidity uint64
-	token2ID        string
-	token2Liquidity uint64
-	baseAPY         float64
-	fee             float64
-	CurrentPrice    float64 // Compare price between token 1 and token 2
-	CurrentTick     int
-}
-
-type Position struct {
-	minPrice        float64
-	maxPrice        float64
-	token1ID        string
-	token1Liquidity uint64
-	token2ID        string
-	token2Liquidity uint64
-	apy             float64
-	tradingFees     map[string]uint64
-}
-
-type Tick struct {
-	Liquidity uint64
+	token0RealAmount      uint64
+	token1RealAmount      uint64
+	shares                map[string]uint64
+	tradingFees           map[string]map[string]uint64
+	currentContributionID uint64
+	token0VirtualAmount   uint64
+	token1VirtualAmount   uint64
+	amplifier             uint
 }
 
 type Params struct {

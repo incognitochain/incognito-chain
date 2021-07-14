@@ -1,8 +1,6 @@
 package pdex
 
-import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-)
+import "github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 type stateBase struct {
 }
@@ -55,15 +53,27 @@ func (s *stateBase) GetDiff(compareState State) (State, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) WaitingContributions() map[string]*rawdbv2.PDEContribution {
+func (s *stateBase) WaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) DeletedWaitingContributions() map[string]*rawdbv2.PDEContribution {
+func (s *stateBase) DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) PoolPairs() map[string]*rawdbv2.PDEPoolForPair {
+func (s *stateBase) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) WaitingContributionsV2() map[string]Contribution {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) DeletedWaitingContributionsV2() map[string]Contribution {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) PoolPairsV2() map[string]PoolPairState {
 	panic("Implement this fucntion")
 }
 
@@ -72,5 +82,9 @@ func (s *stateBase) Shares() map[string]uint64 {
 }
 
 func (s *stateBase) TradingFees() map[string]uint64 {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) Reader() StateReader {
 	panic("Implement this fucntion")
 }

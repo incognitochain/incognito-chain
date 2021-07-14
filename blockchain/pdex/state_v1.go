@@ -423,7 +423,7 @@ func (s *stateV1) GetDiff(compareState State) (State, error) {
 	return res, nil
 }
 
-func (s *stateV1) WaitingContributions() map[string]*rawdbv2.PDEContribution {
+func (s *stateV1) WaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
 	res := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
 	for k, v := range s.waitingContributions {
 		res[k] = new(rawdbv2.PDEContribution)
@@ -432,7 +432,7 @@ func (s *stateV1) WaitingContributions() map[string]*rawdbv2.PDEContribution {
 	return res
 }
 
-func (s *stateV1) DeletedWaitingContributions() map[string]*rawdbv2.PDEContribution {
+func (s *stateV1) DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
 	res := make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
 	for k, v := range s.deletedWaitingContributions {
 		res[k] = new(rawdbv2.PDEContribution)
@@ -441,7 +441,7 @@ func (s *stateV1) DeletedWaitingContributions() map[string]*rawdbv2.PDEContribut
 	return res
 }
 
-func (s *stateV1) PoolPairs() map[string]*rawdbv2.PDEPoolForPair {
+func (s *stateV1) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
 	res := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
 	for k, v := range s.poolPairs {
 		res[k] = new(rawdbv2.PDEPoolForPair)
@@ -464,4 +464,8 @@ func (s *stateV1) TradingFees() map[string]uint64 {
 		res[k] = v
 	}
 	return res
+}
+
+func (s *stateV1) Reader() StateReader {
+	return s
 }
