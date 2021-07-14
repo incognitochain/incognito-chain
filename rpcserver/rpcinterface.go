@@ -209,6 +209,8 @@ var HttpHandler = map[string]httpHandler{
 	getPDEFeeWithdrawalStatus:                  (*HttpServer).handleGetPDEFeeWithdrawalStatus,
 	convertPDEPrices:                           (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
+	addLiquidityV3:                             (*HttpServer).handleAddLiquidityV3,
+	//
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

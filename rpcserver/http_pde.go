@@ -1656,3 +1656,79 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPDEFeeWithdrawalReq(param
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleAddLiquidityV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.createRawTxAddLiquidityV3(params)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) createRawTxAddLiquidityV3(params interface{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) != 4 {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
+	}
+	addLiquidityParam, ok := arrayParams[3].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	addLiquidityRequest := PDEAddLiquidityV3Request{}
+
+	err := json.Unmarshal([]byte(addLiquidityParam), &addLiquidityRequest)
+
+	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	amplifier, err := common.AssertAndConvertNumber(addLiquidityRequest.Amplifier)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(addLiquidityRequest.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(addLiquidityRequest.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	metaData := metadata.NewPDEContributionV3WithValue(
+		addLiquidityRequest.PoolPairID,
+		addLiquidityRequest.PairHash,
+		otaPublicKeyRefundStr, otaTxRandomRefundStr,
+		otaPublicKeyReceiveStr, otaTxRandomReceiveStr,
+		addLiquidityRequest.TokenID, tokenAmount, uint(amplifier),
+	)
+
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, metaData)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}

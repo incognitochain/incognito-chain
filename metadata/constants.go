@@ -50,6 +50,7 @@ const (
 
 	// pDEX v3
 	PDexV3ModifyParamsMeta = 270
+	PDexV3AddLiquidityMeta = 271
 
 	// portal
 	PortalCustodianDepositMeta                  = 100

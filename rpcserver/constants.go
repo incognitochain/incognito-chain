@@ -232,6 +232,8 @@ const (
 	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
+	addLiquidityV3                             = "pdexv3_txAddLiquidity"
+	//
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
