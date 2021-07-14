@@ -271,7 +271,7 @@ var ErrCodeMessage = map[int]struct {
 	CacheQueueError: {-13001, "Full node cache error"},
 
 	// pDex v3
-	GetPDexV3StateError: {-14001, "Get PDE state error"},
+	GetPDexV3StateError: {-14001, "Get pDex V3 state error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

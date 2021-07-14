@@ -67,4 +67,7 @@ portal_v3_height: 1328816
 tx_pool_version: 0
 bsc_param:
   host: "https://data-seed-prebsc-2-s1.binance.org:8545"
-pde_v2_height: 1000000000000
+pdex_param:
+  pdex_v3_break_point_height: 1000000000000
+  admin_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
