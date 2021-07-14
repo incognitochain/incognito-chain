@@ -11,7 +11,7 @@ type stateV2 struct {
 	stateBase
 	waitingContributions        map[string]Contribution
 	deletedWaitingContributions map[string]Contribution
-	poolPairs                   map[string]PoolPair //
+	poolPairs                   map[string]PoolPairState //
 	params                      Params
 	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
 	orders                      map[int64][]Order
@@ -48,7 +48,7 @@ type Contribution struct {
 	txReqID        string
 }
 
-type PoolPair struct {
+type PoolPairState struct {
 	token0ID              string
 	token1ID              string
 	token0RealAmount      uint64

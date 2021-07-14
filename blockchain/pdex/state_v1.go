@@ -423,32 +423,29 @@ func (s *stateV1) GetDiff(compareState State) (State, error) {
 	return res, nil
 }
 
-func (s *stateV1) WaitingContributions() map[string]interface{} {
-	res := make(map[string]interface{}, len(s.deletedWaitingContributions))
+func (s *stateV1) WaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
+	res := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
 	for k, v := range s.waitingContributions {
-		temp := new(rawdbv2.PDEContribution)
-		*temp = *v
-		res[k] = temp
+		res[k] = new(rawdbv2.PDEContribution)
+		*res[k] = *v
 	}
 	return res
 }
 
-func (s *stateV1) DeletedWaitingContributions() map[string]interface{} {
-	res := make(map[string]interface{}, len(s.deletedWaitingContributions))
+func (s *stateV1) DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
+	res := make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
 	for k, v := range s.deletedWaitingContributions {
-		temp := new(rawdbv2.PDEContribution)
-		*temp = *v
-		res[k] = temp
+		res[k] = new(rawdbv2.PDEContribution)
+		*res[k] = *v
 	}
 	return res
 }
 
-func (s *stateV1) PoolPairs() map[string]interface{} {
-	res := make(map[string]interface{}, len(s.poolPairs))
+func (s *stateV1) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
+	res := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
 	for k, v := range s.poolPairs {
-		temp := new(rawdbv2.PDEPoolForPair)
-		*temp = *v
-		res[k] = temp
+		res[k] = new(rawdbv2.PDEPoolForPair)
+		*res[k] = *v
 	}
 	return res
 }

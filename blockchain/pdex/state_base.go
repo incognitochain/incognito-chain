@@ -1,5 +1,7 @@
 package pdex
 
+import "github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+
 type stateBase struct {
 }
 
@@ -51,15 +53,27 @@ func (s *stateBase) GetDiff(compareState State) (State, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) WaitingContributions() map[string]interface{} {
+func (s *stateBase) WaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) DeletedWaitingContributions() map[string]interface{} {
+func (s *stateBase) DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) PoolPairs() map[string]interface{} {
+func (s *stateBase) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) WaitingContributionsV2() map[string]Contribution {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) DeletedWaitingContributionsV2() map[string]Contribution {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) PoolPairsV2() map[string]PoolPairState {
 	panic("Implement this fucntion")
 }
 

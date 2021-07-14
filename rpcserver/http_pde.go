@@ -712,28 +712,12 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
-	for k, v := range pdeState.Reader().PoolPairs() {
-		temp, ok := v.(*rawdbv2.PDEPoolForPair)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, errors.New("Wrong version of pde state"))
-		}
-		poolPairs[k] = temp
-	}
-	waitingContributions := make(map[string]*rawdbv2.PDEContribution)
-	for k, v := range pdeState.Reader().WaitingContributions() {
-		temp, ok := v.(*rawdbv2.PDEContribution)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, errors.New("Wrong version of pde state"))
-		}
-		waitingContributions[k] = temp
-	}
 	beaconBlock := beaconBlocks[0]
 	result := jsonresult.CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
-		PDEPoolPairs:            poolPairs,
+		PDEPoolPairs:            pdeState.Reader().PoolPairsV1(),
 		PDEShares:               pdeState.Reader().Shares(),
-		WaitingPDEContributions: waitingContributions,
+		WaitingPDEContributions: pdeState.Reader().WaitingContributionsV1(),
 		PDETradingFees:          pdeState.Reader().TradingFees(),
 	}
 	return result, nil
@@ -1266,14 +1250,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
-	for k, v := range pdeState.Reader().PoolPairs() {
-		temp, ok := v.(*rawdbv2.PDEPoolForPair)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, errors.New("Wrong version of pde state"))
-		}
-		poolPairs[k] = temp
-	}
+	poolPairs := pdeState.Reader().PoolPairsV1()
 	results := []*ConvertedPrice{}
 	if toTokenIDStr != "all" {
 		convertedPrice := convertPrice(
