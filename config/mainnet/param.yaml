@@ -53,7 +53,7 @@ enable_feature_flags:
   - 0: 1
   - 1: 0
 portal_v3_height: 10000000
-tx_pool_version: 0
+tx_pool_version: 1
 geth_param:
   host: "https://eth-fullnode.incognito.org"
   protocol: ""
