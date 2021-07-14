@@ -3,6 +3,7 @@ package metadata
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type PDEContributionV3 struct {
@@ -88,7 +89,7 @@ func (pc *PDEContributionV3) ValidateSanityData(chainRetriever ChainRetriever, s
 }
 
 func (pc *PDEContributionV3) ValidateMetadataByItself() bool {
-	return pc.Type == PDexV3AddLiquidityMeta
+	return pc.Type == metadataCommon.PDexV3AddLiquidityMeta
 }
 
 func (pc *PDEContributionV3) Hash() *common.Hash {

@@ -1,4 +1,4 @@
-package metadata
+package common
 
 import (
 	"fmt"
