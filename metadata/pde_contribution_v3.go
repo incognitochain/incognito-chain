@@ -1,6 +1,11 @@
 package metadata
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -29,6 +34,9 @@ func NewPDEContributionV3WithValue(
 	otaPublicKeyReceive, otaTxRandomReceive,
 	tokenID string, tokenAmount uint64, amplifier uint,
 ) *PDEContributionV3 {
+	metadataBase := MetadataBase{
+		Type: metadataCommon.PDexV3AddLiquidityMeta,
+	}
 	return &PDEContributionV3{
 		PoolPairID:          poolPairID,
 		PairHash:            pairHash,
@@ -39,6 +47,7 @@ func NewPDEContributionV3WithValue(
 		TokenID:             tokenID,
 		TokenAmount:         tokenAmount,
 		Amplifier:           amplifier,
+		MetadataBase:        metadataBase,
 	}
 }
 
@@ -47,43 +56,78 @@ func (pc *PDEContributionV3) ValidateTxWithBlockChain(tx Transaction, chainRetri
 	return true, nil
 }
 
-func (pc *PDEContributionV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	/*if chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight) && pc.GetType() == PDEContributionMeta {*/
-	//return false, false, fmt.Errorf("metadata type %v is no longer supported, consider using %v instead", PDEContributionMeta, PDEPRVRequiredContributionRequestMeta)
-	//}
+func (pc *PDEContributionV3) ValidateSanityData(
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	beaconHeight uint64,
+	tx Transaction,
+) (bool, bool, error) {
+	if pc.PairHash == "" {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pair hash should not be empty"))
+	}
+	if pc.OtaPublicKeyRefund == "" {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Ota public key refund should not be empty"))
+	}
+	if pc.OtaPublicKeyReceive == "" {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Ota public key receive should not be empty"))
+	}
+	if pc.OtaTxRandomRefund == "" {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Ota tx random refund should not be empty"))
+	}
+	if pc.OtaTxRandomReceive == "" {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Ota tx random receive should not be empty"))
+	}
+	if pc.TokenID == "" {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
+	}
 
-	//if pc.PDEContributionPairID == "" {
-	//return false, false, errors.New("PDE contribution pair id should not be empty.")
-	//}
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
+	}
 
-	//if _, err := AssertPaymentAddressAndTxVersion(pc.ContributorAddressStr, tx.GetVersion()); err != nil {
-	//return false, false, err
-	//}
+	if pc.TokenAmount == 0 || pc.TokenAmount != burnCoin.GetValue() {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Contributed amount is not valid"))
+	}
 
-	//isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
-	//if err != nil || !isBurned {
-	//return false, false, errors.New("Error This is not Tx Burn")
-	//}
+	//TODO: @tin add here amplifier can not smaller than 1.0
+	if pc.Amplifier == 0 {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
+	}
 
-	//if pc.ContributedAmount == 0 || pc.ContributedAmount != burnCoin.GetValue() {
-	//return false, false, errors.New("Contributed Amount is not valid ")
-	//}
+	tokenHash, err := common.Hash{}.NewHashFromStr(pc.TokenID)
+	if err != nil {
+		return false, false, NewMetadataTxError(metadataCommon.PDECouldNotGenerateHashFromStringError, errors.New("TokenIDStr incorrect"))
+	}
+	if !bytes.Equal(burnedTokenID[:], tokenHash[:]) {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
+	}
 
-	//tokenID, err := common.Hash{}.NewHashFromStr(pc.TokenIDStr)
-	//if err != nil {
-	//return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDStr incorrect"))
-	//}
-	//if !bytes.Equal(burnedTokenID[:], tokenID[:]) {
-	//return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
-	//}
+	if tx.GetType() == common.TxNormalType && pc.TokenID != common.PRVCoinID.String() {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
+	}
 
-	//if tx.GetType() == common.TxNormalType && pc.TokenIDStr != common.PRVCoinID.String() {
-	//return false, false, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token.")
-	//}
+	if tx.GetType() == common.TxCustomTokenPrivacyType && pc.TokenID == common.PRVCoinID.String() {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
+	}
 
-	//if tx.GetType() == common.TxCustomTokenPrivacyType && pc.TokenIDStr == common.PRVCoinID.String() {
-	//return false, false, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token.")
-	/*}*/
+	_, err, ver := checkTraderAddress(pc.OtaPublicKeyRefund, pc.OtaTxRandomRefund)
+	if err != nil {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
+	if int8(ver) != tx.GetVersion() {
+		err := fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
+	_, err, ver = checkTraderAddress(pc.OtaPublicKeyReceive, pc.OtaTxRandomReceive)
+	if err != nil {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
+	if int8(ver) != tx.GetVersion() {
+		err := fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
 
 	return true, true, nil
 }
@@ -93,15 +137,19 @@ func (pc *PDEContributionV3) ValidateMetadataByItself() bool {
 }
 
 func (pc *PDEContributionV3) Hash() *common.Hash {
-	/*record := pc.MetadataBase.Hash().String()*/
-	//record += pc.PDEContributionPairID
-	//record += pc.ContributorAddressStr
-	//record += pc.TokenIDStr
-	//record += strconv.FormatUint(pc.ContributedAmount, 10)
-	//// final hash
-	//hash := common.HashH([]byte(record))
-	/*return &hash*/
-	return nil
+	record := pc.MetadataBase.Hash().String()
+	record += pc.PoolPairID
+	record += pc.PairHash
+	record += pc.OtaPublicKeyRefund
+	record += pc.OtaTxRandomRefund
+	record += pc.OtaPublicKeyReceive
+	record += pc.OtaTxRandomReceive
+	record += pc.TokenID
+	record += strconv.FormatUint(uint64(pc.Amplifier), 10)
+	record += strconv.FormatUint(pc.TokenAmount, 10)
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
 }
 
 func (pc *PDEContributionV3) BuildReqActions(
@@ -112,22 +160,9 @@ func (pc *PDEContributionV3) BuildReqActions(
 	shardID byte,
 	shardHeight uint64,
 ) ([][]string, error) {
-	/*actionContent := PDEContributionAction{*/
-	//Meta:    *pc,
-	//TxReqID: *tx.Hash(),
-	//ShardID: shardID,
-	//}
-	//actionContentBytes, err := json.Marshal(actionContent)
-	//if err != nil {
-	//return [][]string{}, err
-	//}
-	//actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	//action := []string{strconv.Itoa(pc.Type), actionContentBase64Str}
-	/*return [][]string{action}, nil*/
 	return [][]string{}, nil
 }
 
 func (pc *PDEContributionV3) CalculateSize() uint64 {
-	//return calculateSize(pc)
-	return 0
+	return calculateSize(pc)
 }

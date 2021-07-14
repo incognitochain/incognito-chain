@@ -97,7 +97,12 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	result := jsonresult.NewCreateTransactionResult(
+		txHash,
+		utils.EmptyString,
+		nil,
+		common.GetShardIDFromLastByte(LastBytePubKeySender),
+	)
 	return result, nil
 }
 
@@ -366,7 +371,6 @@ func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interfac
 		}
 	}
 
-
 	//Get tokenID, default is PRV
 	tokenKey := "TokenID"
 	tokenID := &common.PRVCoinID
@@ -394,7 +398,7 @@ func (httpServer *HttpServer) handleGetTransactionHashPublicKey(params interface
 
 	paramList, ok := arrayParams[0].(map[string]interface{})
 	if !ok || len(paramList) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,fmt.Errorf("paramList %v is not a map[string]interface{}", arrayParams[0]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("paramList %v is not a map[string]interface{}", arrayParams[0]))
 	}
 
 	//Get publicKey list
@@ -422,7 +426,6 @@ func (httpServer *HttpServer) handleGetTransactionHashPublicKey(params interface
 
 	return result, nil
 }
-
 
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -631,7 +634,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	shardID, ok := arrayParams[0].(float64)
 	if !ok {
 		//If no direct shardID provided, try a payment address
-		paymentAddressStr ,ok := arrayParams[0].(string)
+		paymentAddressStr, ok := arrayParams[0].(string)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
 		}
@@ -643,10 +646,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 
 		pk := tmpWallet.KeySet.PaymentAddress.Pk
 		if len(pk) == 0 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf( "payment address %v invalid: no public key found", paymentAddressStr)))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("payment address %v invalid: no public key found", paymentAddressStr)))
 		}
 
-		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
+		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk)-1]))
 	}
 
 	// #2: available inputCoin from old outputcoin
@@ -695,7 +698,7 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 	shardID, ok := arrayParams[0].(float64)
 	if !ok {
 		//If no direct shardID provided, try a payment address
-		paymentAddressStr ,ok := arrayParams[0].(string)
+		paymentAddressStr, ok := arrayParams[0].(string)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
 		}
@@ -707,10 +710,10 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 
 		pk := tmpWallet.KeySet.PaymentAddress.Pk
 		if len(pk) == 0 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf( "payment address %v invalid: no public key found", paymentAddressStr)))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("payment address %v invalid: no public key found", paymentAddressStr)))
 		}
 
-		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
+		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk)-1]))
 	}
 
 	// #2: Number of commitments
@@ -897,7 +900,7 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	shardID, ok := arrayParams[0].(float64)
 	if !ok {
 		//If no direct shardID provided, try a payment address
-		paymentAddressStr ,ok := arrayParams[0].(string)
+		paymentAddressStr, ok := arrayParams[0].(string)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
 		}
@@ -909,10 +912,10 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 
 		pk := tmpWallet.KeySet.PaymentAddress.Pk
 		if len(pk) == 0 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf( "payment address %v invalid: no public key found", paymentAddressStr)))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("payment address %v invalid: no public key found", paymentAddressStr)))
 		}
 
-		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
+		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk)-1]))
 	}
 
 	//#2: list serialnumbers in base58check encode string
@@ -989,7 +992,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawConvertCoinVer1ToVer2TxToken(params interface{}, closeChan <-chan struct{}) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError){
+func (httpServer *HttpServer) handleCreateRawConvertCoinVer1ToVer2TxToken(params interface{}, closeChan <-chan struct{}) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawConvertVer1ToVer2Transaction params: %+v", params)
 
 	// create new param to build raw tx from param interface
@@ -1053,7 +1056,7 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 }
 
 // handleSendRawTransaction...
-func (httpServer *HttpServer) 	handleSendRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))

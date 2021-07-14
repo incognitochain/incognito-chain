@@ -177,5 +177,4 @@ type PDEAddLiquidityV3Request struct {
 	Amplifier      string `json:"Amplifier"`
 	PairHash       string `json:"PairHash"`
 	PaymentAddress string `json:"PaymentAddress"`
-	TokenReceivers string `json:"TokenReceivers"`
 }
