@@ -99,6 +99,7 @@ type CoinV1 = coin.CoinV1
 type CoinV2 = coin.CoinV2
 type CoinObject = coin.CoinObject
 type TxRandom = coin.TxRandom
+type OTAReceiver = coin.OTAReceiver
 
 type Proof = proof.Proof
 type ProofV1 = zkp.PaymentProof
