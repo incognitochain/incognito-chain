@@ -36,7 +36,9 @@ func TestNewStopAutoStakingMetadata(t *testing.T) {
 				committeePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			want: &metadata.StopAutoStakingMetadata{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			wantErr: false,
@@ -58,8 +60,8 @@ func TestNewStopAutoStakingMetadata(t *testing.T) {
 
 func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
-		MetadataBase       metadata.MetadataBase
-		CommitteePublicKey string
+		MetadataBaseWithSignature metadata.MetadataBaseWithSignature
+		CommitteePublicKey        string
 	}
 	tests := []struct {
 		name   string
@@ -69,8 +71,10 @@ func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		{
 			name: "Base58CheckDeserialize error",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					metadata.StopAutoStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
 				},
 				CommitteePublicKey: "blah",
 			},
@@ -78,24 +82,31 @@ func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		{
 			name: "CheckSanityData error",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					metadata.StopAutoStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
 				},
 				CommitteePublicKey: "1hm766APBSXcyDbNbPLbb65Hm2DkK35RJp1cwYx95mFExK3VAkE9qfzDJLTKTMiKbscm4zns5QuDpGS4yc5Hi994G1BVVE2hdLgoNJbvxXdbmsRdrwVCENVYJhYk2k1kci7b8ysb9nFXW8fUEJNsBtfQjtXQY7pEqngbwpEFuF45Kj8skjDriKp2Sc9TjxnPw4478dN4h4XYojPaiSo3sJpqJWDfcZ68DqSWuUAud5REAqeBT3sUiyJCpnfZ9Lp2Uk7M7Pc9CeuTZBVfV3M669zpPdErUgWf7VDYe5wujvcMLhqqjvJRe5WREYLjVni1H1d4qhcuzdbPdW8BC4b7xY2qRSBtiFav8tJt7iSdycTeTTsaYN1",
 			},
 		},
 		{
 			name: "stopAutoStakingMetadata error",
-			fields: fields{MetadataBase: metadata.MetadataBase{
-				metadata.ShardStakingMeta,
-			},
+			fields: fields{
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.ShardStakingMeta,
+					},
+				},
 				CommitteePublicKey: "blah"},
 		},
 		{
 			name: "happy case",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					metadata.StopAutoStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
 				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
@@ -105,8 +116,8 @@ func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			stopAutoStakingMetadata := &metadata.StopAutoStakingMetadata{
-				MetadataBase:       tt.fields.MetadataBase,
-				CommitteePublicKey: tt.fields.CommitteePublicKey,
+				MetadataBaseWithSignature: tt.fields.MetadataBaseWithSignature,
+				CommitteePublicKey:        tt.fields.CommitteePublicKey,
 			}
 			if got := stopAutoStakingMetadata.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("ValidateMetadataByItself() = %v, want %v", got, tt.want)
@@ -117,8 +128,8 @@ func TestStopAutoStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 
 func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 	type fields struct {
-		MetadataBase       metadata.MetadataBase
-		CommitteePublicKey string
+		MetadataBaseWithSignature metadata.MetadataBaseWithSignature
+		CommitteePublicKey        string
 	}
 	type args struct {
 		chainRetriever  metadata.ChainRetriever
@@ -203,7 +214,11 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "stopAutoStakingMetadata check burning address error",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 			},
 			args: args{
 				tx:             txBurningAddressPublicKeyError,
@@ -214,7 +229,11 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "stopAutoStakingMetadata type error",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{metadata.ShardStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.ShardStakingMeta,
+					},
+				},
 			},
 			args: args{
 				tx:             txStopAutoStakingMetadataError,
@@ -225,7 +244,11 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "stopAutoStakingMetadata amount error",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 			},
 			args: args{
 				tx:             txStopAutoStakingMetadataError1,
@@ -236,7 +259,11 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "CommitteePublicKey.FromString error",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6Afv9xkLDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -248,7 +275,11 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "CommitteePublicKey.CheckSanityData() error",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "1hm766APBSXcyDbNbPLbb65Hm2DkK35RJp1cwYx95mFExK3VAkE9qfzDJLTKTMiKbscm4zns5QuDpGS4yc5Hi994G1BVVE2hdLgoNJbvxXdbmsRdrwVCENVYJhYk2k1kci7b8ysb9nFXW8fUEJNsBtfQjtXQY7pEqngbwpEFuF45Kj8skjDriKp2Sc9TjxnPw4478dN4h4XYojPaiSo3sJpqJWDfcZ68DqSWuUAud5REAqeBT3sUiyJCpnfZ9Lp2Uk7M7Pc9CeuTZBVfV3M669zpPdErUgWf7VDYe5wujvcMLhqqjvJRe5WREYLjVni1H1d4qhcuzdbPdW8BC4b7xY2qRSBtiFav8tJt7iSdycTeTTsaYN1",
 			},
 			args: args{
@@ -260,7 +291,11 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "happy case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -275,8 +310,8 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			stopAutoStakingMetadata := metadata.StopAutoStakingMetadata{
-				MetadataBase:       tt.fields.MetadataBase,
-				CommitteePublicKey: tt.fields.CommitteePublicKey,
+				MetadataBaseWithSignature: tt.fields.MetadataBaseWithSignature,
+				CommitteePublicKey:        tt.fields.CommitteePublicKey,
 			}
 			got, got1, err := stopAutoStakingMetadata.ValidateSanityData(tt.args.chainRetriever, tt.args.shardRetriever, tt.args.beaconRetriever, tt.args.beaconHeight, tt.args.tx)
 			if (err != nil) != tt.wantErr {
@@ -295,8 +330,8 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 
 func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	type fields struct {
-		MetadataBase       metadata.MetadataBase
-		CommitteePublicKey string
+		MetadataBaseWithSignature metadata.MetadataBaseWithSignature
+		CommitteePublicKey        string
 	}
 	type args struct {
 		tx                  metadata.Transaction
@@ -309,8 +344,10 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 
 	var stopStakeTx1Meta metadata.Metadata
 	stopStakeTx1Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[1],
 	}
@@ -326,8 +363,10 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 
 	var stopStakeTx2Meta metadata.Metadata
 	stopStakeTx2Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
-			metadata.StopAutoStakingMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				metadata.StopAutoStakingMeta,
+			},
 		},
 		CommitteePublicKey: validCommitteePublicKeys[2],
 	}
@@ -503,7 +542,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "check common.IndexOfStr error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "",
 			},
 			args: args{
@@ -518,7 +561,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Get Staker Info error",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -533,7 +580,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Not have staker info",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -548,7 +599,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "check chainRetriever.GetTransactionByHash() error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -563,7 +618,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "check bytes.Equal(stakingTx.GetSender(), tx.GetSender()) error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -578,7 +637,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "check autoStakingList[stopStakingMetadata.CommitteePublicKey] error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -593,7 +656,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "check !isAutoStaking error case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -608,7 +675,11 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "happy case",
 			fields: fields{
-				MetadataBase:       metadata.MetadataBase{metadata.StopAutoStakingMeta},
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						metadata.StopAutoStakingMeta,
+					},
+				},
 				CommitteePublicKey: "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc",
 			},
 			args: args{
@@ -624,8 +695,8 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			stopAutoStakingMetadata := metadata.StopAutoStakingMetadata{
-				MetadataBase:       tt.fields.MetadataBase,
-				CommitteePublicKey: tt.fields.CommitteePublicKey,
+				MetadataBaseWithSignature: tt.fields.MetadataBaseWithSignature,
+				CommitteePublicKey:        tt.fields.CommitteePublicKey,
 			}
 			got, err := stopAutoStakingMetadata.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.shardID, tt.args.stateDB)
 			if (err != nil) != tt.wantErr {

@@ -561,6 +561,15 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
+	// reset number of shard block counter
+	if blockchain.IsLastBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
+		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
+		for i := 0; i < beaconBestState.ActiveShards; i++ {
+			shardID := byte(i)
+			beaconBestState.NumberOfShardBlock[shardID] = 0
+		}
+	}
+
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
@@ -590,9 +599,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.BeaconProposerIndex = 0
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
 		beaconBestState.BestShardHeight[shardID] = 1
+		beaconBestState.NumberOfShardBlock[shardID] = 0
 	}
 	// Update new best new block hash
 	for shardID, shardStates := range genesisBeaconBlock.Body.ShardState {

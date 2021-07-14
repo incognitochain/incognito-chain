@@ -16,14 +16,14 @@ type Penalty struct {
 }
 
 type MissingSignature struct {
-	Total   uint
-	Missing uint
+	ActualTotal uint
+	Missing     uint
 }
 
 func NewMissingSignature() MissingSignature {
 	return MissingSignature{
-		Total:   0,
-		Missing: 0,
+		ActualTotal: 0,
+		Missing:     0,
 	}
 }
 
@@ -47,8 +47,8 @@ type IMissingSignatureCounter interface {
 	MissingSignature() map[string]MissingSignature
 	Penalties() []Penalty
 	AddMissingSignature(validationData string, committees []incognitokey.CommitteePublicKey) error
-	GetAllSlashingPenalty() map[string]Penalty
-	GetSlashingPenalty(key *incognitokey.CommitteePublicKey) (bool, Penalty, error)
+	GetAllSlashingPenaltyWithActualTotalBlock() map[string]Penalty
+	GetAllSlashingPenaltyWithExpectedTotalBlock(map[string]uint) map[string]Penalty
 	Reset(committees []string)
 	CommitteeChange(committees []string)
 	Copy() IMissingSignatureCounter
@@ -109,7 +109,7 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 			// skip toBeSignedCommittee not in current list
 			continue
 		}
-		missingSignature.Total++
+		missingSignature.ActualTotal++
 		if _, ok := signedCommittees[toBeSignedCommittee]; !ok {
 			missingSignature.Missing++
 		}
@@ -118,13 +118,32 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 	return nil
 }
 
-func (s MissingSignatureCounter) GetAllSlashingPenalty() map[string]Penalty {
+func (s MissingSignatureCounter) GetAllSlashingPenaltyWithActualTotalBlock() map[string]Penalty {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	penalties := make(map[string]Penalty)
 	for key, numberOfMissingSig := range s.missingSignature {
-		penalty := getSlashingPenalty(numberOfMissingSig.Missing, numberOfMissingSig.Total, s.penalties)
+		penalty := getSlashingPenalty(numberOfMissingSig.Missing, numberOfMissingSig.ActualTotal, s.penalties)
+		if !penalty.IsEmpty() {
+			penalties[key] = penalty
+		}
+	}
+	return penalties
+}
+
+func (s MissingSignatureCounter) GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlocks map[string]uint) map[string]Penalty {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	penalties := make(map[string]Penalty)
+	for key, expectedTotalBlock := range expectedTotalBlocks {
+		missingBlock := expectedTotalBlock
+		missingSignature, ok := s.missingSignature[key]
+		if ok {
+			missingBlock = missingSignature.Missing
+		}
+		penalty := getSlashingPenalty(missingBlock, expectedTotalBlock, s.penalties)
 		if !penalty.IsEmpty() {
 			penalties[key] = penalty
 		}
@@ -144,25 +163,6 @@ func getSlashingPenalty(numberOfMissingSig uint, total uint, penalties []Penalty
 		}
 	}
 	return penalty
-}
-
-func (s MissingSignatureCounter) GetSlashingPenalty(key *incognitokey.CommitteePublicKey) (bool, Penalty, error) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	tempKey, err := key.ToBase58()
-	if err != nil {
-		return false, NewPenalty(), err
-	}
-	missingSignature, ok := s.missingSignature[tempKey]
-	if !ok {
-		return false, NewPenalty(), nil
-	}
-	penalty := getSlashingPenalty(missingSignature.Missing, missingSignature.Total, s.penalties)
-	if penalty.IsEmpty() {
-		return false, NewPenalty(), nil
-	}
-	return true, penalty, nil
 }
 
 func (s *MissingSignatureCounter) Reset(committees []string) {

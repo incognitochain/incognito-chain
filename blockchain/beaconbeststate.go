@@ -57,6 +57,7 @@ type BeaconBestState struct {
 	ActiveShards            int                  `json:"ActiveShards"`
 	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
+	NumberOfShardBlock      map[byte]uint        `json:"NumberOfShardBlock"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeEngine   committeestate.BeaconCommitteeEngine
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -522,7 +523,21 @@ func (beaconBestState *BeaconBestState) GetNumberOfMissingSignature() map[string
 }
 
 func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]signaturecounter.Penalty {
-	return beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+
+	slashingPenalty := make(map[string]signaturecounter.Penalty)
+
+	if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
+
+		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
+		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
+
+	} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
+
+		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
+
+	}
+
+	return slashingPenalty
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
@@ -626,9 +641,13 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
-		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
-		beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
-		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
+			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
+			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
+		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
+			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
+		}
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
@@ -662,9 +681,13 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
-		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
-		beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
-		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
+			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
+			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
+		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
+			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
+		}
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
@@ -934,4 +957,42 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		beaconBestState.missingSignatureCounter.Reset(shardCommitteeFlattenList)
 	}
 	Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Beacon Committee Engine from V1 to V2", beaconBestState.BeaconHeight)
+}
+
+func (b *BeaconBestState) GetExpectedTotalBlock() map[string]uint {
+
+	expectedTotalBlock := make(map[string]uint)
+	expectedBlockForShards := b.CalculateExpectedTotalBlock()
+
+	for shardID, committees := range b.GetShardCommittee() {
+		expectedBlockForShard := expectedBlockForShards[shardID]
+		for _, committee := range committees {
+			temp, _ := committee.ToBase58()
+			expectedTotalBlock[temp] = expectedBlockForShard
+		}
+	}
+
+	return expectedTotalBlock
+}
+
+func (b *BeaconBestState) CalculateExpectedTotalBlock() map[byte]uint {
+
+	mean := uint(0)
+
+	for _, v := range b.NumberOfShardBlock {
+		mean += v
+	}
+
+	mean = mean / uint(len(b.NumberOfShardBlock))
+
+	expectedTotalBlock := make(map[byte]uint)
+	for k, v := range b.NumberOfShardBlock {
+		if v <= mean {
+			expectedTotalBlock[k] = mean
+		} else {
+			expectedTotalBlock[k] = v
+		}
+	}
+
+	return expectedTotalBlock
 }

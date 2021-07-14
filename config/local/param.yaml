@@ -51,6 +51,7 @@ consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
+  enable_slashing_height_v2: 1
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 7000000
