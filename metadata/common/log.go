@@ -1,13 +1,13 @@
-package metadata
+package common
 
 import "github.com/incognitochain/incognito-chain/common"
 
 type MetaDataLogger struct {
-	log common.Logger
+	Log common.Logger
 }
 
 func (metricLogger *MetaDataLogger) Init(inst common.Logger) {
-	metricLogger.log = inst
+	metricLogger.Log = inst
 }
 
 // Global instant to use
