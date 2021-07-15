@@ -49,8 +49,8 @@ swap_committee_param:
   assign_offset: 2
 consensus_param:
   consensus_v2_epoch: 1
-  staking_flow_v2_height: 3016278
-  enable_slashing_height: 3016778
+  staking_flow_v2_height: 1
+  enable_slashing_height: 1
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 7000000

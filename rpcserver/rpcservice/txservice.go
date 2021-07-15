@@ -1123,7 +1123,10 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 }
 
 // BuildRawCustomTokenTransaction ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
+	params interface{},
+	metaData metadata.Metadata,
+) (transaction.TransactionToken, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -2445,4 +2448,140 @@ func isTxRelateCommittee(tx metadata.Transaction) bool {
 		}
 	}
 	return false
+}
+
+// BuildRawCustomTokenTransaction ...
+func (txService TxService) BuildRawPrivacyTokenTransaction(
+	params interface{},
+	metaData metadata.Metadata,
+	receiverAddresses map[string]interface{},
+	tokenID string, tokenAmount, fee uint64,
+) (transaction.TransactionToken, *RPCError) {
+	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+	if errParam != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errParam)
+	}
+	tokenParams, _, _, err := txService.BuildPrivacyTokenParam(
+		txParam.SenderKeySet,
+		txParam.ShardIDSender,
+		receiverAddresses,
+		tokenID, tokenAmount, fee,
+	)
+	if err != nil {
+		return nil, NewRPCError(BuildTokenParamError, err)
+	}
+
+	if tokenParams == nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("can not build token params for request"))
+	}
+	/******* START choose output native coins(PRV), which is used to create tx *****/
+	var inputCoins []coin.PlainCoin
+	realFeePRV := uint64(0)
+	inputCoins, realFeePRV, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
+		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
+		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(txParam.PaymentInfos) == 0 && realFeePRV == 0 {
+		txParam.HasPrivacyCoin = false
+	}
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
+	beaconView := txService.BlockChain.BeaconChain.GetFinalViewState()
+
+	txTokenParams := transaction.NewTxTokenParams(&txParam.SenderKeySet.PrivateKey,
+		txParam.PaymentInfos,
+		inputCoins,
+		realFeePRV,
+		tokenParams,
+		txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetCopiedTransactionStateDB(),
+		metaData,
+		txParam.HasPrivacyCoin,
+		txParam.HasPrivacyToken,
+		txParam.ShardIDSender, txParam.Info,
+		beaconView.GetBeaconFeatureStateDB())
+
+	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
+	if errTx != nil {
+		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
+		return nil, NewRPCError(CreateTxDataError, errTx)
+	}
+	errTx = tx.Init(txTokenParams)
+	if errTx != nil {
+		return nil, NewRPCError(CreateTxDataError, errTx)
+	}
+
+	return tx, nil
+}
+
+func (txService TxService) BuildPrivacyTokenParam(
+	senderKeySet *incognitokey.KeySet,
+	shardIDSender byte,
+	receiverAddresses map[string]interface{},
+	tokenID string,
+	tokenAmount, fee uint64,
+) (*transaction.TokenParam, map[common.Hash]transaction.TransactionToken, map[common.Hash]types.CrossShardTokenPrivacyMetaData, *RPCError) {
+	tokenParams := &transaction.TokenParam{
+		TokenTxType: int(transaction.CustomTokenTransfer),
+		Amount:      uint64(tokenAmount),
+		TokenInput:  nil,
+		Fee:         uint64(fee),
+	}
+	voutsAmount := int64(0)
+	var err1 error
+
+	tokenParams.Receiver, voutsAmount, err1 = CreateCustomTokenPrivacyReceiverArray(receiverAddresses)
+	if err1 != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, err1)
+	}
+	voutsAmount += int64(fee)
+	tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+	if err != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+	}
+	Logger.log.Info("[pdex] tokenHash.String():", tokenHash.String())
+	isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(), *tokenHash)
+	if !isExisted {
+		var isBridgeToken bool
+		bridgeTokenIDs, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
+		if err != nil {
+			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+		}
+		for _, bridgeToken := range allBridgeTokens {
+			if bridgeToken.TokenID.IsEqual(tokenHash) {
+				isBridgeToken = true
+				break
+			}
+		}
+		if !isBridgeToken {
+			// totally invalid token
+			Logger.log.Errorf("BUGLOG invalid TokenID: %v\n", tokenHash.String())
+			if len(bridgeTokenIDs) != len(allBridgeTokens) {
+				Logger.log.Errorf("BUGLOG something must be wrong here\n")
+			}
+
+			for i := 0; i < len(bridgeTokenIDs); i++ {
+				Logger.log.Infof("BUGLOG tokenID: %v, %v\n", bridgeTokenIDs[i].String(), allBridgeTokens[i].TokenID.String())
+			}
+
+			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+		}
+		//return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
+	}
+	outputTokens, err := txService.BlockChain.TryGetAllOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenHash, true)
+	if err != nil {
+		return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
+	}
+	outputTokens, err = txService.filterMemPoolOutcoinsToSpent(outputTokens)
+	if err != nil {
+		return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
+	}
+	candidateOutputTokens, _, _, err := txService.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
+	if err != nil {
+		return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
+	}
+	tokenParams.TokenInput = candidateOutputTokens
+	return tokenParams, nil, nil, nil
 }

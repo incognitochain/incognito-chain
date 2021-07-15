@@ -1687,11 +1687,18 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if !ok {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
 	}
+	privacyDetect, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("privacy detection param need to be int"))
+	}
+	if int(privacyDetect) <= 0 {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
+	}
 
-	if len(arrayParams) != 4 {
+	if len(arrayParams) != 5 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
-	addLiquidityParam, ok := arrayParams[3].(map[string]interface{})
+	addLiquidityParam, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata type is invalid"))
 	}
@@ -1714,14 +1721,16 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
 	}
 	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	pkBytes := keyWallet.KeySet.PaymentAddress.GetPublicSpend().ToBytesS()
-	shardID := common.GetShardIDFromLastByte(pkBytes[len(pkBytes)-1])
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	amplifier, err := common.AssertAndConvertNumber(addLiquidityRequest.Amplifier)
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	tokenFee, err := common.AssertAndConvertNumber(addLiquidityRequest.Fee)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -1751,23 +1760,11 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	var byteArrays []byte
 	var txHashStr string
-	fee, ok := arrayParams[2].(float64)
-	if !ok {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Fee is invalid"))
-	}
-
-	paymentInfos, err := bean.GetListReceivers(arrayParams[1])
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
 	if isPRV {
-		rawTxParam := &bean.CreateRawTxParam{
-			SenderKeySet:         &keyWallet.KeySet,
-			ShardIDSender:        shardID,
-			PaymentInfos:         paymentInfos,
-			EstimateFeeCoinPerKb: int64(fee),
-			HasPrivacyCoin:       true,
-			Info:                 []byte{},
+		// create new param to build raw tx from param interface
+		rawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+		if errNewParam != nil {
+			return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 		}
 		tx, rpcErr := httpServer.txService.BuildRawTransaction(rawTxParam, metaData)
 		if rpcErr != nil {
@@ -1781,7 +1778,19 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		}
 		txHashStr = tx.Hash().String()
 	} else {
-		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, metaData)
+		receiverAddresses, ok := arrayParams[1].(map[string]interface{})
+		if !ok {
+			return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+		}
+
+		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyTokenTransaction(
+			params,
+			metaData,
+			receiverAddresses,
+			addLiquidityRequest.TokenID,
+			tokenAmount,
+			tokenFee,
+		)
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)
 			return nil, isPRV, rpcservice.NewRPCError(rpcservice.UnexpectedError, rpcErr)

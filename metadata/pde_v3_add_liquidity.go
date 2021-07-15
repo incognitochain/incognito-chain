@@ -81,17 +81,31 @@ func (pl *PDEV3AddLiquidity) ValidateSanityData(
 	if pl.TokenID == "" {
 		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
+	_, err, ver := checkTraderAddress(pl.OtaPublicKeyRefund, pl.OtaTxRandomRefund)
+	if err != nil {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
+	if int8(ver) != tx.GetVersion() {
+		err := fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
+	_, err, ver = checkTraderAddress(pl.OtaPublicKeyReceive, pl.OtaTxRandomReceive)
+	if err != nil {
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
+	if int8(ver) != tx.GetVersion() {
+		err := fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
+	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
 		return false, false, NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
 	}
 
-	/*fmt.Println("pl.TokenAmount:", pl.TokenAmount)*/
-	/*fmt.Println("burnCoin.GetValue():", burnCoin.GetValue())*/
-
 	if pl.TokenAmount == 0 || pl.TokenAmount != burnCoin.GetValue() {
-		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Contributed amount is not valid"))
+		err := fmt.Errorf("Contributed amount is not valid expect %v but get %v", pl.TokenAmount, burnCoin.GetValue())
+		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
 
 	//TODO: @tin add here amplifier can not smaller than 1.0
@@ -113,23 +127,6 @@ func (pl *PDEV3AddLiquidity) ValidateSanityData(
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType && pl.TokenID == common.PRVCoinID.String() {
 		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
-	}
-
-	_, err, ver := checkTraderAddress(pl.OtaPublicKeyRefund, pl.OtaTxRandomRefund)
-	if err != nil {
-		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
-	}
-	if int8(ver) != tx.GetVersion() {
-		err := fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
-		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
-	}
-	_, err, ver = checkTraderAddress(pl.OtaPublicKeyReceive, pl.OtaTxRandomReceive)
-	if err != nil {
-		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
-	}
-	if int8(ver) != tx.GetVersion() {
-		err := fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
-		return false, false, NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, err)
 	}
 
 	return true, true, nil
