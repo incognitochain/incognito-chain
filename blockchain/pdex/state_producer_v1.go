@@ -23,7 +23,7 @@ func (sp *stateProducerV1) crossPoolTrade(
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-) ([][]string, error) {
+) ([][]string, map[string]*rawdbv2.PDEPoolForPair, map[string]uint64, error) {
 	res := [][]string{}
 
 	// handle cross pool trade
@@ -43,7 +43,7 @@ func (sp *stateProducerV1) crossPoolTrade(
 		res = append(res, tradingFeesDistInst)
 	}
 
-	return res, nil
+	return res, poolPairs, shares, nil
 }
 
 func (sp *stateProducerV1) buildInstForTradingFeesDist(
@@ -414,7 +414,7 @@ func (sp *stateProducerV1) withdrawal(
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-) ([][]string, error) {
+) ([][]string, map[string]*rawdbv2.PDEPoolForPair, map[string]uint64, error) {
 	res := [][]string{}
 
 	for _, action := range actions {
@@ -422,13 +422,13 @@ func (sp *stateProducerV1) withdrawal(
 		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
-			return utils.EmptyStringMatrix, err
+			return utils.EmptyStringMatrix, poolPairs, shares, err
 		}
 		var withdrawalRequestAction metadata.PDEWithdrawalRequestAction
 		err = json.Unmarshal(contentBytes, &withdrawalRequestAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
-			return [][]string{}, err
+			return [][]string{}, poolPairs, shares, err
 		}
 		wdMeta := withdrawalRequestAction.Meta
 		deductingAmounts := sp.deductAmounts(
@@ -445,7 +445,7 @@ func (sp *stateProducerV1) withdrawal(
 				common.PDEWithdrawalRejectedChainStatus,
 				contentStr,
 			}
-			return [][]string{inst}, nil
+			return [][]string{inst}, poolPairs, shares, nil
 		}
 
 		inst, err := buildWithdrawalAcceptedInst(
@@ -455,7 +455,7 @@ func (sp *stateProducerV1) withdrawal(
 			deductingAmounts.Shares,
 		)
 		if err != nil {
-			return [][]string{}, nil
+			return [][]string{}, poolPairs, shares, nil
 		}
 		res = append(res, inst)
 		inst, err = buildWithdrawalAcceptedInst(
@@ -465,12 +465,12 @@ func (sp *stateProducerV1) withdrawal(
 			0,
 		)
 		if err != nil {
-			return [][]string{}, nil
+			return [][]string{}, poolPairs, shares, nil
 		}
 		res = append(res, inst)
 	}
 
-	return res, nil
+	return res, poolPairs, shares, nil
 }
 
 func (sp *stateProducerV1) deductAmounts(
@@ -574,7 +574,13 @@ func (sp *stateProducerV1) contribution(
 	waitingContributions map[string]*rawdbv2.PDEContribution,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-) ([][]string, error) {
+) (
+	[][]string,
+	map[string]*rawdbv2.PDEContribution,
+	map[string]*rawdbv2.PDEPoolForPair,
+	map[string]uint64,
+	error,
+) {
 	res := [][]string{}
 
 	for _, action := range actions {
@@ -582,13 +588,13 @@ func (sp *stateProducerV1) contribution(
 		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
-			return [][]string{}, err
+			return [][]string{}, waitingContributions, poolPairs, shares, err
 		}
 		var contributionAction metadata.PDEContributionAction
 		err = json.Unmarshal(contentBytes, &contributionAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution action: %+v", err)
-			return [][]string{}, err
+			return [][]string{}, waitingContributions, poolPairs, shares, err
 		}
 		meta := contributionAction.Meta
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, meta.PDEContributionPairID))
@@ -656,7 +662,7 @@ func (sp *stateProducerV1) contribution(
 				shares,
 			)
 			if err != nil {
-				return utils.EmptyStringMatrix, err
+				return utils.EmptyStringMatrix, waitingContributions, poolPairs, shares, err
 			}
 			matchedInst := buildMatchedContributionInst(
 				contributionAction,
@@ -745,14 +751,14 @@ func (sp *stateProducerV1) contribution(
 		res = append(res, matchedAndReturnedInst2)
 	}
 
-	return res, nil
+	return res, waitingContributions, poolPairs, shares, nil
 }
 
 func (sp *stateProducerV1) trade(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-) ([][]string, error) {
+) ([][]string, map[string]*rawdbv2.PDEPoolForPair, error) {
 	res := [][]string{}
 
 	// handle trade
@@ -764,12 +770,12 @@ func (sp *stateProducerV1) trade(
 	for _, tradeAction := range sortedTradesActions {
 		should, receiveAmount, err := shouldRefundTradeAction(tradeAction, beaconHeight, poolPairs)
 		if err != nil {
-			return utils.EmptyStringMatrix, err
+			return utils.EmptyStringMatrix, poolPairs, err
 		}
 		if should {
 			actionContentBytes, err := json.Marshal(tradeAction)
 			if err != nil {
-				return utils.EmptyStringMatrix, err
+				return utils.EmptyStringMatrix, poolPairs, err
 			}
 			actionStr := base64.StdEncoding.EncodeToString(actionContentBytes)
 			inst := []string{
@@ -783,10 +789,10 @@ func (sp *stateProducerV1) trade(
 		}
 		inst, err := buildAcceptedTradeInstruction(tradeAction, beaconHeight, receiveAmount, poolPairs)
 		if err != nil {
-			return utils.EmptyStringMatrix, err
+			return utils.EmptyStringMatrix, poolPairs, err
 		}
 		res = append(res, inst)
 	}
 
-	return res, nil
+	return res, poolPairs, nil
 }

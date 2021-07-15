@@ -9,11 +9,13 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
+	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
@@ -234,21 +236,32 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	txIsPrivacyError := &metadataCommonMocks.Transaction{}
 	txIsPrivacyError.On("IsPrivacy").Return(true)
 
+	burnCoin := &coinMocks.Coin{}
+	burnCoin.On("GetValue").Return(uint64(1750000000000))
+	config.AbortParam()
+	config.Param().StakingAmountShard = 1750000000000
+
 	txGetUniqueReceiverError := &metadataCommonMocks.Transaction{}
 	txGetUniqueReceiverError.On("IsPrivacy").Return(false)
 	txGetUniqueReceiverError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
+	txGetUniqueReceiverError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txGetUniqueReceiverError.On("GetVersion").Return(int8(1))
 
 	bcrBase58CheckDeserializeError := &metadataCommonMocks.ChainRetriever{}
 	bcrBase58CheckDeserializeError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiipQxBdSVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 	txBase58CheckDeserializeError := &metadataCommonMocks.Transaction{}
 	txBase58CheckDeserializeError.On("IsPrivacy").Return(false)
 	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+	txBase58CheckDeserializeError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txBase58CheckDeserializeError.On("GetVersion").Return(int8(1))
 
 	bcrBurningAddressPublicKeyError := &metadataCommonMocks.ChainRetriever{}
 	bcrBurningAddressPublicKeyError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 	txBurningAddressPublicKeyError := &metadataCommonMocks.Transaction{}
 	txBurningAddressPublicKeyError.On("IsPrivacy").Return(false)
 	txBurningAddressPublicKeyError.On("GetUniqueReceiver").Return(true, []byte{0, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
+	txBurningAddressPublicKeyError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txBurningAddressPublicKeyError.On("GetVersion").Return(int8(1))
 
 	bcrGetStakingAmountShardError := &metadataCommonMocks.ChainRetriever{}
 	bcrGetStakingAmountShardError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
@@ -256,14 +269,20 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 	txGetStakingAmountShardError := &metadataCommonMocks.Transaction{}
 	txGetStakingAmountShardError.On("IsPrivacy").Return(false)
 	txGetStakingAmountShardError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
+	txGetStakingAmountShardError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txGetStakingAmountShardError.On("GetVersion").Return(int8(1))
 
 	txGetStakingAmountBeaconError := &metadataCommonMocks.Transaction{}
 	txGetStakingAmountBeaconError.On("IsPrivacy").Return(false)
 	txGetStakingAmountBeaconError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1750000000000))
+	txGetStakingAmountBeaconError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txGetStakingAmountBeaconError.On("GetVersion").Return(int8(1))
 
 	txBase58CheckDeserialize2Error := &metadataCommonMocks.Transaction{}
 	txBase58CheckDeserialize2Error.On("IsPrivacy").Return(false)
 	txBase58CheckDeserialize2Error.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1750000000000))
+	txBase58CheckDeserialize2Error.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txBase58CheckDeserialize2Error.On("GetVersion").Return(int8(1))
 
 	tests := []struct {
 		name    string
