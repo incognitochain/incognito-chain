@@ -315,14 +315,15 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				return utils.NewTransactionErr(utils.UnexpectedError, err)
 			}
 			txToken.TokenData.PropertyID = *plainTokenID
-			txToken.SetTxNormal(temp)
+			// no type-cast error since temp is of correct type
+			_ = txToken.SetTxNormal(temp)
 			return nil
 		}
 	case utils.CustomTokenTransfer:
 		{
 			propertyID, _ := common.TokenStringToHash(params.TokenParams.PropertyID)
 			dbFacingTokenID := common.ConfidentialAssetID
-			utils.Logger.Log.Debugf("Token %+v wil be transfered with", propertyID)
+			utils.Logger.Log.Debugf("Token %+v wil be transferred with", propertyID)
 
 			// fee in pToken is not supported
 			feeToken := uint64(0)
@@ -348,7 +349,8 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				// tokenID is already hidden in asset tags in coin, here we use the umbrella ID
 				txToken.TokenData.PropertyID = dbFacingTokenID
 			}
-			txToken.SetTxNormal(txNormal)
+			// no type-cast error since txNormal is of correct type
+			_ = txToken.SetTxNormal(txNormal)
 			return nil
 		}
 	default:
@@ -528,11 +530,12 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	if err := tx.InitializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
-	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes) - 1])
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 	tx.SetType(common.TxCustomTokenPrivacyType)
 	tx.SetPrivateKey(*txPrivacyParams.SenderSK)
 	temp := makeTxToken(tx, []byte{}, []byte{}, proof)
-	txToken.SetTxNormal(temp)
+	// no type-cast error since temp is of correct type
+	_ = txToken.SetTxNormal(temp)
 
 	hashedTokenMessage, err := txToken.TokenData.Hash()
 	if err != nil {
@@ -541,15 +544,15 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 
 	message := common.HashH(append(tx.Hash()[:], hashedTokenMessage[:]...))
 	if tx.Sig, tx.SigPubKey, err = tx_generic.SignNoPrivacy(privKey, message[:]); err != nil {
-		utils.Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
+		utils.Logger.Log.Error(fmt.Sprintf("Cannot signOnMessage tx %v\n", err))
 		return utils.NewTransactionErr(utils.SignTxError, err)
 	}
 
-	txToken.SetTxBase(tx)
+	_ = txToken.SetTxBase(tx)
 	return nil
 }
 
-//ValidateTxSalary checks the following conditions for minteable transactions:
+// ValidateTxSalary checks the following conditions for minteable transactions:
 //	- the signature is valid
 //	- all fields of the output coins are valid: commitment, assetTag, etc,.
 //	- the commitment has been calculated correctly
@@ -628,7 +631,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 	// Reform MLSAG Signature
 	inputCoins := txFee.GetProof().GetInputCoins()
 	keyImages := make([]*privacy.Point, len(inputCoins)+1)
-	for i := 0; i < len(inputCoins); i += 1 {
+	for i := 0; i < len(inputCoins); i++ {
 		if inputCoins[i].GetKeyImage() == nil {
 			utils.Logger.Log.Errorf("Error when reconstructing mlsagSignature: missing keyImage")
 			return false, err
@@ -689,47 +692,44 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 	if !ok {
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v \n", txToken.Hash().String(), err)
 		return false, nil, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
-	} else {
-		// validate for pToken
-		tokenID := txToken.TokenData.PropertyID
-		switch txToken.TokenData.Type {
-		case utils.CustomTokenTransfer:
-			if txToken.GetType() == common.TxTokenConversionType {
-				valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenID)
-				return valid, nil, err
-			} else {
-				isBatch, ok := boolParams["isBatch"]
-				if !ok {
-					isBatch = false
-				}
+	}
 
-				// for CA, bulletproof batching is not supported
-				boolParams["isBatch"] = false
-				boolParams["hasPrivacy"] = true
-				resTxTokenData, _, err := txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenID)
-				if err != nil {
-					return resTxTokenData, nil, err
-				}
-				txFeeProof := txToken.Tx.GetProof()
-				if txFeeProof == nil {
-					return false, nil, errors.New("Missing proof for PRV")
-				}
-
-				boolParams["isBatch"] = isBatch
-				boolParams["hasConfidentialAsset"] = false
-				// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
-				bpValid, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
-				resultProofs := []privacy.Proof{}
-				if isBatch {
-					resultProofs = append(resultProofs, txFeeProof)
-				}
-
-				return bpValid && resTxTokenData, resultProofs, err
-
-			}
-		default:
-			return false, nil, errors.New("Cannot validate Tx Token. Unavailable type")
+	// validate for pToken
+	tokenIdOnTx := txToken.TokenData.PropertyID
+	switch txToken.TokenData.Type {
+	case utils.CustomTokenTransfer:
+		if txToken.GetType() == common.TxTokenConversionType {
+			valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenIdOnTx)
+			return valid, nil, err
 		}
+		isBatch, ok := boolParams["isBatch"]
+		if !ok {
+			isBatch = false
+		}
+
+		// for CA, bulletproof batching is not supported
+		boolParams["isBatch"] = false
+		boolParams["hasPrivacy"] = true
+		resTxTokenData, _, err := txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenIdOnTx)
+		if err != nil {
+			return resTxTokenData, nil, err
+		}
+		txFeeProof := txToken.Tx.GetProof()
+		if txFeeProof == nil {
+			return false, nil, errors.New("Missing proof for PRV")
+		}
+
+		boolParams["isBatch"] = isBatch
+		boolParams["hasConfidentialAsset"] = false
+		// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
+		bpValid, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
+		resultProofs := []privacy.Proof{}
+		if isBatch {
+			resultProofs = append(resultProofs, txFeeProof)
+		}
+		return bpValid && resTxTokenData, resultProofs, err
+	default:
+		return false, nil, errors.New("Cannot validate Tx Token. Unavailable type")
 	}
 }
 
@@ -949,7 +949,7 @@ func (txToken TxToken) CheckTxVersion(maxTxVersion int8) bool {
 	return !(txToken.Tx.Version > maxTxVersion)
 }
 
-//IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees which the following conditions:
+// IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees which the following conditions:
 //
 // - mintable is true, tokenType is CustomTokenInit
 // - PRV proof is nil
@@ -1016,7 +1016,7 @@ func (txToken TxToken) ValidateType() bool {
 }
 
 func (txToken *TxToken) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	//Validate duplicate OTA
+	// Validate duplicate OTA
 	poolOTAHashH := mr.GetOTAHashH()
 	err := txToken.validateDuplicateOTAsWithCurrentMempool(poolOTAHashH)
 	if err != nil {
@@ -1024,14 +1024,13 @@ func (txToken *TxToken) ValidateTxWithCurrentMempool(mr metadata.MempoolRetrieve
 		return utils.NewTransactionErr(utils.DoubleSpendError, err)
 	}
 
-	//Validate duplicate serial numbers
+	// Validate duplicate serial numbers
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err = txToken.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
 		utils.Logger.Log.Error(err)
 		return utils.NewTransactionErr(utils.DoubleSpendError, err)
 	}
-	// TODO: will move this to mempool process
 	if txToken.TokenData.Type == utils.CustomTokenInit && txToken.Tx.GetMetadata() == nil {
 		initTokenID := txToken.TokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()
@@ -1093,7 +1092,7 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 	outCoinHash := make(map[common.Hash][32]byte)
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
-		//Skip coins sent to the burning address
+		// Skip coins sent to the burning address
 		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
@@ -1106,7 +1105,7 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 	}
 
 	for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
-		//Skip coins sent to the burning address
+		// Skip coins sent to the burning address
 		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
@@ -1269,10 +1268,10 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 func (txToken TxToken) ListOTAHashH() []common.Hash {
 	result := make([]common.Hash, 0)
 
-	//Retrieve PRV output coins
+	// Retrieve PRV output coins
 	if txToken.GetTxBase().GetProof() != nil {
 		for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
-			//Discard coins sent to the burning address
+			// Discard coins sent to the burning address
 			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
@@ -1281,10 +1280,10 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 		}
 	}
 
-	//Retrieve token output coins
+	// Retrieve token output coins
 	if txToken.GetTxNormal().GetProof() != nil {
 		for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
-			//Discard coins sent to the burning address
+			// Discard coins sent to the burning address
 			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}

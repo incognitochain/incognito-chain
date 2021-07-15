@@ -48,16 +48,15 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 	return result, nil
 }
 
-func (walletService WalletService) SubmitKey(keyStr string, accessToken string, isReset bool, syncFrom *uint64) (struct{}, *RPCError) {
+func (walletService WalletService) SubmitKey(keyStr string, accessToken string, isReset bool, syncFrom *uint64) (bool, *RPCError) {
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, _, err := GetKeySetFromPrivateKeyParams(keyStr)
 	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil{
-		return struct{}{}, NewRPCError(InvalidSenderViewingKeyError, fmt.Errorf("OTA key not found, error: %v", err))
+		return false, NewRPCError(InvalidSenderViewingKeyError, fmt.Errorf("OTA key not found, error: %v", err))
 	}else{
 		otaKey = keySet.OTAKey
 	}
-	result := struct{}{}
 
 	var heightToSyncFrom uint64
 	if syncFrom != nil {
@@ -66,10 +65,10 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 
 	err = walletService.BlockChain.SubmitOTAKey(otaKey, accessToken, isReset, heightToSyncFrom)
 	if err != nil {
-		return struct{}{}, NewRPCError(CacheQueueError, err)
+		return false, NewRPCError(CacheQueueError, err)
 	}
 
-	return result, nil
+	return true, nil
 }
 
 func (walletService WalletService) GetAccount(paymentAddrStr string) (string, error) {

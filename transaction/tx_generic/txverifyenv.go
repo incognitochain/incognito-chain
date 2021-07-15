@@ -1,4 +1,5 @@
-package tx_generic
+//nolint:forcetypeassert // This file uses uncheck type assertions
+package tx_generic //nolint:revive
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
