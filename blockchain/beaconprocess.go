@@ -525,6 +525,7 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+		beaconBestState.NumberOfShardBlock[shardID] += uint(len(shardStates))
 	}
 
 	// processing instruction

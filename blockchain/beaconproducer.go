@@ -80,7 +80,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
-
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
@@ -372,7 +371,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
-
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
 		randomInstruction, randomNumber := curView.generateRandomInstruction()
@@ -405,7 +403,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 				instructions = append(instructions, beaconRootInst)
 			}
 		}
-	} else if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+	} else if curView.CommitteeEngineVersion() >= committeestate.SLASHING_VERSION {
 		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment()
