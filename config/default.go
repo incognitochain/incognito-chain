@@ -68,8 +68,8 @@ var MainnetParam = &param{
 	BCHeightBreakPointPortalV3:     10000000,
 	TxPoolVersion:                  0,
 	GethParam: gethParam{
-		Host:     "eth-fullnode.incognito.org",
-		Protocol: "https",
+		Host:     "https://eth-fullnode.incognito.org",
+		Protocol: "",
 		Port:     "",
 	},
 	BSCParam: bscParam{
