@@ -126,6 +126,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 
+	for _, tx := range env.Transactions() {
+		// TODO: @pdex cast get metadata here and build instructions from transactions here
+		Logger.log.Info(tx)
+	}
+
 	// handle modify params
 	modifyParamsInstructions, err := s.producer.modifyParams(
 		env.ModifyParamsActions(),

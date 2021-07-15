@@ -1683,19 +1683,39 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 ) (*jsonresult.CreateTransactionResult, bool, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	isPRV := false
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
 
 	if len(arrayParams) != 4 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
-	addLiquidityParam, ok := arrayParams[3].(string)
+	addLiquidityParam, ok := arrayParams[3].(map[string]interface{})
 	if !ok {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata type is invalid"))
 	}
 	addLiquidityRequest := PDEAddLiquidityV3Request{}
-	err := json.Unmarshal([]byte(addLiquidityParam), &addLiquidityRequest)
+	// Convert map to json string
+	addLiquidityParamData, err := json.Marshal(addLiquidityParam)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	err = json.Unmarshal(addLiquidityParamData, &addLiquidityRequest)
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private key %v: %v", privateKey, err))
+	}
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
+	}
+	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	pkBytes := keyWallet.KeySet.PaymentAddress.GetPublicSpend().ToBytesS()
+	shardID := common.GetShardIDFromLastByte(pkBytes[len(pkBytes)-1])
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
@@ -1706,21 +1726,23 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(addLiquidityRequest.PaymentAddress)
+	otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(addLiquidityRequest.PaymentAddress)
+	otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	metaData := metadata.NewPDEContributionV3WithValue(
+	metaData := metadata.NewPDEV3AddLiquidityWithValue(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,
 		otaPublicKeyRefundStr, otaTxRandomRefundStr,
 		otaPublicKeyReceiveStr, otaTxRandomReceiveStr,
-		addLiquidityRequest.TokenID, tokenAmount, uint(amplifier),
+		addLiquidityRequest.TokenID,
+		tokenAmount,
+		uint(amplifier),
 	)
 
 	if addLiquidityRequest.TokenID == common.PRVIDStr {
@@ -1729,13 +1751,25 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	var byteArrays []byte
 	var txHashStr string
+	fee, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Fee is invalid"))
+	}
+
+	paymentInfos, err := bean.GetListReceivers(arrayParams[1])
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
 	if isPRV {
-		// create new param to build raw tx from param interface
-		createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-		if errNewParam != nil {
-			return nil, isPRV, rpcservice.NewRPCError(rpcservice.UnexpectedError, errNewParam)
+		rawTxParam := &bean.CreateRawTxParam{
+			SenderKeySet:         &keyWallet.KeySet,
+			ShardIDSender:        shardID,
+			PaymentInfos:         paymentInfos,
+			EstimateFeeCoinPerKb: int64(fee),
+			HasPrivacyCoin:       true,
+			Info:                 []byte{},
 		}
-		tx, rpcErr := httpServer.txService.BuildRawTransaction(createRawTxParam, metaData)
+		tx, rpcErr := httpServer.txService.BuildRawTransaction(rawTxParam, metaData)
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)
 			return nil, isPRV, rpcservice.NewRPCError(rpcservice.UnexpectedError, rpcErr)

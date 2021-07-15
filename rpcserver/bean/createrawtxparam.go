@@ -43,26 +43,12 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	return &keyWallet.KeySet, shardID, nil
 }
 
-func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 3 {
-		return nil, errors.New("not enough param")
-	}
-
-	// param #1: private key of sender
-	senderKeyParam, ok := arrayParams[0].(string)
-	if !ok {
-		return nil, errors.New("sender private key is invalid")
-	}
-	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
-	if err != nil {
-		return nil, err
-	}
-
+func GetListReceivers(param interface{}) ([]*privacy.PaymentInfo, error) {
 	// param #2: list receivers
 	receivers := make(map[string]interface{})
-	if arrayParams[1] != nil {
-		receivers, ok = arrayParams[1].(map[string]interface{})
+	var ok bool
+	if param != nil {
+		receivers, ok = param.(map[string]interface{})
 		if !ok {
 			return nil, errors.New("receivers param is invalid")
 		}
@@ -81,12 +67,35 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         amountParam,
 			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
+	}
+	return paymentInfos, nil
+}
+
+func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 3 {
+		return nil, errors.New("not enough param")
+	}
+
+	// param #1: private key of sender
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, errors.New("sender private key is invalid")
+	}
+	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, err
+	}
+
+	// param #2: list receivers
+	paymentInfos, err := GetListReceivers(arrayParams[1])
+	if err != nil {
+		return nil, err
 	}
 
 	// param #3: estimation fee nano P per kb
@@ -148,33 +157,9 @@ func NewCreateRawTxParamV2(params interface{}) (*CreateRawTxParam, error) {
 	}
 
 	// param #2: list receivers
-	receivers := make(map[string]interface{})
-	if arrayParams[1] != nil {
-		receivers, ok = arrayParams[1].(map[string]interface{})
-		if !ok {
-			return nil, errors.New("receivers param is invalid")
-		}
-	}
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for paymentAddressStr, amount := range receivers {
-		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, err
-		}
-		if len(keyWalletReceiver.KeySet.PaymentAddress.Pk) == 0 {
-			return nil, fmt.Errorf("payment info %+v is invalid", paymentAddressStr)
-		}
-
-		amountParam, err := common.AssertAndConvertStrToNumber(amount)
-		if err != nil {
-			return nil, err
-		}
-
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         amountParam,
-			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-		}
-		paymentInfos = append(paymentInfos, paymentInfo)
+	paymentInfos, err := GetListReceivers(arrayParams[1])
+	if err != nil {
+		return nil, err
 	}
 
 	// param #3: estimation fee nano P per kb

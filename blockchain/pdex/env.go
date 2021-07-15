@@ -1,8 +1,8 @@
 package pdex
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type StateEnvBuilder interface {
@@ -14,7 +14,7 @@ type StateEnvBuilder interface {
 	BuildFeeWithdrawalActions([][]string) StateEnvBuilder
 	BuildModifyParamsActions([][]string) StateEnvBuilder
 	BuildBeaconHeight(uint64) StateEnvBuilder
-	BuildTxHashes([]common.Hash) StateEnvBuilder
+	BuildTransactions([]metadata.Transaction) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
 	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
@@ -35,7 +35,7 @@ type stateEnvironment struct {
 	modifyParamsActions            [][]string
 	beaconHeight                   uint64
 	beaconInstructions             [][]string
-	txHashes                       []common.Hash
+	transactions                   []metadata.Transaction
 	stateDB                        *statedb.StateDB
 	bcHeightBreakPointPrivacyV2    uint64
 }
@@ -90,8 +90,8 @@ func (env *stateEnvironment) BuildBeaconInstructions(beaconInstructions [][]stri
 	return env
 }
 
-func (env *stateEnvironment) BuildTxHashes(txHashes []common.Hash) StateEnvBuilder {
-	env.txHashes = txHashes
+func (env *stateEnvironment) BuildTransactions(transactions []metadata.Transaction) StateEnvBuilder {
+	env.transactions = transactions
 	return env
 }
 
@@ -114,7 +114,7 @@ type StateEnvironment interface {
 	ModifyParamsActions() [][]string
 	BeaconHeight() uint64
 	BeaconInstructions() [][]string
-	TxHashes() []common.Hash
+	Transactions() []metadata.Transaction
 	StateDB() *statedb.StateDB
 	BCHeightBreakPointPrivacyV2() uint64
 }
@@ -151,8 +151,8 @@ func (env *stateEnvironment) BeaconHeight() uint64 {
 	return env.beaconHeight
 }
 
-func (env *stateEnvironment) TxHashes() []common.Hash {
-	return env.txHashes
+func (env *stateEnvironment) Transactions() []metadata.Transaction {
+	return env.transactions
 }
 
 func (env *stateEnvironment) BeaconInstructions() [][]string {

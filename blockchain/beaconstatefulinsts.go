@@ -214,12 +214,18 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	txHashes := []common.Hash{}
+	transactions := []metadata.Transaction{}
 
 	for _, key := range keys {
+		txHashes := []common.Hash{}
 		for _, shardState := range shardStates[byte(key)] {
 			txHashes = append(txHashes, shardState.PDETxHashes()...)
 		}
+		txs, err := blockchain.GetTransactionsByHashesWithShardID(txHashes, byte(key))
+		if err != nil {
+			return utils.EmptyStringMatrix, err
+		}
+		transactions = append(transactions, txs...)
 	}
 
 	pdeStateEnv := pdex.
@@ -231,7 +237,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildCrossPoolTradeActions(pdeCrossPoolTradeActions).
 		BuildWithdrawalActions(pdeWithdrawalActions).
 		BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
-		BuildTxHashes(txHashes).
+		BuildTransactions(transactions).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		Build()
 

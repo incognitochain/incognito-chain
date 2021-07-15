@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -77,6 +78,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
+	case metadataCommon.PDexV3AddLiquidityMeta:
+		md = &PDEV3AddLiquidity{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
 	case PDEPRVRequiredContributionRequestMeta:

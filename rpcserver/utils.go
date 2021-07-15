@@ -171,10 +171,9 @@ func interfaceAddrs() ([]net.Addr, error) {
 }
 
 type PDEAddLiquidityV3Request struct {
-	TokenID        string `json:"TokenID"`
-	TokenAmount    string `json:"TokenAmount"`
-	PoolPairID     string `json:"PoolPairID"`
-	Amplifier      string `json:"Amplifier"`
-	PairHash       string `json:"PairHash"`
-	PaymentAddress string `json:"PaymentAddress"`
+	TokenID     string `json:"TokenID"`
+	TokenAmount string `json:"TokenAmount"`
+	PoolPairID  string `json:"PoolPairID"`
+	Amplifier   string `json:"Amplifier"`
+	PairHash    string `json:"PairHash"`
 }
