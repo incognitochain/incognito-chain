@@ -61,6 +61,9 @@ const (
 
 	// bsc bridge
 	BridgeBSCTxObjectType
+
+	// pDex v3
+	PDexV3StatusObjectType
 )
 
 // Prefix length

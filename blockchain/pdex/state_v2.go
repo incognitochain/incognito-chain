@@ -62,11 +62,13 @@ type PoolPairState struct {
 }
 
 type Params struct {
-	FeeRateBPS               map[string]int // map: pool ID -> fee rate (0.1% ~ 10 BPS)
-	PRVDiscountPercent       int            // percent of fee that will be discounted if using PRV as the trading token fee (defaul: 25%)
-	ProtocolFeePercent       int            // percent of fees that is rewarded for the core team (default: 0%)
-	StakingPoolRewardPercent int            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 30%)
-	StakingPoolsShare        map[string]int // map: staking tokenID -> pool staking share weight (default: pDEX pool - 1000)
+	DefaultFeeRateBPS        uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
+	FeeRateBPS               map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
+	PRVDiscountPercent       uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
+	ProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
+	StakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
+	DefaultStakingPoolsShare uint            // the default value of staking pool share weight (default - 0)
+	StakingPoolsShare        map[string]uint // map: staking tokenID -> pool staking share weight
 }
 
 func newStateV2() *stateV2 {
@@ -125,9 +127,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
+	var err error
 
 	// handle modify params
-	modifyParamsInstructions, err := s.producer.modifyParams(
+	var modifyParamsInstructions [][]string
+	modifyParamsInstructions, s.params, err = s.producer.modifyParams(
 		env.ModifyParamsActions(),
 		env.BeaconHeight(),
 		s.params,

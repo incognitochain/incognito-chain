@@ -44,6 +44,9 @@ const (
 	RejectInvalidFee
 	PDEFeeWithdrawalRequestFromMapError
 
+	// pDex v3
+	PDexV3ModifyParamsValidateSanityDataError
+
 	// portal
 	PortalRequestPTokenParamError
 	PortalRedeemRequestParamError

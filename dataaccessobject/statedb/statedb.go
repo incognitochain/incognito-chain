@@ -3,15 +3,16 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 // StateDBs within the incognito protocol are used to store anything
@@ -1875,4 +1876,15 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 		return bscTxState.GetValue().(*BridgeBSCTxState), true, nil
 	}
 	return NewBridgeBSCTxState(), false, nil
+}
+
+func (stateDB *StateDB) getPDexV3StatusByKey(key common.Hash) (*PDexV3StatusState, bool, error) {
+	pDexv3StatusState, err := stateDB.getStateObject(PDexV3StatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3StatusState != nil {
+		return pDexv3StatusState.GetValue().(*PDexV3StatusState), true, nil
+	}
+	return NewPDexV3StatusState(), false, nil
 }

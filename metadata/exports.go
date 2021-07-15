@@ -203,6 +203,8 @@ const (
 	CouldNotGetExchangeRateError        = metadataCommon.CouldNotGetExchangeRateError
 	RejectInvalidFee                    = metadataCommon.RejectInvalidFee
 	PDEFeeWithdrawalRequestFromMapError = metadataCommon.PDEFeeWithdrawalRequestFromMapError
+	// pdex
+	PDexV3ModifyParamsValidateSanityDataError = metadataCommon.PDexV3ModifyParamsValidateSanityDataError
 	// portal
 	PortalRequestPTokenParamError                = metadataCommon.PortalRequestPTokenParamError
 	PortalRedeemRequestParamError                = metadataCommon.PortalRedeemRequestParamError
