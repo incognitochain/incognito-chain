@@ -51,6 +51,8 @@ var ConvertNativeTokenToPrivacyToken = metadataCommon.ConvertNativeTokenToPrivac
 var HasBridgeInstructions = metadataCommon.HasBridgeInstructions
 var HasPortalInstructions = metadataCommon.HasPortalInstructions
 
+var calculateSize = metadataCommon.CalculateSize
+
 // export package constants
 const (
 	InvalidMeta                  = metadataCommon.InvalidMeta
@@ -96,6 +98,12 @@ const (
 	PDETradingFeesDistributionMeta        = metadataCommon.PDETradingFeesDistributionMeta
 	// pDEX v3
 	PDexV3ModifyParamsMeta = metadataCommon.PDexV3ModifyParamsMeta
+	PDexV3TradeRequestMeta = metadataCommon.PDexV3TradeRequestMeta
+	PDexV3TradeResponseMeta = metadataCommon.PDexV3TradeResponseMeta
+	PDexV3AddOrderRequestMeta = metadataCommon.PDexV3AddOrderRequestMeta
+	PDexV3AddOrderResponseMeta = metadataCommon.PDexV3AddOrderResponseMeta
+	PDexV3WithdrawOrderRequestMeta = metadataCommon.PDexV3WithdrawOrderRequestMeta
+	PDexV3WithdrawOrderResponseMeta = metadataCommon.PDexV3WithdrawOrderResponseMeta
 	// portal
 	PortalCustodianDepositMeta                  = metadataCommon.PortalCustodianDepositMeta
 	PortalRequestPortingMeta                    = metadataCommon.PortalRequestPortingMeta
