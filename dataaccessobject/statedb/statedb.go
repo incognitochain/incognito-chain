@@ -1878,6 +1878,7 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 	return NewBridgeBSCTxState(), false, nil
 }
 
+// ================================= pDex v3 OBJECT =======================================
 func (stateDB *StateDB) getPDexV3StatusByKey(key common.Hash) (*PDexV3StatusState, bool, error) {
 	pDexv3StatusState, err := stateDB.getStateObject(PDexV3StatusObjectType, key)
 	if err != nil {
@@ -1887,4 +1888,15 @@ func (stateDB *StateDB) getPDexV3StatusByKey(key common.Hash) (*PDexV3StatusStat
 		return pDexv3StatusState.GetValue().(*PDexV3StatusState), true, nil
 	}
 	return NewPDexV3StatusState(), false, nil
+}
+
+func (stateDB *StateDB) getPDexV3ParamsByKey(key common.Hash) (*PDexV3Params, bool, error) {
+	pDexv3ParamsState, err := stateDB.getStateObject(PDexV3ParamsObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3ParamsState != nil {
+		return pDexv3ParamsState.GetValue().(*PDexV3Params), true, nil
+	}
+	return NewPDexV3Params(), false, nil
 }

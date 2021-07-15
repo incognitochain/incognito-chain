@@ -53,6 +53,7 @@ const (
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
 	// pDex v3
 	ErrInvalidPDexV3StatusStateType = "invalid pdex v3 status state type"
+	ErrInvalidPDexV3ParamsStateType = "invalid pdex v3 params state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -221,8 +222,9 @@ const (
 
 	// pDex v3
 	GetPDexV3StatusError
-	GetPDexV3StatusNotFoundError
 	StorePDexV3StatusError
+	GetPDexV3ParamsError
+	StorePDexV3ParamsError
 )
 
 var ErrCodeMessage = map[int]struct {

@@ -55,6 +55,7 @@ var (
 	// pdex v3
 	pDexV3StatusPrefix          = []byte("pdexv3status-")
 	pDexV3ParamsModifyingPrefix = []byte("pdexv3paramsmodifyingstatus-")
+	pDexV3ParamsStatePrefix     = []byte("pdexv3paramsstate-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -548,6 +549,10 @@ func PDexV3ParamsModifyingStatusPrefix() []byte {
 func GetPDexV3StatusPrefix(statusType []byte) []byte {
 	h := common.HashH(append(pDexV3StatusPrefix, statusType...))
 	return h[:][:prefixHashKeyLength]
+}
+
+func GetPDexV3ParamsPrefix() []byte {
+	return pDexV3ParamsStatePrefix
 }
 
 var _ = func() (_ struct{}) {
