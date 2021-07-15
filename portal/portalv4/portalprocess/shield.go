@@ -88,6 +88,7 @@ func buildPortalShieldingRequestInstV4(
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
+	externalTxID string,
 	status string,
 	errorStr string,
 ) []string {
@@ -98,6 +99,7 @@ func buildPortalShieldingRequestInstV4(
 		ShieldingUTXO:   shieldingUTXO,
 		MintingAmount:   mintingAmt,
 		TxReqID:         txReqID,
+		ExternalTxID:    externalTxID,
 		ShardID:         shardID,
 	}
 	shieldingReqContentBytes, _ := json.Marshal(shieldingReqContent)
@@ -143,6 +145,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
+		"",
 		portalcommonv4.PortalV4RequestRejectedChainStatus,
 		"isInvalidProof",
 	)
@@ -216,6 +219,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
+		listUTXO[0].GetTxHash(),
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
 		"None",
 	)
@@ -283,6 +287,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		ShieldingUTXO:   actionData.ShieldingUTXO,
 		MintingAmount:   actionData.MintingAmount,
 		TxReqID:         actionData.TxReqID,
+		ExternalTxID:    actionData.ExternalTxID,
 	}
 	shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
 	err = statedb.StoreShieldingRequestStatus(

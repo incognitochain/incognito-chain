@@ -37,6 +37,7 @@ type PortalShieldingRequestContent struct {
 	ShieldingUTXO   []*statedb.UTXO
 	MintingAmount   uint64
 	TxReqID         common.Hash
+	ExternalTxID    string
 	ShardID         byte
 }
 
@@ -50,6 +51,7 @@ type PortalShieldingRequestStatus struct {
 	ShieldingUTXO   []*statedb.UTXO
 	MintingAmount   uint64
 	TxReqID         common.Hash
+	ExternalTxID    string
 }
 
 func NewPortalShieldingRequest(
