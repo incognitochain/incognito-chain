@@ -91,25 +91,6 @@ func (req TradeRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (req *TradeRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	action := TradeAction{
-		Metadata:    *req,
-		ShardID:     shardID,
-		RequestTxID: *tx.Hash(),
-	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionEncoded := base64.StdEncoding.EncodeToString(b)
-	return [][]string{
-		[]string{
-			strconv.Itoa(metadataCommon.PDexV3TradeRequestMeta),
-			actionEncoded,
-		},
-	}, nil
-}
-
 func (req *TradeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(req)
 }
