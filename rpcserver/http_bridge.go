@@ -265,6 +265,20 @@ func (httpServer *HttpServer) handleCheckBSCHashIssued(params interface{}, close
 	return issued, nil
 }
 
+func (httpServer *HttpServer) handleCheckBSCHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data := arrayParams[0].(map[string]interface{})
+
+	issued, err := httpServer.blockService.CheckBSCHashIssued(data)
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return issued, nil
+}
+
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
@@ -466,6 +480,50 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingBSCReq(params inte
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
+		metadata.BurningPBSCRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningBSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningBSCReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithIssuingEVMReq(params, closeChan, metadata.IssuingBSCRequestMeta)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReqV2(
 		metadata.BurningPBSCRequestMeta,
 		params,
 		closeChan,
