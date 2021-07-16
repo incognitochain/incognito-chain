@@ -79,7 +79,16 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "",
+			fields: fields{},
+			want:   false,
+		},
+		{
+			name:   "",
+			fields: fields{},
+			want:   true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
