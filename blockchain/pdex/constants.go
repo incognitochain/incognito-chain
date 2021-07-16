@@ -21,5 +21,5 @@ const (
 	MaxPRVDiscountPercent        = 75
 	InitProtocolFeePercent       = 0
 	InitStakingPoolRewardPercent = 10
-	DefaultStakingPoolsShare     = 0
+	InitStakingPoolsShare        = 0
 )

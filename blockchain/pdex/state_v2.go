@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -72,18 +73,47 @@ type Params struct {
 }
 
 func newStateV2() *stateV2 {
-	return nil
+	return &stateV2{
+		params: Params{
+			DefaultFeeRateBPS:        InitFeeRateBPS,
+			FeeRateBPS:               map[string]uint{},
+			PRVDiscountPercent:       InitPRVDiscountPercent,
+			ProtocolFeePercent:       InitProtocolFeePercent,
+			StakingPoolRewardPercent: InitStakingPoolRewardPercent,
+			DefaultStakingPoolsShare: InitStakingPoolsShare,
+			StakingPoolsShare:        map[string]uint{},
+		},
+	}
 }
 
-func newStateV2WithValue() *stateV2 {
-	return nil
+func newStateV2WithValue(
+	params Params,
+) *stateV2 {
+	return &stateV2{
+		params: params,
+	}
 }
 
 func initStateV2(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (*stateV2, error) {
-	return nil, nil
+	stateObject, err := statedb.GetPDexV3Params(stateDB)
+	params := Params{
+		DefaultFeeRateBPS:        stateObject.DefaultFeeRateBPS(),
+		FeeRateBPS:               stateObject.FeeRateBPS(),
+		PRVDiscountPercent:       stateObject.PRVDiscountPercent(),
+		ProtocolFeePercent:       stateObject.ProtocolFeePercent(),
+		StakingPoolRewardPercent: stateObject.StakingPoolRewardPercent(),
+		DefaultStakingPoolsShare: stateObject.DefaultStakingPoolsShare(),
+		StakingPoolsShare:        stateObject.StakingPoolsShare(),
+	}
+	if err != nil {
+		return nil, err
+	}
+	return newStateV2WithValue(
+		params,
+	), nil
 }
 
 func (s *stateV2) Version() uint {
@@ -91,7 +121,14 @@ func (s *stateV2) Version() uint {
 }
 
 func (s *stateV2) Clone() State {
-	return nil
+	res := newStateV2()
+
+	res.params = s.params
+
+	res.producer = s.producer
+	res.processor = s.processor
+
+	return res
 }
 
 func (s *stateV2) Process(env StateEnvironment) error {
@@ -149,6 +186,21 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment) error {
+	var err error
+
+	err = statedb.StorePDexV3Params(
+		env.StateDB(),
+		s.params.DefaultFeeRateBPS,
+		s.params.FeeRateBPS,
+		s.params.PRVDiscountPercent,
+		s.params.ProtocolFeePercent,
+		s.params.StakingPoolRewardPercent,
+		s.params.DefaultStakingPoolsShare,
+		s.params.StakingPoolsShare,
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -161,9 +213,22 @@ func (s *stateV2) ClearCache() {
 }
 
 func (s *stateV2) GetDiff(compareState State) (State, error) {
-	return nil, nil
+	if compareState == nil {
+		return nil, errors.New("compareState is nil")
+	}
+
+	res := newStateV2()
+
+	res.params = s.params
+
+	return res, nil
+
 }
 
 func (s *stateV2) Params() Params {
 	return s.params
+}
+
+func (s *stateV2) Reader() StateReader {
+	return s
 }
