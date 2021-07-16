@@ -122,6 +122,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pdeWithdrawalActions := [][]string{}
 	pdeFeeWithdrawalActions := [][]string{}
 
+	// Start pDex v3 instructions handler
+	pDexV3ModifyParamsActions := [][]string{}
+
 	var keys []int
 	for k := range statefulActionsByShardID {
 		keys = append(keys, int(k))
@@ -193,6 +196,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				if uniqTx != nil {
 					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
 				}
+
+			// PDE metadata
 			case metadata.PDEContributionMeta:
 				pdeContributionActions = append(pdeContributionActions, action)
 			case metadata.PDEPRVRequiredContributionRequestMeta:
@@ -205,6 +210,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
+
+			// pDex v3 metadata
+			case metadata.PDexV3ModifyParamsMeta:
+				pDexV3ModifyParamsActions = append(pDexV3ModifyParamsActions, action)
 			default:
 				continue
 			}
@@ -225,6 +234,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconHeight(beaconHeight - 1).
+		BuildModifyParamsActions(pDexV3ModifyParamsActions).
 		BuildContributionActions(pdeContributionActions).
 		BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
 		BuildTradeActions(pdeTradeActions).
