@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // build instructions at beacon chain before syncing to shards
@@ -212,7 +213,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
 
 			// pDex v3 metadata
-			case metadata.PDexV3ModifyParamsMeta:
+			case metadataCommon.PDexV3ModifyParamsMeta:
 				pDexV3ModifyParamsActions = append(pDexV3ModifyParamsActions, action)
 			default:
 				continue

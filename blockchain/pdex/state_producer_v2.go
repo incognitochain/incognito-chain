@@ -6,7 +6,8 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProducerV2 struct {
@@ -14,19 +15,19 @@ type stateProducerV2 struct {
 }
 
 func buildModifyParamsInst(
-	params metadata.PDexV3Params,
+	params metadataPDexV3.PDexV3Params,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
 ) []string {
-	modifyingParamsReqContent := metadata.PDexV3ParamsModifyingRequestContent{
+	modifyingParamsReqContent := metadataPDexV3.PDexV3ParamsModifyingRequestContent{
 		Content: params,
 		TxReqID: reqTxID,
 		ShardID: shardID,
 	}
 	modifyingParamsReqContentBytes, _ := json.Marshal(modifyingParamsReqContent)
 	return []string{
-		strconv.Itoa(metadata.PDexV3ModifyParamsMeta),
+		strconv.Itoa(metadataCommon.PDexV3ModifyParamsMeta),
 		strconv.Itoa(int(shardID)),
 		status,
 		string(modifyingParamsReqContentBytes),
@@ -65,7 +66,7 @@ func (sp *stateProducerV2) modifyParams(
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pdex v3 modify params action: %+v", err)
 			return [][]string{}, params, err
 		}
-		var modifyParamsRequestAction metadata.PDexV3ParamsModifyingRequestAction
+		var modifyParamsRequestAction metadataPDexV3.PDexV3ParamsModifyingRequestAction
 		err = json.Unmarshal(contentBytes, &modifyParamsRequestAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pdex v3 modify params action: %+v", err)

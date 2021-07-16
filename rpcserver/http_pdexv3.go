@@ -10,7 +10,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -144,9 +145,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 		stakingPoolsShare[key] = uint(value)
 	}
 
-	meta, err := metadata.NewPDexV3ParamsModifyingRequest(
-		metadata.PDexV3ModifyParamsMeta,
-		metadata.PDexV3Params{
+	meta, err := metadataPDexV3.NewPDexV3ParamsModifyingRequest(
+		metadataCommon.PDexV3ModifyParamsMeta,
+		metadataPDexV3.PDexV3Params{
 			DefaultFeeRateBPS:        uint(defaultFeeRateBPS),
 			FeeRateBPS:               feeRateBPS,
 			PRVDiscountPercent:       uint(prvDiscountPercent),

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
+	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProcessorV2 struct {
@@ -26,7 +26,7 @@ func (sp *stateProcessorV2) modifyParams(
 	}
 
 	// unmarshal instructions content
-	var actionData metadata.PDexV3ParamsModifyingRequestContent
+	var actionData metadataPDexV3.PDexV3ParamsModifyingRequestContent
 	err := json.Unmarshal([]byte(inst[3]), &actionData)
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
@@ -43,9 +43,9 @@ func (sp *stateProcessorV2) modifyParams(
 		reqTrackStatus = ParamsModifyingFailedStatus
 	}
 
-	modifyingReqStatus := metadata.PDexV3ParamsModifyingRequestStatus{
+	modifyingReqStatus := metadataPDexV3.PDexV3ParamsModifyingRequestStatus{
 		Status:       reqTrackStatus,
-		PDexV3Params: metadata.PDexV3Params(actionData.Content),
+		PDexV3Params: metadataPDexV3.PDexV3Params(actionData.Content),
 	}
 	modifyingReqStatusBytes, _ := json.Marshal(modifyingReqStatus)
 	err = statedb.TrackPDexV3Status(
@@ -55,7 +55,7 @@ func (sp *stateProcessorV2) modifyParams(
 		modifyingReqStatusBytes,
 	)
 	if err != nil {
-		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking modifying request tx - Error: %v", err)
+		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking shielding request tx - Error: %v", err)
 	}
 
 	return params, nil

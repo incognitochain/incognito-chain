@@ -3,6 +3,8 @@ package metadata
 import (
 	"encoding/json"
 
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/pkg/errors"
 )
 
@@ -163,6 +165,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case metadataCommon.PDexV3ModifyParamsMeta:
+		md = &metadataPDexV3.PDexV3ParamsModifyingRequest{}
 	default:
 		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

@@ -43,7 +43,6 @@ var IsPortalRelayingMetaType = metadataCommon.IsPortalRelayingMetaType
 var IsPortalMetaTypeV3 = metadataCommon.IsPortalMetaTypeV3
 var GetMetaAction = metadataCommon.GetMetaAction
 var IsPDEType = metadataCommon.IsPDEType
-var IspDEXv3Type = metadataCommon.IspDEXv3Type
 var GetLimitOfMeta = metadataCommon.GetLimitOfMeta
 var IsPDETx = metadataCommon.IsPDETx
 var ConvertPrivacyTokenToNativeToken = metadataCommon.ConvertPrivacyTokenToNativeToken
@@ -97,12 +96,11 @@ const (
 	PDEFeeWithdrawalResponseMeta          = metadataCommon.PDEFeeWithdrawalResponseMeta
 	PDETradingFeesDistributionMeta        = metadataCommon.PDETradingFeesDistributionMeta
 	// pDEX v3
-	PDexV3ModifyParamsMeta = metadataCommon.PDexV3ModifyParamsMeta
-	PDexV3TradeRequestMeta = metadataCommon.PDexV3TradeRequestMeta
-	PDexV3TradeResponseMeta = metadataCommon.PDexV3TradeResponseMeta
-	PDexV3AddOrderRequestMeta = metadataCommon.PDexV3AddOrderRequestMeta
-	PDexV3AddOrderResponseMeta = metadataCommon.PDexV3AddOrderResponseMeta
-	PDexV3WithdrawOrderRequestMeta = metadataCommon.PDexV3WithdrawOrderRequestMeta
+	PDexV3TradeRequestMeta          = metadataCommon.PDexV3TradeRequestMeta
+	PDexV3TradeResponseMeta         = metadataCommon.PDexV3TradeResponseMeta
+	PDexV3AddOrderRequestMeta       = metadataCommon.PDexV3AddOrderRequestMeta
+	PDexV3AddOrderResponseMeta      = metadataCommon.PDexV3AddOrderResponseMeta
+	PDexV3WithdrawOrderRequestMeta  = metadataCommon.PDexV3WithdrawOrderRequestMeta
 	PDexV3WithdrawOrderResponseMeta = metadataCommon.PDexV3WithdrawOrderResponseMeta
 	// portal
 	PortalCustodianDepositMeta                  = metadataCommon.PortalCustodianDepositMeta
@@ -211,8 +209,6 @@ const (
 	CouldNotGetExchangeRateError        = metadataCommon.CouldNotGetExchangeRateError
 	RejectInvalidFee                    = metadataCommon.RejectInvalidFee
 	PDEFeeWithdrawalRequestFromMapError = metadataCommon.PDEFeeWithdrawalRequestFromMapError
-	// pdex
-	PDexV3ModifyParamsValidateSanityDataError = metadataCommon.PDexV3ModifyParamsValidateSanityDataError
 	// portal
 	PortalRequestPTokenParamError                = metadataCommon.PortalRequestPTokenParamError
 	PortalRedeemRequestParamError                = metadataCommon.PortalRedeemRequestParamError

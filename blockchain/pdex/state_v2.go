@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type stateV2 struct {
@@ -140,11 +140,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		if err != nil {
 			continue // Not error, just not PDE instructions
 		}
-		if !metadata.IspDEXv3Type(metadataType) {
+		if !metadataCommon.IspDEXv3Type(metadataType) {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadata.PDexV3ModifyParamsMeta:
+		case metadataCommon.PDexV3ModifyParamsMeta:
 			s.params, err = s.processor.modifyParams(
 				env.StateDB(),
 				env.BeaconHeight(),
