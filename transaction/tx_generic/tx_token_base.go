@@ -1,8 +1,4 @@
-// Because txprivacytoken version 1 had a bug
-// txprivacytoken in later version will not use the same base with txtokenversion1
-// So we duplicate some code from ver1 to ver2 and not use any embedding
-
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"bytes"
@@ -49,7 +45,7 @@ type TokenParam struct {
 	Amount         uint64                 `json:"TokenAmount"`
 	TokenTxType    int                    `json:"TokenTxType"`
 	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
-	TokenInput     []privacy.PlainCoin       `json:"TokenInput"`
+	TokenInput     []privacy.PlainCoin    `json:"TokenInput"`
 	Mintable       bool                   `json:"TokenMintable"`
 	Fee            uint64                 `json:"TokenFee"`
 }
@@ -85,18 +81,18 @@ func NewTxTokenParams(senderKey *privacy.PrivateKey,
 
 // ========== Get/Set FUNCTION ============
 
-func (txToken TxTokenBase) GetTxBase() metadata.Transaction    { return txToken.Tx }
-func (txToken *TxTokenBase) SetTxBase(tx metadata.Transaction) error{ 
-	txToken.Tx = tx 
+func (txToken TxTokenBase) GetTxBase() metadata.Transaction { return txToken.Tx }
+func (txToken *TxTokenBase) SetTxBase(tx metadata.Transaction) error {
+	txToken.Tx = tx
 	return nil
 }
-func (txToken TxTokenBase) GetTxNormal() metadata.Transaction    { return txToken.TxTokenData.TxNormal }
-func (txToken *TxTokenBase) SetTxNormal(tx metadata.Transaction) error{ 
-	txToken.TxTokenData.TxNormal = tx 
+func (txToken TxTokenBase) GetTxNormal() metadata.Transaction { return txToken.TxTokenData.TxNormal }
+func (txToken *TxTokenBase) SetTxNormal(tx metadata.Transaction) error {
+	txToken.TxTokenData.TxNormal = tx
 	return nil
 }
 func (txToken TxTokenBase) GetTxTokenData() TxTokenData { return txToken.TxTokenData }
-func (txToken *TxTokenBase) SetTxTokenData(data TxTokenData)error { 
+func (txToken *TxTokenBase) SetTxTokenData(data TxTokenData) error {
 	txToken.TxTokenData = data
 	return nil
 }
@@ -113,7 +109,7 @@ func (txToken TxTokenBase) GetTxBurnData() (bool, privacy.Coin, *common.Hash, er
 }
 
 func (txToken TxTokenBase) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
-	isBurnToken, burnToken, burnedTokenID, errToken :=  txToken.GetTxBurnData()
+	isBurnToken, burnToken, burnedTokenID, errToken := txToken.GetTxBurnData()
 	isBurnPrv, burnPrv, _, errPrv := txToken.GetTxBase().GetTxBurnData()
 
 	if errToken != nil && errPrv != nil {
@@ -122,6 +118,7 @@ func (txToken TxTokenBase) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin
 
 	return isBurnPrv || isBurnToken, burnPrv, burnToken, burnedTokenID, nil
 }
+
 // ========== CHECK FUNCTION ===========
 
 func (txToken TxTokenBase) IsSalaryTx() bool {
@@ -343,7 +340,6 @@ func (txToken TxTokenBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetri
 		utils.Logger.Log.Error(err)
 		return utils.NewTransactionErr(utils.DoubleSpendError, err)
 	}
-	// TODO: will move this to mempool process
 	if txToken.TxTokenData.Type == utils.CustomTokenInit && txToken.GetMetadata() == nil {
 		initTokenID := txToken.TxTokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()
@@ -400,7 +396,7 @@ func (txToken TxTokenBase) validateDoubleSpendTxWithCurrentMempool(poolSerialNum
 
 func (txToken TxTokenBase) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := MdValidateWithBlockChain(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	err = txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
@@ -416,7 +412,6 @@ func (txToken TxTokenBase) ValidateTxWithBlockChain(chainRetriever metadata.Chai
 }
 
 // ValidateSanityData - validate sanity data of PRV and pToken
-
 
 // VerifyMinerCreatedTxBeforeGettingInBlock
 func (txToken TxTokenBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {

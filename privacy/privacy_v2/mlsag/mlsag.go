@@ -1,3 +1,5 @@
+//nolint:gocritic,revive // skip some linters since this file has some capitalized, underscored
+// variable names to match names in the crypto protocol
 // Package mlsag contains the implementation of MLSAG, a ring signature scheme.
 package mlsag
 
@@ -34,7 +36,7 @@ func (ring Ring) ToBytes() ([]byte, error) {
 		return nil, errors.New("RingToBytes: Ring is empty")
 	}
 	// Make sure that the ring size is a rectangle row*column
-	for i := 1; i < len(k); i += 1 {
+	for i := 1; i < len(k); i++ {
 		if len(k[i]) != len(k[0]) {
 			return nil, errors.New("RingToBytes: Ring is not a proper rectangle row*column")
 		}
@@ -49,8 +51,8 @@ func (ring Ring) ToBytes() ([]byte, error) {
 	b[1] = byte(n)
 	b[2] = byte(m)
 
-	for i := 0; i < n; i += 1 {
-		for j := 0; j < m; j += 1 {
+	for i := 0; i < n; i++ {
+		for j := 0; j < m; j++ {
 			b = append(b, k[i][j].ToBytesS()...)
 		}
 	}
@@ -75,9 +77,9 @@ func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
 	}
 	offset := 3
 	key := make([][]*operation.Point, 0)
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		curRow := make([]*operation.Point, m)
-		for j := 0; j < m; j += 1 {
+		for j := 0; j < m; j++ {
 			currentByte := b[offset : offset+operation.Ed25519KeySize]
 			offset += operation.Ed25519KeySize
 			currentPoint, err := new(operation.Point).FromBytesS(currentByte)
@@ -94,7 +96,7 @@ func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
 
 func createFakePublicKeyArray(length int) []*operation.Point {
 	K := make([]*operation.Point, length)
-	for i := 0; i < length; i += 1 {
+	for i := 0; i < length; i++ {
 		K[i] = operation.RandomPoint()
 	}
 	return K
@@ -106,12 +108,12 @@ func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
 
 	K = new(Ring)
 	K.keys = make([][]*operation.Point, numFake)
-	for i := 0; i < numFake; i += 1 {
+	for i := 0; i < numFake; i++ {
 		if i != pi {
 			K.keys[i] = createFakePublicKeyArray(m)
 		} else {
 			K.keys[pi] = make([]*operation.Point, m)
-			for j := 0; j < m; j += 1 {
+			for j := 0; j < m; j++ {
 				K.keys[i][j] = parsePublicKey(privateKeys[j], j == m-1)
 			}
 		}
@@ -154,7 +156,7 @@ func ParseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
 	m := len(privateKeys)
 
 	result := make([]*operation.Point, m)
-	for i := 0; i < m; i += 1 {
+	for i := 0; i < m; i++ {
 		publicKey := parsePublicKey(privateKeys[i], i == m-1)
 		hashPoint := operation.HashToPoint(publicKey.ToBytesS())
 		result[i] = new(operation.Point).ScalarMult(hashPoint, privateKeys[i])
@@ -167,16 +169,16 @@ func (mlsag *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*
 	n := len(mlsag.R.keys)
 
 	alpha = make([]*operation.Scalar, m)
-	for i := 0; i < m; i += 1 {
+	for i := 0; i < m; i++ {
 		alpha[i] = operation.RandomScalar()
 	}
 	r = make([][]*operation.Scalar, n)
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		r[i] = make([]*operation.Scalar, m)
 		if i == mlsag.pi {
 			continue
 		}
-		for j := 0; j < m; j += 1 {
+		for j := 0; j < m; j++ {
 			r[i][j] = operation.RandomScalar()
 		}
 	}
@@ -191,7 +193,7 @@ func calculateFirstC(digest [common.HashSize]byte, alpha []*operation.Scalar, K 
 	b = append(b, digest[:]...)
 
 	// Process columns before the last
-	for i := 0; i < len(K)-1; i += 1 {
+	for i := 0; i < len(K)-1; i++ {
 		alphaG := new(operation.Point).ScalarMultBase(alpha[i])
 
 		H := operation.HashToPoint(K[i].ToBytesS())
@@ -230,7 +232,7 @@ func calculateNextC(digest [common.HashSize]byte, r []*operation.Scalar, c *oper
 	// rHK_cKI: rHK + cKI
 
 	// Process columns before the last
-	for i := 0; i < len(K)-1; i += 1 {
+	for i := 0; i < len(K)-1; i++ {
 		rG := new(operation.Point).ScalarMultBase(r[i])
 		cK := new(operation.Point).ScalarMult(K[i], c)
 		rG_cK := new(operation.Point).Add(rG, cK)
@@ -270,8 +272,8 @@ func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation
 		return nil, err
 	}
 
-	c[(mlsag.pi + 1) % n] = firstC
-	for i := (mlsag.pi + 1) % n; i != mlsag.pi; i = (i+1) %n {
+	c[(mlsag.pi+1)%n] = firstC
+	for i := (mlsag.pi + 1) % n; i != mlsag.pi; i = (i + 1) % n {
 		next := (i + 1) % n
 		nextC, err := calculateNextC(message, r[i], c[i], mlsag.R.keys[i], mlsag.keyImages)
 		if err != nil {
@@ -281,7 +283,7 @@ func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation
 		c[next] = nextC
 	}
 
-	for i := 0; i < m; i += 1 {
+	for i := 0; i < m; i++ {
 		ck := new(operation.Scalar).Mul(c[mlsag.pi], mlsag.privateKeys[i])
 		r[mlsag.pi][i] = new(operation.Scalar).Sub(alpha[i], ck)
 	}
@@ -291,8 +293,8 @@ func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation
 
 // check l*KI = 0 by checking KI is a valid point
 func verifyKeyImages(keyImages []*operation.Point) bool {
-	for i := 0; i < len(keyImages); i += 1 {
-		if keyImages[i]==nil{
+	for i := 0; i < len(keyImages); i++ {
+		if keyImages[i] == nil {
 			return false
 		}
 		lKI := new(operation.Point).ScalarMult(keyImages[i], CurveOrder)
@@ -303,13 +305,13 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 	return true
 }
 
-func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
+func verifyRing(sig *Sig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
-	if len(R.keys) != len(sig.r){
+	if len(R.keys) != len(sig.r) {
 		return false, errors.New("MLSAG Error : Malformed Ring")
 	}
-	for i := 0; i < len(sig.r); i += 1 {
+	for i := 0; i < len(sig.r); i++ {
 		nextC, err := calculateNextC(
 			message,
 			sig.r[i], &c,
@@ -325,7 +327,7 @@ func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, er
 }
 
 // Verify does verification of a ring signature on a message.
-func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
+func Verify(sig *Sig, K *Ring, message []byte) (bool, error) {
 	if len(message) != common.HashSize {
 		return false, fmt.Errorf("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")
 	}
@@ -340,8 +342,8 @@ func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 }
 
 // Sign uses the private key in this Mlsag to sign a message (which is the transaction hash).
-// It returns a MlsagSig.
-func (mlsag *Mlsag) Sign(message []byte) (*MlsagSig, error) {
+// It returns a Sig.
+func (mlsag *Mlsag) Sign(message []byte) (*Sig, error) {
 	if len(message) != common.HashSize {
 		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")
 	}
@@ -354,7 +356,7 @@ func (mlsag *Mlsag) Sign(message []byte) (*MlsagSig, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MlsagSig{
+	return &Sig{
 		c[0], mlsag.keyImages, r,
 	}, nil
 }
