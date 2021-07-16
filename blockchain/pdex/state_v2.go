@@ -39,6 +39,7 @@ type Order struct {
 
 type Contribution struct {
 	poolPairID          string // only "" for the first contribution of pool
+	pairHash            string
 	otaPublicKeyRefund  string // refund contributed token
 	otaTxRandomRefund   string
 	otaPublicKeyReceive string // receive nfct

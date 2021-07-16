@@ -2,6 +2,7 @@ package pdexv3
 
 type WaitingAddLiquidity struct {
 	PoolPairID          string // only "" for the first contribution of pool
+	PairHash            string // only "" for the first contribution of pool
 	OtaPublicKeyRefund  string // refund contributed token
 	OtaTxRandomRefund   string
 	OtaPublicKeyReceive string // receive nfct
