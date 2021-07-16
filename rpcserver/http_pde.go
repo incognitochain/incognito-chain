@@ -1742,26 +1742,21 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	receiverAddresses := privacy.OTAReceiver{}
-	err = receiverAddresses.FromAddress(senderAddress, *tokenHash)
+	receiverAddress := privacy.OTAReceiver{}
+	refundAddress := privacy.OTAReceiver{}
+	err = receiverAddress.FromAddress(senderAddress, *tokenHash)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = receiverAddresses.FromAddress(senderAddress, *tokenHash)
+	err = refundAddress.FromAddress(senderAddress, *tokenHash)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	/*otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)*/
-
-	//otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
-	//if err != nil {
-	//return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	/*}*/
 
 	metaData := metadataPdexV3.NewAddLiquidityWithValue(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,
-		privacy.OTAReceiver{}, privacy.OTAReceiver{},
+		receiverAddress, refundAddress,
 		*tokenHash,
 		tokenAmount,
 		uint(amplifier),
