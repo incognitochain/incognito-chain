@@ -1722,7 +1722,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
 	}
-	//senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
@@ -1737,19 +1737,26 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	/*otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)*/
-	//if err != nil {
-	//return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	//}
-	//otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
-	//if err != nil {
-	//return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	/*}*/
-
 	tokenHash, err := common.Hash{}.NewHashFromStr(addLiquidityRequest.TokenID)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+
+	receiverAddresses := privacy.OTAReceiver{}
+	err = receiverAddresses.FromAddress(senderAddress, *tokenHash)
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	err = receiverAddresses.FromAddress(senderAddress, *tokenHash)
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	/*otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)*/
+
+	//otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
+	//if err != nil {
+	//return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	/*}*/
 
 	metaData := metadataPdexV3.NewAddLiquidityWithValue(
 		addLiquidityRequest.PoolPairID,

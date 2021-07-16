@@ -15,8 +15,8 @@ import (
 type AddLiquidity struct {
 	PoolPairID      string              `json:"PoolPairID"` // only "" for the first contribution of pool
 	PairHash        string              `json:"PairHash"`
-	ReceiverAddress privacy.OTAReceiver `json:"RefundReceiver"` // receive nfct
-	RefundAddress   privacy.OTAReceiver `json:"RefundReceiver"` // refund pToken
+	ReceiverAddress privacy.OTAReceiver `json:"ReceiverAddress"` // receive nfct
+	RefundAddress   privacy.OTAReceiver `json:"RefundAddress"`   // refund pToken
 	TokenID         common.Hash
 	TokenAmount     uint64
 	Amplifier       uint // only set for the first contribution

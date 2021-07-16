@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -32,7 +31,7 @@ func (recv OTAReceiver) IsValid() bool {
 	return recv.PublicKey.PointValid()
 }
 
-func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress, tokenID common.Hash) error {
+func (recv *OTAReceiver) FromAddress(addr string, tokenID common.Hash) error {
 	if recv == nil {
 		return errors.New("OTAReceiver not initialized")
 	}
