@@ -6,8 +6,8 @@ type MetaDataLogger struct {
 	Log common.Logger
 }
 
-func (metricLogger *MetaDataLogger) Init(inst common.Logger) {
-	metricLogger.Log = inst
+func (metadataLogger *MetaDataLogger) Init(inst common.Logger) {
+	metadataLogger.Log = inst
 }
 
 // Global instant to use

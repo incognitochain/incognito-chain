@@ -22,11 +22,17 @@ type OTADeclaration = metadataCommon.OTADeclaration
 type MintData = metadataCommon.MintData
 type AccumulatedValues = metadataCommon.AccumulatedValues
 
-// export package variable
-var Logger = struct {
+// 
+type MetadataLogger struct {
 	log common.Logger
-	*metadataCommon.MetaDataLogger
-}{log: metadataCommon.Logger.Log, MetaDataLogger: &metadataCommon.Logger}
+}
+func (metadataLogger *MetadataLogger) Init(inst common.Logger) {
+	metadataLogger.log = inst
+	metadataCommon.Logger.Init(inst)
+}
+var Logger = MetadataLogger{}
+
+// export package variable
 var AcceptedWithdrawRewardRequestVersion = metadataCommon.AcceptedWithdrawRewardRequestVersion
 
 // export functions
