@@ -1,15 +1,32 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/metadata"
+import (
+	"errors"
+
+	"github.com/incognitochain/incognito-chain/metadata"
+)
 
 type stateProducerV2 struct {
 	stateProducerBase
 }
 
 func (sp *stateProducerV2) addLiquidity(
-	metaData []metadata.PDEV3AddLiquidity,
+	txs []metadata.Transaction,
 	beaconHeight uint64,
 ) ([][]string, error) {
+	res := [][]string{}
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := tx.Hash().String()
+		metaData, ok := tx.GetMetadata().(*metadata.PDEV3AddLiquidity)
+		if !ok {
+			return res, errors.New("Can not parse add liquidity metadata")
+		}
+		Logger.log.Info(metaData)
+		Logger.log.Info(shardID)
+		Logger.log.Info(txReqID)
+	}
+
 	return [][]string{}, nil
 }
 

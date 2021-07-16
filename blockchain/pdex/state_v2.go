@@ -127,22 +127,22 @@ func (s *stateV2) Process(env StateEnvironment) error {
 
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
-	addLiquidityMeta := []metadata.PDEV3AddLiquidity{}
+	addLiquidityTxs := []metadata.Transaction{}
 
 	for _, tx := range env.Transactions() {
 		// TODO: @pdex get metadata here and build instructions from transactions here
 		switch tx.GetMetadataType() {
 		case metadataCommon.PDexV3AddLiquidityMeta:
-			metaData, ok := tx.GetMetadata().(*metadata.PDEV3AddLiquidity)
+			_, ok := tx.GetMetadata().(*metadata.PDEV3AddLiquidity)
 			if !ok {
 				return instructions, errors.New("Can not parse add liquidity metadata")
 			}
-			addLiquidityMeta = append(addLiquidityMeta, *metaData)
+			addLiquidityTxs = append(addLiquidityTxs, tx)
 		}
 	}
 
 	addLiquidityInstructions, err := s.producer.addLiquidity(
-		addLiquidityMeta,
+		addLiquidityTxs,
 		env.BeaconHeight(),
 	)
 	if err != nil {
