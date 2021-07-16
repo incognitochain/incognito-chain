@@ -235,7 +235,9 @@ const (
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
 
 	// pDex v3
-	getPDexV3State = "pdexv3_getState"
+	getPDexV3State                        = "pdexv3_getState"
+	createAndSendTxWithPDexV3ModifyParams = "pdexv3_txModifyParams"
+	getPDexV3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

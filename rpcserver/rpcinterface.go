@@ -212,7 +212,9 @@ var HttpHandler = map[string]httpHandler{
 	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 
 	// pDex v3
-	getPDexV3State: (*HttpServer).handleGetPDexV3State,
+	getPDexV3State:                        (*HttpServer).handleGetPDexV3State,
+	createAndSendTxWithPDexV3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPDexV3ModifyParams,
+	getPDexV3ParamsModifyingStatus:        (*HttpServer).handleGetPDexV3ParamsModifyingRequestStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

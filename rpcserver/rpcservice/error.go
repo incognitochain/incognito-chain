@@ -136,6 +136,7 @@ const (
 
 	// pdex v3
 	GetPDexV3StateError
+	GetPDexV3ParamsModyfingStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.
