@@ -1,10 +1,12 @@
 package pdex
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type stateV2 struct {
@@ -125,11 +127,28 @@ func (s *stateV2) Process(env StateEnvironment) error {
 
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
+	addLiquidityMeta := []metadata.PDEV3AddLiquidity{}
 
 	for _, tx := range env.Transactions() {
-		// TODO: @pdex cast get metadata here and build instructions from transactions here
-		Logger.log.Info(tx)
+		// TODO: @pdex get metadata here and build instructions from transactions here
+		switch tx.GetMetadataType() {
+		case metadataCommon.PDexV3AddLiquidityMeta:
+			metaData, ok := tx.GetMetadata().(*metadata.PDEV3AddLiquidity)
+			if !ok {
+				return instructions, errors.New("Can not parse add liquidity metadata")
+			}
+			addLiquidityMeta = append(addLiquidityMeta, *metaData)
+		}
 	}
+
+	addLiquidityInstructions, err := s.producer.addLiquidity(
+		addLiquidityMeta,
+		env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addLiquidityInstructions...)
 
 	// handle modify params
 	modifyParamsInstructions, err := s.producer.modifyParams(
