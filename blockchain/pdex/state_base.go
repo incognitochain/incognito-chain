@@ -61,6 +61,10 @@ func (s *stateBase) DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContr
 	panic("Implement this fucntion")
 }
 
+func (s *stateBase) Params() Params {
+	panic("Implement this fucntion")
+}
+
 func (s *stateBase) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
 	panic("Implement this fucntion")
 }

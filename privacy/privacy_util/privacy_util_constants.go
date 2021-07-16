@@ -1,3 +1,4 @@
+//nolint:revive // skip linter for this package name
 package privacy_util
 
 const (

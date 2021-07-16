@@ -16,6 +16,7 @@ type State interface {
 }
 
 type StateReader interface {
+	Params() Params
 	WaitingContributionsV1() map[string]*rawdbv2.PDEContribution
 	DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution
 	PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair

@@ -76,6 +76,7 @@ const (
 	listUnspentCustomToken                     = "listunspentcustomtoken"
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
+	getEncodedTransactionsByHashes             = "getencodedtransactionsbyhashes"
 	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
 	gettransactionhashbyreceiverv2             = "gettransactionhashbyreceiverv2"
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
@@ -234,6 +235,9 @@ const (
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
 	addLiquidityV3                             = "pdexv3_txAddLiquidity"
 	//
+
+	// pDex v3
+	getPDexV3State = "pdexv3_getState"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

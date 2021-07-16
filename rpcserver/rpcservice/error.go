@@ -134,9 +134,9 @@ const (
 
 	CacheQueueError
 
-	// PDE
+	// pdex v3
+	GetPDexV3StateError
 	GenerateOTAFailError
-	//
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -271,9 +271,9 @@ var ErrCodeMessage = map[int]struct {
 
 	CacheQueueError: {-13001, "Full node cache error"},
 
-	//PDE
-	GenerateOTAFailError: {-14001, "Generate ota fail"},
-	//
+	// pDex v3
+	GetPDexV3StateError:  {-14001, "Get pDex V3 state error"},
+	GenerateOTAFailError: {-14002, "Generate ota fail"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

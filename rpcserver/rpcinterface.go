@@ -71,6 +71,7 @@ var HttpHandler = map[string]httpHandler{
 	createConvertCoinVer1ToVer2Transaction:  (*HttpServer).handleCreateConvertCoinVer1ToVer2Transaction,
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
+	getEncodedTransactionsByHashes:          (*HttpServer).handleGetEncodedTransactionsByHashes,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
 	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
@@ -211,6 +212,9 @@ var HttpHandler = map[string]httpHandler{
 	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 	addLiquidityV3:                             (*HttpServer).handleAddLiquidityV3,
 	//
+
+	// pDex v3
+	getPDexV3State: (*HttpServer).handleGetPDexV3State,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

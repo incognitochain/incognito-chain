@@ -48,8 +48,8 @@ type param struct {
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
-	PDEV2Height                      uint64             `mapstructure:"pde_v2_height"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
+	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsBackup                         bool
 }
 
@@ -221,6 +221,11 @@ func (p *param) LoadKey() {
 
 type bscParam struct {
 	Host string `mapstructure:"host"`
+}
+
+type pdexParam struct {
+	PDexV3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
+	AdminAddress           string `mapstructure:"admin_address"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {

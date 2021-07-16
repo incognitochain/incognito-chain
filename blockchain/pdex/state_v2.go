@@ -182,3 +182,7 @@ func (s *stateV2) ClearCache() {
 func (s *stateV2) GetDiff(compareState State) (State, error) {
 	return nil, nil
 }
+
+func (s *stateV2) Params() Params {
+	return s.params
+}

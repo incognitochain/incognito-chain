@@ -44,7 +44,7 @@ func (sigPub SigPubKey) Bytes() ([]byte, error) {
 	if m > utils.MaxSizeByte {
 		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is too large, too many columns")
 	}
-	for i := 1; i < n; i += 1 {
+	for i := 1; i < n; i++ {
 		if len(sigPub.Indexes[i]) != m {
 			return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is not a rectangle array")
 		}
@@ -53,8 +53,8 @@ func (sigPub SigPubKey) Bytes() ([]byte, error) {
 	b := make([]byte, 0)
 	b = append(b, byte(n))
 	b = append(b, byte(m))
-	for i := 0; i < n; i += 1 {
-		for j := 0; j < m; j += 1 {
+	for i := 0; i < n; i++ {
+		for j := 0; j < m; j++ {
 			currentByte := sigPub.Indexes[i][j].Bytes()
 			lengthByte := len(currentByte)
 			if lengthByte > utils.MaxSizeByte {
@@ -75,14 +75,14 @@ func (sigPub *SigPubKey) SetBytes(b []byte) error {
 	m := int(b[1])
 	offset := 2
 	indexes := make([][]*big.Int, n)
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		row := make([]*big.Int, m)
-		for j := 0; j < m; j += 1 {
+		for j := 0; j < m; j++ {
 			if offset >= len(b) {
 				return errors.New("txSigPubKeyFromBytes: cannot parse byte length of index[i][j], length of input byte is too small")
 			}
 			byteLength := int(b[offset])
-			offset += 1
+			offset++
 			if offset+byteLength > len(b) {
 				return errors.New("txSigPubKeyFromBytes: cannot parse big int index[i][j], length of input byte is too small")
 			}
@@ -121,7 +121,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	}
 
 	privKeyMlsag := make([]*privacy.Scalar, len(inputCoins)+1)
-	for i := 0; i < len(inputCoins); i += 1 {
+	for i := 0; i < len(inputCoins); i++ {
 		var err error
 		privKeyMlsag[i], err = inputCoins[i].ParsePrivateKeyOfCoin(*senderSK)
 		if err != nil {
@@ -131,7 +131,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	}
 	commitmentToZeroRecomputed := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], sumRand)
 	match := privacy.IsPointEqual(commitmentToZeroRecomputed, commitmentToZero)
-	if !match{
+	if !match {
 		return nil, utils.NewTransactionErr(utils.SignTxError, errors.New("Error : asset tag sum or commitment sum mismatch"))
 	}
 	privKeyMlsag[len(inputCoins)] = sumRand
@@ -183,8 +183,8 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 	ringSize := privacy.RingSize
 
 	// Generate Ring
-	piBig,piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
-	if piErr!=nil{
+	piBig, piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
+	if piErr != nil {
 		return piErr
 	}
 	var pi int = int(piBig.Int64())
@@ -250,10 +250,10 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	if tx.GetMetadata() != nil {
 		if err := tx.GetMetadata().Sign(params.SenderSK, tx); err != nil {
 			utils.Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
-				return err
+			return err
 		}
 	}
-	
+
 	err = tx.signOnMessage(inputCoins, outputCoins, params, tx.Hash()[:])
 	return err
 }
@@ -278,11 +278,11 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 	m := len(indexes[0])
 
 	ring := make([][]*privacy.Point, n)
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		sumCommitment := new(privacy.Point).Identity()
 		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
 		row := make([]*privacy.Point, m+1)
-		for j := 0; j < m; j += 1 {
+		for j := 0; j < m; j++ {
 			index := indexes[i][j]
 			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
 			if err != nil {
@@ -312,21 +312,21 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 		return nil, nil, nil, err
 	}
 	outputCoinsAsGeneric := make([]privacy.Coin, len(outputCoins))
-	for i:=0;i<len(outputCoins);i++{
+	for i := 0; i < len(outputCoins); i++ {
 		outputCoinsAsGeneric[i] = outputCoins[i]
 	}
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(outputCoinsAsGeneric, params.Fee)
 	indexes := make([][]*big.Int, ringSize)
 	ring := make([][]*privacy.Point, ringSize)
 	var commitmentToZero *privacy.Point
-	for i := 0; i < ringSize; i += 1 {
+	for i := 0; i < ringSize; i++ {
 		sumInputs := new(privacy.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
 
 		row := make([]*privacy.Point, len(inputCoins))
 		rowIndexes := make([]*big.Int, len(inputCoins))
 		if i == pi {
-			for j := 0; j < len(inputCoins); j += 1 {
+			for j := 0; j < len(inputCoins); j++ {
 				row[j] = inputCoins[j].GetPublicKey()
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
 				if rowIndexes[j], err = statedb.GetOTACoinIndex(params.StateDB, *params.TokenID, publicKeyBytes); err != nil {
@@ -336,7 +336,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 				sumInputs.Add(sumInputs, inputCoins[j].GetCommitment())
 			}
 		} else {
-			for j := 0; j < len(inputCoins); j += 1 {
+			for j := 0; j < len(inputCoins); j++ {
 				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
 				coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
@@ -353,7 +353,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 			}
 		}
 		row = append(row, sumInputs)
-		if i==pi{
+		if i == pi {
 			commitmentToZero = sumInputs
 		}
 		ring[i] = row
@@ -362,8 +362,8 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 	return mlsag.NewRing(ring), indexes, commitmentToZero, nil
 }
 
-func getMLSAGSigFromTxSigAndKeyImages(txSig []byte, keyImages []*privacy.Point) (*mlsag.MlsagSig, error) {
-	mlsagSig, err := new(mlsag.MlsagSig).FromBytes(txSig)
+func getMLSAGSigFromTxSigAndKeyImages(txSig []byte, keyImages []*privacy.Point) (*mlsag.Sig, error) {
+	mlsagSig, err := new(mlsag.Sig).FromBytes(txSig)
 	if err != nil {
 		utils.Logger.Log.Errorf("Has error when converting byte to mlsag signature, err: %v", err)
 		return nil, err
@@ -390,8 +390,8 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 	// Reform MLSAG Signature
 	inputCoins := tx.Proof.GetInputCoins()
 	keyImages := make([]*privacy.Point, len(inputCoins)+1)
-	for i := 0; i < len(inputCoins); i += 1 {
-		if inputCoins[i].GetKeyImage()==nil {
+	for i := 0; i < len(inputCoins); i++ {
+		if inputCoins[i].GetKeyImage() == nil {
 			utils.Logger.Log.Errorf("Error when reconstructing mlsagSignature: missing keyImage")
 			return false, err
 		}
@@ -417,7 +417,7 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 		return false, err
 	}
 	proofAsV2, ok := tx.GetProof().(*privacy.ProofV2)
-	if !ok{
+	if !ok {
 		utils.Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have proofs of any other version - %v", tx.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
@@ -428,14 +428,14 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 	}
 
 	isConfAsset, err := proofAsV2.IsConfidentialAsset()
-	if err!=nil{
+	if err != nil {
 		utils.Logger.Log.Errorf("Error in tx %s : proof is invalid due to inconsistent asset tags - %v", tx.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
-	if isConfAsset{
+	if isConfAsset {
 		utils.Logger.Log.Infof("Verifying transaction with assetTag\n")
 		valid, err = tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction)
-	}else{
+	} else {
 		utils.Logger.Log.Infof("Verifying transaction without assetTag\n")
 		valid, err = tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}
@@ -462,15 +462,13 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 			if err1.Code == privacy.ErrCodeMessage[errhandler.VerifyOneOutOfManyProofFailedErr].Code {
 				if isNewTransaction {
 					return false, utils.NewTransactionErr(utils.VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-				} else {
-					// for old txs which be get from sync block or validate new block
-					if tx.LockTime <= utils.ValidateTimeForOneoutOfManyProof {
-						// only verify by signOnMessage on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-						return true, nil
-					} else {
-						return false, utils.NewTransactionErr(utils.VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					}
 				}
+				// for old txs which be get from sync block or validate new block
+				if tx.LockTime <= utils.ValidateTimeForOneoutOfManyProof {
+					// only verify by signOnMessage on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+					return true, nil
+				}
+				return false, utils.NewTransactionErr(utils.VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
 			}
 		}
 		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err, tx.Hash().String())
@@ -498,7 +496,7 @@ func (tx Tx) IsSalaryTx() bool {
 	if len(proof.GetInputCoins()) != 0 {
 		return false
 	}
-	if len(proof.GetOutputCoins()) != 1{
+	if len(proof.GetOutputCoins()) != 1 {
 		return false
 	}
 
@@ -511,7 +509,7 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
 		return utils.NewTransactionErr(utils.TokenIDInvalidError, err, tokenID.String())
 	}
-	found, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS())	
+	found, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
 		return errors.New(errStr)
@@ -537,7 +535,8 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	tempOutputCoin := []privacy.Coin{otaCoin}
 	proof := new(privacy.ProofV2)
 	proof.Init()
-	proof.SetOutputCoins(tempOutputCoin)
+	// no type-cast error since elements of tempOutputCoin are of correct type (*CoinV2)
+	_ = proof.SetOutputCoins(tempOutputCoin)
 	tx.Proof = proof
 
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
@@ -553,7 +552,7 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	return nil
 }
 
-//ValidateTxSalary checks the following conditions for salary transactions (s, rs):
+// ValidateTxSalary checks the following conditions for salary transactions (s, rs):
 //	- the signature is valid
 //	- the number of output coins is 1
 //	- all fields of the output coins are valid
@@ -599,7 +598,7 @@ func (tx Tx) Hash() *common.Hash {
 	tx.Sig = []byte{}
 	tx.SigPubKey = []byte{}
 	inBytes, err := json.Marshal(tx)
-	if err!=nil{
+	if err != nil {
 		return nil
 	}
 	hash := common.HashH(inBytes)
@@ -613,7 +612,7 @@ func (tx Tx) HashWithoutMetadataSig() *common.Hash {
 	mdHash := md.HashWithoutSig()
 	tx.SetMetadata(nil)
 	txHash := tx.Hash()
-	if mdHash==nil || txHash==nil{
+	if mdHash == nil || txHash == nil {
 		return nil
 	}
 	// tx.SetMetadata(md)
@@ -644,9 +643,13 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 
 // ========== SHARED FUNCTIONS ============
 
-func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxMintData(&tx, &common.PRVCoinID) }
+func (tx Tx) GetTxMintData() (bool, privacy.Coin, *common.Hash, error) {
+	return tx_generic.GetTxMintData(&tx, &common.PRVCoinID)
+}
 
-func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) { return tx_generic.GetTxBurnData(&tx) }
+func (tx Tx) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error) {
+	return tx_generic.GetTxBurnData(&tx)
+}
 
 func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
 	isBurn, burnedCoin, burnedToken, err := tx.GetTxBurnData()
@@ -655,7 +658,7 @@ func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 	return tx.TxBase.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
@@ -673,7 +676,7 @@ func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB 
 		return valid, nil, err
 	case common.TxConversionType:
 		valid, err := validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
-		return valid, nil ,err
+		return valid, nil, err
 	default:
 		valid, err := tx.Verify(boolParams, transactionStateDB, bridgeStateDB, shardID, tokenID)
 		resultProofs := []privacy.Proof{}
@@ -681,8 +684,8 @@ func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB 
 		if !ok {
 			isBatch = false
 		}
-		if isBatch{
-			if tx.GetProof()!=nil{
+		if isBatch {
+			if tx.GetProof() != nil {
 				resultProofs = append(resultProofs, tx.GetProof())
 			}
 		}
@@ -717,7 +720,7 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 // It is the length of its JSON form.
 func (tx Tx) GetTxActualSize() uint64 {
 	jsb, err := json.Marshal(tx)
-	if err!=nil{
+	if err != nil {
 		return 0
 	}
 	return uint64(math.Ceil(float64(len(jsb)) / 1024))
@@ -727,8 +730,8 @@ func (tx Tx) ListOTAHashH() []common.Hash {
 	result := make([]common.Hash, 0)
 	if tx.Proof != nil {
 		for _, outputCoin := range tx.Proof.GetOutputCoins() {
-			//Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			// Discard coins sent to the burning address
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -748,8 +751,8 @@ func (tx Tx) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Has
 	outCoinHash := make(map[common.Hash][32]byte)
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range tx.Proof.GetOutputCoins() {
-		//Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+		// Skip coins sent to the burning address
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -785,14 +788,14 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 		return nil
 	}
 
-	//Check if any OTA has been produced in current mempool
+	// Check if any OTA has been produced in current mempool
 	poolSNDOutputsHashH := mr.GetOTAHashH()
 	err := tx.validateDuplicateOTAsWithCurrentMempool(poolSNDOutputsHashH)
 	if err != nil {
 		return err
 	}
 
-	//Check if any serial number has been used in current mempool
+	// Check if any serial number has been used in current mempool
 	temp := make(map[common.Hash]interface{})
 	for _, desc := range tx.Proof.GetInputCoins() {
 		hash := common.HashH(desc.GetKeyImage().ToBytesS())
@@ -808,4 +811,3 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	}
 	return nil
 }
-

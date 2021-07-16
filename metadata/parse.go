@@ -7,14 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func calculateSize(meta Metadata) uint64 {
-	metaBytes, err := json.Marshal(meta)
-	if err != nil {
-		return 0
-	}
-	return uint64(len(metaBytes))
-}
-
 func ParseMetadata(meta interface{}) (Metadata, error) {
 
 	if meta == nil {
