@@ -50,13 +50,13 @@ const (
 	GetShardIDByPublicKeyError
 
 	NormalTokenPRVJsonError
-	NormalTokenJsonError
+	NormalTokenJsonError //nolint:revive
 
 	PrivacyTokenInitFeeParamsError
 	PrivacyTokenInitPRVError
 	PrivacyTokenInitTokenDataError
 	PrivacyTokenPRVJsonError
-	PrivacyTokenJsonError
+	PrivacyTokenJsonError //nolint:revive
 	PrivacyTokenTxTypeNotHandleError
 
 	ExceedSizeTx
@@ -78,7 +78,7 @@ const (
 
 var ErrCodeMessage = utils.ErrCodeMessage
 
-type TransactionError = utils.TransactionError
+type TransactionError = utils.TransactionError //nolint:revive
 
 func NewTransactionErr(key int, err error, params ...interface{}) *TransactionError {
 	e := utils.NewTransactionErr(key, errors.Wrap(err, utils2.EmptyString), params)

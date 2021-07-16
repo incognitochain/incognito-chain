@@ -9,11 +9,10 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
-
 
 type batchTransaction struct {
 	txs []metadata.Transaction
@@ -24,7 +23,7 @@ type batchTransaction struct {
 //
 // One can then call ".Validate(" to validate all TXs in this batch. This does not cover sanity checks & double-spend checks, those are handled separately.
 // The batch can have transactions from both versions.
-// 
+//
 // Outside of Bulletproofs, other verification steps are done normally.
 // Batching is applicable to PRV transfers, not pToken transfers.
 func NewBatchTransaction(txs []metadata.Transaction) *batchTransaction {
@@ -58,16 +57,16 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			return false, err, i
 		}
 		if tx.GetMetadata() != nil {
-			//if hasPrivacy {
-			//	return false, errors.New("Metadata can not exist in privacy tx"), i
-			//}
+			// if hasPrivacy {
+			// 	return false, errors.New("Metadata can not exist in privacy tx"), i
+			// }
 			validateMetadata := tx.GetMetadata().ValidateMetadataByItself()
 			if !validateMetadata {
 				return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid")), i
 			}
 		}
 
-		for _, batchableProof := range batchableProofs{
+		for _, batchableProof := range batchableProofs {
 			bulletproof := batchableProof.GetAggregatedRangeProof()
 			if bulletproof == nil {
 				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("Privacy TX Proof missing at index %d", i)), -1
@@ -80,7 +79,6 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			}
 		}
 	}
-	//TODO: add go routine
 	isNewZKP, ok := boolParams["isNewZKP"]
 	if !ok {
 		isNewZKP = true
@@ -105,7 +103,6 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)), index
 		}
 	}
-
 
 	ok, err, i := bulletproofs.VerifyBatch(bulletProofListVer2)
 	if err != nil {

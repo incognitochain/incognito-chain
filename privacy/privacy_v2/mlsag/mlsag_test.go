@@ -65,7 +65,7 @@ func TestDumpSig(t *testing.T){
 		if err!=nil{
 			panic(err)
 		}
-		sig := &MlsagSig{}
+		sig := &Sig{}
 		_, err = sig.FromBytes(sigByteHolder)
 		fmt.Printf("\n\nBegin Signature\n")
 		fmt.Printf("  %x\n--Key Images\n", sig.c.ToBytesS())

@@ -1,10 +1,9 @@
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"errors"
 	"math"
 	"math/big"
-	"math/rand"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -70,7 +69,6 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	}
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
-	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	lenCommitment, err1 := statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 	if err1 != nil {
 		utils.Logger.Log.Error(err1)
@@ -116,8 +114,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	for _, commitmentInHash := range listUsableCommitmentsIndices {
 		commitmentValue := listUsableCommitments[commitmentInHash]
 		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(commitmentValue, common.ZeroByte)]
-		randInt := rand.Intn(param.randNum)
-		i := (j * param.randNum) + randInt
+		randInt, _ := common.RandBigIntMaxRange(big.NewInt(int64(param.randNum)))
+		i := (j * param.randNum) + int(randInt.Int64())
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		commitments = append(commitments[:i], append([][]byte{commitmentValue}, commitments[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs
@@ -127,7 +125,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 type EstimateTxSizeParam struct {
-	version 				 int
+	version                  int
 	numInputCoins            int
 	numPayments              int
 	hasPrivacy               bool
@@ -141,7 +139,7 @@ func NewEstimateTxSizeParam(version, numInputCoins, numPayments int,
 	privacyCustomTokenParams *TokenParam,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
-		version: 				  version,
+		version:                  version,
 		numInputCoins:            numInputCoins,
 		numPayments:              numPayments,
 		hasPrivacy:               hasPrivacy,
@@ -152,26 +150,25 @@ func NewEstimateTxSizeParam(version, numInputCoins, numPayments int,
 	return estimateTxSizeParam
 }
 
-func toB64Len(numOfBytes uint64) uint64{
-	l := (numOfBytes * 4 + 2) / 3
+func toB64Len(numOfBytes uint64) uint64 {
+	l := (numOfBytes*4 + 2) / 3
 	l = ((l + 3) / 4) * 4
 	return l
 }
 
-
-func EstimateProofSizeV2(numIn, numOut uint64) uint64{
-	coinSizeBound := uint64(257) + (privacy.Ed25519KeySize + 1) * 7 + privacy.TxRandomGroupSize + 1
+func EstimateProofSizeV2(numIn, numOut uint64) uint64 {
+	coinSizeBound := uint64(257) + (privacy.Ed25519KeySize+1)*7 + privacy.TxRandomGroupSize + 1
 	ipProofLRLen := uint64(math.Log2(float64(numOut))) + 1
-	aggProofSizeBound := uint64(4) + 1 + privacy.Ed25519KeySize * uint64(7 + numOut) + 1 + uint64(2 * ipProofLRLen + 3) * privacy.Ed25519KeySize
+	aggProofSizeBound := uint64(4) + 1 + privacy.Ed25519KeySize*uint64(7+numOut) + 1 + uint64(2*ipProofLRLen+3)*privacy.Ed25519KeySize
 	// add 10 for rounding
-	result := uint64(1) + (coinSizeBound + 1) * uint64(numIn + numOut) + 2 + aggProofSizeBound + 10
+	result := uint64(1) + (coinSizeBound+1)*uint64(numIn+numOut) + 2 + aggProofSizeBound + 10
 	return toB64Len(result)
 }
 
-func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64{
-	jsonKeysSizeBound := uint64(20 * 10 + 2)
-	sizeVersion := uint64(1)  // int8
-	sizeType := uint64(5)     // string, max : 5
+func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
+	jsonKeysSizeBound := uint64(20*10 + 2)
+	sizeVersion := uint64(1)      // int8
+	sizeType := uint64(5)         // string, max : 5
 	sizeLockTime := uint64(8) * 3 // int64
 	sizeFee := uint64(8) * 3      // uint64
 	sizeInfo := toB64Len(uint64(512))
@@ -179,10 +176,10 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64{
 	numIn := uint64(estimateTxSizeParam.numInputCoins)
 	numOut := uint64(estimateTxSizeParam.numPayments)
 
-	sizeSigPubKey := uint64(numIn) * privacy.RingSize * 9 + 2
+	sizeSigPubKey := uint64(numIn)*privacy.RingSize*9 + 2
 	sizeSigPubKey = toB64Len(sizeSigPubKey)
-	sizeSig := uint64(1) + numIn + (numIn + 2) * privacy.RingSize 
-	sizeSig = sizeSig * 33 + 3
+	sizeSig := uint64(1) + numIn + (numIn+2)*privacy.RingSize
+	sizeSig = sizeSig*33 + 3
 
 	sizeProof := EstimateProofSizeV2(numIn, numOut)
 
@@ -194,7 +191,7 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64{
 
 	sizeTx := jsonKeysSizeBound + sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 	if estimateTxSizeParam.privacyCustomTokenParams != nil {
-		tokenKeysSizeBound := uint64(20 * 8 + 2)
+		tokenKeysSizeBound := uint64(20*8 + 2)
 		tokenSize := toB64Len(uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertyID)))
 		tokenSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertySymbol))
 		tokenSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertyName))
@@ -203,10 +200,10 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64{
 		numOut = uint64(len(estimateTxSizeParam.privacyCustomTokenParams.Receiver))
 
 		// shadow variable names
-		sizeSigPubKey := uint64(numIn) * privacy.RingSize * 9 + 2
+		sizeSigPubKey := uint64(numIn)*privacy.RingSize*9 + 2
 		sizeSigPubKey = toB64Len(sizeSigPubKey)
-		sizeSig := uint64(1) + numIn + (numIn + 2) * privacy.RingSize 
-		sizeSig = sizeSig * 33 + 3
+		sizeSig := uint64(1) + numIn + (numIn+2)*privacy.RingSize
+		sizeSig = sizeSig*33 + 3
 
 		sizeProof := EstimateProofSizeV2(numIn, numOut)
 		tokenSize += tokenKeysSizeBound + sizeSigPubKey + sizeSig + sizeProof
@@ -217,7 +214,7 @@ func EstimateTxSizeV2(estimateTxSizeParam *EstimateTxSizeParam) uint64{
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
 func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
-	if estimateTxSizeParam.version==2{
+	if estimateTxSizeParam.version == 2 {
 		return uint64(math.Ceil(float64(EstimateTxSizeV2(estimateTxSizeParam)) / 1024))
 	}
 	sizeVersion := uint64(1)  // int8
@@ -235,10 +232,8 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	sizeProof := uint64(0)
 	if estimateTxSizeParam.numInputCoins != 0 || estimateTxSizeParam.numPayments != 0 {
 		sizeProof = zku.EstimateProofSize(estimateTxSizeParam.numInputCoins, estimateTxSizeParam.numPayments, estimateTxSizeParam.hasPrivacy)
-	} else {
-		if estimateTxSizeParam.limitFee > 0 {
-			sizeProof = zku.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
-		}
+	} else if estimateTxSizeParam.limitFee > 0 {
+		sizeProof = zku.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
 	}
 
 	sizePubKeyLastByte := uint64(1)
@@ -274,7 +269,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 		// Proof
 		customTokenDataSize += zku.EstimateProofSize(len(estimateTxSizeParam.privacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.privacyCustomTokenParams.Receiver), true)
 
-		customTokenDataSize += uint64(1) //PubKeyLastByte
+		customTokenDataSize += uint64(1) // PubKeyLastByte
 
 		sizeTx += customTokenDataSize
 	}
@@ -284,7 +279,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 
 func CalculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
 	sumOutputsWithFee := new(operation.Point).Identity()
-	for i := 0; i < len(outputCoins); i += 1 {
+	for i := 0; i < len(outputCoins); i++ {
 		sumOutputsWithFee.Add(sumOutputsWithFee, outputCoins[i].GetCommitment())
 	}
 	feeCommitment := new(operation.Point).ScalarMult(
