@@ -13,35 +13,35 @@ import (
 )
 
 type PDexV3Params struct {
-	DefaultFeeRateBPS        uint
-	FeeRateBPS               map[string]uint
-	PRVDiscountPercent       uint
-	ProtocolFeePercent       uint
-	StakingPoolRewardPercent uint
-	DefaultStakingPoolsShare uint
-	StakingPoolsShare        map[string]uint
+	DefaultFeeRateBPS        uint            `json:"DefaultFeeRateBPS"`
+	FeeRateBPS               map[string]uint `json:"FeeRateBPS"`
+	PRVDiscountPercent       uint            `json:"PRVDiscountPercent"`
+	ProtocolFeePercent       uint            `json:"ProtocolFeePercent"`
+	StakingPoolRewardPercent uint            `json:"StakingPoolRewardPercent"`
+	DefaultStakingPoolsShare uint            `json:"DefaultStakingPoolsShare"`
+	StakingPoolsShare        map[string]uint `json:"StakingPoolsShare"`
 }
 
 type PDexV3ParamsModifyingRequest struct {
 	MetadataBaseWithSignature
-	PDexV3Params
+	PDexV3Params `json:"PDexV3Params"`
 }
 
 type PDexV3ParamsModifyingRequestAction struct {
-	Meta    PDexV3ParamsModifyingRequest
-	TxReqID common.Hash
-	ShardID byte
+	Meta    PDexV3ParamsModifyingRequest `json:"Meta"`
+	TxReqID common.Hash                  `json:"TxReqID"`
+	ShardID byte                         `json:"ShardID"`
 }
 
 type PDexV3ParamsModifyingRequestContent struct {
-	Content PDexV3Params
-	TxReqID common.Hash
-	ShardID byte
+	Content PDexV3Params `json:"Content"`
+	TxReqID common.Hash  `json:"TxReqID"`
+	ShardID byte         `json:"ShardID"`
 }
 
 type PDexV3ParamsModifyingRequestStatus struct {
-	Status int
-	PDexV3Params
+	Status       int `json:"Status"`
+	PDexV3Params `json:"PDexV3Params"`
 }
 
 func NewPDexV3ParamsModifyingRequestStatus(
