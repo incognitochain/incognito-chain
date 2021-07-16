@@ -14,8 +14,7 @@ import (
 
 // TradeRequest
 type TradeRequest struct {
-	TokenToSell         common.Hash         `json:"TokenToSell"`
-	TokenToBuy          common.Hash         `json:"TokenToBuy"`
+	TradePath           []common.Hash       `json:"TradePath"`
 	SellAmount          uint64              `json:"SellAmount"`
 	MinAcceptableAmount uint64              `json:"MinAcceptableAmount"`
 	TradingFee          uint64              `json:"TradingFee"`
@@ -50,8 +49,7 @@ type RefundedTrade struct {
 }
 
 func NewTradeRequest(
-	tokenToBuy common.Hash,
-	tokenToSell common.Hash,
+	tradePath []common.Hash,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	tradingFee uint64,
@@ -59,8 +57,7 @@ func NewTradeRequest(
 	metaType int,
 ) (*TradeRequest, error) {
 	pdeTradeRequest := &TradeRequest{
-		TokenToSell:         tokenToSell,
-		TokenToBuy:          tokenToBuy,
+		TradePath:           tradePath,
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,

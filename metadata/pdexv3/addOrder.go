@@ -15,6 +15,7 @@ import (
 type AddOrderRequest struct {
 	TokenToSell         common.Hash         `json:"TokenToSell"`
 	TokenToBuy          common.Hash         `json:"TokenToBuy"`
+	PairID              string              `json:"PairID"`
 	SellAmount          uint64              `json:"SellAmount"`
 	MinAcceptableAmount uint64              `json:"MinAcceptableAmount"`
 	TradingFee          uint64              `json:"TradingFee"`
@@ -29,10 +30,12 @@ type AddOrderAction struct {
 }
 
 type AcceptedAddOrder struct {
-	TokenToBuy  common.Hash `json:"TokenToBuy"`
-	PairID      string      `json:"PairID"`
-	ShardID     byte        `json:"ShardID"`
-	RequestTxID common.Hash `json:"RequestTxID"`
+	TokenToBuy          common.Hash `json:"TokenToBuy"`
+	PairID              string      `json:"PairID"`
+	SellAmount          uint64      `json:"SellAmount"`
+	MinAcceptableAmount uint64      `json:"MinAcceptableAmount"`
+	ShardID             byte        `json:"ShardID"`
+	RequestTxID         common.Hash `json:"RequestTxID"`
 }
 
 type RefundedAddOrder struct {
@@ -46,6 +49,7 @@ type RefundedAddOrder struct {
 func NewAddOrderRequest(
 	tokenToBuy common.Hash,
 	tokenToSell common.Hash,
+	pairID string,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	tradingFee uint64,
@@ -55,6 +59,7 @@ func NewAddOrderRequest(
 	pdeTradeRequest := &AddOrderRequest{
 		TokenToSell:         tokenToSell,
 		TokenToBuy:          tokenToBuy,
+		PairID:              pairID,
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
