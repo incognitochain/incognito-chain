@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -23,7 +24,7 @@ type PDexV3Params struct {
 }
 
 type PDexV3ParamsModifyingRequest struct {
-	MetadataBaseWithSignature
+	metadataCommon.MetadataBaseWithSignature
 	PDexV3Params `json:"PDexV3Params"`
 }
 
@@ -68,7 +69,7 @@ func NewPDexV3ParamsModifyingRequest(
 	metaType int,
 	params PDexV3Params,
 ) (*PDexV3ParamsModifyingRequest, error) {
-	metadataBase := NewMetadataBaseWithSignature(metaType)
+	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metaType)
 	paramsModifying := &PDexV3ParamsModifyingRequest{}
 	paramsModifying.MetadataBaseWithSignature = *metadataBase
 	paramsModifying.PDexV3Params = params
@@ -77,10 +78,10 @@ func NewPDexV3ParamsModifyingRequest(
 }
 
 func (paramsModifying PDexV3ParamsModifyingRequest) ValidateTxWithBlockChain(
-	txr Transaction,
-	chainRetriever ChainRetriever,
-	shardViewRetriever ShardViewRetriever,
-	beaconViewRetriever BeaconViewRetriever,
+	tx metadataCommon.Transaction,
+	chainRetriever metadataCommon.ChainRetriever,
+	shardViewRetriever metadataCommon.ShardViewRetriever,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
@@ -88,15 +89,20 @@ func (paramsModifying PDexV3ParamsModifyingRequest) ValidateTxWithBlockChain(
 }
 
 func (paramsModifying PDexV3ParamsModifyingRequest) ValidateSanityData(
-	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+	chainRetriever metadataCommon.ChainRetriever,
+	shardViewRetriever metadataCommon.ShardViewRetriever,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
+	beaconHeight uint64,
+	tx metadataCommon.Transaction,
+) (bool, bool, error) {
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
-		return false, false, NewMetadataTxError(PDexV3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
-		return false, false, NewMetadataTxError(PDexV3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	if ok, err := paramsModifying.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
@@ -105,19 +111,18 @@ func (paramsModifying PDexV3ParamsModifyingRequest) ValidateSanityData(
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(PDexV3ModifyParamsValidateSanityDataError, errors.New("Tx pDex v3 modifying params must be TxNormalType"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3ModifyParamsValidateSanityDataError, errors.New("Tx pDex v3 modifying params must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(0,
-			errors.New("Tx pDex v3 modifying params must be version 2"))
+		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 modifying params must be version 2"))
 	}
 
 	return true, true, nil
 }
 
 func (paramsModifying PDexV3ParamsModifyingRequest) ValidateMetadataByItself() bool {
-	return paramsModifying.Type == PDexV3ModifyParamsMeta
+	return paramsModifying.Type == metadataCommon.PDexV3ModifyParamsMeta
 }
 
 func (paramsModifying PDexV3ParamsModifyingRequest) Hash() *common.Hash {
@@ -146,7 +151,14 @@ func (paramsModifying PDexV3ParamsModifyingRequest) HashWithoutSig() *common.Has
 	return &hash
 }
 
-func (paramsModifying *PDexV3ParamsModifyingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (paramsModifying *PDexV3ParamsModifyingRequest) BuildReqActions(
+	tx metadataCommon.Transaction,
+	chainRetriever metadataCommon.ChainRetriever,
+	shardViewRetriever metadataCommon.ShardViewRetriever,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
+	shardID byte,
+	shardHeight uint64,
+) ([][]string, error) {
 	actionContent := PDexV3ParamsModifyingRequestAction{
 		Meta:    *paramsModifying,
 		TxReqID: *tx.Hash(),
@@ -158,10 +170,10 @@ func (paramsModifying *PDexV3ParamsModifyingRequest) BuildReqActions(tx Transact
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalExchangeRatesMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(metadataCommon.PDexV3ModifyParamsMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
 func (paramsModifying *PDexV3ParamsModifyingRequest) CalculateSize() uint64 {
-	return calculateSize(paramsModifying)
+	return metadataCommon.CalculateSize(paramsModifying)
 }
