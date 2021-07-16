@@ -233,7 +233,7 @@ const (
 	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
-	addLiquidityV3                             = "pdexv3_txAddLiquidity"
+	pdexV3AddLiquidityV3                       = "pdexv3_txAddLiquidity"
 	//
 
 	// pDex v3

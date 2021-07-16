@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProducerV2 struct {
@@ -18,7 +19,7 @@ func (sp *stateProducerV2) addLiquidity(
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := tx.Hash().String()
-		metaData, ok := tx.GetMetadata().(*metadata.PDEV3AddLiquidity)
+		metaData, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
 		if !ok {
 			return res, errors.New("Can not parse add liquidity metadata")
 		}

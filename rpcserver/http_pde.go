@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -19,7 +21,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/metadata"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -1720,7 +1722,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
 	}
-	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	//senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
@@ -1735,21 +1737,25 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
+	/*otaPublicKeyRefundStr, otaTxRandomRefundStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)*/
+	//if err != nil {
+	//return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	//}
+	//otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
+	//if err != nil {
+	//return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	/*}*/
+
+	tokenHash, err := common.Hash{}.NewHashFromStr(addLiquidityRequest.TokenID)
 	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaPublicKeyReceiveStr, otaTxRandomReceiveStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddress)
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	metaData := metadata.NewPDEV3AddLiquidityWithValue(
+	metaData := metadataPdexV3.NewAddLiquidityWithValue(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,
-		otaPublicKeyRefundStr, otaTxRandomRefundStr,
-		otaPublicKeyReceiveStr, otaTxRandomReceiveStr,
-		addLiquidityRequest.TokenID,
+		privacy.OTAReceiver{}, privacy.OTAReceiver{},
+		*tokenHash,
 		tokenAmount,
 		uint(amplifier),
 	)

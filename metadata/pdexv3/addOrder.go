@@ -1,9 +1,7 @@
 package metadata
 
 import (
-	"encoding/base64"
 	"encoding/json"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"

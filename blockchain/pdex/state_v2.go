@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateV2 struct {
@@ -132,7 +133,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		// TODO: @pdex get metadata here and build instructions from transactions here
 		switch tx.GetMetadataType() {
 		case metadataCommon.PDexV3AddLiquidityMeta:
-			_, ok := tx.GetMetadata().(*metadata.PDEV3AddLiquidity)
+			_, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
 			if !ok {
 				return instructions, errors.New("Can not parse add liquidity metadata")
 			}

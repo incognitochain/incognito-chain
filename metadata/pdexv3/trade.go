@@ -1,10 +1,8 @@
 package metadata
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"math/big"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -94,11 +92,11 @@ func (req *TradeRequest) CalculateSize() uint64 {
 
 func (req *TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	sellingToken := common.ConfidentialAssetID
-	if req.TokenToSell == common.PRVCoinID {
-		sellingToken = common.PRVCoinID
-	}
-	result = append(result, metadataCommon.OTADeclaration{PublicKey: req.Receiver.PublicKey.ToBytes(), TokenID: sellingToken})
-	result = append(result, metadataCommon.OTADeclaration{PublicKey: req.RefundReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID})
+	/*sellingToken := common.ConfidentialAssetID*/
+	//if req.TokenToSell == common.PRVCoinID {
+	//sellingToken = common.PRVCoinID
+	//}
+	//result = append(result, metadataCommon.OTADeclaration{PublicKey: req.Receiver.PublicKey.ToBytes(), TokenID: sellingToken})
+	/*result = append(result, metadataCommon.OTADeclaration{PublicKey: req.RefundReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID})*/
 	return result
 }
