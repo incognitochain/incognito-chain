@@ -35,7 +35,6 @@ type Order struct {
 	ota             string
 	txRandom        string
 	fee             uint64
-	txReqID         string
 }
 
 type Contribution struct {
@@ -47,7 +46,6 @@ type Contribution struct {
 	tokenID             string
 	tokenAmount         uint64
 	amplifier           uint // only set for the first contribution
-	txReqID             string
 }
 
 type PoolPairState struct {
