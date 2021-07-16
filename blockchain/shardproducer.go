@@ -890,7 +890,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			if beaconHeight < config.Param().PDEV2Height || !metadata.IsPDETx(metadataValue) {
+			if beaconHeight < config.Param().PDexParams.PDexV3BreakPointHeight || !metadata.IsPDETx(metadataValue) {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 				if err == nil {

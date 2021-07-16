@@ -56,4 +56,6 @@ portal_v3_height: 10000000
 tx_pool_version: 0
 bsc_param:
   host: "https://bsc-dataseed.binance.org"
-pde_v2_height: 1000000000000
+pdex_param:
+  pdex_v3_break_point_height: 1000000000000
+  admin_address: ""
