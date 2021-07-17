@@ -1,4 +1,4 @@
-package metadata
+package pdexv3
 
 import (
 	"bytes"
@@ -17,9 +17,9 @@ type AddLiquidity struct {
 	PairHash        string              `json:"PairHash"`
 	ReceiverAddress privacy.OTAReceiver `json:"ReceiverAddress"` // receive nfct
 	RefundAddress   privacy.OTAReceiver `json:"RefundAddress"`   // refund pToken
-	TokenID         common.Hash
-	TokenAmount     uint64
-	Amplifier       uint // only set for the first contribution
+	TokenID         common.Hash         `json:"TokenID"`
+	TokenAmount     uint64              `json:"TokenAmount"`
+	Amplifier       uint                `json:"Amplifier"` // only set for the first contribution
 	metadataCommon.MetadataBase
 }
 
@@ -69,7 +69,7 @@ func (al *AddLiquidity) ValidateSanityData(
 	if al.PairHash == "" {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pair hash should not be empty"))
 	}
-	if !al.TokenID.IsZeroValue() {
+	if al.TokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
 	if !al.ReceiverAddress.IsValid() {
@@ -78,30 +78,26 @@ func (al *AddLiquidity) ValidateSanityData(
 	if !al.RefundAddress.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("RefundAddress is not valid"))
 	}
+	//TODO: @tin add here amplifier can not smaller than 1.0
+	if al.Amplifier == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
+	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
 	}
 
+	if !bytes.Equal(burnedTokenID[:], al.TokenID[:]) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
+	}
 	if al.TokenAmount == 0 || al.TokenAmount != burnCoin.GetValue() {
 		err := fmt.Errorf("Contributed amount is not valid expect %v but get %v", al.TokenAmount, burnCoin.GetValue())
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-
-	//TODO: @tin add here amplifier can not smaller than 1.0
-	if al.Amplifier == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
-	}
-
-	if !bytes.Equal(burnedTokenID[:], al.TokenID[:]) {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
-	}
-
 	if tx.GetType() == common.TxNormalType && al.TokenID.String() != common.PRVCoinID.String() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
 	}
-
 	if tx.GetType() == common.TxCustomTokenPrivacyType && al.TokenID.String() == common.PRVCoinID.String() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
 	}

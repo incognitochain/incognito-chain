@@ -1,4 +1,4 @@
-package metadata
+package pdexv3
 
 import (
 	"encoding/json"
@@ -42,7 +42,7 @@ type RefundedTrade struct {
 	Receiver    privacy.OTAReceiver `json:"Receiver"`
 	TokenToSell common.Hash         `json:"TokenToSell"`
 	Amount      uint64              `json:"Amount"`
-	ShardID     byte                `json:"ShardID`
+	ShardID     byte                `json:"ShardID"`
 	RequestTxID common.Hash         `json:"RequestTxID"`
 }
 
