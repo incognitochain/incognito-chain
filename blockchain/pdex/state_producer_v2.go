@@ -3,6 +3,7 @@ package pdex
 import (
 	"errors"
 
+	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
@@ -23,9 +24,12 @@ func (sp *stateProducerV2) addLiquidity(
 		if !ok {
 			return res, errors.New("Can not parse add liquidity metadata")
 		}
-		Logger.log.Info(metaData)
-		Logger.log.Info(shardID)
-		Logger.log.Info(txReqID)
+		waitingInstruction := instruction.NewWaitingAddLiquidityFromMetadata(*metaData, txReqID, shardID)
+		instStr, err := waitingInstruction.StringArr()
+		if err != nil {
+			return res, err
+		}
+		res = append(res, instStr)
 	}
 
 	return [][]string{}, nil
