@@ -1752,12 +1752,20 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
+	receiverAddressStr, err := receiverAddress.String()
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	refundAddressStr, err := refundAddress.String()
+	if err != nil {
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
 
 	metaData := metadataPdexV3.NewAddLiquidityWithValue(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,
-		receiverAddress, refundAddress,
-		*tokenHash,
+		receiverAddressStr, refundAddressStr,
+		tokenHash.String(),
 		tokenAmount,
 		uint(amplifier),
 	)

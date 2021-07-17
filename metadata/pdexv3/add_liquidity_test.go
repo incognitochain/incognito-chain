@@ -7,14 +7,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
-	"github.com/incognitochain/incognito-chain/privacy"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAddLiquidity_ValidateSanityData(t *testing.T) {
-
-	initTestParam(t)
 
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
@@ -48,13 +45,13 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
 
 	type fields struct {
-		PoolPairID      string
-		PairHash        string
-		ReceiverAddress privacy.OTAReceiver
-		RefundAddress   privacy.OTAReceiver
-		TokenID         common.Hash
-		TokenAmount     uint64
-		Amplifier       uint
+		poolPairID      string
+		pairHash        string
+		receiverAddress string
+		refundAddress   string
+		tokenID         string
+		tokenAmount     uint64
+		amplifier       uint
 		MetadataBase    metadataCommon.MetadataBase
 	}
 	type args struct {
@@ -75,7 +72,18 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid PairHash",
 			fields: fields{
-				PairHash: "",
+				pairHash: "",
+			},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "Invalid tokenID",
+			fields: fields{
+				pairHash: "pair hash",
+				tokenID:  "asdb",
 			},
 			args:    args{},
 			want:    false,
@@ -85,8 +93,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Empty tokenID",
 			fields: fields{
-				PairHash: "pair hash",
-				TokenID:  common.Hash{},
+				pairHash: "pair hash",
+				tokenID:  "",
 			},
 			args:    args{},
 			want:    false,
@@ -96,8 +104,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid ReceiverAddress",
 			fields: fields{
-				PairHash: "pair hash",
-				TokenID:  *tokenHash,
+				pairHash: "pair hash",
+				tokenID:  tokenHash.String(),
 			},
 			args:    args{},
 			want:    false,
@@ -107,9 +115,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid RefundAddress",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
 			},
 			args:    args{},
 			want:    false,
@@ -119,10 +127,10 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid amplifier",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
 			},
 			args:    args{},
 			want:    false,
@@ -132,11 +140,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Tx is not burn tx",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
 			},
 			args: args{
 				tx: notBurnTx,
@@ -148,11 +156,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "tokenID not match with burnCoin",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
 			},
 			args: args{
 				tx: notMactchTokenIDTx,
@@ -164,11 +172,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Token amount = 0",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
 			},
 			args: args{
 				tx: notMactchAmountTx0,
@@ -180,12 +188,12 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Contributed amount is not match with burn amount",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
-				TokenAmount:     200,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
+				tokenAmount:     200,
 			},
 			args: args{
 				tx: notMactchAmountTx1,
@@ -197,12 +205,12 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Normal tx && tokenID != prv",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
-				TokenAmount:     200,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
+				tokenAmount:     200,
 			},
 			args: args{
 				tx: invalidNormalTx,
@@ -215,12 +223,12 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Custom token tx && tokenID == prv",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         common.PRVCoinID,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
-				TokenAmount:     200,
+				pairHash:        "pair hash",
+				tokenID:         common.PRVCoinID.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
+				tokenAmount:     200,
 			},
 			args: args{
 				tx: invalidCustomTx,
@@ -232,12 +240,12 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				PairHash:        "pair hash",
-				TokenID:         *tokenHash,
-				ReceiverAddress: validOTAReceiver0,
-				RefundAddress:   validOTAReceiver1,
-				Amplifier:       10000,
-				TokenAmount:     200,
+				pairHash:        "pair hash",
+				tokenID:         tokenHash.String(),
+				receiverAddress: validOTAReceiver0,
+				refundAddress:   validOTAReceiver1,
+				amplifier:       10000,
+				tokenAmount:     200,
 			},
 			args: args{
 				tx: validTx,
@@ -250,13 +258,13 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			al := &AddLiquidity{
-				PoolPairID:      tt.fields.PoolPairID,
-				PairHash:        tt.fields.PairHash,
-				ReceiverAddress: tt.fields.ReceiverAddress,
-				RefundAddress:   tt.fields.RefundAddress,
-				TokenID:         tt.fields.TokenID,
-				TokenAmount:     tt.fields.TokenAmount,
-				Amplifier:       tt.fields.Amplifier,
+				poolPairID:      tt.fields.poolPairID,
+				pairHash:        tt.fields.pairHash,
+				receiverAddress: tt.fields.receiverAddress,
+				refundAddress:   tt.fields.refundAddress,
+				tokenID:         tt.fields.tokenID,
+				tokenAmount:     tt.fields.tokenAmount,
+				amplifier:       tt.fields.amplifier,
 				MetadataBase:    tt.fields.MetadataBase,
 			}
 			got, got1, err := al.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
@@ -276,13 +284,13 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 
 func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
-		PoolPairID      string
-		PairHash        string
-		ReceiverAddress privacy.OTAReceiver
-		RefundAddress   privacy.OTAReceiver
-		TokenID         common.Hash
-		TokenAmount     uint64
-		Amplifier       uint
+		poolPairID      string
+		pairHash        string
+		receiverAddress string
+		refundAddress   string
+		tokenID         string
+		tokenAmount     uint64
+		amplifier       uint
 		MetadataBase    metadataCommon.MetadataBase
 	}
 	tests := []struct {
@@ -312,13 +320,13 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			al := &AddLiquidity{
-				PoolPairID:      tt.fields.PoolPairID,
-				PairHash:        tt.fields.PairHash,
-				ReceiverAddress: tt.fields.ReceiverAddress,
-				RefundAddress:   tt.fields.RefundAddress,
-				TokenID:         tt.fields.TokenID,
-				TokenAmount:     tt.fields.TokenAmount,
-				Amplifier:       tt.fields.Amplifier,
+				poolPairID:      tt.fields.poolPairID,
+				pairHash:        tt.fields.pairHash,
+				receiverAddress: tt.fields.receiverAddress,
+				refundAddress:   tt.fields.refundAddress,
+				tokenID:         tt.fields.tokenID,
+				tokenAmount:     tt.fields.tokenAmount,
+				amplifier:       tt.fields.amplifier,
 				MetadataBase:    tt.fields.MetadataBase,
 			}
 			if got := al.ValidateMetadataByItself(); got != tt.want {
