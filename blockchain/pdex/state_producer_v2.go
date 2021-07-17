@@ -32,7 +32,7 @@ func (sp *stateProducerV2) addLiquidity(
 		res = append(res, instStr)
 	}
 
-	return [][]string{}, nil
+	return res, nil
 }
 
 func (sp *stateProducerV2) modifyParams(
