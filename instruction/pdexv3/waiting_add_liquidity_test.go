@@ -188,6 +188,26 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:   "Amplifier is smaller than default amplifier",
+			fields: fields{},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					WaitingStatus,
+					"pool_pair_id",
+					"pair_hash",
+					common.PRVCoinID.String(),
+					"300",
+					"900",
+					validOTAReceiver0,
+					validOTAReceiver1,
+					"tx_req_id",
+					"1",
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name:   "Invalid receiver Address",
 			fields: fields{},
 			args: args{

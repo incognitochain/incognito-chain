@@ -153,6 +153,9 @@ func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 	if err != nil {
 		return err
 	}
+	if amplifier < metadataPdexV3.DefaultAmplifier {
+		return fmt.Errorf("Amplifier can not be smaller than %v get %v", metadataPdexV3.DefaultAmplifier, amplifier)
+	}
 	w.amplifier = uint(amplifier)
 	receiverAddress := privacy.OTAReceiver{}
 	err = receiverAddress.FromString(source[7])

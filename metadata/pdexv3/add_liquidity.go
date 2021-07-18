@@ -93,8 +93,7 @@ func (al *AddLiquidity) ValidateSanityData(
 	if !refundAddress.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("RefundAddress is not valid"))
 	}
-	//TODO: @tin add here amplifier can not smaller than 1.0
-	if al.amplifier == 0 {
+	if al.amplifier < DefaultAmplifier {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
 	}
 

@@ -25,10 +25,7 @@ func (sp *stateProducerV2) addLiquidity(
 			return res, errors.New("Can not parse add liquidity metadata")
 		}
 		waitingInstruction := instruction.NewWaitingAddLiquidityFromMetadata(*metaData, txReqID, shardID)
-		instStr, err := waitingInstruction.StringArr()
-		if err != nil {
-			return res, err
-		}
+		instStr := waitingInstruction.StringArr()
 		res = append(res, instStr)
 	}
 
