@@ -306,7 +306,7 @@ func (keeper *AddrKeeper) GetHighway(selfPeerID *peer.ID) (*rpcclient.HighwayAdd
 		if len(cstB.Members()) > 0 {
 			cst = cstB
 		} else {
-			if len(cstA.Members()) > 0 {
+			if len(cstC.Members()) > 0 {
 				cst = cstC
 			} else {
 				return nil, errors.Errorf("Nothing to choose")
