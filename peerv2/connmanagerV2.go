@@ -93,7 +93,9 @@ func (cm *ConnManager) PickHighway() error {
 	}
 	if !gotNewHW {
 		time.Sleep(2 * time.Second)
-		cm.keeper.IgnoreAddress(*newHW)
+		if newHW != nil {
+			cm.keeper.IgnoreAddress(*newHW)
+		}
 		Logger.Info("Can not pick HW, repick")
 		cm.reqPickHW <- nil
 		return errors.Errorf("Can not pick new Highway, err %v", err)
