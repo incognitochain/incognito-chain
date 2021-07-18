@@ -122,61 +122,68 @@ func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
 }
 
 func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
-	if len(source) != 10 {
+	if len(source) != 11 {
 		return fmt.Errorf("Receive length %v but expect %v", len(source), 9)
 	}
 	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
 		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
 	}
-	w.poolPairID = source[1]
-	if source[2] == "" {
+	if source[1] != WaitingStatus {
+		return fmt.Errorf("Receive status %v but expect %v", source[1], WaitingStatus)
+	}
+	w.poolPairID = source[2]
+	if source[3] == "" {
 		return errors.New("Pair hash is invalid")
 	}
-	w.pairHash = source[2]
-	tokenID, err := common.Hash{}.NewHashFromStr(source[3])
+	w.pairHash = source[3]
+	tokenID, err := common.Hash{}.NewHashFromStr(source[4])
 	if err != nil {
 		return err
 	}
 	if tokenID.IsZeroValue() {
 		return errors.New("TokenID is empty")
 	}
-	w.tokenID = source[3]
-	tokenAmount, err := strconv.ParseUint(source[4], 10, 32)
+	w.tokenID = source[4]
+	tokenAmount, err := strconv.ParseUint(source[5], 10, 32)
 	if err != nil {
 		return err
 	}
 	w.tokenAmount = tokenAmount
-	amplifier, err := strconv.ParseUint(source[5], 10, 32)
+	amplifier, err := strconv.ParseUint(source[6], 10, 32)
 	if err != nil {
 		return err
 	}
 	w.amplifier = uint(amplifier)
 	receiverAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromString(source[6])
+	err = receiverAddress.FromString(source[7])
 	if err != nil {
 		return err
 	}
-	w.receiverAddress = source[6]
-
-	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(source[6])
-	if err != nil {
-		return err
+	if !receiverAddress.IsValid() {
+		return errors.New("receiver Address is invalid")
 	}
 	w.receiverAddress = source[7]
-	w.txReqID = source[8]
-	shardID, err := strconv.Atoi(source[9])
+	refundAddress := privacy.OTAReceiver{}
+	err = refundAddress.FromString(source[8])
+	if err != nil {
+		return err
+	}
+	if !refundAddress.IsValid() {
+		return errors.New("refund Address is invalid")
+	}
+	w.refundAddress = source[8]
+	w.txReqID = source[9]
+	shardID, err := strconv.Atoi(source[10])
 	if err != nil {
 		return err
 	}
 	w.shardID = byte(shardID)
-
 	return nil
 }
 
-func (w *WaitingAddLiquidity) StringArr() ([]string, error) {
+func (w *WaitingAddLiquidity) StringArr() []string {
 	metaDataType := strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta)
-	res := []string{metaDataType}
+	res := []string{metaDataType, WaitingStatus}
 	res = append(res, w.poolPairID)
 	res = append(res, w.pairHash)
 	res = append(res, w.tokenID)
@@ -189,5 +196,5 @@ func (w *WaitingAddLiquidity) StringArr() ([]string, error) {
 	res = append(res, w.txReqID)
 	shardID := strconv.Itoa(int(w.shardID))
 	res = append(res, shardID)
-	return res, nil
+	return res
 }
