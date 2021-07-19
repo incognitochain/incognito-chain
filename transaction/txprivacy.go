@@ -1002,6 +1002,18 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("invalid cmValues in Bullet proof")
 			}
 
+			if len(txN.Proof.GetOutputCoins()) != len(cmValueOfOutputCoins) {
+				return false, fmt.Errorf("invalid output commitments, need %v, got %v",
+					len(txN.Proof.GetOutputCoins()),
+					len(cmValueOfOutputCoins))
+			}
+
+			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetCommitmentInputValue()) {
+				return false, fmt.Errorf("invalid input commitments, need %v, got %v",
+					len(txN.Proof.GetInputCoins()),
+					len(txN.Proof.GetCommitmentInputValue()))
+			}
+
 			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumber proofs and the number of one-of-many proofs")
 			}
