@@ -1,4 +1,4 @@
-package metadata
+package pdexv3
 
 import (
 	"encoding/base64"
