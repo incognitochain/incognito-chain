@@ -90,6 +90,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams,
 	shardStates map[byte][]types.ShardState,
+	allRemainTxs map[byte][]metadata.Transaction,
 ) ([][]string, error) {
 	// transfrom beacon height for pdex process
 	beaconBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconHeight - 1)
@@ -214,20 +215,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	transactions := []metadata.Transaction{}
-
-	for _, key := range keys {
-		txHashes := []common.Hash{}
-		for _, shardState := range shardStates[byte(key)] {
-			txHashes = append(txHashes, shardState.PDETxHashes()...)
-		}
-		txs, err := blockchain.GetTransactionsByHashesWithShardID(txHashes, byte(key))
-		if err != nil {
-			return utils.EmptyStringMatrix, err
-		}
-		transactions = append(transactions, txs...)
-	}
-
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconHeight(beaconHeight - 1).
@@ -237,7 +224,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildCrossPoolTradeActions(pdeCrossPoolTradeActions).
 		BuildWithdrawalActions(pdeWithdrawalActions).
 		BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
-		BuildTransactions(transactions).
+		BuildAllRemainTxs(allRemainTxs).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		Build()
 

@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -126,15 +127,24 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 	addLiquidityTxs := []metadata.Transaction{}
 
-	for _, tx := range env.Transactions() {
-		// TODO: @pdex get metadata here and build instructions from transactions here
-		switch tx.GetMetadataType() {
-		case metadataCommon.PDexV3AddLiquidityMeta:
-			_, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
-			if !ok {
-				return instructions, errors.New("Can not parse add liquidity metadata")
+	allRemainTxs := env.AllRemainTxs()
+	keys := []int{}
+
+	for k := range allRemainTxs {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, key := range keys {
+		for _, tx := range allRemainTxs[byte(key)] {
+			// TODO: @pdex get metadata here and build instructions from transactions here
+			switch tx.GetMetadataType() {
+			case metadataCommon.PDexV3AddLiquidityMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+				if !ok {
+					return instructions, errors.New("Can not parse add liquidity metadata")
+				}
+				addLiquidityTxs = append(addLiquidityTxs, tx)
 			}
-			addLiquidityTxs = append(addLiquidityTxs, tx)
 		}
 	}
 

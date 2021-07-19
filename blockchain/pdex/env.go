@@ -14,7 +14,7 @@ type StateEnvBuilder interface {
 	BuildFeeWithdrawalActions([][]string) StateEnvBuilder
 	BuildModifyParamsActions([][]string) StateEnvBuilder
 	BuildBeaconHeight(uint64) StateEnvBuilder
-	BuildTransactions([]metadata.Transaction) StateEnvBuilder
+	BuildAllRemainTxs(map[byte][]metadata.Transaction) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
 	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
@@ -35,7 +35,7 @@ type stateEnvironment struct {
 	modifyParamsActions            [][]string
 	beaconHeight                   uint64
 	beaconInstructions             [][]string
-	transactions                   []metadata.Transaction
+	allRemainTxs                   map[byte][]metadata.Transaction
 	stateDB                        *statedb.StateDB
 	bcHeightBreakPointPrivacyV2    uint64
 }
@@ -90,8 +90,8 @@ func (env *stateEnvironment) BuildBeaconInstructions(beaconInstructions [][]stri
 	return env
 }
 
-func (env *stateEnvironment) BuildTransactions(transactions []metadata.Transaction) StateEnvBuilder {
-	env.transactions = transactions
+func (env *stateEnvironment) BuildAllRemainTxs(allRemainTxs map[byte][]metadata.Transaction) StateEnvBuilder {
+	env.allRemainTxs = allRemainTxs
 	return env
 }
 
@@ -114,7 +114,7 @@ type StateEnvironment interface {
 	ModifyParamsActions() [][]string
 	BeaconHeight() uint64
 	BeaconInstructions() [][]string
-	Transactions() []metadata.Transaction
+	AllRemainTxs() map[byte][]metadata.Transaction
 	StateDB() *statedb.StateDB
 	BCHeightBreakPointPrivacyV2() uint64
 }
@@ -151,8 +151,8 @@ func (env *stateEnvironment) BeaconHeight() uint64 {
 	return env.beaconHeight
 }
 
-func (env *stateEnvironment) Transactions() []metadata.Transaction {
-	return env.transactions
+func (env *stateEnvironment) AllRemainTxs() map[byte][]metadata.Transaction {
+	return env.allRemainTxs
 }
 
 func (env *stateEnvironment) BeaconInstructions() [][]string {

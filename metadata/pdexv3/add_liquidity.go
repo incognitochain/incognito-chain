@@ -218,3 +218,14 @@ func (al *AddLiquidity) TokenAmount() uint64 {
 func (al *AddLiquidity) Amplifier() uint {
 	return al.amplifier
 }
+
+func (al *AddLiquidity) BuildReqActions(
+	tx metadataCommon.Transaction,
+	chainRetriever metadataCommon.ChainRetriever,
+	shardViewRetriever metadataCommon.ShardViewRetriever,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
+	shardID byte,
+	shardHeight uint64,
+) ([][]string, error) {
+	return [][]string{}, nil
+}
