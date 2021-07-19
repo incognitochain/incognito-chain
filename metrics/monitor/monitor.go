@@ -56,6 +56,11 @@ func init() {
 	uid := uuid.New()
 	globalParam = &logKV{param: make(map[string]interface{})}
 	SetGlobalParam("UID", uid.String())
+	commitID := os.Getenv("commit")
+	if commitID == "" {
+		commitID = "NA"
+	}
+	SetGlobalParam("CommitID", commitID)
 	//var err error
 	//monitorFile, err = os.OpenFile("/data/monitor.json", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	//if err != nil {
@@ -140,7 +145,6 @@ func (s *logKV) Write() {
 	//s.param["PACKAGE"] = fmt.Sprintf("%s", r.FindStringSubmatch(fn)[1])
 	s.param["Time"] = fmt.Sprintf("%s", time.Now().Format(time.RFC3339))
 	b, _ := json.Marshal(s.param)
-
 	if v, ok := s.param["MINING_PUBKEY"]; !ok || v == "" {
 		return
 	}
@@ -148,7 +152,6 @@ func (s *logKV) Write() {
 	//io.Copy(monitorFile, bytes.NewReader([]byte("\n")))
 
 	go func() {
-
 		monitorEP := os.Getenv("MONITOR")
 		if monitorEP != "" {
 			req, err := http.NewRequest(http.MethodPost, monitorEP, bytes.NewBuffer(b))
