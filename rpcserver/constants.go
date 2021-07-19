@@ -133,6 +133,7 @@ const (
 
 	getShardBestState        = "getshardbeststate"
 	getShardBestStateDetail  = "getshardbeststatedetail"
+	getBeaconViewByHash      = "getbeaconviewbyhash"
 	getBeaconBestState       = "getbeaconbeststate"
 	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 

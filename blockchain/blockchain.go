@@ -800,10 +800,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	sID := []int{}
-	for i := 0; i < config.Param().ActiveShards; i++ {
-		sID = append(sID, i)
-	}
 	return beaconView, err
 }
 
