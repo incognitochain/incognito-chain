@@ -9,13 +9,15 @@ import (
 )
 
 type PDexV3Params struct {
-	defaultFeeRateBPS        uint
-	feeRateBPS               map[string]uint
-	prvDiscountPercent       uint
-	protocolFeePercent       uint
-	stakingPoolRewardPercent uint
-	defaultStakingPoolsShare uint
-	stakingPoolsShare        map[string]uint
+	defaultFeeRateBPS               uint
+	feeRateBPS                      map[string]uint
+	prvDiscountPercent              uint
+	limitProtocolFeePercent         uint
+	limitStakingPoolRewardPercent   uint
+	tradingProtocolFeePercent       uint
+	tradingStakingPoolRewardPercent uint
+	defaultStakingPoolsShare        uint
+	stakingPoolsShare               map[string]uint
 }
 
 func (pp PDexV3Params) DefaultFeeRateBPS() uint {
@@ -27,11 +29,17 @@ func (pp PDexV3Params) FeeRateBPS() map[string]uint {
 func (pp PDexV3Params) PRVDiscountPercent() uint {
 	return pp.prvDiscountPercent
 }
-func (pp PDexV3Params) ProtocolFeePercent() uint {
-	return pp.protocolFeePercent
+func (pp PDexV3Params) LimitProtocolFeePercent() uint {
+	return pp.limitProtocolFeePercent
 }
-func (pp PDexV3Params) StakingPoolRewardPercent() uint {
-	return pp.stakingPoolRewardPercent
+func (pp PDexV3Params) LimitStakingPoolRewardPercent() uint {
+	return pp.limitStakingPoolRewardPercent
+}
+func (pp PDexV3Params) TradingProtocolFeePercent() uint {
+	return pp.tradingProtocolFeePercent
+}
+func (pp PDexV3Params) TradingStakingPoolRewardPercent() uint {
+	return pp.tradingStakingPoolRewardPercent
 }
 func (pp PDexV3Params) DefaultStakingPoolsShare() uint {
 	return pp.defaultStakingPoolsShare
@@ -42,21 +50,25 @@ func (pp PDexV3Params) StakingPoolsShare() map[string]uint {
 
 func (pp PDexV3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		DefaultFeeRateBPS        uint
-		FeeRateBPS               map[string]uint
-		PRVDiscountPercent       uint
-		ProtocolFeePercent       uint
-		StakingPoolRewardPercent uint
-		DefaultStakingPoolsShare uint
-		StakingPoolsShare        map[string]uint
+		DefaultFeeRateBPS               uint
+		FeeRateBPS                      map[string]uint
+		PRVDiscountPercent              uint
+		LimitProtocolFeePercent         uint
+		LimitStakingPoolRewardPercent   uint
+		TradingProtocolFeePercent       uint
+		TradingStakingPoolRewardPercent uint
+		DefaultStakingPoolsShare        uint
+		StakingPoolsShare               map[string]uint
 	}{
-		DefaultFeeRateBPS:        pp.defaultFeeRateBPS,
-		FeeRateBPS:               pp.feeRateBPS,
-		PRVDiscountPercent:       pp.prvDiscountPercent,
-		ProtocolFeePercent:       pp.protocolFeePercent,
-		StakingPoolRewardPercent: pp.stakingPoolRewardPercent,
-		DefaultStakingPoolsShare: pp.defaultStakingPoolsShare,
-		StakingPoolsShare:        pp.stakingPoolsShare,
+		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
+		FeeRateBPS:                      pp.feeRateBPS,
+		PRVDiscountPercent:              pp.prvDiscountPercent,
+		LimitProtocolFeePercent:         pp.limitProtocolFeePercent,
+		LimitStakingPoolRewardPercent:   pp.limitStakingPoolRewardPercent,
+		TradingProtocolFeePercent:       pp.tradingProtocolFeePercent,
+		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
+		DefaultStakingPoolsShare:        pp.defaultStakingPoolsShare,
+		StakingPoolsShare:               pp.stakingPoolsShare,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -66,13 +78,15 @@ func (pp PDexV3Params) MarshalJSON() ([]byte, error) {
 
 func (pp *PDexV3Params) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		DefaultFeeRateBPS        uint
-		FeeRateBPS               map[string]uint
-		PRVDiscountPercent       uint
-		ProtocolFeePercent       uint
-		StakingPoolRewardPercent uint
-		DefaultStakingPoolsShare uint
-		StakingPoolsShare        map[string]uint
+		DefaultFeeRateBPS               uint
+		FeeRateBPS                      map[string]uint
+		PRVDiscountPercent              uint
+		LimitProtocolFeePercent         uint
+		LimitStakingPoolRewardPercent   uint
+		TradingProtocolFeePercent       uint
+		TradingStakingPoolRewardPercent uint
+		DefaultStakingPoolsShare        uint
+		StakingPoolsShare               map[string]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -81,8 +95,10 @@ func (pp *PDexV3Params) UnmarshalJSON(data []byte) error {
 	pp.defaultFeeRateBPS = temp.DefaultFeeRateBPS
 	pp.feeRateBPS = temp.FeeRateBPS
 	pp.prvDiscountPercent = temp.PRVDiscountPercent
-	pp.protocolFeePercent = temp.ProtocolFeePercent
-	pp.stakingPoolRewardPercent = temp.StakingPoolRewardPercent
+	pp.limitProtocolFeePercent = temp.LimitProtocolFeePercent
+	pp.limitStakingPoolRewardPercent = temp.LimitStakingPoolRewardPercent
+	pp.tradingProtocolFeePercent = temp.TradingProtocolFeePercent
+	pp.tradingStakingPoolRewardPercent = temp.TradingStakingPoolRewardPercent
 	pp.defaultStakingPoolsShare = temp.DefaultStakingPoolsShare
 	pp.stakingPoolsShare = temp.StakingPoolsShare
 	return nil
@@ -96,19 +112,23 @@ func NewPDexV3ParamsWithValue(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	protocolFeePercent uint,
-	stakingPoolRewardPercent uint,
+	limitProtocolFeePercent uint,
+	limitStakingPoolRewardPercent uint,
+	tradingProtocolFeePercent uint,
+	tradingStakingPoolRewardPercent uint,
 	defaultStakingPoolsShare uint,
 	stakingPoolsShare map[string]uint,
 ) *PDexV3Params {
 	return &PDexV3Params{
-		defaultFeeRateBPS:        defaultFeeRateBPS,
-		feeRateBPS:               feeRateBPS,
-		prvDiscountPercent:       prvDiscountPercent,
-		protocolFeePercent:       protocolFeePercent,
-		stakingPoolRewardPercent: stakingPoolRewardPercent,
-		defaultStakingPoolsShare: defaultStakingPoolsShare,
-		stakingPoolsShare:        stakingPoolsShare,
+		defaultFeeRateBPS:               defaultFeeRateBPS,
+		feeRateBPS:                      feeRateBPS,
+		prvDiscountPercent:              prvDiscountPercent,
+		limitProtocolFeePercent:         limitProtocolFeePercent,
+		limitStakingPoolRewardPercent:   limitStakingPoolRewardPercent,
+		tradingProtocolFeePercent:       tradingProtocolFeePercent,
+		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
+		defaultStakingPoolsShare:        defaultStakingPoolsShare,
+		stakingPoolsShare:               stakingPoolsShare,
 	}
 }
 

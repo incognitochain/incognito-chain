@@ -117,14 +117,24 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PRVDiscountPercent is invalid"))
 	}
 
-	protocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["ProtocolFeePercent"])
+	limitProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["LimitProtocolFeePercent"])
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ProtocolFeePercent is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("LimitProtocolFeePercent is invalid"))
 	}
 
-	stakingPoolRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["StakingPoolRewardPercent"])
+	limitStakingPoolRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["LimitStakingPoolRewardPercent"])
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolRewardPercent is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("LimitStakingPoolRewardPercent is invalid"))
+	}
+
+	tradingProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["TradingProtocolFeePercent"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TradingProtocolFeePercent is invalid"))
+	}
+
+	tradingStakingPoolRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["TradingStakingPoolRewardPercent"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TradingStakingPoolRewardPercent is invalid"))
 	}
 
 	defaultStakingPoolsShare, err := common.AssertAndConvertStrToNumber(newParams["DefaultStakingPoolsShare"])
@@ -148,13 +158,15 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 	meta, err := metadataPDexV3.NewPDexV3ParamsModifyingRequest(
 		metadataCommon.PDexV3ModifyParamsMeta,
 		metadataPDexV3.PDexV3Params{
-			DefaultFeeRateBPS:        uint(defaultFeeRateBPS),
-			FeeRateBPS:               feeRateBPS,
-			PRVDiscountPercent:       uint(prvDiscountPercent),
-			ProtocolFeePercent:       uint(protocolFeePercent),
-			StakingPoolRewardPercent: uint(stakingPoolRewardPercent),
-			DefaultStakingPoolsShare: uint(defaultStakingPoolsShare),
-			StakingPoolsShare:        stakingPoolsShare,
+			DefaultFeeRateBPS:               uint(defaultFeeRateBPS),
+			FeeRateBPS:                      feeRateBPS,
+			PRVDiscountPercent:              uint(prvDiscountPercent),
+			LimitProtocolFeePercent:         uint(limitProtocolFeePercent),
+			LimitStakingPoolRewardPercent:   uint(limitStakingPoolRewardPercent),
+			TradingProtocolFeePercent:       uint(tradingProtocolFeePercent),
+			TradingStakingPoolRewardPercent: uint(tradingStakingPoolRewardPercent),
+			DefaultStakingPoolsShare:        uint(defaultStakingPoolsShare),
+			StakingPoolsShare:               stakingPoolsShare,
 		},
 	)
 	if err != nil {

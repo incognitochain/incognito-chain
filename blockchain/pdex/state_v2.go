@@ -63,25 +63,29 @@ type PoolPairState struct {
 }
 
 type Params struct {
-	DefaultFeeRateBPS        uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
-	FeeRateBPS               map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
-	PRVDiscountPercent       uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
-	ProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
-	StakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
-	DefaultStakingPoolsShare uint            // the default value of staking pool share weight (default - 0)
-	StakingPoolsShare        map[string]uint // map: staking tokenID -> pool staking share weight
+	DefaultFeeRateBPS               uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
+	FeeRateBPS                      map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
+	PRVDiscountPercent              uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
+	LimitProtocolFeePercent         uint            // percent of fees from limit orders
+	LimitStakingPoolRewardPercent   uint            // percent of fees from limit orders
+	TradingProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
+	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
+	DefaultStakingPoolsShare        uint            // the default value of staking pool share weight (default - 0)
+	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
 }
 
 func newStateV2() *stateV2 {
 	return &stateV2{
 		params: Params{
-			DefaultFeeRateBPS:        InitFeeRateBPS,
-			FeeRateBPS:               map[string]uint{},
-			PRVDiscountPercent:       InitPRVDiscountPercent,
-			ProtocolFeePercent:       InitProtocolFeePercent,
-			StakingPoolRewardPercent: InitStakingPoolRewardPercent,
-			DefaultStakingPoolsShare: InitStakingPoolsShare,
-			StakingPoolsShare:        map[string]uint{},
+			DefaultFeeRateBPS:               InitFeeRateBPS,
+			FeeRateBPS:                      map[string]uint{},
+			PRVDiscountPercent:              InitPRVDiscountPercent,
+			LimitProtocolFeePercent:         InitProtocolFeePercent,
+			LimitStakingPoolRewardPercent:   InitStakingPoolRewardPercent,
+			TradingProtocolFeePercent:       InitProtocolFeePercent,
+			TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
+			DefaultStakingPoolsShare:        InitStakingPoolsShare,
+			StakingPoolsShare:               map[string]uint{},
 		},
 	}
 }
@@ -100,13 +104,15 @@ func initStateV2(
 ) (*stateV2, error) {
 	stateObject, err := statedb.GetPDexV3Params(stateDB)
 	params := Params{
-		DefaultFeeRateBPS:        stateObject.DefaultFeeRateBPS(),
-		FeeRateBPS:               stateObject.FeeRateBPS(),
-		PRVDiscountPercent:       stateObject.PRVDiscountPercent(),
-		ProtocolFeePercent:       stateObject.ProtocolFeePercent(),
-		StakingPoolRewardPercent: stateObject.StakingPoolRewardPercent(),
-		DefaultStakingPoolsShare: stateObject.DefaultStakingPoolsShare(),
-		StakingPoolsShare:        stateObject.StakingPoolsShare(),
+		DefaultFeeRateBPS:               stateObject.DefaultFeeRateBPS(),
+		FeeRateBPS:                      stateObject.FeeRateBPS(),
+		PRVDiscountPercent:              stateObject.PRVDiscountPercent(),
+		LimitProtocolFeePercent:         stateObject.LimitProtocolFeePercent(),
+		LimitStakingPoolRewardPercent:   stateObject.LimitStakingPoolRewardPercent(),
+		TradingProtocolFeePercent:       stateObject.TradingProtocolFeePercent(),
+		TradingStakingPoolRewardPercent: stateObject.TradingStakingPoolRewardPercent(),
+		DefaultStakingPoolsShare:        stateObject.DefaultStakingPoolsShare(),
+		StakingPoolsShare:               stateObject.StakingPoolsShare(),
 	}
 	if err != nil {
 		return nil, err
@@ -193,8 +199,10 @@ func (s *stateV2) StoreToDB(env StateEnvironment) error {
 		s.params.DefaultFeeRateBPS,
 		s.params.FeeRateBPS,
 		s.params.PRVDiscountPercent,
-		s.params.ProtocolFeePercent,
-		s.params.StakingPoolRewardPercent,
+		s.params.LimitProtocolFeePercent,
+		s.params.LimitStakingPoolRewardPercent,
+		s.params.TradingProtocolFeePercent,
+		s.params.TradingStakingPoolRewardPercent,
 		s.params.DefaultStakingPoolsShare,
 		s.params.StakingPoolsShare,
 	)

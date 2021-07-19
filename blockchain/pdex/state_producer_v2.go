@@ -46,7 +46,10 @@ func isValidPDexV3Params(params Params) bool {
 	if params.PRVDiscountPercent > MaxPRVDiscountPercent {
 		return false
 	}
-	if params.StakingPoolRewardPercent+params.ProtocolFeePercent > 100 {
+	if params.TradingStakingPoolRewardPercent+params.TradingProtocolFeePercent > 100 {
+		return false
+	}
+	if params.LimitProtocolFeePercent+params.LimitStakingPoolRewardPercent > 100 {
 		return false
 	}
 	return true

@@ -14,13 +14,15 @@ import (
 )
 
 type PDexV3Params struct {
-	DefaultFeeRateBPS        uint            `json:"DefaultFeeRateBPS"`
-	FeeRateBPS               map[string]uint `json:"FeeRateBPS"`
-	PRVDiscountPercent       uint            `json:"PRVDiscountPercent"`
-	ProtocolFeePercent       uint            `json:"ProtocolFeePercent"`
-	StakingPoolRewardPercent uint            `json:"StakingPoolRewardPercent"`
-	DefaultStakingPoolsShare uint            `json:"DefaultStakingPoolsShare"`
-	StakingPoolsShare        map[string]uint `json:"StakingPoolsShare"`
+	DefaultFeeRateBPS               uint            `json:"DefaultFeeRateBPS"`
+	FeeRateBPS                      map[string]uint `json:"FeeRateBPS"`
+	PRVDiscountPercent              uint            `json:"PRVDiscountPercent"`
+	LimitProtocolFeePercent         uint            `json:"LimitProtocolFeePercent"`
+	LimitStakingPoolRewardPercent   uint            `json:"LimitStakingPoolRewardPercent"`
+	TradingProtocolFeePercent       uint            `json:"TradingProtocolFeePercent"`
+	TradingStakingPoolRewardPercent uint            `json:"TradingStakingPoolRewardPercent"`
+	DefaultStakingPoolsShare        uint            `json:"DefaultStakingPoolsShare"`
+	StakingPoolsShare               map[string]uint `json:"StakingPoolsShare"`
 }
 
 type PDexV3ParamsModifyingRequest struct {
@@ -49,17 +51,21 @@ func NewPDexV3ParamsModifyingRequestStatus(
 	status int,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	protocolFeePercent uint,
-	stakingPoolRewardPercent uint,
+	limitProtocolFeePercent uint,
+	limitStakingPoolRewardPercent uint,
+	tradingProtocolFeePercent uint,
+	tradingStakingPoolRewardPercent uint,
 	stakingPoolsShare map[string]uint,
 ) *PDexV3ParamsModifyingRequestStatus {
 	return &PDexV3ParamsModifyingRequestStatus{
 		PDexV3Params: PDexV3Params{
-			FeeRateBPS:               feeRateBPS,
-			PRVDiscountPercent:       prvDiscountPercent,
-			ProtocolFeePercent:       protocolFeePercent,
-			StakingPoolRewardPercent: stakingPoolRewardPercent,
-			StakingPoolsShare:        stakingPoolsShare,
+			FeeRateBPS:                      feeRateBPS,
+			PRVDiscountPercent:              prvDiscountPercent,
+			LimitProtocolFeePercent:         limitProtocolFeePercent,
+			LimitStakingPoolRewardPercent:   limitStakingPoolRewardPercent,
+			TradingProtocolFeePercent:       tradingProtocolFeePercent,
+			TradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
+			StakingPoolsShare:               stakingPoolsShare,
 		},
 		Status: status,
 	}
