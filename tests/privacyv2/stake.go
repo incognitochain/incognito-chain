@@ -184,9 +184,9 @@ var (
      0,
     {
     "StakingType": 63,
-    "CandidatePaymentAddress": "12sw7BWe13ApYguEyBZCBLH6d5XWPzGsXy7EY3vtQ9ZsXrJ3yTJejiiC2PJW2DTqTKGTcgvK1S67TX2TwicjLVqcuD6ZWuDEkEmKSoaJfeiFAtFVzSVVJ6rFpbG8Vz9D6hmQSJ51JgayCz8ghhW9",
-    "PrivateSeed": "1kbmGmRfAPoqbem2mTsMwmjr72mJR1U9CTFNJ2iDmXHk5rh4tv",
-    "RewardReceiverPaymentAddress": "12sw7BWe13ApYguEyBZCBLH6d5XWPzGsXy7EY3vtQ9ZsXrJ3yTJejiiC2PJW2DTqTKGTcgvK1S67TX2TwicjLVqcuD6ZWuDEkEmKSoaJfeiFAtFVzSVVJ6rFpbG8Vz9D6hmQSJ51JgayCz8ghhW9",
+    "CandidatePaymentAddress": "12smfcjJ12WXVXah6K181U3nr3PFYMinXiMRnCTYEJUZLS1DdMkP8VqjRgBhJyKt9oRaiWU2it7Qtfi6VfQxpKUMta2Sx49F78kfgVVLQRYE8JjDHPfCDZwHi5MpGnakBcMLhX5V6JfFoxCrFvFA",
+    "PrivateSeed": "19Md7MynbrZaGUKk1YnD1BKcrQybF2ZSu1pkxMGnksJHSwPLTv",
+    "RewardReceiverPaymentAddress": "12smfcjJ12WXVXah6K181U3nr3PFYMinXiMRnCTYEJUZLS1DdMkP8VqjRgBhJyKt9oRaiWU2it7Qtfi6VfQxpKUMta2Sx49F78kfgVVLQRYE8JjDHPfCDZwHi5MpGnakBcMLhX5V6JfFoxCrFvFA",
     "AutoReStaking":true
      }
    ],
@@ -231,7 +231,8 @@ var (
      }
    ],
    "id":1
-}`), strings.NewReader(`{
+}`),
+		strings.NewReader(`{
    "jsonrpc":"1.0",
    "method":"createandsendstakingtransaction",
    "params":[
