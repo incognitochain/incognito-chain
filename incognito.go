@@ -11,7 +11,6 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/portal"
@@ -84,13 +83,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		fmt.Fprintln(os.Stderr, err)
 		panic(err)
 	}
-	param := config.LoadParam()
-
-	common.TIMESLOT = param.ConsensusParam.Timeslot
-	common.MaxShardNumber = param.ActiveShards
-
-	//load keys from file
-	param.LoadKey()
+	config.LoadParam()
 	portal.SetupParam()
 
 	//create genesis block
