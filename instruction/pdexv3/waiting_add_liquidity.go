@@ -123,7 +123,7 @@ func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
 
 func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 	if len(source) != 11 {
-		return fmt.Errorf("Receive length %v but expect %v", len(source), 9)
+		return fmt.Errorf("Receive length %v but expect %v", len(source), 11)
 	}
 	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
 		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
