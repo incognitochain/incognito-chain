@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 func InitVersionByBeaconHeight(beaconHeight uint64) State {
@@ -585,10 +586,36 @@ func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
 	return strings.Join([]string{token0Name, token1Name, txReqID}, "-")
 }
 
-func addLiquidityToPoolPair(
-	contribution0 Contribution,
-	contribution1 Contribution,
-	poolPairs map[string]PoolPairState,
-) {
+//amplifier >= 10000
+func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (uint64, uint64) {
+	if amplifier == metadataPdexV3.DefaultAmplifier {
+		return amount0, amount1
+	}
+	vAmount0 := big.NewInt(0)
+	vAmount1 := big.NewInt(0)
+	vAmount0.Mul(
+		new(big.Int).SetUint64(amount0),
+		new(big.Int).SetUint64(uint64(amplifier)),
+	)
+	vAmount0.Div(
+		vAmount0,
+		new(big.Int).SetUint64(uint64(metadataPdexV3.DefaultAmplifier)),
+	)
+	vAmount1.Mul(
+		new(big.Int).SetUint64(amount0),
+		new(big.Int).SetUint64(uint64(amplifier)),
+	)
+	vAmount1.Div(
+		vAmount0,
+		new(big.Int).SetUint64(uint64(metadataPdexV3.DefaultAmplifier)),
+	)
 
+	return vAmount0.Uint64(), vAmount1.Uint64()
+}
+
+func addShare(
+	shares map[string]uint64,
+	amount uint64,
+) (map[string]uint64, error) {
+	return shares, nil
 }

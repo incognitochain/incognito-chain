@@ -39,19 +39,6 @@ type Order struct {
 	fee             uint64
 }
 
-type PoolPairState struct {
-	token0ID              string
-	token1ID              string
-	token0RealAmount      uint64
-	token1RealAmount      uint64
-	shares                map[string]uint64
-	tradingFees           map[string]map[string]uint64
-	currentContributionID uint64
-	token0VirtualAmount   uint64
-	token1VirtualAmount   uint64
-	amplifier             uint
-}
-
 type Params struct {
 	FeeRateBPS               map[string]int // map: pool ID -> fee rate (0.1% ~ 10 BPS)
 	PRVDiscountPercent       int            // percent of fee that will be discounted if using PRV as the trading token fee (defaul: 25%)
@@ -61,11 +48,32 @@ type Params struct {
 }
 
 func newStateV2() *stateV2 {
-	return nil
+	return &stateV2{
+		stateBase:                   *newStateBase(),
+		waitingContributions:        make(map[string]Contribution),
+		deletedWaitingContributions: make(map[string]Contribution),
+		poolPairs:                   make(map[string]PoolPairState),
+		stakingPoolsState:           make(map[string]StakingPoolState),
+		orders:                      make(map[int64][]Order),
+	}
 }
 
-func newStateV2WithValue() *stateV2 {
-	return nil
+func newStateV2WithValue(
+	waitingContributions map[string]Contribution,
+	deletedWaitingContributions map[string]Contribution,
+	poolPairs map[string]PoolPairState,
+	params Params,
+	stakingPoolsState map[string]StakingPoolState,
+	orders map[int64][]Order,
+) *stateV2 {
+	return &stateV2{
+		waitingContributions:        waitingContributions,
+		deletedWaitingContributions: deletedWaitingContributions,
+		poolPairs:                   poolPairs,
+		params:                      params,
+		stakingPoolsState:           stakingPoolsState,
+		orders:                      orders,
+	}
 }
 
 func initStateV2(

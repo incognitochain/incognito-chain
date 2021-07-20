@@ -13,15 +13,15 @@ import (
 )
 
 type WaitingAddLiquidity struct {
-	poolPairID      string // only "" for the first contribution of pool
-	pairHash        string
-	receiverAddress string // receive nfct
-	refundAddress   string // refund pToken
-	tokenID         string
-	tokenAmount     uint64
-	amplifier       uint // only set for the first contribution
-	txReqID         string
-	shardID         byte
+	poolPairID     string // only "" for the first contribution of pool
+	pairHash       string
+	receiveAddress string // receive nfct
+	refundAddress  string // refund pToken
+	tokenID        string
+	tokenAmount    uint64
+	amplifier      uint // only set for the first contribution
+	txReqID        string
+	shardID        byte
 }
 
 func NewWaitingAddLiquidity() *WaitingAddLiquidity {
@@ -35,7 +35,7 @@ func NewWaitingAddLiquidityFromMetadata(
 	return NewWaitingAddLiquidityWithValue(
 		metaData.PoolPairID(),
 		metaData.PairHash(),
-		metaData.ReceiverAddress(),
+		metaData.ReceiveAddress(),
 		metaData.RefundAddress(),
 		metaData.TokenID(),
 		txReqID,
@@ -47,45 +47,45 @@ func NewWaitingAddLiquidityFromMetadata(
 
 func NewWaitingAddLiquidityWithValue(
 	poolPairID, pairHash,
-	receiverAddress, refundAddress,
+	receiveAddress, refundAddress,
 	tokenID, txReqID string,
 	tokenAmount uint64, amplifier uint,
 	shardID byte,
 ) *WaitingAddLiquidity {
 	return &WaitingAddLiquidity{
-		poolPairID:      poolPairID,
-		pairHash:        pairHash,
-		receiverAddress: receiverAddress,
-		refundAddress:   refundAddress,
-		tokenID:         tokenID,
-		tokenAmount:     tokenAmount,
-		amplifier:       amplifier,
-		txReqID:         txReqID,
-		shardID:         shardID,
+		poolPairID:     poolPairID,
+		pairHash:       pairHash,
+		receiveAddress: receiveAddress,
+		refundAddress:  refundAddress,
+		tokenID:        tokenID,
+		tokenAmount:    tokenAmount,
+		amplifier:      amplifier,
+		txReqID:        txReqID,
+		shardID:        shardID,
 	}
 }
 
 func (w *WaitingAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID      string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash        string `json:"PairHash"`
-		ReceiverAddress string `json:"ReceiverAddress"` // receive nfct
-		RefundAddress   string `json:"RefundAddress"`   // refund pToken
-		TokenID         string `json:"TokenID"`
-		TokenAmount     uint64 `json:"TokenAmount"`
-		Amplifier       uint   `json:"Amplifier"` // only set for the first contribution
-		TxReqID         string `json:"TxReqID"`
-		ShardID         byte   `json:"ShardID"`
+		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash       string `json:"PairHash"`
+		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
+		RefundAddress  string `json:"RefundAddress"`  // refund pToken
+		TokenID        string `json:"TokenID"`
+		TokenAmount    uint64 `json:"TokenAmount"`
+		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
+		TxReqID        string `json:"TxReqID"`
+		ShardID        byte   `json:"ShardID"`
 	}{
-		PoolPairID:      w.poolPairID,
-		PairHash:        w.pairHash,
-		ReceiverAddress: w.receiverAddress,
-		RefundAddress:   w.refundAddress,
-		TokenID:         w.tokenID,
-		TokenAmount:     w.tokenAmount,
-		Amplifier:       w.amplifier,
-		TxReqID:         w.txReqID,
-		ShardID:         w.shardID,
+		PoolPairID:     w.poolPairID,
+		PairHash:       w.pairHash,
+		ReceiveAddress: w.receiveAddress,
+		RefundAddress:  w.refundAddress,
+		TokenID:        w.tokenID,
+		TokenAmount:    w.tokenAmount,
+		Amplifier:      w.amplifier,
+		TxReqID:        w.txReqID,
+		ShardID:        w.shardID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -95,15 +95,15 @@ func (w *WaitingAddLiquidity) MarshalJSON() ([]byte, error) {
 
 func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID      string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash        string `json:"PairHash"`
-		ReceiverAddress string `json:"ReceiverAddress"` // receive nfct
-		RefundAddress   string `json:"RefundAddress"`   // refund pToken
-		TokenID         string `json:"TokenID"`
-		TokenAmount     uint64 `json:"TokenAmount"`
-		Amplifier       uint   `json:"Amplifier"` // only set for the first contribution
-		TxReqID         string `json:"TxReqID"`
-		ShardID         byte   `json:"ShardID"`
+		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash       string `json:"PairHash"`
+		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
+		RefundAddress  string `json:"RefundAddress"`  // refund pToken
+		TokenID        string `json:"TokenID"`
+		TokenAmount    uint64 `json:"TokenAmount"`
+		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
+		TxReqID        string `json:"TxReqID"`
+		ShardID        byte   `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -111,7 +111,7 @@ func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
 	}
 	w.poolPairID = temp.PoolPairID
 	w.pairHash = temp.PairHash
-	w.receiverAddress = temp.ReceiverAddress
+	w.receiveAddress = temp.ReceiveAddress
 	w.refundAddress = temp.RefundAddress
 	w.tokenID = temp.TokenID
 	w.tokenAmount = temp.TokenAmount
@@ -157,15 +157,15 @@ func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 		return fmt.Errorf("Amplifier can not be smaller than %v get %v", metadataPdexV3.DefaultAmplifier, amplifier)
 	}
 	w.amplifier = uint(amplifier)
-	receiverAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromString(source[7])
+	receiveAddress := privacy.OTAReceiver{}
+	err = receiveAddress.FromString(source[7])
 	if err != nil {
 		return err
 	}
-	if !receiverAddress.IsValid() {
-		return errors.New("receiver Address is invalid")
+	if !receiveAddress.IsValid() {
+		return errors.New("receive Address is invalid")
 	}
-	w.receiverAddress = source[7]
+	w.receiveAddress = source[7]
 	refundAddress := privacy.OTAReceiver{}
 	err = refundAddress.FromString(source[8])
 	if err != nil {
@@ -194,7 +194,7 @@ func (w *WaitingAddLiquidity) StringArr() []string {
 	res = append(res, tokenAmount)
 	amplifier := strconv.FormatUint(uint64(w.amplifier), 10)
 	res = append(res, amplifier)
-	res = append(res, w.receiverAddress)
+	res = append(res, w.receiveAddress)
 	res = append(res, w.refundAddress)
 	res = append(res, w.txReqID)
 	shardID := strconv.Itoa(int(w.shardID))

@@ -14,13 +14,13 @@ import (
 )
 
 type AddLiquidity struct {
-	poolPairID      string // only "" for the first contribution of pool
-	pairHash        string
-	receiverAddress string // receive nfct
-	refundAddress   string // refund pToken
-	tokenID         string
-	tokenAmount     uint64
-	amplifier       uint // only set for the first contribution
+	poolPairID     string // only "" for the first contribution of pool
+	pairHash       string
+	receiveAddress string // receive nfct
+	refundAddress  string // refund pToken
+	tokenID        string
+	tokenAmount    uint64
+	amplifier      uint // only set for the first contribution
 	metadataCommon.MetadataBase
 }
 
@@ -30,21 +30,21 @@ func NewAddLiquidity() *AddLiquidity {
 
 func NewAddLiquidityWithValue(
 	poolPairID, pairHash,
-	receiverAddress, refundAddress,
+	receiveAddress, refundAddress,
 	tokenID string, tokenAmount uint64, amplifier uint,
 ) *AddLiquidity {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.PDexV3AddLiquidityMeta,
 	}
 	return &AddLiquidity{
-		poolPairID:      poolPairID,
-		pairHash:        pairHash,
-		receiverAddress: receiverAddress,
-		refundAddress:   refundAddress,
-		tokenID:         tokenID,
-		tokenAmount:     tokenAmount,
-		amplifier:       amplifier,
-		MetadataBase:    metadataBase,
+		poolPairID:     poolPairID,
+		pairHash:       pairHash,
+		receiveAddress: receiveAddress,
+		refundAddress:  refundAddress,
+		tokenID:        tokenID,
+		tokenAmount:    tokenAmount,
+		amplifier:      amplifier,
+		MetadataBase:   metadataBase,
 	}
 }
 
@@ -77,13 +77,13 @@ func (al *AddLiquidity) ValidateSanityData(
 	if tokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
-	receiverAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromString(al.receiverAddress)
+	receiveAddress := privacy.OTAReceiver{}
+	err = receiveAddress.FromString(al.receiveAddress)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if !receiverAddress.IsValid() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiverAddress is not valid"))
+	if !receiveAddress.IsValid() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
 	refundAddress := privacy.OTAReceiver{}
 	err = refundAddress.FromString(al.refundAddress)
@@ -125,7 +125,7 @@ func (al *AddLiquidity) Hash() *common.Hash {
 	record := al.MetadataBase.Hash().String()
 	record += al.poolPairID
 	record += al.pairHash
-	record += al.receiverAddress
+	record += al.receiveAddress
 	record += al.refundAddress
 	record += al.tokenID
 	record += strconv.FormatUint(uint64(al.amplifier), 10)
@@ -141,23 +141,23 @@ func (al *AddLiquidity) CalculateSize() uint64 {
 
 func (al *AddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID      string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash        string `json:"PairHash"`
-		ReceiverAddress string `json:"ReceiverAddress"` // receive nfct
-		RefundAddress   string `json:"RefundAddress"`   // refund pToken
-		TokenID         string `json:"TokenID"`
-		TokenAmount     uint64 `json:"TokenAmount"`
-		Amplifier       uint   `json:"Amplifier"` // only set for the first contribution
+		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash       string `json:"PairHash"`
+		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
+		RefundAddress  string `json:"RefundAddress"`  // refund pToken
+		TokenID        string `json:"TokenID"`
+		TokenAmount    uint64 `json:"TokenAmount"`
+		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
 	}{
-		PoolPairID:      al.poolPairID,
-		PairHash:        al.pairHash,
-		ReceiverAddress: al.receiverAddress,
-		RefundAddress:   al.refundAddress,
-		TokenID:         al.tokenID,
-		TokenAmount:     al.tokenAmount,
-		Amplifier:       al.amplifier,
-		MetadataBase:    al.MetadataBase,
+		PoolPairID:     al.poolPairID,
+		PairHash:       al.pairHash,
+		ReceiveAddress: al.receiveAddress,
+		RefundAddress:  al.refundAddress,
+		TokenID:        al.tokenID,
+		TokenAmount:    al.tokenAmount,
+		Amplifier:      al.amplifier,
+		MetadataBase:   al.MetadataBase,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -167,13 +167,13 @@ func (al *AddLiquidity) MarshalJSON() ([]byte, error) {
 
 func (al *AddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID      string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash        string `json:"PairHash"`
-		ReceiverAddress string `json:"ReceiverAddress"` // receive nfct
-		RefundAddress   string `json:"RefundAddress"`   // refund pToken
-		TokenID         string `json:"TokenID"`
-		TokenAmount     uint64 `json:"TokenAmount"`
-		Amplifier       uint   `json:"Amplifier"` // only set for the first contribution
+		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash       string `json:"PairHash"`
+		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
+		RefundAddress  string `json:"RefundAddress"`  // refund pToken
+		TokenID        string `json:"TokenID"`
+		TokenAmount    uint64 `json:"TokenAmount"`
+		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -182,7 +182,7 @@ func (al *AddLiquidity) UnmarshalJSON(data []byte) error {
 	}
 	al.poolPairID = temp.PoolPairID
 	al.pairHash = temp.PairHash
-	al.receiverAddress = temp.ReceiverAddress
+	al.receiveAddress = temp.ReceiveAddress
 	al.refundAddress = temp.RefundAddress
 	al.tokenID = temp.TokenID
 	al.tokenAmount = temp.TokenAmount
@@ -199,8 +199,8 @@ func (al *AddLiquidity) PairHash() string {
 	return al.pairHash
 }
 
-func (al *AddLiquidity) ReceiverAddress() string {
-	return al.receiverAddress
+func (al *AddLiquidity) ReceiveAddress() string {
+	return al.receiveAddress
 }
 
 func (al *AddLiquidity) RefundAddress() string {

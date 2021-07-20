@@ -35,7 +35,7 @@ func (sp *stateProducerV2) addLiquidity(
 		waitingContribution, found := waitingContributions[metaData.PairHash()]
 		if !found {
 			waitingContributions[metaData.PairHash()] = *NewContributionWithValue(
-				metaData.PoolPairID(), metaData.ReceiverAddress(),
+				metaData.PoolPairID(), metaData.ReceiveAddress(),
 				metaData.RefundAddress(), metaData.TokenID(), txReqID,
 				metaData.TokenAmount(), metaData.Amplifier(), shardID,
 			)
@@ -43,10 +43,10 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, inst)
 			continue
 		}
+		delete(waitingContributions, metaData.PairHash())
 		if waitingContribution.tokenID == metaData.TokenID() ||
 			waitingContribution.amplifier != metaData.Amplifier() ||
 			waitingContribution.poolPairID != metaData.PoolPairID() {
-			delete(waitingContributions, metaData.PairHash())
 			refundInst1 := instruction.NewRefundAddLiquidityWithValue(
 				metaData.PairHash(), waitingContribution.refundAddress,
 				waitingContribution.tokenID, waitingContribution.txReqID,
@@ -68,34 +68,79 @@ func (sp *stateProducerV2) addLiquidity(
 		} else {
 			poolPairID = waitingContribution.poolPairID
 		}
-		poolPair, found := poolPairs[poolPairID]
 		incomingWaitingContribution := *NewContributionWithValue(
-			poolPairID, metaData.ReceiverAddress(), metaData.RefundAddress(),
+			poolPairID, metaData.ReceiveAddress(), metaData.RefundAddress(),
 			metaData.TokenID(), txReqID, metaData.TokenAmount(),
 			metaData.Amplifier(), shardID,
 		)
-
+		poolPair, found := poolPairs[poolPairID]
 		if !found {
-			delete(waitingContributions, metaData.PairHash())
-
-			addLiquidityToPoolPair()
-			err := updateWaitingContributionPairToPool(
-				beaconHeight,
-				waitingContribution,
-				incomingWaitingContribution,
-				poolPairs,
-				shares,
-			)
+			poolPairs[poolPairID] = *initPoolPairState(waitingContribution, incomingWaitingContribution)
+			poolPair := poolPairs[poolPairID]
+			_, err := poolPair.addContributions(waitingContribution, incomingWaitingContribution)
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
-			matchedInst := buildMatchedContributionInst(
-				contributionAction,
-				metaType,
-			)
-			res = append(res, matchedInst)
+			//TODO: @tin choose right otaReceiver
+			otaReceiver := waitingContribution.receiveAddress
+			inst := instruction.NewMatchAddLiquidityWithValue(
+				metaData.PairHash(), otaReceiver,
+				metaData.TokenID(), txReqID,
+				metaData.TokenAmount(), shardID,
+			).StringArr()
+			res = append(res, inst)
 			continue
 		}
+		token0Contribution, token1Contribution := poolPair.getContributionsByOrder(
+			waitingContribution,
+			incomingWaitingContribution,
+		)
+		actualToken0ContributionAmount,
+			returnedToken0ContributionAmount,
+			actualToken1ContributionAmount,
+			returnedToken1ContributionAmount := poolPair.
+			computeActualContributedAmounts(token0Contribution, token1Contribution)
+
+		if actualToken0ContributionAmount == 0 || actualToken1ContributionAmount == 0 {
+			refundInst1 := instruction.NewRefundAddLiquidityWithValue(
+				metaData.PairHash(), token0Contribution.refundAddress,
+				token0Contribution.tokenID, token0Contribution.txReqID,
+				token0Contribution.tokenAmount, token0Contribution.shardID,
+			).StringArr()
+			res = append(res, refundInst1)
+			refundInst2 := instruction.NewRefundAddLiquidityWithValue(
+				metaData.PairHash(), token1Contribution.refundAddress,
+				token1Contribution.tokenID, token1Contribution.txReqID,
+				token1Contribution.tokenAmount, token1Contribution.shardID,
+			).StringArr()
+			res = append(res, refundInst2)
+			continue
+		}
+
+		// change token amount
+		token0Contribution.tokenAmount = actualToken0ContributionAmount
+		token1Contribution.tokenAmount = actualToken1ContributionAmount
+		//
+		nfctID, err := poolPair.addContributions(token0Contribution, token1Contribution)
+		if err != nil {
+			return res, poolPairs, waitingContributions, err
+		}
+		matchAndReturnInst0 := instruction.NewMatchAndReturnAddLiquidityWithValue(
+			metaData.PairHash(),
+			token0Contribution.receiveAddress, token0Contribution.refundAddress,
+			token0Contribution.tokenID, nfctID, token0Contribution.txReqID,
+			actualToken0ContributionAmount, returnedToken0ContributionAmount,
+			token0Contribution.shardID,
+		).StringArr()
+		res = append(res, matchAndReturnInst0)
+		matchAndReturnInst1 := instruction.NewMatchAndReturnAddLiquidityWithValue(
+			metaData.PairHash(),
+			token1Contribution.receiveAddress, token1Contribution.refundAddress,
+			token1Contribution.tokenID, nfctID, token1Contribution.txReqID,
+			actualToken1ContributionAmount, returnedToken1ContributionAmount,
+			token1Contribution.shardID,
+		).StringArr()
+		res = append(res, matchAndReturnInst1)
 	}
 
 	return res, poolPairs, waitingContributions, nil
