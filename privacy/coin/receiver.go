@@ -31,9 +31,17 @@ func (recv OTAReceiver) IsValid() bool {
 	return recv.PublicKey.PointValid()
 }
 
+func (recv *OTAReceiver) FromAddress(addr string, tokenID common.Hash) error {
+	if recv == nil {
+		return errors.New("OTAReceiver not initialized")
+	}
+	// TODO
+	return nil
+}
+
 // FromString() returns a new OTAReceiver parsed from the input string,
 // or error on failure
-func (recv *OTAReceiver) FromString(data string) (error) {
+func (recv *OTAReceiver) FromString(data string) error {
 	if recv == nil {
 		return errors.New("OTAReceiver not initialized")
 	}

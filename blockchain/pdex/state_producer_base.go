@@ -20,20 +20,20 @@ func (sp *stateProducerBase) feeWithdrawal(
 	actions [][]string,
 	beaconHeight uint64,
 	tradingFees map[string]uint64,
-) ([][]string, error) {
+) ([][]string, map[string]uint64, error) {
 	res := [][]string{}
 	for _, action := range actions {
 		contentStr := action[1]
 		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
-			return utils.EmptyStringMatrix, err
+			return utils.EmptyStringMatrix, tradingFees, err
 		}
 		var feeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
 		err = json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
-			return utils.EmptyStringMatrix, err
+			return utils.EmptyStringMatrix, tradingFees, err
 		}
 		wdMeta := feeWithdrawalRequestAction.Meta
 		tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(
@@ -44,7 +44,7 @@ func (sp *stateProducerBase) feeWithdrawal(
 		)
 		if err != nil {
 			Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
-			return utils.EmptyStringMatrix, err
+			return utils.EmptyStringMatrix, tradingFees, err
 		}
 		tradingFeeKey := string(tradingFeeKeyBytes)
 		withdrawableFee, found := tradingFees[tradingFeeKey]
@@ -67,7 +67,7 @@ func (sp *stateProducerBase) feeWithdrawal(
 		}
 		res = append(res, acceptedInst)
 	}
-	return res, nil
+	return res, tradingFees, nil
 }
 
 func (sp *stateProducerBase) sortTradeInstsByFee(

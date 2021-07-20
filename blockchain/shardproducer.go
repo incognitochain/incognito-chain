@@ -284,7 +284,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
+	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -878,7 +878,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
 	bc *BlockChain, shardID byte,
 	shardHeight, beaconHeight uint64,
-) (instructions [][]string, err error) {
+) (instructions [][]string, remainTxs []metadata.Transaction, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -898,13 +898,15 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				} else {
 					Logger.log.Errorf("Build Request Action Error %+v", err)
 				}
+			} else {
+				remainTxs = append(remainTxs, tx)
 			}
 		}
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
@@ -923,7 +925,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			if len(stopAutoStakingMetadata.CommitteePublicKey) != 0 {
 				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
@@ -931,7 +933,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		case metadata.UnStakingMeta:
 			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
 			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			if len(unstakingMetadata.CommitteePublicKey) != 0 {
 				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
@@ -943,12 +945,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		if len(stakeShardPublicKey) != len(stakeShardTxID) &&
 			len(stakeShardTxID) != len(stakeShardRewardReceiver) &&
 			len(stakeShardRewardReceiver) != len(stakeShardAutoStaking) {
-			return nil, NewBlockChainError(StakeInstructionError,
+			return nil, nil, NewBlockChainError(StakeInstructionError,
 				fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoStaking)))
 		}
 		stakeShardPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeShardPublicKey)
 		if err != nil {
-			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
+			return nil, nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
 		inst := []string{
@@ -976,5 +978,5 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
-	return instructions, nil
+	return instructions, remainTxs, nil
 }

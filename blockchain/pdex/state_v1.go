@@ -213,9 +213,15 @@ func (s *stateV1) Process(env StateEnvironment) error {
 
 func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
+	var err error
+	feeWithdrawalInstructions := [][]string{}
+	tradeInstructions := [][]string{}
+	crossPoolTradeInstructions := [][]string{}
+	withdrawalInstructions := [][]string{}
+	contributionInstructions := [][]string{}
 
 	// handle fee withdrawal
-	feeWithdrawalInstructions, err := s.producer.feeWithdrawal(
+	feeWithdrawalInstructions, s.tradingFees, err = s.producer.feeWithdrawal(
 		env.FeeWithdrawalActions(),
 		env.BeaconHeight(),
 		s.tradingFees,
@@ -227,7 +233,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
 		// handle trade
-		tradeInstructions, err := s.producer.trade(
+		tradeInstructions, s.poolPairs, err = s.producer.trade(
 			env.TradeActions(),
 			env.BeaconHeight(),
 			s.poolPairs,
@@ -239,7 +245,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	// handle cross pool trade
-	crossPoolTradeInstructions, err := s.producer.crossPoolTrade(
+	crossPoolTradeInstructions, s.poolPairs, s.shares, err = s.producer.crossPoolTrade(
 		env.CrossPoolTradeActions(),
 		env.BeaconHeight(),
 		s.poolPairs,
@@ -251,7 +257,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, crossPoolTradeInstructions...)
 
 	// handle withdrawal
-	withdrawalInstructions, err := s.producer.withdrawal(
+	withdrawalInstructions, s.poolPairs, s.shares, err = s.producer.withdrawal(
 		env.WithdrawalActions(),
 		env.BeaconHeight(),
 		s.poolPairs,
@@ -264,7 +270,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
 		// handle contribution
-		contributionInstructions, err := s.producer.contribution(
+		contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
 			env.ContributionActions(),
 			env.BeaconHeight(),
 			false,
@@ -280,7 +286,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	// handle prv required contribution
-	contributionInstructions, err := s.producer.contribution(
+	contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
 		env.PRVRequiredContributionActions(),
 		env.BeaconHeight(),
 		true,
