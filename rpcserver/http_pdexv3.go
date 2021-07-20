@@ -101,12 +101,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DefaultFeeRateBPS is invalid"))
 	}
 
-	feeRateBPSStr, ok := newParams["FeeRateBPS"].(map[string]string)
+	feeRateBPSTemp, ok := newParams["FeeRateBPS"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeRateBPS is invalid"))
 	}
 	feeRateBPS := map[string]uint{}
-	for key, feeRatePool := range feeRateBPSStr {
+	for key, feeRatePool := range feeRateBPSTemp {
 		value, err := common.AssertAndConvertStrToNumber(feeRatePool)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeRateBPS is invalid"))
@@ -144,12 +144,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DefaultStakingPoolsShare is invalid"))
 	}
 
-	stakingPoolsShareStr, ok := newParams["StakingPoolsShare"].(map[string]string)
+	stakingPoolsShareTemp, ok := newParams["StakingPoolsShare"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolsShare is invalid"))
 	}
 	stakingPoolsShare := map[string]uint{}
-	for key, share := range stakingPoolsShareStr {
+	for key, share := range stakingPoolsShareTemp {
 		value, err := common.AssertAndConvertStrToNumber(share)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolsShare is invalid"))

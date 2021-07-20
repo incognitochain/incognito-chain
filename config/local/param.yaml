@@ -68,5 +68,5 @@ tx_pool_version: 0
 bsc_param:
   host: "https://data-seed-prebsc-1-s1.binance.org:8545"
 pdex_param:
-  pdex_v3_break_point_height: 1000000000000
+  pdex_v3_break_point_height: 10
   admin_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
