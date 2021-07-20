@@ -1,7 +1,6 @@
 package pdex
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"strconv"
 
@@ -25,7 +24,7 @@ func buildModifyParamsInst(
 	reqTxID common.Hash,
 	status string,
 ) []string {
-	modifyingParamsReqContent := metadataPdexV3.PDexV3ParamsModifyingRequestContent{
+	modifyingParamsReqContent := metadataPdexV3.ParamsModifyingContent{
 		Content: params,
 		TxReqID: reqTxID,
 		ShardID: shardID,
@@ -81,28 +80,22 @@ func (sp *stateProducerV2) addLiquidity(
 }
 
 func (sp *stateProducerV2) modifyParams(
-	actions [][]string,
+	txs []metadata.Transaction,
 	beaconHeight uint64,
 	params Params,
 ) ([][]string, Params, error) {
 	instructions := [][]string{}
 
-	for _, action := range actions {
-		contentStr := action[1]
-		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while decoding content string of pdex v3 modify params action: %+v", err)
-			return [][]string{}, params, err
-		}
-		var modifyParamsRequestAction metadataPdexV3.PDexV3ParamsModifyingRequestAction
-		err = json.Unmarshal(contentBytes, &modifyParamsRequestAction)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while unmarshaling pdex v3 modify params action: %+v", err)
-			return [][]string{}, params, err
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := *tx.Hash()
+		metaData, ok := tx.GetMetadata().(*metadataPdexV3.ParamsModifyingRequest)
+		if !ok {
+			return instructions, params, errors.New("Can not parse params modifying metadata")
 		}
 
 		// check conditions
-		metadataParams := modifyParamsRequestAction.Meta.PDexV3Params
+		metadataParams := metaData.PDexV3Params
 		newParams := Params(metadataParams)
 		isValidParams := isValidPDexV3Params(newParams)
 
@@ -116,13 +109,10 @@ func (sp *stateProducerV2) modifyParams(
 
 		inst := buildModifyParamsInst(
 			metadataParams,
-			modifyParamsRequestAction.ShardID,
-			modifyParamsRequestAction.TxReqID,
+			shardID,
+			txReqID,
 			status,
 		)
-		if err != nil {
-			return [][]string{}, params, nil
-		}
 		instructions = append(instructions, inst)
 	}
 

@@ -12,7 +12,6 @@ type StateEnvBuilder interface {
 	BuildCrossPoolTradeActions([][]string) StateEnvBuilder
 	BuildWithdrawalActions([][]string) StateEnvBuilder
 	BuildFeeWithdrawalActions([][]string) StateEnvBuilder
-	BuildModifyParamsActions([][]string) StateEnvBuilder
 	BuildBeaconHeight(uint64) StateEnvBuilder
 	BuildAllRemainTxs(map[byte][]metadata.Transaction) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
@@ -32,7 +31,6 @@ type stateEnvironment struct {
 	crossPoolTradeActions          [][]string
 	withdrawalActions              [][]string
 	feeWithdrawalActions           [][]string
-	modifyParamsActions            [][]string
 	beaconHeight                   uint64
 	beaconInstructions             [][]string
 	allRemainTxs                   map[byte][]metadata.Transaction
@@ -75,11 +73,6 @@ func (env *stateEnvironment) BuildFeeWithdrawalActions(actions [][]string) State
 	return env
 }
 
-func (env *stateEnvironment) BuildModifyParamsActions(actions [][]string) StateEnvBuilder {
-	env.modifyParamsActions = actions
-	return env
-}
-
 func (env *stateEnvironment) BuildBeaconHeight(beaconHeight uint64) StateEnvBuilder {
 	env.beaconHeight = beaconHeight
 	return env
@@ -111,7 +104,6 @@ type StateEnvironment interface {
 	CrossPoolTradeActions() [][]string
 	WithdrawalActions() [][]string
 	FeeWithdrawalActions() [][]string
-	ModifyParamsActions() [][]string
 	BeaconHeight() uint64
 	BeaconInstructions() [][]string
 	AllRemainTxs() map[byte][]metadata.Transaction
@@ -141,10 +133,6 @@ func (env *stateEnvironment) WithdrawalActions() [][]string {
 
 func (env *stateEnvironment) FeeWithdrawalActions() [][]string {
 	return env.feeWithdrawalActions
-}
-
-func (env *stateEnvironment) ModifyParamsActions() [][]string {
-	return env.modifyParamsActions
 }
 
 func (env *stateEnvironment) BeaconHeight() uint64 {

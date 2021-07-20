@@ -1,10 +1,8 @@
 package pdexv3
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -25,18 +23,12 @@ type PDexV3Params struct {
 	StakingPoolsShare               map[string]uint `json:"StakingPoolsShare"`
 }
 
-type PDexV3ParamsModifyingRequest struct {
+type ParamsModifyingRequest struct {
 	metadataCommon.MetadataBaseWithSignature
 	PDexV3Params `json:"PDexV3Params"`
 }
 
-type PDexV3ParamsModifyingRequestAction struct {
-	Meta    PDexV3ParamsModifyingRequest `json:"Meta"`
-	TxReqID common.Hash                  `json:"TxReqID"`
-	ShardID byte                         `json:"ShardID"`
-}
-
-type PDexV3ParamsModifyingRequestContent struct {
+type ParamsModifyingContent struct {
 	Content PDexV3Params `json:"Content"`
 	TxReqID common.Hash  `json:"TxReqID"`
 	ShardID byte         `json:"ShardID"`
@@ -74,16 +66,16 @@ func NewPDexV3ParamsModifyingRequestStatus(
 func NewPDexV3ParamsModifyingRequest(
 	metaType int,
 	params PDexV3Params,
-) (*PDexV3ParamsModifyingRequest, error) {
+) (*ParamsModifyingRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metaType)
-	paramsModifying := &PDexV3ParamsModifyingRequest{}
+	paramsModifying := &ParamsModifyingRequest{}
 	paramsModifying.MetadataBaseWithSignature = *metadataBase
 	paramsModifying.PDexV3Params = params
 
 	return paramsModifying, nil
 }
 
-func (paramsModifying PDexV3ParamsModifyingRequest) ValidateTxWithBlockChain(
+func (paramsModifying ParamsModifyingRequest) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -94,7 +86,7 @@ func (paramsModifying PDexV3ParamsModifyingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (paramsModifying PDexV3ParamsModifyingRequest) ValidateSanityData(
+func (paramsModifying ParamsModifyingRequest) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
@@ -127,11 +119,11 @@ func (paramsModifying PDexV3ParamsModifyingRequest) ValidateSanityData(
 	return true, true, nil
 }
 
-func (paramsModifying PDexV3ParamsModifyingRequest) ValidateMetadataByItself() bool {
+func (paramsModifying ParamsModifyingRequest) ValidateMetadataByItself() bool {
 	return paramsModifying.Type == metadataCommon.PDexV3ModifyParamsMeta
 }
 
-func (paramsModifying PDexV3ParamsModifyingRequest) Hash() *common.Hash {
+func (paramsModifying ParamsModifyingRequest) Hash() *common.Hash {
 	record := paramsModifying.MetadataBaseWithSignature.Hash().String()
 	contentBytes, _ := json.Marshal(paramsModifying.PDexV3Params)
 	hashParams := common.HashH(contentBytes)
@@ -146,7 +138,7 @@ func (paramsModifying PDexV3ParamsModifyingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (paramsModifying PDexV3ParamsModifyingRequest) HashWithoutSig() *common.Hash {
+func (paramsModifying ParamsModifyingRequest) HashWithoutSig() *common.Hash {
 	record := paramsModifying.MetadataBaseWithSignature.Hash().String()
 	contentBytes, _ := json.Marshal(paramsModifying.PDexV3Params)
 	hashParams := common.HashH(contentBytes)
@@ -157,7 +149,7 @@ func (paramsModifying PDexV3ParamsModifyingRequest) HashWithoutSig() *common.Has
 	return &hash
 }
 
-func (paramsModifying *PDexV3ParamsModifyingRequest) BuildReqActions(
+func (paramsModifying *ParamsModifyingRequest) BuildReqActions(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -165,21 +157,9 @@ func (paramsModifying *PDexV3ParamsModifyingRequest) BuildReqActions(
 	shardID byte,
 	shardHeight uint64,
 ) ([][]string, error) {
-	actionContent := PDexV3ParamsModifyingRequestAction{
-		Meta:    *paramsModifying,
-		TxReqID: *tx.Hash(),
-		ShardID: shardID,
-	}
-
-	actionContentBytes, err := json.Marshal(actionContent)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(metadataCommon.PDexV3ModifyParamsMeta), actionContentBase64Str}
-	return [][]string{action}, nil
+	return [][]string{}, nil
 }
 
-func (paramsModifying *PDexV3ParamsModifyingRequest) CalculateSize() uint64 {
+func (paramsModifying *ParamsModifyingRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(paramsModifying)
 }

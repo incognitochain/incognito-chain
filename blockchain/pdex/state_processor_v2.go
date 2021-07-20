@@ -44,7 +44,7 @@ func (sp *stateProcessorV2) modifyParams(
 	}
 
 	// unmarshal instructions content
-	var actionData metadataPdexV3.PDexV3ParamsModifyingRequestContent
+	var actionData metadataPdexV3.ParamsModifyingContent
 	err := json.Unmarshal([]byte(inst[3]), &actionData)
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)

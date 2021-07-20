@@ -171,6 +171,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 	addLiquidityTxs := []metadata.Transaction{}
+	modifyParamsTxs := []metadata.Transaction{}
 
 	allRemainTxs := env.AllRemainTxs()
 	keys := []int{}
@@ -189,6 +190,12 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 					return instructions, errors.New("Can not parse add liquidity metadata")
 				}
 				addLiquidityTxs = append(addLiquidityTxs, tx)
+			case metadataCommon.PDexV3ModifyParamsMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexV3.ParamsModifyingRequest)
+				if !ok {
+					return instructions, errors.New("Can not parse params modifying metadata")
+				}
+				modifyParamsTxs = append(modifyParamsTxs, tx)
 			}
 		}
 	}
@@ -205,7 +212,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle modify params
 	var modifyParamsInstructions [][]string
 	modifyParamsInstructions, s.params, err = s.producer.modifyParams(
-		env.ModifyParamsActions(),
+		modifyParamsTxs,
 		env.BeaconHeight(),
 		s.params,
 	)
