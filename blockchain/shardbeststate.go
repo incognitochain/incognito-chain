@@ -651,6 +651,7 @@ func GetSubsetID(proposerIndex int) int {
 	return proposerIndex % +MaxSubsetCommittees
 }
 
+// GetSubsetIDByKey compare based on consensus mining key
 func GetSubsetIDByKey(fullCommittees []incognitokey.CommitteePublicKey, miningKey string, consensusName string) (int, int) {
 	for i, v := range fullCommittees {
 		if v.GetMiningKeyBase58(consensusName) == miningKey {

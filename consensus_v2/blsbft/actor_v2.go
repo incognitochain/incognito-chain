@@ -732,7 +732,6 @@ func (a *actorV2) proposeShardBlock(
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	}
-
 	// propose new block when
 	// no previous proposed block
 	// or previous proposed block has different committee with new committees
@@ -741,13 +740,31 @@ func (a *actorV2) proposeShardBlock(
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
-		a.logger.Info("CreateNewBlock")
+
+		//debug only
+		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
+		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(a.GetConsensusName())
+		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, a.GetConsensusName())
 		newBlock, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
+		a.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
+			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(),
+			proposerKeySetIndex, proposerKeySetSubsetID)
 	} else {
-		a.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v", block.GetHeight(), block.Hash().String())
+		//debug only
+		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
+		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(a.GetConsensusName())
+		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, a.GetConsensusName())
+		producerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{block.GetProducer()})
+		producerKeySet := producerCommitteePK[0].GetMiningKeyBase58(a.GetConsensusName())
+		producerKeySetIndex, producerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, producerKeySet, a.GetConsensusName())
+
+		a.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v | "+
+			"Producer Index %+v, Producer SubsetID %+v | "+
+			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.Hash().String(),
+			producerKeySetIndex, producerKeySetSubsetID, proposerKeySetIndex, proposerKeySetSubsetID)
 		newBlock, err = a.chain.CreateNewBlockFromOldBlock(block, b58Str, a.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
