@@ -39,15 +39,6 @@ type Order struct {
 	fee             uint64
 }
 
-type Contribution struct {
-	poolPairID      string // only "" for the first contribution of pool
-	receiverAddress string // receive nfct
-	refundAddress   string // refund pToken
-	tokenID         string
-	tokenAmount     uint64
-	amplifier       uint // only set for the first contribution
-}
-
 type PoolPairState struct {
 	token0ID              string
 	token1ID              string
@@ -126,6 +117,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 	addLiquidityTxs := []metadata.Transaction{}
+	addLiquidityInstructions := [][]string{}
+	var err error
 
 	allRemainTxs := env.AllRemainTxs()
 	keys := []int{}
@@ -148,9 +141,11 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
-	addLiquidityInstructions, err := s.producer.addLiquidity(
+	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
 		addLiquidityTxs,
 		env.BeaconHeight(),
+		s.poolPairs,
+		s.waitingContributions,
 	)
 	if err != nil {
 		return instructions, err

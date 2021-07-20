@@ -580,3 +580,7 @@ func InitStateFromDB(
 	}
 	return initStateV1(stateDB, beaconHeight)
 }
+
+func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
+	return strings.Join([]string{token0Name, token1Name, txReqID}, "-")
+}
