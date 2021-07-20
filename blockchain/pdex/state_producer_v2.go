@@ -5,9 +5,14 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+
+	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
+	"github.com/incognitochain/incognito-chain/metadata"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProducerV2 struct {
@@ -15,12 +20,12 @@ type stateProducerV2 struct {
 }
 
 func buildModifyParamsInst(
-	params metadataPDexV3.PDexV3Params,
+	params metadataPdexV3.PDexV3Params,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
 ) []string {
-	modifyingParamsReqContent := metadataPDexV3.PDexV3ParamsModifyingRequestContent{
+	modifyingParamsReqContent := metadataPdexV3.PDexV3ParamsModifyingRequestContent{
 		Content: params,
 		TxReqID: reqTxID,
 		ShardID: shardID,
@@ -55,6 +60,26 @@ func isValidPDexV3Params(params Params) bool {
 	return true
 }
 
+func (sp *stateProducerV2) addLiquidity(
+	txs []metadata.Transaction,
+	beaconHeight uint64,
+) ([][]string, error) {
+	res := [][]string{}
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := tx.Hash().String()
+		metaData, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+		if !ok {
+			return res, errors.New("Can not parse add liquidity metadata")
+		}
+		waitingInstruction := instruction.NewWaitingAddLiquidityFromMetadata(*metaData, txReqID, shardID)
+		instStr := waitingInstruction.StringArr()
+		res = append(res, instStr)
+	}
+
+	return res, nil
+}
+
 func (sp *stateProducerV2) modifyParams(
 	actions [][]string,
 	beaconHeight uint64,
@@ -69,7 +94,7 @@ func (sp *stateProducerV2) modifyParams(
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pdex v3 modify params action: %+v", err)
 			return [][]string{}, params, err
 		}
-		var modifyParamsRequestAction metadataPDexV3.PDexV3ParamsModifyingRequestAction
+		var modifyParamsRequestAction metadataPdexV3.PDexV3ParamsModifyingRequestAction
 		err = json.Unmarshal(contentBytes, &modifyParamsRequestAction)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pdex v3 modify params action: %+v", err)

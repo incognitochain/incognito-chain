@@ -6,11 +6,29 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProcessorV2 struct {
 	stateProcessorBase
+}
+
+func (sp *stateProcessorV2) addLiquidity(
+	insts [][]string,
+) error {
+	for _, inst := range insts {
+		switch inst[1] {
+		case instruction.WaitingStatus:
+			waitingAddLiquidityInst := instruction.WaitingAddLiquidity{}
+			err := waitingAddLiquidityInst.FromStringArr(inst)
+			//TODO: Update state with current instruction
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (sp *stateProcessorV2) modifyParams(
@@ -26,7 +44,7 @@ func (sp *stateProcessorV2) modifyParams(
 	}
 
 	// unmarshal instructions content
-	var actionData metadataPDexV3.PDexV3ParamsModifyingRequestContent
+	var actionData metadataPdexV3.PDexV3ParamsModifyingRequestContent
 	err := json.Unmarshal([]byte(inst[3]), &actionData)
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
@@ -43,9 +61,9 @@ func (sp *stateProcessorV2) modifyParams(
 		reqTrackStatus = ParamsModifyingFailedStatus
 	}
 
-	modifyingReqStatus := metadataPDexV3.PDexV3ParamsModifyingRequestStatus{
+	modifyingReqStatus := metadataPdexV3.PDexV3ParamsModifyingRequestStatus{
 		Status:       reqTrackStatus,
-		PDexV3Params: metadataPDexV3.PDexV3Params(actionData.Content),
+		PDexV3Params: metadataPdexV3.PDexV3Params(actionData.Content),
 	}
 	modifyingReqStatusBytes, _ := json.Marshal(modifyingReqStatus)
 	err = statedb.TrackPDexV3Status(

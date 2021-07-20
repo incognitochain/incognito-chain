@@ -4,8 +4,12 @@ import (
 	"errors"
 	"strconv"
 
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateV2 struct {
@@ -34,19 +38,15 @@ type Order struct {
 	ota             string
 	txRandom        string
 	fee             uint64
-	txReqID         string
 }
 
 type Contribution struct {
-	poolPairID     string // only "" for the first contribution of pool
-	otaRefund      string // refund contributed token
-	txRandomRefund string
-	otaReceive     string // receive nfct
-	txRandom       string
-	tokenID        string
-	tokenAmount    uint64
-	amplifier      uint // only set for the first contribution
-	txReqID        string
+	poolPairID      string // only "" for the first contribution of pool
+	receiverAddress string // receive nfct
+	refundAddress   string // refund pToken
+	tokenID         string
+	tokenAmount     uint64
+	amplifier       uint // only set for the first contribution
 }
 
 type PoolPairState struct {
@@ -170,7 +170,37 @@ func (s *stateV2) Process(env StateEnvironment) error {
 
 func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
-	var err error
+	addLiquidityTxs := []metadata.Transaction{}
+
+	allRemainTxs := env.AllRemainTxs()
+	keys := []int{}
+
+	for k := range allRemainTxs {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, key := range keys {
+		for _, tx := range allRemainTxs[byte(key)] {
+			// TODO: @pdex get metadata here and build instructions from transactions here
+			switch tx.GetMetadataType() {
+			case metadataCommon.PDexV3AddLiquidityMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+				if !ok {
+					return instructions, errors.New("Can not parse add liquidity metadata")
+				}
+				addLiquidityTxs = append(addLiquidityTxs, tx)
+			}
+		}
+	}
+
+	addLiquidityInstructions, err := s.producer.addLiquidity(
+		addLiquidityTxs,
+		env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addLiquidityInstructions...)
 
 	// handle modify params
 	var modifyParamsInstructions [][]string

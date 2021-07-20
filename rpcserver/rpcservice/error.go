@@ -136,6 +136,7 @@ const (
 
 	// pdex v3
 	GetPDexV3StateError
+	GenerateOTAFailError
 	GetPDexV3ParamsModyfingStatusError
 )
 
@@ -273,7 +274,8 @@ var ErrCodeMessage = map[int]struct {
 
 	// pDex v3
 	GetPDexV3StateError:                {-14001, "Get pDex V3 state error"},
-	GetPDexV3ParamsModyfingStatusError: {-14002, "Get pDex v3 params modyfing status error"},
+	GenerateOTAFailError:               {-14002, "Generate ota fail"},
+	GetPDexV3ParamsModyfingStatusError: {-14003, "Get pDex v3 params modyfing status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
