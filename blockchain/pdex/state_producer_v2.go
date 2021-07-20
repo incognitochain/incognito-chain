@@ -77,6 +77,8 @@ func (sp *stateProducerV2) addLiquidity(
 
 		if !found {
 			delete(waitingContributions, metaData.PairHash())
+
+			addLiquidityToPoolPair()
 			err := updateWaitingContributionPairToPool(
 				beaconHeight,
 				waitingContribution,
