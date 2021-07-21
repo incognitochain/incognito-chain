@@ -16,10 +16,10 @@ genesis_param:
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
 
 committee_size:
-  max_shard_committee_size: 6
+  max_shard_committee_size: 12
   min_shard_committee_size: 4
   min_beacon_committee_size: 4
-  max_beacon_committee_size: 4
+  max_beacon_committee_size: 7
   init_shard_committee_size: 4
   init_beacon_committee_size: 4
   shard_committee_size_key_list_v2: 4
@@ -34,10 +34,10 @@ staking_amount_shard: 1750000000000
 active_shards: 2
 basic_reward: 400000000
 epoch_param:
-  number_of_block_in_epoch: 10
+  number_of_block_in_epoch: 50
   number_of_block_in_epoch_v2: 1000000000000
   epoch_v2_break_point: 1000000000000
-  random_time: 5
+  random_time: 25
   random_time_v2: 1000000000000
 eth_contract_address: "0x7bebc8445C6223b41B7BB4b0aE9742e2Fd2f47F3"
 bsc_contract_address: "0x2f601ba66187b003036ae4d5aeaeec10e113f9c2"
@@ -51,7 +51,7 @@ consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
-  enable_slashing_height_v2: 1
+  enable_slashing_height_v2: 200
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 7000000

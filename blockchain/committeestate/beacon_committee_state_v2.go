@@ -639,6 +639,8 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 
+	Logger.log.Debugf("Process Swap Shard Instruction | Missing Signature", env.MissingSignaturePenalty)
+
 	var err error
 	shardID := byte(swapShardInstruction.ChainID)
 	committees := oldState.shardCommittee[shardID]

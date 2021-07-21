@@ -530,11 +530,11 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 
 		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
-
+		Logger.log.Debug("Get Missing Signature with Slashing V2")
 	} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
 
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
-
+		Logger.log.Debug("Get Missing Signature with Slashing V1")
 	}
 
 	return slashingPenalty
@@ -645,8 +645,10 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
+			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
+			Logger.log.Debug("Get Missing Signature with Slashing V1")
 		}
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
@@ -685,8 +687,10 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
+			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
+			Logger.log.Debug("Get Missing Signature with Slashing V1")
 		}
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
