@@ -34,7 +34,7 @@ type ParamsModifyingContent struct {
 	ShardID byte         `json:"ShardID"`
 }
 
-type PDexV3ParamsModifyingRequestStatus struct {
+type ParamsModifyingRequestStatus struct {
 	Status       int `json:"Status"`
 	PDexV3Params `json:"PDexV3Params"`
 }
@@ -48,8 +48,8 @@ func NewPDexV3ParamsModifyingRequestStatus(
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
 	stakingPoolsShare map[string]uint,
-) *PDexV3ParamsModifyingRequestStatus {
-	return &PDexV3ParamsModifyingRequestStatus{
+) *ParamsModifyingRequestStatus {
+	return &ParamsModifyingRequestStatus{
 		PDexV3Params: PDexV3Params{
 			FeeRateBPS:                      feeRateBPS,
 			PRVDiscountPercent:              prvDiscountPercent,

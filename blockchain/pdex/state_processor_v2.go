@@ -61,7 +61,7 @@ func (sp *stateProcessorV2) modifyParams(
 		reqTrackStatus = ParamsModifyingFailedStatus
 	}
 
-	modifyingReqStatus := metadataPdexV3.PDexV3ParamsModifyingRequestStatus{
+	modifyingReqStatus := metadataPdexV3.ParamsModifyingRequestStatus{
 		Status:       reqTrackStatus,
 		PDexV3Params: metadataPdexV3.PDexV3Params(actionData.Content),
 	}

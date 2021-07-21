@@ -7,7 +7,7 @@ import (
 	metadataPDexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
-func (blockService BlockService) GetPDexV3ParamsModifyingRequestStatus(reqTxID string) (*metadataPDexV3.PDexV3ParamsModifyingRequestStatus, error) {
+func (blockService BlockService) GetPDexV3ParamsModifyingRequestStatus(reqTxID string) (*metadataPDexV3.ParamsModifyingRequestStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPDexV3Status(
 		stateDB,
@@ -18,7 +18,7 @@ func (blockService BlockService) GetPDexV3ParamsModifyingRequestStatus(reqTxID s
 		return nil, err
 	}
 
-	var status metadataPDexV3.PDexV3ParamsModifyingRequestStatus
+	var status metadataPDexV3.ParamsModifyingRequestStatus
 	err = json.Unmarshal(data, &status)
 	if err != nil {
 		return nil, err
