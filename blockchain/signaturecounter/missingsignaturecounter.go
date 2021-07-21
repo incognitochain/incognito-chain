@@ -138,16 +138,20 @@ func (s MissingSignatureCounter) GetAllSlashingPenaltyWithExpectedTotalBlock(exp
 
 	penalties := make(map[string]Penalty)
 	for key, expectedTotalBlock := range expectedTotalBlocks {
-		missingBlock := expectedTotalBlock
+		var penalty Penalty
 		missingSignature, ok := s.missingSignature[key]
-		if ok {
-			missingBlock = missingSignature.Missing
+		if !ok {
+			penalty = getSlashingPenalty(expectedTotalBlock, expectedTotalBlock, s.penalties)
+		} else {
+			signedBlock := missingSignature.ActualTotal - missingSignature.Missing
+			missingBlock := expectedTotalBlock - signedBlock
+			penalty = getSlashingPenalty(missingBlock, expectedTotalBlock, s.penalties)
 		}
-		penalty := getSlashingPenalty(missingBlock, expectedTotalBlock, s.penalties)
 		if !penalty.IsEmpty() {
 			penalties[key] = penalty
 		}
 	}
+
 	return penalties
 }
 

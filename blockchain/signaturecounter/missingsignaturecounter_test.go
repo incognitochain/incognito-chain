@@ -637,16 +637,20 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
 					keys[0]: {
-						Missing: 0,
+						Missing:     0,
+						ActualTotal: 100,
 					},
 					keys[1]: {
-						Missing: 49,
+						Missing:     49,
+						ActualTotal: 100,
 					},
 					keys[2]: {
-						Missing: 149,
+						Missing:     149,
+						ActualTotal: 300,
 					},
 					keys[3]: {
-						Missing: 99,
+						Missing:     99,
+						ActualTotal: 200,
 					},
 				},
 				penalties: samplePenaltyRule,
@@ -667,16 +671,20 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
 					keys[0]: {
-						Missing: 0,
+						Missing:     0,
+						ActualTotal: 100,
 					},
 					keys[1]: {
-						Missing: 49,
+						Missing:     49,
+						ActualTotal: 100,
 					},
 					keys[2]: {
-						Missing: 149,
+						Missing:     149,
+						ActualTotal: 300,
 					},
 					keys[3]: {
-						Missing: 99,
+						Missing:     99,
+						ActualTotal: 200,
 					},
 					keys[4]: {
 						Missing: 99,
@@ -700,16 +708,20 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
 					keys[0]: {
-						Missing: 0,
+						Missing:     0,
+						ActualTotal: 100,
 					},
 					keys[1]: {
-						Missing: 49,
+						Missing:     49,
+						ActualTotal: 100,
 					},
 					keys[2]: {
-						Missing: 149,
+						Missing:     149,
+						ActualTotal: 300,
 					},
 					keys[3]: {
-						Missing: 99,
+						Missing:     99,
+						ActualTotal: 200,
 					},
 					keys[4]: {
 						Missing: 99,
@@ -736,22 +748,27 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
 					keys[0]: {
-						Missing: 0,
+						Missing:     0,
+						ActualTotal: 100,
 					},
 					keys[1]: {
-						Missing: 49,
+						Missing:     49,
+						ActualTotal: 100,
 					},
 					keys[2]: {
-						Missing: 149,
+						Missing:     149,
+						ActualTotal: 300,
 					},
 					keys[3]: {
-						Missing: 99,
+						Missing:     99,
+						ActualTotal: 200,
 					},
 					keys[4]: {
 						Missing: 99,
 					},
 					keys[6]: {
-						Missing: 200,
+						Missing:     0,
+						ActualTotal: 200,
 					},
 				},
 				penalties: samplePenaltyRule,
@@ -777,25 +794,31 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
 					keys[0]: {
-						Missing: 0,
+						Missing:     0,
+						ActualTotal: 100,
 					},
 					keys[1]: {
-						Missing: 49,
+						Missing:     49,
+						ActualTotal: 100,
 					},
 					keys[2]: {
-						Missing: 149,
+						Missing:     149,
+						ActualTotal: 300,
 					},
 					keys[3]: {
-						Missing: 99,
+						Missing:     99,
+						ActualTotal: 200,
 					},
 					keys[4]: {
 						Missing: 99,
 					},
 					keys[6]: {
-						Missing: 200,
+						Missing:     0,
+						ActualTotal: 200,
 					},
 					keys[7]: {
-						Missing: 100,
+						Missing:     100,
+						ActualTotal: 200,
 					},
 				},
 				penalties: samplePenaltyRule,
@@ -816,6 +839,64 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 				keys[5]: samplePenaltyRule[0],
 				keys[6]: samplePenaltyRule[0],
 				keys[7]: samplePenaltyRule[0],
+			},
+		},
+		{
+			name: "produce no block in an epoch",
+			fields: fields{
+				missingSignature: map[string]MissingSignature{
+					keys[0]: {
+						Missing:     0,
+						ActualTotal: 100,
+					},
+					keys[1]: {
+						Missing:     49,
+						ActualTotal: 100,
+					},
+					keys[2]: {
+						Missing:     149,
+						ActualTotal: 300,
+					},
+					keys[3]: {
+						Missing:     99,
+						ActualTotal: 200,
+					},
+					keys[4]: {
+						Missing: 99,
+					},
+					keys[6]: {
+						Missing:     0,
+						ActualTotal: 200,
+					},
+					keys[7]: {
+						Missing:     100,
+						ActualTotal: 200,
+					},
+					keys[8]: {
+						Missing:     0,
+						ActualTotal: 0,
+					},
+				},
+				penalties: samplePenaltyRule,
+				lock:      new(sync.RWMutex),
+			},
+			args: args{
+				expectedTotalBlocks: map[string]uint{
+					keys[0]: 100,
+					keys[1]: 100,
+					keys[2]: 300,
+					keys[3]: 200,
+					keys[5]: 200,
+					keys[6]: 180,
+					keys[7]: 200,
+					keys[8]: 100,
+				},
+			},
+			want: map[string]Penalty{
+				keys[5]: samplePenaltyRule[0],
+				keys[6]: samplePenaltyRule[0],
+				keys[7]: samplePenaltyRule[0],
+				keys[8]: samplePenaltyRule[0],
 			},
 		},
 	}
