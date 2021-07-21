@@ -189,7 +189,7 @@ func newPDexV3ParamsObjectWithValue(db *StateDB, key common.Hash, data interface
 
 func GeneratePDexV3ParamsObjectKey() common.Hash {
 	prefixHash := GetPDexV3ParamsPrefix()
-	return common.BytesToHash(prefixHash)
+	return common.HashH(prefixHash)
 }
 
 func (t PDexV3ParamsObject) GetVersion() int {
