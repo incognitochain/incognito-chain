@@ -26,3 +26,43 @@ func (blockService BlockService) GetPDexV3ParamsModifyingRequestStatus(reqTxID s
 
 	return &status, nil
 }
+
+func (blockService BlockService) GetPDexV3WithdrawalLPFeeStatus(reqTxID string) (*metadataPDexV3.WithdrawalLPFeeStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPDexV3Status(
+		stateDB,
+		statedb.PDexV3WithdrawalLPFeeStatusPrefix(),
+		[]byte(reqTxID),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadataPDexV3.WithdrawalLPFeeStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetPDexV3WithdrawalProtocolFeeStatus(reqTxID string) (*metadataPDexV3.WithdrawalProtocolFeeStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPDexV3Status(
+		stateDB,
+		statedb.PDexV3WithdrawalProtocolFeeStatusPrefix(),
+		[]byte(reqTxID),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadataPDexV3.WithdrawalProtocolFeeStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}

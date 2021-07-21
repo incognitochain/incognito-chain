@@ -169,6 +169,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingRequestV3{}
 	case metadataCommon.PDexV3ModifyParamsMeta:
 		md = &metadataPdexV3.ParamsModifyingRequest{}
+	case metadataCommon.PDexV3WithdrawLPFeeRequestMeta:
+		md = &metadataPdexV3.WithdrawalLPFeeRequest{}
+	case metadataCommon.PDexV3WithdrawProtocolFeeRequestMeta:
+		md = &metadataPdexV3.WithdrawalProtocolFeeRequest{}
 	default:
 		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

@@ -217,6 +217,9 @@ var HttpHandler = map[string]httpHandler{
 	getPDexV3State:                        (*HttpServer).handleGetPDexV3State,
 	createAndSendTxWithPDexV3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPDexV3ModifyParams,
 	getPDexV3ParamsModifyingStatus:        (*HttpServer).handleGetPDexV3ParamsModifyingRequestStatus,
+	getPDexV3EstimatedLPFee:               (*HttpServer).handleGetPDexV3EstimatedLPFee,
+	getPDexV3WithdrawalLPFeeStatus:        (*HttpServer).handleGetPDexV3WithdrawalLPFeeStatus,
+	getPDexV3WithdrawalProtocolFeeStatus:  (*HttpServer).handleGetPDexV3WithdrawalProtocolFeeStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

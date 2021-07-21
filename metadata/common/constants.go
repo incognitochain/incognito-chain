@@ -53,14 +53,18 @@ const (
 	PDETradingFeesDistributionMeta        = 209
 
 	// pDEX v3
-	PDexV3ModifyParamsMeta          = 270
-	PDexV3AddLiquidityMeta          = 271
-	PDexV3TradeRequestMeta          = 273
-	PDexV3TradeResponseMeta         = 274
-	PDexV3AddOrderRequestMeta       = 275
-	PDexV3AddOrderResponseMeta      = 276
-	PDexV3WithdrawOrderRequestMeta  = 277
-	PDexV3WithdrawOrderResponseMeta = 278
+	PDexV3ModifyParamsMeta                = 270
+	PDexV3AddLiquidityMeta                = 271
+	PDexV3TradeRequestMeta                = 273
+	PDexV3TradeResponseMeta               = 274
+	PDexV3AddOrderRequestMeta             = 275
+	PDexV3AddOrderResponseMeta            = 276
+	PDexV3WithdrawOrderRequestMeta        = 277
+	PDexV3WithdrawOrderResponseMeta       = 278
+	PDexV3WithdrawLPFeeRequestMeta        = 279
+	PDexV3WithdrawLPFeeResponseMeta       = 280
+	PDexV3WithdrawProtocolFeeRequestMeta  = 281
+	PDexV3WithdrawProtocolFeeResponseMeta = 282
 
 	// portal
 	PortalCustodianDepositMeta                  = 100

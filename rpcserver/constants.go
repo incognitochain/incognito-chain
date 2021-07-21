@@ -237,9 +237,14 @@ const (
 	//
 
 	// pDex v3
-	getPDexV3State                        = "pdexv3_getState"
-	createAndSendTxWithPDexV3ModifyParams = "pdexv3_txModifyParams"
-	getPDexV3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
+	getPDexV3State                                = "pdexv3_getState"
+	createAndSendTxWithPDexV3ModifyParams         = "pdexv3_txModifyParams"
+	getPDexV3ParamsModifyingStatus                = "pdexv3_getParamsModifyingStatus"
+	getPDexV3EstimatedLPFee                       = "pdexv3_getEstimatedUncollectedLPFee"
+	createAndSendTxWithPDexV3WithdrawlLPFee       = "pdexv3_txWithdrawLPFee"
+	getPDexV3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"
+	createAndSendTxWithPDexV3WithdrawlProtocolFee = "pdexv3_txWithdrawProtocolFee"
+	getPDexV3WithdrawalProtocolFeeStatus          = "pdexv3_getWithdrawalProtocolFeeStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

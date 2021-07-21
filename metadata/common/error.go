@@ -52,6 +52,8 @@ const (
 
 	// pDex v3
 	PDexV3ModifyParamsValidateSanityDataError
+	PDexV3WitdrawLPFeeValidateSanityDataError
+	PDexV3WitdrawProtocolFeeValidateSanityDataError
 
 	// portal
 	PortalRequestPTokenParamError

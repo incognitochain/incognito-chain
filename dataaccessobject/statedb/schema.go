@@ -53,9 +53,11 @@ var (
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// pdex v3
-	pDexV3StatusPrefix          = []byte("pdexv3status-")
-	pDexV3ParamsModifyingPrefix = []byte("pdexv3paramsmodifyingstatus-")
-	pDexV3ParamsStatePrefix     = []byte("pdexv3paramsstate-")
+	pDexV3StatusPrefix                = []byte("pdexv3status-")
+	pDexV3ParamsModifyingPrefix       = []byte("pdexv3paramsmodifyingstatus-")
+	pDexV3WithdrawalLPFeePrefix       = []byte("pdexv3withdrawallpfeestatus-")
+	pDexV3WithdrawalProtocolFeePrefix = []byte("pdexv3withdrawalprotocolfeestatus")
+	pDexV3ParamsStatePrefix           = []byte("pdexv3paramsstate-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -543,6 +545,14 @@ func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 // pDex v3 prefix for status
 func PDexV3ParamsModifyingStatusPrefix() []byte {
 	return pDexV3ParamsModifyingPrefix
+}
+
+func PDexV3WithdrawalLPFeeStatusPrefix() []byte {
+	return pDexV3WithdrawalLPFeePrefix
+}
+
+func PDexV3WithdrawalProtocolFeeStatusPrefix() []byte {
+	return pDexV3WithdrawalProtocolFeePrefix
 }
 
 // pDex v3 prefix hash of the key
