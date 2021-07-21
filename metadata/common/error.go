@@ -43,6 +43,12 @@ const (
 	CouldNotGetExchangeRateError
 	RejectInvalidFee
 	PDEFeeWithdrawalRequestFromMapError
+	PDECouldNotGenerateHashFromStringError
+	PDEInvalidMetadataValueError
+	PDENotBurningTxError
+	PDEInvalidTxTypeError
+	PDETxWrongVersionError
+	//
 
 	// portal
 	PortalRequestPTokenParamError
@@ -131,9 +137,14 @@ var ErrCodeMessage = map[int]struct {
 	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
 
 	// pde
-	PDEWithdrawalRequestFromMapError: {-6001, "PDE withdrawal request Error"},
-	CouldNotGetExchangeRateError:     {-6002, "Could not get the exchange rate error"},
-	RejectInvalidFee:                 {-6003, "Reject invalid fee"},
+	PDEWithdrawalRequestFromMapError:       {-6001, "PDE withdrawal request Error"},
+	CouldNotGetExchangeRateError:           {-6002, "Could not get the exchange rate error"},
+	RejectInvalidFee:                       {-6003, "Reject invalid fee"},
+	PDECouldNotGenerateHashFromStringError: {-6003, "Could not generate hash from string"},
+	PDEInvalidMetadataValueError:           {-6004, "Invalid metadata value"},
+	PDENotBurningTxError:                   {-6004, "Tx is not a burning tx"},
+	PDEInvalidTxTypeError:                  {-6005, "Invalid tx type"},
+	PDETxWrongVersionError:                 {-6006, "Invalid tx version"},
 
 	// portal
 	PortalRequestPTokenParamError:                {-7001, "Portal request ptoken param error"},

@@ -366,6 +366,8 @@ func IsPDEType(metadataType int) bool {
 		return true
 	case PDETradingFeesDistributionMeta:
 		return true
+	case PDexV3AddLiquidityMeta:
+		return true
 	default:
 		return false
 	}

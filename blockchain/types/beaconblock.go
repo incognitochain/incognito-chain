@@ -77,15 +77,6 @@ type ShardState struct {
 	Height             uint64
 	Hash               common.Hash
 	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
-	pdeTxHashes        []common.Hash
-}
-
-func (shardState *ShardState) AddPDETxHash(hash common.Hash) {
-	shardState.pdeTxHashes = append(shardState.pdeTxHashes, hash)
-}
-
-func (shardState *ShardState) PDETxHashes() []common.Hash {
-	return shardState.pdeTxHashes
 }
 
 func NewShardState(validationData string,

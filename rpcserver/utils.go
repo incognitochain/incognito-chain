@@ -169,3 +169,12 @@ func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []stri
 func interfaceAddrs() ([]net.Addr, error) {
 	return net.InterfaceAddrs()
 }
+
+type PDEAddLiquidityV3Request struct {
+	TokenID     string `json:"TokenID"`
+	TokenAmount string `json:"TokenAmount"`
+	PoolPairID  string `json:"PoolPairID"`
+	Amplifier   string `json:"Amplifier"`
+	PairHash    string `json:"PairHash"`
+	Fee         string `json:"Fee"`
+}
