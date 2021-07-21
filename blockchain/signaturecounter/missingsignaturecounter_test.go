@@ -764,7 +764,8 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 						ActualTotal: 200,
 					},
 					keys[4]: {
-						Missing: 99,
+						Missing:     99,
+						ActualTotal: 100,
 					},
 					keys[6]: {
 						Missing:     0,
@@ -786,7 +787,6 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			},
 			want: map[string]Penalty{
 				keys[5]: samplePenaltyRule[0],
-				keys[6]: samplePenaltyRule[0],
 			},
 		},
 		{
@@ -837,7 +837,6 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			},
 			want: map[string]Penalty{
 				keys[5]: samplePenaltyRule[0],
-				keys[6]: samplePenaltyRule[0],
 				keys[7]: samplePenaltyRule[0],
 			},
 		},
@@ -894,7 +893,6 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 			},
 			want: map[string]Penalty{
 				keys[5]: samplePenaltyRule[0],
-				keys[6]: samplePenaltyRule[0],
 				keys[7]: samplePenaltyRule[0],
 				keys[8]: samplePenaltyRule[0],
 			},
@@ -942,6 +940,10 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 						Missing:     0,
 						ActualTotal: 30,
 					},
+					keys[11]: {
+						Missing:     0,
+						ActualTotal: 101,
+					},
 				},
 				penalties: samplePenaltyRule,
 				lock:      new(sync.RWMutex),
@@ -958,11 +960,11 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 					keys[8]:  100,
 					keys[9]:  100,
 					keys[10]: 100,
+					keys[11]: 100,
 				},
 			},
 			want: map[string]Penalty{
 				keys[5]:  samplePenaltyRule[0],
-				keys[6]:  samplePenaltyRule[0],
 				keys[7]:  samplePenaltyRule[0],
 				keys[8]:  samplePenaltyRule[0],
 				keys[9]:  samplePenaltyRule[0],

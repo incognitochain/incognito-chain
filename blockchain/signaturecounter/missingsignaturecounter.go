@@ -144,7 +144,12 @@ func (s MissingSignatureCounter) GetAllSlashingPenaltyWithExpectedTotalBlock(exp
 			penalty = getSlashingPenalty(expectedTotalBlock, expectedTotalBlock, s.penalties)
 		} else {
 			signedBlock := missingSignature.ActualTotal - missingSignature.Missing
-			missingBlock := expectedTotalBlock - signedBlock
+			missingBlock := uint(0)
+			if signedBlock > expectedTotalBlock {
+				missingBlock = 0
+			} else {
+				missingBlock = expectedTotalBlock - signedBlock
+			}
 			penalty = getSlashingPenalty(missingBlock, expectedTotalBlock, s.penalties)
 		}
 		if !penalty.IsEmpty() {
