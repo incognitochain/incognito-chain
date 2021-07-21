@@ -219,13 +219,70 @@ func (al *AddLiquidity) Amplifier() uint {
 	return al.amplifier
 }
 
-func (al *AddLiquidity) BuildReqActions(
-	tx metadataCommon.Transaction,
-	chainRetriever metadataCommon.ChainRetriever,
-	shardViewRetriever metadataCommon.ShardViewRetriever,
-	beaconViewRetriever metadataCommon.BeaconViewRetriever,
-	shardID byte,
-	shardHeight uint64,
-) ([][]string, error) {
-	return [][]string{}, nil
+func (al *AddLiquidity) FromString(source []string) error {
+	if len(source) != 8 {
+		return fmt.Errorf("Receive length %v but expect %v", len(source), 8)
+	}
+	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
+		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
+	}
+	receiveAddress := privacy.OTAReceiver{}
+	err := receiveAddress.FromString(source[1])
+	if err != nil {
+		return err
+	}
+	if !receiveAddress.IsValid() {
+		return errors.New("receive Address is invalid")
+	}
+	al.receiveAddress = source[1]
+	refundAddress := privacy.OTAReceiver{}
+	err = refundAddress.FromString(source[2])
+	if err != nil {
+		return err
+	}
+	if !refundAddress.IsValid() {
+		return errors.New("refund Address is invalid")
+	}
+	al.refundAddress = source[2]
+	al.poolPairID = source[3]
+	if source[4] == "" {
+		return errors.New("Pair hash is invalid")
+	}
+	al.pairHash = source[4]
+	tokenID, err := common.Hash{}.NewHashFromStr(source[5])
+	if err != nil {
+		return err
+	}
+	if tokenID.IsZeroValue() {
+		return errors.New("TokenID is empty")
+	}
+	al.tokenID = source[5]
+	tokenAmount, err := strconv.ParseUint(source[6], 10, 32)
+	if err != nil {
+		return err
+	}
+	al.tokenAmount = tokenAmount
+	amplifier, err := strconv.ParseUint(source[7], 10, 32)
+	if err != nil {
+		return err
+	}
+	if amplifier < DefaultAmplifier {
+		return fmt.Errorf("Amplifier can not be smaller than %v get %v", DefaultAmplifier, amplifier)
+	}
+	al.amplifier = uint(amplifier)
+	return nil
+}
+
+func (al *AddLiquidity) StringArr() []string {
+	res := []string{strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta)}
+	res = append(res, al.poolPairID)
+	res = append(res, al.pairHash)
+	res = append(res, al.receiveAddress)
+	res = append(res, al.refundAddress)
+	res = append(res, al.tokenID)
+	tokenAmount := strconv.FormatUint(al.tokenAmount, 10)
+	res = append(res, tokenAmount)
+	amplifier := strconv.FormatUint(uint64(al.amplifier), 10)
+	res = append(res, amplifier)
+	return res
 }

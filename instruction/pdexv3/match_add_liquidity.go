@@ -1,24 +1,18 @@
 package pdexv3
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type MatchAddLiquidity struct {
-	pairHash    string
-	otaReceiver string // receive nfct
-	tokenID     string
-	tokenAmount uint64
-	txReqID     string
-	shardID     byte
+	Base
+	newPoolPairID string
+	nfctID        string
 }
 
 func NewMatchAddLiquidity() *MatchAddLiquidity {
@@ -28,132 +22,60 @@ func NewMatchAddLiquidity() *MatchAddLiquidity {
 func NewMatchAddLiquidityFromMetadata(
 	metaData metadataPdexV3.AddLiquidity,
 	txReqID string, shardID byte,
+	newPoolPairID, nfctID string,
 ) *MatchAddLiquidity {
 	return NewMatchAddLiquidityWithValue(
-		metaData.PairHash(),
-		metaData.ReceiveAddress(),
-		metaData.TokenID(),
-		txReqID,
-		metaData.TokenAmount(),
-		shardID,
+		*NewBaseWithValue(&metaData, txReqID, shardID),
+		newPoolPairID, nfctID,
 	)
 }
 
 func NewMatchAddLiquidityWithValue(
-	pairHash, otaReceiver,
-	tokenID, txReqID string,
-	tokenAmount uint64,
-	shardID byte,
+	base Base, newPoolPairID, nfctID string,
 ) *MatchAddLiquidity {
 	return &MatchAddLiquidity{
-		pairHash:    pairHash,
-		otaReceiver: otaReceiver,
-		tokenID:     tokenID,
-		tokenAmount: tokenAmount,
-		txReqID:     txReqID,
-		shardID:     shardID,
+		Base:          base,
+		newPoolPairID: newPoolPairID,
+		nfctID:        nfctID,
 	}
-}
-
-func (m *MatchAddLiquidity) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		PairHash    string `json:"PairHash"`
-		OTAReceiver string `json:"OTAReceiver"` // receive nfct
-		TokenID     string `json:"TokenID"`
-		TokenAmount uint64 `json:"TokenAmount"`
-		TxReqID     string `json:"TxReqID"`
-		ShardID     byte   `json:"ShardID"`
-	}{
-		PairHash:    m.pairHash,
-		OTAReceiver: m.otaReceiver,
-		TokenID:     m.tokenID,
-		TokenAmount: m.tokenAmount,
-		TxReqID:     m.txReqID,
-		ShardID:     m.shardID,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (m *MatchAddLiquidity) UnmarshalJSON(data []byte) error {
-	temp := struct {
-		PairHash    string `json:"PairHash"`
-		OTAReceiver string `json:"OTAReceiver"` // Receive nfct
-		TokenID     string `json:"TokenID"`
-		TokenAmount uint64 `json:"TokenAmount"`
-		TxReqID     string `json:"TxReqID"`
-		ShardID     byte   `json:"ShardID"`
-	}{}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-	m.pairHash = temp.PairHash
-	m.otaReceiver = temp.OTAReceiver
-	m.tokenID = temp.TokenID
-	m.tokenAmount = temp.TokenAmount
-	m.txReqID = temp.TxReqID
-	m.shardID = temp.ShardID
-	return nil
 }
 
 func (m *MatchAddLiquidity) FromStringArr(source []string) error {
-	if len(source) != 8 {
-		return fmt.Errorf("Receive length %v but expect %v", len(source), 8)
+	temp := source
+	if len(temp) < 4 {
+		return errors.New("Length of source can not be smaller than 4")
 	}
-	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
-		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
+	m.Base.FromStringArr(temp[:len(temp)-3])
+	temp = temp[len(temp)-3:]
+	if temp[0] == utils.EmptyString {
+		return errors.New("PoolPairID can not be empty")
 	}
-	if source[1] != MatchStatus {
-		return fmt.Errorf("Receive status %v but expect %v", source[1], MatchStatus)
-	}
-	if source[2] == "" {
-		return errors.New("Pair hash is invalid")
-	}
-	m.pairHash = source[2]
-	tokenID, err := common.Hash{}.NewHashFromStr(source[3])
+	nfctID, err := common.Hash{}.NewHashFromStr(temp[1])
 	if err != nil {
 		return err
 	}
-	if tokenID.IsZeroValue() {
-		return errors.New("TokenID is empty")
+	if nfctID.IsZeroValue() {
+		return errors.New("NfctID is empty")
 	}
-	m.tokenID = source[3]
-	tokenAmount, err := strconv.ParseUint(source[4], 10, 32)
-	if err != nil {
-		return err
+	m.nfctID = temp[1]
+	if temp[2] != MatchStatus {
+		return fmt.Errorf("Receive status %s expect %s", temp[2], MatchStatus)
 	}
-	m.tokenAmount = tokenAmount
-	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromString(source[5])
-	if err != nil {
-		return err
-	}
-	if !otaReceiver.IsValid() {
-		return errors.New("receiver Address is invalid")
-	}
-	m.otaReceiver = source[5]
-	m.txReqID = source[6]
-	shardID, err := strconv.Atoi(source[7])
-	if err != nil {
-		return err
-	}
-	m.shardID = byte(shardID)
 	return nil
 }
 
 func (m *MatchAddLiquidity) StringArr() []string {
-	metaDataType := strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta)
-	res := []string{metaDataType, MatchStatus}
-	res = append(res, m.pairHash)
-	res = append(res, m.tokenID)
-	tokenAmount := strconv.FormatUint(m.tokenAmount, 10)
-	res = append(res, tokenAmount)
-	res = append(res, m.otaReceiver)
-	res = append(res, m.txReqID)
-	shardID := strconv.Itoa(int(m.shardID))
-	res = append(res, shardID)
+	res := m.Base.StringArr()
+	res = append(res, m.newPoolPairID)
+	res = append(res, m.nfctID)
+	res = append(res, MatchStatus)
 	return res
+}
+
+func (m *MatchAddLiquidity) NewPoolPairID() string {
+	return m.newPoolPairID
+}
+
+func (m *MatchAddLiquidity) NfctID() string {
+	return m.nfctID
 }

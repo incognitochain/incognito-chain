@@ -111,6 +111,16 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.params,
 			)
+		case metadataCommon.PDexV3AddLiquidityMeta:
+			s.poolPairs,
+				s.waitingContributions,
+				s.deletedWaitingContributions, err = s.processor.addLiquidity(
+				env.StateDB(),
+				inst,
+				s.poolPairs,
+				s.waitingContributions,
+				s.deletedWaitingContributions,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -151,7 +161,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
 		addLiquidityTxs,
-		env.BeaconHeight(),
 		s.poolPairs,
 		s.waitingContributions,
 	)

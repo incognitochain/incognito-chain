@@ -1,8 +1,10 @@
 package pdex
 
 import (
+	"math/big"
 	"sort"
 
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/utils"
 )
 
@@ -71,18 +73,48 @@ func NewPoolPairStateWithValue(
 }
 
 func (p *PoolPairState) getContributionsByOrder(
-	contribution0, contribution1 Contribution,
-) (Contribution, Contribution) {
+	contribution0, contribution1 *Contribution,
+	metaData0, metaData1 *metadataPdexV3.AddLiquidity,
+) (
+	Contribution, Contribution,
+	metadataPdexV3.AddLiquidity, metadataPdexV3.AddLiquidity,
+) {
 	if contribution0.tokenID == p.token0ID {
-		return contribution0, contribution1
+		return *contribution0, *contribution1, *metaData0, *metaData1
 	}
-	return contribution1, contribution0
+	return *contribution1, *contribution0, *metaData1, *metaData0
 }
 
 func (p *PoolPairState) computeActualContributedAmounts(
 	contribution0, contribution1 Contribution,
 ) (uint64, uint64, uint64, uint64) {
-	return 0, 0, 0, 0
+	contribution0Amount := big.NewInt(0)
+	tempAmt := big.NewInt(0)
+	tempAmt.Mul(
+		new(big.Int).SetUint64(contribution1.tokenAmount),
+		new(big.Int).SetUint64(p.token0RealAmount),
+	)
+	tempAmt.Div(
+		tempAmt,
+		new(big.Int).SetUint64(p.token1RealAmount),
+	)
+	if tempAmt.Uint64() > contribution0.tokenAmount {
+		contribution0Amount = new(big.Int).SetUint64(contribution0.tokenAmount)
+	} else {
+		contribution0Amount = tempAmt
+	}
+	contribution1Amount := big.NewInt(0)
+	contribution1Amount.Mul(
+		contribution0Amount,
+		new(big.Int).SetUint64(p.token1RealAmount),
+	)
+	contribution1Amount.Div(
+		contribution1Amount,
+		new(big.Int).SetUint64(p.token0RealAmount),
+	)
+	actualContribution0Amt := contribution0Amount.Uint64()
+	actualContribution1Amt := contribution1Amount.Uint64()
+	return actualContribution0Amt, contribution0.tokenAmount - actualContribution0Amt, actualContribution1Amt, contribution1.tokenAmount - actualContribution1Amt
 }
 
 func (p *PoolPairState) addContributions(contribution0, contribution1 Contribution) (string, error) {
@@ -90,10 +122,23 @@ func (p *PoolPairState) addContributions(contribution0, contribution1 Contributi
 	if err != nil {
 		return utils.EmptyString, err
 	}
+	p.currentContributionID++
+
+	contributions := []Contribution{contribution0, contribution1}
+	sort.Slice(contributions, func(i, j int) bool {
+		return contributions[i].tokenID < contributions[j].tokenID
+	})
+
+	p.token0RealAmount += contributions[0].tokenAmount
+	p.token1RealAmount += contributions[1].tokenAmount
+	p.token0VirtualAmount += contributions[0].tokenAmount
+	p.token1VirtualAmount += contributions[1].tokenAmount
+
 	return nfctID, nil
 }
 
 func (p *PoolPairState) addShare(tokenAmount uint64) (string, error) {
 	res := utils.EmptyString
+	//TODO: @tin
 	return res, nil
 }

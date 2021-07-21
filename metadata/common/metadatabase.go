@@ -29,7 +29,7 @@ func (mb *MetadataBase) SetSharedRandom(_ []byte) {
 
 type MetadataBaseWithSignature struct {
 	MetadataBase
-	Sig []byte 		`json:"Sig,omitempty"`
+	Sig []byte `json:"Sig,omitempty"`
 }
 
 func NewMetadataBaseWithSignature(thisType int) *MetadataBaseWithSignature {
@@ -169,4 +169,12 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetr
 
 func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
+}
+
+func (mb *MetadataBase) FromStringArr(source []string) error {
+	return nil
+}
+
+func (mb *MetadataBase) StringArr() []string {
+	return []string{}
 }

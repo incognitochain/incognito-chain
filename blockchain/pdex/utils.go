@@ -612,10 +612,3 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (uint64, ui
 
 	return vAmount0.Uint64(), vAmount1.Uint64()
 }
-
-func addShare(
-	shares map[string]uint64,
-	amount uint64,
-) (map[string]uint64, error) {
-	return shares, nil
-}
