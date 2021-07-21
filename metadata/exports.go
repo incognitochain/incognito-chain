@@ -45,6 +45,7 @@ var GetMetaAction = metadataCommon.GetMetaAction
 var IsPDEType = metadataCommon.IsPDEType
 var GetLimitOfMeta = metadataCommon.GetLimitOfMeta
 var IsPDETx = metadataCommon.IsPDETx
+var IspDEXv3Tx = metadataCommon.IspDEXv3Tx
 var ConvertPrivacyTokenToNativeToken = metadataCommon.ConvertPrivacyTokenToNativeToken
 var ConvertNativeTokenToPrivacyToken = metadataCommon.ConvertNativeTokenToPrivacyToken
 var HasBridgeInstructions = metadataCommon.HasBridgeInstructions
