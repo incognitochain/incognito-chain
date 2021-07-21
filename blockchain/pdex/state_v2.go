@@ -130,6 +130,16 @@ func (s *stateV2) Clone() State {
 	res := newStateV2()
 
 	res.params = s.params
+	clonedFeeRateBPS := map[string]uint{}
+	for k, v := range s.params.FeeRateBPS {
+		clonedFeeRateBPS[k] = v
+	}
+	clonedStakingPoolsShare := map[string]uint{}
+	for k, v := range s.params.StakingPoolsShare {
+		clonedStakingPoolsShare[k] = v
+	}
+	res.params.FeeRateBPS = clonedFeeRateBPS
+	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	res.producer = s.producer
 	res.processor = s.processor
@@ -173,15 +183,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addLiquidityTxs := []metadata.Transaction{}
 	modifyParamsTxs := []metadata.Transaction{}
 
-	allRemainTxs := env.AllRemainTxs()
+	pDexV3Txs := env.ListTxs()
 	keys := []int{}
 
-	for k := range allRemainTxs {
+	for k := range pDexV3Txs {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, key := range keys {
-		for _, tx := range allRemainTxs[byte(key)] {
+		for _, tx := range pDexV3Txs[byte(key)] {
 			// TODO: @pdex get metadata here and build instructions from transactions here
 			switch tx.GetMetadataType() {
 			case metadataCommon.PDexV3AddLiquidityMeta:
@@ -265,6 +275,16 @@ func (s *stateV2) GetDiff(compareState State) (State, error) {
 	res := newStateV2()
 
 	res.params = s.params
+	clonedFeeRateBPS := map[string]uint{}
+	for k, v := range s.params.FeeRateBPS {
+		clonedFeeRateBPS[k] = v
+	}
+	clonedStakingPoolsShare := map[string]uint{}
+	for k, v := range s.params.StakingPoolsShare {
+		clonedStakingPoolsShare[k] = v
+	}
+	res.params.FeeRateBPS = clonedFeeRateBPS
+	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	return res, nil
 
