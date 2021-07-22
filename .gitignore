@@ -38,6 +38,7 @@ privacy/server/verifying\.key
 .env
 datadirs/data**
 data/**
+datatestnet/**
 ethdata/**
 constant-*
 constant_*

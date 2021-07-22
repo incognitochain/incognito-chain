@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -9,6 +10,21 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
+
+type AssignRuleProcessor interface {
+	Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string
+}
+
+type NilAssignRule struct {
+}
+
+func NewNilAssignRule() *NilAssignRule {
+	return &NilAssignRule{}
+}
+
+func (n NilAssignRule) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
+	panic("implement me")
+}
 
 // createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
 // return params
@@ -81,7 +97,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 // #5 number of swap out nodes >= number of swap in nodes
 func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedValidator, minCommitteeSize int) int {
 
-	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
 	if swapOffset == 0 {
 		return 0
 	}
@@ -170,8 +186,15 @@ func swapInAfterSwapOut(committees, substitutes []string, maxCommitteeSize int) 
 	return committees, substitutes, newCommittees
 }
 
-// assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number
-func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
+type AssignRuleV2 struct {
+}
+
+func NewAssignRuleV2() *AssignRuleV2 {
+	return &AssignRuleV2{}
+}
+
+// Process assign unassignedCommonPool into shard pool with random number
+func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 	total := 0
 	for _, v := range numberOfValidators {
 		total += v
@@ -202,8 +225,9 @@ func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand 
 // calculateCandidatePosition calculate reverse shardID for candidate
 // randomPosition = sum(hash(candidate+rand)) % total, if randomPosition == 0 then randomPosition = 1
 // randomPosition in range (1, total)
-func calculateCandidatePosition(candidate string, rand int64, total int) (pos int) {
-	seed := candidate + fmt.Sprintf("%v", rand)
+func calculateCandidatePosition(candidate string, randomNumber int64, total int) (pos int) {
+	rand.Seed(randomNumber)
+	seed := candidate + fmt.Sprintf("%v", randomNumber)
 	hash := common.HashB([]byte(seed))
 	data := 0
 	for _, v := range hash {
@@ -255,10 +279,101 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 	)
 
 	if assignPerShard == 0 {
-		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
-		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT {
+		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
+		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT_V2 {
 			assignPerShard = 1
 		}
 	}
 	return assignPerShard
+}
+
+type AssignRuleV3 struct {
+}
+
+func NewAssignRuleV3() *AssignRuleV3 {
+	return &AssignRuleV3{}
+}
+
+func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
+
+	sum := 0
+	for _, v := range numberOfValidators {
+		sum += v
+	}
+
+	totalShard := len(numberOfValidators)
+	tempMean := float64(sum) / float64(totalShard)
+	mean := int(tempMean)
+	if tempMean > float64(mean) {
+		mean += 1
+	}
+
+	lowerSet := getOrderedLowerSet(mean, numberOfValidators)
+
+	diff := []int{}
+	totalDiff := 0
+	for _, shardID := range lowerSet {
+		shardDiff := mean - numberOfValidators[shardID]
+
+		// special case: mean == numberOfValidators[shardID] ||
+		// shard committee size is equal among all shard ||
+		// len(numberOfValidators) == 1
+		if shardDiff == 0 {
+			shardDiff = 1
+		}
+
+		diff = append(diff, shardDiff)
+		totalDiff += shardDiff
+	}
+
+	assignedCandidates := make(map[byte][]string)
+	rand.Seed(randomNumber)
+	for _, candidate := range candidates {
+		randomPosition := calculateCandidatePositionV2(totalDiff)
+		position := 0
+		tempPosition := diff[position]
+		for randomPosition >= tempPosition && position < len(diff)-1 {
+			position++
+			tempPosition += diff[position]
+		}
+		shardID := lowerSet[position]
+		assignedCandidates[byte(shardID)] = append(assignedCandidates[byte(shardID)], candidate)
+	}
+
+	return assignedCandidates
+}
+
+func getOrderedLowerSet(mean int, numberOfValidators []int) []int {
+
+	lowerSet := []int{}
+	totalShard := len(numberOfValidators)
+	sortedShardIDs := sortShardIDByIncreaseOrder(numberOfValidators)
+
+	halfOfShard := totalShard / 2
+	if halfOfShard == 0 {
+		halfOfShard = 1
+	}
+
+	for _, shardID := range sortedShardIDs {
+		if numberOfValidators[shardID] < mean && len(lowerSet) < halfOfShard {
+			lowerSet = append(lowerSet, int(shardID))
+		}
+	}
+
+	//special case: mean == 0 || shard committee size is equal among all shard || len(numberOfValidators) == 1
+	if len(lowerSet) == 0 {
+		for i, _ := range numberOfValidators {
+			if i == halfOfShard {
+				break
+			}
+			lowerSet = append(lowerSet, i)
+		}
+	}
+
+	return lowerSet
+}
+
+// calculateCandidatePositionV2 random a position in total
+func calculateCandidatePositionV2(total int) (pos int) {
+	return rand.Intn(total)
 }

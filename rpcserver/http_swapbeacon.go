@@ -3,8 +3,9 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -273,13 +274,13 @@ func (p *keccak256MerkleProof) getPath() []string {
 
 // buildProof builds a merkle proof for one element in a merkle tree
 func buildProofFromTree(merkles [][]byte, id int) *keccak256MerkleProof {
-	path, left := blockchain.GetKeccak256MerkleProofFromTree(merkles, id)
+	path, left := types.GetKeccak256MerkleProofFromTree(merkles, id)
 	return &keccak256MerkleProof{path: path, left: left}
 }
 
 // buildProof receives a list of data (as bytes) and returns a merkle proof for one element in the list
 func buildProof(data [][]byte, id int) *keccak256MerkleProof {
-	merkles := blockchain.BuildKeccak256MerkleTree(data)
+	merkles := types.BuildKeccak256MerkleTree(data)
 	BLogger.log.Debugf("BuildProof: %x", merkles[id])
 	BLogger.log.Debugf("BuildProof merkles: %x", merkles)
 	return buildProofFromTree(merkles, id)
