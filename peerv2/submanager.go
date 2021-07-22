@@ -94,9 +94,12 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	if sub.syncMode == "" {
 		newRole := sub.consensusData.GetOneValidatorForEachConsensusProcess()
 
+		Logger.Infof("[debugSubs] relayShardIDs %+v", sub.relayShard)
 		for _, sid := range relayShardIDs {
 			if newRole[int(sid)] == nil {
 				newRole[int(sid)] = &consensus.Validator{}
+			} else {
+				Logger.Infof("[debugSubs] newRole sID %v role %v", sid, newRole[int(sid)].State.Role)
 			}
 		}
 
@@ -107,6 +110,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		sort.Ints(shardIDs)
 		str := ""
 		for _, chainID := range shardIDs {
+			Logger.Infof("[debugSubs] newRole sID %v role %v", chainID, newRole[int(chainID)].State.Role)
 			if newRole[chainID] != nil {
 				str += fmt.Sprintf("%v-%v", chainID, newRole[chainID].State.Role)
 			} else {
