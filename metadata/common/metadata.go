@@ -366,10 +366,8 @@ func IsPDEType(metadataType int) bool {
 		return true
 	case PDETradingFeesDistributionMeta:
 		return true
-	case PDexV3AddLiquidityMeta:
-		return true
 	default:
-		return false
+		return IspDEXv3Type(metadataType)
 	}
 }
 
@@ -382,7 +380,21 @@ func IspDexV3Tx(metadata Metadata) bool {
 
 func IspDEXv3Type(metadataType int) bool {
 	switch metadataType {
+	case PDexV3AddLiquidityMeta:
+		return true
 	case PDexV3ModifyParamsMeta:
+		return true
+	case PDexV3TradeRequestMeta:
+		return true
+	case PDexV3TradeResponseMeta:
+		return true
+	case PDexV3AddOrderRequestMeta:
+		return true
+	case PDexV3AddOrderResponseMeta:
+		return true
+	case PDexV3WithdrawOrderRequestMeta:
+		return true
+	case PDexV3WithdrawOrderResponseMeta:
 		return true
 	default:
 		return false

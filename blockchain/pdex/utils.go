@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -579,4 +580,12 @@ func InitStateFromDB(
 		return newStateV1(), nil
 	}
 	return initStateV1(stateDB, beaconHeight)
+}
+
+func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]v3.PoolReserve, []string, []bool, error) {
+	return nil, nil, nil, nil
+}
+
+func setRelevantReserves(pairs map[string]PoolPairState, reserves []v3.PoolReserve, tradePath []string, isSellingToken0 []bool) error {
+	return nil
 }
