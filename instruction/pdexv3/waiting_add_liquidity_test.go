@@ -36,7 +36,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddOrderRequestMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddOrderRequestMeta),
 					WaitingStatus,
 					common.PRVCoinID.String(),
 					"300",
@@ -52,7 +52,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddOrderRequestMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddOrderRequestMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -72,7 +72,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					"",
 					"pool_pair_id",
 					"pair_hash",
@@ -92,7 +92,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"",
@@ -112,7 +112,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -132,7 +132,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -152,7 +152,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -172,7 +172,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -192,7 +192,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -212,7 +212,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -232,7 +232,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -252,7 +252,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -283,7 +283,7 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 			},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 					WaitingStatus,
 					"pool_pair_id",
 					"pair_hash",
@@ -389,7 +389,7 @@ func TestWaitingAddLiquidity_StringArr(t *testing.T) {
 				shardID:         1,
 			},
 			want: []string{
-				strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
+				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta),
 				WaitingStatus,
 				"pool_pair_id",
 				"pair_hash",

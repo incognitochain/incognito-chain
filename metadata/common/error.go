@@ -50,6 +50,9 @@ const (
 	PDETxWrongVersionError
 	//
 
+	// pDex v3
+	Pdexv3ModifyParamsValidateSanityDataError
+
 	// portal
 	PortalRequestPTokenParamError
 	PortalRedeemRequestParamError

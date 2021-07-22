@@ -224,7 +224,7 @@ type bscParam struct {
 }
 
 type pdexParam struct {
-	PDexV3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
+	Pdexv3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
 	AdminAddress           string `mapstructure:"admin_address"`
 }
 

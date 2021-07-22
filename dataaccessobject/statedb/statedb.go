@@ -3,15 +3,16 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 // StateDBs within the incognito protocol are used to store anything
@@ -1875,4 +1876,27 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 		return bscTxState.GetValue().(*BridgeBSCTxState), true, nil
 	}
 	return NewBridgeBSCTxState(), false, nil
+}
+
+// ================================= pDex v3 OBJECT =======================================
+func (stateDB *StateDB) getPdexv3StatusByKey(key common.Hash) (*Pdexv3StatusState, bool, error) {
+	pDexv3StatusState, err := stateDB.getStateObject(Pdexv3StatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3StatusState != nil {
+		return pDexv3StatusState.GetValue().(*Pdexv3StatusState), true, nil
+	}
+	return NewPdexv3StatusState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bool, error) {
+	pDexv3ParamsState, err := stateDB.getStateObject(Pdexv3ParamsObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3ParamsState != nil {
+		return pDexv3ParamsState.GetValue().(*Pdexv3Params), true, nil
+	}
+	return NewPdexv3Params(), false, nil
 }

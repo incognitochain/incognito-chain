@@ -78,7 +78,7 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 }
 
 func (req AddOrderRequest) ValidateMetadataByItself() bool {
-	return req.Type == metadataCommon.PDexV3AddOrderRequestMeta
+	return req.Type == metadataCommon.Pdexv3AddOrderRequestMeta
 }
 
 func (req AddOrderRequest) Hash() *common.Hash {

@@ -34,7 +34,7 @@ func NewAddLiquidityWithValue(
 	tokenID string, tokenAmount uint64, amplifier uint,
 ) *AddLiquidity {
 	metadataBase := metadataCommon.MetadataBase{
-		Type: metadataCommon.PDexV3AddLiquidityMeta,
+		Type: metadataCommon.Pdexv3AddLiquidityMeta,
 	}
 	return &AddLiquidity{
 		poolPairID:      poolPairID,
@@ -118,7 +118,7 @@ func (al *AddLiquidity) ValidateSanityData(
 }
 
 func (al *AddLiquidity) ValidateMetadataByItself() bool {
-	return al.Type == metadataCommon.PDexV3AddLiquidityMeta
+	return al.Type == metadataCommon.Pdexv3AddLiquidityMeta
 }
 
 func (al *AddLiquidity) Hash() *common.Hash {

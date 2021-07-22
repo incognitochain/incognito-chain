@@ -77,7 +77,7 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 }
 
 func (req TradeRequest) ValidateMetadataByItself() bool {
-	return req.Type == metadataCommon.PDexV3TradeRequestMeta
+	return req.Type == metadataCommon.Pdexv3TradeRequestMeta
 }
 
 func (req TradeRequest) Hash() *common.Hash {
