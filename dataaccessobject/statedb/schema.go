@@ -55,8 +55,8 @@ var (
 	// pdex v3
 	pdexv3StatusPrefix                = []byte("pdexv3status-")
 	pdexv3ParamsModifyingPrefix       = []byte("pdexv3paramsmodifyingstatus-")
-	pDexV3WithdrawalLPFeePrefix       = []byte("pdexv3withdrawallpfeestatus-")
-	pDexV3WithdrawalProtocolFeePrefix = []byte("pdexv3withdrawalprotocolfeestatus")
+	pdexv3WithdrawalLPFeePrefix       = []byte("pdexv3withdrawallpfeestatus-")
+	pdexv3WithdrawalProtocolFeePrefix = []byte("pdexv3withdrawalprotocolfeestatus-")
 	pdexv3ParamsStatePrefix           = []byte("pdexv3paramsstate-")
 
 	// portal
@@ -548,11 +548,11 @@ func Pdexv3ParamsModifyingStatusPrefix() []byte {
 }
 
 func Pdexv3WithdrawalLPFeeStatusPrefix() []byte {
-	return pDexV3WithdrawalLPFeePrefix
+	return pdexv3WithdrawalLPFeePrefix
 }
 
 func Pdexv3WithdrawalProtocolFeeStatusPrefix() []byte {
-	return pDexV3WithdrawalProtocolFeePrefix
+	return pdexv3WithdrawalProtocolFeePrefix
 }
 
 // pDex v3 prefix hash of the key
