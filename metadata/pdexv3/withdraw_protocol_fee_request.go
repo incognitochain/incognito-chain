@@ -26,7 +26,7 @@ type WithdrawalProtocolFeeStatus struct {
 	PairID string `json:"PairID"`
 }
 
-func NewPDexV3WithdrawalProtocolFeeStatus(
+func NewPdexv3WithdrawalProtocolFeeStatus(
 	status int,
 	pairID string,
 ) *WithdrawalProtocolFeeStatus {
@@ -36,7 +36,7 @@ func NewPDexV3WithdrawalProtocolFeeStatus(
 	}
 }
 
-func NewPDexV3WithdrawalProtocolFeeRequest(
+func NewPdexv3WithdrawalProtocolFeeRequest(
 	metaType int,
 	pairID string,
 ) (*WithdrawalProtocolFeeRequest, error) {
@@ -69,11 +69,11 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3WitdrawProtocolFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawProtocolFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3WitdrawProtocolFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawProtocolFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	if ok, err := withdrawal.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
@@ -82,7 +82,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3WitdrawProtocolFeeValidateSanityDataError, errors.New("Tx pDex v3 protocol fee withdrawal must be TxNormalType"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawProtocolFeeValidateSanityDataError, errors.New("Tx pDex v3 protocol fee withdrawal must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
@@ -93,7 +93,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 }
 
 func (withdrawal WithdrawalProtocolFeeRequest) ValidateMetadataByItself() bool {
-	return withdrawal.Type == metadataCommon.PDexV3WithdrawProtocolFeeRequestMeta
+	return withdrawal.Type == metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta
 }
 
 func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {

@@ -135,12 +135,12 @@ const (
 	CacheQueueError
 
 	// pdex v3
-	GetPDexV3StateError
+	GetPdexv3StateError
 	GenerateOTAFailError
-	GetPDexV3ParamsModyfingStatusError
-	GetPDexV3LPFeeError
-	GetPDexV3WithdrawlLPFeeStatusError
-	GetPDexV3WithdrawlProtocolFeeStatusError
+	GetPdexv3ParamsModyfingStatusError
+	GetPdexv3LPFeeError
+	GetPdexv3WithdrawlLPFeeStatusError
+	GetPdexv3WithdrawlProtocolFeeStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -276,9 +276,9 @@ var ErrCodeMessage = map[int]struct {
 	CacheQueueError: {-13001, "Full node cache error"},
 
 	// pDex v3
-	GetPDexV3StateError:                {-14001, "Get pDex V3 state error"},
+	GetPdexv3StateError:                {-14001, "Get pDex V3 state error"},
 	GenerateOTAFailError:               {-14002, "Generate ota fail"},
-	GetPDexV3ParamsModyfingStatusError: {-14003, "Get pDex v3 params modyfing status error"},
+	GetPdexv3ParamsModyfingStatusError: {-14003, "Get pDex v3 params modyfing status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

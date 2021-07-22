@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/pkg/errors"
 )
 
@@ -71,8 +71,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
-	case metadataCommon.PDexV3AddLiquidityMeta:
-		md = &metadataPdexV3.AddLiquidity{}
+	case metadataCommon.Pdexv3AddLiquidityMeta:
+		md = &metadataPdexv3.AddLiquidity{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
 	case PDEPRVRequiredContributionRequestMeta:
@@ -167,12 +167,12 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
-	case metadataCommon.PDexV3ModifyParamsMeta:
-		md = &metadataPdexV3.ParamsModifyingRequest{}
-	case metadataCommon.PDexV3WithdrawLPFeeRequestMeta:
-		md = &metadataPdexV3.WithdrawalLPFeeRequest{}
-	case metadataCommon.PDexV3WithdrawProtocolFeeRequestMeta:
-		md = &metadataPdexV3.WithdrawalProtocolFeeRequest{}
+	case metadataCommon.Pdexv3ModifyParamsMeta:
+		md = &metadataPdexv3.ParamsModifyingRequest{}
+	case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
+		md = &metadataPdexv3.WithdrawalLPFeeRequest{}
+	case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:
+		md = &metadataPdexv3.WithdrawalProtocolFeeRequest{}
 	default:
 		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

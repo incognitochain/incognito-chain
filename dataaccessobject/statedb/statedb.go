@@ -1879,24 +1879,24 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 }
 
 // ================================= pDex v3 OBJECT =======================================
-func (stateDB *StateDB) getPDexV3StatusByKey(key common.Hash) (*PDexV3StatusState, bool, error) {
-	pDexv3StatusState, err := stateDB.getStateObject(PDexV3StatusObjectType, key)
+func (stateDB *StateDB) getPdexv3StatusByKey(key common.Hash) (*Pdexv3StatusState, bool, error) {
+	pDexv3StatusState, err := stateDB.getStateObject(Pdexv3StatusObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if pDexv3StatusState != nil {
-		return pDexv3StatusState.GetValue().(*PDexV3StatusState), true, nil
+		return pDexv3StatusState.GetValue().(*Pdexv3StatusState), true, nil
 	}
-	return NewPDexV3StatusState(), false, nil
+	return NewPdexv3StatusState(), false, nil
 }
 
-func (stateDB *StateDB) getPDexV3ParamsByKey(key common.Hash) (*PDexV3Params, bool, error) {
-	pDexv3ParamsState, err := stateDB.getStateObject(PDexV3ParamsObjectType, key)
+func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bool, error) {
+	pDexv3ParamsState, err := stateDB.getStateObject(Pdexv3ParamsObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if pDexv3ParamsState != nil {
-		return pDexv3ParamsState.GetValue().(*PDexV3Params), true, nil
+		return pDexv3ParamsState.GetValue().(*Pdexv3Params), true, nil
 	}
-	return NewPDexV3Params(), false, nil
+	return NewPdexv3Params(), false, nil
 }

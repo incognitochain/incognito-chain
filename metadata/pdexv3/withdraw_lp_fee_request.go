@@ -29,7 +29,7 @@ type WithdrawalLPFeeStatus struct {
 	NcftTokenID string `json:"NcftTokenID"`
 }
 
-func NewPDexV3WithdrawalLPFeeStatus(
+func NewPdexv3WithdrawalLPFeeStatus(
 	status int,
 	pairID string,
 	ncftTokenID string,
@@ -41,7 +41,7 @@ func NewPDexV3WithdrawalLPFeeStatus(
 	}
 }
 
-func NewPDexV3WithdrawalLPFeeRequest(
+func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
 	ncftTokenID string,
@@ -76,16 +76,16 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3WitdrawLPFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3WitdrawLPFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3WitdrawLPFeeValidateSanityDataError, errors.New("Tx pDex v3 LP fee withdrawal must be TxNormalType"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Tx pDex v3 LP fee withdrawal must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
@@ -96,7 +96,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 }
 
 func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
-	return withdrawal.Type == metadataCommon.PDexV3WithdrawLPFeeRequestMeta
+	return withdrawal.Type == metadataCommon.Pdexv3WithdrawLPFeeRequestMeta
 }
 
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {

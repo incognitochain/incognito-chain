@@ -8,37 +8,37 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type PDexV3StatusState struct {
+type Pdexv3StatusState struct {
 	statusType    []byte
 	statusSuffix  []byte
 	statusContent []byte
 }
 
-func (s PDexV3StatusState) StatusType() []byte {
+func (s Pdexv3StatusState) StatusType() []byte {
 	return s.statusType
 }
 
-func (s *PDexV3StatusState) SetStatusType(statusType []byte) {
+func (s *Pdexv3StatusState) SetStatusType(statusType []byte) {
 	s.statusType = statusType
 }
 
-func (s PDexV3StatusState) StatusSuffix() []byte {
+func (s Pdexv3StatusState) StatusSuffix() []byte {
 	return s.statusSuffix
 }
 
-func (s *PDexV3StatusState) SetStatusSuffix(statusSuffix []byte) {
+func (s *Pdexv3StatusState) SetStatusSuffix(statusSuffix []byte) {
 	s.statusSuffix = statusSuffix
 }
 
-func (s PDexV3StatusState) StatusContent() []byte {
+func (s Pdexv3StatusState) StatusContent() []byte {
 	return s.statusContent
 }
 
-func (s *PDexV3StatusState) SetStatusContent(statusContent []byte) {
+func (s *Pdexv3StatusState) SetStatusContent(statusContent []byte) {
 	s.statusContent = statusContent
 }
 
-func (s PDexV3StatusState) MarshalJSON() ([]byte, error) {
+func (s Pdexv3StatusState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		StatusType    []byte
 		StatusSuffix  []byte
@@ -54,7 +54,7 @@ func (s PDexV3StatusState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (s *PDexV3StatusState) UnmarshalJSON(data []byte) error {
+func (s *Pdexv3StatusState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		StatusType    []byte
 		StatusSuffix  []byte
@@ -69,7 +69,7 @@ func (s *PDexV3StatusState) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *PDexV3StatusState) ToString() string {
+func (s *Pdexv3StatusState) ToString() string {
 	return "{" +
 		" \"StatusType\": " + string(s.statusType) +
 		" \"StatusSuffix\": " + string(s.statusSuffix) +
@@ -77,22 +77,22 @@ func (s *PDexV3StatusState) ToString() string {
 		"}"
 }
 
-func NewPDexV3StatusState() *PDexV3StatusState {
-	return &PDexV3StatusState{}
+func NewPdexv3StatusState() *Pdexv3StatusState {
+	return &Pdexv3StatusState{}
 }
 
-func NewPDexV3StatusStateWithValue(statusType []byte, statusSuffix []byte, statusContent []byte) *PDexV3StatusState {
-	return &PDexV3StatusState{statusType: statusType, statusSuffix: statusSuffix, statusContent: statusContent}
+func NewPdexv3StatusStateWithValue(statusType []byte, statusSuffix []byte, statusContent []byte) *Pdexv3StatusState {
+	return &Pdexv3StatusState{statusType: statusType, statusSuffix: statusSuffix, statusContent: statusContent}
 }
 
-type PDexV3StatusObject struct {
+type Pdexv3StatusObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version          int
-	PDexV3StatusHash common.Hash
-	PDexV3Status     *PDexV3StatusState
+	Pdexv3StatusHash common.Hash
+	Pdexv3Status     *Pdexv3StatusState
 	objectType       int
 	deleted          bool
 
@@ -104,19 +104,19 @@ type PDexV3StatusObject struct {
 	dbErr error
 }
 
-func newPDexV3StatusObject(db *StateDB, hash common.Hash) *PDexV3StatusObject {
-	return &PDexV3StatusObject{
+func newPdexv3StatusObject(db *StateDB, hash common.Hash) *Pdexv3StatusObject {
+	return &Pdexv3StatusObject{
 		version:          defaultVersion,
 		db:               db,
-		PDexV3StatusHash: hash,
-		PDexV3Status:     NewPDexV3StatusState(),
-		objectType:       PDexV3StatusObjectType,
+		Pdexv3StatusHash: hash,
+		Pdexv3Status:     NewPdexv3StatusState(),
+		objectType:       Pdexv3StatusObjectType,
 		deleted:          false,
 	}
 }
 
-func newPDexV3StatusObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*PDexV3StatusObject, error) {
-	var newPortalStatus = NewPDexV3StatusState()
+func newPdexv3StatusObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*Pdexv3StatusObject, error) {
+	var newPortalStatus = NewPdexv3StatusState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
@@ -125,92 +125,92 @@ func newPDexV3StatusObjectWithValue(db *StateDB, key common.Hash, data interface
 			return nil, err
 		}
 	} else {
-		newPortalStatus, ok = data.(*PDexV3StatusState)
+		newPortalStatus, ok = data.(*Pdexv3StatusState)
 		if !ok {
-			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidPDexV3StatusStateType, reflect.TypeOf(data))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidPdexv3StatusStateType, reflect.TypeOf(data))
 		}
 	}
-	return &PDexV3StatusObject{
+	return &Pdexv3StatusObject{
 		version:          defaultVersion,
-		PDexV3StatusHash: key,
-		PDexV3Status:     newPortalStatus,
+		Pdexv3StatusHash: key,
+		Pdexv3Status:     newPortalStatus,
 		db:               db,
-		objectType:       PDexV3StatusObjectType,
+		objectType:       Pdexv3StatusObjectType,
 		deleted:          false,
 	}, nil
 }
 
-func GeneratePDexV3StatusObjectKey(statusType []byte, statusSuffix []byte) common.Hash {
-	prefixHash := GetPDexV3StatusPrefix(statusType)
+func GeneratePdexv3StatusObjectKey(statusType []byte, statusSuffix []byte) common.Hash {
+	prefixHash := GetPdexv3StatusPrefix(statusType)
 	valueHash := common.HashH(append(statusType, statusSuffix...))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (t PDexV3StatusObject) GetVersion() int {
+func (t Pdexv3StatusObject) GetVersion() int {
 	return t.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (t *PDexV3StatusObject) SetError(err error) {
+func (t *Pdexv3StatusObject) SetError(err error) {
 	if t.dbErr == nil {
 		t.dbErr = err
 	}
 }
 
-func (t PDexV3StatusObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (t Pdexv3StatusObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return t.trie
 }
 
-func (t *PDexV3StatusObject) SetValue(data interface{}) error {
-	newPortalStatus, ok := data.(*PDexV3StatusState)
+func (t *Pdexv3StatusObject) SetValue(data interface{}) error {
+	newPortalStatus, ok := data.(*Pdexv3StatusState)
 	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidPDexV3StatusStateType, reflect.TypeOf(data))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidPdexv3StatusStateType, reflect.TypeOf(data))
 	}
-	t.PDexV3Status = newPortalStatus
+	t.Pdexv3Status = newPortalStatus
 	return nil
 }
 
-func (t PDexV3StatusObject) GetValue() interface{} {
-	return t.PDexV3Status
+func (t Pdexv3StatusObject) GetValue() interface{} {
+	return t.Pdexv3Status
 }
 
-func (t PDexV3StatusObject) GetValueBytes() []byte {
-	PDexV3StatusState, ok := t.GetValue().(*PDexV3StatusState)
+func (t Pdexv3StatusObject) GetValueBytes() []byte {
+	Pdexv3StatusState, ok := t.GetValue().(*Pdexv3StatusState)
 	if !ok {
 		panic("wrong expected value type")
 	}
-	value, err := json.Marshal(PDexV3StatusState)
+	value, err := json.Marshal(Pdexv3StatusState)
 	if err != nil {
-		panic("failed to marshal PDexV3StatusState")
+		panic("failed to marshal Pdexv3StatusState")
 	}
 	return value
 }
 
-func (t PDexV3StatusObject) GetHash() common.Hash {
-	return t.PDexV3StatusHash
+func (t Pdexv3StatusObject) GetHash() common.Hash {
+	return t.Pdexv3StatusHash
 }
 
-func (t PDexV3StatusObject) GetType() int {
+func (t Pdexv3StatusObject) GetType() int {
 	return t.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (t *PDexV3StatusObject) MarkDelete() {
+func (t *Pdexv3StatusObject) MarkDelete() {
 	t.deleted = true
 }
 
 // reset all shard committee value into default value
-func (t *PDexV3StatusObject) Reset() bool {
-	t.PDexV3Status = NewPDexV3StatusState()
+func (t *Pdexv3StatusObject) Reset() bool {
+	t.Pdexv3Status = NewPdexv3StatusState()
 	return true
 }
 
-func (t PDexV3StatusObject) IsDeleted() bool {
+func (t Pdexv3StatusObject) IsDeleted() bool {
 	return t.deleted
 }
 
 // value is either default or nil
-func (t PDexV3StatusObject) IsEmpty() bool {
-	temp := NewPDexV3StatusState()
-	return reflect.DeepEqual(temp, t.PDexV3Status) || t.PDexV3Status == nil
+func (t Pdexv3StatusObject) IsEmpty() bool {
+	temp := NewPdexv3StatusState()
+	return reflect.DeepEqual(temp, t.Pdexv3Status) || t.Pdexv3Status == nil
 }

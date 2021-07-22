@@ -302,7 +302,7 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 			name: "Invalid Input",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
-					Type: metadataCommon.PDexV3TradeResponseMeta,
+					Type: metadataCommon.PDexv3TradeResponseMeta,
 				},
 			},
 			want: false,
@@ -311,7 +311,7 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 			name: "Valid Input",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
-					Type: metadataCommon.PDexV3AddLiquidityMeta,
+					Type: metadataCommon.Pdexv3AddLiquidityMeta,
 				},
 			},
 			want: true,

@@ -233,18 +233,18 @@ const (
 	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
-	pdexV3AddLiquidityV3                       = "pdexv3_txAddLiquidity"
+	pdexv3AddLiquidityV3                       = "pdexv3_txAddLiquidity"
 	//
 
 	// pDex v3
-	getPDexV3State                                = "pdexv3_getState"
-	createAndSendTxWithPDexV3ModifyParams         = "pdexv3_txModifyParams"
-	getPDexV3ParamsModifyingStatus                = "pdexv3_getParamsModifyingStatus"
-	getPDexV3EstimatedLPFee                       = "pdexv3_getEstimatedUncollectedLPFee"
-	createAndSendTxWithPDexV3WithdrawlLPFee       = "pdexv3_txWithdrawLPFee"
-	getPDexV3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"
-	createAndSendTxWithPDexV3WithdrawlProtocolFee = "pdexv3_txWithdrawProtocolFee"
-	getPDexV3WithdrawalProtocolFeeStatus          = "pdexv3_getWithdrawalProtocolFeeStatus"
+	getPdexv3State                                = "pdexv3_getState"
+	createAndSendTxWithPdexv3ModifyParams         = "pdexv3_txModifyParams"
+	getPdexv3ParamsModifyingStatus                = "pdexv3_getParamsModifyingStatus"
+	getPdexv3EstimatedLPFee                       = "pdexv3_getEstimatedUncollectedLPFee"
+	createAndSendTxWithPdexv3WithdrawlLPFee       = "pdexv3_txWithdrawLPFee"
+	getPdexv3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"
+	createAndSendTxWithPdexv3WithdrawlProtocolFee = "pdexv3_txWithdrawProtocolFee"
+	getPdexv3WithdrawalProtocolFeeStatus          = "pdexv3_getWithdrawalProtocolFeeStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

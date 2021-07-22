@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateV2 struct {
@@ -102,7 +102,7 @@ func initStateV2(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (*stateV2, error) {
-	stateObject, err := statedb.GetPDexV3Params(stateDB)
+	stateObject, err := statedb.GetPdexv3Params(stateDB)
 	params := Params{
 		DefaultFeeRateBPS:               stateObject.DefaultFeeRateBPS(),
 		FeeRateBPS:                      stateObject.FeeRateBPS(),
@@ -156,11 +156,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		if err != nil {
 			continue // Not error, just not PDE instructions
 		}
-		if !metadataCommon.IspDEXv3Type(metadataType) {
+		if !metadataCommon.IsPdexv3Type(metadataType) {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadataCommon.PDexV3ModifyParamsMeta:
+		case metadataCommon.Pdexv3ModifyParamsMeta:
 			s.params, err = s.processor.modifyParams(
 				env.StateDB(),
 				env.BeaconHeight(),
@@ -183,25 +183,25 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addLiquidityTxs := []metadata.Transaction{}
 	modifyParamsTxs := []metadata.Transaction{}
 
-	pDexV3Txs := env.ListTxs()
+	pdexv3Txs := env.ListTxs()
 	keys := []int{}
 
-	for k := range pDexV3Txs {
+	for k := range pdexv3Txs {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, key := range keys {
-		for _, tx := range pDexV3Txs[byte(key)] {
+		for _, tx := range pdexv3Txs[byte(key)] {
 			// TODO: @pdex get metadata here and build instructions from transactions here
 			switch tx.GetMetadataType() {
-			case metadataCommon.PDexV3AddLiquidityMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+			case metadataCommon.Pdexv3AddLiquidityMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
 				if !ok {
 					return instructions, errors.New("Can not parse add liquidity metadata")
 				}
 				addLiquidityTxs = append(addLiquidityTxs, tx)
-			case metadataCommon.PDexV3ModifyParamsMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexV3.ParamsModifyingRequest)
+			case metadataCommon.Pdexv3ModifyParamsMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
 				if !ok {
 					return instructions, errors.New("Can not parse params modifying metadata")
 				}
@@ -241,7 +241,7 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 func (s *stateV2) StoreToDB(env StateEnvironment) error {
 	var err error
 
-	err = statedb.StorePDexV3Params(
+	err = statedb.StorePdexv3Params(
 		env.StateDB(),
 		s.params.DefaultFeeRateBPS,
 		s.params.FeeRateBPS,

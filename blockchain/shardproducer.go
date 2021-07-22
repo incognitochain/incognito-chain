@@ -878,7 +878,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
 	bc *BlockChain, shardID byte,
 	shardHeight, beaconHeight uint64,
-) (instructions [][]string, pDEXv3Txs []metadata.Transaction, err error) {
+) (instructions [][]string, pdexv3Txs []metadata.Transaction, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -890,8 +890,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			if beaconHeight >= config.Param().PDexParams.PDexV3BreakPointHeight && metadata.IspDEXv3Tx(metadataValue) {
-				pDEXv3Txs = append(pDEXv3Txs, tx)
+			if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight && metadata.IsPdexv3Tx(metadataValue) {
+				pdexv3Txs = append(pdexv3Txs, tx)
 			} else {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
@@ -978,5 +978,5 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
-	return instructions, pDEXv3Txs, nil
+	return instructions, pdexv3Txs, nil
 }

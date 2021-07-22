@@ -4,29 +4,29 @@ import (
 	"fmt"
 )
 
-func TrackPDexV3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
-	key := GeneratePDexV3StatusObjectKey(statusType, statusSuffix)
-	value := NewPDexV3StatusStateWithValue(statusType, statusSuffix, statusContent)
-	err := stateDB.SetStateObject(PDexV3StatusObjectType, key, value)
+func TrackPdexv3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePdexv3StatusObjectKey(statusType, statusSuffix)
+	value := NewPdexv3StatusStateWithValue(statusType, statusSuffix, statusContent)
+	err := stateDB.SetStateObject(Pdexv3StatusObjectType, key, value)
 	if err != nil {
-		return NewStatedbError(StorePDexV3StatusError, err)
+		return NewStatedbError(StorePdexv3StatusError, err)
 	}
 	return nil
 }
 
-func GetPDexV3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
-	key := GeneratePDexV3StatusObjectKey(statusType, statusSuffix)
-	s, has, err := stateDB.getPDexV3StatusByKey(key)
+func GetPdexv3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
+	key := GeneratePdexv3StatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.getPdexv3StatusByKey(key)
 	if err != nil {
-		return []byte{}, NewStatedbError(GetPDexV3StatusError, err)
+		return []byte{}, NewStatedbError(GetPdexv3StatusError, err)
 	}
 	if !has {
-		return []byte{}, NewStatedbError(GetPDexV3StatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+		return []byte{}, NewStatedbError(GetPdexv3StatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
 	return s.statusContent, nil
 }
 
-func StorePDexV3Params(
+func StorePdexv3Params(
 	stateDB *StateDB,
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
@@ -38,8 +38,8 @@ func StorePDexV3Params(
 	defaultStakingPoolsShare uint,
 	stakingPoolsShare map[string]uint,
 ) error {
-	key := GeneratePDexV3ParamsObjectKey()
-	value := NewPDexV3ParamsWithValue(
+	key := GeneratePdexv3ParamsObjectKey()
+	value := NewPdexv3ParamsWithValue(
 		defaultFeeRateBPS,
 		feeRateBPS,
 		prvDiscountPercent,
@@ -50,21 +50,21 @@ func StorePDexV3Params(
 		defaultStakingPoolsShare,
 		stakingPoolsShare,
 	)
-	err := stateDB.SetStateObject(PDexV3ParamsObjectType, key, value)
+	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {
-		return NewStatedbError(StorePDexV3ParamsError, err)
+		return NewStatedbError(StorePdexv3ParamsError, err)
 	}
 	return nil
 }
 
-func GetPDexV3Params(stateDB *StateDB) (*PDexV3Params, error) {
-	key := GeneratePDexV3ParamsObjectKey()
-	s, has, err := stateDB.getPDexV3ParamsByKey(key)
+func GetPdexv3Params(stateDB *StateDB) (*Pdexv3Params, error) {
+	key := GeneratePdexv3ParamsObjectKey()
+	s, has, err := stateDB.getPdexv3ParamsByKey(key)
 	if err != nil {
-		return nil, NewStatedbError(GetPDexV3ParamsError, err)
+		return nil, NewStatedbError(GetPdexv3ParamsError, err)
 	}
 	if !has {
-		return nil, NewStatedbError(GetPDexV3ParamsError, fmt.Errorf("could not found pDex v3 params in statedb"))
+		return nil, NewStatedbError(GetPdexv3ParamsError, fmt.Errorf("could not found pDex v3 params in statedb"))
 	}
 	return s, nil
 }
