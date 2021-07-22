@@ -38,7 +38,8 @@ func (sp *stateProcessorV2) addLiquidity(
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
 	case instruction.MatchAndReturnStatus:
-		waitingContributions, poolPairs, err = sp.matchAndReturnContribution(stateDB, inst, waitingContributions, poolPairs)
+		waitingContributions, deletedWaitingContributions, poolPairs, err = sp.matchAndReturnContribution(
+			stateDB, inst, waitingContributions, deletedWaitingContributions, poolPairs)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
@@ -57,13 +58,9 @@ func (sp *stateProcessorV2) waitingContribution(
 		return waitingContributions, err
 	}
 	metaData := waitingAddLiquidityInst.MetaData().(*metadataPdexV3.AddLiquidity)
-	//TODO: Update state with current instruction
-	contribution := NewContributionWithValue(
-		metaData.PoolPairID(),
-		metaData.ReceiveAddress(), metaData.RefundAddress(),
-		metaData.TokenID(), waitingAddLiquidityInst.TxReqID(),
-		metaData.TokenAmount(), metaData.Amplifier(),
-		waitingAddLiquidityInst.ShardID(),
+	//TODO: Add more conditions from instructions
+	contribution := NewContributionWithMetaData(
+		*metaData, waitingAddLiquidityInst.TxReqID(), waitingAddLiquidityInst.ShardID(),
 	)
 	waitingContributions[metaData.PairHash()] = *contribution
 
@@ -84,11 +81,14 @@ func (sp *stateProcessorV2) refundContribution(
 		return waitingContributions, deletedWaitingContributions, err
 	}
 	metaData := refundAddLiquidityInst.MetaData().(*metadataPdexV3.AddLiquidity)
+	//TODO: Add more conditions from instructions
 	existingWaitingContribution, found := waitingContributions[metaData.PairHash()]
-	if found {
-		deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
-		delete(waitingContributions, metaData.PairHash())
+	if !found {
+		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", metaData.PairHash())
+		return waitingContributions, deletedWaitingContributions, err
 	}
+	deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
+	delete(waitingContributions, metaData.PairHash())
 	//TODO: Track status of contribution
 
 	return waitingContributions, deletedWaitingContributions, nil
@@ -107,18 +107,15 @@ func (sp *stateProcessorV2) matchContribution(
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
 	metaData := matchAddLiquidityInst.MetaData().(*metadataPdexV3.AddLiquidity)
+	//TODO: Add more conditions from instructions
 	existingWaitingContribution, found := waitingContributions[metaData.PairHash()]
 	if !found {
 		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", metaData.PairHash())
-		Logger.log.Error(err)
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
 
-	incomingWaitingContribution := *NewContributionWithValue(
-		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
-		metaData.TokenID(), matchAddLiquidityInst.TxReqID(),
-		metaData.TokenAmount(), metaData.Amplifier(),
-		matchAddLiquidityInst.ShardID(),
+	incomingWaitingContribution := *NewContributionWithMetaData(
+		*metaData, matchAddLiquidityInst.TxReqID(), matchAddLiquidityInst.ShardID(),
 	)
 	poolPair := initPoolPairState(existingWaitingContribution, incomingWaitingContribution)
 	nfctID, err := poolPair.addShare(poolPair.token0RealAmount)
@@ -127,10 +124,18 @@ func (sp *stateProcessorV2) matchContribution(
 	}
 	if nfctID != matchAddLiquidityInst.NfctID() {
 		err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAddLiquidityInst.NfctID())
-		Logger.log.Error(err)
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
-	//TODO: @tin add more conditions here
+	poolPairID := generatePoolPairKey(
+		existingWaitingContribution.tokenID,
+		incomingWaitingContribution.tokenID,
+		existingWaitingContribution.txReqID,
+	)
+	if poolPairID != matchAddLiquidityInst.NewPoolPairID() {
+		err := fmt.Errorf("PoolPairID is invalid expect %s but get %s", poolPairID, matchAddLiquidityInst.NewPoolPairID())
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
+	poolPairs[poolPairID] = *poolPair
 	deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
 	delete(waitingContributions, metaData.PairHash())
 
@@ -142,18 +147,42 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
 	waitingContributions map[string]Contribution,
+	deletedWaitingContributions map[string]Contribution,
 	poolPairs map[string]PoolPairState,
-) (map[string]Contribution, map[string]PoolPairState, error) {
+) (map[string]Contribution, map[string]Contribution, map[string]PoolPairState, error) {
 	matchAndReturnAddLiquidity := instruction.MatchAndReturnAddLiquidity{}
 	err := matchAndReturnAddLiquidity.FromStringArr(inst)
 	if err != nil {
-		return waitingContributions, poolPairs, err
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
 	metaData := matchAndReturnAddLiquidity.MetaData().(*metadataPdexV3.AddLiquidity)
-	Logger.log.Info(metaData)
+	existingWaitingContribution, found := waitingContributions[metaData.PairHash()]
+	if !found {
+		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", metaData.PairHash())
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
+	incomingWaitingContribution := *NewContributionWithMetaData(
+		*metaData, matchAndReturnAddLiquidity.TxReqID(), matchAndReturnAddLiquidity.ShardID(),
+	)
+	if existingWaitingContribution.poolPairID != incomingWaitingContribution.poolPairID {
+		err := fmt.Errorf("PoolPairID is invalid expect %s but get %s", existingWaitingContribution.poolPairID, incomingWaitingContribution.poolPairID)
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
+	poolPair := poolPairs[existingWaitingContribution.poolPairID]
+	nfctID, err := poolPair.addContributions(existingWaitingContribution, incomingWaitingContribution)
+	if err != nil {
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
+	if nfctID != matchAndReturnAddLiquidity.NfctID() {
+		err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAndReturnAddLiquidity.NfctID())
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
+	deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
+	delete(waitingContributions, metaData.PairHash())
+	//TODO: Add more conditions from instructions
 
 	//TODO: Track status of contribution
-	return waitingContributions, poolPairs, nil
+	return waitingContributions, deletedWaitingContributions, poolPairs, nil
 }
 
 func (sp *stateProcessorV2) modifyParams(

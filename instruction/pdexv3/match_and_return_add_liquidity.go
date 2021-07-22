@@ -73,3 +73,11 @@ func (m *MatchAndReturnAddLiquidity) StringArr() []string {
 	res = append(res, MatchAndReturnStatus)
 	return res
 }
+
+func (m *MatchAndReturnAddLiquidity) ReturnAmount() uint64 {
+	return m.returnAmount
+}
+
+func (m *MatchAndReturnAddLiquidity) NfctID() string {
+	return m.nfctID
+}

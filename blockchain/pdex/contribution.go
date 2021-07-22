@@ -1,5 +1,7 @@
 package pdex
 
+import metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+
 //Contribution ...
 type Contribution struct {
 	poolPairID     string // only "" for the first contribution of pool
@@ -10,6 +12,16 @@ type Contribution struct {
 	amplifier      uint // only set for the first contribution
 	txReqID        string
 	shardID        byte
+}
+
+func NewContributionWithMetaData(
+	metaData metadataPdexV3.AddLiquidity, txReqID string, shardID byte,
+) *Contribution {
+	return NewContributionWithValue(
+		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
+		metaData.TokenID(), txReqID, metaData.TokenAmount(), metaData.Amplifier(),
+		shardID,
+	)
 }
 
 func NewContributionWithValue(

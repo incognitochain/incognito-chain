@@ -583,7 +583,10 @@ func InitStateFromDB(
 }
 
 func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
-	return strings.Join([]string{token0Name, token1Name, txReqID}, "-")
+	if token0Name <= token1Name {
+		return strings.Join([]string{token0Name, token1Name, txReqID}, "-")
+	}
+	return strings.Join([]string{token1Name, token0Name, txReqID}, "-")
 }
 
 //amplifier >= 10000
