@@ -10,7 +10,7 @@ const (
 	RequestRejectedChainStatus = "rejected"
 
 	ParamsModifyingFailedStatus  = 0
-	ParamsModifyingSucceedStatus = 1
+	ParamsModifyingSuccessStatus = 1
 )
 
 // params

@@ -56,7 +56,7 @@ func (sp *stateProcessorV2) modifyParams(
 	var reqTrackStatus int
 	if modifyingStatus == RequestAcceptedChainStatus {
 		params = Params(actionData.Content)
-		reqTrackStatus = ParamsModifyingSucceedStatus
+		reqTrackStatus = ParamsModifyingSuccessStatus
 	} else {
 		reqTrackStatus = ParamsModifyingFailedStatus
 	}
