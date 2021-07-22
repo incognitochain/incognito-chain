@@ -71,8 +71,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
+
+	// pDex types
 	case metadataCommon.PDexV3AddLiquidityMeta:
 		md = &metadataPdexV3.AddLiquidity{}
+	case metadataCommon.PDexV3TradeRequestMeta:
+		md = &metadataPdexV3.TradeRequest{}
+	case metadataCommon.PDexV3TradeResponseMeta:
+		md = &metadataPdexV3.TradeResponse{}
+	case metadataCommon.PDexV3AddOrderRequestMeta:
+		md = &metadataPdexV3.AddOrderRequest{}
+	case metadataCommon.PDexV3AddOrderResponseMeta:
+		md = &metadataPdexV3.AddOrderResponse{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
 	case PDEPRVRequiredContributionRequestMeta:

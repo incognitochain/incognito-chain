@@ -123,7 +123,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
 	}
-	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	senderAddress := keyWallet.KeySet.PaymentAddress
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
@@ -145,11 +145,11 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	receiverAddress := privacy.OTAReceiver{}
 	refundAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromAddress(senderAddress, *tokenHash)
+	err = receiverAddress.FromAddress(senderAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = refundAddress.FromAddress(senderAddress, *tokenHash)
+	err = refundAddress.FromAddress(senderAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}

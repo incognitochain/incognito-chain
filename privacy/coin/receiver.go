@@ -3,9 +3,11 @@ package coin
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -31,20 +33,48 @@ func (recv OTAReceiver) IsValid() bool {
 	return recv.PublicKey.PointValid()
 }
 
-func (recv *OTAReceiver) FromAddress(addr string, tokenID common.Hash) error {
+func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 	if recv == nil {
 		return errors.New("OTAReceiver not initialized")
 	}
-	// TODO
-	return nil
+
+	targetShardID := common.GetShardIDFromLastByte(addr.Pk[len(addr.Pk)-1])
+	otaRand := operation.RandomScalar()
+	concealRand := operation.RandomScalar()
+
+	// Increase index until have the right shardID
+	index := uint32(0)
+	publicOTA := addr.GetOTAPublicKey()
+	if publicOTA == nil {
+		return errors.New("Missing public OTA in payment address")
+	}
+	publicSpend := addr.GetPublicSpend()
+	rK := (&operation.Point{}).ScalarMult(publicOTA, otaRand)
+	for i := MaxTriesOTA; i > 0; i-- {
+		index++
+		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
+		HrKG := (&operation.Point{}).ScalarMultBase(hash)
+		publicKey := (&operation.Point{}).Add(HrKG, publicSpend)
+
+		pkb := publicKey.ToBytesS()
+		currentShardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
+		if currentShardID == targetShardID {
+			otaRandomPoint := (&operation.Point{}).ScalarMultBase(otaRand)
+			concealRandomPoint := (&operation.Point{}).ScalarMultBase(concealRand)
+			recv.PublicKey = *publicKey
+			recv.TxRandom = *NewTxRandom()
+			recv.TxRandom.SetTxOTARandomPoint(otaRandomPoint)
+			recv.TxRandom.SetTxConcealRandomPoint(concealRandomPoint)
+			recv.TxRandom.SetIndex(index)
+			return nil
+		}
+	}
+	return fmt.Errorf("Cannot generate OTAReceiver after %d attempts", MaxTriesOTA)
 }
 
 // FromString() returns a new OTAReceiver parsed from the input string,
 // or error on failure
 func (recv *OTAReceiver) FromString(data string) error {
-	if recv == nil {
-		return errors.New("OTAReceiver not initialized")
-	}
 	raw, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
 		return err
