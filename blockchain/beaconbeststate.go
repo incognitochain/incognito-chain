@@ -760,7 +760,6 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		shardSubstitute[byte(k)] = v
 	}
 	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
-
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash
