@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type PDexV3Params struct {
+type Pdexv3Params struct {
 	DefaultFeeRateBPS               uint            `json:"DefaultFeeRateBPS"`
 	FeeRateBPS                      map[string]uint `json:"FeeRateBPS"`
 	PRVDiscountPercent              uint            `json:"PRVDiscountPercent"`
@@ -25,21 +25,21 @@ type PDexV3Params struct {
 
 type ParamsModifyingRequest struct {
 	metadataCommon.MetadataBaseWithSignature
-	PDexV3Params `json:"PDexV3Params"`
+	Pdexv3Params `json:"Pdexv3Params"`
 }
 
 type ParamsModifyingContent struct {
-	Content PDexV3Params `json:"Content"`
+	Content Pdexv3Params `json:"Content"`
 	TxReqID common.Hash  `json:"TxReqID"`
 	ShardID byte         `json:"ShardID"`
 }
 
 type ParamsModifyingRequestStatus struct {
 	Status       int `json:"Status"`
-	PDexV3Params `json:"PDexV3Params"`
+	Pdexv3Params `json:"Pdexv3Params"`
 }
 
-func NewPDexV3ParamsModifyingRequestStatus(
+func NewPdexv3ParamsModifyingRequestStatus(
 	status int,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
@@ -50,7 +50,7 @@ func NewPDexV3ParamsModifyingRequestStatus(
 	stakingPoolsShare map[string]uint,
 ) *ParamsModifyingRequestStatus {
 	return &ParamsModifyingRequestStatus{
-		PDexV3Params: PDexV3Params{
+		Pdexv3Params: Pdexv3Params{
 			FeeRateBPS:                      feeRateBPS,
 			PRVDiscountPercent:              prvDiscountPercent,
 			LimitProtocolFeePercent:         limitProtocolFeePercent,
@@ -63,14 +63,14 @@ func NewPDexV3ParamsModifyingRequestStatus(
 	}
 }
 
-func NewPDexV3ParamsModifyingRequest(
+func NewPdexv3ParamsModifyingRequest(
 	metaType int,
-	params PDexV3Params,
+	params Pdexv3Params,
 ) (*ParamsModifyingRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metaType)
 	paramsModifying := &ParamsModifyingRequest{}
 	paramsModifying.MetadataBaseWithSignature = *metadataBase
-	paramsModifying.PDexV3Params = params
+	paramsModifying.Pdexv3Params = params
 
 	return paramsModifying, nil
 }
@@ -96,11 +96,11 @@ func (paramsModifying ParamsModifyingRequest) ValidateSanityData(
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3ModifyParamsValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	if ok, err := paramsModifying.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
@@ -109,7 +109,7 @@ func (paramsModifying ParamsModifyingRequest) ValidateSanityData(
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDexV3ModifyParamsValidateSanityDataError, errors.New("Tx pDex v3 modifying params must be TxNormalType"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3ModifyParamsValidateSanityDataError, errors.New("Tx pDex v3 modifying params must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
@@ -120,12 +120,12 @@ func (paramsModifying ParamsModifyingRequest) ValidateSanityData(
 }
 
 func (paramsModifying ParamsModifyingRequest) ValidateMetadataByItself() bool {
-	return paramsModifying.Type == metadataCommon.PDexV3ModifyParamsMeta
+	return paramsModifying.Type == metadataCommon.Pdexv3ModifyParamsMeta
 }
 
 func (paramsModifying ParamsModifyingRequest) Hash() *common.Hash {
 	record := paramsModifying.MetadataBaseWithSignature.Hash().String()
-	contentBytes, _ := json.Marshal(paramsModifying.PDexV3Params)
+	contentBytes, _ := json.Marshal(paramsModifying.Pdexv3Params)
 	hashParams := common.HashH(contentBytes)
 	record += hashParams.String()
 
@@ -140,7 +140,7 @@ func (paramsModifying ParamsModifyingRequest) Hash() *common.Hash {
 
 func (paramsModifying ParamsModifyingRequest) HashWithoutSig() *common.Hash {
 	record := paramsModifying.MetadataBaseWithSignature.Hash().String()
-	contentBytes, _ := json.Marshal(paramsModifying.PDexV3Params)
+	contentBytes, _ := json.Marshal(paramsModifying.Pdexv3Params)
 	hashParams := common.HashH(contentBytes)
 	record += hashParams.String()
 

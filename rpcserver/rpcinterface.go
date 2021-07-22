@@ -210,13 +210,13 @@ var HttpHandler = map[string]httpHandler{
 	getPDEFeeWithdrawalStatus:                  (*HttpServer).handleGetPDEFeeWithdrawalStatus,
 	convertPDEPrices:                           (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:             (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
-	pdexV3AddLiquidityV3:                       (*HttpServer).handleAddLiquidityV3,
+	pdexv3AddLiquidityV3:                       (*HttpServer).handleAddLiquidityV3,
 	//
 
 	// pDex v3
-	getPDexV3State:                        (*HttpServer).handleGetPDexV3State,
-	createAndSendTxWithPDexV3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPDexV3ModifyParams,
-	getPDexV3ParamsModifyingStatus:        (*HttpServer).handleGetPDexV3ParamsModifyingRequestStatus,
+	getPdexv3State:                        (*HttpServer).handleGetPdexv3State,
+	createAndSendTxWithPdexv3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPdexv3ModifyParams,
+	getPdexv3ParamsModifyingStatus:        (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

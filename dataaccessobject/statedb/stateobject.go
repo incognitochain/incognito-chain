@@ -103,10 +103,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newStakerObjectWithValue(db, hash, value)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObjectWithValue(db, hash, value)
-	case PDexV3StatusObjectType:
-		return newPDexV3StatusObjectWithValue(db, hash, value)
-	case PDexV3ParamsObjectType:
-		return newPDexV3ParamsObjectWithValue(db, hash, value)
+	case Pdexv3StatusObjectType:
+		return newPdexv3StatusObjectWithValue(db, hash, value)
+	case Pdexv3ParamsObjectType:
+		return newPdexv3ParamsObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -190,10 +190,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newStakerObject(db, hash)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObject(db, hash)
-	case PDexV3StatusObjectType:
-		return newPDexV3StatusObject(db, hash)
-	case PDexV3ParamsObjectType:
-		return newPDexV3ParamsObject(db, hash)
+	case Pdexv3StatusObjectType:
+		return newPdexv3StatusObject(db, hash)
+	case Pdexv3ParamsObjectType:
+		return newPdexv3ParamsObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

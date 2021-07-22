@@ -11,7 +11,7 @@ import (
 
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProducerV2 struct {
@@ -19,26 +19,26 @@ type stateProducerV2 struct {
 }
 
 func buildModifyParamsInst(
-	params metadataPdexV3.PDexV3Params,
+	params metadataPdexv3.Pdexv3Params,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
 ) []string {
-	modifyingParamsReqContent := metadataPdexV3.ParamsModifyingContent{
+	modifyingParamsReqContent := metadataPdexv3.ParamsModifyingContent{
 		Content: params,
 		TxReqID: reqTxID,
 		ShardID: shardID,
 	}
 	modifyingParamsReqContentBytes, _ := json.Marshal(modifyingParamsReqContent)
 	return []string{
-		strconv.Itoa(metadataCommon.PDexV3ModifyParamsMeta),
+		strconv.Itoa(metadataCommon.Pdexv3ModifyParamsMeta),
 		strconv.Itoa(int(shardID)),
 		status,
 		string(modifyingParamsReqContentBytes),
 	}
 }
 
-func isValidPDexV3Params(params Params) bool {
+func isValidPdexv3Params(params Params) bool {
 	if params.DefaultFeeRateBPS > MaxFeeRateBPS {
 		return false
 	}
@@ -67,7 +67,7 @@ func (sp *stateProducerV2) addLiquidity(
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := tx.Hash().String()
-		metaData, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
 		if !ok {
 			return res, errors.New("Can not parse add liquidity metadata")
 		}
@@ -89,15 +89,15 @@ func (sp *stateProducerV2) modifyParams(
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := *tx.Hash()
-		metaData, ok := tx.GetMetadata().(*metadataPdexV3.ParamsModifyingRequest)
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
 		if !ok {
 			return instructions, params, errors.New("Can not parse params modifying metadata")
 		}
 
 		// check conditions
-		metadataParams := metaData.PDexV3Params
+		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
-		isValidParams := isValidPDexV3Params(newParams)
+		isValidParams := isValidPdexv3Params(newParams)
 
 		status := ""
 		if isValidParams {

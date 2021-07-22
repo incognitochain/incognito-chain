@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProcessorV2 struct {
@@ -44,7 +44,7 @@ func (sp *stateProcessorV2) modifyParams(
 	}
 
 	// unmarshal instructions content
-	var actionData metadataPdexV3.ParamsModifyingContent
+	var actionData metadataPdexv3.ParamsModifyingContent
 	err := json.Unmarshal([]byte(inst[3]), &actionData)
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
@@ -61,14 +61,14 @@ func (sp *stateProcessorV2) modifyParams(
 		reqTrackStatus = ParamsModifyingFailedStatus
 	}
 
-	modifyingReqStatus := metadataPdexV3.ParamsModifyingRequestStatus{
+	modifyingReqStatus := metadataPdexv3.ParamsModifyingRequestStatus{
 		Status:       reqTrackStatus,
-		PDexV3Params: metadataPdexV3.PDexV3Params(actionData.Content),
+		Pdexv3Params: metadataPdexv3.Pdexv3Params(actionData.Content),
 	}
 	modifyingReqStatusBytes, _ := json.Marshal(modifyingReqStatus)
-	err = statedb.TrackPDexV3Status(
+	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.PDexV3ParamsModifyingStatusPrefix(),
+		statedb.Pdexv3ParamsModifyingStatusPrefix(),
 		[]byte(actionData.TxReqID.String()),
 		modifyingReqStatusBytes,
 	)

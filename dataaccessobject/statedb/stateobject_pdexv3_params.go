@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type PDexV3Params struct {
+type Pdexv3Params struct {
 	defaultFeeRateBPS               uint
 	feeRateBPS                      map[string]uint
 	prvDiscountPercent              uint
@@ -20,35 +20,35 @@ type PDexV3Params struct {
 	stakingPoolsShare               map[string]uint
 }
 
-func (pp PDexV3Params) DefaultFeeRateBPS() uint {
+func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
 	return pp.defaultFeeRateBPS
 }
-func (pp PDexV3Params) FeeRateBPS() map[string]uint {
+func (pp Pdexv3Params) FeeRateBPS() map[string]uint {
 	return pp.feeRateBPS
 }
-func (pp PDexV3Params) PRVDiscountPercent() uint {
+func (pp Pdexv3Params) PRVDiscountPercent() uint {
 	return pp.prvDiscountPercent
 }
-func (pp PDexV3Params) LimitProtocolFeePercent() uint {
+func (pp Pdexv3Params) LimitProtocolFeePercent() uint {
 	return pp.limitProtocolFeePercent
 }
-func (pp PDexV3Params) LimitStakingPoolRewardPercent() uint {
+func (pp Pdexv3Params) LimitStakingPoolRewardPercent() uint {
 	return pp.limitStakingPoolRewardPercent
 }
-func (pp PDexV3Params) TradingProtocolFeePercent() uint {
+func (pp Pdexv3Params) TradingProtocolFeePercent() uint {
 	return pp.tradingProtocolFeePercent
 }
-func (pp PDexV3Params) TradingStakingPoolRewardPercent() uint {
+func (pp Pdexv3Params) TradingStakingPoolRewardPercent() uint {
 	return pp.tradingStakingPoolRewardPercent
 }
-func (pp PDexV3Params) DefaultStakingPoolsShare() uint {
+func (pp Pdexv3Params) DefaultStakingPoolsShare() uint {
 	return pp.defaultStakingPoolsShare
 }
-func (pp PDexV3Params) StakingPoolsShare() map[string]uint {
+func (pp Pdexv3Params) StakingPoolsShare() map[string]uint {
 	return pp.stakingPoolsShare
 }
 
-func (pp PDexV3Params) MarshalJSON() ([]byte, error) {
+func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
@@ -76,7 +76,7 @@ func (pp PDexV3Params) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (pp *PDexV3Params) UnmarshalJSON(data []byte) error {
+func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
@@ -104,11 +104,11 @@ func (pp *PDexV3Params) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewPDexV3Params() *PDexV3Params {
-	return &PDexV3Params{}
+func NewPdexv3Params() *Pdexv3Params {
+	return &Pdexv3Params{}
 }
 
-func NewPDexV3ParamsWithValue(
+func NewPdexv3ParamsWithValue(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
@@ -118,8 +118,8 @@ func NewPDexV3ParamsWithValue(
 	tradingStakingPoolRewardPercent uint,
 	defaultStakingPoolsShare uint,
 	stakingPoolsShare map[string]uint,
-) *PDexV3Params {
-	return &PDexV3Params{
+) *Pdexv3Params {
+	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
 		feeRateBPS:                      feeRateBPS,
 		prvDiscountPercent:              prvDiscountPercent,
@@ -132,14 +132,14 @@ func NewPDexV3ParamsWithValue(
 	}
 }
 
-type PDexV3ParamsObject struct {
+type Pdexv3ParamsObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version          int
-	pDexV3ParamsHash common.Hash
-	PDexV3Params     *PDexV3Params
+	pdexv3ParamsHash common.Hash
+	Pdexv3Params     *Pdexv3Params
 	objectType       int
 	deleted          bool
 
@@ -151,112 +151,112 @@ type PDexV3ParamsObject struct {
 	dbErr error
 }
 
-func newPDexV3ParamsObject(db *StateDB, hash common.Hash) *PDexV3ParamsObject {
-	return &PDexV3ParamsObject{
+func newPdexv3ParamsObject(db *StateDB, hash common.Hash) *Pdexv3ParamsObject {
+	return &Pdexv3ParamsObject{
 		version:          defaultVersion,
 		db:               db,
-		pDexV3ParamsHash: hash,
-		PDexV3Params:     NewPDexV3Params(),
-		objectType:       PDexV3ParamsObjectType,
+		pdexv3ParamsHash: hash,
+		Pdexv3Params:     NewPdexv3Params(),
+		objectType:       Pdexv3ParamsObjectType,
 		deleted:          false,
 	}
 }
 
-func newPDexV3ParamsObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*PDexV3ParamsObject, error) {
-	var newPDexV3Params = NewPDexV3Params()
+func newPdexv3ParamsObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*Pdexv3ParamsObject, error) {
+	var newPdexv3Params = NewPdexv3Params()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
-		err := json.Unmarshal(dataBytes, newPDexV3Params)
+		err := json.Unmarshal(dataBytes, newPdexv3Params)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		newPDexV3Params, ok = data.(*PDexV3Params)
+		newPdexv3Params, ok = data.(*Pdexv3Params)
 		if !ok {
-			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidPDexV3ParamsStateType, reflect.TypeOf(data))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidPdexv3ParamsStateType, reflect.TypeOf(data))
 		}
 	}
-	return &PDexV3ParamsObject{
+	return &Pdexv3ParamsObject{
 		version:          defaultVersion,
-		pDexV3ParamsHash: key,
-		PDexV3Params:     newPDexV3Params,
+		pdexv3ParamsHash: key,
+		Pdexv3Params:     newPdexv3Params,
 		db:               db,
-		objectType:       PDexV3ParamsObjectType,
+		objectType:       Pdexv3ParamsObjectType,
 		deleted:          false,
 	}, nil
 }
 
-func GeneratePDexV3ParamsObjectKey() common.Hash {
-	prefixHash := GetPDexV3ParamsPrefix()
+func GeneratePdexv3ParamsObjectKey() common.Hash {
+	prefixHash := GetPdexv3ParamsPrefix()
 	return common.HashH(prefixHash)
 }
 
-func (t PDexV3ParamsObject) GetVersion() int {
+func (t Pdexv3ParamsObject) GetVersion() int {
 	return t.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (t *PDexV3ParamsObject) SetError(err error) {
+func (t *Pdexv3ParamsObject) SetError(err error) {
 	if t.dbErr == nil {
 		t.dbErr = err
 	}
 }
 
-func (t PDexV3ParamsObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (t Pdexv3ParamsObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return t.trie
 }
 
-func (t *PDexV3ParamsObject) SetValue(data interface{}) error {
-	newPDexV3Params, ok := data.(*PDexV3Params)
+func (t *Pdexv3ParamsObject) SetValue(data interface{}) error {
+	newPdexv3Params, ok := data.(*Pdexv3Params)
 	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidPDexV3ParamsStateType, reflect.TypeOf(data))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidPdexv3ParamsStateType, reflect.TypeOf(data))
 	}
-	t.PDexV3Params = newPDexV3Params
+	t.Pdexv3Params = newPdexv3Params
 	return nil
 }
 
-func (t PDexV3ParamsObject) GetValue() interface{} {
-	return t.PDexV3Params
+func (t Pdexv3ParamsObject) GetValue() interface{} {
+	return t.Pdexv3Params
 }
 
-func (t PDexV3ParamsObject) GetValueBytes() []byte {
-	PDexV3Params, ok := t.GetValue().(*PDexV3Params)
+func (t Pdexv3ParamsObject) GetValueBytes() []byte {
+	Pdexv3Params, ok := t.GetValue().(*Pdexv3Params)
 	if !ok {
 		panic("wrong expected value type")
 	}
-	value, err := json.Marshal(PDexV3Params)
+	value, err := json.Marshal(Pdexv3Params)
 	if err != nil {
 		panic("failed to marshal pdex v3 params state")
 	}
 	return value
 }
 
-func (t PDexV3ParamsObject) GetHash() common.Hash {
-	return t.pDexV3ParamsHash
+func (t Pdexv3ParamsObject) GetHash() common.Hash {
+	return t.pdexv3ParamsHash
 }
 
-func (t PDexV3ParamsObject) GetType() int {
+func (t Pdexv3ParamsObject) GetType() int {
 	return t.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (t *PDexV3ParamsObject) MarkDelete() {
+func (t *Pdexv3ParamsObject) MarkDelete() {
 	t.deleted = true
 }
 
 // reset all shard committee value into default value
-func (t *PDexV3ParamsObject) Reset() bool {
-	t.PDexV3Params = NewPDexV3Params()
+func (t *Pdexv3ParamsObject) Reset() bool {
+	t.Pdexv3Params = NewPdexv3Params()
 	return true
 }
 
-func (t PDexV3ParamsObject) IsDeleted() bool {
+func (t Pdexv3ParamsObject) IsDeleted() bool {
 	return t.deleted
 }
 
 // value is either default or nil
-func (t PDexV3ParamsObject) IsEmpty() bool {
-	temp := NewPDexV3Params()
-	return reflect.DeepEqual(temp, t.PDexV3Params) || t.PDexV3Params == nil
+func (t Pdexv3ParamsObject) IsEmpty() bool {
+	temp := NewPdexv3Params()
+	return reflect.DeepEqual(temp, t.Pdexv3Params) || t.Pdexv3Params == nil
 }

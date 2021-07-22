@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -19,7 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func (httpServer *HttpServer) handleGetPDexV3State(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
@@ -34,27 +34,27 @@ func (httpServer *HttpServer) handleGetPDexV3State(params interface{}, closeChan
 	}
 	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDexV3StateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDexV3StateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
 
-	if uint64(beaconHeight) < config.Param().PDexParams.PDexV3BreakPointHeight {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDexV3StateError, fmt.Errorf("pDEX v3 is not available"))
+	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, fmt.Errorf("pDEX v3 is not available"))
 	}
 	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDexV3StateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
 
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDexV3StateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
-	result := jsonresult.PDexV3State{
+	result := jsonresult.Pdexv3State{
 		BeaconTimeStamp: beaconBlock.Header.Timestamp,
 		Params:          pDexv3State.Reader().Params(),
 	}
@@ -65,8 +65,8 @@ func (httpServer *HttpServer) handleGetPDexV3State(params interface{}, closeChan
 	Params Modifying
 */
 
-func (httpServer *HttpServer) handleCreateAndSendTxWithPDexV3ModifyParams(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPDexV3ModifyParams(params, closeChan)
+func (httpServer *HttpServer) handleCreateAndSendTxWithPdexv3ModifyParams(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithPdexv3ModifyParams(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -83,7 +83,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPDexV3ModifyParams(params
 	return sendResult, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
@@ -157,9 +157,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 		stakingPoolsShare[key] = uint(value)
 	}
 
-	meta, err := metadataPdexV3.NewPDexV3ParamsModifyingRequest(
-		metadataCommon.PDexV3ModifyParamsMeta,
-		metadataPdexV3.PDexV3Params{
+	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
+		metadataCommon.Pdexv3ModifyParamsMeta,
+		metadataPdexv3.Pdexv3Params{
 			DefaultFeeRateBPS:               uint(defaultFeeRateBPS),
 			FeeRateBPS:                      feeRateBPS,
 			PRVDiscountPercent:              uint(prvDiscountPercent),
@@ -199,7 +199,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDexV3ModifyParams(params int
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetPDexV3ParamsModifyingRequestStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPdexv3ParamsModifyingRequestStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
@@ -212,9 +212,9 @@ func (httpServer *HttpServer) handleGetPDexV3ParamsModifyingRequestStatus(params
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
 	}
-	status, err := httpServer.blockService.GetPDexV3ParamsModifyingRequestStatus(reqTxID)
+	status, err := httpServer.blockService.GetPdexv3ParamsModifyingRequestStatus(reqTxID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDexV3ParamsModyfingStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3ParamsModyfingStatusError, err)
 	}
 	return status, nil
 }
@@ -321,7 +321,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	metaData := metadataPdexV3.NewAddLiquidityWithValue(
+	metaData := metadataPdexv3.NewAddLiquidityWithValue(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,
 		receiverAddressStr, refundAddressStr,

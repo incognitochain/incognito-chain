@@ -51,7 +51,7 @@ const (
 	//
 
 	// pDex v3
-	PDexV3ModifyParamsValidateSanityDataError
+	Pdexv3ModifyParamsValidateSanityDataError
 
 	// portal
 	PortalRequestPTokenParamError

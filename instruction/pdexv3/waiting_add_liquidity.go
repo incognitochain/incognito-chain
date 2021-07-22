@@ -8,7 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -29,7 +29,7 @@ func NewWaitingAddLiquidity() *WaitingAddLiquidity {
 }
 
 func NewWaitingAddLiquidityFromMetadata(
-	metaData metadataPdexV3.AddLiquidity,
+	metaData metadataPdexv3.AddLiquidity,
 	txReqID string, shardID byte,
 ) *WaitingAddLiquidity {
 	return NewWaitingAddLiquidityWithValue(
@@ -125,8 +125,8 @@ func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 	if len(source) != 11 {
 		return fmt.Errorf("Receive length %v but expect %v", len(source), 9)
 	}
-	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
-		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta) {
+		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.Pdexv3AddLiquidityMeta)
 	}
 	if source[1] != WaitingStatus {
 		return fmt.Errorf("Receive status %v but expect %v", source[1], WaitingStatus)
@@ -153,8 +153,8 @@ func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 	if err != nil {
 		return err
 	}
-	if amplifier < metadataPdexV3.DefaultAmplifier {
-		return fmt.Errorf("Amplifier can not be smaller than %v get %v", metadataPdexV3.DefaultAmplifier, amplifier)
+	if amplifier < metadataPdexv3.DefaultAmplifier {
+		return fmt.Errorf("Amplifier can not be smaller than %v get %v", metadataPdexv3.DefaultAmplifier, amplifier)
 	}
 	w.amplifier = uint(amplifier)
 	receiverAddress := privacy.OTAReceiver{}
@@ -185,7 +185,7 @@ func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 }
 
 func (w *WaitingAddLiquidity) StringArr() []string {
-	metaDataType := strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta)
+	metaDataType := strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta)
 	res := []string{metaDataType, WaitingStatus}
 	res = append(res, w.poolPairID)
 	res = append(res, w.pairHash)

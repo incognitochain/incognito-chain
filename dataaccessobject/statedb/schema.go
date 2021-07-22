@@ -53,9 +53,9 @@ var (
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// pdex v3
-	pDexV3StatusPrefix          = []byte("pdexv3status-")
-	pDexV3ParamsModifyingPrefix = []byte("pdexv3paramsmodifyingstatus-")
-	pDexV3ParamsStatePrefix     = []byte("pdexv3paramsstate-")
+	pdexv3StatusPrefix          = []byte("pdexv3status-")
+	pdexv3ParamsModifyingPrefix = []byte("pdexv3paramsmodifyingstatus-")
+	pdexv3ParamsStatePrefix     = []byte("pdexv3paramsstate-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -541,18 +541,18 @@ func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 }
 
 // pDex v3 prefix for status
-func PDexV3ParamsModifyingStatusPrefix() []byte {
-	return pDexV3ParamsModifyingPrefix
+func Pdexv3ParamsModifyingStatusPrefix() []byte {
+	return pdexv3ParamsModifyingPrefix
 }
 
 // pDex v3 prefix hash of the key
-func GetPDexV3StatusPrefix(statusType []byte) []byte {
-	h := common.HashH(append(pDexV3StatusPrefix, statusType...))
+func GetPdexv3StatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(pdexv3StatusPrefix, statusType...))
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPDexV3ParamsPrefix() []byte {
-	return pDexV3ParamsStatePrefix
+func GetPdexv3ParamsPrefix() []byte {
+	return pdexv3ParamsStatePrefix
 }
 
 var _ = func() (_ struct{}) {

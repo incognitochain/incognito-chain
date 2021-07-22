@@ -45,7 +45,7 @@ var GetMetaAction = metadataCommon.GetMetaAction
 var IsPDEType = metadataCommon.IsPDEType
 var GetLimitOfMeta = metadataCommon.GetLimitOfMeta
 var IsPDETx = metadataCommon.IsPDETx
-var IspDEXv3Tx = metadataCommon.IspDEXv3Tx
+var IsPdexv3Tx = metadataCommon.IsPdexv3Tx
 var ConvertPrivacyTokenToNativeToken = metadataCommon.ConvertPrivacyTokenToNativeToken
 var ConvertNativeTokenToPrivacyToken = metadataCommon.ConvertNativeTokenToPrivacyToken
 var HasBridgeInstructions = metadataCommon.HasBridgeInstructions
@@ -97,12 +97,12 @@ const (
 	PDEFeeWithdrawalResponseMeta          = metadataCommon.PDEFeeWithdrawalResponseMeta
 	PDETradingFeesDistributionMeta        = metadataCommon.PDETradingFeesDistributionMeta
 	// pDEX v3
-	PDexV3TradeRequestMeta          = metadataCommon.PDexV3TradeRequestMeta
-	PDexV3TradeResponseMeta         = metadataCommon.PDexV3TradeResponseMeta
-	PDexV3AddOrderRequestMeta       = metadataCommon.PDexV3AddOrderRequestMeta
-	PDexV3AddOrderResponseMeta      = metadataCommon.PDexV3AddOrderResponseMeta
-	PDexV3WithdrawOrderRequestMeta  = metadataCommon.PDexV3WithdrawOrderRequestMeta
-	PDexV3WithdrawOrderResponseMeta = metadataCommon.PDexV3WithdrawOrderResponseMeta
+	Pdexv3TradeRequestMeta          = metadataCommon.Pdexv3TradeRequestMeta
+	Pdexv3TradeResponseMeta         = metadataCommon.PDexv3TradeResponseMeta
+	Pdexv3AddOrderRequestMeta       = metadataCommon.Pdexv3AddOrderRequestMeta
+	Pdexv3AddOrderResponseMeta      = metadataCommon.Pdexv3AddOrderResponseMeta
+	Pdexv3WithdrawOrderRequestMeta  = metadataCommon.Pdexv3WithdrawOrderRequestMeta
+	Pdexv3WithdrawOrderResponseMeta = metadataCommon.Pdexv3WithdrawOrderResponseMeta
 	// portal
 	PortalCustodianDepositMeta                  = metadataCommon.PortalCustodianDepositMeta
 	PortalRequestPortingMeta                    = metadataCommon.PortalRequestPortingMeta
