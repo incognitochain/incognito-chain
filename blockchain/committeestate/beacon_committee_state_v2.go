@@ -838,6 +838,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				return committeeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
 		}
+		Logger.log.Infof("\n \n Unstake, Stop Auto Stake list \n %+v \n \n", b.autoStake)
 	}
 
 	return committeeChange, returnStakingInstruction, nil
