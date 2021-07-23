@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateProcessorV2 struct {
@@ -182,18 +183,27 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
 	metaData := matchAndReturnAddLiquidity.MetaData().(*metadataPdexv3.AddLiquidity)
-	existingWaitingContribution, found := waitingContributions[metaData.PairHash()]
+	waitingContribution, found := waitingContributions[metaData.PairHash()]
 	if found {
-		incomingWaitingContribution := *NewContributionWithMetaData(
+		incomingWaitingContribution := NewContributionWithMetaData(
 			*metaData, matchAndReturnAddLiquidity.TxReqID(), matchAndReturnAddLiquidity.ShardID(),
 		)
-		if existingWaitingContribution.poolPairID != incomingWaitingContribution.poolPairID {
-			err := fmt.Errorf("PoolPairID is invalid expect %s but get %s", existingWaitingContribution.poolPairID, incomingWaitingContribution.poolPairID)
-			return waitingContributions, deletedWaitingContributions, poolPairs, err
+		poolPair := poolPairs[waitingContribution.poolPairID]
+		nfctID := utils.EmptyString
+		if waitingContribution.tokenID == incomingWaitingContribution.tokenID {
+			nfctID, err = poolPair.updateReserveAndShares(
+				waitingContribution.tokenID, matchAndReturnAddLiquidity.ExistedTokenID(),
+				waitingContribution.tokenAmount-matchAndReturnAddLiquidity.ReturnAmount(),
+				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
+			)
+		} else {
+			nfctID, err = poolPair.updateReserveAndShares(
+				waitingContribution.tokenID, metaData.TokenID(),
+				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
+				metaData.TokenAmount()-matchAndReturnAddLiquidity.ReturnAmount(),
+			)
 		}
-		poolPair := poolPairs[existingWaitingContribution.poolPairID]
 		//TODO: After release beacon recompute for contributions amount
-		nfctID, err := poolPair.addContributions(existingWaitingContribution, incomingWaitingContribution)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, err
 		}
@@ -201,7 +211,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAndReturnAddLiquidity.NfctID())
 			return waitingContributions, deletedWaitingContributions, poolPairs, err
 		}
-		deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
+		deletedWaitingContributions[metaData.PairHash()] = waitingContribution
 		delete(waitingContributions, metaData.PairHash())
 	}
 

@@ -15,7 +15,10 @@ func TestRefundAddLiquidity_FromStringSlice(t *testing.T) {
 		common.PRVIDStr, 300, 10000,
 	)
 	type fields struct {
-		Base Base
+		Base               Base
+		existedTokenID     string
+		existedTokenAmount uint64
+		refundAddress      string
 	}
 	type args struct {
 		source []string

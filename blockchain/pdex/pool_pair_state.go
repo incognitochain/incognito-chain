@@ -117,18 +117,23 @@ func (p *PoolPairState) computeActualContributedAmounts(
 	return actualContribution0Amt, contribution0.tokenAmount - actualContribution0Amt, actualContribution1Amt, contribution1.tokenAmount - actualContribution1Amt
 }
 
-func (p *PoolPairState) addContributions(contribution0, contribution1 Contribution) (string, error) {
-	contributions := []Contribution{contribution0, contribution1}
-	sort.Slice(contributions, func(i, j int) bool {
-		return contributions[i].tokenID < contributions[j].tokenID
-	})
-
-	p.token0RealAmount += contributions[0].tokenAmount
-	p.token1RealAmount += contributions[1].tokenAmount
-	p.token0VirtualAmount += contributions[0].tokenAmount
-	p.token1VirtualAmount += contributions[1].tokenAmount
-
-	nfctID, err := p.addShare(contributions[0].tokenAmount)
+func (p *PoolPairState) updateReserveAndShares(
+	token0ID, token1ID string,
+	token0Amount, token1Amount uint64,
+) (string, error) {
+	var amount0, amount1 uint64
+	if token0ID < token1ID {
+		amount0 = token0Amount
+		amount1 = token1Amount
+	} else {
+		amount0 = token1Amount
+		amount1 = token0Amount
+	}
+	p.token0RealAmount += amount0
+	p.token1RealAmount += amount1
+	p.token0VirtualAmount += amount0
+	p.token1VirtualAmount += amount1
+	nfctID, err := p.addShare(amount0)
 	if err != nil {
 		return utils.EmptyString, err
 	}
