@@ -53,9 +53,9 @@ var (
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// pdex v3
-	pdexv3StatusPrefix          = []byte("pdexv3status-")
-	pdexv3ParamsModifyingPrefix = []byte("pdexv3paramsmodifyingstatus-")
-	pdexv3ParamsStatePrefix     = []byte("pdexv3paramsstate-")
+	pdexv3StatusPrefix          = []byte("pdexv3-status-")
+	pdexv3ParamsModifyingPrefix = []byte("pdexv3-paramsmodifyingstatus-")
+	pdexv3ParamsPrefix          = []byte("pdexv3-params-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -552,7 +552,7 @@ func GetPdexv3StatusPrefix(statusType []byte) []byte {
 }
 
 func GetPdexv3ParamsPrefix() []byte {
-	return pdexv3ParamsStatePrefix
+	return pdexv3ParamsPrefix
 }
 
 var _ = func() (_ struct{}) {

@@ -101,10 +101,10 @@ func (sp *stateProducerV2) modifyParams(
 
 		status := ""
 		if isValidParams {
-			status = RequestAcceptedChainStatus
+			status = metadataPdexv3.RequestAcceptedChainStatus
 			params = newParams
 		} else {
-			status = RequestRejectedChainStatus
+			status = metadataPdexv3.RequestRejectedChainStatus
 		}
 
 		inst := buildModifyParamsInst(

@@ -125,13 +125,12 @@ func (paramsModifying ParamsModifyingRequest) ValidateMetadataByItself() bool {
 
 func (paramsModifying ParamsModifyingRequest) Hash() *common.Hash {
 	record := paramsModifying.MetadataBaseWithSignature.Hash().String()
-	contentBytes, _ := json.Marshal(paramsModifying.Pdexv3Params)
-	hashParams := common.HashH(contentBytes)
-	record += hashParams.String()
-
 	if paramsModifying.Sig != nil && len(paramsModifying.Sig) != 0 {
 		record += string(paramsModifying.Sig)
 	}
+	contentBytes, _ := json.Marshal(paramsModifying.Pdexv3Params)
+	hashParams := common.HashH(contentBytes)
+	record += hashParams.String()
 
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -147,17 +146,6 @@ func (paramsModifying ParamsModifyingRequest) HashWithoutSig() *common.Hash {
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
-}
-
-func (paramsModifying *ParamsModifyingRequest) BuildReqActions(
-	tx metadataCommon.Transaction,
-	chainRetriever metadataCommon.ChainRetriever,
-	shardViewRetriever metadataCommon.ShardViewRetriever,
-	beaconViewRetriever metadataCommon.BeaconViewRetriever,
-	shardID byte,
-	shardHeight uint64,
-) ([][]string, error) {
-	return [][]string{}, nil
 }
 
 func (paramsModifying *ParamsModifyingRequest) CalculateSize() uint64 {
