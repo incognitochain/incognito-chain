@@ -838,7 +838,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				return committeeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
 		}
-		Logger.log.Infof("\n \n Unstake, Stop Auto Stake list \n %+v \n \n", b.autoStake)
+		//Logger.log.Infof("\n \n Unstake, Stop Auto Stake list \n %+v \n \n", b.autoStake)
 	}
 
 	return committeeChange, returnStakingInstruction, nil
@@ -922,15 +922,15 @@ func (engine *BeaconCommitteeEngineV2) generateCommitteeHashes(state *BeaconComm
 		}
 	}
 
-	if !isNilOrAutoStakeHash(newB.hashes) &&
-		len(committeeChange.StopAutoStake) == 0 {
-		tempAutoStakingHash = newB.hashes.AutoStakeHash
-	} else {
-		tempAutoStakingHash, err = common.GenerateHashFromMapStringBool(newB.autoStake)
-		if err != nil {
-			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-		}
+	//if !isNilOrAutoStakeHash(newB.hashes) &&
+	//	len(committeeChange.StopAutoStake) == 0 {
+	//	tempAutoStakingHash = newB.hashes.AutoStakeHash
+	//} else {
+	tempAutoStakingHash, err = common.GenerateHashFromMapStringBool(newB.autoStake)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
+	//}
 
 	hashes := &BeaconCommitteeStateHash{
 		BeaconCommitteeAndValidatorHash: tempBeaconCommitteeAndValidatorHash,
