@@ -214,12 +214,14 @@ var HttpHandler = map[string]httpHandler{
 	//
 
 	// pDex v3
-	getPdexv3State:                        (*HttpServer).handleGetPdexv3State,
-	createAndSendTxWithPdexv3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPdexv3ModifyParams,
-	getPdexv3ParamsModifyingStatus:        (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
-	getPdexv3EstimatedLPFee:               (*HttpServer).handleGetPdexv3EstimatedLPFee,
-	getPdexv3WithdrawalLPFeeStatus:        (*HttpServer).handleGetPdexv3WithdrawalLPFeeStatus,
-	getPdexv3WithdrawalProtocolFeeStatus:  (*HttpServer).handleGetPdexv3WithdrawalProtocolFeeStatus,
+	getPdexv3State:                                (*HttpServer).handleGetPdexv3State,
+	createAndSendTxWithPdexv3ModifyParams:         (*HttpServer).handleCreateAndSendTxWithPdexv3ModifyParams,
+	getPdexv3ParamsModifyingStatus:                (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
+	getPdexv3EstimatedLPFee:                       (*HttpServer).handleGetPdexv3EstimatedLPFee,
+	createAndSendTxWithPdexv3WithdrawlLPFee:       (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawLPFee,
+	getPdexv3WithdrawalLPFeeStatus:                (*HttpServer).handleGetPdexv3WithdrawalLPFeeStatus,
+	createAndSendTxWithPdexv3WithdrawlProtocolFee: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawProtocolFee,
+	getPdexv3WithdrawalProtocolFeeStatus:          (*HttpServer).handleGetPdexv3WithdrawalProtocolFeeStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

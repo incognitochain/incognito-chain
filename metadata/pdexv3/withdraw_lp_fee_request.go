@@ -4,40 +4,58 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
-	PairID      string `json:"PairID"`
-	NcftTokenID string `json:"NcftTokenID"`
+	PairID                string `json:"PairID"`
+	NcftTokenID           string `json:"NcftTokenID"`
+	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
+	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
+	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
+	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PairID      string      `json:"PairID"`
-	NcftTokenID string      `json:"NcftTokenID"`
-	TxReqID     common.Hash `json:"TxReqID"`
-	ShardID     byte        `json:"ShardID"`
+	PairID                string      `json:"PairID"`
+	NcftTokenID           string      `json:"NcftTokenID"`
+	Token0ReceiverAddress string      `json:"Token0ReceiverAddress"`
+	Token1ReceiverAddress string      `json:"Token1ReceiverAddress"`
+	PRVReceiverAddress    string      `json:"PRVReceiverAddress"`
+	PDEXReceiverAddress   string      `json:"PDEXReceiverAddress"`
+	TxReqID               common.Hash `json:"TxReqID"`
+	ShardID               byte        `json:"ShardID"`
 }
 
 type WithdrawalLPFeeStatus struct {
-	Status      int    `json:"Status"`
-	PairID      string `json:"PairID"`
-	NcftTokenID string `json:"NcftTokenID"`
+	Status                int    `json:"Status"`
+	PairID                string `json:"PairID"`
+	NcftTokenID           string `json:"NcftTokenID"`
+	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
+	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
+	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
+	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
 }
 
 func NewPdexv3WithdrawalLPFeeStatus(
 	status int,
 	pairID string,
 	ncftTokenID string,
+	token0ReceiverAddress string,
+	token1ReceiverAddress string,
+	prvReceiverAddress string,
+	pdexReceiverAddress string,
 ) *WithdrawalLPFeeStatus {
 	return &WithdrawalLPFeeStatus{
-		PairID:      pairID,
-		NcftTokenID: ncftTokenID,
-		Status:      status,
+		PairID:                pairID,
+		NcftTokenID:           ncftTokenID,
+		Token0ReceiverAddress: token0ReceiverAddress,
+		Token1ReceiverAddress: token1ReceiverAddress,
+		PRVReceiverAddress:    prvReceiverAddress,
+		PDEXReceiverAddress:   pdexReceiverAddress,
+		Status:                status,
 	}
 }
 
@@ -45,14 +63,22 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
 	ncftTokenID string,
+	token0ReceiverAddress string,
+	token1ReceiverAddress string,
+	prvReceiverAddress string,
+	pdexReceiverAddress string,
 ) (*WithdrawalLPFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
-	withdrawal := &WithdrawalLPFeeRequest{}
-	withdrawal.MetadataBase = *metadataBase
-	withdrawal.PairID = pairID
-	withdrawal.NcftTokenID = ncftTokenID
 
-	return withdrawal, nil
+	return &WithdrawalLPFeeRequest{
+		MetadataBase:          *metadataBase,
+		PairID:                pairID,
+		NcftTokenID:           ncftTokenID,
+		Token0ReceiverAddress: token0ReceiverAddress,
+		Token1ReceiverAddress: token1ReceiverAddress,
+		PRVReceiverAddress:    prvReceiverAddress,
+		PDEXReceiverAddress:   pdexReceiverAddress,
+	}, nil
 }
 
 func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
@@ -73,24 +99,20 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	// validate IncAddressStr
-	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
-	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
-	}
-	incAddr := keyWallet.KeySet.PaymentAddress
-	if len(incAddr.Pk) == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
-	}
-
 	// check tx type and version
-	if tx.GetType() != common.TxNormalType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Tx pDex v3 LP fee withdrawal must be TxNormalType"))
+	if tx.GetType() != common.TxCustomTokenPrivacyType {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Tx pDex v3 LP fee withdrawal must be TxCustomTokenPrivacyType"))
 	}
 
 	if tx.GetVersion() != 2 {
 		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 LP fee withdrawal must be version 2"))
 	}
+
+	// TODO: Check OTA address string and tx random is valid
+
+	// TODO: validate receiver & amount = 1
+
+	// TODO: validate transfer token & Ncft Token ID
 
 	return true, true, nil
 }
@@ -103,21 +125,14 @@ func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
 	record += withdrawal.PairID
 	record += withdrawal.NcftTokenID
+	record += withdrawal.Token0ReceiverAddress
+	record += withdrawal.Token1ReceiverAddress
+	record += withdrawal.PRVReceiverAddress
+	record += withdrawal.PDEXReceiverAddress
 
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
-}
-
-func (withdrawal *WithdrawalLPFeeRequest) BuildReqActions(
-	tx metadataCommon.Transaction,
-	chainRetriever metadataCommon.ChainRetriever,
-	shardViewRetriever metadataCommon.ShardViewRetriever,
-	beaconViewRetriever metadataCommon.BeaconViewRetriever,
-	shardID byte,
-	shardHeight uint64,
-) ([][]string, error) {
-	return [][]string{}, nil
 }
 
 func (withdrawal *WithdrawalLPFeeRequest) CalculateSize() uint64 {
