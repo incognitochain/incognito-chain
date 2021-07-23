@@ -582,10 +582,10 @@ func InitStateFromDB(
 	return initStateV1(stateDB, beaconHeight)
 }
 
-func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]v3.PoolReserve, []string, []bool, error) {
+func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]*v3.PoolReserve, []string, []int, error) {
 	return nil, nil, nil, nil
 }
 
-func setRelevantReserves(pairs map[string]PoolPairState, reserves []v3.PoolReserve, tradePath []string, isSellingToken0 []bool) error {
+func setRelevantReserves(pairs map[string]PoolPairState, reserves []*v3.PoolReserve, tradePath []string, tradeDirections []int) error {
 	return nil
 }

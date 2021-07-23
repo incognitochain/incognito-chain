@@ -2,9 +2,11 @@ package pdex
 
 import (
 	"errors"
+	"math/big"
 	"sort"
 	"strconv"
 
+	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -18,7 +20,6 @@ type stateV2 struct {
 	poolPairs                   map[string]PoolPairState //
 	params                      Params
 	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
-	orders                      map[int64][]Order
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
@@ -30,13 +31,9 @@ type StakingPoolState struct {
 }
 
 type Order struct {
-	tick            int64
-	tokenBuyID      string
-	tokenBuyAmount  uint64
-	tokenSellAmount uint64
-	ota             string
-	txRandom        string
-	fee             uint64
+	id                string
+	orderMatchingInfo v3.OrderMatchingInfo
+	fee               uint64
 }
 
 type Contribution struct {
@@ -51,14 +48,39 @@ type Contribution struct {
 type PoolPairState struct {
 	token0ID              string
 	token1ID              string
-	token0RealAmount      uint64
-	token1RealAmount      uint64
+	tokenReserve          v3.PoolReserve
 	shares                map[string]uint64
 	tradingFees           map[string]map[string]uint64
 	currentContributionID uint64
-	token0VirtualAmount   uint64
-	token1VirtualAmount   uint64
 	amplifier             uint
+	orders                []*Order
+}
+
+// InsertOrder() appends a new order while keeping the list sorted (ascending by Token1Init / Token0Init)
+func (p *PoolPairState) InsertOrder(ord *Order) {
+	insertAt := func(lst []*Order, i int, newItem *Order) []*Order {
+		if i == len(lst) {
+			return append(lst, newItem)
+		}
+		lst = append(lst[:i+1], lst[i:]...)
+		lst[i] = newItem
+		return lst
+	}
+	index := sort.Search(len(p.orders), func(i int) bool {
+		ordRate := big.NewInt(0).SetUint64(p.orders[i].orderMatchingInfo.Token0Rate)
+		ordRate.Mul(ordRate, big.NewInt(0).SetUint64(ord.orderMatchingInfo.Token1Rate))
+		myRate := big.NewInt(0).SetUint64(p.orders[i].orderMatchingInfo.Token1Rate)
+		myRate.Mul(myRate, big.NewInt(0).SetUint64(ord.orderMatchingInfo.Token0Rate))
+		// compare Token1Init / Token0Init of current order in the list to ord
+		if ord.orderMatchingInfo.TradeDirection == v3.TradeDirectionSell0 {
+			// orders selling token0 are iterated from start of list (buy the least token1), so we resolve equality of rate by putting the new one last
+			return ordRate.Cmp(myRate) < 0
+		} else {
+			// orders selling token1 are iterated from end of list (buy the least token0), so we resolve equality of rate by putting the new one first
+			return ordRate.Cmp(myRate) <= 0
+		}
+	})
+	p.orders = insertAt(p.orders, index, ord)
 }
 
 type Params struct {

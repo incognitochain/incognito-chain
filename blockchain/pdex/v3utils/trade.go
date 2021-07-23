@@ -5,7 +5,7 @@ import (
     "math/big"
 )
 
-func Quote(amount0 uint64, reserve0 uint64, reserve1 uint64) (uint64, error) {
+func quote(amount0 uint64, reserve0 uint64, reserve1 uint64) (uint64, error) {
     if amount0 <= 0 {
         return 0, errors.New("Insufficient amount")
     }
@@ -21,7 +21,7 @@ func Quote(amount0 uint64, reserve0 uint64, reserve1 uint64) (uint64, error) {
     return result.Uint64(), nil
 }
 
-func CalculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn uint64, virtualReserveOut uint64, fee uint64) (uint64, error) {
+func calculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn uint64, virtualReserveOut uint64, fee uint64) (uint64, error) {
     if amountIn <= 0 {
         return 0, errors.New("Insufficient input amount")
     }
@@ -39,7 +39,7 @@ func CalculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, vi
     return result.Uint64(), nil
 }
 
-func CalculateAmountToSell(amountOut uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn uint64, virtualReserveOut uint64, fee uint64) (uint64, error) {
+func calculateAmountToSell(amountOut uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn uint64, virtualReserveOut uint64, fee uint64) (uint64, error) {
     if amountOut <= 0 {
         return 0, errors.New("Insufficient input amount")
     }

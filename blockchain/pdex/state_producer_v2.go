@@ -66,21 +66,15 @@ func (sp *stateProducerV2) trade(
 
 	for _, currentTrade := range tradeRequests {
 		// line up the trade path
-		reserves, tradePath, isSellingToken0, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+		reserves, tradePath, tradeDirections, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		if err != nil {
 			return [][]string{}, pairs, err
 		}
-		refunded, currentInst, changedReserves, err := v3.AcceptOrRefundTrade(currentTrade.SellAmount, reserves, nil)
+		refunded, currentInst, changedReserves, err := v3.AcceptOrRefundTrade(currentTrade.SellAmount, reserves, tradeDirections, nil)
 		if err != nil {
 			return [][]string{}, pairs, err
 		}
-
-		if !refunded {
-			err = setRelevantReserves(pairs, changedReserves, tradePath, isSellingToken0)
-			if err != nil {
-				return [][]string{}, pairs, err
-			}	
-		}
+		_, _, _ = tradePath, refunded, changedReserves
 		result = append(result, currentInst)
 	}
 
