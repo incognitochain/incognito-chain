@@ -79,12 +79,12 @@ func NewGetBlocksBeaconResult(block *types.BeaconBlock, size uint64, nextBlockHa
 	getBlockResult.ShardStates = block.Body.ShardState
 	getBlockResult.ProposeTime = block.Header.ProposeTime
 	getBlockResult.RootHash = make(map[string]interface{})
-	getBlockResult.RootHash["AutoStakingRoot"] = block.Header.AutoStakingRoot
-	getBlockResult.RootHash["InstructionMerkleRoot"] = block.Header.InstructionMerkleRoot
-	getBlockResult.RootHash["BeaconCommitteeAndValidatorRoot"] = block.Header.BeaconCommitteeAndValidatorRoot
-	getBlockResult.RootHash["BeaconCandidateRoot"] = block.Header.BeaconCandidateRoot
-	getBlockResult.RootHash["ShardCandidateRoot"] = block.Header.ShardCandidateRoot
-	getBlockResult.RootHash["ShardCommitteeAndValidatorRoot"] = block.Header.ShardCommitteeAndValidatorRoot
+	getBlockResult.RootHash["AutoStakingRoot"] = block.Header.AutoStakingRoot.String()
+	getBlockResult.RootHash["InstructionMerkleRoot"] = block.Header.InstructionMerkleRoot.String()
+	getBlockResult.RootHash["BeaconCommitteeAndValidatorRoot"] = block.Header.BeaconCommitteeAndValidatorRoot.String()
+	getBlockResult.RootHash["BeaconCandidateRoot"] = block.Header.BeaconCandidateRoot.String()
+	getBlockResult.RootHash["ShardCandidateRoot"] = block.Header.ShardCandidateRoot.String()
+	getBlockResult.RootHash["ShardCommitteeAndValidatorRoot"] = block.Header.ShardCommitteeAndValidatorRoot.String()
 	return getBlockResult
 }
 
