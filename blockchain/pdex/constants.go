@@ -5,14 +5,6 @@ const (
 	RangeProvideVersion
 )
 
-const (
-	RequestAcceptedChainStatus = "accepted"
-	RequestRejectedChainStatus = "rejected"
-
-	ParamsModifyingFailedStatus  = 0
-	ParamsModifyingSuccessStatus = 1
-)
-
 // params
 const (
 	InitFeeRateBPS               = 30

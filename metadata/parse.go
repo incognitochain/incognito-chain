@@ -71,8 +71,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
-	case metadataCommon.Pdexv3AddLiquidityMeta:
-		md = &metadataPdexv3.AddLiquidity{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
 	case PDEPRVRequiredContributionRequestMeta:
@@ -169,6 +167,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingRequestV3{}
 	case metadataCommon.Pdexv3ModifyParamsMeta:
 		md = &metadataPdexv3.ParamsModifyingRequest{}
+	case metadataCommon.Pdexv3AddLiquidityMeta:
+		md = &metadataPdexv3.AddLiquidity{}
 	case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
 		md = &metadataPdexv3.WithdrawalLPFeeRequest{}
 	case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:

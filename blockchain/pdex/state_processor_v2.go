@@ -54,11 +54,11 @@ func (sp *stateProcessorV2) modifyParams(
 
 	modifyingStatus := inst[2]
 	var reqTrackStatus int
-	if modifyingStatus == RequestAcceptedChainStatus {
+	if modifyingStatus == metadataPdexv3.RequestAcceptedChainStatus {
 		params = Params(actionData.Content)
-		reqTrackStatus = ParamsModifyingSuccessStatus
+		reqTrackStatus = metadataPdexv3.ParamsModifyingSuccessStatus
 	} else {
-		reqTrackStatus = ParamsModifyingFailedStatus
+		reqTrackStatus = metadataPdexv3.ParamsModifyingFailedStatus
 	}
 
 	modifyingReqStatus := metadataPdexv3.ParamsModifyingRequestStatus{
