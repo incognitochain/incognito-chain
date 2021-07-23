@@ -40,7 +40,7 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid Base Instruction",
+			name: "Invalid Base",
 			fields: fields{
 				Base: Base{
 					metaData: metadataPdexv3.NewAddLiquidity(),
@@ -48,7 +48,6 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			},
 			args: args{
 				source: []string{
-					"",
 					"",
 					"",
 				},

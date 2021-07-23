@@ -2,13 +2,14 @@ package pdex
 
 import (
 	"errors"
-	"sort"
 	"strconv"
+
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateV2 struct {
@@ -40,39 +41,38 @@ type Order struct {
 }
 
 type Params struct {
-	FeeRateBPS               map[string]int // map: pool ID -> fee rate (0.1% ~ 10 BPS)
-	PRVDiscountPercent       int            // percent of fee that will be discounted if using PRV as the trading token fee (defaul: 25%)
-	ProtocolFeePercent       int            // percent of fees that is rewarded for the core team (default: 0%)
-	StakingPoolRewardPercent int            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 30%)
-	StakingPoolsShare        map[string]int // map: staking tokenID -> pool staking share weight (default: pDEX pool - 1000)
+	DefaultFeeRateBPS               uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
+	FeeRateBPS                      map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
+	PRVDiscountPercent              uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
+	LimitProtocolFeePercent         uint            // percent of fees from limit orders
+	LimitStakingPoolRewardPercent   uint            // percent of fees from limit orders
+	TradingProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
+	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
+	DefaultStakingPoolsShare        uint            // the default value of staking pool share weight (default - 0)
+	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
 }
 
 func newStateV2() *stateV2 {
 	return &stateV2{
-		stateBase:                   *newStateBase(),
-		waitingContributions:        make(map[string]Contribution),
-		deletedWaitingContributions: make(map[string]Contribution),
-		poolPairs:                   make(map[string]PoolPairState),
-		stakingPoolsState:           make(map[string]StakingPoolState),
-		orders:                      make(map[int64][]Order),
+		params: Params{
+			DefaultFeeRateBPS:               InitFeeRateBPS,
+			FeeRateBPS:                      map[string]uint{},
+			PRVDiscountPercent:              InitPRVDiscountPercent,
+			LimitProtocolFeePercent:         InitProtocolFeePercent,
+			LimitStakingPoolRewardPercent:   InitStakingPoolRewardPercent,
+			TradingProtocolFeePercent:       InitProtocolFeePercent,
+			TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
+			DefaultStakingPoolsShare:        InitStakingPoolsShare,
+			StakingPoolsShare:               map[string]uint{},
+		},
 	}
 }
 
 func newStateV2WithValue(
-	waitingContributions map[string]Contribution,
-	deletedWaitingContributions map[string]Contribution,
-	poolPairs map[string]PoolPairState,
 	params Params,
-	stakingPoolsState map[string]StakingPoolState,
-	orders map[int64][]Order,
 ) *stateV2 {
 	return &stateV2{
-		waitingContributions:        waitingContributions,
-		deletedWaitingContributions: deletedWaitingContributions,
-		poolPairs:                   poolPairs,
-		params:                      params,
-		stakingPoolsState:           stakingPoolsState,
-		orders:                      orders,
+		params: params,
 	}
 }
 
@@ -80,7 +80,24 @@ func initStateV2(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (*stateV2, error) {
-	return nil, nil
+	stateObject, err := statedb.GetPdexv3Params(stateDB)
+	params := Params{
+		DefaultFeeRateBPS:               stateObject.DefaultFeeRateBPS(),
+		FeeRateBPS:                      stateObject.FeeRateBPS(),
+		PRVDiscountPercent:              stateObject.PRVDiscountPercent(),
+		LimitProtocolFeePercent:         stateObject.LimitProtocolFeePercent(),
+		LimitStakingPoolRewardPercent:   stateObject.LimitStakingPoolRewardPercent(),
+		TradingProtocolFeePercent:       stateObject.TradingProtocolFeePercent(),
+		TradingStakingPoolRewardPercent: stateObject.TradingStakingPoolRewardPercent(),
+		DefaultStakingPoolsShare:        stateObject.DefaultStakingPoolsShare(),
+		StakingPoolsShare:               stateObject.StakingPoolsShare(),
+	}
+	if err != nil {
+		return nil, err
+	}
+	return newStateV2WithValue(
+		params,
+	), nil
 }
 
 func (s *stateV2) Version() uint {
@@ -88,7 +105,24 @@ func (s *stateV2) Version() uint {
 }
 
 func (s *stateV2) Clone() State {
-	return nil
+	res := newStateV2()
+
+	res.params = s.params
+	clonedFeeRateBPS := map[string]uint{}
+	for k, v := range s.params.FeeRateBPS {
+		clonedFeeRateBPS[k] = v
+	}
+	clonedStakingPoolsShare := map[string]uint{}
+	for k, v := range s.params.StakingPoolsShare {
+		clonedStakingPoolsShare[k] = v
+	}
+	res.params.FeeRateBPS = clonedFeeRateBPS
+	res.params.StakingPoolsShare = clonedStakingPoolsShare
+
+	res.producer = s.producer
+	res.processor = s.processor
+
+	return res
 }
 
 func (s *stateV2) Process(env StateEnvironment) error {
@@ -100,18 +134,18 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		if err != nil {
 			continue // Not error, just not PDE instructions
 		}
-		if !metadata.IspDEXv3Type(metadataType) {
+		if !metadataCommon.IsPdexv3Type(metadataType) {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadata.PDexV3ModifyParamsMeta:
+		case metadataCommon.Pdexv3ModifyParamsMeta:
 			s.params, err = s.processor.modifyParams(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
 				s.params,
 			)
-		case metadataCommon.PDexV3AddLiquidityMeta:
+		case metadataCommon.Pdexv3AddLiquidityMeta:
 			s.poolPairs,
 				s.waitingContributions,
 				s.deletedWaitingContributions, err = s.processor.addLiquidity(
@@ -137,24 +171,31 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addLiquidityTxs := []metadata.Transaction{}
 	addLiquidityInstructions := [][]string{}
 	var err error
+	modifyParamsTxs := []metadata.Transaction{}
 
-	allRemainTxs := env.AllRemainTxs()
+	pdexv3Txs := env.ListTxs()
 	keys := []int{}
 
-	for k := range allRemainTxs {
+	for k := range pdexv3Txs {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, key := range keys {
-		for _, tx := range allRemainTxs[byte(key)] {
+		for _, tx := range pdexv3Txs[byte(key)] {
 			// TODO: @pdex get metadata here and build instructions from transactions here
 			switch tx.GetMetadataType() {
-			case metadataCommon.PDexV3AddLiquidityMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+			case metadataCommon.Pdexv3AddLiquidityMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
 				if !ok {
 					return instructions, errors.New("Can not parse add liquidity metadata")
 				}
 				addLiquidityTxs = append(addLiquidityTxs, tx)
+			case metadataCommon.Pdexv3ModifyParamsMeta:
+				_, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
+				if !ok {
+					return instructions, errors.New("Can not parse params modifying metadata")
+				}
+				modifyParamsTxs = append(modifyParamsTxs, tx)
 			}
 		}
 	}
@@ -170,8 +211,9 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, addLiquidityInstructions...)
 
 	// handle modify params
-	modifyParamsInstructions, err := s.producer.modifyParams(
-		env.ModifyParamsActions(),
+	var modifyParamsInstructions [][]string
+	modifyParamsInstructions, s.params, err = s.producer.modifyParams(
+		modifyParamsTxs,
 		env.BeaconHeight(),
 		s.params,
 	)
@@ -188,6 +230,23 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment) error {
+	var err error
+
+	err = statedb.StorePdexv3Params(
+		env.StateDB(),
+		s.params.DefaultFeeRateBPS,
+		s.params.FeeRateBPS,
+		s.params.PRVDiscountPercent,
+		s.params.LimitProtocolFeePercent,
+		s.params.LimitStakingPoolRewardPercent,
+		s.params.TradingProtocolFeePercent,
+		s.params.TradingStakingPoolRewardPercent,
+		s.params.DefaultStakingPoolsShare,
+		s.params.StakingPoolsShare,
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -200,9 +259,32 @@ func (s *stateV2) ClearCache() {
 }
 
 func (s *stateV2) GetDiff(compareState State) (State, error) {
-	return nil, nil
+	if compareState == nil {
+		return nil, errors.New("compareState is nil")
+	}
+
+	res := newStateV2()
+
+	res.params = s.params
+	clonedFeeRateBPS := map[string]uint{}
+	for k, v := range s.params.FeeRateBPS {
+		clonedFeeRateBPS[k] = v
+	}
+	clonedStakingPoolsShare := map[string]uint{}
+	for k, v := range s.params.StakingPoolsShare {
+		clonedStakingPoolsShare[k] = v
+	}
+	res.params.FeeRateBPS = clonedFeeRateBPS
+	res.params.StakingPoolsShare = clonedStakingPoolsShare
+
+	return res, nil
+
 }
 
 func (s *stateV2) Params() Params {
 	return s.params
+}
+
+func (s *stateV2) Reader() StateReader {
+	return s
 }

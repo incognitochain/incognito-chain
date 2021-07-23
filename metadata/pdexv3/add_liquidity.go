@@ -34,7 +34,7 @@ func NewAddLiquidityWithValue(
 	tokenID string, tokenAmount uint64, amplifier uint,
 ) *AddLiquidity {
 	metadataBase := metadataCommon.MetadataBase{
-		Type: metadataCommon.PDexV3AddLiquidityMeta,
+		Type: metadataCommon.Pdexv3AddLiquidityMeta,
 	}
 	return &AddLiquidity{
 		poolPairID:     poolPairID,
@@ -118,7 +118,7 @@ func (al *AddLiquidity) ValidateSanityData(
 }
 
 func (al *AddLiquidity) ValidateMetadataByItself() bool {
-	return al.Type == metadataCommon.PDexV3AddLiquidityMeta
+	return al.Type == metadataCommon.Pdexv3AddLiquidityMeta
 }
 
 func (al *AddLiquidity) Hash() *common.Hash {
@@ -223,10 +223,10 @@ func (al *AddLiquidity) FromStringSlice(source []string) error {
 	if len(source) != 8 {
 		return fmt.Errorf("Receive length %v but expect %v", len(source), 8)
 	}
-	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
-		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityMeta) {
+		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.Pdexv3AddLiquidityMeta)
 	}
-	al.MetadataBase = metadataCommon.MetadataBase{Type: metadataCommon.PDexV3AddLiquidityMeta}
+	al.MetadataBase = metadataCommon.MetadataBase{Type: metadataCommon.Pdexv3AddLiquidityMeta}
 	al.poolPairID = source[1]
 	if source[2] == "" {
 		return errors.New("Pair hash is invalid")

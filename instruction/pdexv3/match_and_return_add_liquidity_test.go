@@ -15,9 +15,10 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		common.PRVIDStr, 300, 10000,
 	)
 	type fields struct {
-		Base         Base
-		returnAmount uint64
-		nfctID       string
+		Base                         Base
+		returnAmount                 uint64
+		actualOtherTokenInPairAmount uint64
+		nfctID                       string
 	}
 	type args struct {
 		source []string
@@ -30,7 +31,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "Length of source < 4",
+			name: "Length of source < 5",
 			fields: fields{
 				Base: Base{
 					metaData: metadataPdexv3.NewAddLiquidity(),
@@ -60,7 +61,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Pool pair id is empty",
+			name: "Invalid return amount",
 			fields: fields{
 				Base: Base{
 					metaData: metadataPdexv3.NewAddLiquidity(),
@@ -69,7 +70,22 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"", common.PRVCoinID.String(),
+					"abc", "200", common.PRVCoinID.String(),
+					RefundStatus),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid actualOtherTokenInPairAmount",
+			fields: fields{
+				Base: Base{
+					metaData: metadataPdexv3.NewAddLiquidity(),
+				},
+			},
+			args: args{
+				source: append(metaData.StringSlice(),
+					"tx_req_id", "1",
+					"100", "abc", common.PRVCoinID.String(),
 					RefundStatus),
 			},
 			wantErr: true,
@@ -84,7 +100,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"new_pool_pair_id", "basv",
+					"100", "200", "basv",
 					RefundStatus),
 			},
 			wantErr: true,
@@ -99,7 +115,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"new_pool_pair_id", common.Hash{}.String(),
+					"100", "200", common.Hash{}.String(),
 					RefundStatus),
 			},
 			wantErr: true,
@@ -114,7 +130,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"new_pool_pair_id", common.PRVCoinID.String(),
+					"100", "200", common.PRVCoinID.String(),
 					RefundStatus),
 			},
 			wantErr: true,
@@ -129,7 +145,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", common.PRVCoinID.String(),
+					"100", "200", common.PRVCoinID.String(),
 					MatchAndReturnStatus,
 				),
 			},
@@ -139,8 +155,9 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 					txReqID:  "tx_req_id",
 					shardID:  1,
 				},
-				returnAmount: 100,
-				nfctID:       common.PRVCoinID.String(),
+				returnAmount:                 100,
+				actualOtherTokenInPairAmount: 200,
+				nfctID:                       common.PRVCoinID.String(),
 			},
 			wantErr: false,
 		},
@@ -148,9 +165,10 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MatchAndReturnAddLiquidity{
-				Base:         tt.fields.Base,
-				returnAmount: tt.fields.returnAmount,
-				nfctID:       tt.fields.nfctID,
+				Base:                         tt.fields.Base,
+				returnAmount:                 tt.fields.returnAmount,
+				actualOtherTokenInPairAmount: tt.fields.actualOtherTokenInPairAmount,
+				nfctID:                       tt.fields.nfctID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAndReturnAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
@@ -168,7 +186,11 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				return
 			}
 			if !tt.wantErr && !reflect.DeepEqual(m.returnAmount, tt.fieldsAfterProcess.returnAmount) {
-				t.Errorf("newPoolPairID got = %v, expected = %v", m.returnAmount, tt.fieldsAfterProcess.returnAmount)
+				t.Errorf("returnAmount got = %v, expected = %v", m.returnAmount, tt.fieldsAfterProcess.returnAmount)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(m.actualOtherTokenInPairAmount, tt.fieldsAfterProcess.actualOtherTokenInPairAmount) {
+				t.Errorf("actualOtherTokenInPairAmount got = %v, expected = %v", m.actualOtherTokenInPairAmount, tt.fieldsAfterProcess.actualOtherTokenInPairAmount)
 				return
 			}
 			if !tt.wantErr && !reflect.DeepEqual(m.nfctID, tt.fieldsAfterProcess.nfctID) {
@@ -186,9 +208,10 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		common.PRVIDStr, 300, 10000,
 	)
 	type fields struct {
-		Base         Base
-		returnAmount uint64
-		nfctID       string
+		Base                         Base
+		returnAmount                 uint64
+		actualOtherTokenInPairAmount uint64
+		nfctID                       string
 	}
 	tests := []struct {
 		name   string
@@ -203,19 +226,21 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 					txReqID:  "tx_req_id",
 					shardID:  1,
 				},
-				returnAmount: 100,
-				nfctID:       "nfct_id",
+				returnAmount:                 100,
+				actualOtherTokenInPairAmount: 200,
+				nfctID:                       "nfct_id",
 			},
 			want: append(metaData.StringSlice(),
-				"tx_req_id", "1", "100", "nfct_id", MatchAndReturnStatus),
+				"tx_req_id", "1", "100", "200", "nfct_id", MatchAndReturnStatus),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MatchAndReturnAddLiquidity{
-				Base:         tt.fields.Base,
-				returnAmount: tt.fields.returnAmount,
-				nfctID:       tt.fields.nfctID,
+				Base:                         tt.fields.Base,
+				returnAmount:                 tt.fields.returnAmount,
+				nfctID:                       tt.fields.nfctID,
+				actualOtherTokenInPairAmount: tt.fields.actualOtherTokenInPairAmount,
 			}
 			if got := m.StringSlice(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MatchAndReturnAddLiquidity.StringSlice() = %v, want %v", got, tt.want)

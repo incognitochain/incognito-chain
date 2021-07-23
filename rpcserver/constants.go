@@ -233,11 +233,13 @@ const (
 	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
-	pdexV3AddLiquidityV3                       = "pdexv3_txAddLiquidity"
+	pdexv3AddLiquidityV3                       = "pdexv3_txAddLiquidity"
 	//
 
 	// pDex v3
-	getPDexV3State = "pdexv3_getState"
+	getPdexv3State                        = "pdexv3_getState"
+	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
+	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
