@@ -3,9 +3,10 @@ package statedb
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -50,6 +51,11 @@ var (
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
+
+	// pdex v3
+	pdexv3StatusPrefix          = []byte("pdexv3-status-")
+	pdexv3ParamsModifyingPrefix = []byte("pdexv3-paramsmodifyingstatus-")
+	pdexv3ParamsPrefix          = []byte("pdexv3-params-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -334,9 +340,9 @@ func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contr
 
 	var keyAddr string
 	var err error
-	if len(contributorAddress) == 0{
+	if len(contributorAddress) == 0 {
 		keyAddr = contributorAddress
-	}else{
+	} else {
 		//Always parse the contributor address into the oldest version for compatibility
 		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
 		if err != nil {
@@ -354,9 +360,9 @@ func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, 
 
 	var keyAddr string
 	var err error
-	if len(contributorAddress) == 0{
+	if len(contributorAddress) == 0 {
 		keyAddr = contributorAddress
-	}else{
+	} else {
 		//Always parse the contributor address into the oldest version for compatibility
 		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
 		if err != nil {
@@ -532,6 +538,21 @@ func PortalExpiredPortingReqPrefix() []byte {
 
 func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 	return portalReqMatchingRedeemStatusByTxReqIDPrefix
+}
+
+// pDex v3 prefix for status
+func Pdexv3ParamsModifyingStatusPrefix() []byte {
+	return pdexv3ParamsModifyingPrefix
+}
+
+// pDex v3 prefix hash of the key
+func GetPdexv3StatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(pdexv3StatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPdexv3ParamsPrefix() []byte {
+	return pdexv3ParamsPrefix
 }
 
 var _ = func() (_ struct{}) {

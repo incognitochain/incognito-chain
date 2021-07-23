@@ -48,9 +48,12 @@ const (
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
-	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
+	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
+	// pDex v3
+	ErrInvalidPdexv3StatusStateType = "invalid pdex v3 status state type"
+	ErrInvalidPdexv3ParamsStateType = "invalid pdex v3 params state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -216,6 +219,12 @@ const (
 	// bsc bridge
 	BridgeInsertBSCTxHashIssuedError
 	IsBSCTxHashIssuedError
+
+	// pDex v3
+	GetPdexv3StatusError
+	StorePdexv3StatusError
+	GetPdexv3ParamsError
+	StorePdexv3ParamsError
 )
 
 var ErrCodeMessage = map[int]struct {
