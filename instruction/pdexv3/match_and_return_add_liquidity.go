@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type MatchAndReturnAddLiquidity struct {
@@ -16,11 +16,15 @@ type MatchAndReturnAddLiquidity struct {
 }
 
 func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
-	return &MatchAndReturnAddLiquidity{}
+	return &MatchAndReturnAddLiquidity{
+		Base: Base{
+			metaData: metadataPdexv3.NewAddLiquidity(),
+		},
+	}
 }
 
 func NewMatchAndReturnAddLiquidityFromMetadata(
-	metaData metadataPdexV3.AddLiquidity,
+	metaData metadataPdexv3.AddLiquidity,
 	txReqID string, shardID byte,
 	returnAmount uint64, nfctID string,
 ) *MatchAndReturnAddLiquidity {
@@ -41,12 +45,15 @@ func NewMatchAndReturnAddLiquidityWithValue(
 	}
 }
 
-func (m *MatchAndReturnAddLiquidity) FromStringArr(source []string) error {
+func (m *MatchAndReturnAddLiquidity) FromStringSlice(source []string) error {
 	temp := source
 	if len(temp) < 4 {
 		return errors.New("Length of source can not be smaller than 4")
 	}
-	m.Base.FromStringArr(temp[:len(temp)-3])
+	err := m.Base.FromStringSlice(temp[:len(temp)-3])
+	if err != nil {
+		return err
+	}
 	temp = temp[len(temp)-3:]
 	returnAmount, err := strconv.ParseUint(temp[0], 10, 32)
 	if err != nil {
@@ -67,8 +74,10 @@ func (m *MatchAndReturnAddLiquidity) FromStringArr(source []string) error {
 	return nil
 }
 
-func (m *MatchAndReturnAddLiquidity) StringArr() []string {
-	res := m.Base.StringArr()
+func (m *MatchAndReturnAddLiquidity) StringSlice() []string {
+	res := m.Base.StringSlice()
+	returnAmount := strconv.FormatUint(m.returnAmount, 10)
+	res = append(res, returnAmount)
 	res = append(res, m.nfctID)
 	res = append(res, MatchAndReturnStatus)
 	return res

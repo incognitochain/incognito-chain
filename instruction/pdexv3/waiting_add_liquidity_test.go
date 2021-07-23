@@ -2,24 +2,20 @@ package pdexv3
 
 import (
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
-func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
+func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
+	metaData := metadataPdexv3.NewAddLiquidityWithValue(
+		"pool_pair_id", "pair_hash",
+		validOTAReceiver0, validOTAReceiver1,
+		common.PRVIDStr, 300, 10000,
+	)
 	type fields struct {
-		poolPairID      string
-		pairHash        string
-		receiverAddress string
-		refundAddress   string
-		tokenID         string
-		tokenAmount     uint64
-		amplifier       uint
-		txReqID         string
-		shardID         byte
+		Base Base
 	}
 	type args struct {
 		source []string
@@ -32,268 +28,60 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name:   "Invalid length",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddOrderRequestMeta),
-					WaitingStatus,
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
+			name: "Length of source < 2",
+			fields: fields{
+				Base: Base{
+					metaData: metadataPdexv3.NewAddLiquidity(),
 				},
+			},
+			args: args{
+				source: []string{},
 			},
 			wantErr: true,
 		},
 		{
-			name:   "Invalid metadata type",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddOrderRequestMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
+			name: "Invalid Base Instruction",
+			fields: fields{
+				Base: Base{
+					metaData: metadataPdexv3.NewAddLiquidity(),
 				},
 			},
-			wantErr: true,
-		},
-		{
-			name:   "invalid status",
-			fields: fields{},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
 					"",
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Invalid pair hash",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
 					"",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
+					"",
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name:   "Invalid tokenID",
-			fields: fields{},
+			name: "Invalid status",
+			fields: fields{
+				Base: Base{
+					metaData: metadataPdexv3.NewAddLiquidity(),
+				},
+			},
 			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					"vzxvc",
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
+				source: append(metaData.StringSlice(), "tx_req_id", "1", RefundStatus),
 			},
 			wantErr: true,
 		},
 		{
-			name:   "Empty tokenID",
-			fields: fields{},
+			name: "Valid Input",
+			fields: fields{
+				Base: Base{
+					metaData: metadataPdexv3.NewAddLiquidity(),
+				},
+			},
 			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.Hash{}.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
+				source: append(metaData.StringSlice(), "tx_req_id", "1", WaitingStatus),
 			},
-			wantErr: true,
-		},
-		{
-			name:   "Invalid token amount",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"token_amount",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Invalid amplifier",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"amplifier",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Amplifier is smaller than default amplifier",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"900",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Invalid receiver Address",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					"receiver_address",
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Invalid refund Address",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					"refund_address",
-					"tx_req_id",
-					"1",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Invalid shardID",
-			fields: fields{},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"shard_id",
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:   "Valid input",
-			fields: fields{},
 			fieldsAfterProcess: fields{
-				poolPairID:      "pool_pair_id",
-				pairHash:        "pair_hash",
-				receiverAddress: validOTAReceiver0,
-				refundAddress:   validOTAReceiver1,
-				tokenID:         common.PRVCoinID.String(),
-				tokenAmount:     300,
-				amplifier:       10000,
-				txReqID:         "tx_req_id",
-				shardID:         1,
-			},
-			args: args{
-				source: []string{
-					strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-					WaitingStatus,
-					"pool_pair_id",
-					"pair_hash",
-					common.PRVCoinID.String(),
-					"300",
-					"10000",
-					validOTAReceiver0,
-					validOTAReceiver1,
-					"tx_req_id",
-					"1",
+				Base: Base{
+					metaData: metaData,
+					txReqID:  "tx_req_id",
+					shardID:  1,
 				},
 			},
 			wantErr: false,
@@ -302,73 +90,35 @@ func TestWaitingAddLiquidity_FromStringArr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &WaitingAddLiquidity{
-				poolPairID:      tt.fields.poolPairID,
-				pairHash:        tt.fields.pairHash,
-				receiverAddress: tt.fields.receiverAddress,
-				refundAddress:   tt.fields.refundAddress,
-				tokenID:         tt.fields.tokenID,
-				tokenAmount:     tt.fields.tokenAmount,
-				amplifier:       tt.fields.amplifier,
-				txReqID:         tt.fields.txReqID,
-				shardID:         tt.fields.shardID,
+				Base: tt.fields.Base,
 			}
-			if err := w.FromStringArr(tt.args.source); (err != nil) != tt.wantErr {
-				t.Errorf("WaitingAddLiquidity.FromStringArr() error = %v, wantErr %v", err, tt.wantErr)
+			if err := w.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
+				t.Errorf("WaitingAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && !reflect.DeepEqual(w.metaData, tt.fieldsAfterProcess.Base.metaData) {
+				t.Errorf("metaData got = %v, expected %v", w.metaData, tt.fieldsAfterProcess.Base.metaData)
 				return
 			}
-			if !tt.wantErr {
-				if !reflect.DeepEqual(w.poolPairID, tt.fieldsAfterProcess.poolPairID) {
-					t.Errorf("poolPairID got = %v, want %v", w.poolPairID, tt.fieldsAfterProcess.poolPairID)
-					return
-				}
-				if !reflect.DeepEqual(w.pairHash, tt.fieldsAfterProcess.pairHash) {
-					t.Errorf("pairHash got = %v, want %v", w.pairHash, tt.fieldsAfterProcess.pairHash)
-					return
-				}
-				if !reflect.DeepEqual(w.receiverAddress, tt.fieldsAfterProcess.receiverAddress) {
-					t.Errorf("receiverAddress got = %v, want %v", w.receiverAddress, tt.fieldsAfterProcess.receiverAddress)
-					return
-				}
-				if !reflect.DeepEqual(w.refundAddress, tt.fieldsAfterProcess.refundAddress) {
-					t.Errorf("refundAddress got = %v, want %v", w.refundAddress, tt.fieldsAfterProcess.refundAddress)
-					return
-				}
-				if !reflect.DeepEqual(w.tokenID, tt.fieldsAfterProcess.tokenID) {
-					t.Errorf("tokenID got = %v, want %v", w.tokenID, tt.fieldsAfterProcess.tokenID)
-					return
-				}
-				if !reflect.DeepEqual(w.tokenAmount, tt.fieldsAfterProcess.tokenAmount) {
-					t.Errorf("tokenAmount got = %v, want %v", w.tokenAmount, tt.fieldsAfterProcess.tokenAmount)
-					return
-				}
-				if !reflect.DeepEqual(w.amplifier, tt.fieldsAfterProcess.amplifier) {
-					t.Errorf("amplifier got = %v, want %v", w.amplifier, tt.fieldsAfterProcess.amplifier)
-					return
-				}
-				if !reflect.DeepEqual(w.txReqID, tt.fieldsAfterProcess.txReqID) {
-					t.Errorf("txReqID got = %v, want %v", w.txReqID, tt.fieldsAfterProcess.txReqID)
-					return
-				}
-				if !reflect.DeepEqual(w.shardID, tt.fieldsAfterProcess.shardID) {
-					t.Errorf("shardID got = %v, want %v", w.shardID, tt.fieldsAfterProcess.shardID)
-					return
-				}
+			if !tt.wantErr && !reflect.DeepEqual(w.txReqID, tt.fieldsAfterProcess.Base.txReqID) {
+				t.Errorf("txReqID got = %v, expected %v", w.txReqID, tt.fieldsAfterProcess.Base.txReqID)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(w.shardID, tt.fieldsAfterProcess.Base.shardID) {
+				t.Errorf("shardID got = %v, expected %v", w.shardID, tt.fieldsAfterProcess.Base.shardID)
+				return
 			}
 		})
 	}
 }
 
-func TestWaitingAddLiquidity_StringArr(t *testing.T) {
+func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
+	metaData := metadataPdexv3.NewAddLiquidityWithValue(
+		"pool_pair_id", "pair_hash",
+		validOTAReceiver0, validOTAReceiver1,
+		common.PRVIDStr, 300, 10000,
+	)
 	type fields struct {
-		poolPairID      string
-		pairHash        string
-		receiverAddress string
-		refundAddress   string
-		tokenID         string
-		tokenAmount     uint64
-		amplifier       uint
-		txReqID         string
-		shardID         byte
+		Base Base
 	}
 	tests := []struct {
 		name   string
@@ -378,46 +128,22 @@ func TestWaitingAddLiquidity_StringArr(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				poolPairID:      "pool_pair_id",
-				pairHash:        "pair_hash",
-				receiverAddress: validOTAReceiver0,
-				refundAddress:   validOTAReceiver1,
-				tokenID:         common.PRVCoinID.String(),
-				tokenAmount:     300,
-				amplifier:       10000,
-				txReqID:         "tx_req_id",
-				shardID:         1,
+				Base: Base{
+					metaData: metaData,
+					txReqID:  "tx_req_id",
+					shardID:  1,
+				},
 			},
-			want: []string{
-				strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta),
-				WaitingStatus,
-				"pool_pair_id",
-				"pair_hash",
-				common.PRVCoinID.String(),
-				"300",
-				"10000",
-				validOTAReceiver0,
-				validOTAReceiver1,
-				"tx_req_id",
-				"1",
-			},
+			want: append(metaData.StringSlice(), "tx_req_id", "1", WaitingStatus),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &WaitingAddLiquidity{
-				poolPairID:      tt.fields.poolPairID,
-				pairHash:        tt.fields.pairHash,
-				receiverAddress: tt.fields.receiverAddress,
-				refundAddress:   tt.fields.refundAddress,
-				tokenID:         tt.fields.tokenID,
-				tokenAmount:     tt.fields.tokenAmount,
-				amplifier:       tt.fields.amplifier,
-				txReqID:         tt.fields.txReqID,
-				shardID:         tt.fields.shardID,
+				Base: tt.fields.Base,
 			}
-			if got := w.StringArr(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WaitingAddLiquidity.StringArr() = %v, want %v", got, tt.want)
+			if got := w.StringSlice(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("WaitingAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
 			}
 		})
 	}

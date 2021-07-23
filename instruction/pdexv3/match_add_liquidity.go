@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/utils"
 )
 
@@ -16,11 +16,15 @@ type MatchAddLiquidity struct {
 }
 
 func NewMatchAddLiquidity() *MatchAddLiquidity {
-	return &MatchAddLiquidity{}
+	return &MatchAddLiquidity{
+		Base: Base{
+			metaData: metadataPdexv3.NewAddLiquidity(),
+		},
+	}
 }
 
 func NewMatchAddLiquidityFromMetadata(
-	metaData metadataPdexV3.AddLiquidity,
+	metaData metadataPdexv3.AddLiquidity,
 	txReqID string, shardID byte,
 	newPoolPairID, nfctID string,
 ) *MatchAddLiquidity {
@@ -40,16 +44,20 @@ func NewMatchAddLiquidityWithValue(
 	}
 }
 
-func (m *MatchAddLiquidity) FromStringArr(source []string) error {
+func (m *MatchAddLiquidity) FromStringSlice(source []string) error {
 	temp := source
 	if len(temp) < 4 {
 		return errors.New("Length of source can not be smaller than 4")
 	}
-	m.Base.FromStringArr(temp[:len(temp)-3])
+	err := m.Base.FromStringSlice(temp[:len(temp)-3])
+	if err != nil {
+		return err
+	}
 	temp = temp[len(temp)-3:]
 	if temp[0] == utils.EmptyString {
 		return errors.New("PoolPairID can not be empty")
 	}
+	m.newPoolPairID = temp[0]
 	nfctID, err := common.Hash{}.NewHashFromStr(temp[1])
 	if err != nil {
 		return err
@@ -64,8 +72,8 @@ func (m *MatchAddLiquidity) FromStringArr(source []string) error {
 	return nil
 }
 
-func (m *MatchAddLiquidity) StringArr() []string {
-	res := m.Base.StringArr()
+func (m *MatchAddLiquidity) StringSlice() []string {
+	res := m.Base.StringSlice()
 	res = append(res, m.newPoolPairID)
 	res = append(res, m.nfctID)
 	res = append(res, MatchStatus)

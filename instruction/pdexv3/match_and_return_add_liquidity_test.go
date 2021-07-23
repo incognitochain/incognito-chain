@@ -8,16 +8,16 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
-func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
+func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 	metaData := metadataPdexv3.NewAddLiquidityWithValue(
 		"pool_pair_id", "pair_hash",
 		validOTAReceiver0, validOTAReceiver1,
 		common.PRVIDStr, 300, 10000,
 	)
 	type fields struct {
-		Base          Base
-		newPoolPairID string
-		nfctID        string
+		Base         Base
+		returnAmount uint64
+		nfctID       string
 	}
 	type args struct {
 		source []string
@@ -129,8 +129,8 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"new_pool_pair_id", common.PRVCoinID.String(),
-					MatchStatus,
+					"100", common.PRVCoinID.String(),
+					MatchAndReturnStatus,
 				),
 			},
 			fieldsAfterProcess: fields{
@@ -139,21 +139,21 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 					txReqID:  "tx_req_id",
 					shardID:  1,
 				},
-				newPoolPairID: "new_pool_pair_id",
-				nfctID:        common.PRVCoinID.String(),
+				returnAmount: 100,
+				nfctID:       common.PRVCoinID.String(),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &MatchAddLiquidity{
-				Base:          tt.fields.Base,
-				newPoolPairID: tt.fields.newPoolPairID,
-				nfctID:        tt.fields.nfctID,
+			m := &MatchAndReturnAddLiquidity{
+				Base:         tt.fields.Base,
+				returnAmount: tt.fields.returnAmount,
+				nfctID:       tt.fields.nfctID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
-				t.Errorf("MatchAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MatchAndReturnAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr && !reflect.DeepEqual(m.metaData, tt.fieldsAfterProcess.Base.metaData) {
 				t.Errorf("metaData got = %v, expected = %v", m.metaData, tt.fieldsAfterProcess.Base.metaData)
@@ -167,8 +167,8 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				t.Errorf("shardID got = %v, expected = %v", m.shardID, tt.fieldsAfterProcess.Base.shardID)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(m.newPoolPairID, tt.fieldsAfterProcess.newPoolPairID) {
-				t.Errorf("newPoolPairID got = %v, expected = %v", m.newPoolPairID, tt.fieldsAfterProcess.newPoolPairID)
+			if !tt.wantErr && !reflect.DeepEqual(m.returnAmount, tt.fieldsAfterProcess.returnAmount) {
+				t.Errorf("newPoolPairID got = %v, expected = %v", m.returnAmount, tt.fieldsAfterProcess.returnAmount)
 				return
 			}
 			if !tt.wantErr && !reflect.DeepEqual(m.nfctID, tt.fieldsAfterProcess.nfctID) {
@@ -179,16 +179,16 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 	}
 }
 
-func TestMatchAddLiquidity_StringSlice(t *testing.T) {
+func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 	metaData := metadataPdexv3.NewAddLiquidityWithValue(
 		"pool_pair_id", "pair_hash",
 		validOTAReceiver0, validOTAReceiver1,
 		common.PRVIDStr, 300, 10000,
 	)
 	type fields struct {
-		Base          Base
-		newPoolPairID string
-		nfctID        string
+		Base         Base
+		returnAmount uint64
+		nfctID       string
 	}
 	tests := []struct {
 		name   string
@@ -203,22 +203,22 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 					txReqID:  "tx_req_id",
 					shardID:  1,
 				},
-				newPoolPairID: "new_pool_pair_id",
-				nfctID:        "nfct_id",
+				returnAmount: 100,
+				nfctID:       "nfct_id",
 			},
 			want: append(metaData.StringSlice(),
-				"tx_req_id", "1", "new_pool_pair_id", "nfct_id", MatchStatus),
+				"tx_req_id", "1", "100", "nfct_id", MatchAndReturnStatus),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &MatchAddLiquidity{
-				Base:          tt.fields.Base,
-				newPoolPairID: tt.fields.newPoolPairID,
-				nfctID:        tt.fields.nfctID,
+			m := &MatchAndReturnAddLiquidity{
+				Base:         tt.fields.Base,
+				returnAmount: tt.fields.returnAmount,
+				nfctID:       tt.fields.nfctID,
 			}
 			if got := m.StringSlice(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MatchAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
+				t.Errorf("MatchAndReturnAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
 			}
 		})
 	}

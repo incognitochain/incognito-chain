@@ -5,7 +5,7 @@ import (
 
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/utils"
 )
 
@@ -27,7 +27,7 @@ func (sp *stateProducerV2) addLiquidity(
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := tx.Hash().String()
-		metaData, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
 		if !ok {
 			return res, poolPairs, waitingContributions, errors.New("Can not parse add liquidity metadata")
 		}
@@ -38,12 +38,12 @@ func (sp *stateProducerV2) addLiquidity(
 				metaData.RefundAddress(), metaData.TokenID(), txReqID,
 				metaData.TokenAmount(), metaData.Amplifier(), shardID,
 			)
-			inst := instruction.NewWaitingAddLiquidityFromMetadata(*metaData, txReqID, shardID).StringArr()
+			inst := instruction.NewWaitingAddLiquidityFromMetadata(*metaData, txReqID, shardID).StringSlice()
 			res = append(res, inst)
 			continue
 		}
 		delete(waitingContributions, metaData.PairHash())
-		waitingContributionMetaData := metadataPdexV3.NewAddLiquidityWithValue(
+		waitingContributionMetaData := metadataPdexv3.NewAddLiquidityWithValue(
 			waitingContribution.poolPairID, metaData.PairHash(),
 			waitingContribution.receiveAddress, waitingContribution.refundAddress,
 			waitingContribution.tokenID, waitingContribution.tokenAmount,
@@ -54,11 +54,11 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.poolPairID != metaData.PoolPairID() {
 			refundInst0 := instruction.NewRefundAddLiquidityFromMetadata(
 				*waitingContributionMetaData, waitingContribution.txReqID, waitingContribution.shardID,
-			).StringArr()
+			).StringSlice()
 			res = append(res, refundInst0)
 			refundInst1 := instruction.NewRefundAddLiquidityFromMetadata(
 				*metaData, txReqID, shardID,
-			).StringArr()
+			).StringSlice()
 			res = append(res, refundInst1)
 			continue
 		}
@@ -84,7 +84,7 @@ func (sp *stateProducerV2) addLiquidity(
 			}
 			inst := instruction.NewMatchAddLiquidityFromMetadata(
 				*metaData, txReqID, shardID, poolPairID, nfctID,
-			).StringArr()
+			).StringSlice()
 			res = append(res, inst)
 			continue
 		}
@@ -103,11 +103,11 @@ func (sp *stateProducerV2) addLiquidity(
 		if actualToken0ContributionAmount == 0 || actualToken1ContributionAmount == 0 {
 			refundInst0 := instruction.NewRefundAddLiquidityFromMetadata(
 				token0Metadata, token0Contribution.txReqID, token0Contribution.shardID,
-			).StringArr()
+			).StringSlice()
 			res = append(res, refundInst0)
 			refundInst1 := instruction.NewRefundAddLiquidityFromMetadata(
 				token1Metadata, token1Contribution.txReqID, token1Contribution.shardID,
-			).StringArr()
+			).StringSlice()
 			res = append(res, refundInst1)
 			continue
 		}
@@ -123,12 +123,12 @@ func (sp *stateProducerV2) addLiquidity(
 		matchAndReturnInst0 := instruction.NewMatchAndReturnAddLiquidityFromMetadata(
 			token0Metadata, token0Contribution.txReqID, token0Contribution.shardID,
 			returnedToken0ContributionAmount, nfctID,
-		).StringArr()
+		).StringSlice()
 		res = append(res, matchAndReturnInst0)
 		matchAndReturnInst1 := instruction.NewMatchAndReturnAddLiquidityFromMetadata(
 			token1Metadata, token1Contribution.txReqID, token1Contribution.shardID,
 			returnedToken1ContributionAmount, nfctID,
-		).StringArr()
+		).StringSlice()
 		res = append(res, matchAndReturnInst1)
 	}
 

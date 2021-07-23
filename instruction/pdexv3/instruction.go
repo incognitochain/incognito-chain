@@ -25,11 +25,11 @@ func NewBaseWithValue(metaData metadataCommon.Metadata, txReqID string, shardID 
 	}
 }
 
-func (base *Base) FromStringArr(source []string) error {
+func (base *Base) FromStringSlice(source []string) error {
 	if len(source) < 3 {
 		return errors.New("Invalid length of instruction")
 	}
-	base.metaData.FromStringArr(source[:len(source)-2])
+	base.metaData.FromStringSlice(source[:len(source)-2])
 	base.txReqID = source[len(source)-2]
 	shardID, err := strconv.Atoi(source[len(source)-1])
 	if err != nil {
@@ -39,8 +39,8 @@ func (base *Base) FromStringArr(source []string) error {
 	return nil
 }
 
-func (base *Base) StringArr() []string {
-	res := base.metaData.StringArr()
+func (base *Base) StringSlice() []string {
+	res := base.metaData.StringSlice()
 	res = append(res, base.txReqID)
 	shardID := strconv.Itoa(int(base.shardID))
 	res = append(res, shardID)

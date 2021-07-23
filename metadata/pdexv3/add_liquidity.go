@@ -219,36 +219,37 @@ func (al *AddLiquidity) Amplifier() uint {
 	return al.amplifier
 }
 
-func (al *AddLiquidity) FromString(source []string) error {
+func (al *AddLiquidity) FromStringSlice(source []string) error {
 	if len(source) != 8 {
 		return fmt.Errorf("Receive length %v but expect %v", len(source), 8)
 	}
 	if source[0] != strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta) {
 		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.PDexV3AddLiquidityMeta)
 	}
+	al.MetadataBase = metadataCommon.MetadataBase{Type: metadataCommon.PDexV3AddLiquidityMeta}
+	al.poolPairID = source[1]
+	if source[2] == "" {
+		return errors.New("Pair hash is invalid")
+	}
+	al.pairHash = source[2]
 	receiveAddress := privacy.OTAReceiver{}
-	err := receiveAddress.FromString(source[1])
+	err := receiveAddress.FromString(source[3])
 	if err != nil {
 		return err
 	}
 	if !receiveAddress.IsValid() {
 		return errors.New("receive Address is invalid")
 	}
-	al.receiveAddress = source[1]
+	al.receiveAddress = source[3]
 	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(source[2])
+	err = refundAddress.FromString(source[4])
 	if err != nil {
 		return err
 	}
 	if !refundAddress.IsValid() {
 		return errors.New("refund Address is invalid")
 	}
-	al.refundAddress = source[2]
-	al.poolPairID = source[3]
-	if source[4] == "" {
-		return errors.New("Pair hash is invalid")
-	}
-	al.pairHash = source[4]
+	al.refundAddress = source[4]
 	tokenID, err := common.Hash{}.NewHashFromStr(source[5])
 	if err != nil {
 		return err
@@ -273,8 +274,8 @@ func (al *AddLiquidity) FromString(source []string) error {
 	return nil
 }
 
-func (al *AddLiquidity) StringArr() []string {
-	res := []string{strconv.Itoa(metadataCommon.PDexV3AddLiquidityMeta)}
+func (al *AddLiquidity) StringSlice() []string {
+	res := []string{strconv.Itoa(al.Type)}
 	res = append(res, al.poolPairID)
 	res = append(res, al.pairHash)
 	res = append(res, al.receiveAddress)

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type WaitingAddLiquidity struct {
@@ -12,11 +12,15 @@ type WaitingAddLiquidity struct {
 }
 
 func NewWaitingAddLiquidity() *WaitingAddLiquidity {
-	return &WaitingAddLiquidity{}
+	return &WaitingAddLiquidity{
+		Base: Base{
+			metaData: metadataPdexv3.NewAddLiquidity(),
+		},
+	}
 }
 
 func NewWaitingAddLiquidityFromMetadata(
-	metaData metadataPdexV3.AddLiquidity,
+	metaData metadataPdexv3.AddLiquidity,
 	txReqID string, shardID byte,
 ) *WaitingAddLiquidity {
 	return NewWaitingAddLiquidityWithValue(*NewBaseWithValue(&metaData, txReqID, shardID))
@@ -30,12 +34,15 @@ func NewWaitingAddLiquidityWithValue(
 	}
 }
 
-func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
+func (w *WaitingAddLiquidity) FromStringSlice(source []string) error {
 	temp := source
 	if len(temp) < 2 {
 		return errors.New("Length of source can not be smaller than 2")
 	}
-	w.Base.FromStringArr(temp[:len(temp)-1])
+	err := w.Base.FromStringSlice(temp[:len(temp)-1])
+	if err != nil {
+		return err
+	}
 	temp = temp[len(temp)-1:]
 	if temp[0] != WaitingStatus {
 		return fmt.Errorf("Receive status %s expect %s", temp[0], WaitingStatus)
@@ -43,6 +50,6 @@ func (w *WaitingAddLiquidity) FromStringArr(source []string) error {
 	return nil
 }
 
-func (w *WaitingAddLiquidity) StringArr() []string {
-	return append(w.Base.StringArr(), WaitingStatus)
+func (w *WaitingAddLiquidity) StringSlice() []string {
+	return append(w.Base.StringSlice(), WaitingStatus)
 }

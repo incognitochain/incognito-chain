@@ -171,10 +171,10 @@ func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintDa
 	return true, nil
 }
 
-func (mb *MetadataBase) FromStringArr(source []string) error {
+func (mb *MetadataBase) FromStringSlice(source []string) error {
 	return nil
 }
 
-func (mb *MetadataBase) StringArr() []string {
+func (mb *MetadataBase) StringSlice() []string {
 	return []string{}
 }
