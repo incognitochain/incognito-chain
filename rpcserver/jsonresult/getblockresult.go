@@ -7,21 +7,22 @@ import (
 )
 
 type GetBeaconBlockResult struct {
-	Hash              string      `json:"Hash"`
-	Height            uint64      `json:"Height"`
-	BlockProducer     string      `json:"BlockProducer"`
-	ValidationData    string      `json:"ValidationData"`
-	ConsensusType     string      `json:"ConsensusType"`
-	Version           int         `json:"Version"`
-	Epoch             uint64      `json:"Epoch"`
-	Round             int         `json:"Round"`
-	Time              int64       `json:"Time"`
-	PreviousBlockHash string      `json:"PreviousBlockHash"`
-	NextBlockHash     string      `json:"NextBlockHash"`
-	Instructions      [][]string  `json:"Instructions"`
-	Size              uint64      `json:"Size"`
-	ShardStates       interface{} `json:"ShardStates"`
-	ProposeTime       int64       `json:"ProposeTime"`
+	Hash              string                 `json:"Hash"`
+	Height            uint64                 `json:"Height"`
+	BlockProducer     string                 `json:"BlockProducer"`
+	ValidationData    string                 `json:"ValidationData"`
+	ConsensusType     string                 `json:"ConsensusType"`
+	Version           int                    `json:"Version"`
+	Epoch             uint64                 `json:"Epoch"`
+	Round             int                    `json:"Round"`
+	Time              int64                  `json:"Time"`
+	PreviousBlockHash string                 `json:"PreviousBlockHash"`
+	NextBlockHash     string                 `json:"NextBlockHash"`
+	Instructions      [][]string             `json:"Instructions"`
+	Size              uint64                 `json:"Size"`
+	ShardStates       interface{}            `json:"ShardStates"`
+	ProposeTime       int64                  `json:"ProposeTime"`
+	RootHash          map[string]interface{} `json:"RootHash"`
 }
 
 type GetShardBlockResult struct {
@@ -77,6 +78,13 @@ func NewGetBlocksBeaconResult(block *types.BeaconBlock, size uint64, nextBlockHa
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.ShardStates = block.Body.ShardState
 	getBlockResult.ProposeTime = block.Header.ProposeTime
+	getBlockResult.RootHash = make(map[string]interface{})
+	getBlockResult.RootHash["AutoStakingRoot"] = block.Header.AutoStakingRoot
+	getBlockResult.RootHash["InstructionMerkleRoot"] = block.Header.InstructionMerkleRoot
+	getBlockResult.RootHash["BeaconCommitteeAndValidatorRoot"] = block.Header.BeaconCommitteeAndValidatorRoot
+	getBlockResult.RootHash["BeaconCandidateRoot"] = block.Header.BeaconCandidateRoot
+	getBlockResult.RootHash["ShardCandidateRoot"] = block.Header.ShardCandidateRoot
+	getBlockResult.RootHash["ShardCommitteeAndValidatorRoot"] = block.Header.ShardCommitteeAndValidatorRoot
 	return getBlockResult
 }
 
