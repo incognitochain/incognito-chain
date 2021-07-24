@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -267,7 +268,7 @@ func (v *TxsVerifier) FullValidateTransactions(
 	doneCh := make(chan interface{}, len(txs)+len(newTxs))
 	numOfValidGoroutine := 0
 	totalMsgDone := 0
-	timeout := time.After(10 * time.Second)
+	timeout := time.After(config.Param().BlockTime.MinShardBlockInterval / 2)
 	ok, err := v.LoadCommitmentForTxs(
 		txs,
 		shardViewRetriever,
