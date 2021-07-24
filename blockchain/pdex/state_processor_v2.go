@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateProcessorV2 struct {
@@ -18,6 +17,7 @@ type stateProcessorV2 struct {
 func (sp *stateProcessorV2) addLiquidity(
 	stateDB *statedb.StateDB,
 	inst []string,
+	beaconHeight uint64,
 	poolPairs map[string]PoolPairState,
 	waitingContributions map[string]Contribution,
 	deletedWaitingContributions map[string]Contribution,
@@ -36,13 +36,14 @@ func (sp *stateProcessorV2) addLiquidity(
 		}
 	case instruction.MatchStatus:
 		waitingContributions, deletedWaitingContributions, poolPairs, err = sp.matchContribution(
-			stateDB, inst, waitingContributions, deletedWaitingContributions, poolPairs)
+			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
 	case instruction.MatchAndReturnStatus:
 		waitingContributions, deletedWaitingContributions, poolPairs, err = sp.matchAndReturnContribution(
-			stateDB, inst, waitingContributions, deletedWaitingContributions, poolPairs)
+			stateDB, inst, beaconHeight,
+			waitingContributions, deletedWaitingContributions, poolPairs)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
@@ -120,6 +121,7 @@ func (sp *stateProcessorV2) refundContribution(
 func (sp *stateProcessorV2) matchContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
+	beaconHeight uint64,
 	waitingContributions map[string]Contribution,
 	deletedWaitingContributions map[string]Contribution,
 	poolPairs map[string]PoolPairState,
@@ -145,19 +147,16 @@ func (sp *stateProcessorV2) matchContribution(
 		*metaData, matchAddLiquidityInst.TxReqID(), matchAddLiquidityInst.ShardID(),
 	)
 	poolPair := initPoolPairState(existingWaitingContribution, incomingWaitingContribution)
-	nfctID, err := poolPair.addShare(poolPair.token0RealAmount)
-	if err != nil {
-		return waitingContributions, deletedWaitingContributions, poolPairs, err
-	}
-	if nfctID != matchAddLiquidityInst.NfctID() {
-		err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAddLiquidityInst.NfctID())
-		return waitingContributions, deletedWaitingContributions, poolPairs, err
-	}
 	poolPairID := generatePoolPairKey(
 		existingWaitingContribution.tokenID,
 		incomingWaitingContribution.tokenID,
 		existingWaitingContribution.txReqID,
 	)
+	nfctID := poolPair.addShare(poolPairID, poolPair.token0RealAmount, beaconHeight)
+	if nfctID != matchAddLiquidityInst.NfctID() {
+		err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAddLiquidityInst.NfctID())
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
 	if poolPairID != matchAddLiquidityInst.NewPoolPairID() {
 		err := fmt.Errorf("PoolPairID is invalid expect %s but get %s", poolPairID, matchAddLiquidityInst.NewPoolPairID())
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
@@ -173,6 +172,7 @@ func (sp *stateProcessorV2) matchContribution(
 func (sp *stateProcessorV2) matchAndReturnContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
+	beaconHeight uint64,
 	waitingContributions map[string]Contribution,
 	deletedWaitingContributions map[string]Contribution,
 	poolPairs map[string]PoolPairState,
@@ -188,21 +188,26 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		incomingWaitingContribution := NewContributionWithMetaData(
 			*metaData, matchAndReturnAddLiquidity.TxReqID(), matchAndReturnAddLiquidity.ShardID(),
 		)
+		if incomingWaitingContribution.poolPairID != waitingContribution.poolPairID {
+			err := fmt.Errorf("Expect poolPairID %v but get %v", waitingContribution.poolPairID, incomingWaitingContribution.poolPairID)
+			return waitingContributions, deletedWaitingContributions, poolPairs, err
+		}
 		poolPair := poolPairs[waitingContribution.poolPairID]
-		nfctID := utils.EmptyString
+		shareAmount := uint64(0)
 		if waitingContribution.tokenID == incomingWaitingContribution.tokenID {
-			nfctID, err = poolPair.updateReserveAndShares(
+			shareAmount = poolPair.updateReserveAndShares(
 				waitingContribution.tokenID, matchAndReturnAddLiquidity.ExistedTokenID(),
 				waitingContribution.tokenAmount-matchAndReturnAddLiquidity.ReturnAmount(),
 				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 			)
 		} else {
-			nfctID, err = poolPair.updateReserveAndShares(
+			shareAmount = poolPair.updateReserveAndShares(
 				waitingContribution.tokenID, metaData.TokenID(),
 				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				metaData.TokenAmount()-matchAndReturnAddLiquidity.ReturnAmount(),
 			)
 		}
+		nfctID := poolPair.addShare(waitingContribution.poolPairID, shareAmount, beaconHeight)
 		//TODO: After release beacon recompute for contributions amount
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, err

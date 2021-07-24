@@ -3,9 +3,10 @@ package pdex
 import (
 	"math/big"
 	"sort"
+	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type PoolPairState struct {
@@ -120,7 +121,7 @@ func (p *PoolPairState) computeActualContributedAmounts(
 func (p *PoolPairState) updateReserveAndShares(
 	token0ID, token1ID string,
 	token0Amount, token1Amount uint64,
-) (string, error) {
+) uint64 {
 	var amount0, amount1 uint64
 	if token0ID < token1ID {
 		amount0 = token0Amount
@@ -133,16 +134,19 @@ func (p *PoolPairState) updateReserveAndShares(
 	p.token1RealAmount += amount1
 	p.token0VirtualAmount += amount0
 	p.token1VirtualAmount += amount1
-	nfctID, err := p.addShare(amount0)
-	if err != nil {
-		return utils.EmptyString, err
-	}
-	p.currentContributionID++
-	return nfctID, nil
+	return amount0
+
 }
 
-func (p *PoolPairState) addShare(tokenAmount uint64) (string, error) {
-	res := utils.EmptyString
-	//TODO: @tin
-	return res, nil
+func (p *PoolPairState) addShare(key string, amount, beaconHeight uint64) string {
+	p.genNFT(key, beaconHeight)
+	res := p.genNFT(key, beaconHeight)
+	p.shares[res] = amount
+	p.currentContributionID++
+	return res
+}
+
+func (p *PoolPairState) genNFT(key string, beaconHeight uint64) string {
+	id := key + strconv.FormatUint(p.currentContributionID, 10) + strconv.FormatUint(beaconHeight, 10)
+	return common.HashH([]byte(id)).String()
 }

@@ -62,6 +62,7 @@ func isValidPdexv3Params(params Params) bool {
 
 func (sp *stateProducerV2) addLiquidity(
 	txs []metadata.Transaction,
+	beaconHeight uint64,
 	poolPairs map[string]PoolPairState,
 	waitingContributions map[string]Contribution,
 ) (
@@ -125,10 +126,7 @@ func (sp *stateProducerV2) addLiquidity(
 		if !found {
 			poolPairs[poolPairID] = *initPoolPairState(waitingContribution, incomingWaitingContribution)
 			poolPair := poolPairs[poolPairID]
-			nfctID, err := poolPair.addShare(poolPair.token0RealAmount)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
+			nfctID := poolPair.addShare(poolPairID, poolPair.token0RealAmount, beaconHeight)
 			inst := instruction.NewMatchAddLiquidityFromMetadata(
 				*metaData, txReqID, shardID, poolPairID, nfctID,
 			).StringSlice()
@@ -163,13 +161,11 @@ func (sp *stateProducerV2) addLiquidity(
 		token0Contribution.tokenAmount = actualToken0ContributionAmount
 		token1Contribution.tokenAmount = actualToken1ContributionAmount
 		//
-		nfctID, err := poolPair.updateReserveAndShares(
+		shareAmount := poolPair.updateReserveAndShares(
 			token0Contribution.tokenID, token1Contribution.tokenID,
 			token0Contribution.tokenAmount, token1Contribution.tokenAmount,
 		)
-		if err != nil {
-			return res, poolPairs, waitingContributions, err
-		}
+		nfctID := poolPair.addShare(poolPairID, shareAmount, beaconHeight)
 		matchAndReturnInst0 := instruction.NewMatchAndReturnAddLiquidityFromMetadata(
 			token0Metadata, token0Contribution.txReqID, token0Contribution.shardID,
 			returnedToken0ContributionAmount, actualToken1ContributionAmount,

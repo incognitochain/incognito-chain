@@ -151,6 +151,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.deletedWaitingContributions, err = s.processor.addLiquidity(
 				env.StateDB(),
 				inst,
+				env.BeaconHeight(),
 				s.poolPairs,
 				s.waitingContributions,
 				s.deletedWaitingContributions,
@@ -202,6 +203,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
 		addLiquidityTxs,
+		env.BeaconHeight(),
 		s.poolPairs,
 		s.waitingContributions,
 	)
