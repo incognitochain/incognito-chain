@@ -2,6 +2,7 @@ package pdexv3
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -70,7 +71,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"", common.PRVCoinID.String(),
-					RefundStatus),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -85,7 +86,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"new_pool_pair_id", "basv",
-					RefundStatus),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -100,7 +101,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"new_pool_pair_id", common.Hash{}.String(),
-					RefundStatus),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -115,7 +116,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"new_pool_pair_id", common.PRVCoinID.String(),
-					RefundStatus),
+					strconv.Itoa(common.PDEContributionRefundStatus)),
 			},
 			wantErr: true,
 		},
@@ -130,7 +131,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"new_pool_pair_id", common.PRVCoinID.String(),
-					MatchStatus,
+					strconv.Itoa(common.PDEContributionAcceptedStatus),
 				),
 			},
 			fieldsAfterProcess: fields{
@@ -207,7 +208,8 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 				nfctID:        "nfct_id",
 			},
 			want: append(metaData.StringSlice(),
-				"tx_req_id", "1", "new_pool_pair_id", "nfct_id", MatchStatus),
+				"tx_req_id", "1",
+				"new_pool_pair_id", "nfct_id", strconv.Itoa(common.PDEContributionAcceptedStatus)),
 		},
 	}
 	for _, tt := range tests {

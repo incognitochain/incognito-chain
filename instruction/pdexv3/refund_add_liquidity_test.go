@@ -2,6 +2,7 @@ package pdexv3
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -66,7 +67,8 @@ func TestRefundAddLiquidity_FromStringSlice(t *testing.T) {
 				},
 			},
 			args: args{
-				source: append(metaData.StringSlice(), "tx_req_id", "1", WaitingStatus),
+				source: append(metaData.StringSlice(),
+					"tx_req_id", "1", strconv.Itoa(common.PDEContributionWaitingStatus)),
 			},
 			wantErr: true,
 		},
@@ -78,7 +80,8 @@ func TestRefundAddLiquidity_FromStringSlice(t *testing.T) {
 				},
 			},
 			args: args{
-				source: append(metaData.StringSlice(), "tx_req_id", "1", RefundStatus),
+				source: append(metaData.StringSlice(),
+					"tx_req_id", "1", strconv.Itoa(common.PDEContributionRefundStatus)),
 			},
 			fieldsAfterProcess: fields{
 				Base: Base{
@@ -137,7 +140,8 @@ func TestRefundAddLiquidity_StringSlice(t *testing.T) {
 					shardID:  1,
 				},
 			},
-			want: append(metaData.StringSlice(), "tx_req_id", "1", RefundStatus),
+			want: append(metaData.StringSlice(),
+				"tx_req_id", "1", strconv.Itoa(common.PDEContributionRefundStatus)),
 		},
 	}
 	for _, tt := range tests {

@@ -3,7 +3,9 @@ package pdexv3
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
@@ -44,12 +46,12 @@ func (w *WaitingAddLiquidity) FromStringSlice(source []string) error {
 		return err
 	}
 	temp = temp[len(temp)-1:]
-	if temp[0] != WaitingStatus {
-		return fmt.Errorf("Receive status %s expect %s", temp[0], WaitingStatus)
+	if temp[0] != strconv.Itoa(common.PDEContributionWaitingStatus) {
+		return fmt.Errorf("Receive status %s expect %s", temp[0], strconv.Itoa(common.PDEContributionWaitingStatus))
 	}
 	return nil
 }
 
 func (w *WaitingAddLiquidity) StringSlice() []string {
-	return append(w.Base.StringSlice(), WaitingStatus)
+	return append(w.Base.StringSlice(), strconv.Itoa(common.PDEContributionWaitingStatus))
 }

@@ -3,6 +3,7 @@ package pdexv3
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -66,8 +67,8 @@ func (m *MatchAddLiquidity) FromStringSlice(source []string) error {
 		return errors.New("NfctID is empty")
 	}
 	m.nfctID = temp[1]
-	if temp[2] != MatchStatus {
-		return fmt.Errorf("Receive status %s expect %s", temp[2], MatchStatus)
+	if temp[2] != strconv.Itoa(common.PDEContributionAcceptedStatus) {
+		return fmt.Errorf("Receive status %s expect %s", temp[2], strconv.Itoa(common.PDEContributionAcceptedStatus))
 	}
 	return nil
 }
@@ -76,7 +77,7 @@ func (m *MatchAddLiquidity) StringSlice() []string {
 	res := m.Base.StringSlice()
 	res = append(res, m.newPoolPairID)
 	res = append(res, m.nfctID)
-	res = append(res, MatchStatus)
+	res = append(res, strconv.Itoa(common.PDEContributionAcceptedStatus))
 	return res
 }
 

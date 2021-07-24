@@ -13,6 +13,7 @@ type MatchAndReturnAddLiquidity struct {
 	Base
 	returnAmount             uint64
 	existedTokenActualAmount uint64
+	existedTokenReturnAmount uint64
 	existedTokenID           string
 	nfctID                   string
 }
@@ -28,19 +29,19 @@ func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
 func NewMatchAndReturnAddLiquidityFromMetadata(
 	metaData metadataPdexv3.AddLiquidity,
 	txReqID string, shardID byte,
-	returnAmount, existedTokenActualAmount uint64,
+	returnAmount, existedTokenActualAmount, existedTokenReturnAmount uint64,
 	existedTokenID, nfctID string,
 ) *MatchAndReturnAddLiquidity {
 	return NewMatchAndReturnAddLiquidityWithValue(
 		*NewBaseWithValue(&metaData, txReqID, shardID),
-		returnAmount, existedTokenActualAmount,
+		returnAmount, existedTokenActualAmount, existedTokenReturnAmount,
 		existedTokenID, nfctID,
 	)
 }
 
 func NewMatchAndReturnAddLiquidityWithValue(
 	base Base,
-	returnAmount, existedTokenActualAmount uint64,
+	returnAmount, existedTokenActualAmount, existedTokenReturnAmount uint64,
 	existedTokenID, nfctID string,
 ) *MatchAndReturnAddLiquidity {
 	return &MatchAndReturnAddLiquidity{
@@ -48,20 +49,21 @@ func NewMatchAndReturnAddLiquidityWithValue(
 		returnAmount:             returnAmount,
 		existedTokenActualAmount: existedTokenActualAmount,
 		existedTokenID:           existedTokenID,
+		existedTokenReturnAmount: existedTokenReturnAmount,
 		nfctID:                   nfctID,
 	}
 }
 
 func (m *MatchAndReturnAddLiquidity) FromStringSlice(source []string) error {
 	temp := source
-	if len(temp) < 6 {
-		return errors.New("Length of source can not be smaller than 6")
+	if len(temp) < 7 {
+		return errors.New("Length of source can not be smaller than 7")
 	}
-	err := m.Base.FromStringSlice(temp[:len(temp)-5])
+	err := m.Base.FromStringSlice(temp[:len(temp)-6])
 	if err != nil {
 		return err
 	}
-	temp = temp[len(temp)-5:]
+	temp = temp[len(temp)-6:]
 	returnAmount, err := strconv.ParseUint(temp[0], 10, 32)
 	if err != nil {
 		return err
@@ -72,24 +74,29 @@ func (m *MatchAndReturnAddLiquidity) FromStringSlice(source []string) error {
 		return err
 	}
 	m.existedTokenActualAmount = existedTokenActualAmount
-	existedTokenID, err := common.Hash{}.NewHashFromStr(temp[2])
+	existedTokenReturnAmount, err := strconv.ParseUint(temp[2], 10, 32)
+	if err != nil {
+		return err
+	}
+	m.existedTokenReturnAmount = existedTokenReturnAmount
+	existedTokenID, err := common.Hash{}.NewHashFromStr(temp[3])
 	if err != nil {
 		return err
 	}
 	if existedTokenID.IsZeroValue() {
 		return errors.New("NfctID is empty")
 	}
-	m.existedTokenID = temp[2]
-	nfctID, err := common.Hash{}.NewHashFromStr(temp[3])
+	m.existedTokenID = temp[3]
+	nfctID, err := common.Hash{}.NewHashFromStr(temp[4])
 	if err != nil {
 		return err
 	}
 	if nfctID.IsZeroValue() {
 		return errors.New("NfctID is empty")
 	}
-	m.nfctID = temp[3]
-	if temp[4] != MatchAndReturnStatus {
-		return fmt.Errorf("Receive status %s expect %s", temp[4], MatchAndReturnStatus)
+	m.nfctID = temp[4]
+	if temp[5] != strconv.Itoa(common.PDEContributionMatchedNReturnedStatus) {
+		return fmt.Errorf("Receive status %s expect %s", temp[5], strconv.Itoa(common.PDEContributionMatchedNReturnedStatus))
 	}
 	return nil
 }
@@ -100,9 +107,11 @@ func (m *MatchAndReturnAddLiquidity) StringSlice() []string {
 	res = append(res, returnAmount)
 	existedTokenActualAmount := strconv.FormatUint(m.existedTokenActualAmount, 10)
 	res = append(res, existedTokenActualAmount)
+	existedTokenReturnAmount := strconv.FormatUint(m.existedTokenReturnAmount, 10)
+	res = append(res, existedTokenReturnAmount)
 	res = append(res, m.existedTokenID)
 	res = append(res, m.nfctID)
-	res = append(res, MatchAndReturnStatus)
+	res = append(res, strconv.Itoa(common.PDEContributionMatchedNReturnedStatus))
 	return res
 }
 
@@ -116,6 +125,10 @@ func (m *MatchAndReturnAddLiquidity) NfctID() string {
 
 func (m *MatchAndReturnAddLiquidity) ExistedTokenActualAmount() uint64 {
 	return m.existedTokenActualAmount
+}
+
+func (m *MatchAndReturnAddLiquidity) ExistedTokenReturnAmount() uint64 {
+	return m.existedTokenReturnAmount
 }
 
 func (m *MatchAndReturnAddLiquidity) ExistedTokenID() string {

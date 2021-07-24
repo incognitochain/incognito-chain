@@ -3,7 +3,9 @@ package pdexv3
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
@@ -46,14 +48,14 @@ func (r *RefundAddLiquidity) FromStringSlice(source []string) error {
 		return err
 	}
 	temp = temp[len(temp)-1:]
-	if temp[0] != RefundStatus {
-		return fmt.Errorf("Receive status %s expect %s", temp[0], RefundStatus)
+	if temp[0] != strconv.Itoa(common.PDEContributionRefundStatus) {
+		return fmt.Errorf("Receive status %s expect %s", temp[0], strconv.Itoa(common.PDEContributionRefundStatus))
 	}
 	return nil
 }
 
 func (r *RefundAddLiquidity) StringSlice() []string {
 	res := r.Base.StringSlice()
-	res = append(res, RefundStatus)
+	res = append(res, strconv.Itoa(common.PDEContributionRefundStatus))
 	return res
 }

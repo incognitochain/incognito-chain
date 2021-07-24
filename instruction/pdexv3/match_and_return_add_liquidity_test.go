@@ -2,6 +2,7 @@ package pdexv3
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,6 +20,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		Base                     Base
 		returnAmount             uint64
 		existedTokenActualAmount uint64
+		existedTokenReturnAmount uint64
 		existedTokenID           string
 		nfctID                   string
 	}
@@ -73,12 +75,12 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"abc", "200", tokenID.String(), common.PRVCoinID.String(),
-					RefundStatus),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
 		{
-			name: "Invalid actualOtherTokenInPairAmount",
+			name: "Invalid existedTokenActualAmount",
 			fields: fields{
 				Base: Base{
 					metaData: metadataPdexv3.NewAddLiquidity(),
@@ -88,7 +90,22 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
 					"100", "abc", tokenID.String(), common.PRVCoinID.String(),
-					RefundStatus),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid existedTokenReturnAmount",
+			fields: fields{
+				Base: Base{
+					metaData: metadataPdexv3.NewAddLiquidity(),
+				},
+			},
+			args: args{
+				source: append(metaData.StringSlice(),
+					"tx_req_id", "1",
+					"100", "200", "abc", tokenID.String(), common.PRVCoinID.String(),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -102,8 +119,8 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", "200", "basv",
-					RefundStatus),
+					"100", "200", "50", "abc",
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -117,8 +134,8 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", "200", common.Hash{}.String(),
-					RefundStatus),
+					"100", "200", "50", common.Hash{}.String(),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -132,8 +149,8 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", "200", tokenID.String(), "fasd",
-					RefundStatus),
+					"100", "200", "50", tokenID.String(), "fasd",
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -147,8 +164,8 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", "200", tokenID.String(), common.Hash{}.String(),
-					RefundStatus),
+					"100", "200", "50", tokenID.String(), common.Hash{}.String(),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 			},
 			wantErr: true,
 		},
@@ -162,8 +179,8 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", "200", tokenID.String(), common.PRVCoinID.String(),
-					RefundStatus),
+					"100", "200", "50", tokenID.String(), common.PRVCoinID.String(),
+					strconv.Itoa(common.PDEContributionRefundStatus)),
 			},
 			wantErr: true,
 		},
@@ -177,8 +194,8 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 			args: args{
 				source: append(metaData.StringSlice(),
 					"tx_req_id", "1",
-					"100", "200", tokenID.String(), common.PRVCoinID.String(),
-					MatchAndReturnStatus,
+					"100", "200", "50", tokenID.String(), common.PRVCoinID.String(),
+					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus),
 				),
 			},
 			fieldsAfterProcess: fields{
@@ -189,6 +206,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				},
 				returnAmount:             100,
 				existedTokenActualAmount: 200,
+				existedTokenReturnAmount: 50,
 				existedTokenID:           tokenID.String(),
 				nfctID:                   common.PRVCoinID.String(),
 			},
@@ -201,6 +219,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				Base:                     tt.fields.Base,
 				returnAmount:             tt.fields.returnAmount,
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
+				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
 				nfctID:                   tt.fields.nfctID,
 			}
@@ -227,6 +246,10 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				t.Errorf("existedTokenActualAmount got = %v, expected = %v", m.existedTokenActualAmount, tt.fieldsAfterProcess.existedTokenActualAmount)
 				return
 			}
+			if !tt.wantErr && !reflect.DeepEqual(m.existedTokenReturnAmount, tt.fieldsAfterProcess.existedTokenReturnAmount) {
+				t.Errorf("existedTokenReturnAmount got = %v, expected = %v", m.existedTokenReturnAmount, tt.fieldsAfterProcess.existedTokenReturnAmount)
+				return
+			}
 			if !tt.wantErr && !reflect.DeepEqual(m.existedTokenID, tt.fieldsAfterProcess.existedTokenID) {
 				t.Errorf("existedTokenID got = %v, expected = %v", m.existedTokenID, tt.fieldsAfterProcess.existedTokenID)
 				return
@@ -249,6 +272,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		Base                     Base
 		returnAmount             uint64
 		existedTokenActualAmount uint64
+		existedTokenReturnAmount uint64
 		existedTokenID           string
 		nfctID                   string
 	}
@@ -267,11 +291,13 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				},
 				returnAmount:             100,
 				existedTokenActualAmount: 200,
+				existedTokenReturnAmount: 50,
 				existedTokenID:           common.PRVIDStr,
 				nfctID:                   "nfct_id",
 			},
 			want: append(metaData.StringSlice(),
-				"tx_req_id", "1", "100", "200", common.PRVIDStr, "nfct_id", MatchAndReturnStatus),
+				"tx_req_id", "1", "100", "200", "50",
+				common.PRVIDStr, "nfct_id", strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
 		},
 	}
 	for _, tt := range tests {
@@ -281,6 +307,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				returnAmount:             tt.fields.returnAmount,
 				nfctID:                   tt.fields.nfctID,
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
+				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
 			}
 			if got := m.StringSlice(); !reflect.DeepEqual(got, tt.want) {

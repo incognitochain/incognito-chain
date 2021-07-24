@@ -169,13 +169,13 @@ func (sp *stateProducerV2) addLiquidity(
 		matchAndReturnInst0 := instruction.NewMatchAndReturnAddLiquidityFromMetadata(
 			token0Metadata, token0Contribution.txReqID, token0Contribution.shardID,
 			returnedToken0ContributionAmount, actualToken1ContributionAmount,
-			token1Contribution.tokenID, nfctID,
+			returnedToken1ContributionAmount, token1Contribution.tokenID, nfctID,
 		).StringSlice()
 		res = append(res, matchAndReturnInst0)
 		matchAndReturnInst1 := instruction.NewMatchAndReturnAddLiquidityFromMetadata(
 			token1Metadata, token1Contribution.txReqID, token1Contribution.shardID,
 			returnedToken1ContributionAmount, actualToken0ContributionAmount,
-			token0Contribution.tokenID, nfctID,
+			returnedToken0ContributionAmount, token0Contribution.tokenID, nfctID,
 		).StringSlice()
 		res = append(res, matchAndReturnInst1)
 	}

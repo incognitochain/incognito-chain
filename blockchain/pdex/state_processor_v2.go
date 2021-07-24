@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
@@ -24,23 +28,23 @@ func (sp *stateProcessorV2) addLiquidity(
 ) (map[string]PoolPairState, map[string]Contribution, map[string]Contribution, error) {
 	var err error
 	switch inst[len(inst)-1] {
-	case instruction.WaitingStatus:
+	case strconv.Itoa(common.PDEContributionWaitingStatus):
 		waitingContributions, err = sp.waitingContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
-	case instruction.RefundStatus:
+	case strconv.Itoa(common.PDEContributionRefundStatus):
 		waitingContributions, deletedWaitingContributions, err = sp.refundContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
-	case instruction.MatchStatus:
+	case strconv.Itoa(common.PDEContributionAcceptedStatus):
 		waitingContributions, deletedWaitingContributions, poolPairs, err = sp.matchContribution(
 			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
-	case instruction.MatchAndReturnStatus:
+	case strconv.Itoa(common.PDEContributionMatchedNReturnedStatus):
 		waitingContributions, deletedWaitingContributions, poolPairs, err = sp.matchAndReturnContribution(
 			stateDB, inst, beaconHeight,
 			waitingContributions, deletedWaitingContributions, poolPairs)
@@ -72,7 +76,22 @@ func (sp *stateProcessorV2) waitingContribution(
 	)
 	waitingContributions[metaData.PairHash()] = *contribution
 
-	//TODO: Track status of contribution
+	contribStatus := metadata.PDEContributionStatus{
+		Contributed1Amount: contribution.tokenAmount,
+		TokenID1Str:        contribution.tokenID,
+		Status:             byte(common.PDEContributionWaitingStatus),
+	}
+	contribStatusBytes, _ := json.Marshal(contribStatus)
+	err = statedb.TrackPDEContributionStatus(
+		stateDB,
+		rawdbv2.PDEContributionStatusPrefix,
+		[]byte(metaData.PairHash()),
+		contribStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde waiting contribution status: %+v", err)
+		return waitingContributions, err
+	}
 
 	return waitingContributions, nil
 }
@@ -113,7 +132,20 @@ func (sp *stateProcessorV2) refundContribution(
 		delete(waitingContributions, metaData.PairHash())
 	}
 
-	//TODO: Track status of contribution
+	contribStatus := metadata.PDEContributionStatus{
+		Status: byte(common.PDEContributionRefundStatus),
+	}
+	contribStatusBytes, _ := json.Marshal(contribStatus)
+	err = statedb.TrackPDEContributionStatus(
+		stateDB,
+		rawdbv2.PDEContributionStatusPrefix,
+		[]byte(metaData.PairHash()),
+		contribStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde refund contribution status: %+v", err)
+		return waitingContributions, deletedWaitingContributions, err
+	}
 
 	return waitingContributions, deletedWaitingContributions, nil
 }
@@ -165,7 +197,21 @@ func (sp *stateProcessorV2) matchContribution(
 	deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
 	delete(waitingContributions, metaData.PairHash())
 
-	//TODO: Track status of contribution
+	contribStatus := metadata.PDEContributionStatus{
+		Status: byte(common.PDEContributionAcceptedStatus),
+	}
+	contribStatusBytes, _ := json.Marshal(contribStatus)
+	err = statedb.TrackPDEContributionStatus(
+		stateDB,
+		rawdbv2.PDEContributionStatusPrefix,
+		[]byte(metaData.PairHash()),
+		contribStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
+		return waitingContributions, deletedWaitingContributions, poolPairs, err
+	}
+
 	return waitingContributions, deletedWaitingContributions, poolPairs, nil
 }
 
@@ -218,9 +264,47 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		}
 		deletedWaitingContributions[metaData.PairHash()] = waitingContribution
 		delete(waitingContributions, metaData.PairHash())
+	} else {
+		var contribStatus metadata.PDEContributionStatus
+		if matchAndReturnAddLiquidity.ExistedTokenID() < metaData.TokenID() {
+			contribStatus = metadata.PDEContributionStatus{
+				Status:             common.PDEContributionMatchedNReturnedStatus,
+				TokenID1Str:        matchAndReturnAddLiquidity.ExistedTokenID(),
+				Contributed1Amount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
+				Returned1Amount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
+				TokenID2Str:        metaData.TokenID(),
+				Contributed2Amount: metaData.TokenAmount() - matchAndReturnAddLiquidity.ReturnAmount(),
+				Returned2Amount:    matchAndReturnAddLiquidity.ReturnAmount(),
+			}
+		} else {
+			contribStatus = metadata.PDEContributionStatus{
+				Status:             common.PDEContributionMatchedNReturnedStatus,
+				TokenID2Str:        matchAndReturnAddLiquidity.ExistedTokenID(),
+				Contributed2Amount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
+				Returned2Amount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
+				TokenID1Str:        metaData.TokenID(),
+				Contributed1Amount: metaData.TokenAmount() - matchAndReturnAddLiquidity.ReturnAmount(),
+				Returned1Amount:    matchAndReturnAddLiquidity.ReturnAmount(),
+			}
+		}
+
+		contribStatusBytes, err := json.Marshal(contribStatus)
+		if err != nil {
+			return waitingContributions, deletedWaitingContributions, poolPairs, err
+		}
+
+		err = statedb.TrackPDEContributionStatus(
+			stateDB,
+			rawdbv2.PDEContributionStatusPrefix,
+			[]byte(metaData.PairHash()),
+			contribStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
+			return waitingContributions, deletedWaitingContributions, poolPairs, err
+		}
 	}
 
-	//TODO: Track status of contribution
 	return waitingContributions, deletedWaitingContributions, poolPairs, nil
 }
 
