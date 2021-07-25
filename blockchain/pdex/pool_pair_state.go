@@ -139,14 +139,35 @@ func (p *PoolPairState) updateReserveAndShares(
 }
 
 func (p *PoolPairState) addShare(key string, amount, beaconHeight uint64) string {
-	p.genNFT(key, beaconHeight)
-	res := p.genNFT(key, beaconHeight)
+	res := genNFT(key, p.currentContributionID, beaconHeight)
 	p.shares[res] = amount
 	p.currentContributionID++
 	return res
 }
 
-func (p *PoolPairState) genNFT(key string, beaconHeight uint64) string {
-	id := key + strconv.FormatUint(p.currentContributionID, 10) + strconv.FormatUint(beaconHeight, 10)
-	return common.HashH([]byte(id)).String()
+func genNFT(key string, id, beaconHeight uint64) string {
+	hash := key + strconv.FormatUint(id, 10) + strconv.FormatUint(beaconHeight, 10)
+	return common.HashH([]byte(hash)).String()
+}
+
+func (p *PoolPairState) Clone() PoolPairState {
+	res := NewPoolPairState()
+	res.token0ID = p.token0ID
+	res.token1ID = p.token1ID
+	res.token0RealAmount = p.token0RealAmount
+	res.token1RealAmount = p.token1RealAmount
+	res.token0VirtualAmount = p.token0VirtualAmount
+	res.token1VirtualAmount = p.token1VirtualAmount
+	res.currentContributionID = p.currentContributionID
+	res.amplifier = p.amplifier
+	for k, v := range p.shares {
+		res.shares[k] = v
+	}
+	for k, v := range p.tradingFees {
+		res.tradingFees[k] = make(map[string]uint64)
+		for key, value := range v {
+			res.tradingFees[k][key] = value
+		}
+	}
+	return *res
 }

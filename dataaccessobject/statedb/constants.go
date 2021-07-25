@@ -65,6 +65,7 @@ const (
 	// pDex v3
 	Pdexv3StatusObjectType
 	Pdexv3ParamsObjectType
+	Pdexv3ContributionObjectType
 )
 
 // Prefix length

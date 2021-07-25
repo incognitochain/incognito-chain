@@ -68,3 +68,86 @@ func GetPdexv3Params(stateDB *StateDB) (*Pdexv3Params, error) {
 	}
 	return s, nil
 }
+
+func StorePdexv3WaitingContributions(
+	stateDB *StateDB,
+	contributions map[string]Pdexv3ContributionState,
+) error {
+	for k, v := range contributions {
+		key := GeneratePdexv3ContributionObjectKey(k)
+		value := NewPdexv3ContributionState()
+		*value = v
+		err := stateDB.SetStateObject(Pdexv3ContributionObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StorePdexv3ContributionError, err)
+		}
+	}
+	return nil
+}
+
+func DeletePdexv3WaitingContributions() error {
+	/*key := GeneratePdexv3ParamsObjectKey()*/
+	//value := NewPdexv3ParamsWithValue(
+	//defaultFeeRateBPS,
+	//feeRateBPS,
+	//prvDiscountPercent,
+	//limitProtocolFeePercent,
+	//limitStakingPoolRewardPercent,
+	//tradingProtocolFeePercent,
+	//tradingStakingPoolRewardPercent,
+	//defaultStakingPoolsShare,
+	//stakingPoolsShare,
+	//)
+	//err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
+	//if err != nil {
+	//return NewStatedbError(StorePdexv3ParamsError, err)
+	/*}*/
+	return nil
+}
+
+func StorePdexv3PoolPairs() error {
+	/*key := GeneratePdexv3ParamsObjectKey()*/
+	//value := NewPdexv3ParamsWithValue(
+	//)
+	//err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
+	//if err != nil {
+	//return NewStatedbError(StorePdexv3ParamsError, err)
+	/*}*/
+	return nil
+}
+
+func StorePdexv3StakingPools() error {
+	/*key := GeneratePdexv3ParamsObjectKey()*/
+	//value := NewPdexv3ParamsWithValue(
+	//defaultFeeRateBPS,
+	//feeRateBPS,
+	//prvDiscountPercent,
+	//limitProtocolFeePercent,
+	//limitStakingPoolRewardPercent,
+	//tradingProtocolFeePercent,
+	//tradingStakingPoolRewardPercent,
+	//defaultStakingPoolsShare,
+	//stakingPoolsShare,
+	/*)*/
+	/*err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)*/
+	//if err != nil {
+	//return NewStatedbError(StorePdexv3ParamsError, err)
+	/*}*/
+	return nil
+}
+
+func GetPdexv3WaitingContributions(stateDB *StateDB) (*Pdexv3Params, error) {
+	return nil, nil
+}
+
+func GetPdexv3DeletedWaitingContributions(stateDB *StateDB) (*Pdexv3Params, error) {
+	return nil, nil
+}
+
+func GetPdexv3PoolPairs(stateDB *StateDB) (*Pdexv3Params, error) {
+	return nil, nil
+}
+
+func GetPdexv3StakingPools(stateDB *StateDB) (*Pdexv3Params, error) {
+	return nil, nil
+}

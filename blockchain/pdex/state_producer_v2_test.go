@@ -18,14 +18,61 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		waitingContributions map[string]Contribution
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    [][]string
-		want1   map[string]PoolPairState
-		want2   map[string]Contribution
-		wantErr bool
-	}{}
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+		args               args
+		want               [][]string
+		want1              map[string]PoolPairState
+		want2              map[string]Contribution
+		wantErr            bool
+	}{
+		{
+			name:    "Wrong metadata",
+			fields:  fields{},
+			args:    args{},
+			want:    [][]string{},
+			want1:   map[string]PoolPairState{},
+			want2:   map[string]Contribution{},
+			wantErr: true,
+		},
+		{
+			name:    "Success add to waiting list",
+			fields:  fields{},
+			args:    args{},
+			want:    [][]string{},
+			want1:   map[string]PoolPairState{},
+			want2:   map[string]Contribution{},
+			wantErr: true,
+		},
+		{
+			name:    "Refund contributions",
+			fields:  fields{},
+			args:    args{},
+			want:    [][]string{},
+			want1:   map[string]PoolPairState{},
+			want2:   map[string]Contribution{},
+			wantErr: true,
+		},
+		{
+			name:    "Match contributions new pool",
+			fields:  fields{},
+			args:    args{},
+			want:    [][]string{},
+			want1:   map[string]PoolPairState{},
+			want2:   map[string]Contribution{},
+			wantErr: true,
+		},
+		{
+			name:    "Match contributions old pool",
+			fields:  fields{},
+			args:    args{},
+			want:    [][]string{},
+			want1:   map[string]PoolPairState{},
+			want2:   map[string]Contribution{},
+			wantErr: true,
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sp := &stateProducerV2{

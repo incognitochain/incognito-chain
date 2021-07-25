@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"errors"
+	"reflect"
 	"strconv"
 
 	"sort"
@@ -9,25 +10,20 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateV2 struct {
 	stateBase
-	waitingContributions        map[string]Contribution
-	deletedWaitingContributions map[string]Contribution
+	waitingContributions        map[string]statedb.Pdexv3ContributionState
+	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState
 	poolPairs                   map[string]PoolPairState //
 	params                      Params
 	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
 	orders                      map[int64][]Order
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
-}
-
-type StakingPoolState struct {
-	liquidity        uint64
-	stakers          map[string]uint64 // nfst -> amount staking
-	currentStakingID uint64
 }
 
 type Order struct {
@@ -65,14 +61,28 @@ func newStateV2() *stateV2 {
 			DefaultStakingPoolsShare:        InitStakingPoolsShare,
 			StakingPoolsShare:               map[string]uint{},
 		},
+		waitingContributions:        make(map[string]statedb.Pdexv3ContributionState),
+		deletedWaitingContributions: make(map[string]statedb.Pdexv3ContributionState),
+		poolPairs:                   make(map[string]PoolPairState),
+		stakingPoolsState:           make(map[string]StakingPoolState),
 	}
 }
 
 func newStateV2WithValue(
+	waitingContributions map[string]statedb.Pdexv3ContributionState,
+	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	poolPairs map[string]PoolPairState,
 	params Params,
+	stakingPoolsState map[string]StakingPoolState,
+	orders map[int64][]Order,
 ) *stateV2 {
 	return &stateV2{
-		params: params,
+		waitingContributions:        waitingContributions,
+		deletedWaitingContributions: deletedWaitingContributions,
+		poolPairs:                   poolPairs,
+		stakingPoolsState:           stakingPoolsState,
+		orders:                      orders,
+		params:                      params,
 	}
 }
 
@@ -96,12 +106,14 @@ func initStateV2(
 		return nil, err
 	}
 	return newStateV2WithValue(
+		nil, nil, nil,
 		params,
+		nil, nil,
 	), nil
 }
 
 func (s *stateV2) Version() uint {
-	return RangeProvideVersion
+	return AmplifierVersion
 }
 
 func (s *stateV2) Clone() State {
@@ -118,6 +130,19 @@ func (s *stateV2) Clone() State {
 	}
 	res.params.FeeRateBPS = clonedFeeRateBPS
 	res.params.StakingPoolsShare = clonedStakingPoolsShare
+
+	for k, v := range s.stakingPoolsState {
+		res.stakingPoolsState[k] = v.Clone()
+	}
+	for k, v := range s.waitingContributions {
+		res.waitingContributions[k] = *v.Clone()
+	}
+	for k, v := range s.deletedWaitingContributions {
+		res.deletedWaitingContributions[k] = *v.Clone()
+	}
+	for k, v := range s.poolPairs {
+		res.poolPairs[k] = v.Clone()
+	}
 
 	res.producer = s.producer
 	res.processor = s.processor
@@ -232,9 +257,7 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment) error {
-	var err error
-
-	err = statedb.StorePdexv3Params(
+	err := statedb.StorePdexv3Params(
 		env.StateDB(),
 		s.params.DefaultFeeRateBPS,
 		s.params.FeeRateBPS,
@@ -249,15 +272,31 @@ func (s *stateV2) StoreToDB(env StateEnvironment) error {
 	if err != nil {
 		return err
 	}
+	err = statedb.DeletePdexv3WaitingContributions()
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePdexv3WaitingContributions(
+		env.StateDB(),
+		s.waitingContributions,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePdexv3PoolPairs()
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePdexv3StakingPools()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *stateV2) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
-
-}
-
 func (s *stateV2) ClearCache() {
-	s.deletedWaitingContributions = make(map[string]Contribution)
+	s.deletedWaitingContributions = make(map[string]statedb.Pdexv3ContributionState)
 }
 
 func (s *stateV2) GetDiff(compareState State) (State, error) {
@@ -266,6 +305,7 @@ func (s *stateV2) GetDiff(compareState State) (State, error) {
 	}
 
 	res := newStateV2()
+	compareStateV2 := compareState.(*stateV2)
 
 	res.params = s.params
 	clonedFeeRateBPS := map[string]uint{}
@@ -279,6 +319,27 @@ func (s *stateV2) GetDiff(compareState State) (State, error) {
 	res.params.FeeRateBPS = clonedFeeRateBPS
 	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
+	for k, v := range s.waitingContributions {
+		if m, ok := compareStateV2.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.waitingContributions[k] = *v.Clone()
+		}
+	}
+	for k, v := range s.deletedWaitingContributions {
+		if m, ok := compareStateV2.deletedWaitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.deletedWaitingContributions[k] = *v.Clone()
+		}
+	}
+	for k, v := range s.poolPairs {
+		if m, ok := compareStateV2.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.poolPairs[k] = v.Clone()
+		}
+	}
+	for k, v := range s.stakingPoolsState {
+		if m, ok := compareStateV2.stakingPoolsState[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.stakingPoolsState[k] = v.Clone()
+		}
+	}
+
 	return res, nil
 
 }
@@ -289,4 +350,14 @@ func (s *stateV2) Params() Params {
 
 func (s *stateV2) Reader() StateReader {
 	return s
+}
+
+func NewContributionWithMetaData(
+	metaData metadataPdexV3.AddLiquidity, txReqID string, shardID byte,
+) *statedb.Pdexv3ContributionState {
+	return statedb.NewPdexv3ContributionStateWithValue(
+		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
+		metaData.TokenID(), txReqID, metaData.TokenAmount(), metaData.Amplifier(),
+		shardID,
+	)
 }
