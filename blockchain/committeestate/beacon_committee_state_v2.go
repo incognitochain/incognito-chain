@@ -140,6 +140,12 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	for k, v := range b.stakingTx {
 		newB.stakingTx[k] = v
 	}
+
+	newB.hashes.AutoStakeHash = b.hashes.AutoStakeHash
+	newB.hashes.BeaconCommitteeAndValidatorHash = b.hashes.BeaconCommitteeAndValidatorHash
+	newB.hashes.BeaconCandidateHash = b.hashes.BeaconCandidateHash
+	newB.hashes.ShardCandidateHash = b.hashes.ShardCandidateHash
+	newB.hashes.ShardCommitteeAndValidatorHash = b.hashes.ShardCommitteeAndValidatorHash
 }
 
 func (b *BeaconCommitteeStateV2) reset() {
