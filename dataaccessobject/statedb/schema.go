@@ -59,6 +59,7 @@ var (
 	pdexv3WaitingContributionsPrefix        = []byte("pdexv3-waitingContributions-")
 	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
 	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
+	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 
 	// portal
@@ -568,6 +569,10 @@ func GetPdexv3DeletedWaitingContributionsPrefix() []byte {
 }
 
 func GetPdexv3PoolPairsPrefix() []byte {
+	return pdexv3PoolPairsPrefix
+}
+
+func GetPdexv3SharesPrefix() []byte {
 	return pdexv3PoolPairsPrefix
 }
 

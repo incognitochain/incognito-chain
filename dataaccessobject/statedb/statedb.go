@@ -1900,3 +1900,57 @@ func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bo
 	}
 	return NewPdexv3Params(), false, nil
 }
+
+func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]Pdexv3ContributionState, error) {
+	res := map[string]Pdexv3ContributionState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		contributionState := NewPdexv3ContributionState()
+		err := json.Unmarshal(newValue, contributionState)
+		if err != nil {
+			return res, err
+		}
+		res[string(it.Key)] = *contributionState
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pdexv3PoolPairState, error) {
+	res := map[string]Pdexv3PoolPairState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		poolPairState := NewPdexv3PoolPairState()
+		err := json.Unmarshal(newValue, poolPairState)
+		if err != nil {
+			return res, err
+		}
+		res[string(it.Key)] = *poolPairState
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (map[string]Pdexv3ShareState, error) {
+	res := map[string]Pdexv3ShareState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		shareState := NewPdexv3ShareState()
+		err := json.Unmarshal(newValue, shareState)
+		if err != nil {
+			return res, err
+		}
+		res[string(it.Key)] = *shareState
+	}
+	return res, nil
+}

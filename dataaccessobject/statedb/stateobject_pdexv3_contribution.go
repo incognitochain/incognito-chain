@@ -51,6 +51,10 @@ func (pc *Pdexv3ContributionState) Amount() uint64 {
 	return pc.amount
 }
 
+func (pc *Pdexv3ContributionState) SetAmount(amount uint64) {
+	pc.amount = amount
+}
+
 func (pc *Pdexv3ContributionState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID     string `json:"PoolPairID"`

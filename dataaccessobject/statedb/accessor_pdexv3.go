@@ -85,69 +85,59 @@ func StorePdexv3WaitingContributions(
 	return nil
 }
 
-func DeletePdexv3WaitingContributions() error {
-	/*key := GeneratePdexv3ParamsObjectKey()*/
-	//value := NewPdexv3ParamsWithValue(
-	//defaultFeeRateBPS,
-	//feeRateBPS,
-	//prvDiscountPercent,
-	//limitProtocolFeePercent,
-	//limitStakingPoolRewardPercent,
-	//tradingProtocolFeePercent,
-	//tradingStakingPoolRewardPercent,
-	//defaultStakingPoolsShare,
-	//stakingPoolsShare,
-	//)
-	//err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
-	//if err != nil {
-	//return NewStatedbError(StorePdexv3ParamsError, err)
-	/*}*/
+func DeletePdexv3WaitingContributions(
+	stateDB *StateDB,
+	contributions map[string]Pdexv3ContributionState,
+) error {
+	for k := range contributions {
+		key := GeneratePdexv3ContributionObjectKey(k)
+		if !stateDB.MarkDeleteStateObject(Pdexv3ContributionObjectType, key) {
+			return fmt.Errorf("Can't delete contributions with pair hash %v", k)
+		}
+	}
 	return nil
 }
 
-func StorePdexv3PoolPairs() error {
-	/*key := GeneratePdexv3ParamsObjectKey()*/
-	//value := NewPdexv3ParamsWithValue(
-	//)
-	//err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
-	//if err != nil {
-	//return NewStatedbError(StorePdexv3ParamsError, err)
-	/*}*/
+func StorePdexv3PoolPair(
+	stateDB *StateDB,
+	poolPairID string,
+	poolPair Pdexv3PoolPairState,
+	shares map[string]Pdexv3ShareState,
+) error {
+	key := GeneratePdexv3PoolPairObjectKey(poolPairID)
+	value := NewPdexv3PoolPairState()
+	*value = poolPair
+	err := stateDB.SetStateObject(Pdexv3PoolPairObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePdexv3PoolPairError, err)
+	}
+	for k, v := range shares {
+		key := GeneratePdexv3ShareObjectKey(poolPairID, k)
+		value := NewPdexv3ShareState()
+		*value = v
+		err := stateDB.SetStateObject(Pdexv3ShareObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StorePdexv3ShareError, err)
+		}
+	}
 	return nil
 }
 
 func StorePdexv3StakingPools() error {
-	/*key := GeneratePdexv3ParamsObjectKey()*/
-	//value := NewPdexv3ParamsWithValue(
-	//defaultFeeRateBPS,
-	//feeRateBPS,
-	//prvDiscountPercent,
-	//limitProtocolFeePercent,
-	//limitStakingPoolRewardPercent,
-	//tradingProtocolFeePercent,
-	//tradingStakingPoolRewardPercent,
-	//defaultStakingPoolsShare,
-	//stakingPoolsShare,
-	/*)*/
-	/*err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)*/
-	//if err != nil {
-	//return NewStatedbError(StorePdexv3ParamsError, err)
-	/*}*/
 	return nil
 }
 
-func GetPdexv3WaitingContributions(stateDB *StateDB) (*Pdexv3Params, error) {
-	return nil, nil
+func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]Pdexv3ContributionState, error) {
+	prefixHash := GetPdexv3WaitingContributionsPrefix()
+	return stateDB.iterateWithPdexv3Contributions(prefixHash)
 }
 
-func GetPdexv3DeletedWaitingContributions(stateDB *StateDB) (*Pdexv3Params, error) {
-	return nil, nil
+func GetPdexv3PoolPairs(stateDB *StateDB) (map[string]Pdexv3PoolPairState, error) {
+	prefixHash := GetPdexv3PoolPairsPrefix()
+	return stateDB.iterateWithPdexv3PoolPairs(prefixHash)
 }
 
-func GetPdexv3PoolPairs(stateDB *StateDB) (*Pdexv3Params, error) {
-	return nil, nil
-}
-
-func GetPdexv3StakingPools(stateDB *StateDB) (*Pdexv3Params, error) {
-	return nil, nil
+func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (map[string]Pdexv3ShareState, error) {
+	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3Shares(prefixHash)
 }

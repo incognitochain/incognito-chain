@@ -105,8 +105,30 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
+	waitingContributions, err := statedb.GetPdexv3WaitingContributions(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	poolPairsState, err := statedb.GetPdexv3PoolPairs(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	poolPairs := make(map[string]PoolPairState)
+	for k, v := range poolPairsState {
+		poolPair := *NewPoolPairState()
+		poolPair.state = v
+		shares, err := statedb.GetPdexv3Shares(stateDB, k)
+		if err != nil {
+			return nil, err
+		}
+		poolPair.shares = shares
+		poolPairs[k] = poolPair
+	}
+
 	return newStateV2WithValue(
-		nil, nil, nil,
+		waitingContributions,
+		make(map[string]statedb.Pdexv3ContributionState),
+		poolPairs,
 		params,
 		nil, nil,
 	), nil
@@ -272,20 +294,19 @@ func (s *stateV2) StoreToDB(env StateEnvironment) error {
 	if err != nil {
 		return err
 	}
-	err = statedb.DeletePdexv3WaitingContributions()
+	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), s.deletedWaitingContributions)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePdexv3WaitingContributions(
-		env.StateDB(),
-		s.waitingContributions,
-	)
+	err = statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePdexv3PoolPairs()
-	if err != nil {
-		return err
+	for k, v := range s.poolPairs {
+		err = statedb.StorePdexv3PoolPair(env.StateDB(), k, v.state, v.shares)
+		if err != nil {
+			return err
+		}
 	}
 	err = statedb.StorePdexv3StakingPools()
 	if err != nil {

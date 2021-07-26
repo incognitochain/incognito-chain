@@ -55,6 +55,8 @@ const (
 	ErrInvalidPdexv3StatusStateType       = "invalid pdex v3 status state type"
 	ErrInvalidPdexv3ParamsStateType       = "invalid pdex v3 params state type"
 	ErrInvalidPdexv3ContributionStateType = "invalid pdex v3 contribution state type"
+	ErrInvalidPdexv3PoolPairStateType     = "invalid pdex v3 pool pair state type"
+	ErrInvalidPdexv3ShareStateType        = "invalid pdex v3 share state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -227,6 +229,8 @@ const (
 	GetPdexv3ParamsError
 	StorePdexv3ParamsError
 	StorePdexv3ContributionError
+	StorePdexv3PoolPairError
+	StorePdexv3ShareError
 )
 
 var ErrCodeMessage = map[int]struct {

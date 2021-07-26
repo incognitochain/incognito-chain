@@ -1,6 +1,9 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+)
 
 type stateBase struct {
 }
@@ -69,11 +72,11 @@ func (s *stateBase) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) WaitingContributionsV2() map[string]Contribution {
+func (s *stateBase) WaitingContributionsV2() map[string]statedb.Pdexv3ContributionState {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) DeletedWaitingContributionsV2() map[string]Contribution {
+func (s *stateBase) DeletedWaitingContributionsV2() map[string]statedb.Pdexv3ContributionState {
 	panic("Implement this fucntion")
 }
 

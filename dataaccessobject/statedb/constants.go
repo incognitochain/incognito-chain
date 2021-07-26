@@ -66,6 +66,8 @@ const (
 	Pdexv3StatusObjectType
 	Pdexv3ParamsObjectType
 	Pdexv3ContributionObjectType
+	Pdexv3PoolPairObjectType
+	Pdexv3ShareObjectType
 )
 
 // Prefix length
