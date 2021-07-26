@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -81,6 +82,30 @@ func (p *PoolPairState) InsertOrder(ord *Order) {
 		}
 	})
 	p.orders = insertAt(p.orders, index, ord)
+}
+
+func (p *PoolPairState) NextOrder(tradeDirection int) (*v3.OrderMatchingInfo, string, error) {
+	lstLen := len(p.orders)
+	switch tradeDirection {
+	case v3.TradeDirectionSell0:
+		for i := 0; i < lstLen; i++ {
+			if p.orders[i].orderMatchingInfo.Token0Balance > 0 {
+				return &p.orders[i].orderMatchingInfo, p.orders[i].id, nil
+			}
+		}
+		// no active order
+		return nil, "", nil
+	case v3.TradeDirectionSell1:
+		for i := lstLen - 1; i >= 0; i-- {
+			if p.orders[i].orderMatchingInfo.Token0Balance > 0 {
+				return &p.orders[i].orderMatchingInfo, p.orders[i].id, nil
+			}
+		}
+		// no active order
+		return nil, "", nil
+	default:
+		return nil, "", fmt.Errorf("Invalid trade direction %d", tradeDirection)
+	}
 }
 
 type Params struct {

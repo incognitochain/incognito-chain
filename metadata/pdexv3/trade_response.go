@@ -17,10 +17,11 @@ type TradeResponse struct {
 }
 
 type AcceptedTrade struct {
-	Receiver    privacy.OTAReceiver `json:"Receiver"`
-	Amount      uint64              `json:"Amount"`
-	TokenToBuy  common.Hash         `json:"TokenToBuy"`
-	PairChanges [][2]big.Int        `json:"PairChanges"`
+	Receiver     privacy.OTAReceiver     `json:"Receiver"`
+	Amount       uint64                  `json:"Amount"`
+	TokenToBuy   common.Hash             `json:"TokenToBuy"`
+	PairChanges  [][2]big.Int            `json:"PairChanges"`
+	OrderChanges []map[string][2]big.Int `json:"OrderChanges"`
 }
 
 func (md AcceptedTrade) GetType() int {

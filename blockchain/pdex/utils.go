@@ -3,6 +3,7 @@ package pdex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -582,10 +583,29 @@ func InitStateFromDB(
 	return initStateV1(stateDB, beaconHeight)
 }
 
-func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]*v3.PoolReserve, []string, []int, error) {
-	return nil, nil, nil, nil
-}
-
-func setRelevantReserves(pairs map[string]PoolPairState, reserves []*v3.PoolReserve, tradePath []string, tradeDirections []int) error {
-	return nil
+func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]*v3.PoolReserve, []v3.OrderBookIterator, []int, error) {
+	var results []*v3.PoolReserve
+	var pairsInPath []v3.OrderBookIterator
+	var tradeDirections []int
+	
+	intermediateSellingToken := sellToken
+	for _, pairID := range tradePath {
+		if pair, exists := pairs[pairID]; exists {
+			results = append(results, &pair.tokenReserve)
+			pairsInPath = append(pairsInPath, &pair)
+			var td int
+			switch intermediateSellingToken.String() {
+			case pair.token0ID:
+				td = v3.TradeDirectionSell0
+			case pair.token1ID:
+				td = v3.TradeDirectionSell1
+			default:
+				return nil, nil, nil, fmt.Errorf("Incompatible selling token %s vs next pair %s", intermediateSellingToken.String(), pairID)
+			}
+			tradeDirections = append(tradeDirections, td)
+		} else {
+			return nil, nil, nil, fmt.Errorf("Path contains nonexistent pair %s", pairID)
+		}
+	}
+	return results, pairsInPath, tradeDirections, nil
 }

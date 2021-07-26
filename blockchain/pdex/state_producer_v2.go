@@ -6,7 +6,7 @@ import (
 	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type stateProducerV2 struct {
@@ -21,7 +21,7 @@ func (sp *stateProducerV2) addLiquidity(
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := tx.Hash().String()
-		metaData, ok := tx.GetMetadata().(*metadataPdexV3.AddLiquidity)
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
 		if !ok {
 			return res, errors.New("Can not parse add liquidity metadata")
 		}
@@ -47,10 +47,10 @@ func (sp *stateProducerV2) trade(
 	pairs map[string]PoolPairState,
 ) ([][]string, map[string]PoolPairState, error) {
 	result := [][]string{}
-	var tradeRequests []metadataPdexV3.TradeRequest
+	var tradeRequests []metadataPdexv3.TradeRequest
 
 	for _, tx := range txs {
-		item, ok := tx.GetMetadata().(*metadataPdexV3.TradeRequest)
+		item, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
 		if !ok {
 			return result, pairs, errors.New("Can not parse add liquidity metadata")
 		}
@@ -65,16 +65,21 @@ func (sp *stateProducerV2) trade(
 	// )
 
 	for _, currentTrade := range tradeRequests {
-		// line up the trade path
-		reserves, tradePath, tradeDirections, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
-		if err != nil {
-			return [][]string{}, pairs, err
+		refundAction := &instruction.Action{Content: metadataPdexv3.RefundedTrade{
+			Receiver:    currentTrade.RefundReceiver,
+			TokenToSell: currentTrade.TokenToSell,
+			Amount:      currentTrade.SellAmount,
+		}}
+		var currentInst []string = refundAction.Strings()
+
+		reserves, pairsInPath, tradeDirections, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+		if err == nil {
+			var acceptedInst []string
+			acceptedInst, _, err := v3.MaybeAcceptTrade(currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.Receiver, reserves, tradeDirections, pairsInPath)
+			if err == nil {
+				currentInst = acceptedInst
+			}
 		}
-		refunded, currentInst, changedReserves, err := v3.AcceptOrRefundTrade(currentTrade.SellAmount, reserves, tradeDirections, nil)
-		if err != nil {
-			return [][]string{}, pairs, err
-		}
-		_, _, _ = tradePath, refunded, changedReserves
 		result = append(result, currentInst)
 	}
 
@@ -87,10 +92,10 @@ func (sp *stateProducerV2) addOrder(
 	pairs map[string]PoolPairState,
 ) ([][]string, map[string]PoolPairState, error) {
 	result := [][]string{}
-	var orderRequests []metadataPdexV3.AddOrderRequest
+	var orderRequests []metadataPdexv3.AddOrderRequest
 
 	for _, tx := range txs {
-		item, ok := tx.GetMetadata().(*metadataPdexV3.AddOrderRequest)
+		item, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
 		if !ok {
 			return result, pairs, errors.New("Can not parse add liquidity metadata")
 		}
