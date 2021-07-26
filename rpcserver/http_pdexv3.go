@@ -366,10 +366,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		pairID,
 		ncftTokenID,
 		ncftReceiverAddressStr,
-		token0ReceiverAddressStr,
-		token1ReceiverAddressStr,
-		prvReceiverAddressStr,
-		pdexReceiverAddressStr,
+		metadataPdexv3.FeeReceiverAddress{
+			Token0ReceiverAddress: token0ReceiverAddressStr,
+			Token1ReceiverAddress: token1ReceiverAddressStr,
+			PRVReceiverAddress:    prvReceiverAddressStr,
+			PDEXReceiverAddress:   pdexReceiverAddressStr,
+		},
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -445,17 +447,25 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 	}
 
 	// payment address v2
-	feeReceiver, ok := tokenParamsRaw["FeeReceiver"].(string)
+	var err error
+
+	privateKey, ok := arrayParams[0].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Private key is invalid"))
 	}
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize private key: %v", err))
+	}
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Private key length is invalid"))
+	}
+	feeReceiver := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	token0ReceiverAddress := privacy.OTAReceiver{}
 	token1ReceiverAddress := privacy.OTAReceiver{}
 	prvReceiverAddress := privacy.OTAReceiver{}
 	pdexReceiverAddress := privacy.OTAReceiver{}
-
-	var err error
 
 	err = token0ReceiverAddress.FromAddress(feeReceiver, common.Hash{})
 	if err != nil {
@@ -494,10 +504,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
-		token0ReceiverAddressStr,
-		token1ReceiverAddressStr,
-		prvReceiverAddressStr,
-		pdexReceiverAddressStr,
+		metadataPdexv3.FeeReceiverAddress{
+			Token0ReceiverAddress: token0ReceiverAddressStr,
+			Token1ReceiverAddress: token1ReceiverAddressStr,
+			PRVReceiverAddress:    prvReceiverAddressStr,
+			PDEXReceiverAddress:   pdexReceiverAddressStr,
+		},
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

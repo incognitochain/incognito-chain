@@ -11,36 +11,27 @@ import (
 
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
-	PairID                string `json:"PairID"`
-	NcftTokenID           string `json:"NcftTokenID"`
-	NcftReceiverAddress   string `json:"NcftReceiverAddress"`
-	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
-	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
-	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
-	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
+	PairID              string             `json:"PairID"`
+	NcftTokenID         string             `json:"NcftTokenID"`
+	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PairID                string      `json:"PairID"`
-	NcftTokenID           string      `json:"NcftTokenID"`
-	NcftReceiverAddress   string      `json:"NcftReceiverAddress"`
-	Token0ReceiverAddress string      `json:"Token0ReceiverAddress"`
-	Token1ReceiverAddress string      `json:"Token1ReceiverAddress"`
-	PRVReceiverAddress    string      `json:"PRVReceiverAddress"`
-	PDEXReceiverAddress   string      `json:"PDEXReceiverAddress"`
-	TxReqID               common.Hash `json:"TxReqID"`
-	ShardID               byte        `json:"ShardID"`
+	PairID              string             `json:"PairID"`
+	NcftTokenID         string             `json:"NcftTokenID"`
+	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
+	TxReqID             common.Hash        `json:"TxReqID"`
+	ShardID             byte               `json:"ShardID"`
 }
 
 type WithdrawalLPFeeStatus struct {
-	Status                int    `json:"Status"`
-	PairID                string `json:"PairID"`
-	NcftTokenID           string `json:"NcftTokenID"`
-	NcftReceiverAddress   string `json:"NcftReceiverAddress"`
-	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
-	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
-	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
-	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
+	Status              int                `json:"Status"`
+	PairID              string             `json:"PairID"`
+	NcftTokenID         string             `json:"NcftTokenID"`
+	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 func NewPdexv3WithdrawalLPFeeStatus(
@@ -48,20 +39,14 @@ func NewPdexv3WithdrawalLPFeeStatus(
 	pairID string,
 	ncftTokenID string,
 	ncftReceiverAddress string,
-	token0ReceiverAddress string,
-	token1ReceiverAddress string,
-	prvReceiverAddress string,
-	pdexReceiverAddress string,
+	feeReceiverAddress FeeReceiverAddress,
 ) *WithdrawalLPFeeStatus {
 	return &WithdrawalLPFeeStatus{
-		PairID:                pairID,
-		NcftTokenID:           ncftTokenID,
-		NcftReceiverAddress:   ncftReceiverAddress,
-		Token0ReceiverAddress: token0ReceiverAddress,
-		Token1ReceiverAddress: token1ReceiverAddress,
-		PRVReceiverAddress:    prvReceiverAddress,
-		PDEXReceiverAddress:   pdexReceiverAddress,
-		Status:                status,
+		PairID:              pairID,
+		NcftTokenID:         ncftTokenID,
+		NcftReceiverAddress: ncftReceiverAddress,
+		FeeReceiverAddress:  feeReceiverAddress,
+		Status:              status,
 	}
 }
 
@@ -70,22 +55,16 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	pairID string,
 	ncftTokenID string,
 	ncftReceiverAddress string,
-	token0ReceiverAddress string,
-	token1ReceiverAddress string,
-	prvReceiverAddress string,
-	pdexReceiverAddress string,
+	feeReceiverAddress FeeReceiverAddress,
 ) (*WithdrawalLPFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
 
 	return &WithdrawalLPFeeRequest{
-		MetadataBase:          *metadataBase,
-		PairID:                pairID,
-		NcftTokenID:           ncftTokenID,
-		NcftReceiverAddress:   ncftReceiverAddress,
-		Token0ReceiverAddress: token0ReceiverAddress,
-		Token1ReceiverAddress: token1ReceiverAddress,
-		PRVReceiverAddress:    prvReceiverAddress,
-		PDEXReceiverAddress:   pdexReceiverAddress,
+		MetadataBase:        *metadataBase,
+		PairID:              pairID,
+		NcftTokenID:         ncftTokenID,
+		NcftReceiverAddress: ncftReceiverAddress,
+		FeeReceiverAddress:  feeReceiverAddress,
 	}, nil
 }
 
@@ -141,10 +120,7 @@ func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record += withdrawal.PairID
 	record += withdrawal.NcftTokenID
 	record += withdrawal.NcftReceiverAddress
-	record += withdrawal.Token0ReceiverAddress
-	record += withdrawal.Token1ReceiverAddress
-	record += withdrawal.PRVReceiverAddress
-	record += withdrawal.PDEXReceiverAddress
+	record += withdrawal.FeeReceiverAddress.ToString()
 
 	// final hash
 	hash := common.HashH([]byte(record))

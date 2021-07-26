@@ -12,67 +12,46 @@ import (
 
 type WithdrawalProtocolFeeRequest struct {
 	metadataCommon.MetadataBaseWithSignature
-	PairID                string `json:"PairID"`
-	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
-	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
-	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
-	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
+	PairID             string             `json:"PairID"`
+	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalProtocolFeeContent struct {
-	PairID                string      `json:"PairID"`
-	Token0ReceiverAddress string      `json:"Token0ReceiverAddress"`
-	Token1ReceiverAddress string      `json:"Token1ReceiverAddress"`
-	PRVReceiverAddress    string      `json:"PRVReceiverAddress"`
-	PDEXReceiverAddress   string      `json:"PDEXReceiverAddress"`
-	TxReqID               common.Hash `json:"TxReqID"`
-	ShardID               byte        `json:"ShardID"`
+	PairID             string             `json:"PairID"`
+	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
+	TxReqID            common.Hash        `json:"TxReqID"`
+	ShardID            byte               `json:"ShardID"`
 }
 
 type WithdrawalProtocolFeeStatus struct {
-	Status                int    `json:"Status"`
-	PairID                string `json:"PairID"`
-	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
-	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
-	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
-	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
+	Status             int                `json:"Status"`
+	PairID             string             `json:"PairID"`
+	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 func NewPdexv3WithdrawalProtocolFeeStatus(
 	status int,
 	pairID string,
-	token0ReceiverAddress string,
-	token1ReceiverAddress string,
-	prvReceiverAddress string,
-	pdexReceiverAddress string,
+	feeReceiverAddress FeeReceiverAddress,
 ) *WithdrawalProtocolFeeStatus {
 	return &WithdrawalProtocolFeeStatus{
-		PairID:                pairID,
-		Token0ReceiverAddress: token0ReceiverAddress,
-		Token1ReceiverAddress: token1ReceiverAddress,
-		PRVReceiverAddress:    prvReceiverAddress,
-		PDEXReceiverAddress:   pdexReceiverAddress,
-		Status:                status,
+		PairID:             pairID,
+		FeeReceiverAddress: feeReceiverAddress,
+		Status:             status,
 	}
 }
 
 func NewPdexv3WithdrawalProtocolFeeRequest(
 	metaType int,
 	pairID string,
-	token0ReceiverAddress string,
-	token1ReceiverAddress string,
-	prvReceiverAddress string,
-	pdexReceiverAddress string,
+	feeReceiverAddress FeeReceiverAddress,
 ) (*WithdrawalProtocolFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metaType)
 
 	return &WithdrawalProtocolFeeRequest{
 		MetadataBaseWithSignature: *metadataBase,
 		PairID:                    pairID,
-		Token0ReceiverAddress:     token0ReceiverAddress,
-		Token1ReceiverAddress:     token1ReceiverAddress,
-		PRVReceiverAddress:        prvReceiverAddress,
-		PDEXReceiverAddress:       pdexReceiverAddress,
+		FeeReceiverAddress:        feeReceiverAddress,
 	}, nil
 }
 
@@ -129,10 +108,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateMetadataByItself() bool {
 func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBaseWithSignature.Hash().String()
 	record += withdrawal.PairID
-	record += withdrawal.Token0ReceiverAddress
-	record += withdrawal.Token1ReceiverAddress
-	record += withdrawal.PRVReceiverAddress
-	record += withdrawal.PDEXReceiverAddress
+	record += withdrawal.FeeReceiverAddress.ToString()
 	if withdrawal.Sig != nil && len(withdrawal.Sig) != 0 {
 		record += string(withdrawal.Sig)
 	}
@@ -145,10 +121,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {
 func (withdrawal WithdrawalProtocolFeeRequest) HashWithoutSig() *common.Hash {
 	record := withdrawal.MetadataBaseWithSignature.Hash().String()
 	record += withdrawal.PairID
-	record += withdrawal.Token0ReceiverAddress
-	record += withdrawal.Token1ReceiverAddress
-	record += withdrawal.PRVReceiverAddress
-	record += withdrawal.PDEXReceiverAddress
+	record += withdrawal.FeeReceiverAddress.ToString()
 
 	// final hash
 	hash := common.HashH([]byte(record))
