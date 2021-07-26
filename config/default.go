@@ -390,7 +390,7 @@ func NewDefaultParam(network string) *param {
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet1InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-	case "testnet-2", "local":
+	case "testnet-2":
 		p = Tesnet2Param
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet2InitTx)
