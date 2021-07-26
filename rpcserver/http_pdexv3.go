@@ -311,6 +311,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
 	}
 
+	ncftReceiverAddress := privacy.OTAReceiver{}
 	token0ReceiverAddress := privacy.OTAReceiver{}
 	token1ReceiverAddress := privacy.OTAReceiver{}
 	prvReceiverAddress := privacy.OTAReceiver{}
@@ -318,6 +319,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 
 	var err error
 
+	err = ncftReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
 	err = token0ReceiverAddress.FromAddress(feeReceiver, common.Hash{})
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
@@ -335,6 +340,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
+	ncftReceiverAddressStr, err := ncftReceiverAddress.String()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
 	token0ReceiverAddressStr, err := token0ReceiverAddress.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
@@ -356,6 +365,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
 		ncftTokenID,
+		ncftReceiverAddressStr,
 		token0ReceiverAddressStr,
 		token1ReceiverAddressStr,
 		prvReceiverAddressStr,

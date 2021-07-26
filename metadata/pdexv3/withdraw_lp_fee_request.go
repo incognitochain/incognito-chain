@@ -2,6 +2,7 @@ package pdexv3
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,6 +13,7 @@ type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
 	PairID                string `json:"PairID"`
 	NcftTokenID           string `json:"NcftTokenID"`
+	NcftReceiverAddress   string `json:"NcftReceiverAddress"`
 	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
 	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
 	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
@@ -21,6 +23,7 @@ type WithdrawalLPFeeRequest struct {
 type WithdrawalLPFeeContent struct {
 	PairID                string      `json:"PairID"`
 	NcftTokenID           string      `json:"NcftTokenID"`
+	NcftReceiverAddress   string      `json:"NcftReceiverAddress"`
 	Token0ReceiverAddress string      `json:"Token0ReceiverAddress"`
 	Token1ReceiverAddress string      `json:"Token1ReceiverAddress"`
 	PRVReceiverAddress    string      `json:"PRVReceiverAddress"`
@@ -33,6 +36,7 @@ type WithdrawalLPFeeStatus struct {
 	Status                int    `json:"Status"`
 	PairID                string `json:"PairID"`
 	NcftTokenID           string `json:"NcftTokenID"`
+	NcftReceiverAddress   string `json:"NcftReceiverAddress"`
 	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
 	Token1ReceiverAddress string `json:"Token1ReceiverAddress"`
 	PRVReceiverAddress    string `json:"PRVReceiverAddress"`
@@ -43,6 +47,7 @@ func NewPdexv3WithdrawalLPFeeStatus(
 	status int,
 	pairID string,
 	ncftTokenID string,
+	ncftReceiverAddress string,
 	token0ReceiverAddress string,
 	token1ReceiverAddress string,
 	prvReceiverAddress string,
@@ -51,6 +56,7 @@ func NewPdexv3WithdrawalLPFeeStatus(
 	return &WithdrawalLPFeeStatus{
 		PairID:                pairID,
 		NcftTokenID:           ncftTokenID,
+		NcftReceiverAddress:   ncftReceiverAddress,
 		Token0ReceiverAddress: token0ReceiverAddress,
 		Token1ReceiverAddress: token1ReceiverAddress,
 		PRVReceiverAddress:    prvReceiverAddress,
@@ -63,6 +69,7 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
 	ncftTokenID string,
+	ncftReceiverAddress string,
 	token0ReceiverAddress string,
 	token1ReceiverAddress string,
 	prvReceiverAddress string,
@@ -74,6 +81,7 @@ func NewPdexv3WithdrawalLPFeeRequest(
 		MetadataBase:          *metadataBase,
 		PairID:                pairID,
 		NcftTokenID:           ncftTokenID,
+		NcftReceiverAddress:   ncftReceiverAddress,
 		Token0ReceiverAddress: token0ReceiverAddress,
 		Token1ReceiverAddress: token1ReceiverAddress,
 		PRVReceiverAddress:    prvReceiverAddress,
@@ -108,11 +116,18 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 LP fee withdrawal must be version 2"))
 	}
 
+	// validate burn tx, tokenID & amount = 1
+	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
+	if err != nil || !isBurn {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
+	}
+	burningAmt := burnedCoin.GetValue()
+	burningTokenID := burnedToken.String()
+	if burningAmt != 1 || burningTokenID != withdrawal.NcftTokenID {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
+	}
+
 	// TODO: Check OTA address string and tx random is valid
-
-	// TODO: validate receiver & amount = 1
-
-	// TODO: validate transfer token & Ncft Token ID
 
 	return true, true, nil
 }
@@ -125,6 +140,7 @@ func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
 	record += withdrawal.PairID
 	record += withdrawal.NcftTokenID
+	record += withdrawal.NcftReceiverAddress
 	record += withdrawal.Token0ReceiverAddress
 	record += withdrawal.Token1ReceiverAddress
 	record += withdrawal.PRVReceiverAddress
