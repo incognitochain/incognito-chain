@@ -35,7 +35,10 @@ func (p *PortalConvertVaultRequestProcessor) PutAction(action []string, shardID 
 	}
 }
 
-func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(
+	stateDB *statedb.StateDB, contentStr string,
+	portalParams portalv4.PortalParams,
+) (map[string]interface{}, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("Converting request: an error occurred while decoding content string of converting vault request action - Error: %v", err)
@@ -49,7 +52,17 @@ func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(stateDB
 		return nil, fmt.Errorf("Converting request: an error occurred while unmarshal converting vault request action - Error: %v", err)
 	}
 
-	proofHash := hashProof(actionData.Meta.ConvertProof, portalcommonv4.PortalConvertVaultChainCode)
+	portalTokenProcessor := portalParams.PortalTokens[actionData.Meta.TokenID]
+	if portalTokenProcessor == nil {
+		Logger.log.Errorf("Shielding Request: TokenID is not supported currently on Portal")
+		return nil, fmt.Errorf("Shielding Request: TokenID is not supported currently on Portal")
+	}
+	convertTxHash, err := portalTokenProcessor.GetTxHashFromProof(actionData.Meta.ConvertProof)
+	if err != nil {
+		Logger.log.Errorf("Shielding Request: Can not get tx hash from shielding proof")
+		return nil, fmt.Errorf("Shielding Request: Can not get tx hash from shielding proof")
+	}
+	proofHash := hashProof(convertTxHash, portalcommonv4.PortalConvertVaultChainCode)
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
 		Logger.log.Errorf("Converting request: an error occurred while get converting vault request proof from DB - Error: %v", err)
@@ -58,6 +71,7 @@ func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(stateDB
 
 	optionalData := make(map[string]interface{})
 	optionalData["isExistProofTxHash"] = isExistProofTxHash
+	optionalData["proofHash"] = proofHash
 
 	return optionalData, nil
 }
@@ -151,7 +165,11 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	proofHash := hashProof(meta.ConvertProof, portalcommonv4.PortalConvertVaultChainCode)
+	proofHash, ok := optionalData["proofHash"].(string)
+	if !ok {
+		Logger.log.Errorf("Converting Request: optionalData proofHash is invalid")
+		return [][]string{rejectInst}, nil
+	}
 
 	// check unique external proof from portal state
 	if currentPortalState.IsExistedShieldingExternalTx(meta.TokenID, proofHash) || isExistInStateDB {

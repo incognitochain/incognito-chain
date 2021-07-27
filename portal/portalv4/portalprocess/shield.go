@@ -35,7 +35,10 @@ func (p *PortalShieldingRequestProcessor) PutAction(action []string, shardID byt
 	}
 }
 
-func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(
+	stateDB *statedb.StateDB, contentStr string,
+	portalParams portalv4.PortalParams,
+) (map[string]interface{}, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("Shielding request: an error occurred while decoding content string of pToken request action - Error: %v", err)
@@ -49,8 +52,17 @@ func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *s
 		return nil, fmt.Errorf("Shielding request: an error occurred while unmarshal shielding request action - Error: %v", err)
 	}
 
-	proofHash := hashProof(actionData.Meta.ShieldingProof, actionData.Meta.IncogAddressStr)
-
+	portalTokenProcessor := portalParams.PortalTokens[actionData.Meta.TokenID]
+	if portalTokenProcessor == nil {
+		Logger.log.Errorf("Shielding Request: TokenID is not supported currently on Portal")
+		return nil, fmt.Errorf("Shielding Request: TokenID is not supported currently on Portal")
+	}
+	shieldTxHash, err := portalTokenProcessor.GetTxHashFromProof(actionData.Meta.ShieldingProof)
+	if err != nil {
+		Logger.log.Errorf("Shielding Request: Can not get tx hash from shielding proof")
+		return nil, fmt.Errorf("Shielding Request: Can not get tx hash from shielding proof")
+	}
+	proofHash := hashProof(shieldTxHash, actionData.Meta.IncogAddressStr)
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
 		Logger.log.Errorf("Shielding request: an error occurred while get pToken request proof from DB - Error: %v", err)
@@ -59,6 +71,7 @@ func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *s
 
 	optionalData := make(map[string]interface{})
 	optionalData["isExistProofTxHash"] = isExistProofTxHash
+	optionalData["proofHash"] = proofHash
 	return optionalData, nil
 }
 
@@ -172,7 +185,11 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	proofHash := hashProof(meta.ShieldingProof, meta.IncogAddressStr)
+	proofHash, ok := optionalData["proofHash"].(string)
+	if !ok {
+		Logger.log.Errorf("Shielding Request: optionalData proofHash is invalid")
+		return [][]string{rejectInst}, nil
+	}
 
 	// check unique external proof from portal state
 	if currentPortalState.IsExistedShieldingExternalTx(meta.TokenID, proofHash) || isExistInStateDB {

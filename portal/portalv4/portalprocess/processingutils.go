@@ -32,7 +32,7 @@ func buildNewPortalV4InstsFromActions(
 		actions := actions[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			optionalData, err := p.PrepareDataForBlockProducer(stateDB, contentStr)
+			optionalData, err := p.PrepareDataForBlockProducer(stateDB, contentStr, portalParams)
 			if err != nil {
 				Logger.log.Errorf("Error when preparing data before processing instruction %+v", err)
 				continue

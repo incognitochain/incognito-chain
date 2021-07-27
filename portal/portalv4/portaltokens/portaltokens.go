@@ -14,6 +14,7 @@ type PortalTokenProcessor interface {
 	ConvertIncToExternalAmount(incAmt uint64) uint64
 	GetTxHashFromRawTx(rawTx string) (string, error)
 
+	GetTxHashFromProof(proof string) (string, error)
 	ParseAndVerifyShieldProof(
 		proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, minShieldAmt uint64) (bool, []*statedb.UTXO, error)
 	ParseAndVerifyUnshieldProof(

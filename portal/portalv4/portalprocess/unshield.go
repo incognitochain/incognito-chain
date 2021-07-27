@@ -33,7 +33,10 @@ func (p *PortalUnshieldRequestProcessor) PutAction(action []string, shardID byte
 	}
 }
 
-func (p *PortalUnshieldRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalUnshieldRequestProcessor) PrepareDataForBlockProducer(
+	stateDB *statedb.StateDB, contentStr string,
+	portalParams portalv4.PortalParams,
+) (map[string]interface{}, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {

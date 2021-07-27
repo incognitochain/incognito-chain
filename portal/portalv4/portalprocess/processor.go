@@ -12,7 +12,11 @@ type PortalInstructionProcessorV4 interface {
 	GetActions() map[byte][][]string
 	PutAction(action []string, shardID byte)
 	// get necessary db from stateDB to verify instructions when producing new block
-	PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error)
+	PrepareDataForBlockProducer(
+		stateDB *statedb.StateDB,
+		contentStr string,
+		portalParams portalv4.PortalParams,
+	) (map[string]interface{}, error)
 	// validate and create new instructions in new beacon blocks
 	BuildNewInsts(
 		bc metadata.ChainRetriever,

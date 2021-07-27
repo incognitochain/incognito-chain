@@ -39,6 +39,19 @@ func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint6
 	return incAmt / 10 // incAmt / 10^9 * 10^8
 }
 
+func (p PortalBTCTokenProcessor) GetTxHashFromProof(proof string) (string, error) {
+	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	if err != nil {
+		Logger.log.Errorf("Can not decode proof string %v\n", err)
+		return "", fmt.Errorf("Can not decode proof string %v\n", err)
+	}
+	if btcTxProof.BTCTx == nil {
+		Logger.log.Errorf("BTCTx is invalid %v\n", err)
+		return "", fmt.Errorf("BTCTx is invalid  %v\n", err)
+	}
+	return btcTxProof.BTCTx.TxHash().String(), nil
+}
+
 func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string, chainCodeSeed string, minShieldAmt uint64) (bool, []*statedb.UTXO, error) {
 	if btcChain == nil {

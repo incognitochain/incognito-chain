@@ -431,16 +431,38 @@ func buildPortalShieldingRequestAction(
 	return []string{strconv.Itoa(metadata.PortalV4ShieldingRequestMeta), actionContentBase64Str}
 }
 
-func buildShieldingRequestActionsFromTcs(tcs []TestCaseShieldingRequest, shardID byte, shardHeight uint64) []portalV4InstForProducer {
+// hashProof returns the hash of shielding proof (include tx proof and user inc address)
+func hashProof(proof string, chainCode string) string {
+	type shieldingProof struct {
+		Proof      string
+		IncAddress string
+	}
+
+	shieldProof := shieldingProof{
+		Proof:      proof,
+		IncAddress: chainCode,
+	}
+	shieldProofBytes, _ := json.Marshal(shieldProof)
+	hash := common.HashB(shieldProofBytes)
+	return fmt.Sprintf("%x", hash[:])
+}
+
+func (s *PortalTestSuiteV4) buildShieldingRequestActionsFromTcs(tcs []TestCaseShieldingRequest, shardID byte,
+	shardHeight uint64) []portalV4InstForProducer {
 	insts := []portalV4InstForProducer{}
 
 	for _, tc := range tcs {
 		inst := buildPortalShieldingRequestAction(
 			tc.tokenID, tc.incAddressStr, tc.shieldingProof, tc.txID, shardID)
+
+		portalTokenProcessor := s.portalParams.PortalTokens[tc.tokenID]
+		shieldTxHash, _ := portalTokenProcessor.GetTxHashFromProof(tc.shieldingProof)
+		proofHash := hashProof(shieldTxHash, tc.incAddressStr)
 		insts = append(insts, portalV4InstForProducer{
 			inst: inst,
 			optionalData: map[string]interface{}{
 				"isExistProofTxHash": tc.isExistsInPreviousBlocks,
+				"proofHash":          proofHash,
 			},
 		})
 	}
@@ -544,7 +566,7 @@ func (s *PortalTestSuiteV4) TestShieldingRequest() {
 	testcases, expectedResult := s.buildTestCaseAndExpectedResultShieldingRequest()
 
 	// build actions from testcases
-	instsForProducer := buildShieldingRequestActionsFromTcs(testcases, shardID, shardHeight)
+	instsForProducer := s.buildShieldingRequestActionsFromTcs(testcases, shardID, shardHeight)
 
 	// producer instructions
 	newInsts, err := producerPortalInstructionsV4(

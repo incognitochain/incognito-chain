@@ -34,7 +34,10 @@ func (p *PortalUnshieldBatchingProcessor) PutAction(action []string, shardID byt
 	}
 }
 
-func (p *PortalUnshieldBatchingProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalUnshieldBatchingProcessor) PrepareDataForBlockProducer(
+	stateDB *statedb.StateDB, contentStr string,
+	portalParams portalv4.PortalParams,
+) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -267,7 +270,10 @@ func (p *PortalFeeReplacementRequestProcessor) PutAction(action []string, shardI
 	}
 }
 
-func (p *PortalFeeReplacementRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalFeeReplacementRequestProcessor) PrepareDataForBlockProducer(
+	stateDB *statedb.StateDB, contentStr string,
+	portalParams portalv4.PortalParams,
+) (map[string]interface{}, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("[ReplaceFeeRequest]: an error occurred while decoding content string of replace fee unshield request action: %+v", err)
@@ -542,7 +548,10 @@ func (p *PortalSubmitConfirmedTxProcessor) PutAction(action []string, shardID by
 	}
 }
 
-func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(
+	stateDB *statedb.StateDB, contentStr string,
+	portalParams portalv4.PortalParams,
+) (map[string]interface{}, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("[SubmitConfirmedRequest]: an error occurred while decoding content string of SubmitConfirmed unshield request action: %+v", err)
