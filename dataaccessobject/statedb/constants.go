@@ -57,17 +57,17 @@ const (
 	PortalConfirmProofObjectType
 	PortalUnlockOverRateCollaterals
 
+	SlashingCommitteeObjectType
+
+	// bsc bridge
+	BridgeBSCTxObjectType
+
 	// Portal v4
 	PortalV4StatusObjectType
 	PortalV4UTXOObjectType
 	PortalV4ShieldRequestObjectType
 	PortalWaitingUnshieldObjectType
 	PortalProcessedUnshieldRequestBatchObjectType
-
-	SlashingCommitteeObjectType
-
-	// bsc bridge
-	BridgeBSCTxObjectType
 )
 
 // Prefix length
