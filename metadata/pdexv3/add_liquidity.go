@@ -93,7 +93,7 @@ func (al *AddLiquidity) ValidateSanityData(
 	if !refundAddress.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("RefundAddress is not valid"))
 	}
-	if al.amplifier < DefaultAmplifier {
+	if al.amplifier < BaseAmplifier {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
 	}
 
@@ -267,8 +267,8 @@ func (al *AddLiquidity) FromStringSlice(source []string) error {
 	if err != nil {
 		return err
 	}
-	if amplifier < DefaultAmplifier {
-		return fmt.Errorf("Amplifier can not be smaller than %v get %v", DefaultAmplifier, amplifier)
+	if amplifier < BaseAmplifier {
+		return fmt.Errorf("Amplifier can not be smaller than %v get %v", BaseAmplifier, amplifier)
 	}
 	al.amplifier = uint(amplifier)
 	return nil

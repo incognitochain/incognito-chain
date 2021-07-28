@@ -58,7 +58,9 @@ func (pc *Pdexv3ContributionState) Clone() *Pdexv3ContributionState {
 }
 
 func NewPdexv3ContributionState() *Pdexv3ContributionState {
-	return &Pdexv3ContributionState{}
+	return &Pdexv3ContributionState{
+		value: *rawdbv2.NewPdexv3Contribution(),
+	}
 }
 
 func NewPdexv3ContributionStateWithValue(

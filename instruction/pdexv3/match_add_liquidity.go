@@ -1,90 +1,106 @@
 package pdexv3
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type MatchAddLiquidity struct {
-	Base
+	contribution  statedb.Pdexv3ContributionState
 	newPoolPairID string
-	nfctID        string
+	nfctID        common.Hash
 }
 
 func NewMatchAddLiquidity() *MatchAddLiquidity {
-	return &MatchAddLiquidity{
-		Base: Base{
-			metaData: metadataPdexv3.NewAddLiquidity(),
-		},
-	}
-}
-
-func NewMatchAddLiquidityFromMetadata(
-	metaData metadataPdexv3.AddLiquidity,
-	txReqID string, shardID byte,
-	newPoolPairID, nfctID string,
-) *MatchAddLiquidity {
-	return NewMatchAddLiquidityWithValue(
-		*NewBaseWithValue(&metaData, txReqID, shardID),
-		newPoolPairID, nfctID,
-	)
+	return &MatchAddLiquidity{}
 }
 
 func NewMatchAddLiquidityWithValue(
-	base Base, newPoolPairID, nfctID string,
+	contribution statedb.Pdexv3ContributionState,
+	newPoolPairID string,
+	nfctID common.Hash,
 ) *MatchAddLiquidity {
 	return &MatchAddLiquidity{
-		Base:          base,
+		contribution:  contribution,
 		newPoolPairID: newPoolPairID,
 		nfctID:        nfctID,
 	}
 }
 
 func (m *MatchAddLiquidity) FromStringSlice(source []string) error {
-	temp := source
-	if len(temp) < 4 {
-		return errors.New("Length of source can not be smaller than 4")
+	if len(source) != 3 {
+		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
 	}
-	err := m.Base.FromStringSlice(temp[:len(temp)-3])
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta) {
+		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3AddLiquidityRequestMeta, source[0])
+	}
+	if source[1] != common.PDEContributionMatchedChainStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.PDEContributionMatchedChainStatus, source[1])
+	}
+	err := json.Unmarshal([]byte(source[2]), m)
 	if err != nil {
 		return err
-	}
-	temp = temp[len(temp)-3:]
-	if temp[0] == utils.EmptyString {
-		return errors.New("PoolPairID can not be empty")
-	}
-	m.newPoolPairID = temp[0]
-	nfctID, err := common.Hash{}.NewHashFromStr(temp[1])
-	if err != nil {
-		return err
-	}
-	if nfctID.IsZeroValue() {
-		return errors.New("NfctID is empty")
-	}
-	m.nfctID = temp[1]
-	if temp[2] != strconv.Itoa(common.PDEContributionAcceptedStatus) {
-		return fmt.Errorf("Receive status %s expect %s", temp[2], strconv.Itoa(common.PDEContributionAcceptedStatus))
 	}
 	return nil
 }
 
-func (m *MatchAddLiquidity) StringSlice() []string {
-	res := m.Base.StringSlice()
-	res = append(res, m.newPoolPairID)
-	res = append(res, m.nfctID)
-	res = append(res, strconv.Itoa(common.PDEContributionAcceptedStatus))
-	return res
+func (m *MatchAddLiquidity) StringSlice() ([]string, error) {
+	res := []string{}
+	res = append(res, strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	res = append(res, common.PDEContributionMatchedChainStatus)
+	data, err := json.Marshal(m)
+	if err != nil {
+		return res, err
+	}
+	res = append(res, string(data))
+	return res, nil
+}
+
+func (m *MatchAddLiquidity) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Contribution  statedb.Pdexv3ContributionState `json:"Contribution"`
+		NewPoolPairID string                          `json:"NewPoolPairID"`
+		NfctID        common.Hash                     `json:"NfctID"`
+	}{
+		Contribution:  m.contribution,
+		NewPoolPairID: m.newPoolPairID,
+		NfctID:        m.nfctID,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (m *MatchAddLiquidity) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Contribution  statedb.Pdexv3ContributionState `json:"Contribution"`
+		NewPoolPairID string                          `json:"NewPoolPairID"`
+		NfctID        common.Hash                     `json:"NfctID"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	m.contribution = temp.Contribution
+	m.newPoolPairID = temp.NewPoolPairID
+	m.nfctID = temp.NfctID
+	return nil
 }
 
 func (m *MatchAddLiquidity) NewPoolPairID() string {
 	return m.newPoolPairID
 }
 
-func (m *MatchAddLiquidity) NfctID() string {
+func (m *MatchAddLiquidity) NfctID() common.Hash {
 	return m.nfctID
+}
+
+func (m *MatchAddLiquidity) Contribution() statedb.Pdexv3ContributionState {
+	return m.contribution
 }

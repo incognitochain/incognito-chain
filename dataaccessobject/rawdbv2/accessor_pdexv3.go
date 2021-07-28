@@ -137,6 +137,7 @@ func NewPdexv3ContributionWithValue(
 }
 
 type Pdexv3PoolPair struct {
+	shareAmount           uint64
 	token0ID              common.Hash
 	token1ID              common.Hash
 	token0RealAmount      uint64
@@ -145,6 +146,14 @@ type Pdexv3PoolPair struct {
 	token0VirtualAmount   big.Int
 	token1VirtualAmount   big.Int
 	amplifier             uint
+}
+
+func (pp *Pdexv3PoolPair) SetShareAmount(shareAmount uint64) {
+	pp.shareAmount = shareAmount
+}
+
+func (pp *Pdexv3PoolPair) ShareAmount() uint64 {
+	return pp.shareAmount
 }
 
 func (pp *Pdexv3PoolPair) Amplifier() uint {
@@ -209,6 +218,7 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 		Token0VirtualAmount   big.Int     `json:"Token0VirtualAmount"`
 		Token1VirtualAmount   big.Int     `json:"Token1VirtualAmount"`
 		Amplifier             uint        `json:"Amplifier"`
+		ShareAmount           uint64      `json:"ShareAmount"`
 	}{
 		Token0ID:              pp.token0ID,
 		Token1ID:              pp.token1ID,
@@ -218,6 +228,7 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 		Token0VirtualAmount:   pp.token0VirtualAmount,
 		Token1VirtualAmount:   pp.token1VirtualAmount,
 		Amplifier:             pp.amplifier,
+		ShareAmount:           pp.shareAmount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -235,6 +246,7 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 		Token0VirtualAmount   big.Int     `json:"Token0VirtualAmount"`
 		Token1VirtualAmount   big.Int     `json:"Token1VirtualAmount"`
 		Amplifier             uint        `json:"Amplifier"`
+		ShareAmount           uint64      `json:"ShareAmount"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -248,12 +260,13 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	pp.token0VirtualAmount = temp.Token0VirtualAmount
 	pp.token1VirtualAmount = temp.Token1VirtualAmount
 	pp.amplifier = temp.Amplifier
+	pp.shareAmount = temp.ShareAmount
 	return nil
 }
 
 func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
 	return NewPdexv3PoolPairWithValue(
-		pp.token0ID, pp.token1ID,
+		pp.token0ID, pp.token1ID, pp.shareAmount,
 		pp.token0RealAmount, pp.token1RealAmount, pp.currentContributionID,
 		pp.token0VirtualAmount, pp.token1VirtualAmount, pp.amplifier,
 	)
@@ -265,7 +278,7 @@ func NewPdexv3PoolPair() *Pdexv3PoolPair {
 
 func NewPdexv3PoolPairWithValue(
 	token0ID, token1ID common.Hash,
-	token0RealAmount, token1RealAmount, currentContributionID uint64,
+	shareAmount, token0RealAmount, token1RealAmount, currentContributionID uint64,
 	token0VirtualAmount, token1VirtualAmount big.Int,
 	amplifier uint,
 ) *Pdexv3PoolPair {
@@ -278,5 +291,6 @@ func NewPdexv3PoolPairWithValue(
 		token0VirtualAmount:   token0VirtualAmount,
 		token1VirtualAmount:   token1VirtualAmount,
 		amplifier:             amplifier,
+		shareAmount:           shareAmount,
 	}
 }

@@ -418,14 +418,13 @@ func (s *stateV2) Reader() StateReader {
 }
 
 func NewContributionWithMetaData(
-	metaData metadataPdexV3.AddLiquidity, txReqID string, shardID byte,
+	metaData metadataPdexV3.AddLiquidity, txReqID common.Hash, shardID byte,
 ) *rawdbv2.Pdexv3Contribution {
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
-	txReqHash, _ := common.Hash{}.NewHashFromStr(txReqID)
 
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
-		*tokenHash, *txReqHash, metaData.TokenAmount(), metaData.Amplifier(),
+		*tokenHash, txReqID, metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
 	)
 }

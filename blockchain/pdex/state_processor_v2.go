@@ -71,26 +71,24 @@ func (sp *stateProcessorV2) waitingContribution(
 	if err != nil {
 		return waitingContributions, err
 	}
-	metaData := waitingAddLiquidityInst.MetaData().(*metadataPdexv3.AddLiquidity)
-	err = sp.verifyWaitingContribution(*metaData, waitingContributions, deletedWaitingContributions)
+	err = sp.verifyWaitingContribution(waitingAddLiquidityInst.Contribution(), waitingContributions, deletedWaitingContributions)
 	if err != nil {
 		return waitingContributions, err
 	}
-	contribution := NewContributionWithMetaData(
-		*metaData, waitingAddLiquidityInst.TxReqID(), waitingAddLiquidityInst.ShardID(),
-	)
-	waitingContributions[metaData.PairHash()] = *contribution
+	contribution := waitingAddLiquidityInst.Contribution()
+	contributionValue := contribution.Value()
+	waitingContributions[contribution.PairHash()] = contributionValue
 
 	contribStatus := metadata.PDEContributionStatus{
-		Contributed1Amount: contribution.Amount(),
-		TokenID1Str:        contribution.TokenID().String(),
+		Contributed1Amount: contributionValue.Amount(),
+		TokenID1Str:        contributionValue.TokenID().String(),
 		Status:             byte(common.PDEContributionWaitingStatus),
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPDEContributionStatus(
 		stateDB,
 		rawdbv2.PDEContributionStatusPrefix,
-		[]byte(metaData.PairHash()),
+		[]byte(contribution.PairHash()),
 		contribStatusBytes,
 	)
 	if err != nil {
@@ -102,18 +100,18 @@ func (sp *stateProcessorV2) waitingContribution(
 }
 
 func (sp *stateProcessorV2) verifyWaitingContribution(
-	metaData metadataPdexv3.AddLiquidity,
+	contribution statedb.Pdexv3ContributionState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) error {
-	_, found := waitingContributions[metaData.PairHash()]
+	_, found := waitingContributions[contribution.PairHash()]
 	if found {
-		err := fmt.Errorf("Pair Hash %v has been existed in list waitingContributions", metaData.PairHash())
+		err := fmt.Errorf("Pair Hash %v has been existed in list waitingContributions", contribution.PairHash())
 		return err
 	}
-	_, found = deletedWaitingContributions[metaData.PairHash()]
+	_, found = deletedWaitingContributions[contribution.PairHash()]
 	if found {
-		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", metaData.PairHash())
+		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", contribution.PairHash())
 		return err
 	}
 	return nil
@@ -134,11 +132,11 @@ func (sp *stateProcessorV2) refundContribution(
 	if err != nil {
 		return waitingContributions, deletedWaitingContributions, err
 	}
-	metaData := refundAddLiquidityInst.MetaData().(*metadataPdexv3.AddLiquidity)
-	existingWaitingContribution, found := waitingContributions[metaData.PairHash()]
+	refundContribution := refundAddLiquidityInst.Contribution()
+	existingWaitingContribution, found := waitingContributions[refundContribution.PairHash()]
 	if found {
-		deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
-		delete(waitingContributions, metaData.PairHash())
+		deletedWaitingContributions[refundContribution.PairHash()] = existingWaitingContribution
+		delete(waitingContributions, refundContribution.PairHash())
 	}
 
 	contribStatus := metadata.PDEContributionStatus{
@@ -148,7 +146,7 @@ func (sp *stateProcessorV2) refundContribution(
 	err = statedb.TrackPDEContributionStatus(
 		stateDB,
 		rawdbv2.PDEContributionStatusPrefix,
-		[]byte(metaData.PairHash()),
+		[]byte(refundContribution.PairHash()),
 		contribStatusBytes,
 	)
 	if err != nil {
@@ -177,39 +175,29 @@ func (sp *stateProcessorV2) matchContribution(
 	if err != nil {
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
-	metaData := matchAddLiquidityInst.MetaData().(*metadataPdexv3.AddLiquidity)
-	existingWaitingContribution, found := waitingContributions[metaData.PairHash()]
+	matchContribution := matchAddLiquidityInst.Contribution()
+	existingWaitingContribution, found := waitingContributions[matchContribution.PairHash()]
 	if !found {
-		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", metaData.PairHash())
+		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", matchContribution.PairHash())
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
-	_, found = deletedWaitingContributions[metaData.PairHash()]
+	_, found = deletedWaitingContributions[matchContribution.PairHash()]
 	if found {
-		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", metaData.PairHash())
+		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", matchContribution.PairHash())
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
 
-	incomingWaitingContribution := *NewContributionWithMetaData(
-		*metaData, matchAddLiquidityInst.TxReqID(), matchAddLiquidityInst.ShardID(),
-	)
-	poolPair := initPoolPairState(existingWaitingContribution, incomingWaitingContribution)
+	matchContributionValue := matchContribution.Value()
+	poolPair := initPoolPairState(existingWaitingContribution, matchContribution.Value())
 	poolPairID := generatePoolPairKey(
 		existingWaitingContribution.TokenID().String(),
-		incomingWaitingContribution.TokenID().String(),
+		matchContributionValue.TokenID().String(),
 		existingWaitingContribution.TxReqID().String(),
 	)
-	nfctID := poolPair.addShare(poolPairID, poolPair.state.Token0RealAmount(), beaconHeight)
-	if nfctID != matchAddLiquidityInst.NfctID() {
-		err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAddLiquidityInst.NfctID())
-		return waitingContributions, deletedWaitingContributions, poolPairs, err
-	}
-	if poolPairID != matchAddLiquidityInst.NewPoolPairID() {
-		err := fmt.Errorf("PoolPairID is invalid expect %s but get %s", poolPairID, matchAddLiquidityInst.NewPoolPairID())
-		return waitingContributions, deletedWaitingContributions, poolPairs, err
-	}
+	poolPair.addShare(poolPairID, poolPair.state.ShareAmount(), beaconHeight)
 	poolPairs[poolPairID] = *poolPair
-	deletedWaitingContributions[metaData.PairHash()] = existingWaitingContribution
-	delete(waitingContributions, metaData.PairHash())
+	deletedWaitingContributions[matchContribution.PairHash()] = existingWaitingContribution
+	delete(waitingContributions, matchContribution.PairHash())
 
 	contribStatus := metadata.PDEContributionStatus{
 		Status: byte(common.PDEContributionAcceptedStatus),
@@ -218,7 +206,7 @@ func (sp *stateProcessorV2) matchContribution(
 	err = statedb.TrackPDEContributionStatus(
 		stateDB,
 		rawdbv2.PDEContributionStatusPrefix,
-		[]byte(metaData.PairHash()),
+		[]byte(matchContribution.PairHash()),
 		contribStatusBytes,
 	)
 	if err != nil {
@@ -247,62 +235,47 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	if err != nil {
 		return waitingContributions, deletedWaitingContributions, poolPairs, err
 	}
-	metaData := matchAndReturnAddLiquidity.MetaData().(*metadataPdexv3.AddLiquidity)
-	waitingContribution, found := waitingContributions[metaData.PairHash()]
+	matchAndReturnContribution := matchAndReturnAddLiquidity.Contribution()
+	matchAndReturnContributionValue := matchAndReturnContribution.Value()
+	waitingContribution, found := waitingContributions[matchAndReturnContribution.PairHash()]
 	if found {
-		incomingWaitingContribution := NewContributionWithMetaData(
-			*metaData, matchAndReturnAddLiquidity.TxReqID(), matchAndReturnAddLiquidity.ShardID(),
-		)
-		if incomingWaitingContribution.PoolPairID() != waitingContribution.PoolPairID() {
-			err := fmt.Errorf("Expect poolPairID %v but get %v", waitingContribution.PoolPairID(), incomingWaitingContribution.PoolPairID())
+		if matchAndReturnContributionValue.PoolPairID() != waitingContribution.PoolPairID() {
+			err := fmt.Errorf("Expect poolPairID %v but get %v", waitingContribution.PoolPairID(), matchAndReturnContributionValue.PoolPairID())
 			return waitingContributions, deletedWaitingContributions, poolPairs, err
 		}
 		poolPair := poolPairs[waitingContribution.PoolPairID()]
-		shareAmount := uint64(0)
-		if waitingContribution.TokenID() == incomingWaitingContribution.TokenID() {
-			shareAmount = poolPair.updateReserveAndShares(
-				waitingContribution.TokenID().String(), matchAndReturnAddLiquidity.ExistedTokenID(),
-				waitingContribution.Amount()-matchAndReturnAddLiquidity.ReturnAmount(),
-				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
-			)
+		var amount0, amount1 uint64
+		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
+			amount0 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
+			amount1 = matchAndReturnContributionValue.Amount()
 		} else {
-			shareAmount = poolPair.updateReserveAndShares(
-				waitingContribution.TokenID().String(), metaData.TokenID(),
-				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
-				metaData.TokenAmount()-matchAndReturnAddLiquidity.ReturnAmount(),
-			)
+			amount1 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
+			amount0 = matchAndReturnContributionValue.Amount()
 		}
-		nfctID := poolPair.addShare(waitingContribution.PoolPairID(), shareAmount, beaconHeight)
-		//TODO: After release beacon recompute for contributions amount
-		if err != nil {
-			return waitingContributions, deletedWaitingContributions, poolPairs, err
-		}
-		if nfctID != matchAndReturnAddLiquidity.NfctID() {
-			err := fmt.Errorf("NfctID is invalid expect %s but get %s", nfctID, matchAndReturnAddLiquidity.NfctID())
-			return waitingContributions, deletedWaitingContributions, poolPairs, err
-		}
-		deletedWaitingContributions[metaData.PairHash()] = waitingContribution
-		delete(waitingContributions, metaData.PairHash())
+		poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
+		poolPair.addShare(waitingContribution.PoolPairID(), matchAndReturnAddLiquidity.ShareAmount(), beaconHeight)
+		deletedWaitingContributions[matchAndReturnContribution.PairHash()] = waitingContribution
+		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {
 		var contribStatus metadata.PDEContributionStatus
-		if matchAndReturnAddLiquidity.ExistedTokenID() < metaData.TokenID() {
+		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
 			contribStatus = metadata.PDEContributionStatus{
 				Status:             common.PDEContributionMatchedNReturnedStatus,
-				TokenID1Str:        matchAndReturnAddLiquidity.ExistedTokenID(),
+				TokenID1Str:        matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Contributed1Amount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				Returned1Amount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
-				TokenID2Str:        metaData.TokenID(),
-				Contributed2Amount: metaData.TokenAmount() - matchAndReturnAddLiquidity.ReturnAmount(),
+				TokenID2Str:        matchAndReturnContributionValue.TokenID().String(),
+				Contributed2Amount: matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount(),
 				Returned2Amount:    matchAndReturnAddLiquidity.ReturnAmount(),
 			}
 		} else {
 			contribStatus = metadata.PDEContributionStatus{
 				Status:             common.PDEContributionMatchedNReturnedStatus,
-				TokenID2Str:        matchAndReturnAddLiquidity.ExistedTokenID(),
+				TokenID2Str:        matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Contributed2Amount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				Returned2Amount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
-				TokenID1Str:        metaData.TokenID(),
-				Contributed1Amount: metaData.TokenAmount() - matchAndReturnAddLiquidity.ReturnAmount(),
+				TokenID1Str:        matchAndReturnContributionValue.TokenID().String(),
+				Contributed1Amount: matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount(),
 				Returned1Amount:    matchAndReturnAddLiquidity.ReturnAmount(),
 			}
 		}
@@ -315,7 +288,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		err = statedb.TrackPDEContributionStatus(
 			stateDB,
 			rawdbv2.PDEContributionStatusPrefix,
-			[]byte(metaData.PairHash()),
+			[]byte(matchAndReturnContribution.PairHash()),
 			contribStatusBytes,
 		)
 		if err != nil {

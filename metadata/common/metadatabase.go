@@ -170,11 +170,3 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetr
 func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
 }
-
-func (mb *MetadataBase) FromStringSlice(source []string) error {
-	return nil
-}
-
-func (mb *MetadataBase) StringSlice() []string {
-	return []string{}
-}

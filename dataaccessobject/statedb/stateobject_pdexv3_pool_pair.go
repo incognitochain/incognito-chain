@@ -58,7 +58,9 @@ func (pp *Pdexv3PoolPairState) Clone() *Pdexv3PoolPairState {
 }
 
 func NewPdexv3PoolPairState() *Pdexv3PoolPairState {
-	return &Pdexv3PoolPairState{}
+	return &Pdexv3PoolPairState{
+		value: *rawdbv2.NewPdexv3PoolPair(),
+	}
 }
 
 func NewPdexv3PoolPairStateWithValue(

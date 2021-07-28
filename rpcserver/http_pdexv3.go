@@ -277,7 +277,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private key %v: %v", privateKey, err))
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
 	}
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
