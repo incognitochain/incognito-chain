@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/wallet"
 	. "github.com/stretchr/testify/assert"
 )
 
@@ -51,9 +52,32 @@ func TestOTAReceiverValid(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			var r OTAReceiver
 			err := r.FromString(testcase.data)
-			Equal(t, err==nil, testcase.expected)
+			Equal(t, err == nil, testcase.expected)
 			// data that fail IsValid() will not unmarshal successfully
 			// Equal(t, r.IsValid(), testcase.expected)
+		})
+	}
+}
+
+func TestOTAReceiverFromAddress(t *testing.T) {
+	type Testcase struct {
+		name     string
+		data     string
+		expected bool
+	}
+
+	testcases := []Testcase{
+		Testcase{"Valid", "12sxXUjkMJZHz6diDB6yYnSjyYcDYiT5QygUYFsUbGUqK8PH8uhxf4LePiAE8UYoDcNkHAdJJtT1J6T8hcvpZoWLHAp8g6h1BQEfp4h5LQgEPuhMpnVMquvr1xXZZueLhTNCXc8fkebLV8nDoJ17", true},
+		Testcase{"Invalid - missing OTA public key", "12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8jW6mbusUm4j", false},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			kw, err := wallet.Base58CheckDeserialize(testcase.data)
+			NoError(t, err)
+			var r OTAReceiver
+			err = r.FromAddress(kw.KeySet.PaymentAddress)
+			Equal(t, err == nil, testcase.expected)
 		})
 	}
 }
