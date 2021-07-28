@@ -235,9 +235,9 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, 
 	// if !ok {
 	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	// }
-	// ncftTokenID, ok := data["NcftTokenID"].(string)
+	// nfctTokenID, ok := data["NfctTokenID"].(string)
 	// if !ok {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NcftTokenID is invalid"))
+	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
 	// }
 
 	// beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
@@ -300,9 +300,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
-	ncftTokenID, ok := tokenParamsRaw["NcftTokenID"].(string)
+	nfctTokenID, ok := tokenParamsRaw["NfctTokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NcftTokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
 	}
 
 	// payment address v2
@@ -311,7 +311,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
 	}
 
-	ncftReceiverAddress := privacy.OTAReceiver{}
+	nfctReceiverAddress := privacy.OTAReceiver{}
 	token0ReceiverAddress := privacy.OTAReceiver{}
 	token1ReceiverAddress := privacy.OTAReceiver{}
 	prvReceiverAddress := privacy.OTAReceiver{}
@@ -319,7 +319,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 
 	var err error
 
-	err = ncftReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = nfctReceiverAddress.FromAddress(feeReceiver, common.Hash{})
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -340,7 +340,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	ncftReceiverAddressStr, err := ncftReceiverAddress.String()
+	nfctReceiverAddressStr, err := nfctReceiverAddress.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -364,8 +364,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
-		ncftTokenID,
-		ncftReceiverAddressStr,
+		nfctTokenID,
+		nfctReceiverAddressStr,
 		metadataPdexv3.FeeReceiverAddress{
 			Token0ReceiverAddress: token0ReceiverAddressStr,
 			Token1ReceiverAddress: token1ReceiverAddressStr,

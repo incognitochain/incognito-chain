@@ -11,8 +11,8 @@ type WithdrawalLPFeeResponse struct {
 	RequestStatus       string             `json:"RequestStatus"`
 	ReqTxID             common.Hash        `json:"ReqTxID"`
 	PairID              string             `json:"PairID"`
-	NcftTokenID         string             `json:"NcftTokenID"`
-	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	NfctTokenID         string             `json:"NfctTokenID"`
+	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
 	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 	FeeReceiverAmount   FeeReceiverAmount  `json:"FeeReceiverAmount"`
 }
@@ -22,8 +22,8 @@ func NewPdexv3WithdrawalLPFeeResponse(
 	requestStatus string,
 	reqTxID common.Hash,
 	pairID string,
-	ncftTokenID string,
-	ncftReceiverAddress string,
+	nfctTokenID string,
+	nfctReceiverAddress string,
 	feeReceiverAddress FeeReceiverAddress,
 	feeReceiverAmount FeeReceiverAmount,
 ) *WithdrawalLPFeeResponse {
@@ -34,8 +34,8 @@ func NewPdexv3WithdrawalLPFeeResponse(
 		RequestStatus:       requestStatus,
 		ReqTxID:             reqTxID,
 		PairID:              pairID,
-		NcftTokenID:         ncftTokenID,
-		NcftReceiverAddress: ncftReceiverAddress,
+		NfctTokenID:         nfctTokenID,
+		NfctReceiverAddress: nfctReceiverAddress,
 		FeeReceiverAddress:  feeReceiverAddress,
 		FeeReceiverAmount:   feeReceiverAmount,
 	}
@@ -80,8 +80,8 @@ func (withdrawalResponse WithdrawalLPFeeResponse) Hash() *common.Hash {
 	record += withdrawalResponse.RequestStatus
 	record += withdrawalResponse.ReqTxID.String()
 	record += withdrawalResponse.PairID
-	record += withdrawalResponse.NcftTokenID
-	record += withdrawalResponse.NcftReceiverAddress
+	record += withdrawalResponse.NfctTokenID
+	record += withdrawalResponse.NfctReceiverAddress
 	record += withdrawalResponse.FeeReceiverAddress.ToString()
 	record += withdrawalResponse.FeeReceiverAmount.ToString()
 

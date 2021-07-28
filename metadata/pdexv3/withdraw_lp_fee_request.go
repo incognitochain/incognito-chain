@@ -12,15 +12,15 @@ import (
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
 	PairID              string             `json:"PairID"`
-	NcftTokenID         string             `json:"NcftTokenID"`
-	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	NfctTokenID         string             `json:"NfctTokenID"`
+	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
 	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalLPFeeContent struct {
 	PairID              string             `json:"PairID"`
-	NcftTokenID         string             `json:"NcftTokenID"`
-	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	NfctTokenID         string             `json:"NfctTokenID"`
+	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
 	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 	TxReqID             common.Hash        `json:"TxReqID"`
 	ShardID             byte               `json:"ShardID"`
@@ -29,22 +29,22 @@ type WithdrawalLPFeeContent struct {
 type WithdrawalLPFeeStatus struct {
 	Status              int                `json:"Status"`
 	PairID              string             `json:"PairID"`
-	NcftTokenID         string             `json:"NcftTokenID"`
-	NcftReceiverAddress string             `json:"NcftReceiverAddress"`
+	NfctTokenID         string             `json:"NfctTokenID"`
+	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
 	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 func NewPdexv3WithdrawalLPFeeStatus(
 	status int,
 	pairID string,
-	ncftTokenID string,
-	ncftReceiverAddress string,
+	nfctTokenID string,
+	nfctReceiverAddress string,
 	feeReceiverAddress FeeReceiverAddress,
 ) *WithdrawalLPFeeStatus {
 	return &WithdrawalLPFeeStatus{
 		PairID:              pairID,
-		NcftTokenID:         ncftTokenID,
-		NcftReceiverAddress: ncftReceiverAddress,
+		NfctTokenID:         nfctTokenID,
+		NfctReceiverAddress: nfctReceiverAddress,
 		FeeReceiverAddress:  feeReceiverAddress,
 		Status:              status,
 	}
@@ -53,8 +53,8 @@ func NewPdexv3WithdrawalLPFeeStatus(
 func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
-	ncftTokenID string,
-	ncftReceiverAddress string,
+	nfctTokenID string,
+	nfctReceiverAddress string,
 	feeReceiverAddress FeeReceiverAddress,
 ) (*WithdrawalLPFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
@@ -62,8 +62,8 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	return &WithdrawalLPFeeRequest{
 		MetadataBase:        *metadataBase,
 		PairID:              pairID,
-		NcftTokenID:         ncftTokenID,
-		NcftReceiverAddress: ncftReceiverAddress,
+		NfctTokenID:         nfctTokenID,
+		NfctReceiverAddress: nfctReceiverAddress,
 		FeeReceiverAddress:  feeReceiverAddress,
 	}, nil
 }
@@ -102,7 +102,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 	}
 	burningAmt := burnedCoin.GetValue()
 	burningTokenID := burnedToken.String()
-	if burningAmt != 1 || burningTokenID != withdrawal.NcftTokenID {
+	if burningAmt != 1 || burningTokenID != withdrawal.NfctTokenID {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
@@ -118,8 +118,8 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
 	record += withdrawal.PairID
-	record += withdrawal.NcftTokenID
-	record += withdrawal.NcftReceiverAddress
+	record += withdrawal.NfctTokenID
+	record += withdrawal.NfctReceiverAddress
 	record += withdrawal.FeeReceiverAddress.ToString()
 
 	// final hash
