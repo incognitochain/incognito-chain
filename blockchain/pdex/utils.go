@@ -583,29 +583,32 @@ func InitStateFromDB(
 	return initStateV1(stateDB, beaconHeight)
 }
 
-func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]*v3.PoolReserve, []v3.OrderBookIterator, []int, error) {
+func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]*v3.PoolReserve, []v3.OrderBookIterator, []int, common.Hash, error) {
 	var results []*v3.PoolReserve
 	var pairsInPath []v3.OrderBookIterator
 	var tradeDirections []int
 	
-	intermediateSellingToken := sellToken
+	nextTokenToSell := sellToken
+	var buyingToken common.Hash
 	for _, pairID := range tradePath {
 		if pair, exists := pairs[pairID]; exists {
 			results = append(results, &pair.tokenReserve)
 			pairsInPath = append(pairsInPath, &pair)
 			var td int
-			switch intermediateSellingToken.String() {
+			switch nextTokenToSell.String() {
 			case pair.token0ID:
 				td = v3.TradeDirectionSell0
+				// set token to sell for next iteration. If this is the last iteration, it's THE token to buy
+				nextTokenToSell = pair.token1ID
 			case pair.token1ID:
 				td = v3.TradeDirectionSell1
 			default:
-				return nil, nil, nil, fmt.Errorf("Incompatible selling token %s vs next pair %s", intermediateSellingToken.String(), pairID)
+				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Incompatible selling token %s vs next pair %s", nextTokenToSell.String(), pairID)
 			}
 			tradeDirections = append(tradeDirections, td)
 		} else {
-			return nil, nil, nil, fmt.Errorf("Path contains nonexistent pair %s", pairID)
+			return nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains nonexistent pair %s", pairID)
 		}
 	}
-	return results, pairsInPath, tradeDirections, nil
+	return results, pairsInPath, tradeDirections, nextTokenToSell, nil
 }

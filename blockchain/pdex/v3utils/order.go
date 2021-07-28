@@ -98,7 +98,7 @@ func (ordInf *OrderMatchingInfo) MatchOwnRate(maxSellAmountAfterFee uint64, trad
 		if maxSellAmountAfterFee > finalSellAmount {
 			sellAmountRemain = maxSellAmountAfterFee - finalSellAmount
 		} else {
-			return 0, 0, nil, nil, fmt.Errorf("Final sell amount %d exceeds maximum %d", maxSellAmountAfterFee)
+			return 0, 0, nil, nil, fmt.Errorf("Final sell amount %d exceeds maximum %d", finalSellAmount, maxSellAmountAfterFee)
 		}
 	}
 
@@ -144,7 +144,7 @@ func (ordInf *OrderMatchingInfo) Match(maxSellAmountAfterFee uint64, tradeDirect
 		if maxSellAmountAfterFee > finalSellAmount {
 			sellAmountRemain = maxSellAmountAfterFee - finalSellAmount
 		} else {
-			return 0, 0, nil, nil, fmt.Errorf("Final sell amount %d exceeds maximum %d", maxSellAmountAfterFee)
+			return 0, 0, nil, nil, fmt.Errorf("Final sell amount %d exceeds maximum %d", finalSellAmount, maxSellAmountAfterFee)
 		}
 	}
 

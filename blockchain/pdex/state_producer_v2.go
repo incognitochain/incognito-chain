@@ -72,10 +72,10 @@ func (sp *stateProducerV2) trade(
 		}}
 		var currentInst []string = refundAction.Strings()
 
-		reserves, pairsInPath, tradeDirections, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+		reserves, pairsInPath, tradeDirections, tokenToBuy, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		if err == nil {
 			var acceptedInst []string
-			acceptedInst, _, err := v3.MaybeAcceptTrade(currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.Receiver, reserves, tradeDirections, pairsInPath)
+			acceptedInst, _, err := v3.MaybeAcceptTrade(currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.Receiver, reserves, tradeDirections, tokenToBuy, pairsInPath)
 			if err == nil {
 				currentInst = acceptedInst
 			}

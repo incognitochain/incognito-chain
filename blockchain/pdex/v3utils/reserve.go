@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/common"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 const (
@@ -43,9 +44,6 @@ func (pr PoolReserve) AmountToSell(buyAmount uint64, tradeDirection int) (uint64
 // It returns an error when the pool runs out of liquidity
 // Upon success, it updates the reserve values and returns (buyAmount, sellAmountRemain, token0Change, token1Change)
 func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection int, ord *OrderMatchingInfo) (uint64, uint64, *big.Int, *big.Int, error) {
-	if tradeDirection == ord.TradeDirection {
-		return 0, 0, nil, nil, fmt.Errorf("Cannot match trade with order of same direction")
-	}
 	token0Change := big.NewInt(0)
 	token1Change := big.NewInt(0)
 
@@ -64,6 +62,9 @@ func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 
 	var xOrd, yOrd, L, targetDeltaX *big.Int
 	if ord != nil {
+		if tradeDirection == ord.TradeDirection {
+			return 0, 0, nil, nil, fmt.Errorf("Cannot match trade with order of same direction")
+		}
 		if tradeDirection == TradeDirectionSell0 {
 			xOrd = big.NewInt(0).SetUint64(ord.Token0Rate)
 			yOrd = big.NewInt(0).SetUint64(ord.Token1Rate)
@@ -156,12 +157,12 @@ func (pr *PoolReserve) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserves []*PoolReserve, tradeDirections []int, orderbooks []OrderBookIterator) ([]string, []*PoolReserve, error) {
+func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserves []*PoolReserve, tradeDirections []int, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*PoolReserve, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
 		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
 	}
-	if amountIn > fee {
+	if amountIn < fee {
 		return nil, nil, fmt.Errorf("Trade input insufficient for trading fee")
 	}
 	sellAmountRemain := amountIn - fee
@@ -169,8 +170,10 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 		Receiver:     receiver,
 		PairChanges:  make([][2]big.Int, mutualLen),
 		OrderChanges: make([]map[string][2]big.Int, mutualLen),
+		TokenToBuy:   tokenToBuy,
 	}
 
+	var totalBuyAmount uint64
 	for i := 0; i < mutualLen; i++ {
 		acceptedMeta.OrderChanges[i] = make(map[string][2]big.Int)
 
@@ -179,7 +182,7 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 		var order *OrderMatchingInfo
 		var ordID string
 		var err error
-		totalBuyAmount := uint64(0)
+		totalBuyAmount = uint64(0)
 
 		for order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]); err == nil; {
 			buyAmount, temp, token0Change, token1Change, err := reserves[i].SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
@@ -188,7 +191,7 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 			}
 			sellAmountRemain = temp
 			if totalBuyAmount+buyAmount < totalBuyAmount {
-				return nil, nil, fmt.Errorf("Sum exceeds uint64 range")
+				return nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in ")
 			}
 			totalBuyAmount += buyAmount
 			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)
@@ -203,14 +206,13 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 				}
 				sellAmountRemain = temp
 				if totalBuyAmount+buyAmount < totalBuyAmount {
-					return nil, nil, fmt.Errorf("Sum exceeds uint64 range")
+					return nil, nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
 				}
 				totalBuyAmount += buyAmount
 				// add order balance changes to "accepted" instruction
 				acceptedMeta.OrderChanges[i][ordID] = [2]big.Int{*token0Change, *token1Change}
 				if sellAmountRemain == 0 {
-					acn := &instruction.Action{Content: acceptedMeta}
-					return acn.Strings(), reserves, nil
+					break
 				}
 			}
 		}
@@ -220,5 +222,8 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 		// set sell amount before moving on to next pair
 		sellAmountRemain = totalBuyAmount
 	}
-	return nil, nil, fmt.Errorf("Trade handling ended unexpectedly")
+
+	acceptedMeta.Amount = totalBuyAmount
+	acn := &instruction.Action{Content: acceptedMeta}
+	return acn.Strings(), reserves, nil
 }
