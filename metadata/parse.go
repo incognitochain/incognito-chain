@@ -167,7 +167,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingRequestV3{}
 	case metadataCommon.Pdexv3ModifyParamsMeta:
 		md = &metadataPdexv3.ParamsModifyingRequest{}
-	case metadataCommon.Pdexv3AddLiquidityMeta:
+	case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 		md = &metadataPdexv3.AddLiquidity{}
 	default:
 		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)

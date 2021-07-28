@@ -23,12 +23,12 @@ func (sp *stateProcessorV2) addLiquidity(
 	inst []string,
 	beaconHeight uint64,
 	poolPairs map[string]PoolPairState,
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) (
 	map[string]PoolPairState,
-	map[string]statedb.Pdexv3ContributionState,
-	map[string]statedb.Pdexv3ContributionState,
+	map[string]rawdbv2.Pdexv3Contribution,
+	map[string]rawdbv2.Pdexv3Contribution,
 	error,
 ) {
 	var err error
@@ -63,9 +63,9 @@ func (sp *stateProcessorV2) addLiquidity(
 func (sp *stateProcessorV2) waitingContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
-) (map[string]statedb.Pdexv3ContributionState, error) {
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
+) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	waitingAddLiquidityInst := instruction.WaitingAddLiquidity{}
 	err := waitingAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {
@@ -83,7 +83,7 @@ func (sp *stateProcessorV2) waitingContribution(
 
 	contribStatus := metadata.PDEContributionStatus{
 		Contributed1Amount: contribution.Amount(),
-		TokenID1Str:        contribution.TokenID(),
+		TokenID1Str:        contribution.TokenID().String(),
 		Status:             byte(common.PDEContributionWaitingStatus),
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
@@ -103,8 +103,8 @@ func (sp *stateProcessorV2) waitingContribution(
 
 func (sp *stateProcessorV2) verifyWaitingContribution(
 	metaData metadataPdexv3.AddLiquidity,
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) error {
 	_, found := waitingContributions[metaData.PairHash()]
 	if found {
@@ -122,11 +122,11 @@ func (sp *stateProcessorV2) verifyWaitingContribution(
 func (sp *stateProcessorV2) refundContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) (
-	map[string]statedb.Pdexv3ContributionState,
-	map[string]statedb.Pdexv3ContributionState,
+	map[string]rawdbv2.Pdexv3Contribution,
+	map[string]rawdbv2.Pdexv3Contribution,
 	error,
 ) {
 	refundAddLiquidityInst := instruction.RefundAddLiquidity{}
@@ -163,12 +163,12 @@ func (sp *stateProcessorV2) matchContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
 	beaconHeight uint64,
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]PoolPairState,
 ) (
-	map[string]statedb.Pdexv3ContributionState,
-	map[string]statedb.Pdexv3ContributionState,
+	map[string]rawdbv2.Pdexv3Contribution,
+	map[string]rawdbv2.Pdexv3Contribution,
 	map[string]PoolPairState,
 	error,
 ) {
@@ -194,9 +194,9 @@ func (sp *stateProcessorV2) matchContribution(
 	)
 	poolPair := initPoolPairState(existingWaitingContribution, incomingWaitingContribution)
 	poolPairID := generatePoolPairKey(
-		existingWaitingContribution.TokenID(),
-		incomingWaitingContribution.TokenID(),
-		existingWaitingContribution.TxReqID(),
+		existingWaitingContribution.TokenID().String(),
+		incomingWaitingContribution.TokenID().String(),
+		existingWaitingContribution.TxReqID().String(),
 	)
 	nfctID := poolPair.addShare(poolPairID, poolPair.state.Token0RealAmount(), beaconHeight)
 	if nfctID != matchAddLiquidityInst.NfctID() {
@@ -233,12 +233,12 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
 	beaconHeight uint64,
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]PoolPairState,
 ) (
-	map[string]statedb.Pdexv3ContributionState,
-	map[string]statedb.Pdexv3ContributionState,
+	map[string]rawdbv2.Pdexv3Contribution,
+	map[string]rawdbv2.Pdexv3Contribution,
 	map[string]PoolPairState,
 	error,
 ) {
@@ -261,13 +261,13 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		shareAmount := uint64(0)
 		if waitingContribution.TokenID() == incomingWaitingContribution.TokenID() {
 			shareAmount = poolPair.updateReserveAndShares(
-				waitingContribution.TokenID(), matchAndReturnAddLiquidity.ExistedTokenID(),
+				waitingContribution.TokenID().String(), matchAndReturnAddLiquidity.ExistedTokenID(),
 				waitingContribution.Amount()-matchAndReturnAddLiquidity.ReturnAmount(),
 				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 			)
 		} else {
 			shareAmount = poolPair.updateReserveAndShares(
-				waitingContribution.TokenID(), metaData.TokenID(),
+				waitingContribution.TokenID().String(), metaData.TokenID(),
 				matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				metaData.TokenAmount()-matchAndReturnAddLiquidity.ReturnAmount(),
 			)

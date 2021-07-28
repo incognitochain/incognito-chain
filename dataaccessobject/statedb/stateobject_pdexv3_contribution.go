@@ -6,74 +6,29 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
 type Pdexv3ContributionState struct {
-	poolPairID     string
-	receiveAddress string
-	refundAddress  string
-	tokenID        string
-	amount         uint64
-	amplifier      uint
-	txReqID        string
-	shardID        byte
+	value    rawdbv2.Pdexv3Contribution
+	pairHash string
 }
 
-func (pc *Pdexv3ContributionState) ShardID() byte {
-	return pc.shardID
+func (pc *Pdexv3ContributionState) PairHash() string {
+	return pc.pairHash
 }
 
-func (pc *Pdexv3ContributionState) TxReqID() string {
-	return pc.txReqID
-}
-
-func (pc *Pdexv3ContributionState) Amplifier() uint {
-	return pc.amplifier
-}
-
-func (pc *Pdexv3ContributionState) PoolPairID() string {
-	return pc.poolPairID
-}
-
-func (pc *Pdexv3ContributionState) ReceiveAddress() string {
-	return pc.receiveAddress
-}
-
-func (pc *Pdexv3ContributionState) RefundAddress() string {
-	return pc.refundAddress
-}
-
-func (pc *Pdexv3ContributionState) TokenID() string {
-	return pc.tokenID
-}
-
-func (pc *Pdexv3ContributionState) Amount() uint64 {
-	return pc.amount
-}
-
-func (pc *Pdexv3ContributionState) SetAmount(amount uint64) {
-	pc.amount = amount
+func (pc *Pdexv3ContributionState) Value() rawdbv2.Pdexv3Contribution {
+	return pc.value
 }
 
 func (pc *Pdexv3ContributionState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID     string `json:"PoolPairID"`
-		ReceiveAddress string `json:"ReceiveAddress"`
-		RefundAddress  string `json:"RefundAddress"`
-		TokenID        string `json:"TokenID"`
-		Amount         uint64 `json:"Amount"`
-		Amplifier      uint   `json:"Amplifier"`
-		TxReqID        string `json:"TxReqID"`
-		ShardID        byte   `json:"ShardID"`
+		PairHash string                     `json:"PairHash"`
+		Value    rawdbv2.Pdexv3Contribution `json:"Value"`
 	}{
-		PoolPairID:     pc.poolPairID,
-		ReceiveAddress: pc.receiveAddress,
-		RefundAddress:  pc.refundAddress,
-		TokenID:        pc.tokenID,
-		Amount:         pc.amount,
-		TxReqID:        pc.txReqID,
-		Amplifier:      pc.amplifier,
-		ShardID:        pc.shardID,
+		PairHash: pc.pairHash,
+		Value:    pc.value,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -83,35 +38,23 @@ func (pc *Pdexv3ContributionState) MarshalJSON() ([]byte, error) {
 
 func (pc *Pdexv3ContributionState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID     string `json:"PoolPairID"`
-		ReceiveAddress string `json:"ReceiveAddress"`
-		RefundAddress  string `json:"RefundAddress"`
-		TokenID        string `json:"TokenID"`
-		Amount         uint64 `json:"Amount"`
-		Amplifier      uint   `json:"Amplifier"`
-		TxReqID        string `json:"TxReqID"`
-		ShardID        byte   `json:"ShardID"`
+		PairHash string                     `json:"PairHash"`
+		Value    rawdbv2.Pdexv3Contribution `json:"Value"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	pc.poolPairID = temp.PoolPairID
-	pc.receiveAddress = temp.ReceiveAddress
-	pc.refundAddress = temp.RefundAddress
-	pc.tokenID = temp.TokenID
-	pc.amount = temp.Amount
-	pc.txReqID = temp.TxReqID
-	pc.amplifier = temp.Amplifier
-	pc.shardID = temp.ShardID
+	pc.pairHash = temp.PairHash
+	pc.value = temp.Value
 	return nil
 }
 
 func (pc *Pdexv3ContributionState) Clone() *Pdexv3ContributionState {
-	return NewPdexv3ContributionStateWithValue(
-		pc.poolPairID, pc.receiveAddress, pc.refundAddress,
-		pc.tokenID, pc.txReqID, pc.amount, pc.amplifier, pc.shardID,
-	)
+	return &Pdexv3ContributionState{
+		value:    *pc.value.Clone(),
+		pairHash: pc.pairHash,
+	}
 }
 
 func NewPdexv3ContributionState() *Pdexv3ContributionState {
@@ -119,19 +62,11 @@ func NewPdexv3ContributionState() *Pdexv3ContributionState {
 }
 
 func NewPdexv3ContributionStateWithValue(
-	poolPairID, receiveAddress, refundAddress,
-	tokenID, txReqID string,
-	amount uint64, amplifier uint, shardID byte,
+	value rawdbv2.Pdexv3Contribution, pairHash string,
 ) *Pdexv3ContributionState {
 	return &Pdexv3ContributionState{
-		poolPairID:     poolPairID,
-		refundAddress:  refundAddress,
-		receiveAddress: receiveAddress,
-		tokenID:        tokenID,
-		amount:         amount,
-		txReqID:        txReqID,
-		amplifier:      amplifier,
-		shardID:        shardID,
+		value:    value,
+		pairHash: pairHash,
 	}
 }
 

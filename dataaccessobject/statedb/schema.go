@@ -61,6 +61,7 @@ var (
 	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
 	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
+	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -573,7 +574,11 @@ func GetPdexv3PoolPairsPrefix() []byte {
 }
 
 func GetPdexv3SharesPrefix() []byte {
-	return pdexv3PoolPairsPrefix
+	return pdexv3SharesPrefix
+}
+
+func GetPdexv3TradingFeesPrefix() []byte {
+	return pdexv3TradingFeesPrefix
 }
 
 func GetPdexv3StakingPoolsPrefix() []byte {

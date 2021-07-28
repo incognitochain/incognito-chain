@@ -2,6 +2,9 @@ package statedb
 
 import (
 	"fmt"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
 func TrackPdexv3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
@@ -71,12 +74,13 @@ func GetPdexv3Params(stateDB *StateDB) (*Pdexv3Params, error) {
 
 func StorePdexv3WaitingContributions(
 	stateDB *StateDB,
-	contributions map[string]Pdexv3ContributionState,
+	contributions map[string]rawdbv2.Pdexv3Contribution,
 ) error {
 	for k, v := range contributions {
 		key := GeneratePdexv3ContributionObjectKey(k)
-		value := NewPdexv3ContributionState()
-		*value = v
+		value := NewPdexv3ContributionStateWithValue(
+			v, k,
+		)
 		err := stateDB.SetStateObject(Pdexv3ContributionObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StorePdexv3ContributionError, err)
@@ -87,38 +91,52 @@ func StorePdexv3WaitingContributions(
 
 func DeletePdexv3WaitingContributions(
 	stateDB *StateDB,
-	contributions map[string]Pdexv3ContributionState,
+	pairHashes []string,
 ) error {
-	for k := range contributions {
-		key := GeneratePdexv3ContributionObjectKey(k)
+	for _, pairHash := range pairHashes {
+		key := GeneratePdexv3ContributionObjectKey(pairHash)
 		if !stateDB.MarkDeleteStateObject(Pdexv3ContributionObjectType, key) {
-			return fmt.Errorf("Can't delete contributions with pair hash %v", k)
+			return fmt.Errorf("Can't delete contributions with pair hash %v", pairHash)
 		}
 	}
 	return nil
 }
 
+func StorePdexv3Share(
+	stateDB *StateDB,
+	poolPairID string,
+	share Pdexv3ShareState,
+) error {
+	key := GeneratePdexv3ShareObjectKey(poolPairID, share.nfctID.String())
+	return stateDB.SetStateObject(Pdexv3ShareObjectType, key, share)
+}
+
 func StorePdexv3PoolPair(
 	stateDB *StateDB,
 	poolPairID string,
-	poolPair Pdexv3PoolPairState,
-	shares map[string]Pdexv3ShareState,
+	poolPair rawdbv2.Pdexv3PoolPair,
 ) error {
+	state := NewPdexv3PoolPairStateWithValue(poolPairID, poolPair)
 	key := GeneratePdexv3PoolPairObjectKey(poolPairID)
-	value := NewPdexv3PoolPairState()
-	*value = poolPair
-	err := stateDB.SetStateObject(Pdexv3PoolPairObjectType, key, value)
+	return stateDB.SetStateObject(Pdexv3PoolPairObjectType, key, state)
+}
+
+func StorePdexv3TradingFee(
+	stateDB *StateDB,
+	poolPairID string,
+	nfctID string,
+	tokenID string,
+	tradingFee uint64,
+) error {
+	tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
-		return NewStatedbError(StorePdexv3PoolPairError, err)
+		return NewStatedbError(StorePdexv3ShareError, err)
 	}
-	for k, v := range shares {
-		key := GeneratePdexv3ShareObjectKey(poolPairID, k)
-		value := NewPdexv3ShareState()
-		*value = v
-		err := stateDB.SetStateObject(Pdexv3ShareObjectType, key, value)
-		if err != nil {
-			return NewStatedbError(StorePdexv3ShareError, err)
-		}
+	key := GeneratePdexv3TradingFeesObjectKey(poolPairID, nfctID, tokenID)
+	tradingFeeState := NewPdexv3TradingFeeStateWithValue(*tokenHash, tradingFee)
+	err = stateDB.SetStateObject(Pdexv3ShareObjectType, key, tradingFeeState)
+	if err != nil {
+		return NewStatedbError(StorePdexv3ShareError, err)
 	}
 	return nil
 }
@@ -127,7 +145,7 @@ func StorePdexv3StakingPools() error {
 	return nil
 }
 
-func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]Pdexv3ContributionState, error) {
+func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	prefixHash := GetPdexv3WaitingContributionsPrefix()
 	return stateDB.iterateWithPdexv3Contributions(prefixHash)
 }
@@ -137,7 +155,18 @@ func GetPdexv3PoolPairs(stateDB *StateDB) (map[string]Pdexv3PoolPairState, error
 	return stateDB.iterateWithPdexv3PoolPairs(prefixHash)
 }
 
-func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (map[string]Pdexv3ShareState, error) {
+func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (
+	map[string]Pdexv3ShareState,
+	error,
+) {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3Shares(prefixHash)
+}
+
+func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nfctID string) (
+	map[string]Pdexv3TradingFeeState,
+	error,
+) {
+	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nfctID)
+	return stateDB.iterateWithPdexv3TradingFees(prefixHash)
 }

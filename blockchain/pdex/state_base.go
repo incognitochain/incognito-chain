@@ -31,7 +31,7 @@ func (s *stateBase) Process(env StateEnvironment) error {
 	return nil
 }
 
-func (s *stateBase) StoreToDB(env StateEnvironment) error {
+func (s *stateBase) StoreToDB(env StateEnvironment, stateChagne *StateChange) error {
 	var err error
 	return err
 }
@@ -52,7 +52,7 @@ func (s *stateBase) ClearCache() {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) GetDiff(compareState State) (State, error) {
+func (s *stateBase) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
 	panic("Implement this fucntion")
 }
 

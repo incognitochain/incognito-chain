@@ -590,9 +590,9 @@ func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
 }
 
 //amplifier >= 10000
-func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (uint64, uint64) {
+func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, *big.Int) {
 	if amplifier == metadataPdexV3.DefaultAmplifier {
-		return amount0, amount1
+		return big.NewInt(int64(amount0)), big.NewInt(int64(amount1))
 	}
 	vAmount0 := big.NewInt(0)
 	vAmount1 := big.NewInt(0)
@@ -613,5 +613,5 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (uint64, ui
 		new(big.Int).SetUint64(uint64(metadataPdexV3.DefaultAmplifier)),
 	)
 
-	return vAmount0.Uint64(), vAmount1.Uint64()
+	return vAmount0, vAmount1
 }

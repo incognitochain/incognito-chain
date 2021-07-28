@@ -57,6 +57,7 @@ const (
 	ErrInvalidPdexv3ContributionStateType = "invalid pdex v3 contribution state type"
 	ErrInvalidPdexv3PoolPairStateType     = "invalid pdex v3 pool pair state type"
 	ErrInvalidPdexv3ShareStateType        = "invalid pdex v3 share state type"
+	ErrInvalidPdexv3TradingFeetateType    = "invalid pdex v3 trading fee state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

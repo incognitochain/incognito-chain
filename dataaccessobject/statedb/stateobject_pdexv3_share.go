@@ -9,22 +9,32 @@ import (
 )
 
 type Pdexv3ShareState struct {
-	amount uint64
+	nfctID                  common.Hash
+	amount                  uint64
+	lastUpdatedBeaconHeight uint64
+}
+
+func (ps *Pdexv3ShareState) NfctID() common.Hash {
+	return ps.nfctID
 }
 
 func (ps *Pdexv3ShareState) Amount() uint64 {
 	return ps.amount
 }
 
-func (ps *Pdexv3ShareState) SetAmount(amount uint64) {
-	ps.amount = amount
+func (ps *Pdexv3ShareState) LastUpdatedBeaconHeight() uint64 {
+	return ps.lastUpdatedBeaconHeight
 }
 
 func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Amount uint64 `json:"Amount"`
+		NfctID                  common.Hash `json:"NfctID"`
+		Amount                  uint64      `json:"Amount"`
+		LastUpdatedBeaconHeight uint64      `json:"LastUpdatedBeaconHeight"`
 	}{
-		Amount: ps.amount,
+		NfctID:                  ps.nfctID,
+		Amount:                  ps.amount,
+		LastUpdatedBeaconHeight: ps.lastUpdatedBeaconHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -34,27 +44,39 @@ func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 
 func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Amount uint64 `json:"Amount"`
+		NfctID                  common.Hash `json:"NfctID"`
+		Amount                  uint64      `json:"Amount"`
+		LastUpdatedBeaconHeight uint64      `json:"LastUpdatedBeaconHeight"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	ps.nfctID = temp.NfctID
 	ps.amount = temp.Amount
+	ps.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
 	return nil
-}
-
-func (ps *Pdexv3ShareState) Clone() *Pdexv3ShareState {
-	return NewPdexv3ShareStateWithValue(ps.amount)
 }
 
 func NewPdexv3ShareState() *Pdexv3ShareState {
 	return &Pdexv3ShareState{}
 }
 
-func NewPdexv3ShareStateWithValue(amount uint64) *Pdexv3ShareState {
+func NewPdexv3ShareStateWithValue(
+	nfctID common.Hash, amount, lastUpdatedBeaconHeight uint64,
+) *Pdexv3ShareState {
 	return &Pdexv3ShareState{
-		amount: amount,
+		nfctID:                  nfctID,
+		amount:                  amount,
+		lastUpdatedBeaconHeight: lastUpdatedBeaconHeight,
+	}
+}
+
+func (ps *Pdexv3ShareState) Clone() *Pdexv3ShareState {
+	return &Pdexv3ShareState{
+		nfctID:                  ps.nfctID,
+		amount:                  ps.amount,
+		lastUpdatedBeaconHeight: ps.lastUpdatedBeaconHeight,
 	}
 }
 
@@ -116,7 +138,8 @@ func newPdexv3ShareObjectWithValue(db *StateDB, key common.Hash, data interface{
 }
 
 func generatePdexv3ShareObjectPrefix(poolPairID string) []byte {
-	temp := []byte(string(GetPdexv3SharesPrefix()))
+	str := string(GetPdexv3SharesPrefix()) + "-" + poolPairID
+	temp := []byte(str)
 	h := common.HashH(temp)
 	return h[:][:prefixHashKeyLength]
 }
@@ -156,13 +179,13 @@ func (ps *Pdexv3ShareObject) GetValue() interface{} {
 }
 
 func (ps *Pdexv3ShareObject) GetValueBytes() []byte {
-	state, ok := ps.GetValue().(*Pdexv3PoolPairState)
+	state, ok := ps.GetValue().(*Pdexv3ShareState)
 	if !ok {
 		panic("wrong expected value type")
 	}
 	value, err := json.Marshal(state)
 	if err != nil {
-		panic("failed to marshal pdexv3 pool pair state")
+		panic("failed to marshal pdexv3 share state")
 	}
 	return value
 }

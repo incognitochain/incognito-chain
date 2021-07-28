@@ -7,6 +7,8 @@ import (
 
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -16,8 +18,8 @@ import (
 
 type stateV2 struct {
 	stateBase
-	waitingContributions        map[string]statedb.Pdexv3ContributionState
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState
+	waitingContributions        map[string]rawdbv2.Pdexv3Contribution
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 	poolPairs                   map[string]PoolPairState //
 	params                      Params
 	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
@@ -61,16 +63,16 @@ func newStateV2() *stateV2 {
 			DefaultStakingPoolsShare:        InitStakingPoolsShare,
 			StakingPoolsShare:               map[string]uint{},
 		},
-		waitingContributions:        make(map[string]statedb.Pdexv3ContributionState),
-		deletedWaitingContributions: make(map[string]statedb.Pdexv3ContributionState),
+		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
+		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]PoolPairState),
 		stakingPoolsState:           make(map[string]StakingPoolState),
 	}
 }
 
 func newStateV2WithValue(
-	waitingContributions map[string]statedb.Pdexv3ContributionState,
-	deletedWaitingContributions map[string]statedb.Pdexv3ContributionState,
+	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]PoolPairState,
 	params Params,
 	stakingPoolsState map[string]StakingPoolState,
@@ -115,19 +117,31 @@ func initStateV2(
 	}
 	poolPairs := make(map[string]PoolPairState)
 	for k, v := range poolPairsState {
-		poolPair := *NewPoolPairState()
-		poolPair.state = v
-		shares, err := statedb.GetPdexv3Shares(stateDB, k)
+		sharesState, err := statedb.GetPdexv3Shares(stateDB, k)
 		if err != nil {
 			return nil, err
 		}
-		poolPair.shares = shares
-		poolPairs[k] = poolPair
+		shares := make(map[string]Share)
+		for key, value := range sharesState {
+			tradingFeesState, err := statedb.GetPdexv3TradingFees(stateDB, k, key)
+			if err != nil {
+				return nil, err
+			}
+			tradingFees := make(map[string]uint64)
+			for tradingFeesKey, tradingFeesValue := range tradingFeesState {
+				tradingFees[tradingFeesKey] = tradingFeesValue.Amount()
+			}
+			shares[k] = *NewShareWithValue(value.Amount(), tradingFees, value.LastUpdatedBeaconHeight())
+		}
+		poolPair := NewPoolPairStateWithValue(
+			v.Value(), shares,
+		)
+		poolPairs[k] = *poolPair
 	}
 
 	return newStateV2WithValue(
 		waitingContributions,
-		make(map[string]statedb.Pdexv3ContributionState),
+		make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs,
 		params,
 		nil, nil,
@@ -192,7 +206,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.params,
 			)
-		case metadataCommon.Pdexv3AddLiquidityMeta:
+		case metadataCommon.Pdexv3AddLiquidityResponseMeta:
 			s.poolPairs,
 				s.waitingContributions,
 				s.deletedWaitingContributions, err = s.processor.addLiquidity(
@@ -232,7 +246,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		for _, tx := range pdexv3Txs[byte(key)] {
 			// TODO: @pdex get metadata here and build instructions from transactions here
 			switch tx.GetMetadataType() {
-			case metadataCommon.Pdexv3AddLiquidityMeta:
+			case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 				_, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
 				if !ok {
 					return instructions, errors.New("Can not parse add liquidity metadata")
@@ -278,7 +292,7 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 	return nil
 }
 
-func (s *stateV2) StoreToDB(env StateEnvironment) error {
+func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
 	err := statedb.StorePdexv3Params(
 		env.StateDB(),
 		s.params.DefaultFeeRateBPS,
@@ -294,7 +308,11 @@ func (s *stateV2) StoreToDB(env StateEnvironment) error {
 	if err != nil {
 		return err
 	}
-	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), s.deletedWaitingContributions)
+	deletedWaitingContributionsKeys := []string{}
+	for k := range s.deletedWaitingContributions {
+		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
+	}
+	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
 	if err != nil {
 		return err
 	}
@@ -302,12 +320,36 @@ func (s *stateV2) StoreToDB(env StateEnvironment) error {
 	if err != nil {
 		return err
 	}
-	for k, v := range s.poolPairs {
-		err = statedb.StorePdexv3PoolPair(env.StateDB(), k, v.state, v.shares)
-		if err != nil {
-			return err
+
+	for poolPairID, poolPairState := range s.poolPairs {
+		if stateChange.poolPairIDs[poolPairID] {
+			err := statedb.StorePdexv3PoolPair(env.StateDB(), poolPairID, poolPairState.state)
+			if err != nil {
+				return err
+			}
+		}
+		for nfctID, share := range poolPairState.shares {
+			if stateChange.nfctIDs[nfctID] {
+				nfctIDHash, err := common.Hash{}.NewHashFromStr(nfctID)
+				share := statedb.NewPdexv3ShareStateWithValue(*nfctIDHash, share.amount, share.lastUpdatedBeaconHeight)
+				err = statedb.StorePdexv3Share(env.StateDB(), poolPairID, *share)
+				if err != nil {
+					return err
+				}
+			}
+			for tokenID, tradingFee := range share.tradingFees {
+				if stateChange.tokenIDs[tokenID] {
+					err := statedb.StorePdexv3TradingFee(
+						env.StateDB(), poolPairID, nfctID, tokenID, tradingFee,
+					)
+					if err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
+
 	err = statedb.StorePdexv3StakingPools()
 	if err != nil {
 		return err
@@ -317,12 +359,13 @@ func (s *stateV2) StoreToDB(env StateEnvironment) error {
 }
 
 func (s *stateV2) ClearCache() {
-	s.deletedWaitingContributions = make(map[string]statedb.Pdexv3ContributionState)
+	s.deletedWaitingContributions = make(map[string]rawdbv2.Pdexv3Contribution)
 }
 
-func (s *stateV2) GetDiff(compareState State) (State, error) {
+func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
+	newStateChange := stateChange
 	if compareState == nil {
-		return nil, errors.New("compareState is nil")
+		return nil, newStateChange, errors.New("compareState is nil")
 	}
 
 	res := newStateV2()
@@ -352,6 +395,7 @@ func (s *stateV2) GetDiff(compareState State) (State, error) {
 	}
 	for k, v := range s.poolPairs {
 		if m, ok := compareStateV2.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
+			newStateChange = v.getDiff(k, &m, newStateChange)
 			res.poolPairs[k] = v.Clone()
 		}
 	}
@@ -361,7 +405,7 @@ func (s *stateV2) GetDiff(compareState State) (State, error) {
 		}
 	}
 
-	return res, nil
+	return res, newStateChange, nil
 
 }
 
@@ -375,10 +419,13 @@ func (s *stateV2) Reader() StateReader {
 
 func NewContributionWithMetaData(
 	metaData metadataPdexV3.AddLiquidity, txReqID string, shardID byte,
-) *statedb.Pdexv3ContributionState {
-	return statedb.NewPdexv3ContributionStateWithValue(
+) *rawdbv2.Pdexv3Contribution {
+	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
+	txReqHash, _ := common.Hash{}.NewHashFromStr(txReqID)
+
+	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
-		metaData.TokenID(), txReqID, metaData.TokenAmount(), metaData.Amplifier(),
+		*tokenHash, *txReqHash, metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
 	)
 }

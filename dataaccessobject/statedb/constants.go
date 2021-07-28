@@ -68,6 +68,7 @@ const (
 	Pdexv3ContributionObjectType
 	Pdexv3PoolPairObjectType
 	Pdexv3ShareObjectType
+	Pdexv3TradingFeeObjectType
 )
 
 // Prefix length

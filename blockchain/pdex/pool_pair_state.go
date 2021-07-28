@@ -2,68 +2,65 @@ package pdex
 
 import (
 	"math/big"
+	"reflect"
 	"sort"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type PoolPairState struct {
-	state       statedb.Pdexv3PoolPairState
-	shares      map[string]statedb.Pdexv3ShareState
-	tradingFees map[string]map[string]uint64
+	state  rawdbv2.Pdexv3PoolPair
+	shares map[string]Share
 }
 
-func initPoolPairState(contribution0, contribution1 statedb.Pdexv3ContributionState) *PoolPairState {
-	contributions := []statedb.Pdexv3ContributionState{contribution0, contribution1}
+func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) *PoolPairState {
+	contributions := []rawdbv2.Pdexv3Contribution{contribution0, contribution1}
 	sort.Slice(contributions, func(i, j int) bool {
-		return contributions[i].TokenID() < contributions[j].TokenID()
+		return contribution0.TokenID().String() < contribution1.TokenID().String()
 	})
 	token0VirtualAmount, token1VirtualAmount := calculateVirtualAmount(
 		contributions[0].Amount(),
 		contributions[1].Amount(),
 		contributions[0].Amplifier(),
 	)
-	state := statedb.NewPdexv3PoolPairStateWithValue(
+
+	poolPairState := rawdbv2.NewPdexv3PoolPairWithValue(
 		contributions[0].TokenID(), contributions[1].TokenID(),
 		contributions[0].Amount(), contributions[1].Amount(),
 		0,
-		token0VirtualAmount, token1VirtualAmount,
+		*token0VirtualAmount, *token1VirtualAmount,
 		contributions[0].Amplifier(),
 	)
+
 	return NewPoolPairStateWithValue(
-		*state,
-		make(map[string]statedb.Pdexv3ShareState),
-		make(map[string]map[string]uint64),
+		*poolPairState,
+		make(map[string]Share),
 	)
 }
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
-		shares:      make(map[string]statedb.Pdexv3ShareState),
-		tradingFees: make(map[string]map[string]uint64),
+		shares: make(map[string]Share),
 	}
 }
 
 func NewPoolPairStateWithValue(
-	state statedb.Pdexv3PoolPairState,
-	shares map[string]statedb.Pdexv3ShareState,
-	tradingFees map[string]map[string]uint64,
+	state rawdbv2.Pdexv3PoolPair,
+	shares map[string]Share,
 ) *PoolPairState {
 	return &PoolPairState{
-		state:       state,
-		shares:      shares,
-		tradingFees: tradingFees,
+		state:  state,
+		shares: shares,
 	}
 }
 
 func (p *PoolPairState) getContributionsByOrder(
-	contribution0, contribution1 *statedb.Pdexv3ContributionState,
+	contribution0, contribution1 *rawdbv2.Pdexv3Contribution,
 	metaData0, metaData1 *metadataPdexV3.AddLiquidity,
 ) (
-	statedb.Pdexv3ContributionState, statedb.Pdexv3ContributionState,
+	rawdbv2.Pdexv3Contribution, rawdbv2.Pdexv3Contribution,
 	metadataPdexV3.AddLiquidity, metadataPdexV3.AddLiquidity,
 ) {
 	if contribution0.TokenID() == p.state.Token0ID() {
@@ -73,7 +70,7 @@ func (p *PoolPairState) getContributionsByOrder(
 }
 
 func (p *PoolPairState) computeActualContributedAmounts(
-	contribution0, contribution1 *statedb.Pdexv3ContributionState,
+	contribution0, contribution1 *rawdbv2.Pdexv3Contribution,
 ) (uint64, uint64, uint64, uint64) {
 	contribution0Amount := big.NewInt(0)
 	tempAmt := big.NewInt(0)
@@ -118,36 +115,51 @@ func (p *PoolPairState) updateReserveAndShares(
 	}
 	p.state.SetToken0RealAmount(p.state.Token0RealAmount() + amount0)
 	p.state.SetToken1RealAmount(p.state.Token1RealAmount() + amount1)
-	p.state.SetToken0VirtualAmount(p.state.Token0VirtualAmount() + amount0)
-	p.state.SetToken1VirtualAmount(p.state.Token1VirtualAmount() + amount1)
+
+	oldToken0VirtualAmount := p.state.Token0VirtualAmount()
+	newToken0VirtualAmount := big.Int{}
+	newToken0VirtualAmount.Add(&oldToken0VirtualAmount, big.NewInt(int64(amount0)))
+	oldToken1VirtualAmount := p.state.Token1VirtualAmount()
+	newToken1VirtualAmount := big.Int{}
+	newToken1VirtualAmount.Add(&oldToken1VirtualAmount, big.NewInt(int64(amount1)))
+
+	p.state.SetToken0VirtualAmount(newToken0VirtualAmount)
+	p.state.SetToken1VirtualAmount(newToken1VirtualAmount)
 	return amount0
 
 }
 
 func (p *PoolPairState) addShare(key string, amount, beaconHeight uint64) string {
 	nfctID := genNFT(key, p.state.CurrentContributionID(), beaconHeight)
-	share := statedb.NewPdexv3ShareStateWithValue(amount)
+	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
 	p.shares[nfctID] = *share
 	p.state.SetCurrentContributionID(p.state.CurrentContributionID() + 1)
 	return nfctID
 }
 
 func genNFT(key string, id, beaconHeight uint64) string {
-	hash := key + strconv.FormatUint(id, 10) + strconv.FormatUint(beaconHeight, 10)
-	return common.HashH([]byte(hash)).String()
+	hash := append([]byte(key), append(common.Uint64ToBytes(id), common.Uint64ToBytes(beaconHeight)...)...)
+	return common.HashH(hash).String()
 }
 
 func (p *PoolPairState) Clone() PoolPairState {
 	res := NewPoolPairState()
 	res.state = *p.state.Clone()
 	for k, v := range p.shares {
-		res.shares[k] = v
-	}
-	for k, v := range p.tradingFees {
-		res.tradingFees[k] = make(map[string]uint64)
-		for key, value := range v {
-			res.tradingFees[k][key] = value
-		}
+		res.shares[k] = *v.Clone()
 	}
 	return *res
+}
+
+func (p *PoolPairState) getDiff(poolPairID string, comparePoolPair *PoolPairState, stateChange *StateChange) *StateChange {
+	newStateChange := stateChange
+	for k, v := range p.shares {
+		if m, ok := comparePoolPair.shares[k]; !ok || !reflect.DeepEqual(m, v) {
+			newStateChange = v.getDiff(k, &m, newStateChange)
+		}
+	}
+	if !reflect.DeepEqual(p.state, comparePoolPair.state) {
+		newStateChange.poolPairIDs[poolPairID] = true
+	}
+	return newStateChange
 }

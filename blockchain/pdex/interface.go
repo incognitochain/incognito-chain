@@ -9,12 +9,12 @@ type State interface {
 	Version() uint
 	Clone() State
 	Process(StateEnvironment) error
-	StoreToDB(StateEnvironment) error
+	StoreToDB(StateEnvironment, *StateChange) error
 	BuildInstructions(StateEnvironment) ([][]string, error)
 	Upgrade(StateEnvironment) State
 	TransformKeyWithNewBeaconHeight(beaconHeight uint64)
 	ClearCache()
-	GetDiff(State) (State, error)
+	GetDiff(State, *StateChange) (State, *StateChange, error)
 	Reader() StateReader
 }
 
