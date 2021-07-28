@@ -702,6 +702,18 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 			valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenIdOnTx)
 			return valid, nil, err
 		}
+
+		// This transaction might be a tx burn, we must check its tokenId and assetTag
+		if tokenIdOnTx.String() != common.PRVIDStr || tokenIdOnTx.String() != common.ConfidentialAssetID.String() {
+			isBurned, burnedToken, _, err := txToken.GetTxBurnData()
+			if err != nil {
+				return false, nil, err
+			}
+			if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenIdOnTx[:])){
+				return false, nil, fmt.Errorf("invalid burned tokenId")
+			}
+		}
+
 		isBatch, ok := boolParams["isBatch"]
 		if !ok {
 			isBatch = false
