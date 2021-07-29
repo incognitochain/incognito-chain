@@ -2,12 +2,15 @@ package pdex
 
 import (
 	"encoding/json"
+	"math"
 	"strconv"
 
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -77,6 +80,35 @@ func (sp *stateProducerV2) addLiquidity(
 	}
 
 	return res, nil
+}
+
+func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
+	daoPaymentAddressStr := config.Param().IncognitoDAOAddress
+	keyWallet, err := wallet.Base58CheckDeserialize(daoPaymentAddressStr)
+	if err != nil {
+		return [][]string{}, errors.New("Could not deserialize DAO payment address")
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return [][]string{}, errors.New("DAO payment address is invalid")
+	}
+
+	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
+
+	mintingPDEXGenesisContent := metadataPdexv3.MintPDEXGenesisContent{
+		MintingPaymentAddress: daoPaymentAddressStr,
+		MintingAmount:         uint64(GenesisMintingAmount * math.Pow(10, common.PDEXDenominatingDecimal)),
+		ShardID:               shardID,
+	}
+	mintingPDEXGenesisContentBytes, _ := json.Marshal(mintingPDEXGenesisContent)
+
+	inst := []string{
+		strconv.Itoa(metadataCommon.Pdexv3MintPDEXGenesisMeta),
+		strconv.Itoa(int(shardID)),
+		metadataPdexv3.RequestAcceptedChainStatus,
+		string(mintingPDEXGenesisContentBytes),
+	}
+
+	return [][]string{inst}, nil
 }
 
 func (sp *stateProducerV2) modifyParams(

@@ -6,6 +6,7 @@ import (
 
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -218,6 +219,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, addLiquidityInstructions...)
+
+	// mint PDEX token at the pDex v3 checkpoint block
+	if env.BeaconHeight() == config.Param().PDexParams.Pdexv3BreakPointHeight {
+		mintPDEXGenesis, err := s.producer.mintPDEXGenesis()
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, mintPDEXGenesis...)
+	}
 
 	// handle modify params
 	var modifyParamsInstructions [][]string

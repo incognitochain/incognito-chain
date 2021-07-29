@@ -88,7 +88,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 ) (bool, bool, error) {
 	// check tx type and version
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, errors.New("Tx pDex v3 LP fee withdrawal must be TxCustomTokenPrivacyType"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, errors.New("Tx pDex v3 LP fee withdrawal must be TxCustomTokenPrivacyType"))
 	}
 
 	if tx.GetVersion() != 2 {
@@ -98,12 +98,12 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 	// validate burn tx, tokenID & amount = 1
 	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
 	if err != nil || !isBurn {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
 	}
 	burningAmt := burnedCoin.GetValue()
 	burningTokenID := burnedToken.String()
 	if burningAmt != 1 || burningTokenID != withdrawal.NfctTokenID {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WitdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
 	// TODO: Check OTA address string and tx random is valid

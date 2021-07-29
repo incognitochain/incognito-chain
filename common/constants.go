@@ -64,11 +64,13 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID      = Hash{4} // To send PRV in custom token
-	PRVCoinName    = "PRV"   // To send PRV in custom token
-	ConfidentialAssetID = Hash{5}
+	PRVCoinID             = Hash{4} // To send PRV in custom token
+	PRVCoinName           = "PRV"   // To send PRV in custom token
+	ConfidentialAssetID   = Hash{5}
 	ConfidentialAssetName = "CA"
-	MaxShardNumber = 0
+	PDEXCoinID            = Hash{6}
+	PDExCoinName          = "PDEX"
+	MaxShardNumber        = 0
 )
 
 // CONSENSUS
@@ -179,6 +181,8 @@ const (
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
+const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
+const PDEXDenominatingDecimal = 9
 
 const ETHChainName = "eth"
 

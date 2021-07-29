@@ -15,6 +15,12 @@ type MintPDEXGenesisResponse struct {
 	SharedRandom          []byte `json:"SharedRandom"`
 }
 
+type MintPDEXGenesisContent struct {
+	MintingPaymentAddress string `json:"MintingPaymentAddress"`
+	MintingAmount         uint64 `json:"MintingAmount"`
+	ShardID               byte   `json:"ShardID"`
+}
+
 func NewPdexv3MintPDEXGenesisResponse(
 	metaType int,
 	mintingPaymentAddress string,
@@ -60,7 +66,7 @@ func (mintResponse MintPDEXGenesisResponse) ValidateSanityData(
 
 func (mintResponse MintPDEXGenesisResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return mintResponse.Type == metadataCommon.Pdexv3MintPDEXGenesisResponseMeta
+	return mintResponse.Type == metadataCommon.Pdexv3MintPDEXGenesisMeta
 }
 
 func (mintResponse MintPDEXGenesisResponse) Hash() *common.Hash {
