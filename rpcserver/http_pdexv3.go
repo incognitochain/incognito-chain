@@ -277,12 +277,11 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private key %v: %v", privateKey, err))
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
 	}
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
 	}
-	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
@@ -304,11 +303,11 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	receiverAddress := privacy.OTAReceiver{}
 	refundAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromAddress(senderAddress, *tokenHash)
+	err = receiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = refundAddress.FromAddress(senderAddress, *tokenHash)
+	err = refundAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -384,4 +383,8 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return res, isPRV, nil
+}
+
+func (httpServer *HttpServer) handleGetPdexv3ContributionStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleGetPDEContributionStatusV2(params, closeChan)
 }

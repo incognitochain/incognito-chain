@@ -53,9 +53,15 @@ var (
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// pdex v3
-	pdexv3StatusPrefix          = []byte("pdexv3-status-")
-	pdexv3ParamsModifyingPrefix = []byte("pdexv3-paramsmodifyingstatus-")
-	pdexv3ParamsPrefix          = []byte("pdexv3-params-")
+	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
+	pdexv3ParamsModifyingPrefix             = []byte("pdexv3-paramsmodifyingstatus-")
+	pdexv3ParamsPrefix                      = []byte("pdexv3-params-")
+	pdexv3WaitingContributionsPrefix        = []byte("pdexv3-waitingContributions-")
+	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
+	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
+	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
+	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
+	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -553,6 +559,30 @@ func GetPdexv3StatusPrefix(statusType []byte) []byte {
 
 func GetPdexv3ParamsPrefix() []byte {
 	return pdexv3ParamsPrefix
+}
+
+func GetPdexv3WaitingContributionsPrefix() []byte {
+	return pdexv3WaitingContributionsPrefix
+}
+
+func GetPdexv3DeletedWaitingContributionsPrefix() []byte {
+	return pdexv3DeletedWaitingContributionsPrefix
+}
+
+func GetPdexv3PoolPairsPrefix() []byte {
+	return pdexv3PoolPairsPrefix
+}
+
+func GetPdexv3SharesPrefix() []byte {
+	return pdexv3SharesPrefix
+}
+
+func GetPdexv3TradingFeesPrefix() []byte {
+	return pdexv3TradingFeesPrefix
+}
+
+func GetPdexv3StakingPoolsPrefix() []byte {
+	return pdexv3StakingPoolsPrefix
 }
 
 var _ = func() (_ struct{}) {
