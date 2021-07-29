@@ -1,0 +1,7 @@
+[
+{
+    "name": "Valid trade over 2-pair path",
+    "data": "{\"amountIn\":560,\"fee\":60,\"reserves\":[{\"Token0\":250,\"Token1\":500,\"Token0Virtual\":500,\"Token1Virtual\":1000},{\"Token0\":1000,\"Token1\":1900,\"Token0Virtual\":3000,\"Token1Virtual\":6000}],\"tradeDirections\":[1,0],\"orders\":[[],[]]}",
+    "expected": "{\"instructions\":[\"273\",\"accepted\",\"0\",\"{\\\"Content\\\":{\\\"Receiver\\\":\\\"15VRBi1S7Pme5bUpHW12HZVjXCTg1FwDM3yoSUjWgGEhVJoLudKwtpQk3iSmwe27ffsj76LLZvyJ9x5tbX44SmKBSzdegpLsNKFc71j4jDxQh1PYSVbVHtTbgMoLvUUReaQWyyoXPvuarV5E\\\",\\\"Amount\\\":314,\\\"TradePath\\\":[\\\"pair0\\\",\\\"pair1\\\"],\\\"TokenToBuy\\\":\\\"0000000000000000000000000000000000000000000000000000000000000004\\\",\\\"PairChanges\\\":[[-166,500],[166,-314]],\\\"OrderChanges\\\":[{},{}]},\\\"RequestTxID\\\":\\\"0000000000000000000000000000000000000000000000000000000000000000\\\"}\"],\"changedReserves\":[{\"Token0\":84,\"Token1\":1000,\"Token0Virtual\":334,\"Token1Virtual\":1500},{\"Token0\":1166,\"Token1\":1586,\"Token0Virtual\":3166,\"Token1Virtual\":5686}]}",
+    "expectSuccess": true
+}]
