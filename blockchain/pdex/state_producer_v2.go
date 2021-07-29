@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"math/big"
 	"strconv"
 
 	"errors"
@@ -123,7 +124,12 @@ func (sp *stateProducerV2) addLiquidity(
 		poolPair, found := poolPairs[poolPairID]
 		if !found {
 			newPoolPair := *initPoolPairState(waitingContribution, incomingContribution)
-			nfctID := poolPair.addShare(poolPairID, poolPair.state.ShareAmount(), beaconHeight)
+			tempAmt := big.NewInt(0).Mul(
+				big.NewInt(0).SetUint64(waitingContribution.Amount()),
+				big.NewInt(0).SetUint64(incomingContribution.Amount()),
+			)
+			shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
+			nfctID := poolPair.addShare(poolPairID, shareAmount, beaconHeight)
 			inst, err := instruction.NewMatchAddLiquidityWithValue(
 				incomingContributionState, poolPairID, nfctID,
 			).StringSlice()

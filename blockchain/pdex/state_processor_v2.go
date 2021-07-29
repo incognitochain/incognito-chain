@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -194,7 +195,13 @@ func (sp *stateProcessorV2) matchContribution(
 		matchContributionValue.TokenID().String(),
 		existingWaitingContribution.TxReqID().String(),
 	)
-	poolPair.addShare(poolPairID, poolPair.state.ShareAmount(), beaconHeight)
+	tempAmt := big.NewInt(0).Mul(
+		big.NewInt(0).SetUint64(existingWaitingContribution.Amount()),
+		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
+	)
+	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
+
+	poolPair.addShare(poolPairID, shareAmount, beaconHeight)
 	poolPairs[poolPairID] = *poolPair
 	deletedWaitingContributions[matchContribution.PairHash()] = existingWaitingContribution
 	delete(waitingContributions, matchContribution.PairHash())

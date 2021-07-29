@@ -25,15 +25,9 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		contributions[1].Amount(),
 		contributions[0].Amplifier(),
 	)
-	tempAmt := big.NewInt(0).Mul(
-		big.NewInt(0).SetUint64(contributions[0].Amount()),
-		big.NewInt(0).SetUint64(contributions[1].Amount()),
-	)
-	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-
 	poolPairState := rawdbv2.NewPdexv3PoolPairWithValue(
 		contributions[0].TokenID(), contributions[1].TokenID(),
-		shareAmount, contributions[0].Amount(), contributions[1].Amount(),
+		0, contributions[0].Amount(), contributions[1].Amount(),
 		0,
 		*token0VirtualAmount, *token1VirtualAmount,
 		contributions[0].Amplifier(),
@@ -176,6 +170,7 @@ func (p *PoolPairState) addShare(key string, amount, beaconHeight uint64) common
 	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
 	p.shares[nfctID.String()] = *share
 	p.state.SetCurrentContributionID(p.state.CurrentContributionID() + 1)
+	p.state.SetShareAmount(p.state.ShareAmount() + amount)
 	return nfctID
 }
 
