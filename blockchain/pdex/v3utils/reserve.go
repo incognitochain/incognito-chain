@@ -74,7 +74,7 @@ func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 		}
 		L = big.NewInt(0).Mul(xV, yV)
 
-		targetDeltaX := big.NewInt(0).Mul(L, xOrd)
+		targetDeltaX = big.NewInt(0).Mul(L, xOrd)
 		targetDeltaX.Div(targetDeltaX, yOrd)
 		targetDeltaX.Sqrt(targetDeltaX)
 		targetDeltaX.Sub(targetDeltaX, xV)
@@ -127,7 +127,7 @@ func (pr *PoolReserve) ApplyReserveChanges(change0, change1 *big.Int) error {
 	resv := big.NewInt(0).SetUint64(pr.Token0)
 	temp := big.NewInt(0).Add(resv, change0)
 	if temp.Cmp(big.NewInt(0)) == -1 {
-		return fmt.Errorf("Not enough liquidity for trade")
+		return fmt.Errorf("Not enough token0 liquidity for trade")
 	}
 	pr.Token0 = temp.Uint64()
 
@@ -141,7 +141,7 @@ func (pr *PoolReserve) ApplyReserveChanges(change0, change1 *big.Int) error {
 	resv.SetUint64(pr.Token1)
 	temp.Add(resv, change1)
 	if temp.Cmp(big.NewInt(0)) == -1 {
-		return fmt.Errorf("Not enough liquidity for trade")
+		return fmt.Errorf("Not enough token1 liquidity for trade")
 	}
 	pr.Token1 = temp.Uint64()
 
@@ -157,7 +157,7 @@ func (pr *PoolReserve) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserves []*PoolReserve, tradeDirections []int, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*PoolReserve, error) {
+func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, reserves []*PoolReserve, tradeDirections []int, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*PoolReserve, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
 		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
@@ -168,23 +168,21 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 	sellAmountRemain := amountIn - fee
 	acceptedMeta := metadataPdexv3.AcceptedTrade{
 		Receiver:     receiver,
-		PairChanges:  make([][2]big.Int, mutualLen),
-		OrderChanges: make([]map[string][2]big.Int, mutualLen),
+		TradePath:    tradePath,
+		PairChanges:  make([][2]*big.Int, mutualLen),
+		OrderChanges: make([]map[string][2]*big.Int, mutualLen),
 		TokenToBuy:   tokenToBuy,
 	}
 
 	var totalBuyAmount uint64
 	for i := 0; i < mutualLen; i++ {
-		acceptedMeta.OrderChanges[i] = make(map[string][2]big.Int)
+		acceptedMeta.OrderChanges[i] = make(map[string][2]*big.Int)
 
 		accumulatedToken0Change := big.NewInt(0)
 		accumulatedToken1Change := big.NewInt(0)
-		var order *OrderMatchingInfo
-		var ordID string
-		var err error
 		totalBuyAmount = uint64(0)
 
-		for order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]); err == nil; {
+		for order, ordID, err := orderbooks[i].NextOrder(tradeDirections[i]); err == nil; order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]) {
 			buyAmount, temp, token0Change, token1Change, err := reserves[i].SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
 				return nil, nil, err
@@ -200,7 +198,7 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 				break
 			}
 			if order != nil {
-				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i], *reserves[i])
+				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i])
 				if err != nil {
 					return nil, nil, err
 				}
@@ -210,7 +208,7 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 				}
 				totalBuyAmount += buyAmount
 				// add order balance changes to "accepted" instruction
-				acceptedMeta.OrderChanges[i][ordID] = [2]big.Int{*token0Change, *token1Change}
+				acceptedMeta.OrderChanges[i][ordID] = [2]*big.Int{token0Change, token1Change}
 				if sellAmountRemain == 0 {
 					break
 				}
@@ -218,12 +216,12 @@ func MaybeAcceptTrade(amountIn, fee uint64, receiver privacy.OTAReceiver, reserv
 		}
 
 		// add pair changes to "accepted" instruction
-		acceptedMeta.PairChanges[i] = [2]big.Int{*accumulatedToken0Change, *accumulatedToken1Change}
+		acceptedMeta.PairChanges[i] = [2]*big.Int{accumulatedToken0Change, accumulatedToken1Change}
 		// set sell amount before moving on to next pair
 		sellAmountRemain = totalBuyAmount
 	}
 
 	acceptedMeta.Amount = totalBuyAmount
-	acn := &instruction.Action{Content: acceptedMeta}
+	acn.Content = acceptedMeta
 	return acn.Strings(), reserves, nil
 }

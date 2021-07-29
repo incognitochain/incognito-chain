@@ -75,8 +75,8 @@ func (ordInf OrderMatchingInfo) SellAmountToOrder(incomingTradeBuyAmount uint64,
 	return result.Uint64(), nil
 }
 
-// MatchOwnRate() swaps this order's selling balance with token sold in a trade, following this order's rate
-func (ordInf *OrderMatchingInfo) MatchOwnRate(maxSellAmountAfterFee uint64, tradeDirection int) (uint64, uint64, *big.Int, *big.Int, error) {
+// Match() swaps this order's selling balance with token sold in a trade, following this order's rate
+func (ordInf *OrderMatchingInfo) Match(maxSellAmountAfterFee uint64, tradeDirection int) (uint64, uint64, *big.Int, *big.Int, error) {
 	finalSellAmount := maxSellAmountAfterFee
 	sellAmountRemain := uint64(0)
 	buyAmount, err := ordInf.BuyAmountFromOrder(maxSellAmountAfterFee, tradeDirection)
@@ -102,7 +102,8 @@ func (ordInf *OrderMatchingInfo) MatchOwnRate(maxSellAmountAfterFee uint64, trad
 		}
 	}
 
-	var token0Change, token1Change *big.Int
+	token0Change := big.NewInt(0)
+	token1Change := big.NewInt(0)
 	// sell / buy are from incoming trade's view
 	if tradeDirection == TradeDirectionSell0 {
 		token0Change.SetUint64(finalSellAmount)
@@ -121,8 +122,8 @@ func (ordInf *OrderMatchingInfo) MatchOwnRate(maxSellAmountAfterFee uint64, trad
 	return buyAmount, sellAmountRemain, token0Change, token1Change, nil
 }
 
-// Match() is the default order matcher. It uses pool price instead of this order's rate
-func (ordInf *OrderMatchingInfo) Match(maxSellAmountAfterFee uint64, tradeDirection int, pr PoolReserve) (uint64, uint64, *big.Int, *big.Int, error) {
+// MatchPoolAmount() uses pool values instead of this order's rate
+func (ordInf *OrderMatchingInfo) MatchPoolAmount(maxSellAmountAfterFee uint64, tradeDirection int, pr PoolReserve) (uint64, uint64, *big.Int, *big.Int, error) {
 	finalSellAmount := maxSellAmountAfterFee
 	sellAmountRemain := uint64(0)
 	buyAmount, err := pr.BuyAmount(maxSellAmountAfterFee, tradeDirection)
@@ -131,9 +132,9 @@ func (ordInf *OrderMatchingInfo) Match(maxSellAmountAfterFee uint64, tradeDirect
 	}
 	var maxBuyingAmount uint64
 	if tradeDirection == TradeDirectionSell0 {
-		maxBuyingAmount = ordInf.Token1Rate
+		maxBuyingAmount = ordInf.Token1Balance
 	} else {
-		maxBuyingAmount = ordInf.Token0Rate
+		maxBuyingAmount = ordInf.Token0Balance
 	}
 	if maxBuyingAmount < buyAmount {
 		buyAmount = maxBuyingAmount
@@ -148,7 +149,8 @@ func (ordInf *OrderMatchingInfo) Match(maxSellAmountAfterFee uint64, tradeDirect
 		}
 	}
 
-	var token0Change, token1Change *big.Int
+	token0Change := big.NewInt(0)
+	token1Change := big.NewInt(0)
 	// sell / buy are from incoming trade's view
 	if tradeDirection == TradeDirectionSell0 {
 		token0Change.SetUint64(finalSellAmount)
@@ -178,7 +180,7 @@ func (ordInf *OrderMatchingInfo) ApplyBalanceChanges(change0, change1 *big.Int) 
 	balance := big.NewInt(0).SetUint64(ordInf.Token0Balance)
 	temp := big.NewInt(0).Add(balance, change0)
 	if temp.Cmp(big.NewInt(0)) == -1 {
-		return fmt.Errorf("Not enough liquidity for trade")
+		return fmt.Errorf("Not enough token0 balance in order for trade")
 	} else if !temp.IsUint64() {
 		return fmt.Errorf("Cannot set token0 balance out of uint64 range")
 	}
@@ -187,7 +189,7 @@ func (ordInf *OrderMatchingInfo) ApplyBalanceChanges(change0, change1 *big.Int) 
 	balance.SetUint64(ordInf.Token1Balance)
 	temp.Add(balance, change1)
 	if temp.Cmp(big.NewInt(0)) == -1 {
-		return fmt.Errorf("Not enough liquidity for trade")
+		return fmt.Errorf("Not enough token1 balance in order for trade")
 	} else if !temp.IsUint64() {
 		return fmt.Errorf("Cannot set token1 balance out of uint64 range")
 	}
