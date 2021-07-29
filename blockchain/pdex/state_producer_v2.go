@@ -65,17 +65,22 @@ func (sp *stateProducerV2) trade(
 	// )
 
 	for _, currentTrade := range tradeRequests {
-		refundAction := &instruction.Action{Content: metadataPdexv3.RefundedTrade{
-			Receiver:    currentTrade.RefundReceiver,
-			TokenToSell: currentTrade.TokenToSell,
-			Amount:      currentTrade.SellAmount,
-		}}
-		var currentInst []string = refundAction.Strings()
+		currentAction := &instruction.Action{
+			metadataPdexv3.RefundedTrade{
+				Receiver:    currentTrade.RefundReceiver,
+				TokenToSell: currentTrade.TokenToSell,
+				Amount:      currentTrade.SellAmount,
+			},
+			tx.Hash(),
+			currentTrade.Receiver.ShardID(), // sender & receiver shard must be the same
+		}
+		// produced instruction defaults to refund & will be set to acceptedInst if MaybeAcceptTrade succeeds
+		var currentInst []string = currentAction.Strings()
 
 		reserves, pairsInPath, tradeDirections, tokenToBuy, err := getRelevantReserves(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		if err == nil {
 			var acceptedInst []string
-			acceptedInst, _, err := v3.MaybeAcceptTrade(currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.Receiver, reserves, tradeDirections, tokenToBuy, pairsInPath)
+			acceptedInst, _, err := v3.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.TradePath, currentTrade.Receiver, reserves, tradeDirections, tokenToBuy, pairsInPath)
 			if err == nil {
 				currentInst = acceptedInst
 			}

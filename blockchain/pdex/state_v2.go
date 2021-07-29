@@ -89,7 +89,7 @@ func (p *PoolPairState) NextOrder(tradeDirection int) (*v3.OrderMatchingInfo, st
 	switch tradeDirection {
 	case v3.TradeDirectionSell0:
 		for i := 0; i < lstLen; i++ {
-			if p.orders[i].orderMatchingInfo.Token0Balance > 0 {
+			if p.orders[i].orderMatchingInfo.Token1Balance > 0 {
 				return &p.orders[i].orderMatchingInfo, p.orders[i].id, nil
 			}
 		}
