@@ -10,42 +10,42 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
-type WaitingAddLiquidity struct {
+type RefundAddLiquidity struct {
 	contribution statedb.Pdexv3ContributionState
 }
 
-func NewWaitingAddLiquidity() *WaitingAddLiquidity {
-	return &WaitingAddLiquidity{}
+func NewRefundAddLiquidity() *RefundAddLiquidity {
+	return &RefundAddLiquidity{}
 }
 
-func NewWaitingAddLiquidityWithValue(contribution statedb.Pdexv3ContributionState) *WaitingAddLiquidity {
-	return &WaitingAddLiquidity{
+func NewRefundAddLiquidityWithValue(contribution statedb.Pdexv3ContributionState) *RefundAddLiquidity {
+	return &RefundAddLiquidity{
 		contribution: contribution,
 	}
 }
 
-func (w *WaitingAddLiquidity) FromStringSlice(source []string) error {
+func (r *RefundAddLiquidity) FromStringSlice(source []string) error {
 	if len(source) != 3 {
 		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
 	}
 	if source[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3AddLiquidityRequestMeta, source[0])
 	}
-	if source[1] != common.PDEContributionWaitingChainStatus {
-		return fmt.Errorf("Expect status %s but get %v", common.PDEContributionWaitingChainStatus, source[1])
+	if source[1] != common.PDEContributionRefundChainStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.PDEContributionRefundChainStatus, source[1])
 	}
-	err := json.Unmarshal([]byte(source[2]), w)
+	err := json.Unmarshal([]byte(source[2]), r)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *WaitingAddLiquidity) StringSlice() ([]string, error) {
+func (r *RefundAddLiquidity) StringSlice() ([]string, error) {
 	res := []string{}
 	res = append(res, strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
-	res = append(res, common.PDEContributionWaitingChainStatus)
-	data, err := json.Marshal(w)
+	res = append(res, common.PDEContributionRefundChainStatus)
+	data, err := json.Marshal(r)
 	if err != nil {
 		return res, err
 	}
@@ -53,11 +53,11 @@ func (w *WaitingAddLiquidity) StringSlice() ([]string, error) {
 	return res, nil
 }
 
-func (w *WaitingAddLiquidity) MarshalJSON() ([]byte, error) {
+func (r *RefundAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Contribution statedb.Pdexv3ContributionState `json:"Contribution"`
 	}{
-		Contribution: w.contribution,
+		Contribution: r.contribution,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -65,7 +65,7 @@ func (w *WaitingAddLiquidity) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
+func (r *RefundAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Contribution statedb.Pdexv3ContributionState `json:"Contribution"`
 	}{}
@@ -73,10 +73,10 @@ func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	w.contribution = temp.Contribution
+	r.contribution = temp.Contribution
 	return nil
 }
 
-func (w *WaitingAddLiquidity) Contribution() statedb.Pdexv3ContributionState {
-	return w.contribution
+func (r *RefundAddLiquidity) Contribution() statedb.Pdexv3ContributionState {
+	return r.contribution
 }

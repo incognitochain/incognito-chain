@@ -1,7 +1,7 @@
 package pdexv3
 
 const (
-	DefaultAmplifier = 10000
+	BaseAmplifier = 10000
 )
 
 const (

@@ -311,31 +311,37 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
 	}
 
+	keyWallet, err := wallet.Base58CheckDeserialize(feeReceiver)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize payment address: %v", err))
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address is invalid"))
+	}
+
 	nfctReceiverAddress := privacy.OTAReceiver{}
 	token0ReceiverAddress := privacy.OTAReceiver{}
 	token1ReceiverAddress := privacy.OTAReceiver{}
 	prvReceiverAddress := privacy.OTAReceiver{}
 	pdexReceiverAddress := privacy.OTAReceiver{}
 
-	var err error
-
-	err = nfctReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = nfctReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = token0ReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = token0ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = token1ReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = token1ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = prvReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = prvReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = pdexReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = pdexReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -447,39 +453,32 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 	}
 
 	// payment address v2
-	var err error
-
-	privateKey, ok := arrayParams[0].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Private key is invalid"))
-	}
-	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize private key: %v", err))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize paymentAddress: %v", err))
 	}
-	if len(keyWallet.KeySet.PrivateKey) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Private key length is invalid"))
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("pDEX v3 admin payment address is invalid"))
 	}
-	feeReceiver := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	token0ReceiverAddress := privacy.OTAReceiver{}
 	token1ReceiverAddress := privacy.OTAReceiver{}
 	prvReceiverAddress := privacy.OTAReceiver{}
 	pdexReceiverAddress := privacy.OTAReceiver{}
 
-	err = token0ReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = token0ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = token1ReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = token1ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = prvReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = prvReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = pdexReceiverAddress.FromAddress(feeReceiver, common.Hash{})
+	err = pdexReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -617,12 +616,11 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private key %v: %v", privateKey, err))
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
 	}
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
+		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
 	}
-	senderAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	tokenAmount, err := common.AssertAndConvertNumber(addLiquidityRequest.TokenAmount)
 	if err != nil {
@@ -644,11 +642,11 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 
 	receiverAddress := privacy.OTAReceiver{}
 	refundAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromAddress(senderAddress, *tokenHash)
+	err = receiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = refundAddress.FromAddress(senderAddress, *tokenHash)
+	err = refundAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -724,4 +722,8 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return res, isPRV, nil
+}
+
+func (httpServer *HttpServer) handleGetPdexv3ContributionStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleGetPDEContributionStatusV2(params, closeChan)
 }

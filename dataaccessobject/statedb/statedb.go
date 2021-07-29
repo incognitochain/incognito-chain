@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/pkg/errors"
@@ -1899,4 +1900,83 @@ func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bo
 		return pDexv3ParamsState.GetValue().(*Pdexv3Params), true, nil
 	}
 	return NewPdexv3Params(), false, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {
+	res := map[string]rawdbv2.Pdexv3Contribution{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		contributionState := NewPdexv3ContributionState()
+		err := json.Unmarshal(newValue, contributionState)
+		if err != nil {
+			return res, err
+		}
+		res[string(contributionState.pairHash)] = contributionState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pdexv3PoolPairState, error) {
+	res := map[string]Pdexv3PoolPairState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		poolPairState := NewPdexv3PoolPairState()
+		err := json.Unmarshal(newValue, poolPairState)
+		if err != nil {
+			return res, err
+		}
+		res[poolPairState.poolPairID] = *poolPairState
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (
+	map[string]Pdexv3ShareState,
+	error,
+) {
+	shares := map[string]Pdexv3ShareState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		shareState := NewPdexv3ShareState()
+		err := json.Unmarshal(newValue, shareState)
+		if err != nil {
+			return shares, err
+		}
+		shares[shareState.nfctID.String()] = *shareState
+
+	}
+	return shares, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (
+	map[string]Pdexv3TradingFeeState,
+	error,
+) {
+	tradingFees := map[string]Pdexv3TradingFeeState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		tradingFeeState := NewPdexv3TradingFeeState()
+		err := json.Unmarshal(newValue, tradingFeeState)
+		if err != nil {
+			return tradingFees, err
+		}
+		tradingFees[tradingFeeState.tokenID.String()] = *tradingFeeState
+	}
+	return tradingFees, nil
 }

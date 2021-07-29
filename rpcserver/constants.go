@@ -233,13 +233,14 @@ const (
 	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
-	pdexv3AddLiquidityV3                       = "pdexv3_txAddLiquidity"
 	//
 
 	// pDex v3
 	getPdexv3State                                = "pdexv3_getState"
 	createAndSendTxWithPdexv3ModifyParams         = "pdexv3_txModifyParams"
 	getPdexv3ParamsModifyingStatus                = "pdexv3_getParamsModifyingStatus"
+	pdexv3AddLiquidityV3                          = "pdexv3_txAddLiquidity"
+	getPdexv3ContributionStatus                   = "pdexv3_getContributionStatus"
 	getPdexv3EstimatedLPFee                       = "pdexv3_getEstimatedUncollectedLPFee"
 	createAndSendTxWithPdexv3WithdrawlLPFee       = "pdexv3_txWithdrawLPFee"
 	getPdexv3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"

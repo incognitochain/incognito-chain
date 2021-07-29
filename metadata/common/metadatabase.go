@@ -29,7 +29,7 @@ func (mb *MetadataBase) SetSharedRandom(_ []byte) {
 
 type MetadataBaseWithSignature struct {
 	MetadataBase
-	Sig []byte 		`json:"Sig,omitempty"`
+	Sig []byte `json:"Sig,omitempty"`
 }
 
 func NewMetadataBaseWithSignature(thisType int) *MetadataBaseWithSignature {
