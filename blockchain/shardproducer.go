@@ -416,6 +416,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 		if err != nil {
 			return nil, nil, err
 		}
+		//clear cache for pde tx builder
+		curView.pdeTxBuilder.ClearCache()
+
 		for _, inst := range beaconBlock.Body.Instructions {
 			if len(inst) <= 2 {
 				continue
@@ -508,19 +511,18 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			default:
-				newTx, err = curView.pdeTxBuilder.Build(
+				newTxs, err := curView.pdeTxBuilder.Build(
 					metaType,
 					inst,
 					producerPrivateKey,
 					shardID,
 					curView.GetCopiedTransactionStateDB(),
-					featureStateDB,
 				)
 				if err != nil {
 					return nil, nil, err
 				}
-				if newTx == nil {
-					continue
+				if len(newTxs) == 0 {
+					responsedTxs = append(responsedTxs, newTxs...)
 				}
 			}
 			if err != nil {

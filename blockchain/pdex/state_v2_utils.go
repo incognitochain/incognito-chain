@@ -1,6 +1,9 @@
 package pdex
 
-import "reflect"
+import (
+	"encoding/json"
+	"reflect"
+)
 
 type Share struct {
 	amount                  uint64
@@ -35,6 +38,38 @@ func (share *Share) Clone() *Share {
 		res.tradingFees[k] = v
 	}
 	return res
+}
+
+func (share *Share) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Amount                  uint64            `json:"Amount"`
+		TradingFees             map[string]uint64 `json:"TradingFees"`
+		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
+	}{
+		Amount:                  share.amount,
+		TradingFees:             share.tradingFees,
+		LastUpdatedBeaconHeight: share.lastUpdatedBeaconHeight,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (share *Share) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Amount                  uint64            `json:"Amount"`
+		TradingFees             map[string]uint64 `json:"TradingFees"`
+		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	share.amount = temp.Amount
+	share.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
+	share.tradingFees = temp.TradingFees
+	return nil
 }
 
 func (share *Share) getDiff(nfctID string, compareShare *Share, stateChange *StateChange) *StateChange {

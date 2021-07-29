@@ -13,7 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type AddLiquidity struct {
+type AddLiquidityRequest struct {
 	poolPairID     string // only "" for the first contribution of pool
 	pairHash       string
 	receiveAddress string // receive nfct
@@ -24,19 +24,19 @@ type AddLiquidity struct {
 	metadataCommon.MetadataBase
 }
 
-func NewAddLiquidity() *AddLiquidity {
-	return &AddLiquidity{}
+func NewAddLiquidity() *AddLiquidityRequest {
+	return &AddLiquidityRequest{}
 }
 
-func NewAddLiquidityWithValue(
+func NewAddLiquidityRequestWithValue(
 	poolPairID, pairHash,
 	receiveAddress, refundAddress,
 	tokenID string, tokenAmount uint64, amplifier uint,
-) *AddLiquidity {
+) *AddLiquidityRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
 	}
-	return &AddLiquidity{
+	return &AddLiquidityRequest{
 		poolPairID:     poolPairID,
 		pairHash:       pairHash,
 		receiveAddress: receiveAddress,
@@ -48,7 +48,7 @@ func NewAddLiquidityWithValue(
 	}
 }
 
-func (al *AddLiquidity) ValidateTxWithBlockChain(
+func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -60,17 +60,17 @@ func (al *AddLiquidity) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (al *AddLiquidity) ValidateSanityData(
+func (request *AddLiquidityRequest) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	if al.pairHash == "" {
+	if request.pairHash == "" {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pair hash should not be empty"))
 	}
-	tokenID, err := common.Hash{}.NewHashFromStr(al.tokenID)
+	tokenID, err := common.Hash{}.NewHashFromStr(request.tokenID)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
@@ -78,7 +78,7 @@ func (al *AddLiquidity) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
 	receiveAddress := privacy.OTAReceiver{}
-	err = receiveAddress.FromString(al.receiveAddress)
+	err = receiveAddress.FromString(request.receiveAddress)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
@@ -86,14 +86,14 @@ func (al *AddLiquidity) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
 	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(al.refundAddress)
+	err = refundAddress.FromString(request.refundAddress)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
 	if !refundAddress.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("RefundAddress is not valid"))
 	}
-	if al.amplifier < BaseAmplifier {
+	if request.amplifier < BaseAmplifier {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
 	}
 
@@ -104,8 +104,8 @@ func (al *AddLiquidity) ValidateSanityData(
 	if !bytes.Equal(burnedTokenID[:], tokenID[:]) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
 	}
-	if al.tokenAmount == 0 || al.tokenAmount != burnCoin.GetValue() {
-		err := fmt.Errorf("Contributed amount is not valid expect %v but get %v", al.tokenAmount, burnCoin.GetValue())
+	if request.tokenAmount == 0 || request.tokenAmount != burnCoin.GetValue() {
+		err := fmt.Errorf("Contributed amount is not valid expect %v but get %v", request.tokenAmount, burnCoin.GetValue())
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
 	if tx.GetType() == common.TxNormalType && tokenID.String() != common.PRVCoinID.String() {
@@ -117,29 +117,29 @@ func (al *AddLiquidity) ValidateSanityData(
 	return true, true, nil
 }
 
-func (al *AddLiquidity) ValidateMetadataByItself() bool {
-	return al.Type == metadataCommon.Pdexv3AddLiquidityRequestMeta
+func (request *AddLiquidityRequest) ValidateMetadataByItself() bool {
+	return request.Type == metadataCommon.Pdexv3AddLiquidityRequestMeta
 }
 
-func (al *AddLiquidity) Hash() *common.Hash {
-	record := al.MetadataBase.Hash().String()
-	record += al.poolPairID
-	record += al.pairHash
-	record += al.receiveAddress
-	record += al.refundAddress
-	record += al.tokenID
-	record += strconv.FormatUint(uint64(al.amplifier), 10)
-	record += strconv.FormatUint(al.tokenAmount, 10)
+func (request *AddLiquidityRequest) Hash() *common.Hash {
+	record := request.MetadataBase.Hash().String()
+	record += request.poolPairID
+	record += request.pairHash
+	record += request.receiveAddress
+	record += request.refundAddress
+	record += request.tokenID
+	record += strconv.FormatUint(uint64(request.amplifier), 10)
+	record += strconv.FormatUint(request.tokenAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (al *AddLiquidity) CalculateSize() uint64 {
-	return metadataCommon.CalculateSize(al)
+func (request *AddLiquidityRequest) CalculateSize() uint64 {
+	return metadataCommon.CalculateSize(request)
 }
 
-func (al *AddLiquidity) MarshalJSON() ([]byte, error) {
+func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
 		PairHash       string `json:"PairHash"`
@@ -150,14 +150,14 @@ func (al *AddLiquidity) MarshalJSON() ([]byte, error) {
 		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
 	}{
-		PoolPairID:     al.poolPairID,
-		PairHash:       al.pairHash,
-		ReceiveAddress: al.receiveAddress,
-		RefundAddress:  al.refundAddress,
-		TokenID:        al.tokenID,
-		TokenAmount:    al.tokenAmount,
-		Amplifier:      al.amplifier,
-		MetadataBase:   al.MetadataBase,
+		PoolPairID:     request.poolPairID,
+		PairHash:       request.pairHash,
+		ReceiveAddress: request.receiveAddress,
+		RefundAddress:  request.refundAddress,
+		TokenID:        request.tokenID,
+		TokenAmount:    request.tokenAmount,
+		Amplifier:      request.amplifier,
+		MetadataBase:   request.MetadataBase,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -165,7 +165,7 @@ func (al *AddLiquidity) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (al *AddLiquidity) UnmarshalJSON(data []byte) error {
+func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
 		PairHash       string `json:"PairHash"`
@@ -180,110 +180,156 @@ func (al *AddLiquidity) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	al.poolPairID = temp.PoolPairID
-	al.pairHash = temp.PairHash
-	al.receiveAddress = temp.ReceiveAddress
-	al.refundAddress = temp.RefundAddress
-	al.tokenID = temp.TokenID
-	al.tokenAmount = temp.TokenAmount
-	al.amplifier = temp.Amplifier
-	al.MetadataBase = temp.MetadataBase
+	request.poolPairID = temp.PoolPairID
+	request.pairHash = temp.PairHash
+	request.receiveAddress = temp.ReceiveAddress
+	request.refundAddress = temp.RefundAddress
+	request.tokenID = temp.TokenID
+	request.tokenAmount = temp.TokenAmount
+	request.amplifier = temp.Amplifier
+	request.MetadataBase = temp.MetadataBase
 	return nil
 }
 
-func (al *AddLiquidity) PoolPairID() string {
-	return al.poolPairID
+func (request *AddLiquidityRequest) PoolPairID() string {
+	return request.poolPairID
 }
 
-func (al *AddLiquidity) PairHash() string {
-	return al.pairHash
+func (request *AddLiquidityRequest) PairHash() string {
+	return request.pairHash
 }
 
-func (al *AddLiquidity) ReceiveAddress() string {
-	return al.receiveAddress
+func (request *AddLiquidityRequest) ReceiveAddress() string {
+	return request.receiveAddress
 }
 
-func (al *AddLiquidity) RefundAddress() string {
-	return al.refundAddress
+func (request *AddLiquidityRequest) RefundAddress() string {
+	return request.refundAddress
 }
 
-func (al *AddLiquidity) TokenID() string {
-	return al.tokenID
+func (request *AddLiquidityRequest) TokenID() string {
+	return request.tokenID
 }
 
-func (al *AddLiquidity) TokenAmount() uint64 {
-	return al.tokenAmount
+func (request *AddLiquidityRequest) TokenAmount() uint64 {
+	return request.tokenAmount
 }
 
-func (al *AddLiquidity) Amplifier() uint {
-	return al.amplifier
+func (request *AddLiquidityRequest) Amplifier() uint {
+	return request.amplifier
 }
 
-func (al *AddLiquidity) FromStringSlice(source []string) error {
-	if len(source) != 8 {
-		return fmt.Errorf("Receive length %v but expect %v", len(source), 8)
+type AddLiquidityResponse struct {
+	metadataCommon.MetadataBase
+	status  string
+	txReqID string
+}
+
+func NewAddLiquidityResponse() *AddLiquidityResponse {
+	return &AddLiquidityResponse{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3AddLiquidityResponseMeta,
+		},
 	}
-	if source[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta) {
-		return fmt.Errorf("Receive metaType %v but expect %v", source[0], metadataCommon.Pdexv3AddLiquidityRequestMeta)
+}
+
+func NewAddLiquidityResponseWithValue(
+	status, txReqID string,
+) *AddLiquidityResponse {
+	return &AddLiquidityResponse{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3AddLiquidityResponseMeta,
+		},
+		status:  status,
+		txReqID: txReqID,
 	}
-	al.MetadataBase = metadataCommon.MetadataBase{Type: metadataCommon.Pdexv3AddLiquidityRequestMeta}
-	al.poolPairID = source[1]
-	if source[2] == "" {
-		return errors.New("Pair hash is invalid")
+}
+
+func (response *AddLiquidityResponse) ValidateTxWithBlockChain(
+	tx metadataCommon.Transaction,
+	chainRetriever metadataCommon.ChainRetriever,
+	shardViewRetriever metadataCommon.ShardViewRetriever,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (bool, error) {
+	// NOTE: verify supported tokens pair as needed
+	return true, nil
+}
+
+func (response *AddLiquidityResponse) ValidateSanityData(
+	chainRetriever metadataCommon.ChainRetriever,
+	shardViewRetriever metadataCommon.ShardViewRetriever,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
+	beaconHeight uint64,
+	tx metadataCommon.Transaction,
+) (bool, bool, error) {
+	if response.status == "" {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
 	}
-	al.pairHash = source[2]
-	receiveAddress := privacy.OTAReceiver{}
-	err := receiveAddress.FromString(source[3])
+	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
+	if err != nil {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if txReqID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TxReqID should not be empty"))
+	}
+	return true, true, nil
+}
+
+func (response *AddLiquidityResponse) ValidateMetadataByItself() bool {
+	return response.Type == metadataCommon.Pdexv3AddLiquidityResponseMeta
+}
+
+func (response *AddLiquidityResponse) Hash() *common.Hash {
+	record := response.MetadataBase.Hash().String()
+	record += response.status
+	record += response.txReqID
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (response *AddLiquidityResponse) CalculateSize() uint64 {
+	return metadataCommon.CalculateSize(response)
+}
+
+func (response *AddLiquidityResponse) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Status  string `json:"Status"`
+		TxReqID string `json:"TxReqID"`
+		metadataCommon.MetadataBase
+	}{
+		Status:       response.status,
+		TxReqID:      response.txReqID,
+		MetadataBase: response.MetadataBase,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (response *AddLiquidityResponse) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Status  string `json:"Status"`
+		TxReqID string `json:"TxReqID"`
+		metadataCommon.MetadataBase
+	}{}
+	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	if !receiveAddress.IsValid() {
-		return errors.New("receive Address is invalid")
-	}
-	al.receiveAddress = source[3]
-	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(source[4])
-	if err != nil {
-		return err
-	}
-	if !refundAddress.IsValid() {
-		return errors.New("refund Address is invalid")
-	}
-	al.refundAddress = source[4]
-	tokenID, err := common.Hash{}.NewHashFromStr(source[5])
-	if err != nil {
-		return err
-	}
-	if tokenID.IsZeroValue() {
-		return errors.New("TokenID is empty")
-	}
-	al.tokenID = source[5]
-	tokenAmount, err := strconv.ParseUint(source[6], 10, 32)
-	if err != nil {
-		return err
-	}
-	al.tokenAmount = tokenAmount
-	amplifier, err := strconv.ParseUint(source[7], 10, 32)
-	if err != nil {
-		return err
-	}
-	if amplifier < BaseAmplifier {
-		return fmt.Errorf("Amplifier can not be smaller than %v get %v", BaseAmplifier, amplifier)
-	}
-	al.amplifier = uint(amplifier)
+	response.txReqID = temp.TxReqID
+	response.status = temp.Status
+	response.MetadataBase = temp.MetadataBase
 	return nil
 }
 
-func (al *AddLiquidity) StringSlice() []string {
-	res := []string{strconv.Itoa(al.Type)}
-	res = append(res, al.poolPairID)
-	res = append(res, al.pairHash)
-	res = append(res, al.receiveAddress)
-	res = append(res, al.refundAddress)
-	res = append(res, al.tokenID)
-	tokenAmount := strconv.FormatUint(al.tokenAmount, 10)
-	res = append(res, tokenAmount)
-	amplifier := strconv.FormatUint(uint64(al.amplifier), 10)
-	res = append(res, amplifier)
-	return res
+func (response *AddLiquidityResponse) TxReqID() string {
+	return response.txReqID
+}
+
+func (response *AddLiquidityResponse) Status() string {
+	return response.status
 }

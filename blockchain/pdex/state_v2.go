@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strconv"
@@ -247,7 +248,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			// TODO: @pdex get metadata here and build instructions from transactions here
 			switch tx.GetMetadataType() {
 			case metadataCommon.Pdexv3AddLiquidityRequestMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
+				_, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidityRequest)
 				if !ok {
 					return instructions, errors.New("Can not parse add liquidity metadata")
 				}
@@ -418,7 +419,7 @@ func (s *stateV2) Reader() StateReader {
 }
 
 func NewContributionWithMetaData(
-	metaData metadataPdexV3.AddLiquidity, txReqID common.Hash, shardID byte,
+	metaData metadataPdexV3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
 ) *rawdbv2.Pdexv3Contribution {
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
 
@@ -427,4 +428,22 @@ func NewContributionWithMetaData(
 		*tokenHash, txReqID, metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
 	)
+}
+
+func (s *stateV2) WaitingContributions() []byte {
+	temp := make(map[string]rawdbv2.Pdexv3Contribution, len(s.waitingContributions))
+	for k, v := range s.waitingContributions {
+		temp[k] = *v.Clone()
+	}
+	data, _ := json.Marshal(temp)
+	return data
+}
+
+func (s *stateV2) PoolPairs() []byte {
+	temp := make(map[string]PoolPairState, len(s.poolPairs))
+	for k, v := range s.poolPairs {
+		temp[k] = v.Clone()
+	}
+	data, _ := json.Marshal(temp)
+	return data
 }

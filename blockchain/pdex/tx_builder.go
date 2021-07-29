@@ -7,7 +7,10 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -15,6 +18,11 @@ import (
 )
 
 type TxBuilder struct {
+	nfctIDs map[string]bool
+}
+
+func (txBuilder *TxBuilder) ClearCache() {
+	txBuilder.nfctIDs = make(map[string]bool)
 }
 
 func (txBuilder *TxBuilder) Build(
@@ -23,92 +31,131 @@ func (txBuilder *TxBuilder) Build(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
-) (metadata.Transaction, error) {
+) ([]metadata.Transaction, error) {
 
-	var tx metadata.Transaction
-	var err error
+	res := []metadata.Transaction{}
 
 	switch metaType {
 	case metadata.PDETradeRequestMeta:
-		if len(inst) == 4 {
-			tx, err = buildTradeIssuanceTx(
-				inst[2],
-				inst[3],
-				producerPrivateKey,
-				shardID,
-				transactionStateDB,
-				featureStateDB,
-			)
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		if len(inst) != 4 {
+			return res, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
+		tx, err := buildTradeIssuanceTx(
+			inst[2],
+			inst[3],
+			producerPrivateKey,
+			shardID,
+			transactionStateDB,
+		)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, tx)
 	case metadata.PDECrossPoolTradeRequestMeta:
-		if len(inst) == 4 {
-			tx, err = buildCrossPoolTradeIssuanceTx(
-				inst[2],
+		if len(inst) != 4 {
+			return res, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		tx, err := buildCrossPoolTradeIssuanceTx(
+			inst[2],
+			inst[3],
+			producerPrivateKey,
+			shardID,
+			transactionStateDB,
+		)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, tx)
+	case metadata.PDEWithdrawalRequestMeta:
+		if len(inst) != 4 {
+			return res, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		if inst[2] == common.PDEWithdrawalAcceptedChainStatus {
+			tx, err := buildWithdrawalTx(
 				inst[3],
 				producerPrivateKey,
 				shardID,
 				transactionStateDB,
-				featureStateDB,
 			)
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
-		}
-	case metadata.PDEWithdrawalRequestMeta:
-		if len(inst) == 4 {
-			if inst[2] == common.PDEWithdrawalAcceptedChainStatus {
-				tx, err = buildWithdrawalTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
+			if err != nil {
+				return res, err
 			}
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+			res = append(res, tx)
 		}
 	case metadata.PDEFeeWithdrawalRequestMeta:
-		if len(inst) == 4 {
-			if inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
-				tx, err = buildFeeWithdrawalTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
-			}
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		if len(inst) != 4 {
+			return res, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
+		tx, err := buildFeeWithdrawalTx(
+			inst[3],
+			producerPrivateKey,
+			shardID,
+			transactionStateDB,
+		)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, tx)
 	case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-		if len(inst) == 4 {
-			if inst[2] == common.PDEContributionRefundChainStatus {
-				tx, err = buildRefundContributionTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
-			} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
-				tx, err = buildMatchedAndReturnedContributionTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
+		if len(inst) != 4 {
+			return res, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		if inst[2] == common.PDEContributionRefundChainStatus {
+			tx, err := buildRefundContributionTx(
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+			if err != nil {
+				return res, err
 			}
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+			res = append(res, tx)
+		} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
+			tx, err := buildMatchedAndReturnedContributionTx(
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+			if err != nil {
+				return res, err
+			}
+			res = append(res, tx)
+		}
+	case metadataCommon.Pdexv3AddLiquidityRequestMeta:
+		if len(inst) < 3 {
+			return res, fmt.Errorf("Length of instruction is invalid expectm equal or greater than %v but get %v", 3, len(inst))
+		}
+		switch inst[1] {
+		case common.PDEContributionRefundChainStatus:
+			tx, err := buildRefundContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
+			if err != nil {
+				return res, err
+			}
+			if tx != nil {
+				res = append(res, tx)
+			}
+		case common.PDEContributionMatchedChainStatus:
+			tx, err := buildMatchContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
+			if err != nil {
+				return res, err
+			}
+			if tx != nil {
+				res = append(res, tx)
+			}
+		case common.PDEContributionMatchedNReturnedChainStatus:
+			txs, err := buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB, txBuilder.nfctIDs)
+			if err != nil {
+				return res, err
+			}
+			if len(txs) != 0 {
+				res = append(res, txs...)
+			}
 		}
 	}
 
-	return tx, err
+	return res, nil
 }
 
 func buildTradeIssuanceTx(
@@ -117,7 +164,6 @@ func buildTradeIssuanceTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Trade] Starting...")
 	if instStatus == common.PDETradeRefundChainStatus {
@@ -127,7 +173,6 @@ func buildTradeIssuanceTx(
 			producerPrivateKey,
 			shardID,
 			transactionStateDB,
-			featureStateDB,
 		)
 	}
 	return buildTradeAcceptedTx(
@@ -136,7 +181,6 @@ func buildTradeIssuanceTx(
 		producerPrivateKey,
 		shardID,
 		transactionStateDB,
-		featureStateDB,
 	)
 }
 
@@ -146,7 +190,6 @@ func buildTradeRefundTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	tradeRequestAction, err := parseTradeRefundContent(contentStr)
 	if err != nil {
@@ -186,7 +229,6 @@ func buildTradeAcceptedTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	tradeAcceptedContent, err := parseTradeAcceptedContent(contentStr)
 	if err != nil {
@@ -319,7 +361,6 @@ func buildCrossPoolTradeIssuanceTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Cross Pool Trade] Starting...")
 	if instStatus == common.PDECrossPoolTradeFeeRefundChainStatus || instStatus == common.PDECrossPoolTradeSellingTokenRefundChainStatus {
@@ -329,7 +370,6 @@ func buildCrossPoolTradeIssuanceTx(
 			producerPrivateKey,
 			shardID,
 			transactionStateDB,
-			featureStateDB,
 		)
 	}
 	return buildCrossPoolTradeAcceptedTx(
@@ -338,7 +378,6 @@ func buildCrossPoolTradeIssuanceTx(
 		producerPrivateKey,
 		shardID,
 		transactionStateDB,
-		featureStateDB,
 	)
 }
 
@@ -348,7 +387,6 @@ func buildCrossPoolTradeRefundTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	crossPoolTradeRefundContent, err := parseCrossPoolTradeRefundContent(contentStr)
 	if err != nil {
@@ -387,7 +425,6 @@ func buildCrossPoolTradeAcceptedTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	crossPoolTradeAcceptedContents, err := parseCrossPoolTradeAcceptedContent(contentStr)
 	if err != nil {
@@ -433,7 +470,6 @@ func buildWithdrawalTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Withdrawal] Starting...")
 	contentBytes := []byte(contentStr)
@@ -480,7 +516,6 @@ func buildFeeWithdrawalTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Fee Withdrawal] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -529,7 +564,6 @@ func buildRefundContributionTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Refund contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -578,7 +612,6 @@ func buildMatchedAndReturnedContributionTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Matched and Returned contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -623,4 +656,158 @@ func buildMatchedAndReturnedContributionTx(
 	}
 	// set shareRandom for metadata
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, makeMD)
+}
+
+func buildRefundContributionTxv2(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	refundInst := instruction.NewRefundAddLiquidity()
+	err := refundInst.FromStringSlice(inst)
+	if err != nil {
+		return tx, err
+	}
+	refundContribution := refundInst.Contribution()
+	refundContributionValue := refundContribution.Value()
+
+	if refundContributionValue.ShardID() != shardID {
+		return tx, nil
+	}
+	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
+		common.PDEContributionRefundChainStatus,
+		refundContributionValue.TxReqID().String(),
+	)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromString(refundContributionValue.RefundAddress())
+	if err != nil {
+		return tx, err
+	}
+	tx, err = buildMintTokenTxs(
+		refundContributionValue.TokenID(), refundContributionValue.Amount(),
+		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+		return tx, err
+	}
+	return tx, nil
+}
+
+func buildMatchContributionTxv2(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	matchInst := instruction.NewMatchAddLiquidity()
+	err := matchInst.FromStringSlice(inst)
+	if err != nil {
+		return tx, err
+	}
+
+	matchContribution := matchInst.Contribution()
+	matchContributionValue := matchContribution.Value()
+	if matchContributionValue.ShardID() != shardID {
+		return tx, nil
+	}
+	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
+		common.PDEContributionMatchedChainStatus,
+		matchContributionValue.TxReqID().String(),
+	)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromString(matchContributionValue.ReceiveAddress())
+	if err != nil {
+		return tx, err
+	}
+	tx, err = buildMintTokenTxs(
+		matchInst.NfctID(), 1,
+		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+		return tx, err
+	}
+	return tx, nil
+
+}
+
+func buildMatchAndReturnContributionTxv2(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+	nfctIDs map[string]bool,
+) ([]metadata.Transaction, error) {
+	res := []metadata.Transaction{}
+	matchAndReturnInst := instruction.NewMatchAndReturnAddLiquidity()
+	err := matchAndReturnInst.FromStringSlice(inst)
+	if err != nil {
+		return res, err
+	}
+	matchAndReturnContribution := matchAndReturnInst.Contribution()
+	matchAndReturnContributionValue := matchAndReturnContribution.Value()
+	if matchAndReturnContributionValue.ShardID() != shardID {
+		return res, nil
+	}
+	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
+		common.PDEContributionMatchedChainStatus,
+		matchAndReturnContributionValue.TxReqID().String(),
+	)
+	if !nfctIDs[matchAndReturnInst.NfctID().String()] {
+		receiveAddress := privacy.OTAReceiver{}
+		err = receiveAddress.FromString(matchAndReturnContributionValue.ReceiveAddress())
+		if err != nil {
+			return res, err
+		}
+		tx0, err := buildMintTokenTxs(
+			matchAndReturnInst.NfctID(), 1,
+			receiveAddress, producerPrivateKey, transactionStateDB, metaData,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+			return res, err
+		}
+		res = append(res, tx0)
+		nfctIDs[matchAndReturnInst.NfctID().String()] = true
+	}
+	refundAddress := privacy.OTAReceiver{}
+	err = refundAddress.FromString(matchAndReturnContributionValue.RefundAddress())
+	if err != nil {
+		return res, err
+	}
+	tx1, err := buildMintTokenTxs(
+		matchAndReturnContributionValue.TokenID(), matchAndReturnInst.ReturnAmount(),
+		refundAddress, producerPrivateKey, transactionStateDB, metaData,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+		return res, err
+	}
+	res = append(res, tx1)
+	return res, nil
+}
+
+func buildMintTokenTxs(
+	tokenID common.Hash, tokenAmount uint64,
+	otaReceiver privacy.OTAReceiver,
+	producerPrivateKey *privacy.PrivateKey,
+	transactionStateDB *statedb.StateDB,
+	meta metadata.Metadata,
+) (metadata.Transaction, error) {
+	var txParam transaction.TxSalaryOutputParams
+	txParam = transaction.TxSalaryOutputParams{
+		Amount:          tokenAmount,
+		ReceiverAddress: nil,
+		PublicKey:       &otaReceiver.PublicKey,
+		TxRandom:        &otaReceiver.TxRandom,
+		TokenID:         &tokenID,
+		Info:            []byte{},
+	}
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
+		return meta
+	})
 }

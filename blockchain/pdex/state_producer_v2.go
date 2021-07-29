@@ -77,7 +77,7 @@ func (sp *stateProducerV2) addLiquidity(
 	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
-		metaData, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidityRequest)
 		if !ok {
 			return res, poolPairs, waitingContributions, errors.New("Can not parse add liquidity metadata")
 		}

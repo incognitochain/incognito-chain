@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"encoding/json"
 	"math/big"
 	"reflect"
 	"sort"
@@ -13,6 +14,34 @@ import (
 type PoolPairState struct {
 	state  rawdbv2.Pdexv3PoolPair
 	shares map[string]Share
+}
+
+func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		State  rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares map[string]Share       `json:"Shares"`
+	}{
+		State:  poolPairState.state,
+		Shares: poolPairState.shares,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		State  rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares map[string]Share       `json:"Shares"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	poolPairState.shares = temp.Shares
+	poolPairState.state = temp.State
+	return nil
 }
 
 func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) *PoolPairState {
