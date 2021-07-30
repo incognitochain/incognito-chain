@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -14,7 +13,7 @@ import (
 // PortalRequestWithdrawReward - custodians request withdraw reward
 // metadata - custodians request withdraw reward - create normal tx with this metadata
 type PortalRequestWithdrawReward struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	CustodianAddressStr string
 	TokenID             common.Hash
 }
@@ -50,14 +49,12 @@ func NewPortalRequestWithdrawReward(
 	metaType int,
 	incogAddressStr string,
 	tokenID common.Hash) (*PortalRequestWithdrawReward, error) {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	meta := &PortalRequestWithdrawReward{
 		CustodianAddressStr: incogAddressStr,
 		TokenID:             tokenID,
 	}
-	meta.MetadataBase = metadataBase
+	meta.MetadataBaseWithSignature = *metadataBase
 	return meta, nil
 }
 
@@ -80,8 +77,8 @@ func (meta PortalRequestWithdrawReward) ValidateSanityData(chainRetriever ChainR
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("Custodian incognito address is invalid")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("Custodian incognito address is not signer")
+	if ok, err := meta.MetadataBaseWithSignature.VerifyMetadataSignature(incogAddr.Pk, txr); err != nil || !ok {
+		return false, false, errors.New("Withdraw request sender is unauthorized")
 	}
 
 	// check tx type
@@ -97,7 +94,19 @@ func (meta PortalRequestWithdrawReward) ValidateMetadataByItself() bool {
 }
 
 func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
-	record := meta.MetadataBase.Hash().String()
+	record := meta.MetadataBaseWithSignature.Hash().String()
+	record += meta.CustodianAddressStr
+	record += meta.TokenID.String()
+	if meta.Sig != nil && len(meta.Sig) != 0 {
+		record += string(meta.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (meta PortalRequestWithdrawReward) HashWithoutSig() *common.Hash {
+	record := meta.MetadataBaseWithSignature.Hash().String()
 	record += meta.CustodianAddressStr
 	record += meta.TokenID.String()
 	// final hash

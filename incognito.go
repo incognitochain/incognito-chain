@@ -11,7 +11,6 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/portal"
@@ -84,13 +83,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		fmt.Fprintln(os.Stderr, err)
 		panic(err)
 	}
-	param := config.LoadParam()
-
-	common.TIMESLOT = param.ConsensusParam.Timeslot
-	common.MaxShardNumber = param.ActiveShards
-
-	//load keys from file
-	param.LoadKey()
+	config.LoadParam()
 	portal.SetupParam()
 
 	//create genesis block
@@ -175,10 +168,20 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
+	useOutcoinDb := len(cfg.UseOutcoinDatabase)>=1
+	var outcoinDb *incdb.Database = nil
+	if useOutcoinDb{
+		temp, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.OutcoinDatabaseDir))
+		if err!=nil{
+			Logger.log.Error("could not open leveldb instance for coin storing")
+		}
+		outcoinDb = &temp
+	}
+
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, dbmp, version, btcChain, bnbChainState, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, outcoinDb, cfg.NumIndexerWorkers, cfg.IndexerAccessTokens, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)

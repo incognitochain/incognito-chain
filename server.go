@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"log"
 	"net"
 	"os"
@@ -18,10 +20,8 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -192,6 +192,9 @@ func (serverObj *Server) NewServer(
 	listenAddrs string,
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
+	dboc *incdb.Database,
+	indexerWorkers int64,
+	indexerToken string,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -311,11 +314,14 @@ func (serverObj *Server) NewServer(
 		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		// NodeMode:        cfg.NodeMode,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsubManager,
-		ConsensusEngine: serverObj.consensusEngine,
-		Highway:         serverObj.highway,
-		PoolManager:     poolManager,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:     pubsubManager,
+		ConsensusEngine:   serverObj.consensusEngine,
+		Highway:           serverObj.highway,
+		OutCoinByOTAKeyDb: dboc,
+		IndexerWorkers:    indexerWorkers,
+		IndexerToken:      indexerToken,
+		PoolManager:       poolManager,
 	})
 	if err != nil {
 		return err
@@ -613,6 +619,12 @@ func (serverObj *Server) Stop() error {
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
+	//Stop the output coin indexer
+	if blockchain.GetCoinIndexer() != nil {
+		blockchain.GetCoinIndexer().Stop()
+	}
+
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -758,27 +770,25 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			if !txDesc.IsFowardMessage {
 				tx := txDesc.Desc.Tx
 				switch tx.GetType() {
-				case common.TxNormalType:
+				case common.TxNormalType, common.TxConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 						if err != nil {
 							continue
 						}
-						normalTx := tx.(*transaction.Tx)
-						txMsg.(*wire.MessageTx).Transaction = normalTx
+						txMsg.(*wire.MessageTx).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 						}
 					}
-				case common.TxCustomTokenPrivacyType:
+				case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 						if err != nil {
 							continue
 						}
-						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
@@ -1019,12 +1029,12 @@ func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.Message
 	valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 	tx.SetValidationEnv(valEnv)
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		txCustom, ok := tx.(transaction.TransactionToken)
 		if !ok {
 			return
 		}
-		valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, &txCustom.TxPrivacyTokenData.TxNormal)
-		txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+		valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, txCustom.GetTxNormal())
+		txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
 	}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
 	//<-txProcessed

@@ -19,6 +19,7 @@ type PortalRedeemRequestResponse struct {
 	RequesterAddrStr string
 	Amount           uint64
 	IncTokenID       string
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemRequestResponse(
@@ -77,25 +78,15 @@ func (iRes *PortalRedeemRequestResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-	tx Transaction,
-	chainRetriever ChainRetriever,
-	ac *AccumulatedValues,
-	shardViewRetriever ShardViewRetriever,
-	beaconViewRetriever BeaconViewRetriever,
-) (bool, error) {
+func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PortalRedeemRequest response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalRedeemRequestMeta) && instMetaType != strconv.Itoa(PortalRedeemRequestMetaV3)) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalRedeemRequestMeta) && instMetaType != strconv.Itoa(PortalRedeemRequestMetaV3)) {
 			continue
 		}
 		instReqStatus := inst[2]
@@ -144,18 +135,30 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 			continue
 		}
 
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			redeemAmountFromInst != paidAmount ||
-			tokenIDStrFromInst != assetID.String() {
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted {
+			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
 			continue
 		}
+		if coinID.String() != tokenIDStrFromInst {
+			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct.")
+			continue
+		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, redeemAmountFromInst); !ok {
+			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
+			continue
+		}
+
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemRequest instruction found for PortalRedeemRequestResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PortalRedeemRequestResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

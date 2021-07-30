@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -129,7 +130,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 	}
 	println("inputCoinStrs: ", inputCoinStrs)
 
-	inputCoins := make([]*privacy.InputCoin, len(inputCoinStrs))
+	inputCoins := make([]*coin.PlainCoinV1, len(inputCoinStrs))
 	for i := 0; i < len(inputCoins); i++ {
 		tmp, ok := inputCoinStrs[i].(map[string]interface{})
 		if !ok {
@@ -173,7 +174,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 			return nil, errors.New("Invalid input coin info param")
 		}
 
-		inputCoins[i] = new(privacy.InputCoin).Init()
+		inputCoins[i] = new(coin.PlainCoinV1).Init()
 		inputCoins[i].ParseCoinObjectToInputCoin(*coinObjTmp)
 	}
 
@@ -378,7 +379,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	}
 	println("inputCoinStrs: ", inputCoinStrs)
 
-	inputCoins := make([]*privacy.InputCoin, len(inputCoinStrs))
+	inputCoins := make([]*coin.PlainCoinV1, len(inputCoinStrs))
 	for i := 0; i < len(inputCoins); i++ {
 		tmp, ok := inputCoinStrs[i].(map[string]interface{})
 		if !ok {
@@ -422,7 +423,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 			return nil, errors.New("Invalid input coin info param")
 		}
 
-		inputCoins[i] = new(privacy.InputCoin).Init()
+		inputCoins[i] = new(coin.PlainCoinV1).Init()
 		inputCoins[i].ParseCoinObjectToInputCoin(*coinObjTmp)
 	}
 
@@ -557,7 +558,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	println("sndOutputsForPToken: ", sndOutputsForPToken)
 
 	// get privacy token param
-	privacyTokenParam := new(transaction.CustomTokenPrivacyParamTx)
+	privacyTokenParam := new(transaction.TokenParam)
 	pTokenParam, ok := paramMaps["privacyTokenParam"].(map[string]interface{})
 	if !ok {
 		println("Invalid privacy token param")
@@ -659,7 +660,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	}
 	println("tokenInputs: ", tokenInputsParam)
 
-	tokenInputs := make([]*privacy.InputCoin, len(tokenInputsParam))
+	tokenInputs := make([]*coin.PlainCoinV1, len(tokenInputsParam))
 	for i := 0; i < len(tokenInputs); i++ {
 		tmp, ok := tokenInputsParam[i].(map[string]interface{})
 		if !ok {
@@ -703,7 +704,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 			return nil, errors.New("Invalid input coin info param")
 		}
 
-		tokenInputs[i] = new(privacy.InputCoin).Init()
+		tokenInputs[i] = new(coin.PlainCoinV1).Init()
 		tokenInputs[i].ParseCoinObjectToInputCoin(*coinObjTmp)
 	}
 

@@ -29,7 +29,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-	"github.com/incognitochain/incognito-chain/privacy"
+	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
@@ -39,6 +39,7 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 var (
@@ -73,6 +74,8 @@ var (
 	daov2Logger            = backendLog.Logger("DAO log", false)
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
+	privacyV1Logger        = backendLog.Logger("Privacy V1 log ", false)
+	privacyV2Logger        = backendLog.Logger("Privacy V2 log ", false)
 	instructionLogger      = backendLog.Logger("Instruction log ", false)
 	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
 
@@ -112,7 +115,7 @@ func init() {
 	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	transaction.Logger.Init(transactionLogger)
-	privacy.Logger.Init(privacyLogger)
+	//privacy.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
 	blockchain.BLogger.Init(bridgeLogger)
 	rpcserver.BLogger.Init(bridgeLogger)
@@ -124,6 +127,8 @@ func init() {
 	dataaccessobject.Logger.Init(daov2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
+	privacy.LoggerV1.Init(privacyV1Logger)
+	privacy.LoggerV2.Init(privacyV2Logger)
 	instruction.Logger.Init(instructionLogger)
 	committeestate.Logger.Init(committeeStateLogger)
 

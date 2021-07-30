@@ -2,10 +2,10 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type StateObjectValidation struct {
@@ -27,7 +27,7 @@ func init() {
 	return
 }
 
-func (s StateObjectValidation) ValidatePaymentAddressSanity(v privacy.PaymentAddress) error {
+func (s StateObjectValidation) ValidatePaymentAddressSanity(v key.PaymentAddress) error {
 	if len(v.Pk) == 0 || len(v.Tk) == 0 {
 		return fmt.Errorf("length public key %+v, length transmission key %+v", len(v.Pk), len(v.Tk))
 	}

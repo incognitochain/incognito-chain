@@ -114,6 +114,9 @@ const (
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
 
+	InitTokenRequestMeta  = 244
+	InitTokenResponseMeta = 245
+
 	// incognito mode for bsc
 	IssuingBSCRequestMeta  = 250
 	IssuingBSCResponseMeta = 251
@@ -146,6 +149,7 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	InitTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

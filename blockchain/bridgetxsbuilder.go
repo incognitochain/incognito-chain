@@ -79,7 +79,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, issuingTokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, issuingTokenID)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -198,7 +198,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
 		return append(instructions, rejectedInst), nil, nil
 	}
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, md.IncTokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil, nil
@@ -268,13 +268,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		Logger.log.Warnf("WARNING: an error occurs while decode content string of accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var issuingAcceptedInst metadata.IssuingAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		Logger.log.Warnf("WARNING: an error occurs while unmarshal accepted issuance instruction: ", err)
 		return nil, nil
 	}
 
@@ -292,40 +292,20 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 		Amount:         issuingAcceptedInst.DepositedAmount,
 		PaymentAddress: issuingAcceptedInst.ReceiverAddr,
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:     propID.String(),
-		PropertyName:   issuingAcceptedInst.IncTokenName,
-		PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:         issuingAcceptedInst.DepositedAmount,
-		TokenTxType:    transaction.CustomTokenInit,
-		Receiver:       []*privacy.PaymentInfo{receiver},
-		TokenInput:     []*privacy.InputCoin{},
-		Mintable:       true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			issuingRes,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB))
 
-	if initErr != nil {
-		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
-		return nil, nil
+	tokenID := issuingAcceptedInst.IncTokenID
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
 	}
-	Logger.log.Infof("[Centralized token issuance] Create tx ok: %s", resTx.Hash().String())
-	return resTx, nil
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			issuingRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingRes
+	}
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
@@ -362,17 +342,6 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		Amount:         issuingEVMAcceptedInst.IssuingAmount,
 		PaymentAddress: key.KeySet.PaymentAddress,
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingEVMAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:  propID.String(),
-		Amount:      issuingEVMAcceptedInst.IssuingAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
 
 	issuingEVMRes := metadata.NewIssuingEVMResponse(
 		issuingEVMAcceptedInst.TxReqID,
@@ -380,24 +349,19 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		issuingEVMAcceptedInst.ExternalTokenID,
 		metatype,
 	)
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			issuingEVMRes,
-			false,
-			false,
-			shardID, nil,
-			featureStateDB))
-
-	if initErr != nil {
-		Logger.log.Warn("WARNING: an error occurred while initializing response tx: ", initErr)
-		return nil, nil
+	tokenID := issuingEVMAcceptedInst.IncTokenID
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
 	}
-	Logger.log.Infof("[Decentralized bridge token issuance] Create tx ok: %s", resTx.Hash().String())
-	return resTx, nil
+
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingEVMRes
+	}
+
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }

@@ -103,12 +103,12 @@ func CreateGenesisShardBlock() *types.ShardBlock {
 		if err != nil {
 			panic(err)
 		}
-		initSalaryTx := transaction.Tx{}
+		initSalaryTx := new(transaction.TxVersion1)
 		err = initSalaryTx.UnmarshalJSON(tx)
 		if err != nil {
 			panic(err)
 		}
-		body.Transactions = append(body.Transactions, &initSalaryTx)
+		body.Transactions = append(body.Transactions, initSalaryTx)
 	}
 
 	block := &types.ShardBlock{
