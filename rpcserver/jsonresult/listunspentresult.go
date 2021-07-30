@@ -38,7 +38,6 @@ type OutCoin struct {
 	Index                string `json:"Index"`
 	PublicKey            string `json:"PublicKey"`
 	Commitment           string `json:"Commitment"`
-	CoinCommitment       string `json:"CoinCommitment"`
 	SNDerivator          string `json:"SNDerivator"`
 	KeyImage             string `json:"KeyImage"`
 	SerialNumber         string `json:"SerialNumber"`
@@ -92,7 +91,6 @@ func NewOutCoin(outCoin ICoinInfo) OutCoin {
 		Value:          strconv.FormatUint(outCoin.GetValue(), 10),
 		Info:           EncodeBase58Check(outCoin.GetInfo()),
 		Commitment:     commitment,
-		CoinCommitment: commitment,
 		SNDerivator:    snd,
 		KeyImage:       keyImage,
 		SerialNumber:   keyImage,
