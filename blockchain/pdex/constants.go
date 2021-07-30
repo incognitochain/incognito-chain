@@ -1,5 +1,11 @@
 package pdex
 
+import (
+	"math"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
+
 const (
 	BasicVersion = iota + 1
 	AmplifierVersion
@@ -23,8 +29,15 @@ const (
 
 // PDEX token
 const (
-	GenesisMintingAmount = 5000000 // without mulitply with denominating rate
+	GenesisMintingAmount = 5000000                  // without mulitply with denominating rate
+	MintingBlockReward   = 45000000                 // without multiply with denominating rate
+	MintingBlocks        = 3600 * 24 * 30 * 60 / 40 // 60 months
 	DecayIntervals       = 30
-	DecayRateBPS         = 50000 // 5%
+	DecayRateBPS         = 500 // 5%
+)
 
+var (
+	TotalPDEXReward         = MintingBlockReward * math.Pow(10, common.PDEXDenominatingDecimal)
+	DecayRate               = float64(DecayRateBPS) / float64(BPS)
+	PDEXRewardFirstInterval = uint64(TotalPDEXReward * DecayRate / (1 - math.Pow(1-DecayRate, DecayIntervals)))
 )

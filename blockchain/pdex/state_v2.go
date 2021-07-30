@@ -46,7 +46,7 @@ type Params struct {
 	LimitStakingPoolRewardPercent   uint            // percent of fees from limit orders
 	TradingProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
 	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
-	DefaultStakingPoolsShare        uint            // the default value of staking pool share weight (default - 0)
+	PDEXRewardPoolPairsShare        map[string]uint // map: pool pair ID -> PDEX reward share weight
 	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
 }
 
@@ -60,7 +60,7 @@ func newStateV2() *stateV2 {
 			LimitStakingPoolRewardPercent:   InitStakingPoolRewardPercent,
 			TradingProtocolFeePercent:       InitProtocolFeePercent,
 			TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
-			DefaultStakingPoolsShare:        InitStakingPoolsShare,
+			PDEXRewardPoolPairsShare:        map[string]uint{},
 			StakingPoolsShare:               map[string]uint{},
 		},
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
@@ -101,7 +101,7 @@ func initStateV2(
 		LimitStakingPoolRewardPercent:   stateObject.LimitStakingPoolRewardPercent(),
 		TradingProtocolFeePercent:       stateObject.TradingProtocolFeePercent(),
 		TradingStakingPoolRewardPercent: stateObject.TradingStakingPoolRewardPercent(),
-		DefaultStakingPoolsShare:        stateObject.DefaultStakingPoolsShare(),
+		PDEXRewardPoolPairsShare:        stateObject.PDEXRewardPoolPairsShare(),
 		StakingPoolsShare:               stateObject.StakingPoolsShare(),
 	}
 	if err != nil {
@@ -273,6 +273,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, addLiquidityInstructions...)
 
+	pdexBlockRewards := uint64(0)
 	// mint PDEX token at the pDex v3 checkpoint block
 	if env.BeaconHeight() == config.Param().PDexParams.Pdexv3BreakPointHeight {
 		mintPDEXGenesis, err := s.producer.mintPDEXGenesis()
@@ -280,6 +281,20 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			return instructions, err
 		}
 		instructions = append(instructions, mintPDEXGenesis...)
+	} else if env.BeaconHeight() > config.Param().PDexParams.Pdexv3BreakPointHeight {
+		intervalLength := uint64(MintingBlocks / DecayIntervals)
+		decayIntevalIdx := (env.BeaconHeight() - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength
+		if decayIntevalIdx < DecayIntervals {
+			curIntervalReward := PDEXRewardFirstInterval
+			for i := uint64(0); i < decayIntevalIdx; i++ {
+				curIntervalReward -= curIntervalReward * DecayRateBPS / BPS
+			}
+			pdexBlockRewards = curIntervalReward / intervalLength
+		}
+	}
+
+	if pdexBlockRewards > 0 {
+		// TODO: update state here
 	}
 
 	// handle modify params
@@ -311,7 +326,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		s.params.LimitStakingPoolRewardPercent,
 		s.params.TradingProtocolFeePercent,
 		s.params.TradingStakingPoolRewardPercent,
-		s.params.DefaultStakingPoolsShare,
+		s.params.PDEXRewardPoolPairsShare,
 		s.params.StakingPoolsShare,
 	)
 	if err != nil {

@@ -139,9 +139,17 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TradingStakingPoolRewardPercent is invalid"))
 	}
 
-	defaultStakingPoolsShare, err := common.AssertAndConvertStrToNumber(newParams["DefaultStakingPoolsShare"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DefaultStakingPoolsShare is invalid"))
+	pdexRewardPoolPairsShareTemp, ok := newParams["pdexRewardPoolPairsShare"].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolsShare is invalid"))
+	}
+	pdexRewardPoolPairsShare := map[string]uint{}
+	for key, share := range pdexRewardPoolPairsShareTemp {
+		value, err := common.AssertAndConvertStrToNumber(share)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("pdexRewardPoolPairsShare is invalid"))
+		}
+		pdexRewardPoolPairsShare[key] = uint(value)
 	}
 
 	stakingPoolsShareTemp, ok := newParams["StakingPoolsShare"].(map[string]interface{})
@@ -167,7 +175,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			LimitStakingPoolRewardPercent:   uint(limitStakingPoolRewardPercent),
 			TradingProtocolFeePercent:       uint(tradingProtocolFeePercent),
 			TradingStakingPoolRewardPercent: uint(tradingStakingPoolRewardPercent),
-			DefaultStakingPoolsShare:        uint(defaultStakingPoolsShare),
+			PDEXRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 			StakingPoolsShare:               stakingPoolsShare,
 		},
 	)

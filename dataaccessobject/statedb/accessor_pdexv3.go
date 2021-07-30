@@ -38,7 +38,7 @@ func StorePdexv3Params(
 	limitStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
-	defaultStakingPoolsShare uint,
+	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
@@ -50,7 +50,7 @@ func StorePdexv3Params(
 		limitStakingPoolRewardPercent,
 		tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent,
-		defaultStakingPoolsShare,
+		pdexRewardPoolPairsShare,
 		stakingPoolsShare,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)

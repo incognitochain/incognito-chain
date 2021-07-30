@@ -16,7 +16,7 @@ type Pdexv3Params struct {
 	limitStakingPoolRewardPercent   uint
 	tradingProtocolFeePercent       uint
 	tradingStakingPoolRewardPercent uint
-	defaultStakingPoolsShare        uint
+	pdexRewardPoolPairsShare        map[string]uint
 	stakingPoolsShare               map[string]uint
 }
 
@@ -41,8 +41,8 @@ func (pp Pdexv3Params) TradingProtocolFeePercent() uint {
 func (pp Pdexv3Params) TradingStakingPoolRewardPercent() uint {
 	return pp.tradingStakingPoolRewardPercent
 }
-func (pp Pdexv3Params) DefaultStakingPoolsShare() uint {
-	return pp.defaultStakingPoolsShare
+func (pp Pdexv3Params) PDEXRewardPoolPairsShare() map[string]uint {
+	return pp.pdexRewardPoolPairsShare
 }
 func (pp Pdexv3Params) StakingPoolsShare() map[string]uint {
 	return pp.stakingPoolsShare
@@ -57,7 +57,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		LimitStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
-		DefaultStakingPoolsShare        uint
+		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
@@ -67,7 +67,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		LimitStakingPoolRewardPercent:   pp.limitStakingPoolRewardPercent,
 		TradingProtocolFeePercent:       pp.tradingProtocolFeePercent,
 		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
-		DefaultStakingPoolsShare:        pp.defaultStakingPoolsShare,
+		PDEXRewardPoolPairsShare:        pp.pdexRewardPoolPairsShare,
 		StakingPoolsShare:               pp.stakingPoolsShare,
 	})
 	if err != nil {
@@ -85,7 +85,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		LimitStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
-		DefaultStakingPoolsShare        uint
+		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -99,7 +99,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.limitStakingPoolRewardPercent = temp.LimitStakingPoolRewardPercent
 	pp.tradingProtocolFeePercent = temp.TradingProtocolFeePercent
 	pp.tradingStakingPoolRewardPercent = temp.TradingStakingPoolRewardPercent
-	pp.defaultStakingPoolsShare = temp.DefaultStakingPoolsShare
+	pp.pdexRewardPoolPairsShare = temp.PDEXRewardPoolPairsShare
 	pp.stakingPoolsShare = temp.StakingPoolsShare
 	return nil
 }
@@ -116,7 +116,7 @@ func NewPdexv3ParamsWithValue(
 	limitStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
-	defaultStakingPoolsShare uint,
+	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
@@ -127,7 +127,7 @@ func NewPdexv3ParamsWithValue(
 		limitStakingPoolRewardPercent:   limitStakingPoolRewardPercent,
 		tradingProtocolFeePercent:       tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
-		defaultStakingPoolsShare:        defaultStakingPoolsShare,
+		pdexRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 		stakingPoolsShare:               stakingPoolsShare,
 	}
 }

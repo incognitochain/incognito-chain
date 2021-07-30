@@ -31,6 +31,8 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		0,
 		*token0VirtualAmount, *token1VirtualAmount,
 		contributions[0].Amplifier(),
+		map[common.Hash]uint64{}, map[common.Hash]big.Int{},
+		map[common.Hash]uint64{}, map[common.Hash]uint64{},
 	)
 
 	return NewPoolPairStateWithValue(
