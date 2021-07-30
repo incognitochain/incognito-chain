@@ -1,14 +1,36 @@
 package pdexv3
 
 import (
+	"encoding/json"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
+	tokenHash, _ := common.Hash{}.NewHashFromStr("abc")
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
+	)
+	inst := NewMatchAndReturnAddLiquidityWithValue(
+		contributionState,
+		100, 100, 200, 100,
+		*tokenHash,
+		common.PRVCoinID,
+	)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
 		shareAmount              uint64
 		contribution             statedb.Pdexv3ContributionState
@@ -22,12 +44,63 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		source []string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+		args               args
+		wantErr            bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "Invalid length",
+			fields:  fields{},
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name:   "Invalid metadata type",
+			fields: fields{},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
+					common.PDEContributionRefundChainStatus,
+					string(data),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Invalid status",
+			fields: fields{},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionRefundChainStatus,
+					string(data),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			fieldsAfterProcess: fields{
+				contribution:             contributionState,
+				shareAmount:              100,
+				returnAmount:             100,
+				existedTokenActualAmount: 200,
+				existedTokenReturnAmount: 100,
+				existedTokenID:           *tokenHash,
+				nfctID:                   common.PRVCoinID,
+			},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionMatchedNReturnedChainStatus,
+					string(data),
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,6 +121,22 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 }
 
 func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
+	tokenHash, _ := common.Hash{}.NewHashFromStr("abc")
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
+	)
+	inst := NewMatchAndReturnAddLiquidityWithValue(
+		contributionState,
+		100, 100, 200, 100,
+		*tokenHash,
+		common.PRVCoinID,
+	)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
 		shareAmount              uint64
 		contribution             statedb.Pdexv3ContributionState
@@ -63,7 +152,24 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Valid Input",
+			fields: fields{
+				contribution:             contributionState,
+				shareAmount:              100,
+				returnAmount:             100,
+				existedTokenActualAmount: 200,
+				existedTokenReturnAmount: 100,
+				existedTokenID:           *tokenHash,
+				nfctID:                   common.PRVCoinID,
+			},
+			want: []string{
+				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+				common.PDEContributionMatchedNReturnedChainStatus,
+				string(data),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

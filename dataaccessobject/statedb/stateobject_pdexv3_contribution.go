@@ -24,11 +24,11 @@ func (pc *Pdexv3ContributionState) Value() rawdbv2.Pdexv3Contribution {
 
 func (pc *Pdexv3ContributionState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PairHash string                     `json:"PairHash"`
-		Value    rawdbv2.Pdexv3Contribution `json:"Value"`
+		PairHash string                      `json:"PairHash"`
+		Value    *rawdbv2.Pdexv3Contribution `json:"Value"`
 	}{
 		PairHash: pc.pairHash,
-		Value:    pc.value,
+		Value:    &pc.value,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -38,15 +38,17 @@ func (pc *Pdexv3ContributionState) MarshalJSON() ([]byte, error) {
 
 func (pc *Pdexv3ContributionState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PairHash string                     `json:"PairHash"`
-		Value    rawdbv2.Pdexv3Contribution `json:"Value"`
+		PairHash string                      `json:"PairHash"`
+		Value    *rawdbv2.Pdexv3Contribution `json:"Value"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	pc.pairHash = temp.PairHash
-	pc.value = temp.Value
+	if temp.Value != nil {
+		pc.value = *temp.Value
+	}
 	return nil
 }
 

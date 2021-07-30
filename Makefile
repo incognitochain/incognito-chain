@@ -27,8 +27,10 @@ mainnet:
 	INCOGNITO_NETWORK_KEY=$(MAINNET) ./$(BUILD_FILE_NAME) 2>&1 | tee mainnet.log
 
 test:
-	go test ./...
+	go test ./.../pdexv3
+	go test ./.../pdex
 
 clean:
 	env GO111MODULE=on go clean -cache
 	rm -rf $(DATADIR)
+	rm -rf $(BUILD_FILE_NAME)

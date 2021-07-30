@@ -16,11 +16,14 @@ import (
 
 func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 
-	contribution := *rawdbv2.NewPdexv3ContributionWithValue(
-		"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-		common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
-	data, err := json.Marshal(contribution)
+	inst := NewWaitingAddLiquidityWithValue(contributionState)
+	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
 
 	type fields struct {
@@ -30,10 +33,11 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 		source []string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+		args               args
+		wantErr            bool
 	}{
 		{
 			name: "Invalid length",
@@ -78,6 +82,9 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			fields: fields{
 				contribution: *statedb.NewPdexv3ContributionState(),
 			},
+			fieldsAfterProcess: fields{
+				contribution: contributionState,
+			},
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
@@ -95,12 +102,27 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			}
 			if err := w.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("WaitingAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(w.contribution, tt.fieldsAfterProcess.contribution) {
+				t.Errorf("fieldsAfterProcess expect = %v, but get %v", tt.fieldsAfterProcess.contribution, w.contribution)
+				return
 			}
 		})
 	}
 }
 
 func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
+	)
+	inst := NewWaitingAddLiquidityWithValue(contributionState)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
 		contribution statedb.Pdexv3ContributionState
 	}
@@ -110,7 +132,18 @@ func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Valid Input",
+			fields: fields{
+				contribution: contributionState,
+			},
+			want: []string{
+				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+				common.PDEContributionWaitingChainStatus,
+				string(data),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,6 +157,7 @@ func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("WaitingAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
+				return
 			}
 		})
 	}

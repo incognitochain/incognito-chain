@@ -55,9 +55,9 @@ func (w *WaitingAddLiquidity) StringSlice() ([]string, error) {
 
 func (w *WaitingAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Contribution statedb.Pdexv3ContributionState `json:"Contribution"`
+		Contribution *statedb.Pdexv3ContributionState `json:"Contribution"`
 	}{
-		Contribution: w.contribution,
+		Contribution: &w.contribution,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -67,13 +67,15 @@ func (w *WaitingAddLiquidity) MarshalJSON() ([]byte, error) {
 
 func (w *WaitingAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Contribution statedb.Pdexv3ContributionState `json:"Contribution"`
+		Contribution *statedb.Pdexv3ContributionState `json:"Contribution"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	w.contribution = temp.Contribution
+	if temp.Contribution != nil {
+		w.contribution = *temp.Contribution
+	}
 	return nil
 }
 
