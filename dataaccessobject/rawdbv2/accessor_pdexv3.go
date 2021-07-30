@@ -294,3 +294,100 @@ func NewPdexv3PoolPairWithValue(
 		shareAmount:           shareAmount,
 	}
 }
+
+type Pdexv3Order struct {
+	id             string
+	token0Rate     uint64
+	token1Rate     uint64
+	token0Balance  uint64
+	token1Balance  uint64
+	tradeDirection int
+	fee            uint64
+}
+
+func (o Pdexv3Order) Id() string            { return o.id }
+func (o Pdexv3Order) Token0Rate() uint64    { return o.token0Rate }
+func (o Pdexv3Order) Token1Rate() uint64    { return o.token1Rate }
+func (o Pdexv3Order) Token0Balance() uint64 { return o.token0Balance }
+func (o Pdexv3Order) Token1Balance() uint64 { return o.token1Balance }
+func (o Pdexv3Order) TradeDirection() int   { return o.tradeDirection }
+func (o Pdexv3Order) Fee() uint64           { return o.fee }
+
+// SetToken0Balance() changes the token0 balance of this order. Only balances & fee can be updated,
+// while rates, id & trade direction cannot
+func (o *Pdexv3Order) SetToken0Balance(b uint64) { o.token0Balance = b }
+func (o *Pdexv3Order) SetToken1Balance(b uint64) { o.token1Balance = b }
+func (o *Pdexv3Order) SetFee(fee uint64)         { o.fee = fee }
+
+func NewPdexv3OrderWithValue(
+	id string,
+	token0Rate, token1Rate, token0Balance, token1Balance uint64,
+	tradeDirection int,
+	fee uint64,
+) *Pdexv3Order {
+	return &Pdexv3Order{
+		id:             id,
+		token0Rate:     token0Rate,
+		token1Rate:     token1Rate,
+		token0Balance:  token0Balance,
+		token1Balance:  token1Balance,
+		tradeDirection: tradeDirection,
+		fee:            fee,
+	}
+}
+
+func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Id             string `json:"Id"`
+		Token0Rate     uint64 `json:"Token0Rate"`
+		Token1Rate     uint64 `json:"Token1Rate"`
+		Token0Balance  uint64 `json:"Token0Balance"`
+		Token1Balance  uint64 `json:"Token1Balance"`
+		TradeDirection int    `json:"TradeDirection"`
+		Fee            uint64 `json:"Fee"`
+	}{
+		Id:             o.id,
+		Token0Rate:     o.token0Rate,
+		Token1Rate:     o.token1Rate,
+		Token0Balance:  o.token0Balance,
+		Token1Balance:  o.token1Balance,
+		TradeDirection: o.tradeDirection,
+		Fee:            o.fee,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
+	var temp struct {
+		Id             string `json:"Id"`
+		Token0Rate     uint64 `json:"Token0Rate"`
+		Token1Rate     uint64 `json:"Token1Rate"`
+		Token0Balance  uint64 `json:"Token0Balance"`
+		Token1Balance  uint64 `json:"Token1Balance"`
+		TradeDirection int    `json:"TradeDirection"`
+		Fee            uint64 `json:"Fee"`
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+
+	*o = Pdexv3Order{
+		id:             temp.Id,
+		token0Rate:     temp.Token0Rate,
+		token1Rate:     temp.Token1Rate,
+		token0Balance:  temp.Token0Balance,
+		token1Balance:  temp.Token1Balance,
+		tradeDirection: temp.TradeDirection,
+		fee:            temp.Fee,
+	}
+	return nil
+}
+
+func (o *Pdexv3Order) Clone() *Pdexv3Order {
+	return NewPdexv3OrderWithValue(o.id, o.token0Rate, o.token1Rate,
+		o.token0Balance, o.token1Balance, o.tradeDirection, o.fee)
+}

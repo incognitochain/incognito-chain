@@ -1,13 +1,14 @@
 package v3utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -18,6 +19,11 @@ const (
 
 type TradingPair struct {
 	*rawdbv2.Pdexv3PoolPair
+}
+
+func (tp *TradingPair) UnmarshalJSON(data []byte) error {
+	tp.Pdexv3PoolPair = &rawdbv2.Pdexv3PoolPair{}
+	return json.Unmarshal(data, tp.Pdexv3PoolPair)
 }
 
 // BuyAmount() computes the output amount given input, based on reserve amounts. Deduct fees before calling this
@@ -41,7 +47,7 @@ func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection int) (uint64
 // SwapToReachOrderRate() does a *partial* swap using liquidity in the pool, such that the price afterwards does not exceed an order's rate
 // It returns an error when the pool runs out of liquidity
 // Upon success, it updates the reserve values and returns (buyAmount, sellAmountRemain, token0Change, token1Change)
-func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection int, ord *OrderMatchingInfo) (uint64, uint64, *big.Int, *big.Int, error) {
+func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection int, ord *MatchingOrder) (uint64, uint64, *big.Int, *big.Int, error) {
 	token0Change := big.NewInt(0)
 	token1Change := big.NewInt(0)
 
@@ -60,15 +66,15 @@ func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 
 	var xOrd, yOrd, L, targetDeltaX *big.Int
 	if ord != nil {
-		if tradeDirection == ord.TradeDirection {
+		if tradeDirection == ord.TradeDirection() {
 			return 0, 0, nil, nil, fmt.Errorf("Cannot match trade with order of same direction")
 		}
 		if tradeDirection == TradeDirectionSell0 {
-			xOrd = big.NewInt(0).SetUint64(ord.Token0Rate)
-			yOrd = big.NewInt(0).SetUint64(ord.Token1Rate)
+			xOrd = big.NewInt(0).SetUint64(ord.Token0Rate())
+			yOrd = big.NewInt(0).SetUint64(ord.Token1Rate())
 		} else {
-			xOrd = big.NewInt(0).SetUint64(ord.Token1Rate)
-			yOrd = big.NewInt(0).SetUint64(ord.Token0Rate)
+			xOrd = big.NewInt(0).SetUint64(ord.Token1Rate())
+			yOrd = big.NewInt(0).SetUint64(ord.Token0Rate())
 		}
 		L = big.NewInt(0).Mul(xV, yV)
 

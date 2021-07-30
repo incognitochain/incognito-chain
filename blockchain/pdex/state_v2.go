@@ -2,11 +2,11 @@ package pdex
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"reflect"
 	"sort"
 	"strconv"
-	"fmt"
 
 	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
 	"github.com/incognitochain/incognito-chain/common"
@@ -29,11 +29,7 @@ type stateV2 struct {
 	processor                   stateProcessorV2
 }
 
-type Order struct {
-	id                string
-	orderMatchingInfo v3.OrderMatchingInfo
-	fee               uint64
-}
+type Order = rawdbv2.Pdexv3Order
 
 type Orderbook struct {
 	orders []*Order
@@ -50,12 +46,12 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 		return lst
 	}
 	index := sort.Search(len(ob.orders), func(i int) bool {
-		ordRate := big.NewInt(0).SetUint64(ob.orders[i].orderMatchingInfo.Token0Rate)
-		ordRate.Mul(ordRate, big.NewInt(0).SetUint64(ord.orderMatchingInfo.Token1Rate))
-		myRate := big.NewInt(0).SetUint64(ob.orders[i].orderMatchingInfo.Token1Rate)
-		myRate.Mul(myRate, big.NewInt(0).SetUint64(ord.orderMatchingInfo.Token0Rate))
+		ordRate := big.NewInt(0).SetUint64(ob.orders[i].Token0Rate())
+		ordRate.Mul(ordRate, big.NewInt(0).SetUint64(ord.Token1Rate()))
+		myRate := big.NewInt(0).SetUint64(ob.orders[i].Token1Rate())
+		myRate.Mul(myRate, big.NewInt(0).SetUint64(ord.Token0Rate()))
 		// compare Token1Init / Token0Init of current order in the list to ord
-		if ord.orderMatchingInfo.TradeDirection == v3.TradeDirectionSell0 {
+		if ord.TradeDirection() == v3.TradeDirectionSell0 {
 			// orders selling token0 are iterated from start of list (buy the least token1), so we resolve equality of rate by putting the new one last
 			return ordRate.Cmp(myRate) < 0
 		} else {
@@ -66,21 +62,21 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 	ob.orders = insertAt(ob.orders, index, ord)
 }
 
-func (ob *Orderbook) NextOrder(tradeDirection int) (*v3.OrderMatchingInfo, string, error) {
+func (ob *Orderbook) NextOrder(tradeDirection int) (*v3.MatchingOrder, string, error) {
 	lstLen := len(ob.orders)
 	switch tradeDirection {
 	case v3.TradeDirectionSell0:
 		for i := 0; i < lstLen; i++ {
-			if ob.orders[i].orderMatchingInfo.Token1Balance > 0 {
-				return &ob.orders[i].orderMatchingInfo, ob.orders[i].id, nil
+			if ob.orders[i].Token1Balance() > 0 {
+				return &v3.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
 			}
 		}
 		// no active order
 		return nil, "", nil
 	case v3.TradeDirectionSell1:
 		for i := lstLen - 1; i >= 0; i-- {
-			if ob.orders[i].orderMatchingInfo.Token0Balance > 0 {
-				return &ob.orders[i].orderMatchingInfo, ob.orders[i].id, nil
+			if ob.orders[i].Token0Balance() > 0 {
+				return &v3.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
 			}
 		}
 		// no active order

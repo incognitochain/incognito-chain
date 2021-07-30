@@ -66,29 +66,25 @@ func TestProduceAcceptedTrade(t *testing.T) {
 	}
 }
 
-type Order struct {
-	OrderMatchingInfo
-	Id string
-}
-type OrderList []Order
+type OrderList []MatchingOrder
 
 // replica of PoolPairState.NextOrder()
-func (o *OrderList) NextOrder(tradeDirection int) (*OrderMatchingInfo, string, error) {
-	lst := []Order(*o)
+func (o *OrderList) NextOrder(tradeDirection int) (*MatchingOrder, string, error) {
+	lst := []MatchingOrder(*o)
 	lstLen := len(lst)
 	switch tradeDirection {
 	case TradeDirectionSell0:
 		for i := 0; i < lstLen; i++ {
-			if lst[i].Token1Balance > 0 {
-				return &lst[i].OrderMatchingInfo, lst[i].Id, nil
+			if lst[i].Token1Balance() > 0 {
+				return &lst[i], lst[i].Id(), nil
 			}
 		}
 		// no active order
 		return nil, "", nil
 	case TradeDirectionSell1:
 		for i := lstLen - 1; i >= 0; i-- {
-			if lst[i].Token0Balance > 0 {
-				return &lst[i].OrderMatchingInfo, lst[i].Id, nil
+			if lst[i].Token0Balance() > 0 {
+				return &lst[i], lst[i].Id(), nil
 			}
 		}
 		// no active order
