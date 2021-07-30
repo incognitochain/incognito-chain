@@ -512,8 +512,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 			default:
 				if metadataCommon.IsPDEType(metaType) {
-					pdeTxBuilder := new(pdex.PDETxBuilder)
-					newTx, err = pdeTxBuilder.Build(
+					txBuilder := new(pdex.TxBuilderV1)
+					newTx, err = txBuilder.Build(
 						metaType,
 						inst,
 						producerPrivateKey,
@@ -522,8 +522,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 						featureStateDB,
 					)
 				} else if metadataCommon.IsPdexv3Type(metaType) {
-					pdexv3TxBuilder := new(pdex.Pdexv3TxBuilder)
-					newTx, err = pdexv3TxBuilder.Build(
+					txBuilder := new(pdex.TxBuilderV2)
+					newTx, err = txBuilder.Build(
 						metaType,
 						inst,
 						producerPrivateKey,
