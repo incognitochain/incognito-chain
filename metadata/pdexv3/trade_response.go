@@ -26,7 +26,7 @@ type AcceptedTrade struct {
 }
 
 func (md AcceptedTrade) GetType() int {
-	return metadataCommon.PDexV3TradeRequestMeta
+	return metadataCommon.Pdexv3TradeRequestMeta
 }
 
 func (md AcceptedTrade) GetStatus() string {
@@ -40,7 +40,7 @@ type RefundedTrade struct {
 }
 
 func (md RefundedTrade) GetType() int {
-	return metadataCommon.PDexV3TradeRequestMeta
+	return metadataCommon.Pdexv3TradeRequestMeta
 }
 
 func (md RefundedTrade) GetStatus() string {
@@ -65,7 +65,7 @@ func (res TradeResponse) ValidateSanityData(chainRetriever metadataCommon.ChainR
 }
 
 func (res TradeResponse) ValidateMetadataByItself() bool {
-	return res.Type == metadataCommon.PDexV3TradeResponseMeta
+	return res.Type == metadataCommon.Pdexv3TradeResponseMeta
 }
 
 func (res TradeResponse) Hash() *common.Hash {

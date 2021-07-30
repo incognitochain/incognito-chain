@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 func InitVersionByBeaconHeight(beaconHeight uint64) State {
@@ -571,8 +572,8 @@ func InitStateFromDB(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (State, error) {
-	if beaconHeight >= config.Param().PDexParams.PDexV3BreakPointHeight {
-		if beaconHeight == config.Param().PDexParams.PDexV3BreakPointHeight {
+	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
+		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
 			return newStateV2(), nil
 		}
 		return initStateV2(stateDB, beaconHeight)
@@ -583,25 +584,63 @@ func InitStateFromDB(
 	return initStateV1(stateDB, beaconHeight)
 }
 
-func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState) ([]*v3.PoolReserve, []v3.OrderBookIterator, []int, common.Hash, error) {
-	var results []*v3.PoolReserve
-	var pairsInPath []v3.OrderBookIterator
+func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
+	if token0Name <= token1Name {
+		return strings.Join([]string{token0Name, token1Name, txReqID}, "-")
+	}
+	return strings.Join([]string{token1Name, token0Name, txReqID}, "-")
+}
+
+//amplifier >= 10000
+func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, *big.Int) {
+	if amplifier == metadataPdexV3.BaseAmplifier {
+		return big.NewInt(0).SetUint64(amount0), big.NewInt(0).SetUint64(amount1)
+	}
+	vAmount0 := big.NewInt(0)
+	vAmount1 := big.NewInt(0)
+	vAmount0.Mul(
+		new(big.Int).SetUint64(amount0),
+		new(big.Int).SetUint64(uint64(amplifier)),
+	)
+	vAmount0.Div(
+		vAmount0,
+		new(big.Int).SetUint64(uint64(metadataPdexV3.BaseAmplifier)),
+	)
+	vAmount1.Mul(
+		new(big.Int).SetUint64(amount0),
+		new(big.Int).SetUint64(uint64(amplifier)),
+	)
+	vAmount1.Div(
+		vAmount0,
+		new(big.Int).SetUint64(uint64(metadataPdexV3.BaseAmplifier)),
+	)
+
+	return vAmount0, vAmount1
+}
+
+func tradePathFromState(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState, orderbookState map[string]Orderbook) ([]*rawdbv2.Pdexv3PoolPair, []v3.OrderBookIterator, []int, common.Hash, error) {
+	var results []*rawdbv2.Pdexv3PoolPair
+	var orderbookList []v3.OrderBookIterator
 	var tradeDirections []int
 	
 	nextTokenToSell := sellToken
-	var buyingToken common.Hash
 	for _, pairID := range tradePath {
 		if pair, exists := pairs[pairID]; exists {
-			results = append(results, &pair.tokenReserve)
-			pairsInPath = append(pairsInPath, &pair)
+			results = append(results, &pair.state)
+			ob, exists := orderbookState[pairID]
+			if !exists {
+				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Orderbook missing for pair %s", pairID)
+			}
+			orderbookList = append(orderbookList, &ob)
 			var td int
-			switch nextTokenToSell.String() {
-			case pair.token0ID:
+			switch nextTokenToSell {
+			case pair.state.Token0ID():
 				td = v3.TradeDirectionSell0
 				// set token to sell for next iteration. If this is the last iteration, it's THE token to buy
-				nextTokenToSell = pair.token1ID
-			case pair.token1ID:
+				nextTokenToSell = pair.state.Token1ID()
+			case pair.state.Token1ID():
 				td = v3.TradeDirectionSell1
+				nextTokenToSell = pair.state.Token0ID()
 			default:
 				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Incompatible selling token %s vs next pair %s", nextTokenToSell.String(), pairID)
 			}
@@ -610,5 +649,5 @@ func getRelevantReserves(sellToken common.Hash, tradePath []string, pairs map[st
 			return nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains nonexistent pair %s", pairID)
 		}
 	}
-	return results, pairsInPath, tradeDirections, nextTokenToSell, nil
+	return results, orderbookList, tradeDirections, nextTokenToSell, nil
 }

@@ -20,9 +20,17 @@ type Action struct {
 	shardID     byte
 }
 
+func NewAction(c Content, txID common.Hash, shardID byte) *Action {
+	return &Action{
+		Content: c,
+		RequestTxID: txID,
+		shardID: shardID,
+	}
+}
+
 func (acn Action) ShardID() byte { return acn.shardID }
 
-func (acn *Action) FromStrings(source []string) error {
+func (acn *Action) FromStringSlice(source []string) error {
 	if len(source) != 4 {
 		return errors.New("Invalid action length")
 	}
@@ -42,7 +50,7 @@ func (acn *Action) FromStrings(source []string) error {
 	return nil
 }
 
-func (acn *Action) Strings() []string {
+func (acn *Action) StringSlice() []string {
 	result := []string{strconv.Itoa(acn.GetType()), acn.GetStatus(), strconv.Itoa(int(acn.shardID))}
 	jsonBytes, _ := json.Marshal(acn)
 	result = append(result, string(jsonBytes))

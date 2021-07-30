@@ -308,7 +308,7 @@ func (s *stateV1) Upgrade(env StateEnvironment) State {
 	return state
 }
 
-func (s *stateV1) StoreToDB(env StateEnvironment) error {
+func (s *stateV1) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
 	var err error
 	statedb.DeleteWaitingPDEContributions(
 		env.StateDB(),
@@ -390,9 +390,9 @@ func (s *stateV1) ClearCache() {
 	s.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution)
 }
 
-func (s *stateV1) GetDiff(compareState State) (State, error) {
+func (s *stateV1) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
 	if compareState == nil {
-		return nil, errors.New("compareState is nil")
+		return nil, stateChange, errors.New("compareState is nil")
 	}
 
 	res := newStateV1()
@@ -426,7 +426,7 @@ func (s *stateV1) GetDiff(compareState State) (State, error) {
 			res.tradingFees[k] = v
 		}
 	}
-	return res, nil
+	return res, stateChange, nil
 }
 
 func (s *stateV1) WaitingContributionsV1() map[string]*rawdbv2.PDEContribution {

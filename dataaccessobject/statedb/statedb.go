@@ -3,15 +3,17 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/trie"
-	"github.com/pkg/errors"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/pkg/errors"
 )
 
 // StateDBs within the incognito protocol are used to store anything
@@ -1875,4 +1877,106 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 		return bscTxState.GetValue().(*BridgeBSCTxState), true, nil
 	}
 	return NewBridgeBSCTxState(), false, nil
+}
+
+// ================================= pDex v3 OBJECT =======================================
+func (stateDB *StateDB) getPdexv3StatusByKey(key common.Hash) (*Pdexv3StatusState, bool, error) {
+	pDexv3StatusState, err := stateDB.getStateObject(Pdexv3StatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3StatusState != nil {
+		return pDexv3StatusState.GetValue().(*Pdexv3StatusState), true, nil
+	}
+	return NewPdexv3StatusState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bool, error) {
+	pDexv3ParamsState, err := stateDB.getStateObject(Pdexv3ParamsObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3ParamsState != nil {
+		return pDexv3ParamsState.GetValue().(*Pdexv3Params), true, nil
+	}
+	return NewPdexv3Params(), false, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {
+	res := map[string]rawdbv2.Pdexv3Contribution{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		contributionState := NewPdexv3ContributionState()
+		err := json.Unmarshal(newValue, contributionState)
+		if err != nil {
+			return res, err
+		}
+		res[string(contributionState.pairHash)] = contributionState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pdexv3PoolPairState, error) {
+	res := map[string]Pdexv3PoolPairState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		poolPairState := NewPdexv3PoolPairState()
+		err := json.Unmarshal(newValue, poolPairState)
+		if err != nil {
+			return res, err
+		}
+		res[poolPairState.poolPairID] = *poolPairState
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (
+	map[string]Pdexv3ShareState,
+	error,
+) {
+	shares := map[string]Pdexv3ShareState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		shareState := NewPdexv3ShareState()
+		err := json.Unmarshal(newValue, shareState)
+		if err != nil {
+			return shares, err
+		}
+		shares[shareState.nfctID.String()] = *shareState
+
+	}
+	return shares, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (
+	map[string]Pdexv3TradingFeeState,
+	error,
+) {
+	tradingFees := map[string]Pdexv3TradingFeeState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		tradingFeeState := NewPdexv3TradingFeeState()
+		err := json.Unmarshal(newValue, tradingFeeState)
+		if err != nil {
+			return tradingFees, err
+		}
+		tradingFees[tradingFeeState.tokenID.String()] = *tradingFeeState
+	}
+	return tradingFees, nil
 }

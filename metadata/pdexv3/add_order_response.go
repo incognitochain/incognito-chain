@@ -26,7 +26,7 @@ type AcceptedAddOrder struct {
 }
 
 func (md AcceptedAddOrder) GetType() int {
-	return metadataCommon.PDexV3AddOrderRequestMeta
+	return metadataCommon.Pdexv3AddOrderRequestMeta
 }
 
 func (md AcceptedAddOrder) GetStatus() string {
@@ -42,7 +42,7 @@ type RefundedAddOrder struct {
 }
 
 func (md RefundedAddOrder) GetType() int {
-	return metadataCommon.PDexV3AddOrderRequestMeta
+	return metadataCommon.Pdexv3AddOrderRequestMeta
 }
 
 func (md RefundedAddOrder) GetStatus() string {
@@ -67,7 +67,7 @@ func (res AddOrderResponse) ValidateSanityData(chainRetriever metadataCommon.Cha
 }
 
 func (res AddOrderResponse) ValidateMetadataByItself() bool {
-	return res.Type == metadataCommon.PDexV3AddOrderResponseMeta
+	return res.Type == metadataCommon.Pdexv3AddOrderResponseMeta
 }
 
 func (res AddOrderResponse) Hash() *common.Hash {

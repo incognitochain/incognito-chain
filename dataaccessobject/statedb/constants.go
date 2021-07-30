@@ -61,6 +61,14 @@ const (
 
 	// bsc bridge
 	BridgeBSCTxObjectType
+
+	// pDex v3
+	Pdexv3StatusObjectType
+	Pdexv3ParamsObjectType
+	Pdexv3ContributionObjectType
+	Pdexv3PoolPairObjectType
+	Pdexv3ShareObjectType
+	Pdexv3TradingFeeObjectType
 )
 
 // Prefix length

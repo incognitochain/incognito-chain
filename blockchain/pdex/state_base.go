@@ -1,6 +1,9 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+)
 
 type stateBase struct {
 }
@@ -28,7 +31,7 @@ func (s *stateBase) Process(env StateEnvironment) error {
 	return nil
 }
 
-func (s *stateBase) StoreToDB(env StateEnvironment) error {
+func (s *stateBase) StoreToDB(env StateEnvironment, stateChagne *StateChange) error {
 	var err error
 	return err
 }
@@ -49,7 +52,7 @@ func (s *stateBase) ClearCache() {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) GetDiff(compareState State) (State, error) {
+func (s *stateBase) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
 	panic("Implement this fucntion")
 }
 
@@ -69,11 +72,11 @@ func (s *stateBase) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) WaitingContributionsV2() map[string]Contribution {
+func (s *stateBase) WaitingContributionsV2() map[string]statedb.Pdexv3ContributionState {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) DeletedWaitingContributionsV2() map[string]Contribution {
+func (s *stateBase) DeletedWaitingContributionsV2() map[string]statedb.Pdexv3ContributionState {
 	panic("Implement this fucntion")
 }
 

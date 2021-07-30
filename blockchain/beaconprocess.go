@@ -856,13 +856,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 
-	diffState, err := newBestState.pdeState.GetDiff(curView.pdeState)
+	pdexStateChange := &pdex.StateChange{}
+	diffState, pdexStateChange, err := newBestState.pdeState.GetDiff(curView.pdeState, pdexStateChange)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
 	}
 	if diffState != nil {
-		err = diffState.StoreToDB(pdeStateEnv)
+		err = diffState.StoreToDB(pdeStateEnv, pdexStateChange)
 		if err != nil {
 			Logger.log.Error(err)
 			return err

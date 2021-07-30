@@ -18,7 +18,7 @@ type OrderBookIterator interface {
 }
 
 
-// BuyAmount() computes the theoretical (by rate) output amount given incoming trade's sell amount. Order balance only needs to be non-zero since it can be partially matched
+// BuyAmountFromOrder() computes the theoretical (by rate) output amount given incoming trade's sell amount. Order balance only needs to be non-zero since it can be partially matched
 func (ordInf OrderMatchingInfo) BuyAmountFromOrder(incomingTradeSellAmount uint64, incomingTradeDirection int) (uint64, error) {
 	if ordInf.TradeDirection == incomingTradeDirection {
 		return 0, fmt.Errorf("Cannot match order with trade of same direction")
@@ -123,7 +123,7 @@ func (ordInf *OrderMatchingInfo) Match(maxSellAmountAfterFee uint64, tradeDirect
 }
 
 // MatchPoolAmount() uses pool values instead of this order's rate
-func (ordInf *OrderMatchingInfo) MatchPoolAmount(maxSellAmountAfterFee uint64, tradeDirection int, pr PoolReserve) (uint64, uint64, *big.Int, *big.Int, error) {
+func (ordInf *OrderMatchingInfo) MatchPoolAmount(maxSellAmountAfterFee uint64, tradeDirection int, pr TradingPair) (uint64, uint64, *big.Int, *big.Int, error) {
 	finalSellAmount := maxSellAmountAfterFee
 	sellAmountRemain := uint64(0)
 	buyAmount, err := pr.BuyAmount(maxSellAmountAfterFee, tradeDirection)

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/pkg/errors"
 )
 
@@ -71,18 +71,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
-
-	// pDex types
-	case metadataCommon.PDexV3AddLiquidityMeta:
-		md = &metadataPdexV3.AddLiquidity{}
-	case metadataCommon.PDexV3TradeRequestMeta:
-		md = &metadataPdexV3.TradeRequest{}
-	case metadataCommon.PDexV3TradeResponseMeta:
-		md = &metadataPdexV3.TradeResponse{}
-	case metadataCommon.PDexV3AddOrderRequestMeta:
-		md = &metadataPdexV3.AddOrderRequest{}
-	case metadataCommon.PDexV3AddOrderResponseMeta:
-		md = &metadataPdexV3.AddOrderResponse{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
 	case PDEPRVRequiredContributionRequestMeta:
@@ -177,6 +165,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case metadataCommon.Pdexv3ModifyParamsMeta:
+		md = &metadataPdexv3.ParamsModifyingRequest{}
+	case metadataCommon.Pdexv3AddLiquidityRequestMeta:
+		md = &metadataPdexv3.AddLiquidity{}
+		case metadataCommon.Pdexv3TradeRequestMeta:
+		md = &metadataPdexv3.TradeRequest{}
+	case metadataCommon.Pdexv3TradeResponseMeta:
+		md = &metadataPdexv3.TradeResponse{}
+	case metadataCommon.Pdexv3AddOrderRequestMeta:
+		md = &metadataPdexv3.AddOrderRequest{}
+	case metadataCommon.Pdexv3AddOrderResponseMeta:
+		md = &metadataPdexv3.AddOrderResponse{}
 	default:
 		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

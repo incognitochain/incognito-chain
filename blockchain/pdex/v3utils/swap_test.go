@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	. "github.com/stretchr/testify/assert"
@@ -15,16 +16,16 @@ import (
 
 func TestProduceAcceptedTrade(t *testing.T) {
 	type TestData struct {
-		AmountIn        uint64         `json:"amountIn"`
-		Fee             uint64         `json:"fee"`
-		Reserves        []*PoolReserve `json:"reserves"`
-		TradeDirections []int          `json:"tradeDirections"`
-		Orderbooks      []OrderList    `json:"orders"` // assume orders have been sorted
+		AmountIn        uint64                    `json:"amountIn"`
+		Fee             uint64                    `json:"fee"`
+		Reserves        []*rawdbv2.Pdexv3PoolPair `json:"reserves"`
+		TradeDirections []int                     `json:"tradeDirections"`
+		Orderbooks      []OrderList               `json:"orders"` // assume orders have been sorted
 	}
 
 	type TestResult struct {
-		Instructions    []string       `json:"instructions"`
-		ChangedReserves []*PoolReserve `json:"changedReserves"`
+		Instructions    []string                  `json:"instructions"`
+		ChangedReserves []*rawdbv2.Pdexv3PoolPair `json:"changedReserves"`
 	}
 
 	// use all available testcases in testdata/

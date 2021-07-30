@@ -9,14 +9,17 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
-func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
+func TestRefundAddLiquidity_FromStringSlice(t *testing.T) {
 	metaData := metadataPdexv3.NewAddLiquidityWithValue(
 		"pool_pair_id", "pair_hash",
 		validOTAReceiver0, validOTAReceiver1,
 		common.PRVIDStr, 300, 10000,
 	)
 	type fields struct {
-		Base Base
+		Base               Base
+		existedTokenID     string
+		existedTokenAmount uint64
+		refundAddress      string
 	}
 	type args struct {
 		source []string
@@ -41,7 +44,7 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid Base",
+			name: "Invalid Base Instruction",
 			fields: fields{
 				Base: Base{
 					metaData: metadataPdexv3.NewAddLiquidity(),
@@ -49,6 +52,7 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			},
 			args: args{
 				source: []string{
+					"",
 					"",
 					"",
 				},
@@ -64,7 +68,7 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			},
 			args: args{
 				source: append(metaData.StringSlice(),
-					"tx_req_id", "1", strconv.Itoa(common.PDEContributionAcceptedStatus)),
+					"tx_req_id", "1", strconv.Itoa(common.PDEContributionWaitingStatus)),
 			},
 			wantErr: true,
 		},
@@ -77,7 +81,7 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			},
 			args: args{
 				source: append(metaData.StringSlice(),
-					"tx_req_id", "1", strconv.Itoa(common.PDEContributionWaitingStatus)),
+					"tx_req_id", "1", strconv.Itoa(common.PDEContributionRefundStatus)),
 			},
 			fieldsAfterProcess: fields{
 				Base: Base{
@@ -91,29 +95,29 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w := &WaitingAddLiquidity{
+			r := &RefundAddLiquidity{
 				Base: tt.fields.Base,
 			}
-			if err := w.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
-				t.Errorf("WaitingAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
+			if err := r.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
+				t.Errorf("RefundAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !tt.wantErr && !reflect.DeepEqual(w.metaData, tt.fieldsAfterProcess.Base.metaData) {
-				t.Errorf("metaData got = %v, expected %v", w.metaData, tt.fieldsAfterProcess.Base.metaData)
+			if !tt.wantErr && !reflect.DeepEqual(r.metaData, tt.fieldsAfterProcess.Base.metaData) {
+				t.Errorf("metaData got = %v, expected %v", r.metaData, tt.fieldsAfterProcess.Base.metaData)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(w.txReqID, tt.fieldsAfterProcess.Base.txReqID) {
-				t.Errorf("txReqID got = %v, expected %v", w.txReqID, tt.fieldsAfterProcess.Base.txReqID)
+			if !tt.wantErr && !reflect.DeepEqual(r.txReqID, tt.fieldsAfterProcess.Base.txReqID) {
+				t.Errorf("txReqID got = %v, expected %v", r.txReqID, tt.fieldsAfterProcess.Base.txReqID)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(w.shardID, tt.fieldsAfterProcess.Base.shardID) {
-				t.Errorf("shardID got = %v, expected %v", w.shardID, tt.fieldsAfterProcess.Base.shardID)
+			if !tt.wantErr && !reflect.DeepEqual(r.shardID, tt.fieldsAfterProcess.Base.shardID) {
+				t.Errorf("shardID got = %v, expected %v", r.shardID, tt.fieldsAfterProcess.Base.shardID)
 				return
 			}
 		})
 	}
 }
 
-func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
+func TestRefundAddLiquidity_StringSlice(t *testing.T) {
 	metaData := metadataPdexv3.NewAddLiquidityWithValue(
 		"pool_pair_id", "pair_hash",
 		validOTAReceiver0, validOTAReceiver1,
@@ -136,16 +140,17 @@ func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
 					shardID:  1,
 				},
 			},
-			want: append(metaData.StringSlice(), "tx_req_id", "1", strconv.Itoa(common.PDEContributionWaitingStatus)),
+			want: append(metaData.StringSlice(),
+				"tx_req_id", "1", strconv.Itoa(common.PDEContributionRefundStatus)),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w := &WaitingAddLiquidity{
+			r := &RefundAddLiquidity{
 				Base: tt.fields.Base,
 			}
-			if got := w.StringSlice(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WaitingAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
+			if got := r.StringSlice(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RefundAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
 			}
 		})
 	}

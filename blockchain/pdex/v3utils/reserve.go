@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -15,35 +16,32 @@ const (
 	TradeDirectionSell1
 )
 
-type PoolReserve struct {
-	Token0        uint64
-	Token1        uint64
-	Token0Virtual uint64
-	Token1Virtual uint64
+type TradingPair struct {
+	*rawdbv2.Pdexv3PoolPair
 }
 
 // BuyAmount() computes the output amount given input, based on reserve amounts. Deduct fees before calling this
-func (pr PoolReserve) BuyAmount(sellAmount uint64, tradeDirection int) (uint64, error) {
+func (tp TradingPair) BuyAmount(sellAmount uint64, tradeDirection int) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
-		return calculateBuyAmount(sellAmount, pr.Token0, pr.Token1, pr.Token0Virtual, pr.Token1Virtual, 0)
+		return calculateBuyAmount(sellAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
 	} else {
-		return calculateBuyAmount(sellAmount, pr.Token1, pr.Token0, pr.Token1Virtual, pr.Token0Virtual, 0)
+		return calculateBuyAmount(sellAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount(), 0)
 	}
 }
 
 // BuyAmount() computes the input amount given output, based on reserve amounts
-func (pr PoolReserve) AmountToSell(buyAmount uint64, tradeDirection int) (uint64, error) {
+func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection int) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
-		return calculateAmountToSell(buyAmount, pr.Token0, pr.Token1, pr.Token0Virtual, pr.Token1Virtual, 0)
+		return calculateAmountToSell(buyAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
 	} else {
-		return calculateAmountToSell(buyAmount, pr.Token1, pr.Token0, pr.Token1Virtual, pr.Token0Virtual, 0)
+		return calculateAmountToSell(buyAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount(), 0)
 	}
 }
 
 // SwapToReachOrderRate() does a *partial* swap using liquidity in the pool, such that the price afterwards does not exceed an order's rate
 // It returns an error when the pool runs out of liquidity
 // Upon success, it updates the reserve values and returns (buyAmount, sellAmountRemain, token0Change, token1Change)
-func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection int, ord *OrderMatchingInfo) (uint64, uint64, *big.Int, *big.Int, error) {
+func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection int, ord *OrderMatchingInfo) (uint64, uint64, *big.Int, *big.Int, error) {
 	token0Change := big.NewInt(0)
 	token1Change := big.NewInt(0)
 
@@ -53,11 +51,11 @@ func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 	var xV, yV *big.Int
 	switch tradeDirection {
 	case TradeDirectionSell0:
-		xV = big.NewInt(0).SetUint64(pr.Token0Virtual)
-		yV = big.NewInt(0).SetUint64(pr.Token1Virtual)
+		xV = big.NewInt(0).Set(tp.Token0VirtualAmount())
+		yV = big.NewInt(0).Set(tp.Token1VirtualAmount())
 	case TradeDirectionSell1:
-		xV = big.NewInt(0).SetUint64(pr.Token1Virtual)
-		yV = big.NewInt(0).SetUint64(pr.Token0Virtual)
+		xV = big.NewInt(0).Set(tp.Token1VirtualAmount())
+		yV = big.NewInt(0).Set(tp.Token0VirtualAmount())
 	}
 
 	var xOrd, yOrd, L, targetDeltaX *big.Int
@@ -94,7 +92,7 @@ func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 		finalSellAmount = targetDeltaX.Uint64()
 		sellAmountRemain = big.NewInt(0).Sub(maxDeltaX, targetDeltaX).Uint64()
 	}
-	buyAmount, err := pr.BuyAmount(finalSellAmount, tradeDirection)
+	buyAmount, err := tp.BuyAmount(finalSellAmount, tradeDirection)
 	if err != nil {
 		return 0, 0, nil, nil, err
 	}
@@ -108,7 +106,7 @@ func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 		token0Change.SetUint64(buyAmount)
 		token0Change.Neg(token0Change)
 	}
-	err = pr.ApplyReserveChanges(token0Change, token1Change)
+	err = tp.ApplyReserveChanges(token0Change, token1Change)
 	if err != nil {
 		return 0, 0, nil, nil, err
 	}
@@ -116,7 +114,7 @@ func (pr *PoolReserve) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 	return buyAmount, sellAmountRemain, token0Change, token1Change, err
 }
 
-func (pr *PoolReserve) ApplyReserveChanges(change0, change1 *big.Int) error {
+func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 	// sign check : changes must have opposite signs or both be zero
 	if change0.Sign()*change1.Sign() >= 0 {
 		if !(change0.Sign() == 0 && change1.Sign() == 0) {
@@ -124,40 +122,40 @@ func (pr *PoolReserve) ApplyReserveChanges(change0, change1 *big.Int) error {
 		}
 	}
 
-	resv := big.NewInt(0).SetUint64(pr.Token0)
+	resv := big.NewInt(0).SetUint64(tp.Token0RealAmount())
 	temp := big.NewInt(0).Add(resv, change0)
 	if temp.Cmp(big.NewInt(0)) == -1 {
 		return fmt.Errorf("Not enough token0 liquidity for trade")
 	}
-	pr.Token0 = temp.Uint64()
-
-	resv.SetUint64(pr.Token0Virtual)
-	temp.Add(resv, change0)
 	if !temp.IsUint64() {
-		return fmt.Errorf("Cannot set reserve out of uint64 range")
+		return fmt.Errorf("Cannot set real token0 reserve out of uint64 range")
 	}
-	pr.Token0Virtual = temp.Uint64()
+	tp.SetToken0RealAmount(temp.Uint64())
 
-	resv.SetUint64(pr.Token1)
+	resv.Set(tp.Token0VirtualAmount())
+	temp.Add(resv, change0)
+	tp.SetToken0VirtualAmount(temp)
+
+	resv.SetUint64(tp.Token1RealAmount())
 	temp.Add(resv, change1)
 	if temp.Cmp(big.NewInt(0)) == -1 {
 		return fmt.Errorf("Not enough token1 liquidity for trade")
 	}
-	pr.Token1 = temp.Uint64()
-
-	resv.SetUint64(pr.Token1Virtual)
-	temp.Add(resv, change1)
 	if !temp.IsUint64() {
-		return fmt.Errorf("Cannot set reserve out of uint64 range")
+		return fmt.Errorf("Cannot set real token1 reserve out of uint64 range")
 	}
-	pr.Token1Virtual = temp.Uint64()
+	tp.SetToken1RealAmount(temp.Uint64())
+
+	resv.Set(tp.Token1VirtualAmount())
+	temp.Add(resv, change1)
+	tp.SetToken1VirtualAmount(temp)
 
 	return nil
 }
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, reserves []*PoolReserve, tradeDirections []int, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*PoolReserve, error) {
+func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []int, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
 		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
@@ -183,7 +181,7 @@ func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath [
 		totalBuyAmount = uint64(0)
 
 		for order, ordID, err := orderbooks[i].NextOrder(tradeDirections[i]); err == nil; order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]) {
-			buyAmount, temp, token0Change, token1Change, err := reserves[i].SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
+			buyAmount, temp, token0Change, token1Change, err := (&TradingPair{reserves[i]}).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -223,5 +221,5 @@ func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath [
 
 	acceptedMeta.Amount = totalBuyAmount
 	acn.Content = acceptedMeta
-	return acn.Strings(), reserves, nil
+	return acn.StringSlice(), reserves, nil
 }
