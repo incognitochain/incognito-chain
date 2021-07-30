@@ -1,5 +1,4 @@
 package jsonresult
-
 import (
 	"encoding/json"
 	"errors"
@@ -9,11 +8,9 @@ import (
 	"log"
 	"math/big"
 	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
-
 type ICoinInfo interface {
 	GetVersion() uint8
 	GetCommitment() *privacy.Point
@@ -31,30 +28,29 @@ type ICoinInfo interface {
 	GetSharedConcealRandom() *privacy.Scalar
 	GetAssetTag() *privacy.Point
 }
-
 type ListOutputCoins struct {
-	FromHeight uint64 `json:"FromHeight"`
-	ToHeight uint64 `json:"ToHeight"`
-	Outputs map[string][]OutCoin `json:"Outputs"`
+	FromHeight uint64               `json:"FromHeight"`
+	ToHeight   uint64               `json:"ToHeight"`
+	Outputs    map[string][]OutCoin `json:"Outputs"`
 }
-
 type OutCoin struct {
-	Version 			 string `json:"Version"`
-	Index 				 string `json:"Index"`
+	Version              string `json:"Version"`
+	Index                string `json:"Index"`
 	PublicKey            string `json:"PublicKey"`
-	Commitment       	 string `json:"Commitment"`
+	Commitment           string `json:"Commitment"`
+	CoinCommitment       string `json:"CoinCommitment"`
 	SNDerivator          string `json:"SNDerivator"`
-	KeyImage         	 string `json:"KeyImage"`
+	KeyImage             string `json:"KeyImage"`
+	SerialNumber         string `json:"SerialNumber"`
 	Randomness           string `json:"Randomness"`
 	Value                string `json:"Value"`
 	Info                 string `json:"Info"`
-	SharedRandom		 string `json:"SharedRandom"`
+	SharedRandom         string `json:"SharedRandom"`
 	SharedConcealRandom  string `json:"SharedConcealRandom"`
-	TxRandom	         string	`json:"TxRandom"`
+	TxRandom             string `json:"TxRandom"`
 	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
-	AssetTag			 string `json:"AssetTag"`
+	AssetTag             string `json:"AssetTag"`
 }
-
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 	outcoin := OutCoin{}
 	temp, err := json.Marshal(data)
@@ -62,7 +58,6 @@ func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 		log.Print(err)
 		return nil, err
 	}
-
 	err = json.Unmarshal(temp, &outcoin)
 	if err != nil {
 		log.Print(err)
@@ -70,65 +65,56 @@ func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 	}
 	return &outcoin, nil
 }
-
-
 func NewOutCoin(outCoin ICoinInfo) OutCoin {
 	keyImage := ""
 	if outCoin.GetKeyImage() != nil && !outCoin.GetKeyImage().IsIdentity() {
 		keyImage = base58.Base58Check{}.Encode(outCoin.GetKeyImage().ToBytesS(), common.ZeroByte)
 	}
-
 	publicKey := ""
 	if outCoin.GetPublicKey() != nil {
 		publicKey = base58.Base58Check{}.Encode(outCoin.GetPublicKey().ToBytesS(), common.ZeroByte)
 	}
-
 	commitment := ""
 	if outCoin.GetCommitment() != nil {
 		commitment = base58.Base58Check{}.Encode(outCoin.GetCommitment().ToBytesS(), common.ZeroByte)
 	}
-
 	snd := ""
 	if outCoin.GetSNDerivator() != nil {
 		snd = base58.Base58Check{}.Encode(outCoin.GetSNDerivator().ToBytesS(), common.ZeroByte)
 	}
-
 	randomness := ""
 	if outCoin.GetRandomness() != nil {
 		randomness = base58.Base58Check{}.Encode(outCoin.GetRandomness().ToBytesS(), common.ZeroByte)
 	}
-
 	result := OutCoin{
-		Version: 		strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
+		Version:        strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
 		PublicKey:      publicKey,
 		Value:          strconv.FormatUint(outCoin.GetValue(), 10),
 		Info:           EncodeBase58Check(outCoin.GetInfo()),
-		Commitment: 	commitment,
+		Commitment:     commitment,
+		CoinCommitment: commitment,
 		SNDerivator:    snd,
-		KeyImage:   	keyImage,
-		Randomness: 	randomness,
+		KeyImage:       keyImage,
+		SerialNumber:   keyImage,
+		Randomness:     randomness,
 	}
-
 	if outCoin.GetCoinDetailEncrypted() != nil {
 		result.CoinDetailsEncrypted = base58.Base58Check{}.Encode(outCoin.GetCoinDetailEncrypted(), common.ZeroByte)
 	}
-
-	if outCoin.GetSharedRandom() != nil{
+	if outCoin.GetSharedRandom() != nil {
 		result.SharedRandom = base58.Base58Check{}.Encode(outCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 	}
-	if outCoin.GetSharedConcealRandom() != nil{
+	if outCoin.GetSharedConcealRandom() != nil {
 		result.SharedRandom = base58.Base58Check{}.Encode(outCoin.GetSharedConcealRandom().ToBytesS(), common.ZeroByte)
 	}
-	if outCoin.GetTxRandom() != nil{
+	if outCoin.GetTxRandom() != nil {
 		result.TxRandom = base58.Base58Check{}.Encode(outCoin.GetTxRandom().Bytes(), common.ZeroByte)
 	}
-	if outCoin.GetAssetTag() != nil{
+	if outCoin.GetAssetTag() != nil {
 		result.AssetTag = base58.Base58Check{}.Encode(outCoin.GetAssetTag().ToBytesS(), common.ZeroByte)
 	}
-
 	return result
 }
-
 func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 	var keyImage, pubkey, cm *privacy.Point
 	var snd, randomness *privacy.Scalar
@@ -139,12 +125,10 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 	var txRandom *coin.TxRandom
 	var coinDetailEncrypted *privacy.HybridCipherText
 	var assetTag *privacy.Point
-
 	value, ok := math.ParseUint64(jsonOutCoin.Value)
 	if !ok {
 		return nil, nil, errors.New("Cannot parse value")
 	}
-
 	if len(jsonOutCoin.KeyImage) == 0 {
 		keyImage = nil
 	} else {
@@ -157,7 +141,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 	}
-
 	if len(jsonOutCoin.Commitment) == 0 {
 		cm = nil
 	} else {
@@ -170,7 +153,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 	}
-
 	if len(jsonOutCoin.PublicKey) == 0 {
 		pubkey = nil
 	} else {
@@ -183,7 +165,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 	}
-
 	if len(jsonOutCoin.Randomness) == 0 {
 		randomness = nil
 	} else {
@@ -193,7 +174,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		}
 		randomness = new(privacy.Scalar).FromBytesS(randomnessInBytes)
 	}
-
 	if len(jsonOutCoin.SNDerivator) == 0 {
 		snd = nil
 	} else {
@@ -203,7 +183,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		}
 		snd = new(privacy.Scalar).FromBytesS(sndInBytes)
 	}
-
 	if len(jsonOutCoin.Info) == 0 {
 		info = []byte{}
 	} else {
@@ -212,44 +191,40 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 	}
-
 	if len(jsonOutCoin.SharedRandom) == 0 {
 		sharedRandom = nil
-	}else{
+	} else {
 		sharedRandomInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.SharedRandom)
 		if err != nil {
 			return nil, nil, err
 		}
 		sharedRandom = new(privacy.Scalar).FromBytesS(sharedRandomInBytes)
 	}
-
 	if len(jsonOutCoin.SharedConcealRandom) == 0 {
 		sharedRandom = nil
-	}else{
+	} else {
 		sharedConcealRandomInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.SharedConcealRandom)
 		if err != nil {
 			return nil, nil, err
 		}
 		sharedConcealRandom = new(privacy.Scalar).FromBytesS(sharedConcealRandomInBytes)
 	}
-
 	if len(jsonOutCoin.TxRandom) == 0 {
 		sharedRandom = nil
-	}else{
+	} else {
 		txRandomInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.TxRandom)
 		if err != nil {
 			return nil, nil, err
 		}
 		txRandom = new(coin.TxRandom)
 		err = txRandom.SetBytes(txRandomInBytes)
-		if err != nil{
+		if err != nil {
 			return nil, nil, err
 		}
 	}
-
 	if len(jsonOutCoin.AssetTag) == 0 {
 		assetTag = nil
-	}else{
+	} else {
 		assetTagInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.AssetTag)
 		if err != nil {
 			return nil, nil, err
@@ -259,7 +234,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 	}
-
 	if len(jsonOutCoin.Index) == 0 {
 		idx = nil
 	} else {
@@ -269,10 +243,8 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		}
 		idx = new(big.Int).SetBytes(idxInBytes)
 	}
-
-	if jsonOutCoin.Version == "1"{
+	if jsonOutCoin.Version == "1" {
 		pCoinV1 := new(coin.PlainCoinV1).Init()
-
 		pCoinV1.SetRandomness(randomness)
 		pCoinV1.SetPublicKey(pubkey)
 		pCoinV1.SetCommitment(cm)
@@ -280,7 +252,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		pCoinV1.SetKeyImage(keyImage)
 		pCoinV1.SetInfo(info)
 		pCoinV1.SetValue(value)
-
 		if len(jsonOutCoin.CoinDetailsEncrypted) != 0 {
 			coinDetailEncryptedInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.CoinDetailsEncrypted)
 			if err != nil {
@@ -288,19 +259,16 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			}
 			coinDetailEncrypted = new(privacy.HybridCipherText)
 			err = coinDetailEncrypted.SetBytes(coinDetailEncryptedInBytes)
-			if err != nil{
+			if err != nil {
 				return nil, nil, err
 			}
-
 			coinV1 := new(coin.CoinV1).Init()
 			coinV1.CoinDetails = pCoinV1
 			coinV1.CoinDetailsEncrypted = coinDetailEncrypted
-
 			return coinV1, idx, nil
 		}
-
 		return pCoinV1, idx, nil
-	}else if jsonOutCoin.Version == "2" {
+	} else if jsonOutCoin.Version == "2" {
 		coinV2 := new(coin.CoinV2).Init()
 		if len(jsonOutCoin.CoinDetailsEncrypted) != 0 {
 			coinDetailEncryptedInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.CoinDetailsEncrypted)
@@ -312,7 +280,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		} else {
 			coinV2.SetValue(value)
 		}
-
 		coinV2.SetRandomness(randomness)
 		coinV2.SetPublicKey(pubkey)
 		coinV2.SetCommitment(cm)
@@ -322,9 +289,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		coinV2.SetSharedRandom(sharedRandom)
 		coinV2.SetSharedConcealRandom(sharedConcealRandom)
 		coinV2.SetTxRandom(txRandom)
-		
 		return coinV2, idx, nil
 	}
-
 	return nil, nil, errors.New("cannot find coin version")
 }
