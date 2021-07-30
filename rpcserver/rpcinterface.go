@@ -114,6 +114,7 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeList:         (*HttpServer).handleGetCommitteeList,
 	getShardBestState:        (*HttpServer).handleGetShardBestState,
 	getShardBestStateDetail:  (*HttpServer).handleGetShardBestStateDetail,
+	getBeaconViewByHash:      (*HttpServer).handleGetBeaconViewByHash,
 	getBeaconBestState:       (*HttpServer).handleGetBeaconBestState,
 	getBeaconBestStateDetail: (*HttpServer).handleGetBeaconBestStateDetail,
 	// getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
