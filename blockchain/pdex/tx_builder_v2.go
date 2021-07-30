@@ -6,10 +6,10 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type Pdexv3TxBuilder struct {
+type TxBuilderV2 struct {
 }
 
-func (txBuilder *Pdexv3TxBuilder) Build(
+func (txBuilder *TxBuilderV2) Build(
 	metaType int,
 	inst []string,
 	producerPrivateKey *privacy.PrivateKey,

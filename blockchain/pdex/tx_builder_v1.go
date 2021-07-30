@@ -14,10 +14,10 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type PDETxBuilder struct {
+type TxBuilderV1 struct {
 }
 
-func (txBuilder *PDETxBuilder) Build(
+func (txBuilder *TxBuilderV1) Build(
 	metaType int,
 	inst []string,
 	producerPrivateKey *privacy.PrivateKey,
