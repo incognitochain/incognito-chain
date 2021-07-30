@@ -58,7 +58,7 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		contributions[0].TokenID(), contributions[1].TokenID(),
 		0, contributions[0].Amount(), contributions[1].Amount(),
 		0,
-		*token0VirtualAmount, *token1VirtualAmount,
+		token0VirtualAmount, token1VirtualAmount,
 		contributions[0].Amplifier(),
 	)
 
@@ -169,8 +169,8 @@ func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) 
 		&oldToken1VirtualAmount,
 		big.NewInt(0).SetUint64(amount1),
 	)
-	p.state.SetToken0VirtualAmount(*newToken0VirtualAmount)
-	p.state.SetToken1VirtualAmount(*newToken1VirtualAmount)
+	p.state.SetToken0VirtualAmount(newToken0VirtualAmount)
+	p.state.SetToken1VirtualAmount(newToken1VirtualAmount)
 }
 
 func (p *PoolPairState) updateReserveAndShares(

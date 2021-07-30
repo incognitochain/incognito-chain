@@ -141,8 +141,7 @@ func (sp *stateProducerV2) addLiquidity(
 			continue
 		}
 		token0Contribution, token1Contribution := poolPair.getContributionsByOrder(
-			&waitingContribution,
-			&incomingContribution,
+			&waitingContribution, &incomingContribution,
 		)
 		actualToken0ContributionAmount,
 			returnedToken0ContributionAmount,

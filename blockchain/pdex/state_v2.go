@@ -21,7 +21,7 @@ type stateV2 struct {
 	stateBase
 	waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
-	poolPairs                   map[string]PoolPairState //
+	poolPairs                   map[string]PoolPairState
 	params                      Params
 	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
 	orders                      map[int64][]Order
