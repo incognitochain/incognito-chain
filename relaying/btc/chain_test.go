@@ -827,7 +827,7 @@ func TestGetChainInfo(t *testing.T) {
 // 	// utxo.  That is to say, the height prior to it.
 // 	utxo := wire.OutPoint{
 // 		Hash:  *targetTx.Hash(),
-// 		Index: 0,
+// 		GetIndex: 0,
 // 	}
 // 	prevUtxoHeight := int32(numBlocksToActivate) - 4
 
@@ -853,7 +853,7 @@ func TestGetChainInfo(t *testing.T) {
 // 	}
 // 	unConfUtxo := wire.OutPoint{
 // 		Hash:  unConfTx.TxHash(),
-// 		Index: 0,
+// 		GetIndex: 0,
 // 	}
 
 // 	// Adding a utxo with a height of 0x7fffffff indicates that the output

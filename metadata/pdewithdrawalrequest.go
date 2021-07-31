@@ -1,15 +1,14 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PDEWithdrawalRequest - privacy dex withdrawal request
@@ -18,8 +17,9 @@ type PDEWithdrawalRequest struct {
 	WithdrawalToken1IDStr string
 	WithdrawalToken2IDStr string
 	WithdrawalShareAmt    uint64
-	MetadataBase
+	MetadataBaseWithSignature
 }
+
 
 type PDEWithdrawalRequestAction struct {
 	Meta    PDEWithdrawalRequest
@@ -45,16 +45,14 @@ func NewPDEWithdrawalRequest(
 	withdrawalShareAmt uint64,
 	metaType int,
 ) (*PDEWithdrawalRequest, error) {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	pdeWithdrawalRequest := &PDEWithdrawalRequest{
 		WithdrawerAddressStr:  withdrawerAddressStr,
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 		WithdrawalShareAmt:    withdrawalShareAmt,
 	}
-	pdeWithdrawalRequest.MetadataBase = metadataBase
+	pdeWithdrawalRequest.MetadataBaseWithSignature = *metadataBase
 	return pdeWithdrawalRequest, nil
 }
 
@@ -64,17 +62,16 @@ func (pc PDEWithdrawalRequest) ValidateTxWithBlockChain(tx Transaction, chainRet
 }
 
 func (pc PDEWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(pc.WithdrawerAddressStr)
+	addr, err := AssertPaymentAddressAndTxVersion(pc.WithdrawerAddressStr, tx.GetVersion())
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawerAddressStr incorrect"))
 	}
-	withdrawerAddr := keyWallet.KeySet.PaymentAddress
-	if len(withdrawerAddr.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's withdrawer address")
+
+	if ok, err := pc.MetadataBaseWithSignature.VerifyMetadataSignature(addr.Pk, tx); err != nil || !ok {
+		fmt.Println("Check authorized sender fail:", ok, err)
+		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], withdrawerAddr.Pk[:]) {
-		return false, false, errors.New("WithdrawerAddr incorrect")
-	}
+
 	_, err = common.Hash{}.NewHashFromStr(pc.WithdrawalToken1IDStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawalTokenID1Str incorrect"))
@@ -99,6 +96,21 @@ func (pc PDEWithdrawalRequest) Hash() *common.Hash {
 	record += pc.WithdrawalToken1IDStr
 	record += pc.WithdrawalToken2IDStr
 	record += strconv.FormatUint(pc.WithdrawalShareAmt, 10)
+	if pc.Sig != nil && len(pc.Sig) != 0 {
+		record += string(pc.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (pc PDEWithdrawalRequest) HashWithoutSig() *common.Hash {
+	record := pc.MetadataBase.Hash().String()
+	record += pc.WithdrawerAddressStr
+	record += pc.WithdrawalToken1IDStr
+	record += pc.WithdrawalToken2IDStr
+	record += strconv.FormatUint(pc.WithdrawalShareAmt, 10)
+
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

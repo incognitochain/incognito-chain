@@ -11,6 +11,7 @@ type AccumulatedValues struct {
 	UniqBSCTxsUsed   [][]byte
 	DBridgeTokenPair map[string][]byte
 	CBridgeTokens    []*common.Hash
+	InitTokens       []*common.Hash
 }
 
 func (ac AccumulatedValues) CanProcessTokenPair(
@@ -45,4 +46,25 @@ func (ac AccumulatedValues) CanProcessCIncToken(
 	incTokenIDStr := incTokenID.String()
 	_, found := ac.DBridgeTokenPair[incTokenIDStr]
 	return !found
+}
+
+func (ac AccumulatedValues) CanProcessTokenInit(
+	pTokenID common.Hash,
+) bool {
+	pTokenIDStr := pTokenID.String()
+	_, found := ac.DBridgeTokenPair[pTokenIDStr]
+	if found {
+		return false
+	}
+	for _, cTokenID := range ac.CBridgeTokens {
+		if bytes.Equal(cTokenID[:], pTokenID[:]) {
+			return false
+		}
+	}
+	for _, initializedPTokenID := range ac.InitTokens {
+		if initializedPTokenID.String() == pTokenIDStr {
+			return false
+		}
+	}
+	return true
 }

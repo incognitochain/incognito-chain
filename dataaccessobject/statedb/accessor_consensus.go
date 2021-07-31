@@ -1,12 +1,12 @@
 package statedb
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 var defaultEnterTime = []int64{}
@@ -145,8 +145,8 @@ func IsInShardCandidateForCurrentEpoch(
 func StoreNextEpochShardCandidate(
 	stateDB *StateDB,
 	candidate []incognitokey.CommitteePublicKey,
-	rewardReceiver map[string]privacy.PaymentAddress,
-	// funderAddress map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
+	// funderAddress map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 	// amountStaking map[string]uint64,
@@ -214,7 +214,7 @@ func StoreCurrentEpochShardCandidate(stateDB *StateDB, candidate []incognitokey.
 func StoreNextEpochBeaconCandidate(
 	stateDB *StateDB,
 	candidate []incognitokey.CommitteePublicKey,
-	rewardReceiver map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 ) error {
@@ -371,7 +371,7 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
-	map[string]privacy.PaymentAddress,
+	map[string]key.PaymentAddress,
 	map[string]bool,
 	map[string]common.Hash,
 ) {
@@ -559,7 +559,7 @@ func DeleteBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incogn
 func storeStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
-	rewardReceiver map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 ) error {
@@ -586,7 +586,7 @@ func storeStakerInfo(
 func StoreStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
-	rewardReceiver map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 ) error {

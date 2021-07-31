@@ -3,6 +3,8 @@ package wire
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
@@ -16,6 +18,26 @@ const (
 
 type MessageTxPrivacyToken struct {
 	Transaction metadata.Transaction
+}
+
+func (msg *MessageTxPrivacyToken) UnmarshalJSON(data []byte) error {
+	temp := &struct {
+		Transaction *json.RawMessage
+	}{}
+	err := json.Unmarshal(data, temp)
+	if err != nil {
+		return errors.New("Cannot unmarshal message tx temp struct")
+	}
+	if temp.Transaction == nil {
+		return errors.New("Cannot unmarshal message tx, transaction is empty")
+	} else {
+		txToken, err := transaction.NewTransactionTokenFromJsonBytes(*temp.Transaction)
+		if err != nil {
+			return errors.New("Cannot unmarshal message tx, new transaction from json byte error")
+		}
+		msg.Transaction = txToken
+	}
+	return nil
 }
 
 func (msg *MessageTxPrivacyToken) Hash() string {
@@ -40,9 +62,16 @@ func (msg *MessageTxPrivacyToken) JsonSerialize() ([]byte, error) {
 }
 
 func (msg *MessageTxPrivacyToken) JsonDeserialize(jsonStr string) error {
-	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	err := json.Unmarshal([]byte(jsonDecodeString), msg)
-	return err
+	jsonDecode, err := hex.DecodeString(jsonStr)
+	if err != nil {
+		return err
+	}
+	txToken, err := transaction.NewTransactionTokenFromJsonBytes(jsonDecode)
+	if err != nil {
+		return err
+	}
+	msg.Transaction = txToken
+	return nil
 }
 
 func (msg *MessageTxPrivacyToken) SetSenderID(senderID peer.ID) error {

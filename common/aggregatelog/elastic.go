@@ -138,5 +138,6 @@ func SendMessageToElastic(message, level string) error {
 		return err
 	}
 	// log.Printf("Indexed tweet %s to index %s, type %s\n", putResult.Id, putResult.Index, putResult.Type)
+	// log.Printf("Indexed tweet %s to index %s, type %s\n", putResult.Id, putResult.Index, putResult.Type)
 	return nil
 }

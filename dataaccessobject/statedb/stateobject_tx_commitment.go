@@ -53,7 +53,12 @@ func NewCommitmentState() *CommitmentState {
 }
 
 func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, index *big.Int) *CommitmentState {
-	return &CommitmentState{tokenID: tokenID, shardID: shardID, commitment: commitment, index: index}
+	return &CommitmentState{
+		tokenID:    tokenID,
+		shardID:    shardID,
+		commitment: commitment,
+		index:      index,
+	}
 }
 
 func (c CommitmentState) MarshalJSON() ([]byte, error) {
@@ -61,6 +66,8 @@ func (c CommitmentState) MarshalJSON() ([]byte, error) {
 		TokenID    common.Hash
 		ShardID    byte
 		Commitment []byte
+		PublicKey  []byte
+		Additional []byte
 		Index      *big.Int
 	}{
 		TokenID:    c.tokenID,
@@ -79,6 +86,8 @@ func (c *CommitmentState) UnmarshalJSON(data []byte) error {
 		TokenID    common.Hash
 		ShardID    byte
 		Commitment []byte
+		PublicKey  []byte
+		Additional []byte
 		Index      *big.Int
 	}{}
 	err := json.Unmarshal(data, &temp)
