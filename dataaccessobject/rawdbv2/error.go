@@ -83,8 +83,6 @@ const (
 	DeleteTransactionByHashError
 	StoreTxByPublicKeyError
 	GetTxByPublicKeyError
-	StoreTxBySerialNumberError
-	GetTxBySerialNumberError
 
 	// relaying - portal
 	StoreRelayingBNBHeaderError

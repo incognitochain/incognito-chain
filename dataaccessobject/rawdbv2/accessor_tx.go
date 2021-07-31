@@ -125,19 +125,6 @@ func GetTxByPublicKeyV2(
 	return result, skip, limit, nil
 }
 
-func GetTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID common.Hash, shardID byte) (*common.Hash, error) {
-	iterator := db.NewIteratorWithPrefix(generateTxBySerialNumberObjectKey(serialNumber, tokenID, shardID))
-	if iterator.Next() {
-		value := iterator.Value()
-		txHash, err := new(common.Hash).NewHash(value)
-		if err != nil {
-			return nil, NewRawdbError(GetTxBySerialNumberError, err, serialNumber, tokenID.String(), shardID)
-		}
-		return txHash, nil
-	}
-	return nil, NewRawdbError(GetTxBySerialNumberError, fmt.Errorf("no tx found for serialNumber %v, tokenID %v, shardID %v", serialNumber, tokenID.String(), shardID))
-}
-
 func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	for _, outputCoin := range outputCoins {
 		key := generateIndexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
