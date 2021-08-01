@@ -47,7 +47,7 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) *PoolPairState {
 	contributions := []rawdbv2.Pdexv3Contribution{contribution0, contribution1}
 	sort.Slice(contributions, func(i, j int) bool {
-		return contribution0.TokenID().String() < contribution1.TokenID().String()
+		return contributions[i].TokenID().String() < contributions[j].TokenID().String()
 	})
 	token0VirtualAmount, token1VirtualAmount := calculateVirtualAmount(
 		contributions[0].Amount(),
@@ -129,6 +129,9 @@ func (p *PoolPairState) computeActualContributedAmounts(
 }
 
 func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) {
+	newToken0VirtualAmount := big.NewInt(0)
+	newToken1VirtualAmount := big.NewInt(0)
+
 	if p.state.Amplifier() != metadataPdexv3.BaseAmplifier {
 		tempShareAmount := p.state.ShareAmount() + shareAmount
 		state := p.state
@@ -150,30 +153,35 @@ func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) 
 			tempToken1VirtualAmount,
 			big.NewInt(0).SetUint64(state.ShareAmount()),
 		)
-		if tempToken0VirtualAmount.Uint64() > amount0 {
-			amount0 = tempToken0VirtualAmount.Uint64()
+		if tempToken0VirtualAmount.Uint64() > p.state.Token0RealAmount() {
+			newToken0VirtualAmount = tempToken0VirtualAmount
+		} else {
+			newToken0VirtualAmount.SetUint64(p.state.Token0RealAmount())
 		}
-		if tempToken1VirtualAmount.Uint64() > amount0 {
-			amount1 = tempToken1VirtualAmount.Uint64()
+		if tempToken1VirtualAmount.Uint64() > p.state.Token1RealAmount() {
+			newToken1VirtualAmount = tempToken1VirtualAmount
+		} else {
+			newToken1VirtualAmount.SetUint64(p.state.Token1RealAmount())
 		}
-	}
-	oldToken0VirtualAmount := p.state.Token0VirtualAmount()
-	newToken0VirtualAmount := big.NewInt(0).Add(
-		&oldToken0VirtualAmount,
-		big.NewInt(0).SetUint64(amount0),
-	)
+	} else {
+		oldToken0VirtualAmount := p.state.Token0VirtualAmount()
+		newToken0VirtualAmount = big.NewInt(0).Add(
+			&oldToken0VirtualAmount,
+			big.NewInt(0).SetUint64(amount0),
+		)
 
-	oldToken1VirtualAmount := p.state.Token1VirtualAmount()
-	newToken1VirtualAmount := big.NewInt(0)
-	newToken1VirtualAmount.Add(
-		&oldToken1VirtualAmount,
-		big.NewInt(0).SetUint64(amount1),
-	)
-	p.state.SetToken0VirtualAmount(newToken0VirtualAmount)
-	p.state.SetToken1VirtualAmount(newToken1VirtualAmount)
+		oldToken1VirtualAmount := p.state.Token1VirtualAmount()
+		newToken1VirtualAmount = big.NewInt(0)
+		newToken1VirtualAmount.Add(
+			&oldToken1VirtualAmount,
+			big.NewInt(0).SetUint64(amount1),
+		)
+	}
+	p.state.SetToken0VirtualAmount(*newToken0VirtualAmount)
+	p.state.SetToken1VirtualAmount(*newToken1VirtualAmount)
 }
 
-func (p *PoolPairState) updateReserveAndShares(
+func (p *PoolPairState) updateReserveAndCalculateShare(
 	token0ID, token1ID string,
 	token0Amount, token1Amount uint64,
 ) uint64 {
@@ -195,10 +203,10 @@ func (p *PoolPairState) updateReserveAndShares(
 }
 
 func (p *PoolPairState) addShare(key string, amount, beaconHeight uint64) common.Hash {
-	nfctID := genNFT(key, p.state.CurrentContributionID(), beaconHeight)
+	nfctID := genNFT(key, p.state.NextContributionID(), beaconHeight)
 	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
 	p.shares[nfctID.String()] = *share
-	p.state.SetCurrentContributionID(p.state.CurrentContributionID() + 1)
+	p.state.SetNextContributionID(p.state.NextContributionID() + 1)
 	p.state.SetShareAmount(p.state.ShareAmount() + amount)
 	return nfctID
 }

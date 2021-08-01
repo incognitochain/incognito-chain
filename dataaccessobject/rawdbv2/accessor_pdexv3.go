@@ -137,15 +137,15 @@ func NewPdexv3ContributionWithValue(
 }
 
 type Pdexv3PoolPair struct {
-	shareAmount           uint64
-	token0ID              common.Hash
-	token1ID              common.Hash
-	token0RealAmount      uint64
-	token1RealAmount      uint64
-	currentContributionID uint64
-	token0VirtualAmount   *big.Int
-	token1VirtualAmount   *big.Int
-	amplifier             uint
+	shareAmount         uint64
+	token0ID            common.Hash
+	token1ID            common.Hash
+	token0RealAmount    uint64
+	token1RealAmount    uint64
+	nextContributionID  uint64
+	token0VirtualAmount big.Int
+	token1VirtualAmount big.Int
+	amplifier           uint
 }
 
 func (pp *Pdexv3PoolPair) SetShareAmount(shareAmount uint64) {
@@ -176,16 +176,16 @@ func (pp *Pdexv3PoolPair) Token1RealAmount() uint64 {
 	return pp.token1RealAmount
 }
 
-func (pp *Pdexv3PoolPair) CurrentContributionID() uint64 {
-	return pp.currentContributionID
+func (pp *Pdexv3PoolPair) NextContributionID() uint64 {
+	return pp.nextContributionID
 }
 
 func (pp *Pdexv3PoolPair) Token0VirtualAmount() big.Int {
-	return *pp.token0VirtualAmount
+	return pp.token0VirtualAmount
 }
 
 func (pp *Pdexv3PoolPair) Token1VirtualAmount() big.Int {
-	return *pp.token1VirtualAmount
+	return pp.token1VirtualAmount
 }
 
 func (pp *Pdexv3PoolPair) SetToken0RealAmount(amount uint64) {
@@ -196,39 +196,39 @@ func (pp *Pdexv3PoolPair) SetToken1RealAmount(amount uint64) {
 	pp.token1RealAmount = amount
 }
 
-func (pp *Pdexv3PoolPair) SetCurrentContributionID(id uint64) {
-	pp.currentContributionID = id
+func (pp *Pdexv3PoolPair) SetNextContributionID(id uint64) {
+	pp.nextContributionID = id
 }
 
-func (pp *Pdexv3PoolPair) SetToken0VirtualAmount(amount *big.Int) {
+func (pp *Pdexv3PoolPair) SetToken0VirtualAmount(amount big.Int) {
 	pp.token0VirtualAmount = amount
 }
 
-func (pp *Pdexv3PoolPair) SetToken1VirtualAmount(amount *big.Int) {
+func (pp *Pdexv3PoolPair) SetToken1VirtualAmount(amount big.Int) {
 	pp.token1VirtualAmount = amount
 }
 
 func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Token0ID              common.Hash `json:"Token0ID"`
-		Token1ID              common.Hash `json:"Token1ID"`
-		Token0RealAmount      uint64      `json:"Token0RealAmount"`
-		Token1RealAmount      uint64      `json:"Token1RealAmount"`
-		CurrentContributionID uint64      `json:"CurrentContributionID"`
-		Token0VirtualAmount   *big.Int    `json:"Token0VirtualAmount"`
-		Token1VirtualAmount   *big.Int    `json:"Token1VirtualAmount"`
-		Amplifier             uint        `json:"Amplifier"`
-		ShareAmount           uint64      `json:"ShareAmount"`
+		Token0ID            common.Hash `json:"Token0ID"`
+		Token1ID            common.Hash `json:"Token1ID"`
+		Token0RealAmount    uint64      `json:"Token0RealAmount"`
+		Token1RealAmount    uint64      `json:"Token1RealAmount"`
+		NextContributionID  uint64      `json:"NextContributionID"`
+		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
+		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
+		Amplifier           uint        `json:"Amplifier"`
+		ShareAmount         uint64      `json:"ShareAmount"`
 	}{
-		Token0ID:              pp.token0ID,
-		Token1ID:              pp.token1ID,
-		Token0RealAmount:      pp.token0RealAmount,
-		Token1RealAmount:      pp.token1RealAmount,
-		CurrentContributionID: pp.currentContributionID,
-		Token0VirtualAmount:   pp.token0VirtualAmount,
-		Token1VirtualAmount:   pp.token1VirtualAmount,
-		Amplifier:             pp.amplifier,
-		ShareAmount:           pp.shareAmount,
+		Token0ID:            pp.token0ID,
+		Token1ID:            pp.token1ID,
+		Token0RealAmount:    pp.token0RealAmount,
+		Token1RealAmount:    pp.token1RealAmount,
+		NextContributionID:  pp.nextContributionID,
+		Token0VirtualAmount: &pp.token0VirtualAmount,
+		Token1VirtualAmount: &pp.token1VirtualAmount,
+		Amplifier:           pp.amplifier,
+		ShareAmount:         pp.shareAmount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -238,15 +238,15 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 
 func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Token0ID              common.Hash `json:"Token0ID"`
-		Token1ID              common.Hash `json:"Token1ID"`
-		Token0RealAmount      uint64      `json:"Token0RealAmount"`
-		Token1RealAmount      uint64      `json:"Token1RealAmount"`
-		CurrentContributionID uint64      `json:"CurrentContributionID"`
-		Token0VirtualAmount   *big.Int    `json:"Token0VirtualAmount"`
-		Token1VirtualAmount   *big.Int    `json:"Token1VirtualAmount"`
-		Amplifier             uint        `json:"Amplifier"`
-		ShareAmount           uint64      `json:"ShareAmount"`
+		Token0ID            common.Hash `json:"Token0ID"`
+		Token1ID            common.Hash `json:"Token1ID"`
+		Token0RealAmount    uint64      `json:"Token0RealAmount"`
+		Token1RealAmount    uint64      `json:"Token1RealAmount"`
+		NextContributionID  uint64      `json:"NextContributionID"`
+		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
+		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
+		Amplifier           uint        `json:"Amplifier"`
+		ShareAmount         uint64      `json:"ShareAmount"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -256,9 +256,13 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	pp.token1ID = temp.Token1ID
 	pp.token0RealAmount = temp.Token0RealAmount
 	pp.token1RealAmount = temp.Token1RealAmount
-	pp.currentContributionID = temp.CurrentContributionID
-	pp.token0VirtualAmount = temp.Token0VirtualAmount
-	pp.token1VirtualAmount = temp.Token1VirtualAmount
+	pp.nextContributionID = temp.NextContributionID
+	if temp.Token0VirtualAmount != nil {
+		pp.token0VirtualAmount = *temp.Token0VirtualAmount
+	}
+	if temp.Token1VirtualAmount != nil {
+		pp.token1VirtualAmount = *temp.Token1VirtualAmount
+	}
 	pp.amplifier = temp.Amplifier
 	pp.shareAmount = temp.ShareAmount
 	return nil
@@ -267,7 +271,7 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
 	return NewPdexv3PoolPairWithValue(
 		pp.token0ID, pp.token1ID, pp.shareAmount,
-		pp.token0RealAmount, pp.token1RealAmount, pp.currentContributionID,
+		pp.token0RealAmount, pp.token1RealAmount, pp.nextContributionID,
 		pp.token0VirtualAmount, pp.token1VirtualAmount, pp.amplifier,
 	)
 }
@@ -278,19 +282,19 @@ func NewPdexv3PoolPair() *Pdexv3PoolPair {
 
 func NewPdexv3PoolPairWithValue(
 	token0ID, token1ID common.Hash,
-	shareAmount, token0RealAmount, token1RealAmount, currentContributionID uint64,
-	token0VirtualAmount, token1VirtualAmount *big.Int,
+	shareAmount, token0RealAmount, token1RealAmount, nextContributionID uint64,
+	token0VirtualAmount, token1VirtualAmount big.Int,
 	amplifier uint,
 ) *Pdexv3PoolPair {
 	return &Pdexv3PoolPair{
-		token0ID:              token0ID,
-		token1ID:              token1ID,
-		token0RealAmount:      token0RealAmount,
-		token1RealAmount:      token1RealAmount,
-		currentContributionID: currentContributionID,
-		token0VirtualAmount:   token0VirtualAmount,
-		token1VirtualAmount:   token1VirtualAmount,
-		amplifier:             amplifier,
-		shareAmount:           shareAmount,
+		token0ID:            token0ID,
+		token1ID:            token1ID,
+		token0RealAmount:    token0RealAmount,
+		token1RealAmount:    token1RealAmount,
+		nextContributionID:  nextContributionID,
+		token0VirtualAmount: token0VirtualAmount,
+		token1VirtualAmount: token1VirtualAmount,
+		amplifier:           amplifier,
+		shareAmount:         shareAmount,
 	}
 }

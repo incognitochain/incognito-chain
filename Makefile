@@ -29,6 +29,7 @@ mainnet:
 test:
 	go test ./.../pdexv3
 	go test ./.../pdex
+	go test ./.../committeestate
 
 clean:
 	env GO111MODULE=on go clean -cache

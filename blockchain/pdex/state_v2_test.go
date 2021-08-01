@@ -100,6 +100,7 @@ func Test_stateV2_Process(t *testing.T) {
 }
 
 func Test_stateV2_Clone(t *testing.T) {
+
 	type fields struct {
 		stateBase                   stateBase
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
@@ -115,9 +116,7 @@ func Test_stateV2_Clone(t *testing.T) {
 		name   string
 		fields fields
 		want   State
-	}{
-		// TODO: Add test cases.
-	}
+	}{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &stateV2{

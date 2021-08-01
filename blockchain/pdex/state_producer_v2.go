@@ -129,7 +129,8 @@ func (sp *stateProducerV2) addLiquidity(
 				big.NewInt(0).SetUint64(incomingContribution.Amount()),
 			)
 			shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-			nfctID := poolPair.addShare(poolPairID, shareAmount, beaconHeight)
+			nfctID := newPoolPair.addShare(poolPairID, shareAmount, beaconHeight)
+			poolPairs[poolPairID] = newPoolPair
 			inst, err := instruction.NewMatchAddLiquidityWithValue(
 				incomingContributionState, poolPairID, nfctID,
 			).StringSlice()
@@ -137,7 +138,6 @@ func (sp *stateProducerV2) addLiquidity(
 				return res, poolPairs, waitingContributions, err
 			}
 			res = append(res, inst)
-			poolPairs[poolPairID] = newPoolPair
 			continue
 		}
 		token0Contribution, token1Contribution := poolPair.getContributionsByOrder(
@@ -173,7 +173,7 @@ func (sp *stateProducerV2) addLiquidity(
 			continue
 		}
 
-		shareAmount := poolPair.updateReserveAndShares(
+		shareAmount := poolPair.updateReserveAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
