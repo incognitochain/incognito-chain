@@ -1019,6 +1019,27 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*
 	}
 	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
 		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
+			return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, result), nil
+		}
+	}
+	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
+	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
+	return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, allCommitteeState), nil
+}
+
+func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][]*statedb.StakerInfoV2, error) {
+	height := bc.GetLastBeaconHeightInEpoch(epoch)
+	var beaconConsensusRootHash common.Hash
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
+		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
 			return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, result), nil
 		}
 	}
@@ -1033,4 +1054,31 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
+}
+
+func (blockchain *BlockChain) GetNonSlashingCommittee(committees []*statedb.StakerInfoV2, epoch uint64, shardID byte) []*statedb.StakerInfoV2 {
+
+	beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, epoch)
+
+	return filterNonSlashingCommittee(committees, slashingCommittees[shardID])
+}
+
+func filterNonSlashingCommittee(committees []*statedb.StakerInfoV2, slashingCommittees []string) []*statedb.StakerInfoV2 {
+
+	nonSlashingCommittees := []*statedb.StakerInfoV2{}
+	tempSlashingCommittees := make(map[string]struct{})
+
+	for _, committee := range slashingCommittees {
+		tempSlashingCommittees[committee] = struct{}{}
+	}
+
+	for _, committee := range committees {
+		_, ok := tempSlashingCommittees[committee.CommitteePublicKey()]
+		if !ok {
+			nonSlashingCommittees = append(nonSlashingCommittees, committee)
+		}
+	}
+
+	return nonSlashingCommittees
 }

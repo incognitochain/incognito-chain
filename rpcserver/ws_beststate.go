@@ -107,10 +107,6 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 				}
 
 				for _, v := range allViews {
-
-					// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
-					// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
-					v.NumberOfShardBlock = make(map[byte]uint, v.ActiveShards)
 					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true)
 					if err != nil {
 						cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}

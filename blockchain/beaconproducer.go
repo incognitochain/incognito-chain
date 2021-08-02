@@ -156,27 +156,56 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	rewardByEpochInstruction := [][]string{}
 
 	if blockchain.IsLastBeaconHeightInEpoch(curView.BeaconHeight) {
-		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
-		if err != nil {
-			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
-		}
+		if curView.BeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
+			featureStateDB := curView.GetBeaconFeatureStateDB()
+			totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
+			if err != nil {
+				return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+			}
 
-		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
-		isSplitRewardForCustodian := totalLockedCollateral > 0
-		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
-		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
-			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
+			portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
+			isSplitRewardForCustodian := totalLockedCollateral > 0
+			percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
+			if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
+				percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
+			}
+			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+				curView,
+				newBeaconBlock.Header.Height,
+				curView.Epoch,
+				isSplitRewardForCustodian,
+				percentCustodianRewards,
+			)
+			if err != nil {
+				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+			}
 		}
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
-			curView,
-			newBeaconBlock.Header.Height,
-			curView.Epoch,
-			isSplitRewardForCustodian,
-			percentCustodianRewards,
-		)
-		if err != nil {
-			return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+	}
+
+	if blockchain.IsFirstBeaconHeightInEpoch(curView.BeaconHeight) {
+		if curView.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
+			featureStateDB := curView.GetBeaconFeatureStateDB()
+			totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
+			if err != nil {
+				return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+			}
+
+			portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
+			isSplitRewardForCustodian := totalLockedCollateral > 0
+			percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
+			if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
+				percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
+			}
+			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+				curView,
+				newBeaconBlock.Header.Height-1,
+				curView.Epoch-1,
+				isSplitRewardForCustodian,
+				percentCustodianRewards,
+			)
+			if err != nil {
+				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+			}
 		}
 	}
 
