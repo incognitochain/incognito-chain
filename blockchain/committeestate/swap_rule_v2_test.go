@@ -405,17 +405,17 @@ func Test_assignShardCandidateV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := assignShardCandidateV2(tt.args.candidates, tt.args.numberOfValidators, tt.args.rand)
+			got := AssignRuleV2{}.Process(tt.args.candidates, tt.args.numberOfValidators, tt.args.rand)
 			if len(got) != len(tt.want) {
-				t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
+				t.Errorf("Process() = %v, want %v", got, tt.want)
 			}
 			for k, gotV := range got {
 				wantV, ok := tt.want[k]
 				if !ok {
-					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
+					t.Errorf("Process() = %v, want %v", got, tt.want)
 				}
 				if !reflect.DeepEqual(gotV, wantV) {
-					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
+					t.Errorf("Process() = %v, want %v", got, tt.want)
 				}
 			}
 		})

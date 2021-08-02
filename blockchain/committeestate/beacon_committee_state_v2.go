@@ -26,6 +26,8 @@ type BeaconCommitteeStateV2 struct {
 
 	hashes *BeaconCommitteeStateHash
 
+	assignRule AssignRuleProcessor
+
 	mu *sync.RWMutex
 }
 
@@ -48,11 +50,11 @@ func NewBeaconCommitteeEngineV2(
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,
 		finalBeaconCommitteeStateV2:       finalBeaconCommitteeStateV2,
-		uncommittedBeaconCommitteeStateV2: NewBeaconCommitteeStateV2(),
+		uncommittedBeaconCommitteeStateV2: NewBeaconCommitteeStateV2(finalBeaconCommitteeStateV2.assignRule),
 	}
 }
 
-func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
+func NewBeaconCommitteeStateV2(assignRule AssignRuleProcessor) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
 		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
@@ -60,16 +62,18 @@ func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
 		hashes:          NewBeaconCommitteeStateHash(),
+		assignRule:      assignRule,
 		mu:              new(sync.RWMutex),
 	}
 }
-func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
+func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex, assignRule AssignRuleProcessor) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
 		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
 		autoStake:       make(map[string]bool),
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
+		assignRule:      assignRule,
 		mu:              mu,
 	}
 }
@@ -83,6 +87,7 @@ func NewBeaconCommitteeStateV2WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	assignRule AssignRuleProcessor,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommittee:            beaconCommittee,
@@ -94,6 +99,7 @@ func NewBeaconCommitteeStateV2WithValue(
 		rewardReceiver:             rewardReceiver,
 		stakingTx:                  stakingTx,
 		hashes:                     NewBeaconCommitteeStateHash(),
+		assignRule:                 assignRule,
 		mu:                         new(sync.RWMutex),
 	}
 }
@@ -140,6 +146,7 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	for k, v := range b.stakingTx {
 		newB.stakingTx[k] = v
 	}
+	newB.assignRule = b.assignRule
 
 	newB.hashes.AutoStakeHash = b.hashes.AutoStakeHash
 	newB.hashes.BeaconCommitteeAndValidatorHash = b.hashes.BeaconCommitteeAndValidatorHash
@@ -162,9 +169,9 @@ func (b *BeaconCommitteeStateV2) reset() {
 //Clone :
 func (engine *BeaconCommitteeEngineV2) Clone() BeaconCommitteeEngine {
 
-	finalCommitteeState := NewBeaconCommitteeStateV2()
+	finalCommitteeState := NewBeaconCommitteeStateV2(engine.finalBeaconCommitteeStateV2.assignRule)
 	engine.finalBeaconCommitteeStateV2.clone(finalCommitteeState)
-	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2()
+	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2(engine.finalBeaconCommitteeStateV2.assignRule)
 
 	res := NewBeaconCommitteeEngineV2(
 		engine.beaconHeight,
@@ -178,6 +185,21 @@ func (engine *BeaconCommitteeEngineV2) Clone() BeaconCommitteeEngine {
 //Version :
 func (engine BeaconCommitteeEngineV2) Version() uint {
 	return SLASHING_VERSION
+}
+
+//Version :
+func (engine BeaconCommitteeEngineV2) AssignRuleVersion() uint {
+	_, ok := engine.finalBeaconCommitteeStateV2.assignRule.(*AssignRuleV2)
+	if ok {
+		return ASSIGN_RULE_V2
+	}
+
+	_, ok = engine.finalBeaconCommitteeStateV2.assignRule.(*AssignRuleV3)
+	if ok {
+		return ASSIGN_RULE_V3
+	}
+
+	panic("unknown version")
 }
 
 //GetBeaconHeight :
@@ -300,6 +322,14 @@ func (engine *BeaconCommitteeEngineV2) GetAllCandidateSubstituteCommittee() []st
 	return engine.finalBeaconCommitteeStateV2.getAllCandidateSubstituteCommittee()
 }
 
+//ActiveShards ...
+func (engine *BeaconCommitteeEngineV2) UpgradeAssignRuleV3() {
+	engine.finalBeaconCommitteeStateV2.mu.Lock()
+	defer engine.finalBeaconCommitteeStateV2.mu.Unlock()
+	engine.finalBeaconCommitteeStateV2.assignRule = AssignRuleV3{}
+	engine.uncommittedBeaconCommitteeStateV2.assignRule = AssignRuleV3{}
+}
+
 func (engine *BeaconCommitteeEngineV2) compareHashes(hash1, hash2 *BeaconCommitteeStateHash) error {
 	if !hash1.BeaconCommitteeAndValidatorHash.IsEqual(&hash2.BeaconCommitteeAndValidatorHash) {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,
@@ -336,7 +366,9 @@ func (engine *BeaconCommitteeEngineV2) Commit(hashes *BeaconCommitteeStateHash, 
 	engine.finalBeaconCommitteeStateV2.mu.Lock()
 	defer engine.finalBeaconCommitteeStateV2.mu.Unlock()
 	engine.uncommittedBeaconCommitteeStateV2.shallowCopy(engine.finalBeaconCommitteeStateV2)
-	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2WithMu(engine.uncommittedBeaconCommitteeStateV2.mu)
+	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2WithMu(
+		engine.uncommittedBeaconCommitteeStateV2.mu,
+		engine.uncommittedBeaconCommitteeStateV2.assignRule)
 	return nil
 }
 
@@ -655,7 +687,7 @@ func (b *BeaconCommitteeStateV2) assign(
 		numberOfValidator[byte(i)] += len(oldState.shardCommittee[byte(i)])
 	}
 
-	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
+	assignedCandidates := b.assignRule.Process(candidates, numberOfValidator, rand)
 	for shardID, tempCandidates := range assignedCandidates {
 		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
@@ -879,7 +911,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 }
 
 func (engine *BeaconCommitteeEngineV2) generateCommitteeHashes(state *BeaconCommitteeStateV2, committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
-	if reflect.DeepEqual(state, NewBeaconCommitteeStateV2()) {
+	if reflect.DeepEqual(state, NewBeaconCommitteeStateV2(engine.finalBeaconCommitteeStateV2.assignRule)) {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
 	newB := state
@@ -1100,4 +1132,27 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
 	return committeeChange, nil
+}
+
+//VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
+func SFV2VersionAssignRule(beaconHeight, assignRuleV2, assignRuleV3 uint64) AssignRuleProcessor {
+	if beaconHeight < assignRuleV2 && beaconHeight < assignRuleV3 {
+		Logger.log.Infof("Beacon Height %+v, using Assign Rule V1", beaconHeight)
+		return NewNilAssignRule()
+	}
+
+	if beaconHeight >= assignRuleV3 {
+		Logger.log.Infof("Beacon Height %+v, using Assign Rule V3", beaconHeight)
+		return NewAssignRuleV3()
+
+	}
+
+	Logger.log.Infof("Beacon Height %+v, using Assign Rule V2", beaconHeight)
+
+	if beaconHeight >= assignRuleV2 {
+
+		return NewAssignRuleV2()
+	}
+
+	return NewAssignRuleV2()
 }

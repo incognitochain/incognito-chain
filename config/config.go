@@ -420,7 +420,7 @@ func (c *config) loadConfig() {
 		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
 		viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType)) // REQUIRED if the config file does not have the extension in the name
 		path := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
-		fmt.Println(path)
+		fmt.Println("loadConfig", path)
 		viper.AddConfigPath(path) // optionally look for config in the working directory
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

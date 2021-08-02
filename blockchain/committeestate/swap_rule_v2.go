@@ -15,6 +15,17 @@ type AssignRuleProcessor interface {
 	Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string
 }
 
+type NilAssignRule struct {
+}
+
+func NewNilAssignRule() *NilAssignRule {
+	return &NilAssignRule{}
+}
+
+func (n NilAssignRule) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {
+	panic("implement me")
+}
+
 // createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
 // return params
 // #1: swap instruction
@@ -86,7 +97,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 // #5 number of swap out nodes >= number of swap in nodes
 func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedValidator, minCommitteeSize int) int {
 
-	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
 	if swapOffset == 0 {
 		return 0
 	}
@@ -175,8 +186,15 @@ func swapInAfterSwapOut(committees, substitutes []string, maxCommitteeSize int) 
 	return committees, substitutes, newCommittees
 }
 
-// assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number
-func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
+type AssignRuleV2 struct {
+}
+
+func NewAssignRuleV2() *AssignRuleV2 {
+	return &AssignRuleV2{}
+}
+
+// Process assign unassignedCommonPool into shard pool with random number
+func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 	total := 0
 	for _, v := range numberOfValidators {
 		total += v
@@ -207,8 +225,9 @@ func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand 
 // calculateCandidatePosition calculate reverse shardID for candidate
 // randomPosition = sum(hash(candidate+rand)) % total, if randomPosition == 0 then randomPosition = 1
 // randomPosition in range (1, total)
-func calculateCandidatePosition(candidate string, rand int64, total int) (pos int) {
-	seed := candidate + fmt.Sprintf("%v", rand)
+func calculateCandidatePosition(candidate string, randomNumber int64, total int) (pos int) {
+	rand.Seed(randomNumber)
+	seed := candidate + fmt.Sprintf("%v", randomNumber)
 	hash := common.HashB([]byte(seed))
 	data := 0
 	for _, v := range hash {
@@ -260,8 +279,8 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 	)
 
 	if assignPerShard == 0 {
-		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
-		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT {
+		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
+		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT_V2 {
 			assignPerShard = 1
 		}
 	}
@@ -269,6 +288,10 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 }
 
 type AssignRuleV3 struct {
+}
+
+func NewAssignRuleV3() *AssignRuleV3 {
+	return &AssignRuleV3{}
 }
 
 func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string {

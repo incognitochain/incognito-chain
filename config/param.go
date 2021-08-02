@@ -108,6 +108,7 @@ type swapCommitteeParam struct {
 type consensusParam struct {
 	ConsensusV2Epoch          uint64   `mapstructure:"consensus_v2_epoch"`
 	StakingFlowV2Height       uint64   `mapstructure:"staking_flow_v2_height"`
+	AssignRuleV3Height        uint64   `mapstructure:"assign_rule_v3_height"`
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	EnableSlashingHeightV2    uint64   `mapstructure:"enable_slashing_height_v2"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
