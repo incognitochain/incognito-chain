@@ -828,6 +828,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if err != nil {
 			return err
 		}
+		Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
 	}
 	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
 	if err != nil {
