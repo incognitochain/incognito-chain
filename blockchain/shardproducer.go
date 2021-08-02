@@ -90,7 +90,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	beaconProcessView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	beaconProcessHeight := beaconProcessView.GetHeight()
-	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+	if beaconProcessHeight > shardBestState.BeaconHeight && beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
@@ -275,7 +275,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	shardBestState.shardCommitteeEngine.AbortUncommittedShardState()
 	//============Build Header=============
 	// Build Root Hash for Header
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
+	merkleRoots := types.Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
 	merkleRoot := &common.Hash{}
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
@@ -311,9 +311,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
-	instMerkleRoot := GetKeccak256MerkleRoot(insts)
+	instMerkleRoot := types.GetKeccak256MerkleRoot(insts)
 	// shard tx root
-	_, shardTxMerkleData := CreateShardTxRoot(newShardBlock.Body.Transactions)
+	_, shardTxMerkleData := types.CreateShardTxRoot(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
 	newShardBlock.Header.TxRoot = *merkleRoot
 	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]

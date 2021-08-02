@@ -65,7 +65,7 @@ var (
 	dummyDB *statedb.StateDB
 	chainStorage incdb.Database
 	featureStorage incdb.Database
-	coinReindexer *coin_indexer.CoinIndexer
+	coinReindexer *coinIndexer.CoinIndexer
 	bridgeDB *statedb.StateDB
 	activeLogger common.Logger
 	inactiveLogger common.Logger
@@ -111,7 +111,7 @@ func setup() {
 		panic(err)
 	}
 	// use only 1 worker for benchmark
-	coinReindexer, err = coin_indexer.NewOutCoinIndexer(1, featureStorage, "")
+	coinReindexer, err = coinIndexer.NewOutCoinIndexer(1, featureStorage, "")
 	if err != nil {
 		panic(err)
 	}
@@ -238,7 +238,7 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 		ks := keySets[chosenIndex]
 		// fmt.Printf("Get coin by key %x\n", ks.PaymentAddress.Pk)
 		// pubKey, _ := new(operation.Point).FromBytesS(ks.PaymentAddress.Pk)
-		results, err := coin_indexer.QueryDbCoinVer1(ks.PaymentAddress.Pk, shardID, &common.PRVCoinID, coinDB)
+		results, err := coinIndexer.QueryDbCoinVer1(ks.PaymentAddress.Pk, shardID, &common.PRVCoinID, coinDB)
 		if err != nil {
 			panic(err)
 		}
@@ -299,7 +299,7 @@ func prepareKeysAndPaymentsV2(count int) ([]*incognitokey.KeySet, []*key.Payment
 	return keySets, paymentInfos
 }
 
-func getCoinFilterByOTAKey() coin_indexer.CoinMatcher {
+func getCoinFilterByOTAKey() coinIndexer.CoinMatcher {
     return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool{
         entry, exists := kvargs["otaKey"]
         if !exists{
@@ -370,7 +370,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[chosenIndex]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			results, err := coin_indexer.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
+			results, err := coinIndexer.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
 			assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)
@@ -388,7 +388,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			idxParam := coin_indexer.IndexParam{
+			idxParam := coinIndexer.IndexParam{
 				FromHeight: uint64(0),
 				ToHeight:   maxHeight,
 				OTAKey:     otaKey,
@@ -477,7 +477,7 @@ func BenchmarkReindexCoinV2(b *testing.B) {
 		ks := keySets[(chosenIndex + loop) % numOfPrivateKeys]
 		// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 		otaKey := ks.OTAKey
-		idxParam := coin_indexer.IndexParam{
+		idxParam := coinIndexer.IndexParam{
 			FromHeight: uint64(0),
 			ToHeight:   1,
 			OTAKey:     otaKey,

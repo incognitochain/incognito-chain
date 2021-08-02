@@ -39,6 +39,7 @@ const (
 	NetworkError
 	TokenIsInvalidError
 	GetClonedBeaconBestStateError
+	GetBeaconViewByBlockHashError
 	GetBeaconBestBlockHashError
 	GetBeaconBestBlockError
 	GetClonedShardBestStateError

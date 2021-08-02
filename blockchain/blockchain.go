@@ -113,11 +113,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
+	EnableIndexingCoinByOTAKey = (config.OutCoinByOTAKeyDb != nil)
 	if EnableIndexingCoinByOTAKey {
-		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
-		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
+		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
 		if err != nil {
 			return err
 		}
@@ -269,9 +268,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
 	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
+		assignRule := committeestate.SFV2VersionAssignRule(
+			1,
+			config.Param().ConsensusParam.StakingFlowV2Height,
+			config.Param().ConsensusParam.AssignRuleV3Height)
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
-				committeestate.NewBeaconCommitteeStateV2())
+				committeestate.NewBeaconCommitteeStateV2(assignRule))
 	} else {
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV1(
@@ -794,10 +797,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)
-	}
-	sID := []int{}
-	for i := 0; i < config.Param().ActiveShards; i++ {
-		sID = append(sID, i)
 	}
 	return beaconView, err
 }

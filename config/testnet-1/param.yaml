@@ -51,6 +51,7 @@ consensus_param:
   consensus_v2_epoch: 15290
   staking_flow_v2_height: 2051863
   enable_slashing_height: 2087789
+  assign_rule_v3_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1280
@@ -58,7 +59,7 @@ beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 2085
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 1148608
-bc_height_break_point_privacy_v2: 2624524
+bc_height_break_point_privacy_v2: 2868392
 coin_v2_lowest_height: 2400000
 enable_feature_flags:
   - PortalRelaying: 1

@@ -49,7 +49,7 @@ func TestSignatureHexBytesConversion(t *testing.T) {
 	assert.Equal(t, err_sig, nil, "Signing signature should not have error")
 	sig_byte, err_byte := signature.ToBytes()
 	assert.Equal(t, err_byte, nil, "Error of byte should be nil")
-	temp_sig_byte, err_from_bytes := new(MlsagSig).FromBytes(sig_byte)
+	temp_sig_byte, err_from_bytes := new(Sig).FromBytes(sig_byte)
 	assert.Equal(t, err_from_bytes, nil, "Bytes to signature should not have errors")
 	assert.Equal(t, signature, temp_sig_byte, "Bytes to signature should be correct")
 }
@@ -78,12 +78,12 @@ func TestErrorBrokenHexByteSignature(t *testing.T) {
 	sig_byte, _ := signature.ToBytes()
 	sig_byte = sig_byte[:len(sig_byte)-1]
 
-	tmp_sig, byte_err := new(MlsagSig).FromBytes(sig_byte)
+	tmp_sig, byte_err := new(Sig).FromBytes(sig_byte)
 	assert.Equal(t, nil == tmp_sig, true, "FromByte of broken signature should return empty signature")
 	assert.NotEqual(t, nil, byte_err)
 
 	sig_byte = sig_byte[:len(sig_byte)-31]
-	tmp_sig, byte_err = new(MlsagSig).FromBytes(sig_byte)
+	tmp_sig, byte_err = new(Sig).FromBytes(sig_byte)
 	assert.Equal(t, tmp_sig == nil, true, "FromByte of broken signature should return empty signature")
 	assert.NotEqual(t, nil, byte_err)
 }

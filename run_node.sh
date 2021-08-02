@@ -3,16 +3,16 @@
 ###### MULTI_MEMBERS
 # Shard 0
 if [ "$1" == "shard0-0" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL"  --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --rpcwslisten "0.0.0.0:19334"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnkwspf7rutf9tYXhb77N3LBTxfmU6oyE7eMQ4wyy8iH7gEZzeePsXX8fx9ZjY8ozeWySuYnWZzwACoDog4GZzViUe5kH46hGxBJzrf"  --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --rpcwslisten "0.0.0.0:19334"
 fi
 if [ "$1" == "shard0-1" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5"  --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnr1HRcYozjwt1Y4t1o7kAvKM876kQeN7s9jCUodhFbsrPZ1UU6vDcSSFAQMAMLz6i576gpVmyy3K4py9ao3aF7hqozCqSw6amKnUjw"  --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335"
 fi
 if [ "$1" == "shard0-2" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXi8eKJ5RYJjyQYcFMThfbXHgaL6pq5AF5bWsDXwfsw8pqQUreDv6qgWyiABoDdphvqE7NFr9K92aomX7Gi5Nm1e4tEoV3qRLVdfSR"  --datadir "data/shard0-2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rpiamZoiyGXTkJ8mMsLxJwgnyUUTTrfpdnpm3KckC3VjaZRzpU24jQTfmfztZUKYqdJUKUt7BrgMKMqKLjqczwffmCx9QM5D1PJShPX"  --datadir "data/shard0-2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336"
 fi
 if [ "$1" == "shard0-3" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnY42xRqJghQX3zvhgEa2ZJBwSzJ46SXyVQEam1yNpN4bfAqJwh1SsobjHAz8wwRvwnqJBfxrbwUuTxqgEbuEE8yMu6F14QmwtwyM43"  --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rqDSA3EThnGp2doR4zuRdgGRiGLdyYi6Deo1QTwW41nttvmo5dVEUjbE3PTW2wtWc9cthKA4ZmJjwQyRShqqXL5NQGRUhoVYjRCR5Qo"  --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
 fi
 if [ "$1" == "shard0-new-0" ]; then
 INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rospAEaouNQgnK8vAAJGzH6ysLAGeZGqmZ5RJTT7CrF1zK8zwqVqx4DEdoD6MDTNiSK9W1vbZXtVe7vqvfEuf6LpuBbUiHvvkfF9L3X"  --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --rpcwslisten "0.0.0.0:19334"
@@ -28,16 +28,16 @@ INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --
 fi
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXBPJQWJTyPdzWsfsUCFTDhcas3y2MYsauKo66euh1udG8dSh2ZszSbfqHwCpYHPRSpFTxYkUcVa619XUM6DjdV7FfUWvYoziWE2Bm"  --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --rpcwslisten "127.0.0.1:19338"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rncXBFzLgSGvci44XrLfzjnXELeBn6sifqbAictF4cyiKSdssN5ud43zuoa5zTaKNiqdv5LgPPKmN4Zmu4CmGxmzbZeELxprhrfAYcu"  --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --rpcwslisten "127.0.0.1:19338"
 fi
 if [ "$1" == "shard1-1" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXN2SLxQncPYvFdzEivznKjBxK5byYmPbAhnEEv8TderLG7NUD7nwAEDu7DJ7pnCKw9N5PuTuELCHz8qKc7z9S9jF8QG41u7Vomc6L"  --datadir "data/shard1-1" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8roiAj2dbQtiDRQnLug5uUBfw8mm2FcqfVb5xUwNs18GAvot9xScRaigH1RQDoM1ghWbCN3ZLtBVUtpSe7mTj2HKYAznkfPd1ZZQEb6o"  --datadir "data/shard1-1" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339"
 fi
 if [ "$1" == "shard1-2" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXs5os49h71E7utfHatnWGQnirbVF2b5Ua8h1ttidk1S5AFcUqHCDmpMziiFC15BG8W1LQKK5tYcvr2CM7DyYgsfVmAWYh4kQ6f33T"  --datadir "data/shard1-2" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rrBVDoKsTXFUicsptwgq5NMHupjDp63q4tmuaAmetWWhFhRCjnQMtpk1fEatrmGZSrYyqXrgppD7d2jKSQgRQGju5b23SSDxGab1esB"  --datadir "data/shard1-2" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340"
 fi
 if [ "$1" == "shard1-3" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXvcE6sxwt7nQ6mH6KdPMWyQRv6xAd3WWorzS7k26YPjm4mvFtC51bRaU18yubQm1N3gBeDJJyXqWmxi5QdCkqYExCEkSqNpD1Wzpz"  --datadir "data/shard1-3" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341"
+INCOGNITO_NETWORK_KEY=local ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rrt9rfVxZs7cGfxnUswThPhByn8UPef31KVkHeKCGtdT36hgNtMuXKNgFj9W8FSN6nafQSZsiLqCgpyJWJRe3cEA75SmKw8Gbov77P6"  --datadir "data/shard1-3" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341"
 fi
 # Shard 2
 if [ "$1" == "shard2-0" ]; then

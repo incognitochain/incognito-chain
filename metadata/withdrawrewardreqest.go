@@ -185,6 +185,9 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+	if tx.GetVersion() == 2 && withDrawRewardRequest.TokenID.String() != common.PRVIDStr {
+		return false, false, fmt.Errorf("withdrawing token is no longer supported in a transaction v2")
+	}
 	if _, err := AssertPaymentAddressAndTxVersion(withDrawRewardRequest.PaymentAddress, tx.GetVersion()); err != nil {
 		return false, false, err
 	}
