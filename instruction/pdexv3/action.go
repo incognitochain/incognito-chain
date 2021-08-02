@@ -11,7 +11,7 @@ import (
 
 type Content interface {
 	GetType() int
-	GetStatus() string
+	GetStatus() int
 }
 
 type Action struct {
@@ -51,7 +51,7 @@ func (acn *Action) FromStringSlice(source []string) error {
 }
 
 func (acn *Action) StringSlice() []string {
-	result := []string{strconv.Itoa(acn.GetType()), acn.GetStatus(), strconv.Itoa(int(acn.shardID))}
+	result := []string{strconv.Itoa(acn.GetType()), strconv.Itoa(acn.GetStatus()), strconv.Itoa(int(acn.shardID))}
 	jsonBytes, _ := json.Marshal(acn)
 	result = append(result, string(jsonBytes))
 	return result

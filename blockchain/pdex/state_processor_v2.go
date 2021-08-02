@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -360,23 +361,78 @@ func (sp *stateProcessorV2) trade(
 	beaconHeight uint64,
 	inst []string,
 	pairs map[string]PoolPairState,
-) (map[string]PoolPairState, error) {
+	orderbooks map[string]Orderbook,
+) (map[string]PoolPairState, map[string]Orderbook, error) {
+	var currentTrade *instruction.Action
+	var trackedStatus metadataPdexv3.TradeStatus
 	switch inst[1] {
-	case metadataPdexv3.TradeAcceptedStatus:
-		currentTrade := &instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
+	case strconv.Itoa(metadataPdexv3.TradeAcceptedStatus):
+		currentTrade = &instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
-			return pairs, err
+			return pairs, orderbooks, err
 		}
-	case metadataPdexv3.TradeRefundedStatus:
-		currentTrade := &instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
+
+		// skip error checking since concrete type is specified above
+		md, _ := currentTrade.Content.(*metadataPdexv3.AcceptedTrade)
+		for index, pairID := range md.TradePath {
+			pair, exists := pairs[pairID]
+			if !exists {
+				return pairs, orderbooks, fmt.Errorf("Cannot find pair %s for trade", pairID)
+			}
+			reserveState := &v3.TradingPair{&pair.state}
+			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
+			if err != nil {
+				return pairs, orderbooks, err
+			}
+
+			orderbook, exists := orderbooks[pairID]
+			if !exists {
+				return pairs, orderbooks, fmt.Errorf("Cannot find orderbook %s for trade", pairID)
+			}
+			ordersById := make(map[string]*Order)
+			for _, ord := range orderbook.orders {
+				ordersById[ord.Id()] = ord
+			}
+			for id, change := range md.OrderChanges[index] {
+				currentOrder, exists := ordersById[id]
+				if !exists {
+					return pairs, orderbooks, fmt.Errorf("Cannot find order ID %s for trade", id)
+				}
+				err := (&v3.MatchingOrder{currentOrder}).ApplyBalanceChanges(change[0], change[1])
+				if err != nil {
+					return pairs, orderbooks, err
+				}
+			}
+		}
+
+		trackedStatus = metadataPdexv3.TradeStatus{
+			BuyAmount:  md.Amount,
+			TokenToBuy: md.TokenToBuy,
+		}
+	case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
+		currentTrade = &instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
-			return pairs, err
+			return pairs, orderbooks, err
 		}
+	default:
+		return pairs, orderbooks, fmt.Errorf("Invalid status %d from instruction")
 	}
-	// TODO : apply state changes
-	return pairs, nil
+
+	// store tracked trade status
+	trackedStatus.Status = currentTrade.GetStatus()
+	marshaledTrackedStatus, err := json.Marshal(trackedStatus)
+	if err != nil {
+		return pairs, orderbooks, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3TradeStatusPrefix(),
+		currentTrade.RequestTxID[:],
+		marshaledTrackedStatus,
+	)
+	return pairs, orderbooks, nil
 }
 
 func (sp *stateProcessorV2) addOrder(
@@ -384,21 +440,24 @@ func (sp *stateProcessorV2) addOrder(
 	beaconHeight uint64,
 	inst []string,
 	pairs map[string]PoolPairState,
-) (map[string]PoolPairState, error) {
+	orderbooks map[string]Orderbook,
+) (map[string]PoolPairState, map[string]Orderbook, error) {
 	switch inst[1] {
-	case metadataPdexv3.OrderAcceptedStatus:
+	case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
 		currentTrade := &instruction.Action{Content: metadataPdexv3.AcceptedAddOrder{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
-			return pairs, err
+			return pairs, orderbooks, err
 		}
-	case metadataPdexv3.OrderRefundedStatus:
+	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
 		currentTrade := &instruction.Action{Content: metadataPdexv3.RefundedAddOrder{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
-			return pairs, err
+			return pairs, orderbooks, err
 		}
+	default:
+		return pairs, orderbooks, fmt.Errorf("Invalid status %d from instruction")
 	}
 	// TODO : apply state changes
-	return pairs, nil
+	return pairs, orderbooks, nil
 }

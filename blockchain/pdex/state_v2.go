@@ -62,6 +62,7 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 	ob.orders = insertAt(ob.orders, index, ord)
 }
 
+// NextOrder() returns the matchable order with the best rate that has any outstanding balance to sell
 func (ob *Orderbook) NextOrder(tradeDirection int) (*v3.MatchingOrder, string, error) {
 	lstLen := len(ob.orders)
 	switch tradeDirection {

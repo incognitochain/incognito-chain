@@ -14,8 +14,8 @@ const (
 
 // trade status
 const (
-	TradeAcceptedStatus = "accepted"
-	TradeRefundedStatus = "refunded"
-	OrderAcceptedStatus = "accepted"
-	OrderRefundedStatus = "refunded"
+	TradeAcceptedStatus = 1
+	TradeRefundedStatus = 0
+	OrderAcceptedStatus = 1
+	OrderRefundedStatus = 0
 )

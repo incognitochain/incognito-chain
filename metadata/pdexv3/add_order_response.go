@@ -9,13 +9,22 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-// AddOrderResponse
+// AddOrderStatus containns the info tracked by feature statedb, which is then displayed in RPC status queries.
+// For refunded `add order` requests, all fields except Status are ignored
+type AddOrderStatus struct {
+	Status     int         `json:"Status"`
+	BuyAmount  uint64      `json:"BuyAmount"`
+	TokenToBuy common.Hash `json:"TokenToBuy"`
+}
+
+// AddOrderResponse is the metadata inside response tx for `add order` (applicable for refunded case only)
 type AddOrderResponse struct {
-	Status      string      `json:"Status"`
+	Status      int         `json:"Status"`
 	RequestTxID common.Hash `json:"RequestTxID"`
 	metadataCommon.MetadataBase
 }
 
+// AcceptedAddOrder is added as Content for produced beacon instruction after to handling an order successfully
 type AcceptedAddOrder struct {
 	TokenToBuy          common.Hash `json:"TokenToBuy"`
 	PairID              string      `json:"PairID"`
@@ -29,10 +38,11 @@ func (md AcceptedAddOrder) GetType() int {
 	return metadataCommon.Pdexv3AddOrderRequestMeta
 }
 
-func (md AcceptedAddOrder) GetStatus() string {
+func (md AcceptedAddOrder) GetStatus() int {
 	return OrderAcceptedStatus
 }
 
+// RefundedAddOrder is added as Content for produced beacon instruction after failure to handle an order
 type RefundedAddOrder struct {
 	Receiver    privacy.OTAReceiver `json:"Receiver"`
 	TokenToSell common.Hash         `json:"TokenToSell"`
@@ -45,7 +55,7 @@ func (md RefundedAddOrder) GetType() int {
 	return metadataCommon.Pdexv3AddOrderRequestMeta
 }
 
-func (md RefundedAddOrder) GetStatus() string {
+func (md RefundedAddOrder) GetStatus() int {
 	return OrderRefundedStatus
 }
 
@@ -79,4 +89,3 @@ func (res AddOrderResponse) Hash() *common.Hash {
 func (res *AddOrderResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(res)
 }
-
