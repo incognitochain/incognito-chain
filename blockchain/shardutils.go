@@ -93,21 +93,6 @@ func createShardSwapActionForKeyListV2(
 	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
 }
 
-func checkReturnStakingTxExistence(txId string, shardBlock *types.ShardBlock) bool {
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadata() != nil {
-			if tx.GetMetadata().GetType() == metadata.ReturnStakingMeta {
-				if returnStakingMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata); ok {
-					if returnStakingMeta.TxID == txId {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
 func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string {
 	requester := base58.Base58Check{}.Encode(pk, common.Base58Version)
 	return fmt.Sprintf("%s-%s", requester, coinID.String())

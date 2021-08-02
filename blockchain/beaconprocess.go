@@ -938,9 +938,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height {
-		newBestState.upgradeCommitteeEngineV2(blockchain)
-	}
+	newBestState.tryUpgradeConsensusRule(beaconBlock)
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
