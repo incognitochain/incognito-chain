@@ -27,6 +27,7 @@ mainnet:
 	INCOGNITO_NETWORK_KEY=$(MAINNET) ./$(BUILD_FILE_NAME) 2>&1 | tee mainnet.log
 
 test:
+	make build
 	go test ./.../pdexv3
 	go test ./.../pdex
 	go test ./.../committeestate

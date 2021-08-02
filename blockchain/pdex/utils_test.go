@@ -4,14 +4,23 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
+)
+
+var (
+	wrarperDB statedb.DatabaseAccessWarper
+	emptyRoot = common.HexToHash(common.HexEmptyRoot)
+	diskDB    incdb.Database
 )
 
 const (
@@ -20,9 +29,18 @@ const (
 	validOTAReceiver0 = "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
 	validOTAReceiver1 = "15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP"
 	initNfctID        = "fbbb009ca00b8cd97e6c408433b4a2e7ab3efacf3cd9b151e1a086e3c7602370"
-	nfctID            = "fbbb009ca00b8cd97e6c408433b4a2e7ab3efacf3cd9b151e1a086e3c7602370"
+	nfctID            = "acd9844f81c7d75ad0821dab742615fd8a4137b21b08d4de9724754ff724da19"
 	poolPairID        = "0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000456-0000000000000000000000000000000000000000000000000000000000000abc"
 )
+
+func initDB() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "data")
+	if err != nil {
+		panic(err)
+	}
+	diskDB, _ = incdb.Open("leveldb", dbPath)
+	wrarperDB = statedb.NewDatabaseAccessWarper(diskDB)
+}
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
 // create roll files in the same directory.  It must be called before the

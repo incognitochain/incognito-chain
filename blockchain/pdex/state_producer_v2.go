@@ -66,21 +66,18 @@ func isValidPdexv3Params(params Params) bool {
 func (sp *stateProducerV2) addLiquidity(
 	txs []metadata.Transaction,
 	beaconHeight uint64,
-	poolPairs map[string]PoolPairState,
+	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) (
 	[][]string,
-	map[string]PoolPairState,
+	map[string]*PoolPairState,
 	map[string]rawdbv2.Pdexv3Contribution,
 	error,
 ) {
 	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
-		metaData, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidityRequest)
-		if !ok {
-			return res, poolPairs, waitingContributions, errors.New("Can not parse add liquidity metadata")
-		}
+		metaData, _ := tx.GetMetadata().(*metadataPdexv3.AddLiquidityRequest)
 		incomingContribution := *NewContributionWithMetaData(*metaData, *tx.Hash(), shardID)
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
@@ -123,7 +120,7 @@ func (sp *stateProducerV2) addLiquidity(
 		}
 		poolPair, found := poolPairs[poolPairID]
 		if !found {
-			newPoolPair := *initPoolPairState(waitingContribution, incomingContribution)
+			newPoolPair := initPoolPairState(waitingContribution, incomingContribution)
 			tempAmt := big.NewInt(0).Mul(
 				big.NewInt(0).SetUint64(waitingContribution.Amount()),
 				big.NewInt(0).SetUint64(incomingContribution.Amount()),

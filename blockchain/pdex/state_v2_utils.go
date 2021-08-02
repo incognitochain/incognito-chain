@@ -99,19 +99,19 @@ type StateChange struct {
 
 type StakingPoolState struct {
 	liquidity        uint64
-	stakers          map[string]StakingInfo // nfst -> amount staking
+	stakers          map[string]*StakingInfo // nfst -> amount staking
 	currentStakingID uint64
 }
 
 func NewStakingPoolState() *StakingPoolState {
 	return &StakingPoolState{
-		stakers: make(map[string]StakingInfo),
+		stakers: make(map[string]*StakingInfo),
 	}
 }
 
 func NewStakingPoolStateWithValue(
 	liquidity uint64,
-	stakers map[string]StakingInfo,
+	stakers map[string]*StakingInfo,
 	currentStakingID uint64,
 ) *StakingPoolState {
 	return &StakingPoolState{
@@ -121,8 +121,7 @@ func NewStakingPoolStateWithValue(
 	}
 }
 
-func (s *StakingPoolState) Clone() StakingPoolState {
+func (s *StakingPoolState) Clone() *StakingPoolState {
 	res := NewStakingPoolState()
-
-	return *res
+	return res
 }

@@ -129,9 +129,6 @@ func (p *PoolPairState) computeActualContributedAmounts(
 }
 
 func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) {
-	p.state.SetToken0RealAmount(p.state.Token0RealAmount() + amount0)
-	p.state.SetToken1RealAmount(p.state.Token1RealAmount() + amount1)
-
 	newToken0VirtualAmount := big.NewInt(0)
 	newToken1VirtualAmount := big.NewInt(0)
 
@@ -198,6 +195,8 @@ func (p *PoolPairState) updateReserveAndCalculateShare(
 	}
 
 	shareAmount := p.calculateShareAmount(amount0, amount1)
+	p.state.SetToken0RealAmount(p.state.Token0RealAmount() + amount0)
+	p.state.SetToken1RealAmount(p.state.Token1RealAmount() + amount1)
 	p.updateReserveData(amount0, amount1, shareAmount)
 	return shareAmount
 
