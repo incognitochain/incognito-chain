@@ -155,8 +155,8 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
 
-	if blockchain.IsLastBeaconHeightInEpoch(curView.BeaconHeight) {
-		if curView.BeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
+	if blockchain.IsLastBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
+		if newBeaconBlock.Header.Height < config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			featureStateDB := curView.GetBeaconFeatureStateDB()
 			totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 			if err != nil {
@@ -182,8 +182,8 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		}
 	}
 
-	if blockchain.IsFirstBeaconHeightInEpoch(curView.BeaconHeight) {
-		if curView.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
+	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
+		if newBeaconBlock.Header.Height >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			featureStateDB := curView.GetBeaconFeatureStateDB()
 			totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 			if err != nil {
@@ -199,7 +199,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
 				curView,
 				newBeaconBlock.Header.Height-1,
-				curView.Epoch-1,
+				newBeaconBlock.Header.Epoch-1,
 				isSplitRewardForCustodian,
 				percentCustodianRewards,
 			)

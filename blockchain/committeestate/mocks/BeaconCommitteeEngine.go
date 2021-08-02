@@ -39,6 +39,20 @@ func (_m *BeaconCommitteeEngine) ActiveShards() int {
 	return r0
 }
 
+// AssignRuleVersion provides a mock function with given fields:
+func (_m *BeaconCommitteeEngine) AssignRuleVersion() uint {
+	ret := _m.Called()
+
+	var r0 uint
+	if rf, ok := ret.Get(0).(func() uint); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(uint)
+	}
+
+	return r0
+}
+
 // Clone provides a mock function with given fields:
 func (_m *BeaconCommitteeEngine) Clone() committeestate.BeaconCommitteeEngine {
 	ret := _m.Called()
@@ -490,6 +504,11 @@ func (_m *BeaconCommitteeEngine) UpdateCommitteeState(env *committeestate.Beacon
 	}
 
 	return r0, r1, r2, r3
+}
+
+// UpgradeAssignRuleV3 provides a mock function with given fields:
+func (_m *BeaconCommitteeEngine) UpgradeAssignRuleV3() {
+	_m.Called()
 }
 
 // Version provides a mock function with given fields:
