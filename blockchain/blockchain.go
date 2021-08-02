@@ -799,6 +799,10 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
 	}
 
+	// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
+	// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
+	beaconView.NumberOfShardBlock = make(map[byte]uint, beaconView.ActiveShards)
+
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)

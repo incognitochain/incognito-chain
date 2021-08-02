@@ -18,9 +18,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
-	// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
-	// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
-	beaconBestState.NumberOfShardBlock = make(map[byte]uint, beaconBestState.ActiveShards)
 	if includeCommittee {
 		var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
 		if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
