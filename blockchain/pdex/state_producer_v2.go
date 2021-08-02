@@ -244,10 +244,9 @@ func (sp *stateProducerV2) modifyParams(
 
 func (sp *stateProducerV2) trade(
 	txs []metadata.Transaction,
-	beaconHeight uint64,
 	pairs map[string]PoolPairState,
 	orderbooks map[string]Orderbook,
-) ([][]string, map[string]PoolPairState, error) {
+) ([][]string, map[string]PoolPairState, map[string]Orderbook, error) {
 	result := [][]string{}
 
 	// TODO: sort
@@ -260,7 +259,7 @@ func (sp *stateProducerV2) trade(
 	for _, tx := range txs {
 		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
 		if !ok {
-			return result, pairs, errors.New("Can not parse add liquidity metadata")
+			return result, pairs, orderbooks, errors.New("Can not parse add liquidity metadata")
 		}
 		
 		currentAction := instruction.NewAction(
@@ -286,12 +285,11 @@ func (sp *stateProducerV2) trade(
 		result = append(result, currentInst)
 	}
 
-	return result, pairs, nil
+	return result, pairs, orderbooks, nil
 }
 
 func (sp *stateProducerV2) addOrder(
 	txs []metadata.Transaction,
-	beaconHeight uint64,
 	pairs map[string]PoolPairState,
 ) ([][]string, map[string]PoolPairState, error) {
 	result := [][]string{}

@@ -266,6 +266,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.waitingContributions,
 				s.deletedWaitingContributions,
 			)
+		case metadataCommon.Pdexv3TradeRequestMeta:
+			s.poolPairs, s.orderbooks, err = s.processor.trade(env.StateDB(), inst,
+				s.poolPairs, s.orderbooks,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -281,9 +285,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 	addLiquidityTxs := []metadata.Transaction{}
 	addLiquidityInstructions := [][]string{}
-	var err error
 	modifyParamsTxs := []metadata.Transaction{}
+	tradeTxs := []metadata.Transaction{}
 
+	var err error
 	pdexv3Txs := env.ListTxs()
 	keys := []int{}
 
@@ -307,6 +312,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 					return instructions, errors.New("Can not parse params modifying metadata")
 				}
 				modifyParamsTxs = append(modifyParamsTxs, tx)
+			case metadataCommon.Pdexv3TradeRequestMeta:
+				tradeTxs = append(tradeTxs, tx)
 			}
 		}
 	}
@@ -333,6 +340,17 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, modifyParamsInstructions...)
+
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, s.orderbooks, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+		s.orderbooks,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
 
 	return instructions, nil
 }

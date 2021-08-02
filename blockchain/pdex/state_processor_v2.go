@@ -358,7 +358,6 @@ func (sp *stateProcessorV2) modifyParams(
 
 func (sp *stateProcessorV2) trade(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	inst []string,
 	pairs map[string]PoolPairState,
 	orderbooks map[string]Orderbook,
@@ -417,7 +416,7 @@ func (sp *stateProcessorV2) trade(
 			return pairs, orderbooks, err
 		}
 	default:
-		return pairs, orderbooks, fmt.Errorf("Invalid status %d from instruction")
+		return pairs, orderbooks, fmt.Errorf("Invalid status %d from instruction", inst[1])
 	}
 
 	// store tracked trade status
@@ -437,7 +436,6 @@ func (sp *stateProcessorV2) trade(
 
 func (sp *stateProcessorV2) addOrder(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	inst []string,
 	pairs map[string]PoolPairState,
 	orderbooks map[string]Orderbook,
