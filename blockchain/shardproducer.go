@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
@@ -23,6 +24,8 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // NewBlockShard Create New block Shard:
@@ -508,19 +511,26 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			default:
-				newTx, err = curView.pdeTxBuilder.Build(
-					metaType,
-					inst,
-					producerPrivateKey,
-					shardID,
-					curView.GetCopiedTransactionStateDB(),
-					featureStateDB,
-				)
-				if err != nil {
-					return nil, nil, err
-				}
-				if newTx == nil {
-					continue
+				if metadataCommon.IsPDEType(metaType) {
+					txBuilder := new(pdex.TxBuilderV1)
+					newTx, err = txBuilder.Build(
+						metaType,
+						inst,
+						producerPrivateKey,
+						shardID,
+						curView.GetCopiedTransactionStateDB(),
+						featureStateDB,
+					)
+				} else if metadataCommon.IsPdexv3Type(metaType) {
+					txBuilder := new(pdex.TxBuilderV2)
+					newTx, err = txBuilder.Build(
+						metaType,
+						inst,
+						producerPrivateKey,
+						shardID,
+						curView.GetCopiedTransactionStateDB(),
+						featureStateDB,
+					)
 				}
 			}
 			if err != nil {
