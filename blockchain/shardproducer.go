@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
@@ -23,6 +24,8 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // NewBlockShard Create New block Shard:
@@ -398,10 +401,20 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*types.BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
+	curView *ShardBestState,
+	beaconBlocks []*types.BeaconBlock,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) ([]metadata.Transaction, [][]string, error) {
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
+
+	pdeTxBuilderV1 := new(pdex.TxBuilderV1)
+	pdeTxBuilderV2 := new(pdex.TxBuilderV2)
+	pdeTxBuilderV2.ClearCache()
+
 	for _, beaconBlock := range beaconBlocks {
 		blockHash := beaconBlock.Header.Hash()
 		beaconRootHashes, err := GetBeaconRootsHashByBlockHash(
@@ -416,8 +429,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 		if err != nil {
 			return nil, nil, err
 		}
-		//clear cache for pde tx builder
-		curView.pdeTxBuilder.ClearCache()
 
 		for _, inst := range beaconBlock.Body.Instructions {
 			if len(inst) <= 2 {
@@ -511,17 +522,23 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			default:
-				newTxs, err := curView.pdeTxBuilder.Build(
-					metaType,
-					inst,
-					producerPrivateKey,
-					shardID,
-					curView.GetCopiedTransactionStateDB(),
-				)
-				if err != nil {
-					return nil, nil, err
-				}
-				if len(newTxs) == 0 {
+				if metadataCommon.IsPDEType(metaType) {
+					newTx, err = pdeTxBuilderV1.Build(
+						metaType,
+						inst,
+						producerPrivateKey,
+						shardID,
+						curView.GetCopiedTransactionStateDB(),
+					)
+				} else if metadataCommon.IsPdexv3Type(metaType) {
+					newTxs := []metadata.Transaction{}
+					newTxs, err = pdeTxBuilderV2.Build(
+						metaType,
+						inst,
+						producerPrivateKey,
+						shardID,
+						curView.GetCopiedTransactionStateDB(),
+					)
 					responsedTxs = append(responsedTxs, newTxs...)
 				}
 			}

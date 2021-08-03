@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -73,7 +72,6 @@ type ShardBestState struct {
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
 	shardCommitteeEngine       committeestate.ShardCommitteeEngine
-	pdeTxBuilder               pdex.TxBuilder
 }
 
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
