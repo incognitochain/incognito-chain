@@ -27,7 +27,7 @@ type AddOrderResponse struct {
 // AcceptedAddOrder is added as Content for produced beacon instruction after to handling an order successfully
 type AcceptedAddOrder struct {
 	TokenToBuy          common.Hash `json:"TokenToBuy"`
-	PairID              string      `json:"PairID"`
+	PoolPairID          string      `json:"PoolPairID"`
 	SellAmount          uint64      `json:"SellAmount"`
 	MinAcceptableAmount uint64      `json:"MinAcceptableAmount"`
 	ShardID             byte        `json:"ShardID"`

@@ -301,17 +301,17 @@ type Pdexv3Order struct {
 	token1Rate     uint64
 	token0Balance  uint64
 	token1Balance  uint64
-	tradeDirection int
+	tradeDirection byte
 	fee            uint64
 }
 
-func (o Pdexv3Order) Id() string            { return o.id }
-func (o Pdexv3Order) Token0Rate() uint64    { return o.token0Rate }
-func (o Pdexv3Order) Token1Rate() uint64    { return o.token1Rate }
-func (o Pdexv3Order) Token0Balance() uint64 { return o.token0Balance }
-func (o Pdexv3Order) Token1Balance() uint64 { return o.token1Balance }
-func (o Pdexv3Order) TradeDirection() int   { return o.tradeDirection }
-func (o Pdexv3Order) Fee() uint64           { return o.fee }
+func (o *Pdexv3Order) Id() string            { return o.id }
+func (o *Pdexv3Order) Token0Rate() uint64    { return o.token0Rate }
+func (o *Pdexv3Order) Token1Rate() uint64    { return o.token1Rate }
+func (o *Pdexv3Order) Token0Balance() uint64 { return o.token0Balance }
+func (o *Pdexv3Order) Token1Balance() uint64 { return o.token1Balance }
+func (o *Pdexv3Order) TradeDirection() byte  { return o.tradeDirection }
+func (o *Pdexv3Order) Fee() uint64           { return o.fee }
 
 // SetToken0Balance() changes the token0 balance of this order. Only balances & fee can be updated,
 // while rates, id & trade direction cannot
@@ -322,7 +322,7 @@ func (o *Pdexv3Order) SetFee(fee uint64)         { o.fee = fee }
 func NewPdexv3OrderWithValue(
 	id string,
 	token0Rate, token1Rate, token0Balance, token1Balance uint64,
-	tradeDirection int,
+	tradeDirection byte,
 	fee uint64,
 ) *Pdexv3Order {
 	return &Pdexv3Order{
@@ -343,7 +343,7 @@ func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
 		Token1Rate     uint64 `json:"Token1Rate"`
 		Token0Balance  uint64 `json:"Token0Balance"`
 		Token1Balance  uint64 `json:"Token1Balance"`
-		TradeDirection int    `json:"TradeDirection"`
+		TradeDirection byte   `json:"TradeDirection"`
 		Fee            uint64 `json:"Fee"`
 	}{
 		Id:             o.id,
@@ -367,7 +367,7 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 		Token1Rate     uint64 `json:"Token1Rate"`
 		Token0Balance  uint64 `json:"Token0Balance"`
 		Token1Balance  uint64 `json:"Token1Balance"`
-		TradeDirection int    `json:"TradeDirection"`
+		TradeDirection byte   `json:"TradeDirection"`
 		Fee            uint64 `json:"Fee"`
 	}
 	err := json.Unmarshal(data, &temp)
