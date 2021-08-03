@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -53,6 +54,7 @@ func NewConnManager(
 		stop:                 make(chan int),
 
 		currentHW:  nil,
+		hwLocker:   &sync.RWMutex{},
 		newHighway: make(chan *rpcclient.HighwayAddr, 100),
 		reqPickHW:  make(chan interface{}, 100),
 		notifiee:   &network.NotifyBundle{},
@@ -205,6 +207,7 @@ type ConnManager struct {
 	rttService *ping.PingService
 	notifiee   *network.NotifyBundle
 	currentHW  *rpcclient.HighwayAddr
+	hwLocker   *sync.RWMutex
 	newHighway chan *rpcclient.HighwayAddr
 	reqPickHW  chan interface{}
 

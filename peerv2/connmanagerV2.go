@@ -42,16 +42,22 @@ func (cm *ConnManager) StartV2(bg BlockGetter) {
 }
 
 func (cm *ConnManager) disconnectAction(nw network.Network, conn network.Conn) {
-	addrInfo, err := getAddressInfo(cm.currentHW.Libp2pAddr)
+	cm.hwLocker.RLock()
+	if cm.currentHW == nil {
+		cm.hwLocker.RUnlock()
+		return
+	}
+	hwAddr := *cm.currentHW
+	cm.hwLocker.RUnlock()
+	addrInfo, err := getAddressInfo(hwAddr.Libp2pAddr)
 	if err != nil {
 		Logger.Errorf("Retry connect to HW %v failed, err: %v", err)
 		return
 	}
-	Logger.Infof("Disconnected, network local peer %v, peer conn .local %v %v, .remote %v %v; currentHW.libp2pAddr %v", nw.LocalPeer().Pretty(), conn.LocalMultiaddr().String(), conn.LocalPeer().Pretty(), conn.RemoteMultiaddr().String(), conn.RemotePeer().Pretty(), addrInfo.ID.Pretty())
+	Logger.Infof("Disconnected, network local peer %v, peer conn .local %v %v, .remote %v %v; hwAddr.libp2pAddr %v", nw.LocalPeer().Pretty(), conn.LocalMultiaddr().String(), conn.LocalPeer().Pretty(), conn.RemoteMultiaddr().String(), conn.RemotePeer().Pretty(), addrInfo.ID.Pretty())
 	if conn.RemotePeer().Pretty() != addrInfo.ID.Pretty() {
 		return
 	}
-	hwAddr := *cm.currentHW
 	cm.CloseConnToCurHW(true)
 	err = cm.tryToConnectHW(&hwAddr)
 	if err != nil {
@@ -68,17 +74,14 @@ func (cm *ConnManager) PickHighway() error {
 	var hwAddrInfo *peer.AddrInfo
 	gotNewHW := false
 	if err == nil {
-		// time.Sleep(2 * time.Second)
-		// cm.keeper.IgnoreAddress(*newHW)
 		Logger.Infof("[newpeerv2] Got new HW = %v", newHW.Libp2pAddr)
-		// cm.reqPickHW <- nil
+		cm.hwLocker.RLock()
 		if (cm.currentHW != nil) && (newHW.Libp2pAddr == cm.currentHW.Libp2pAddr) {
-			// time.Sleep(2 * time.Second)
-			// cm.keeper.IgnoreAddress(*newHW)
 			Logger.Infof("[newpeerv2] currentHW == new HW")
-			// cm.reqPickHW <- nil
+			cm.hwLocker.RUnlock()
 			return nil
 		}
+		cm.hwLocker.RUnlock()
 		hwAddrInfo, err = getAddressInfo(newHW.Libp2pAddr)
 		Logger.Infof("[newpeerv2] get address info %v %v", hwAddrInfo, err)
 		if err == nil {
@@ -149,7 +152,13 @@ func (cm *ConnManager) tryToConnectHW(hwAddr *rpcclient.HighwayAddr) error {
 }
 
 func (cm *ConnManager) CloseConnToCurHW(isDisconnected bool) {
+	cm.hwLocker.RLock()
+	if cm.currentHW == nil {
+		cm.hwLocker.RUnlock()
+		return
+	}
 	addrInfo, err := getAddressInfo(cm.currentHW.Libp2pAddr)
+	cm.hwLocker.RUnlock()
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -165,8 +174,10 @@ func (cm *ConnManager) CloseConnToCurHW(isDisconnected bool) {
 			Logger.Errorf("Failed closing connection to old highway: hwID = %s err = %v", addrInfo.ID.Pretty(), err)
 		}
 	}
+	cm.hwLocker.Lock()
 	cm.currentHW = nil
 	cm.keeper.setCurrHW(nil)
+	cm.hwLocker.Unlock()
 	Logger.Infof("[debugdisconnect] CloseConnToCurHW DONE")
 }
 
@@ -191,24 +202,29 @@ func (cm *ConnManager) manageHighwayConnection() {
 			Logger.Info("[debugGRPC] Pick HW Done")
 		case newHW := <-cm.newHighway:
 			Logger.Info("[debugGRPC] Received newHW %v", newHW)
+			cm.hwLocker.RLock()
+			sameHW := true
 			if cm.currentHW != nil {
-				Logger.Info("[debugGRPC] newHW %v current %v", newHW.Libp2pAddr, cm.currentHW.Libp2pAddr)
-				if cm.currentHW.Libp2pAddr == newHW.Libp2pAddr {
+				if cm.currentHW.Libp2pAddr != newHW.Libp2pAddr {
 					Logger.Infof("[debugGRPC] New HW and current HW is the same")
-					continue
+					sameHW = false
 				}
+			}
+			cm.hwLocker.RUnlock()
+			if !sameHW {
 				cm.CloseConnToCurHW(false)
 			}
+			cm.hwLocker.Lock()
 			cm.currentHW = newHW
-			cm.keeper.currentHW = newHW
+			cm.hwLocker.Unlock()
 			Logger.Info("[debugGRPC] Force subscribe %v", newHW)
 			err := cm.Subscriber.Subscribe(true)
 			if err != nil {
-				Logger.Errorf("[debugGRPC] Subscribe to HW %v failed, ignore this HW and repick", cm.currentHW.Libp2pAddr)
-				cm.keeper.IgnoreAddress(*cm.currentHW)
+				Logger.Errorf("[debugGRPC] Subscribe to HW %v failed, ignore this HW and repick", newHW.Libp2pAddr)
+				cm.keeper.IgnoreAddress(*newHW)
 				cm.reqPickHW <- nil
 			} else {
-				cm.keeper.setCurrHW(cm.currentHW)
+				cm.keeper.setCurrHW(newHW)
 			}
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
@@ -228,13 +244,15 @@ func (cm *ConnManager) keepConnectionAlive() {
 	for {
 		select {
 		case <-subsTimestep.C:
+			cm.hwLocker.RLock()
 			if cm.currentHW != nil {
-				Logger.Infof("Resubscriber to currentHW %v", cm.currentHW.Libp2pAddr)
+				Logger.Debugf("Resubscriber to currentHW %v", cm.currentHW.Libp2pAddr)
 				err = cm.Subscriber.Subscribe(false)
 				if err != nil {
 					Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
 				}
 			}
+			cm.hwLocker.RUnlock()
 		case <-cm.Requester.disconnectNoti:
 			Logger.Infof("Received signal disconnected, repickHW")
 			cm.reqPickHW <- nil
