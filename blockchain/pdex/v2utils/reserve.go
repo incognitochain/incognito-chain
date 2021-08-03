@@ -1,4 +1,4 @@
-package v3utils
+package v2utils
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ func (tp *TradingPair) UnmarshalJSON(data []byte) error {
 }
 
 // BuyAmount() computes the output amount given input, based on reserve amounts. Deduct fees before calling this
-func (tp TradingPair) BuyAmount(sellAmount uint64, tradeDirection int) (uint64, error) {
+func (tp TradingPair) BuyAmount(sellAmount uint64, tradeDirection byte) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
 		return calculateBuyAmount(sellAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
 	} else {
@@ -36,7 +36,7 @@ func (tp TradingPair) BuyAmount(sellAmount uint64, tradeDirection int) (uint64, 
 }
 
 // BuyAmount() computes the input amount given output, based on reserve amounts
-func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection int) (uint64, error) {
+func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection byte) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
 		return calculateAmountToSell(buyAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
 	} else {
@@ -47,7 +47,7 @@ func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection int) (uint64
 // SwapToReachOrderRate() does a *partial* swap using liquidity in the pool, such that the price afterwards does not exceed an order's rate
 // It returns an error when the pool runs out of liquidity
 // Upon success, it updates the reserve values and returns (buyAmount, sellAmountRemain, token0Change, token1Change)
-func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection int, ord *MatchingOrder) (uint64, uint64, *big.Int, *big.Int, error) {
+func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection byte, ord *MatchingOrder) (uint64, uint64, *big.Int, *big.Int, error) {
 	token0Change := big.NewInt(0)
 	token1Change := big.NewInt(0)
 
@@ -161,7 +161,7 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []int, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*rawdbv2.Pdexv3PoolPair, error) {
+func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
 		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
@@ -193,7 +193,7 @@ func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath [
 			}
 			sellAmountRemain = temp
 			if totalBuyAmount+buyAmount < totalBuyAmount {
-				return nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in ")
+				return nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
 			}
 			totalBuyAmount += buyAmount
 			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)

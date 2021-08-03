@@ -1,4 +1,4 @@
-package v3utils
+package v2utils
 
 import (
 	"encoding/json"
@@ -57,9 +57,9 @@ func TestProduceAcceptedTrade(t *testing.T) {
 			// fmt.Println(string(encodedResult))
 			if testcase.ExpectSuccess {
 				NoError(t, err)
-				Equal(t, string(encodedResult), testcase.Expected)
+				Equal(t, testcase.Expected, string(encodedResult))
 			} else {
-				Errorf(t, err, testcase.Expected)
+				Errorf(t, testcase.Expected, err)
 			}
 
 		})

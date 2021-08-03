@@ -2,18 +2,17 @@ package pdex
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 
-	"errors"
-
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -271,18 +270,28 @@ func (sp *stateProducerV2) trade(
 			*tx.Hash(),
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
-		// produced instruction defaults to refund & will be set to acceptedInst if MaybeAcceptTrade succeeds
-		var currentInst []string = currentAction.StringSlice()
+		var refundInst []string = currentAction.StringSlice()
 
-		reserves, orderbookList, tradeDirections, tokenToBuy, err := tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs, orderbooks)
-		if err == nil {
-			var acceptedInst []string
-			acceptedInst, _, err := v3.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.TradePath, currentTrade.Receiver, reserves, tradeDirections, tokenToBuy, orderbookList)
-			if err == nil {
-				currentInst = acceptedInst
-			}
+		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
+			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs, orderbooks)
+		// anytime the trade handler fails, add a refund instruction
+		if err != nil {
+			Logger.log.Warnf("Error preparing trade path: %v", err)
+			result = append(result, refundInst)
+			continue
 		}
-		result = append(result, currentInst)
+
+		acceptedInst, _, err :=
+			v2.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee,
+				currentTrade.TradePath, currentTrade.Receiver, reserves,
+				tradeDirections, tokenToBuy, orderbookList)
+		if err != nil {
+			Logger.log.Warnf("Error handling trade: %v", err)
+			result = append(result, refundInst)
+			continue
+		}
+
+		result = append(result, acceptedInst)
 	}
 
 	return result, pairs, orderbooks, nil

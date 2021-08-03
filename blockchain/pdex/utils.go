@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -618,11 +618,16 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, 
 	return vAmount0, vAmount1
 }
 
-func tradePathFromState(sellToken common.Hash, tradePath []string, pairs map[string]PoolPairState, orderbookState map[string]Orderbook) ([]*rawdbv2.Pdexv3PoolPair, []v3.OrderBookIterator, []int, common.Hash, error) {
+func tradePathFromState(
+	sellToken common.Hash,
+	tradePath []string,
+	pairs map[string]PoolPairState,
+	orderbookState map[string]Orderbook,
+) ([]*rawdbv2.Pdexv3PoolPair, []v2.OrderBookIterator, []byte, common.Hash, error) {
 	var results []*rawdbv2.Pdexv3PoolPair
-	var orderbookList []v3.OrderBookIterator
-	var tradeDirections []int
-	
+	var orderbookList []v2.OrderBookIterator
+	var tradeDirections []byte
+
 	nextTokenToSell := sellToken
 	for _, pairID := range tradePath {
 		if pair, exists := pairs[pairID]; exists {
@@ -632,14 +637,14 @@ func tradePathFromState(sellToken common.Hash, tradePath []string, pairs map[str
 				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Orderbook missing for pair %s", pairID)
 			}
 			orderbookList = append(orderbookList, &ob)
-			var td int
+			var td byte
 			switch nextTokenToSell {
 			case pair.state.Token0ID():
-				td = v3.TradeDirectionSell0
+				td = v2.TradeDirectionSell0
 				// set token to sell for next iteration. If this is the last iteration, it's THE token to buy
 				nextTokenToSell = pair.state.Token1ID()
 			case pair.state.Token1ID():
-				td = v3.TradeDirectionSell1
+				td = v2.TradeDirectionSell1
 				nextTokenToSell = pair.state.Token0ID()
 			default:
 				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Incompatible selling token %s vs next pair %s", nextTokenToSell.String(), pairID)

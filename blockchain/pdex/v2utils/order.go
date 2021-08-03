@@ -1,4 +1,4 @@
-package v3utils
+package v2utils
 
 import (
 	"fmt"
@@ -18,11 +18,11 @@ func (order *MatchingOrder) UnmarshalJSON(data []byte) error {
 }
 
 type OrderBookIterator interface {
-	NextOrder(tradeDirection int) (*MatchingOrder, string, error)
+	NextOrder(tradeDirection byte) (*MatchingOrder, string, error)
 }
 
 // BuyAmountFromOrder() computes the theoretical (by rate) output amount given incoming trade's sell amount. Order balance only needs to be non-zero since it can be partially matched
-func (order MatchingOrder) BuyAmountFromOrder(incomingTradeSellAmount uint64, incomingTradeDirection int) (uint64, error) {
+func (order MatchingOrder) BuyAmountFromOrder(incomingTradeSellAmount uint64, incomingTradeDirection byte) (uint64, error) {
 	if order.TradeDirection() == incomingTradeDirection {
 		return 0, fmt.Errorf("Cannot match order with trade of same direction")
 	}
@@ -47,7 +47,7 @@ func (order MatchingOrder) BuyAmountFromOrder(incomingTradeSellAmount uint64, in
 	return result.Uint64(), nil
 }
 
-func (order MatchingOrder) SellAmountToOrder(incomingTradeBuyAmount uint64, incomingTradeDirection int) (uint64, error) {
+func (order MatchingOrder) SellAmountToOrder(incomingTradeBuyAmount uint64, incomingTradeDirection byte) (uint64, error) {
 	if order.TradeDirection() == incomingTradeDirection {
 		return 0, fmt.Errorf("Cannot match order with trade of same direction")
 	}
@@ -79,7 +79,7 @@ func (order MatchingOrder) SellAmountToOrder(incomingTradeBuyAmount uint64, inco
 }
 
 // Match() swaps this order's selling balance with token sold in a trade, following this order's rate
-func (order *MatchingOrder) Match(maxSellAmountAfterFee uint64, tradeDirection int) (uint64, uint64, *big.Int, *big.Int, error) {
+func (order *MatchingOrder) Match(maxSellAmountAfterFee uint64, tradeDirection byte) (uint64, uint64, *big.Int, *big.Int, error) {
 	finalSellAmount := maxSellAmountAfterFee
 	sellAmountRemain := uint64(0)
 	buyAmount, err := order.BuyAmountFromOrder(maxSellAmountAfterFee, tradeDirection)
@@ -126,7 +126,7 @@ func (order *MatchingOrder) Match(maxSellAmountAfterFee uint64, tradeDirection i
 }
 
 // MatchPoolAmount() uses pool values instead of this order's rate
-func (order *MatchingOrder) MatchPoolAmount(maxSellAmountAfterFee uint64, tradeDirection int, pr TradingPair) (uint64, uint64, *big.Int, *big.Int, error) {
+func (order *MatchingOrder) MatchPoolAmount(maxSellAmountAfterFee uint64, tradeDirection byte, pr TradingPair) (uint64, uint64, *big.Int, *big.Int, error) {
 	finalSellAmount := maxSellAmountAfterFee
 	sellAmountRemain := uint64(0)
 	buyAmount, err := pr.BuyAmount(maxSellAmountAfterFee, tradeDirection)

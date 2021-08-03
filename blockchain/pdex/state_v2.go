@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -8,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 
-	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -35,6 +36,25 @@ type Orderbook struct {
 	orders []*Order
 }
 
+func (ob Orderbook) MarshalJSON() ([]byte, error) {
+	temp := struct {
+		Orders []*Order `json:"orders"`
+	}{ob.orders}
+	return json.Marshal(temp)
+}
+
+func (ob *Orderbook) UnmarshalJSON(data []byte) error {
+	var temp struct {
+		Orders []*Order `json:"orders"`
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	ob.orders = temp.Orders
+	return nil
+}
+
 // InsertOrder() appends a new order while keeping the list sorted (ascending by Token1Rate / Token0Rate)
 func (ob *Orderbook) InsertOrder(ord *Order) {
 	insertAt := func(lst []*Order, i int, newItem *Order) []*Order {
@@ -50,8 +70,8 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 		ordRate.Mul(ordRate, big.NewInt(0).SetUint64(ord.Token1Rate()))
 		myRate := big.NewInt(0).SetUint64(ob.orders[i].Token1Rate())
 		myRate.Mul(myRate, big.NewInt(0).SetUint64(ord.Token0Rate()))
-		// compare Token1Init / Token0Init of current order in the list to ord
-		if ord.TradeDirection() == v3.TradeDirectionSell0 {
+		// compare Token1Rate / Token0Rate of current order in the list to ord
+		if ord.TradeDirection() == v2.TradeDirectionSell0 {
 			// orders selling token0 are iterated from start of list (buy the least token1), so we resolve equality of rate by putting the new one last
 			return ordRate.Cmp(myRate) < 0
 		} else {
@@ -63,21 +83,22 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 }
 
 // NextOrder() returns the matchable order with the best rate that has any outstanding balance to sell
-func (ob *Orderbook) NextOrder(tradeDirection int) (*v3.MatchingOrder, string, error) {
+func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, error) {
 	lstLen := len(ob.orders)
 	switch tradeDirection {
-	case v3.TradeDirectionSell0:
+	case v2.TradeDirectionSell0:
 		for i := 0; i < lstLen; i++ {
-			if ob.orders[i].Token1Balance() > 0 {
-				return &v3.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
+			// only match a trade with an order of the opposite direction
+			if ob.orders[i].TradeDirection() != tradeDirection && ob.orders[i].Token1Balance() > 0 {
+				return &v2.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
 			}
 		}
 		// no active order
 		return nil, "", nil
-	case v3.TradeDirectionSell1:
+	case v2.TradeDirectionSell1:
 		for i := lstLen - 1; i >= 0; i-- {
-			if ob.orders[i].Token0Balance() > 0 {
-				return &v3.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
+			if ob.orders[i].TradeDirection() != tradeDirection && ob.orders[i].Token0Balance() > 0 {
+				return &v2.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
 			}
 		}
 		// no active order

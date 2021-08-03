@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
-	v3 "github.com/incognitochain/incognito-chain/blockchain/pdex/v3utils"
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -379,7 +379,7 @@ func (sp *stateProcessorV2) trade(
 			if !exists {
 				return pairs, orderbooks, fmt.Errorf("Cannot find pair %s for trade", pairID)
 			}
-			reserveState := &v3.TradingPair{&pair.state}
+			reserveState := &v2.TradingPair{&pair.state}
 			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
 			if err != nil {
 				return pairs, orderbooks, err
@@ -398,7 +398,7 @@ func (sp *stateProcessorV2) trade(
 				if !exists {
 					return pairs, orderbooks, fmt.Errorf("Cannot find order ID %s for trade", id)
 				}
-				err := (&v3.MatchingOrder{currentOrder}).ApplyBalanceChanges(change[0], change[1])
+				err := (&v2.MatchingOrder{currentOrder}).ApplyBalanceChanges(change[0], change[1])
 				if err != nil {
 					return pairs, orderbooks, err
 				}
@@ -416,7 +416,7 @@ func (sp *stateProcessorV2) trade(
 			return pairs, orderbooks, err
 		}
 	default:
-		return pairs, orderbooks, fmt.Errorf("Invalid status %d from instruction", inst[1])
+		return pairs, orderbooks, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
 
 	// store tracked trade status
@@ -454,7 +454,7 @@ func (sp *stateProcessorV2) addOrder(
 			return pairs, orderbooks, err
 		}
 	default:
-		return pairs, orderbooks, fmt.Errorf("Invalid status %d from instruction")
+		return pairs, orderbooks, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
 	// TODO : apply state changes
 	return pairs, orderbooks, nil
