@@ -206,7 +206,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.params,
 			)
-		case metadataCommon.Pdexv3AddLiquidityResponseMeta:
+		case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 			s.poolPairs,
 				s.waitingContributions,
 				s.deletedWaitingContributions, err = s.processor.addLiquidity(

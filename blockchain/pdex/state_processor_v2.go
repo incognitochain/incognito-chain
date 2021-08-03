@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -33,24 +32,24 @@ func (sp *stateProcessorV2) addLiquidity(
 	error,
 ) {
 	var err error
-	switch inst[len(inst)-1] {
-	case strconv.Itoa(common.PDEContributionWaitingStatus):
+	switch inst[1] {
+	case common.PDEContributionWaitingChainStatus:
 		waitingContributions, _, err = sp.waitingContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
-	case strconv.Itoa(common.PDEContributionRefundStatus):
+	case common.PDEContributionRefundChainStatus:
 		waitingContributions, deletedWaitingContributions, _, err = sp.refundContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
-	case strconv.Itoa(common.PDEContributionAcceptedStatus):
+	case common.PDEContributionMatchedChainStatus:
 		waitingContributions, deletedWaitingContributions, poolPairs, _, err = sp.matchContribution(
 			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
-	case strconv.Itoa(common.PDEContributionMatchedNReturnedStatus):
+	case common.PDEContributionMatchedNReturnedChainStatus:
 		waitingContributions, deletedWaitingContributions, poolPairs, _, err = sp.matchAndReturnContribution(
 			stateDB, inst, beaconHeight,
 			waitingContributions, deletedWaitingContributions, poolPairs)

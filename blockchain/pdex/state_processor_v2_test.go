@@ -20,6 +20,38 @@ import (
 )
 
 func Test_stateProcessorV2_addLiquidity(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	firstTxHash, err := common.Hash{}.NewHashFromStr("abc")
+	assert.Nil(t, err)
+
+	initDB()
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+
+	// first contribution tx
+	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
+		"", "pair_hash",
+		validOTAReceiver0, validOTAReceiver1,
+		token0ID.String(), 100, 20000,
+	)
+	assert.Nil(t, err)
+	contributionTx := &metadataMocks.Transaction{}
+	contributionTx.On("GetMetadata").Return(firstContributionMetadata)
+	valEnv := tx_generic.DefaultValEnv()
+	valEnv = tx_generic.WithShardID(valEnv, 1)
+	contributionTx.On("GetValidationEnv").Return(valEnv)
+	contributionTx.On("Hash").Return(firstTxHash)
+	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"", validOTAReceiver0, validOTAReceiver1,
+			*token0ID, *firstTxHash, 100, 20000, 1,
+		),
+		"pair_hash")
+	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
+	waitingContributionInstBytes, err := json.Marshal(waitingContributionInst)
+	//
+
 	type fields struct {
 		stateProcessorBase stateProcessorBase
 	}
@@ -40,7 +72,32 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 		want2   map[string]rawdbv2.Pdexv3Contribution
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Valid Input",
+			fields: fields{
+				stateProcessorBase: stateProcessorBase{},
+			},
+			args: args{
+				stateDB: sDB,
+				inst: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionWaitingChainStatus,
+					string(waitingContributionInstBytes),
+				},
+				poolPairs:                   map[string]*PoolPairState{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+			},
+			want: map[string]*PoolPairState{},
+			want1: map[string]rawdbv2.Pdexv3Contribution{
+				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
+					"", validOTAReceiver0, validOTAReceiver1,
+					*token0ID, *firstTxHash, 100, 20000, 1,
+				),
+			},
+			want2:   map[string]rawdbv2.Pdexv3Contribution{},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
