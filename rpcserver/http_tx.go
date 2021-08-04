@@ -550,6 +550,10 @@ func (httpServer *HttpServer) handleListUnspentOutputTokens(params interface{}, 
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetOTACoinLength(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.outputCoinService.GetOTACoinLength()
+}
+
 func (httpServer *HttpServer) handleGetOTACoinsByIndices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	// get component
