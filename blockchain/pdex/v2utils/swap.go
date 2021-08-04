@@ -21,7 +21,7 @@ func quote(amount0 uint64, reserve0 uint64, reserve1 uint64) (uint64, error) {
     return result.Uint64(), nil
 }
 
-func calculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn *big.Int, virtualReserveOut *big.Int, fee uint64) (uint64, error) {
+func calculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn *big.Int, virtualReserveOut *big.Int) (uint64, error) {
     if amountIn <= 0 {
         return 0, errors.New("Insufficient input amount")
     }
@@ -29,7 +29,6 @@ func calculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, vi
         return 0, errors.New("Insufficient liquidity")
     }
     amount := big.NewInt(0).SetUint64(amountIn)
-    amount.Sub(amount, big.NewInt(0).SetUint64(fee))
     num := big.NewInt(0).Mul(amount, virtualReserveOut)
     den := big.NewInt(0).Add(amount, virtualReserveIn)
     result := num.Div(num, den)
@@ -39,7 +38,7 @@ func calculateBuyAmount(amountIn uint64, reserveIn uint64, reserveOut uint64, vi
     return result.Uint64(), nil
 }
 
-func calculateAmountToSell(amountOut uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn *big.Int, virtualReserveOut *big.Int, fee uint64) (uint64, error) {
+func calculateAmountToSell(amountOut uint64, reserveIn uint64, reserveOut uint64, virtualReserveIn *big.Int, virtualReserveOut *big.Int) (uint64, error) {
     if amountOut <= 0 {
         return 0, errors.New("Insufficient input amount")
     }
@@ -49,7 +48,7 @@ func calculateAmountToSell(amountOut uint64, reserveIn uint64, reserveOut uint64
     num := big.NewInt(0).Mul(virtualReserveIn, big.NewInt(0).SetUint64(amountOut))
     den := big.NewInt(0).Sub(virtualReserveOut, big.NewInt(0).SetUint64(amountOut))
     result := num.Div(num, den)
-    result.Add(result, big.NewInt(0).SetUint64(fee + 1))
+    result.Add(result, big.NewInt(1))
     if !result.IsUint64() {
         return 0, errors.New("Number out of range uint64")
     }

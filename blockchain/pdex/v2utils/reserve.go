@@ -29,18 +29,18 @@ func (tp *TradingPair) UnmarshalJSON(data []byte) error {
 // BuyAmount() computes the output amount given input, based on reserve amounts. Deduct fees before calling this
 func (tp TradingPair) BuyAmount(sellAmount uint64, tradeDirection byte) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
-		return calculateBuyAmount(sellAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
+		return calculateBuyAmount(sellAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount())
 	} else {
-		return calculateBuyAmount(sellAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount(), 0)
+		return calculateBuyAmount(sellAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount())
 	}
 }
 
 // BuyAmount() computes the input amount given output, based on reserve amounts
 func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection byte) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
-		return calculateAmountToSell(buyAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
+		return calculateAmountToSell(buyAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount())
 	} else {
-		return calculateAmountToSell(buyAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount(), 0)
+		return calculateAmountToSell(buyAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount())
 	}
 }
 
@@ -140,7 +140,7 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 	resv.Set(tp.Token0VirtualAmount())
 	temp.Add(resv, change0)
-	tp.SetToken0VirtualAmount(temp)
+	tp.SetToken0VirtualAmount(big.NewInt(0).Set(temp))
 
 	resv.SetUint64(tp.Token1RealAmount())
 	temp.Add(resv, change1)
@@ -154,7 +154,7 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 	resv.Set(tp.Token1VirtualAmount())
 	temp.Add(resv, change1)
-	tp.SetToken1VirtualAmount(temp)
+	tp.SetToken1VirtualAmount(big.NewInt(0).Set(temp))
 
 	return nil
 }
