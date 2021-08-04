@@ -665,8 +665,8 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 }
 
 func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
-	jsb, _ := json.Marshal(tx)
-	utils.Logger.Log.Infof("Begin verifying TX %s", string(jsb))
+	//jsb, _ := json.Marshal(tx)
+	//utils.Logger.Log.Infof("Begin verifying TX %s", string(jsb))
 	switch tx.GetType() {
 	case common.TxRewardType:
 		valid, err := tx.ValidateTxSalary(transactionStateDB)

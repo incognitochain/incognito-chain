@@ -682,8 +682,8 @@ func (txToken TxToken) ValidateTxByItself(boolParams map[string]bool, transactio
 // but it works with Bulletproof batching.
 func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
 	var err error
-	jsb, _ := json.Marshal(txToken)
-	utils.Logger.Log.Infof("Begin verifying token TX %s", string(jsb))
+	//jsb, _ := json.Marshal(txToken)
+	//utils.Logger.Log.Infof("Begin verifying token TX %s", string(jsb))
 	txn := txToken.GetTxNormal()
 	if tokenID, err = tx_generic.ParseTokenID(tokenID); err != nil {
 		return false, nil, err
