@@ -1,8 +1,10 @@
 package blsbftv3
 
 import (
-	"github.com/incognitochain/incognito-chain/incdb"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -70,6 +72,7 @@ type ChainInterface interface {
 	GetFinalViewHash() string
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() uint
+	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
 }
 
 //CommitteeChainHandler :

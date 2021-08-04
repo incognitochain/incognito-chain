@@ -2,12 +2,13 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/spf13/viper"
@@ -48,7 +49,7 @@ type param struct {
 	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
 	BCHeightBreakPointPrivacyV2      uint64             `mapstructure:"bc_height_break_point_privacy_v2"`
 	CoinVersion2LowestHeight         uint64             `mapstructure:"coin_v2_lowest_height"`
-	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
+	EnableFeatureFlags               map[string]uint64  `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	GethParam                        gethParam          `mapstructure:"geth_param"`
