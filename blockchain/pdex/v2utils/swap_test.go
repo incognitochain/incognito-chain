@@ -19,7 +19,7 @@ func TestProduceAcceptedTrade(t *testing.T) {
 		AmountIn        uint64                    `json:"amountIn"`
 		Fee             uint64                    `json:"fee"`
 		Reserves        []*rawdbv2.Pdexv3PoolPair `json:"reserves"`
-		TradeDirections []int                     `json:"tradeDirections"`
+		TradeDirections []byte                     `json:"tradeDirections"`
 		Orderbooks      []OrderList               `json:"orders"` // assume orders have been sorted
 	}
 
@@ -59,7 +59,7 @@ func TestProduceAcceptedTrade(t *testing.T) {
 				NoError(t, err)
 				Equal(t, testcase.Expected, string(encodedResult))
 			} else {
-				Errorf(t, testcase.Expected, err)
+				Equal(t, testcase.Expected, err.Error())
 			}
 
 		})
@@ -69,13 +69,13 @@ func TestProduceAcceptedTrade(t *testing.T) {
 type OrderList []MatchingOrder
 
 // replica of PoolPairState.NextOrder()
-func (o *OrderList) NextOrder(tradeDirection int) (*MatchingOrder, string, error) {
+func (o *OrderList) NextOrder(tradeDirection byte) (*MatchingOrder, string, error) {
 	lst := []MatchingOrder(*o)
 	lstLen := len(lst)
 	switch tradeDirection {
 	case TradeDirectionSell0:
 		for i := 0; i < lstLen; i++ {
-			if lst[i].Token1Balance() > 0 {
+			if lst[i].TradeDirection() != tradeDirection && lst[i].Token1Balance() > 0 {
 				return &lst[i], lst[i].Id(), nil
 			}
 		}
@@ -83,7 +83,7 @@ func (o *OrderList) NextOrder(tradeDirection int) (*MatchingOrder, string, error
 		return nil, "", nil
 	case TradeDirectionSell1:
 		for i := lstLen - 1; i >= 0; i-- {
-			if lst[i].Token0Balance() > 0 {
+			if lst[i].TradeDirection() != tradeDirection && lst[i].Token0Balance() > 0 {
 				return &lst[i], lst[i].Id(), nil
 			}
 		}
