@@ -599,13 +599,13 @@ func (coinService CoinService) GetOTACoinLength() (map[common.Hash]map[byte]uint
 
 		prvCoinLength, err = statedb.GetOTACoinLength(db, common.PRVCoinID, shardID)
 		if err != nil {
-			return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length of PRV"))
+			return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length of PRV for shard %v", shardID))
 		}
 		prvRes[shardID] = prvCoinLength.Uint64()
 
 		tokenCoinLength, err = statedb.GetOTACoinLength(db, common.ConfidentialAssetID, shardID)
 		if err != nil {
-			return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length of token"))
+			return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length of token for shard %v", shardID))
 		}
 		tokenRes[shardID] = tokenCoinLength.Uint64()
 	}
