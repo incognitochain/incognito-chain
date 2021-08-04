@@ -134,7 +134,7 @@ func newPdexv3PoolPairObjectWithValue(db *StateDB, key common.Hash, data interfa
 func GeneratePdexv3PoolPairObjectKey(poolPairID string) common.Hash {
 	prefixHash := GetPdexv3PoolPairsPrefix()
 	valueHash := common.HashH([]byte(poolPairID))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 
 func (pp *Pdexv3PoolPairObject) GetVersion() int {

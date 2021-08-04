@@ -130,13 +130,13 @@ func generatePdexv3TradingFeesObjectPrefix(poolPairID, nfctID string) []byte {
 	str := string(GetPdexv3TradingFeesPrefix()) + "-" + poolPairID + "-" + nfctID
 	temp := []byte(str)
 	h := common.HashH(temp)
-	return h[:][:prefixHashKeyLength]
+	return h[:prefixHashKeyLength]
 }
 
 func GeneratePdexv3TradingFeesObjectKey(poolPairID, nfctID, tokenID string) common.Hash {
 	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nfctID)
 	valueHash := common.HashH([]byte(nfctID))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 
 func (pt *Pdexv3TradingFeeObject) GetVersion() int {

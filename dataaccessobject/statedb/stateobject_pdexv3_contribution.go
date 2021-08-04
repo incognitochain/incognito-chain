@@ -134,7 +134,7 @@ func newPdexv3ContributionObjectWithValue(db *StateDB, key common.Hash, data int
 func GeneratePdexv3ContributionObjectKey(pairHash string) common.Hash {
 	prefixHash := GetPdexv3WaitingContributionsPrefix()
 	valueHash := common.HashH([]byte(pairHash))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 
 func (pc *Pdexv3ContributionObject) GetVersion() int {

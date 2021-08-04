@@ -421,19 +421,22 @@ func NewContributionWithMetaData(
 }
 
 func (s *stateV2) WaitingContributions() []byte {
-	temp := make(map[string]rawdbv2.Pdexv3Contribution, len(s.waitingContributions))
+	temp := make(map[string]*rawdbv2.Pdexv3Contribution, len(s.waitingContributions))
 	for k, v := range s.waitingContributions {
-		temp[k] = *v.Clone()
+		temp[k] = v.Clone()
 	}
 	data, _ := json.Marshal(temp)
 	return data
 }
 
 func (s *stateV2) PoolPairs() []byte {
-	temp := make(map[string]PoolPairState, len(s.poolPairs))
+	temp := make(map[string]*PoolPairState, len(s.poolPairs))
 	for k, v := range s.poolPairs {
-		temp[k] = *v.Clone()
+		temp[k] = v.Clone()
 	}
 	data, _ := json.Marshal(temp)
 	return data
+}
+
+func (s *stateV2) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
 }

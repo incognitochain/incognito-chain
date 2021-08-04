@@ -141,13 +141,13 @@ func generatePdexv3ShareObjectPrefix(poolPairID string) []byte {
 	str := string(GetPdexv3SharesPrefix()) + "-" + poolPairID
 	temp := []byte(str)
 	h := common.HashH(temp)
-	return h[:][:prefixHashKeyLength]
+	return h[:prefixHashKeyLength]
 }
 
 func GeneratePdexv3ShareObjectKey(poolPairID, nfctID string) common.Hash {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
 	valueHash := common.HashH([]byte(nfctID))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 
 func (ps *Pdexv3ShareObject) GetVersion() int {
