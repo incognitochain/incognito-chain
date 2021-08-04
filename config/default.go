@@ -299,9 +299,13 @@ var LocalParam = &param{
 	ReplaceStakingTxHeight:         1,
 	ETHRemoveBridgeSigEpoch:        2085,
 	BCHeightBreakPointNewZKP:       1148608,
-	EnableFeatureFlags:             map[int]uint64{0: 1, 1: 0},
-	BCHeightBreakPointPortalV3:     1328816,
-	TxPoolVersion:                  0,
+	EnableFeatureFlags: map[string]uint64{
+		"PortalRelaying": 1,
+		"PortalV3":       0,
+		"PortalV4":       0,
+	},
+	BCHeightBreakPointPortalV3: 1328816,
+	TxPoolVersion:              0,
 	GethParam: gethParam{
 		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
 		Protocol: "https",
@@ -374,9 +378,13 @@ var LocalDCSParam = &param{
 	ReplaceStakingTxHeight:         1,
 	ETHRemoveBridgeSigEpoch:        2085,
 	BCHeightBreakPointNewZKP:       1148608,
-	EnableFeatureFlags:             map[int]uint64{0: 1, 1: 0},
-	BCHeightBreakPointPortalV3:     1328816,
-	TxPoolVersion:                  0,
+	EnableFeatureFlags: map[string]uint64{
+		"PortalRelaying": 1,
+		"PortalV3":       0,
+		"PortalV4":       0,
+	},
+	BCHeightBreakPointPortalV3: 1328816,
+	TxPoolVersion:              0,
 	GethParam: gethParam{
 		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
 		Protocol: "https",
