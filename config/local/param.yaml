@@ -31,7 +31,7 @@ block_time:
   min_shard_block_interval: 8s
   max_shard_block_creation: 5s
 staking_amount_shard: 1750000000000
-active_shards: 2
+active_shards: 1
 basic_reward: 400000000
 epoch_param:
   number_of_block_in_epoch: 10
@@ -62,9 +62,10 @@ bc_height_break_point_new_zkp: 2
 bc_height_break_point_privacy_v2: 52300
 coin_v2_lowest_height: 1
 enable_feature_flags:
-  - 0: 1
-  - 1: 0
-portal_v3_height: 30158
+  - PortalRelaying: 1
+  - PortalV3: 0
+  - PortalV4: 1
+portal_v3_height: 1000000000000
 tx_pool_version: 0
 geth_param:
   host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"

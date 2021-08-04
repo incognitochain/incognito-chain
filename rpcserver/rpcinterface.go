@@ -295,6 +295,23 @@ var HttpHandler = map[string]httpHandler{
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
 
+	// portal v4
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
+	createAndSendTxWithPortalReplacementFee:    (*HttpServer).handleCreateAndSendTxWithPortalReplaceUnshieldFee,
+	getPortalReplacementFeeStatus:              (*HttpServer).handleGetPortalReplacementFeeRequestStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx: (*HttpServer).handleCreateAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx:                 (*HttpServer).handleGetPortalPortalSubmitConfirmedTxStatus,
+	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
+	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
+	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
+	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 }

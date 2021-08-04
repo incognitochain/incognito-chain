@@ -61,6 +61,13 @@ const (
 
 	// bsc bridge
 	BridgeBSCTxObjectType = 40
+
+	// Portal v4
+	PortalV4StatusObjectType                      = 41
+	PortalV4UTXOObjectType                        = 42
+	PortalV4ShieldRequestObjectType               = 43
+	PortalWaitingUnshieldObjectType               = 44
+	PortalProcessedUnshieldRequestBatchObjectType = 45
 )
 
 // Prefix length
@@ -98,7 +105,7 @@ const (
 
 // bridge
 const (
-	BridgeMinorOperator = "-"
+	BridgeMinusOperator = "-"
 	BridgePlusOperator  = "+"
 )
 
