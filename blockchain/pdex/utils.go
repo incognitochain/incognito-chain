@@ -3,11 +3,13 @@ package pdex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -590,9 +592,9 @@ func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
 }
 
 //amplifier >= 10000
-func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (big.Int, big.Int) {
+func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, *big.Int) {
 	if amplifier == metadataPdexV3.BaseAmplifier {
-		return *big.NewInt(0).SetUint64(amount0), *big.NewInt(0).SetUint64(amount1)
+		return big.NewInt(0).SetUint64(amount0), big.NewInt(0).SetUint64(amount1)
 	}
 	vAmount0 := big.NewInt(0)
 	vAmount1 := big.NewInt(0)
@@ -613,5 +615,40 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (big.Int, b
 		new(big.Int).SetUint64(uint64(metadataPdexV3.BaseAmplifier)),
 	)
 
-	return *vAmount0, *vAmount1
+	return vAmount0, vAmount1
+}
+
+func tradePathFromState(
+	sellToken common.Hash,
+	tradePath []string,
+	pairs map[string]*PoolPairState,
+) ([]*rawdbv2.Pdexv3PoolPair, []v2.OrderBookIterator, []byte, common.Hash, error) {
+	var results []*rawdbv2.Pdexv3PoolPair
+	var orderbookList []v2.OrderBookIterator
+	var tradeDirections []byte
+
+	nextTokenToSell := sellToken
+	for _, pairID := range tradePath {
+		if pair, exists := pairs[pairID]; exists {
+			results = append(results, &pair.state)
+			ob := pair.orderbook
+			orderbookList = append(orderbookList, &ob)
+			var td byte
+			switch nextTokenToSell {
+			case pair.state.Token0ID():
+				td = v2.TradeDirectionSell0
+				// set token to sell for next iteration. If this is the last iteration, it's THE token to buy
+				nextTokenToSell = pair.state.Token1ID()
+			case pair.state.Token1ID():
+				td = v2.TradeDirectionSell1
+				nextTokenToSell = pair.state.Token0ID()
+			default:
+				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Incompatible selling token %s vs next pair %s", nextTokenToSell.String(), pairID)
+			}
+			tradeDirections = append(tradeDirections, td)
+		} else {
+			return nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains nonexistent pair %s", pairID)
+		}
+	}
+	return results, orderbookList, tradeDirections, nextTokenToSell, nil
 }

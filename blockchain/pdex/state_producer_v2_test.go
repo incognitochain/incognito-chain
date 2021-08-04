@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -281,8 +282,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 200, 100, 400,
 						1,
-						*big.NewInt(0).SetUint64(200),
-						*big.NewInt(0).SetUint64(800), 20000,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(800), 20000,
 					),
 					shares: map[string]*Share{
 						initNfctID: &Share{
@@ -291,6 +292,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastUpdatedBeaconHeight: 11,
 						},
 					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			want2:   map[string]rawdbv2.Pdexv3Contribution{},
@@ -311,8 +313,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 200, 100, 400,
 							1,
-							*big.NewInt(0).SetUint64(200),
-							*big.NewInt(0).SetUint64(800), 20000,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
 						),
 						shares: map[string]*Share{
 							initNfctID: &Share{
@@ -347,8 +349,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 200, 100, 400,
 						1,
-						*big.NewInt(0).SetUint64(200),
-						*big.NewInt(0).SetUint64(800), 20000,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(800), 20000,
 					),
 					shares: map[string]*Share{
 						initNfctID: &Share{
@@ -377,8 +379,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 200, 100, 400,
 							1,
-							*big.NewInt(0).SetUint64(200),
-							*big.NewInt(0).SetUint64(800), 20000,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
 						),
 						shares: map[string]*Share{
 							initNfctID: &Share{
@@ -413,8 +415,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 300, 150, 600,
 						2,
-						*big.NewInt(0).SetUint64(300),
-						*big.NewInt(0).SetUint64(1200), 20000,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					shares: map[string]*Share{
 						initNfctID: &Share{
@@ -448,6 +450,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				t.Errorf("stateProducerV2.addLiquidity() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
+				for k, v := range got1 {
+					fmt.Println("v.orderbook", v.orderbook)
+					fmt.Println("tt.want1[k].orderbook", tt.want1[k].orderbook)
+				}
 				t.Errorf("stateProducerV2.addLiquidity() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {

@@ -171,7 +171,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.AddLiquidityRequest{}
 	case metadataCommon.Pdexv3AddLiquidityResponseMeta:
 		md = &metadataPdexv3.AddLiquidityResponse{}
-
+	case metadataCommon.Pdexv3TradeRequestMeta:
+		md = &metadataPdexv3.TradeRequest{}
+	case metadataCommon.Pdexv3TradeResponseMeta:
+		md = &metadataPdexv3.TradeResponse{}
+	case metadataCommon.Pdexv3AddOrderRequestMeta:
+		md = &metadataPdexv3.AddOrderRequest{}
+	case metadataCommon.Pdexv3AddOrderResponseMeta:
+		md = &metadataPdexv3.AddOrderResponse{}
 	default:
 		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

@@ -59,7 +59,7 @@ const (
 	Pdexv3WithdrawLiquidityRequestMeta  = 273
 	Pdexv3WithdrawLiquidityResponseMeta = 274
 	Pdexv3TradeRequestMeta              = 275
-	PDexv3TradeResponseMeta             = 276
+	Pdexv3TradeResponseMeta             = 276
 	Pdexv3AddOrderRequestMeta           = 277
 	Pdexv3AddOrderResponseMeta          = 278
 	Pdexv3WithdrawOrderRequestMeta      = 279

@@ -176,5 +176,4 @@ type PDEAddLiquidityV3Request struct {
 	PoolPairID  string `json:"PoolPairID"`
 	Amplifier   string `json:"Amplifier"`
 	PairHash    string `json:"PairHash"`
-	Fee         string `json:"Fee"`
 }

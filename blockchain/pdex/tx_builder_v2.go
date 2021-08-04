@@ -2,7 +2,9 @@ package pdex
 
 import (
 	"fmt"
+	"strconv"
 
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
@@ -62,6 +64,33 @@ func (txBuilder *TxBuilderV2) Build(
 			if len(txs) != 0 {
 				res = append(res, txs...)
 			}
+		}
+	case metadataCommon.Pdexv3TradeRequestMeta:
+		switch inst[1] {
+		case strconv.Itoa(metadataPdexv3.TradeAcceptedStatus):
+			action := instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
+			err := action.FromStringSlice(inst)
+			if err != nil {
+				return res, err
+			}
+			tx, err := v2.TradeAcceptTx(action, producerPrivateKey, shardID, transactionStateDB)
+			if err != nil {
+				return res, err
+			}
+			res = append(res, tx)
+		case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
+			action := instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
+			err := action.FromStringSlice(inst)
+			if err != nil {
+				return nil, err
+			}
+			tx, err := v2.TradeRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
+			if err != nil {
+				return res, err
+			}
+			res = append(res, tx)
+		default:
+			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
 	}
 

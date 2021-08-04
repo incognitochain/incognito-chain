@@ -1,0 +1,42 @@
+{
+    "poolPairs":
+    {
+        "pair0":
+        {
+            "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+            "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+            "Token0RealAmount": 400,
+            "Token1RealAmount": 1000,
+            "CurrentContributionID": 0,
+            "Token0VirtualAmount": 1000,
+            "Token1VirtualAmount": 2000,
+            "Amplifier": 21000,
+            "ShareAmount": 0
+        }
+    },
+    "orderbooks":
+    {
+        "pair0":
+        {
+            "orders": [
+            {
+                "Id": "Order 1",
+                "Token0Rate": 100,
+                "Token1Rate": 100,
+                "Token0Balance": 0,
+                "Token1Balance": 2000,
+                "TradeDirection": 0,
+                "Fee": 11
+            },
+            {
+                "Id": "Order 2",
+                "Token0Rate": 1000,
+                "Token1Rate": 2000,
+                "Token0Balance": 0,
+                "Token1Balance": 2000,
+                "TradeDirection": 1,
+                "Fee": 22
+            }]
+        }
+    }
+}

@@ -426,8 +426,8 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 200, 100, 400,
 						1,
-						*big.NewInt(0).SetUint64(200),
-						*big.NewInt(0).SetUint64(800), 20000,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(800), 20000,
 					),
 					shares: map[string]*Share{
 						initNfctID: &Share{
@@ -436,6 +436,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 							lastUpdatedBeaconHeight: 11,
 						},
 					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			want3: &metadata.PDEContributionStatus{
@@ -561,8 +562,8 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 200, 100, 400,
 							1,
-							*big.NewInt(0).SetUint64(200),
-							*big.NewInt(0).SetUint64(800), 20000,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
 						),
 						shares: map[string]*Share{
 							initNfctID: &Share{
@@ -586,8 +587,8 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 300, 150, 600,
 						2,
-						*big.NewInt(0).SetUint64(300),
-						*big.NewInt(0).SetUint64(1200), 20000,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					shares: map[string]*Share{
 						initNfctID: &Share{
@@ -631,8 +632,8 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 300, 150, 600,
 							2,
-							*big.NewInt(0).SetUint64(300),
-							*big.NewInt(0).SetUint64(1200), 20000,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
 						),
 						shares: map[string]*Share{
 							initNfctID: &Share{
@@ -661,8 +662,8 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 300, 150, 600,
 						2,
-						*big.NewInt(0).SetUint64(300),
-						*big.NewInt(0).SetUint64(1200), 20000,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					shares: map[string]*Share{
 						initNfctID: &Share{

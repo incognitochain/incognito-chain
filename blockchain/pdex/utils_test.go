@@ -19,7 +19,6 @@ import (
 
 var (
 	wrarperDB statedb.DatabaseAccessWarper
-	emptyRoot = common.HexToHash(common.HexEmptyRoot)
 	diskDB    incdb.Database
 )
 

@@ -40,8 +40,8 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 100, 400, 1,
-					*big.NewInt(0).SetUint64(200),
-					*big.NewInt(0).SetUint64(800),
+					big.NewInt(0).SetUint64(200),
+					big.NewInt(0).SetUint64(800),
 					20000,
 				),
 				shares: map[string]*Share{
@@ -56,8 +56,8 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 150, 600, 1,
-					*big.NewInt(0).SetUint64(300),
-					*big.NewInt(0).SetUint64(1200),
+					big.NewInt(0).SetUint64(300),
+					big.NewInt(0).SetUint64(1200),
 					20000,
 				),
 				shares: map[string]*Share{
@@ -82,8 +82,8 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 100, 400, 1,
-					*big.NewInt(0).SetUint64(200),
-					*big.NewInt(0).SetUint64(800),
+					big.NewInt(0).SetUint64(200),
+					big.NewInt(0).SetUint64(800),
 					20000,
 				),
 				shares: map[string]*Share{
@@ -98,8 +98,8 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 150, 600, 1,
-					*big.NewInt(0).SetUint64(300),
-					*big.NewInt(0).SetUint64(1200),
+					big.NewInt(0).SetUint64(300),
+					big.NewInt(0).SetUint64(1200),
 					20000,
 				),
 				shares: map[string]*Share{
@@ -174,8 +174,8 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 100, 400, 0,
-					*big.NewInt(0).SetUint64(200),
-					*big.NewInt(0).SetUint64(800),
+					big.NewInt(0).SetUint64(200),
+					big.NewInt(0).SetUint64(800),
 					20000,
 				),
 				shares: map[string]*Share{
@@ -233,8 +233,8 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 150, 600, 1,
-					*big.NewInt(0).SetUint64(100),
-					*big.NewInt(0).SetUint64(400),
+					big.NewInt(0).SetUint64(100),
+					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
@@ -249,8 +249,8 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 150, 600, 1,
-					*big.NewInt(0).SetUint64(150),
-					*big.NewInt(0).SetUint64(600),
+					big.NewInt(0).SetUint64(150),
+					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
@@ -273,8 +273,8 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 150, 600, 1,
-					*big.NewInt(0).SetUint64(200),
-					*big.NewInt(0).SetUint64(800),
+					big.NewInt(0).SetUint64(200),
+					big.NewInt(0).SetUint64(800),
 					20000,
 				),
 				shares: map[string]*Share{
@@ -289,8 +289,8 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
 					200, 150, 600, 1,
-					*big.NewInt(0).SetUint64(300),
-					*big.NewInt(0).SetUint64(1200),
+					big.NewInt(0).SetUint64(300),
+					big.NewInt(0).SetUint64(1200),
 					20000,
 				),
 				shares: map[string]*Share{

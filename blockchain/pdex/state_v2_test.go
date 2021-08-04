@@ -117,7 +117,6 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
-				orders:                      tt.fields.orders,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
@@ -241,7 +240,6 @@ func Test_stateV2_Process(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
-				orders:                      tt.fields.orders,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
@@ -283,7 +281,6 @@ func Test_stateV2_Clone(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
-				orders:                      tt.fields.orders,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
@@ -327,7 +324,6 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
-				orders:                      tt.fields.orders,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
@@ -373,7 +369,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
-				orders:                      tt.fields.orders,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}

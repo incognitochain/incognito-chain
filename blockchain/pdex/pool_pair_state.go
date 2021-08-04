@@ -12,8 +12,9 @@ import (
 )
 
 type PoolPairState struct {
-	state  rawdbv2.Pdexv3PoolPair
-	shares map[string]*Share
+	state     rawdbv2.Pdexv3PoolPair
+	shares    map[string]*Share
+	orderbook Orderbook
 }
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
@@ -45,7 +46,11 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 }
 
 func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) *PoolPairState {
-	contributions := []rawdbv2.Pdexv3Contribution{contribution0, contribution1}
+
+	cloneContribution0 := contribution0.Clone()
+	cloneContribution1 := contribution1.Clone()
+
+	contributions := []rawdbv2.Pdexv3Contribution{*cloneContribution0, *cloneContribution1}
 	sort.Slice(contributions, func(i, j int) bool {
 		return contributions[i].TokenID().String() < contributions[j].TokenID().String()
 	})
@@ -65,23 +70,27 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 	return NewPoolPairStateWithValue(
 		*poolPairState,
 		make(map[string]*Share),
+		Orderbook{[]*Order{}},
 	)
 }
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
-		shares: make(map[string]*Share),
-		state:  *rawdbv2.NewPdexv3PoolPair(),
+		shares:    make(map[string]*Share),
+		state:     *rawdbv2.NewPdexv3PoolPair(),
+		orderbook: Orderbook{[]*Order{}},
 	}
 }
 
 func NewPoolPairStateWithValue(
 	state rawdbv2.Pdexv3PoolPair,
 	shares map[string]*Share,
+	orderbook Orderbook,
 ) *PoolPairState {
 	return &PoolPairState{
-		state:  state,
-		shares: shares,
+		state:     state,
+		shares:    shares,
+		orderbook: orderbook,
 	}
 }
 
@@ -141,7 +150,7 @@ func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) 
 		token0VirtualAmount := state.Token0VirtualAmount()
 		token1VirtualAmount := state.Token1VirtualAmount()
 		tempToken0VirtualAmount := big.NewInt(0).Mul(
-			&token0VirtualAmount,
+			token0VirtualAmount,
 			big.NewInt(0).SetUint64(tempShareAmount),
 		)
 		tempToken0VirtualAmount = tempToken0VirtualAmount.Div(
@@ -149,7 +158,7 @@ func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) 
 			big.NewInt(0).SetUint64(state.ShareAmount()),
 		)
 		tempToken1VirtualAmount := big.NewInt(0).Mul(
-			&token1VirtualAmount,
+			token1VirtualAmount,
 			big.NewInt(0).SetUint64(tempShareAmount),
 		)
 		tempToken1VirtualAmount = tempToken1VirtualAmount.Div(
@@ -169,19 +178,19 @@ func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) 
 	} else {
 		oldToken0VirtualAmount := p.state.Token0VirtualAmount()
 		newToken0VirtualAmount = big.NewInt(0).Add(
-			&oldToken0VirtualAmount,
+			oldToken0VirtualAmount,
 			big.NewInt(0).SetUint64(amount0),
 		)
 
 		oldToken1VirtualAmount := p.state.Token1VirtualAmount()
 		newToken1VirtualAmount = big.NewInt(0)
 		newToken1VirtualAmount.Add(
-			&oldToken1VirtualAmount,
+			oldToken1VirtualAmount,
 			big.NewInt(0).SetUint64(amount1),
 		)
 	}
-	p.state.SetToken0VirtualAmount(*newToken0VirtualAmount)
-	p.state.SetToken1VirtualAmount(*newToken1VirtualAmount)
+	p.state.SetToken0VirtualAmount(newToken0VirtualAmount)
+	p.state.SetToken1VirtualAmount(newToken1VirtualAmount)
 }
 
 func (p *PoolPairState) updateReserveAndCalculateShare(

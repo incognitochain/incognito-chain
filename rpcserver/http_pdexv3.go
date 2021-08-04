@@ -305,10 +305,6 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	tokenFee, err := common.AssertAndConvertNumber(addLiquidityRequest.Fee)
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
 
 	tokenHash, err := common.Hash{}.NewHashFromStr(addLiquidityRequest.TokenID)
 	if err != nil {
@@ -378,7 +374,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 			receiverAddresses,
 			addLiquidityRequest.TokenID,
 			tokenAmount,
-			tokenFee,
+			0,
 		)
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)

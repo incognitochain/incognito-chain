@@ -2,7 +2,6 @@ package pdexv3
 
 import (
 	"encoding/json"
-	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,7 +11,8 @@ import (
 
 // TradeRequest
 type TradeRequest struct {
-	TradePath           []common.Hash       `json:"TradePath"`
+	TradePath           []string            `json:"TradePath"`
+	TokenToSell         common.Hash         `json:"TokenToSell"`
 	SellAmount          uint64              `json:"SellAmount"`
 	MinAcceptableAmount uint64              `json:"MinAcceptableAmount"`
 	TradingFee          uint64              `json:"TradingFee"`
@@ -21,33 +21,8 @@ type TradeRequest struct {
 	metadataCommon.MetadataBase
 }
 
-type TradeAction struct {
-	Metadata    TradeRequest `json:"Metadata"`
-	ShardID     byte         `json:"ShardID"`
-	RequestTxID common.Hash  `json:"RequestTxID"`
-}
-
-type AcceptedTrade struct {
-	Receiver      privacy.OTAReceiver `json:"Receiver"`
-	ReceiveAmount uint64              `json:"ReceiveAmount"`
-	TokenToBuy    common.Hash         `json:"TokenToBuy"`
-	PairID        string              `json:"PairID"`
-	Token0Change  big.Int             `json:"Token0Change"`
-	Token1Change  big.Int             `json:"Token1Change"`
-	ShardID       byte                `json:"ShardID"`
-	RequestTxID   common.Hash         `json:"RequestTxID"`
-}
-
-type RefundedTrade struct {
-	Receiver    privacy.OTAReceiver `json:"Receiver"`
-	TokenToSell common.Hash         `json:"TokenToSell"`
-	Amount      uint64              `json:"Amount"`
-	ShardID     byte                `json:"ShardID"`
-	RequestTxID common.Hash         `json:"RequestTxID"`
-}
-
 func NewTradeRequest(
-	tradePath []common.Hash,
+	tradePath []string,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	tradingFee uint64,
@@ -90,14 +65,10 @@ func (req *TradeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(req)
 }
 
-func (req *TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+func (req TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	sellingToken := common.ConfidentialAssetID
-	if len(req.TradePath) < 1 {
-		// this would be an invalid request
-		return nil
-	}
-	if req.TradePath[0] == common.PRVCoinID {
+	if req.TokenToSell == common.PRVCoinID {
 		sellingToken = common.PRVCoinID
 	}
 	result = append(result, metadataCommon.OTADeclaration{PublicKey: req.Receiver.PublicKey.ToBytes(), TokenID: sellingToken})

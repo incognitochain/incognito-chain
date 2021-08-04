@@ -1,0 +1,58 @@
+package pdexv3
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
+
+type Content interface {
+	GetType() int
+	GetStatus() int
+}
+
+type Action struct {
+	Content
+	RequestTxID common.Hash `json:"RequestTxID"`
+	shardID     byte
+}
+
+func NewAction(c Content, txID common.Hash, shardID byte) *Action {
+	return &Action{
+		Content: c,
+		RequestTxID: txID,
+		shardID: shardID,
+	}
+}
+
+func (acn Action) ShardID() byte { return acn.shardID }
+
+func (acn *Action) FromStringSlice(source []string) error {
+	if len(source) != 4 {
+		return errors.New("Invalid action length")
+	}
+	err := json.Unmarshal([]byte(source[3]), acn)
+	if err != nil {
+		return err
+	}
+
+	// Content must be of the correct concrete type before entering FromStrings()
+	if mdType, err := strconv.Atoi(source[1]); err != nil || mdType != int(acn.GetType()) {
+		return fmt.Errorf("Metadata type mismatch")
+	}
+
+	shardID, err := strconv.Atoi(source[2])
+	acn.shardID = byte(shardID)
+
+	return nil
+}
+
+func (acn *Action) StringSlice() []string {
+	result := []string{strconv.Itoa(acn.GetType()), strconv.Itoa(acn.GetStatus()), strconv.Itoa(int(acn.shardID))}
+	jsonBytes, _ := json.Marshal(acn)
+	result = append(result, string(jsonBytes))
+	return result
+}

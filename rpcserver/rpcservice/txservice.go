@@ -300,7 +300,7 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 	// Set the fee to be higher for making sure tx will be confirmed
 	// This is a work-around solution only, and it only applies to the case where unitFeeNativeToken < 0.
 	if unitFeeNativeToken < 0 {
-		realFee += uint64(math.Ceil(float64(numTokenCoins)/2))
+		realFee += uint64(math.Ceil(float64(numTokenCoins) / 2))
 	}
 
 	if totalAmmount == 0 && realFee == 0 {
@@ -2585,7 +2585,7 @@ func (txService TxService) BuildPrivacyTokenParam(
 	if err != nil {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 	}
-	Logger.log.Info("[pdex] tokenHash.String():", tokenHash.String())
+
 	isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(), *tokenHash)
 	if !isExisted {
 		var isBridgeToken bool
