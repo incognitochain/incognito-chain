@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -57,10 +56,10 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("transaction id is invalid"))
 	}
 
-	var err error
 	var txInPool metadata.Transaction
 	var shardID byte
 	if httpServer.txService.BlockChain.UsingNewPool() {
+		var err error
 		pM := httpServer.txService.BlockChain.GetPoolManager()
 		if pM != nil {
 			txInPool, err = pM.GetTransactionByHash(txIDParam)
@@ -70,11 +69,16 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 		} else {
 			err = errors.New("PoolManager is nil")
 		}
-	} else {
-		txInPool, shardID, err = httpServer.txMemPoolService.MempoolEntry(txIDParam)
-	}
-	if err != nil {
+
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	} else {
+		tmpTxInPool, tmpShardID, err := httpServer.txMemPoolService.MempoolEntry(txIDParam)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+
+		txInPool = tmpTxInPool
+		shardID = tmpShardID
 	}
 
 	tx, errM := jsonresult.NewTransactionDetail(txInPool, nil, 0, 0, shardID)
