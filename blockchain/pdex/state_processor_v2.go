@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -353,4 +354,104 @@ func (sp *stateProcessorV2) modifyParams(
 	}
 
 	return params, nil
+}
+
+func (sp *stateProcessorV2) trade(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]PoolPairState,
+) (map[string]PoolPairState, error) {
+	var currentTrade *instruction.Action
+	var trackedStatus metadataPdexv3.TradeStatus
+	switch inst[1] {
+	case strconv.Itoa(metadataPdexv3.TradeAcceptedStatus):
+		currentTrade = &instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
+		err := currentTrade.FromStringSlice(inst)
+		if err != nil {
+			return pairs, err
+		}
+
+		// skip error checking since concrete type is specified above
+		md, _ := currentTrade.Content.(*metadataPdexv3.AcceptedTrade)
+		for index, pairID := range md.TradePath {
+			pair, exists := pairs[pairID]
+			if !exists {
+				return pairs, fmt.Errorf("Cannot find pair %s for trade", pairID)
+			}
+			reserveState := &v2.TradingPair{&pair.state}
+			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
+			if err != nil {
+				return pairs, err
+			}
+
+			orderbook := pair.orderbook
+			ordersById := make(map[string]*Order)
+			for _, ord := range orderbook.orders {
+				ordersById[ord.Id()] = ord
+			}
+			for id, change := range md.OrderChanges[index] {
+				currentOrder, exists := ordersById[id]
+				if !exists {
+					return pairs, fmt.Errorf("Cannot find order ID %s for trade", id)
+				}
+				err := (&v2.MatchingOrder{currentOrder}).ApplyBalanceChanges(change[0], change[1])
+				if err != nil {
+					return pairs, err
+				}
+			}
+		}
+
+		trackedStatus = metadataPdexv3.TradeStatus{
+			BuyAmount:  md.Amount,
+			TokenToBuy: md.TokenToBuy,
+		}
+	case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
+		currentTrade = &instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
+		err := currentTrade.FromStringSlice(inst)
+		if err != nil {
+			return pairs, err
+		}
+	default:
+		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
+	}
+
+	// store tracked trade status
+	trackedStatus.Status = currentTrade.GetStatus()
+	marshaledTrackedStatus, err := json.Marshal(trackedStatus)
+	if err != nil {
+		return pairs, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3TradeStatusPrefix(),
+		currentTrade.RequestTxID[:],
+		marshaledTrackedStatus,
+	)
+	return pairs, nil
+}
+
+func (sp *stateProcessorV2) addOrder(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]PoolPairState,
+	orderbooks map[string]Orderbook,
+) (map[string]PoolPairState, map[string]Orderbook, error) {
+	switch inst[1] {
+	case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
+		currentTrade := &instruction.Action{Content: metadataPdexv3.AcceptedAddOrder{}}
+		err := currentTrade.FromStringSlice(inst)
+		if err != nil {
+			return pairs, orderbooks, err
+		}
+	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
+		currentTrade := &instruction.Action{Content: metadataPdexv3.RefundedAddOrder{}}
+		err := currentTrade.FromStringSlice(inst)
+		if err != nil {
+			return pairs, orderbooks, err
+		}
+	default:
+		return pairs, orderbooks, fmt.Errorf("Invalid status %s from instruction", inst[1])
+	}
+	// TODO : apply state changes
+	return pairs, orderbooks, nil
 }

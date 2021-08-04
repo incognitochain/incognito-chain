@@ -2,18 +2,17 @@ package pdex
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 
-	"errors"
-
+	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -240,4 +239,89 @@ func (sp *stateProducerV2) modifyParams(
 	}
 
 	return instructions, params, nil
+}
+
+func (sp *stateProducerV2) trade(
+	txs []metadata.Transaction,
+	pairs map[string]PoolPairState,
+) ([][]string, map[string]PoolPairState, error) {
+	result := [][]string{}
+
+	// TODO: sort
+	// tradeRequests := sortByFee(
+	// 	tradeRequests,
+	// 	beaconHeight,
+	// 	pairs,
+	// )
+
+	for _, tx := range txs {
+		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
+		if !ok {
+			return result, pairs, errors.New("Can not parse add liquidity metadata")
+		}
+		
+		currentAction := instruction.NewAction(
+			metadataPdexv3.RefundedTrade{
+				Receiver:    currentTrade.RefundReceiver,
+				TokenToSell: currentTrade.TokenToSell,
+				Amount:      currentTrade.SellAmount,
+			},
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+		var refundInst []string = currentAction.StringSlice()
+
+		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
+			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+		// anytime the trade handler fails, add a refund instruction
+		if err != nil {
+			Logger.log.Warnf("Error preparing trade path: %v", err)
+			result = append(result, refundInst)
+			continue
+		}
+
+		acceptedInst, _, err :=
+			v2.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee,
+				currentTrade.TradePath, currentTrade.Receiver, reserves,
+				tradeDirections, tokenToBuy, orderbookList)
+		if err != nil {
+			Logger.log.Warnf("Error handling trade: %v", err)
+			result = append(result, refundInst)
+			continue
+		}
+
+		result = append(result, acceptedInst)
+	}
+
+	return result, pairs, nil
+}
+
+func (sp *stateProducerV2) addOrder(
+	txs []metadata.Transaction,
+	pairs map[string]PoolPairState,
+) ([][]string, map[string]PoolPairState, error) {
+	result := [][]string{}
+	var orderRequests []metadataPdexv3.AddOrderRequest
+
+	for _, tx := range txs {
+		item, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
+		if !ok {
+			return result, pairs, errors.New("Can not parse add liquidity metadata")
+		}
+		orderRequests = append(orderRequests, *item)
+	}
+
+	// TODO: sort
+	// orderRequests := sortByFee(
+	// 	orderRequests,
+	// 	beaconHeight,
+	// 	pairs,
+	// )
+
+	for _, currentOrderReq := range orderRequests {
+		_ = currentOrderReq
+		// result = append(result, currentInst)
+	}
+
+	return result, pairs, nil
 }
