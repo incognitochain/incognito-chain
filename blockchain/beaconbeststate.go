@@ -741,8 +741,8 @@ func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 		shardIDs = append(shardIDs, i)
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate,
-	nextEpochBeaconCandidate, currentEpochBeaconCandidate,
-	rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
+		nextEpochBeaconCandidate, currentEpochBeaconCandidate,
+		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCurrentValidator := currentValidator[statedb.BeaconChainID]
 	beaconSubstituteValidator := substituteValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
@@ -781,7 +781,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		shardIDs = append(shardIDs, i)
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate, _, _, _, rewardReceivers,
-	autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
+		autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	shardCommonPool := nextEpochShardCandidate
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
@@ -817,7 +817,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
 		consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
 		snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-		_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+			_, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
 		snapshotShardCommonPool := snapshotNextEpochShardCandidate
 		snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 		snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
@@ -1036,4 +1036,35 @@ func (b *BeaconBestState) CalculateExpectedTotalBlock() map[byte]uint {
 	}
 
 	return expectedTotalBlock
+}
+
+func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*statedb.StakerInfoV2, epoch uint64, shardID byte) ([]*statedb.StakerInfoV2, error) {
+
+	if epoch >= beaconBestState.Epoch {
+		return nil, fmt.Errorf("Can't get committee to pay salary because, BeaconBestState Epoch %+v is"+
+			"equal to lower than want epoch %+v", beaconBestState.Epoch, epoch)
+	}
+
+	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, epoch)
+
+	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
+}
+
+func filterNonSlashingCommittee(committees []*statedb.StakerInfoV2, slashingCommittees []string) []*statedb.StakerInfoV2 {
+
+	nonSlashingCommittees := []*statedb.StakerInfoV2{}
+	tempSlashingCommittees := make(map[string]struct{})
+
+	for _, committee := range slashingCommittees {
+		tempSlashingCommittees[committee] = struct{}{}
+	}
+
+	for _, committee := range committees {
+		_, ok := tempSlashingCommittees[committee.CommitteePublicKey()]
+		if !ok {
+			nonSlashingCommittees = append(nonSlashingCommittees, committee)
+		}
+	}
+
+	return nonSlashingCommittees
 }

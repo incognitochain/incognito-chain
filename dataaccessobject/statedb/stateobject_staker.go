@@ -17,6 +17,10 @@ type StakerInfoV2 struct {
 	autoStaking        bool
 }
 
+func NewStakerInfoV2WithCommittee(committeePublicKey string) *StakerInfoV2 {
+	return &StakerInfoV2{committeePublicKey: committeePublicKey}
+}
+
 func (s StakerInfoV2) CommitteePublicKey() string {
 	return s.committeePublicKey
 }

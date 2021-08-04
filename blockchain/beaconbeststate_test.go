@@ -4,13 +4,18 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/trie"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
 
 var (
-	keys = []string{
+	committeePublicKey = []string{
 		"121VhftSAygpEJZ6i9jGkCVwX5W7tZY6McnoXxZ3xArZQcKduS78P6F6B6T8sjNkoxN7pfjJruViCG3o4X5CiEtHCv9Ufnqp7W3qB9WkuSbGnEKtsNNGpHxJEpdEw4saeueY6kRhqFDcF2NQjgocGLyZsc5Ea6KPBj56kMtUtfcois8pBuFPn2udAsSza7HpkiW7e9kYmzu6Nqnca2jPc8ugCJYHsQDtjmzENC1tje2dfFzCnfkHqam8342bF2wEJgiEwTkkZBY2uLkbQT2X39tSsfzmbqjfrEExjorhFA5yx2ZpKrsA4H9sE34Khy8RradfGCK4L6J4gz1G7YQJ1v2hihEsw3D2fp5ktUh46sicTLmTQ2sfzjnNgMq5uAZ2cJx3HeNiETJ65RVR9J71ujLzdw8xDZvbAPRsdB11Hj2KgKFR",
 		"121VhftSAygpEJZ6i9jGkEKLMQTKTiiHzeUfeuhpQCcLZtys8FazpWwytpHebkAwgCxvqgUUF13fcSMtp5dgV1YkbRMj3z42TW2EebzAaiGg2DkGPodckN2UsbqhVDibpMgJUHVkLXardemfLdgUqWGtymdxaaRyPM38BAZcLpo2pAjxKv5vG5Uh9zHMkn7ZHtdNHmBmhG8B46UeiGBXYTwhyMe9KGS83jCMPAoUwHhTEXj5qQh6586dHjVxwEkRzp7SKn9iG1FFWdJ97xEkP2ezAapNQ46quVrMggcHFvoZofs1xdd4o5vAmPKnPTZtGTKunFiTWGnpSG9L6r5QpcmapqvRrK5SiuFhNM5DqgzUeHBb7fTfoiWd2N29jkbTGSq8CPUSjx3zdLR9sZguvPdnAA8g25cFPGSZt8aEnFJoPRzM",
 		"121VhftSAygpEJZ6i9jGkEqPGAXcmKffwMbzpwxnEfzJxen4oZKPukWAUBbqvV5xPnowZ2eQmAj2mEebG2oexebQPh1MPFC6vEZAk6i7AiRPrZmfaRrRVrBp4WXnVJmL3xK4wzTfkR2rZkhUmSZm112TTyhDNkDQSaBGJkexrPbryqUygazCA2eyo6LnK5qs7jz2RhhsWqUTQ3sQJUuFcYdf2pSnYwhqZqphDCSRizDHeysaua5L7LwS8fY7KZHhPgTuFjvUWWnWSRTmV8u1dTY5kcmMdDZsPiyN9WfqjgVoTFNALjFG8U4GMvzV3kKwVVjuPMsM2XqyPDVpdNQUgLnv2bJS8Tr22A9NgF1FQfWyAny1DYyY3N5H3tfCggsybzZXzrbYPPgokvEynac91y8hPkRdgKW1e7FHzuBnEisPuKzy",
@@ -51,12 +56,20 @@ var (
 		"121VhftSAygpEJZ6i9jGk4feYyg5LbgusdHDXKfn3MeLsE5gXG7CAWEwCZWspf7jPNrBTVohXqo9dsWHMKZrmGsgJzKtSGkCnatUaQfHmKQGK8K9vkdjMTGLmTfqnXG8AajW85Aj3jvWqMnSxCuqFZL1e3SrBXPS2qj1zMWyTVA8GvkVgnJbjGWWyGT2WP5ATyJi88ikErLdHf91mv87YjWXyGkYQrmLZsSUzCsXRB9rW5TLkVZyRt2sL6xXSHLTxqnu66LWGBTG6ZovLwDuSkQdgQmGPaTxCpKebffhL5HKCXYWYpAHemEvDEJTU2fkLdq4eMJbu6pLL7wpmMyrdLECkDbJ1Cu1TJpfXKvdBb5xtPf91MhWTQDiYDhwHSoj8P74DiYiwwydza57PzDmrCbBDpN48JEC9XQ69hTu3EraoCBS",
 		"121VhftSAygpEJZ6i9jGkKqqXYMSSJx9JTJzRLCeK9F64T2iiHK2VWWHiuVZaDQfwVYaFwBgcUgdkRWDx4LSoTp2KPLnWZrxYdq8U98KbwqVsGfKop9mqJPqQa4HBCkT48nk33f5vAySyttbPzAX9GMM5WD5SX3JcmCAr15NaPXbv28CjdRMoRttJBqoGoQx4NErvMK7yrU9Gi8Rpk5Dm1L9YgcehoBffZUUsKB7ikFF7WdBjX6ceH4gAJessqxUu4kCntDFhEL7WacuJ56RCUadmkb8LoL99MT6ffrQR5BFaBDYJ2LujoY9W1wXUecY2vZ7S2SK4oJNegiDK1jpzhCAuwqfBbBKWPUPvnG1HXNsHctCLnRnFzZgMxcHYJ714RxXmXhtdagd45JUbLUnqX4o13359JhAKdWUjsHWqzDQYAxy",
 	}
-	incognitoKeys []incognitokey.CommitteePublicKey
+	incognitoKeys       []incognitokey.CommitteePublicKey
+	warperDBStatedbTest statedb.DatabaseAccessWarper
 )
 
 var _ = func() (_ struct{}) {
-	incognitoKeys, _ = incognitokey.CommitteeBase58KeyListToStruct(keys)
+	incognitoKeys, _ = incognitokey.CommitteeBase58KeyListToStruct(committeePublicKey)
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(diskBD)
+	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
@@ -223,22 +236,22 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 				beaconCommitteeEngine: mockEngine1,
 			},
 			want: map[string]uint{
-				keys[0]:  233,
-				keys[1]:  233,
-				keys[2]:  233,
-				keys[3]:  233,
-				keys[4]:  233,
-				keys[5]:  233,
-				keys[6]:  233,
-				keys[7]:  233,
-				keys[8]:  250,
-				keys[9]:  250,
-				keys[10]: 300,
-				keys[11]: 300,
-				keys[12]: 330,
-				keys[13]: 330,
-				keys[14]: 340,
-				keys[15]: 340,
+				committeePublicKey[0]:  233,
+				committeePublicKey[1]:  233,
+				committeePublicKey[2]:  233,
+				committeePublicKey[3]:  233,
+				committeePublicKey[4]:  233,
+				committeePublicKey[5]:  233,
+				committeePublicKey[6]:  233,
+				committeePublicKey[7]:  233,
+				committeePublicKey[8]:  250,
+				committeePublicKey[9]:  250,
+				committeePublicKey[10]: 300,
+				committeePublicKey[11]: 300,
+				committeePublicKey[12]: 330,
+				committeePublicKey[13]: 330,
+				committeePublicKey[14]: 340,
+				committeePublicKey[15]: 340,
 			},
 		},
 		{
@@ -257,22 +270,22 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 				beaconCommitteeEngine: mockEngine1,
 			},
 			want: map[string]uint{
-				keys[0]:  181,
-				keys[1]:  181,
-				keys[2]:  181,
-				keys[3]:  181,
-				keys[4]:  181,
-				keys[5]:  181,
-				keys[6]:  200,
-				keys[7]:  200,
-				keys[8]:  250,
-				keys[9]:  250,
-				keys[10]: 300,
-				keys[11]: 300,
-				keys[12]: 330,
-				keys[13]: 330,
-				keys[14]: 340,
-				keys[15]: 340,
+				committeePublicKey[0]:  181,
+				committeePublicKey[1]:  181,
+				committeePublicKey[2]:  181,
+				committeePublicKey[3]:  181,
+				committeePublicKey[4]:  181,
+				committeePublicKey[5]:  181,
+				committeePublicKey[6]:  200,
+				committeePublicKey[7]:  200,
+				committeePublicKey[8]:  250,
+				committeePublicKey[9]:  250,
+				committeePublicKey[10]: 300,
+				committeePublicKey[11]: 300,
+				committeePublicKey[12]: 330,
+				committeePublicKey[13]: 330,
+				committeePublicKey[14]: 340,
+				committeePublicKey[15]: 340,
 			},
 		},
 		{
@@ -291,22 +304,22 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 				beaconCommitteeEngine: mockEngine1,
 			},
 			want: map[string]uint{
-				keys[0]:  270,
-				keys[1]:  270,
-				keys[2]:  300,
-				keys[3]:  300,
-				keys[4]:  280,
-				keys[5]:  280,
-				keys[6]:  290,
-				keys[7]:  290,
-				keys[8]:  310,
-				keys[9]:  310,
-				keys[10]: 300,
-				keys[11]: 300,
-				keys[12]: 330,
-				keys[13]: 330,
-				keys[14]: 340,
-				keys[15]: 340,
+				committeePublicKey[0]:  270,
+				committeePublicKey[1]:  270,
+				committeePublicKey[2]:  300,
+				committeePublicKey[3]:  300,
+				committeePublicKey[4]:  280,
+				committeePublicKey[5]:  280,
+				committeePublicKey[6]:  290,
+				committeePublicKey[7]:  290,
+				committeePublicKey[8]:  310,
+				committeePublicKey[9]:  310,
+				committeePublicKey[10]: 300,
+				committeePublicKey[11]: 300,
+				committeePublicKey[12]: 330,
+				committeePublicKey[13]: 330,
+				committeePublicKey[14]: 340,
+				committeePublicKey[15]: 340,
 			},
 		},
 		{
@@ -325,22 +338,22 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 				beaconCommitteeEngine: mockEngine1,
 			},
 			want: map[string]uint{
-				keys[0]:  0,
-				keys[1]:  0,
-				keys[2]:  0,
-				keys[3]:  0,
-				keys[4]:  0,
-				keys[5]:  0,
-				keys[6]:  0,
-				keys[7]:  0,
-				keys[8]:  0,
-				keys[9]:  0,
-				keys[10]: 0,
-				keys[11]: 0,
-				keys[12]: 0,
-				keys[13]: 0,
-				keys[14]: 0,
-				keys[15]: 0,
+				committeePublicKey[0]:  0,
+				committeePublicKey[1]:  0,
+				committeePublicKey[2]:  0,
+				committeePublicKey[3]:  0,
+				committeePublicKey[4]:  0,
+				committeePublicKey[5]:  0,
+				committeePublicKey[6]:  0,
+				committeePublicKey[7]:  0,
+				committeePublicKey[8]:  0,
+				committeePublicKey[9]:  0,
+				committeePublicKey[10]: 0,
+				committeePublicKey[11]: 0,
+				committeePublicKey[12]: 0,
+				committeePublicKey[13]: 0,
+				committeePublicKey[14]: 0,
+				committeePublicKey[15]: 0,
 			},
 		},
 	}
@@ -352,6 +365,415 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 			}
 			if got := b.GetExpectedTotalBlock(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetExpectedTotalBlock() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func Test_filterNonSlashingCommittee(t *testing.T) {
+	type args struct {
+		committees         []*statedb.StakerInfoV2
+		slashingCommittees []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*statedb.StakerInfoV2
+	}{
+		{
+			name: "no slashing committee",
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				slashingCommittees: []string{},
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+		},
+		{
+			name: "no slashing committee 1",
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				slashingCommittees: []string{
+					committeePublicKey[9],
+				},
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+		},
+		{
+			name: "slash some committee",
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				slashingCommittees: []string{
+					committeePublicKey[0],
+					committeePublicKey[1],
+					committeePublicKey[2],
+				},
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+		},
+		{
+			name: "slash some committee 1",
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				slashingCommittees: []string{
+					committeePublicKey[0],
+					committeePublicKey[3],
+					committeePublicKey[5],
+				},
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+		},
+		{
+			name: "slash all committee",
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				slashingCommittees: []string{
+					committeePublicKey[0],
+					committeePublicKey[1],
+					committeePublicKey[2],
+					committeePublicKey[3],
+					committeePublicKey[4],
+					committeePublicKey[5],
+					committeePublicKey[6],
+					committeePublicKey[7],
+					committeePublicKey[8],
+				},
+			},
+			want: []*statedb.StakerInfoV2{},
+		},
+		{
+			name: "some slashing committee not in committees list",
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				slashingCommittees: []string{
+					committeePublicKey[0],
+					committeePublicKey[2],
+					committeePublicKey[5],
+					committeePublicKey[10],
+				},
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filterNonSlashingCommittee(tt.args.committees, tt.args.slashingCommittees); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterNonSlashingCommittee() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBeaconBestState_GetNonSlashingCommittee(t *testing.T) {
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	statedb.StoreSlashingCommittee(sDB, 1, map[byte][]string{
+		0: []string{},
+	})
+	statedb.StoreSlashingCommittee(sDB, 2, map[byte][]string{
+		0: []string{
+			committeePublicKey[0],
+			committeePublicKey[1],
+			committeePublicKey[2],
+		},
+	})
+	statedb.StoreSlashingCommittee(sDB, 3, map[byte][]string{
+		0: []string{
+			committeePublicKey[0],
+			committeePublicKey[3],
+			committeePublicKey[5],
+		},
+	})
+	statedb.StoreSlashingCommittee(sDB, 4, map[byte][]string{
+		0: []string{
+			committeePublicKey[0],
+			committeePublicKey[1],
+			committeePublicKey[2],
+			committeePublicKey[3],
+			committeePublicKey[4],
+			committeePublicKey[5],
+			committeePublicKey[6],
+			committeePublicKey[7],
+			committeePublicKey[8],
+		},
+	})
+	rootHash, _ := sDB.Commit(true)
+	sDB.Database().TrieDB().Commit(rootHash, false)
+
+	sDB2, _ := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+
+	type fields struct {
+		Epoch        uint64
+		slashStateDB *statedb.StateDB
+	}
+	type args struct {
+		committees []*statedb.StakerInfoV2
+		epoch      uint64
+		shardID    byte
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []*statedb.StakerInfoV2
+		wantErr bool
+	}{
+		{
+			name: "input epoch higher than best state epoch",
+			fields: fields{
+				Epoch:        5,
+				slashStateDB: sDB2,
+			},
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				epoch:   5,
+				shardID: 0,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "no slashing committee",
+			fields: fields{
+				Epoch:        5,
+				slashStateDB: sDB2,
+			},
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				epoch:   1,
+				shardID: 0,
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+			wantErr: false,
+		},
+		{
+			name: "slash some committee",
+			fields: fields{
+				Epoch:        5,
+				slashStateDB: sDB2,
+			},
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				epoch:   2,
+				shardID: 0,
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+			wantErr: false,
+		},
+		{
+			name: "slash some committee 1",
+			fields: fields{
+				Epoch:        5,
+				slashStateDB: sDB2,
+			},
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				epoch:   3,
+				shardID: 0,
+			},
+			want: []*statedb.StakerInfoV2{
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+				statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+			},
+			wantErr: false,
+		},
+		{
+			name: "slash all committee",
+			fields: fields{
+				Epoch:        5,
+				slashStateDB: sDB2,
+			},
+			args: args{
+				committees: []*statedb.StakerInfoV2{
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[0]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[1]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[2]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[3]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[4]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[5]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[6]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[7]),
+					statedb.NewStakerInfoV2WithCommittee(committeePublicKey[8]),
+				},
+				epoch:   4,
+				shardID: 0,
+			},
+			want:    []*statedb.StakerInfoV2{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			beaconBestState := &BeaconBestState{
+				Epoch:        tt.fields.Epoch,
+				slashStateDB: tt.fields.slashStateDB,
+			}
+			got, err := beaconBestState.GetNonSlashingCommittee(tt.args.committees, tt.args.epoch, tt.args.shardID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNonSlashingCommittee() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetNonSlashingCommittee() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

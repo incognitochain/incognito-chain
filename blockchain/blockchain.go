@@ -1050,30 +1050,3 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
 }
-
-func (blockchain *BlockChain) GetNonSlashingCommittee(committees []*statedb.StakerInfoV2, epoch uint64, shardID byte) []*statedb.StakerInfoV2 {
-
-	beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, epoch)
-
-	return filterNonSlashingCommittee(committees, slashingCommittees[shardID])
-}
-
-func filterNonSlashingCommittee(committees []*statedb.StakerInfoV2, slashingCommittees []string) []*statedb.StakerInfoV2 {
-
-	nonSlashingCommittees := []*statedb.StakerInfoV2{}
-	tempSlashingCommittees := make(map[string]struct{})
-
-	for _, committee := range slashingCommittees {
-		tempSlashingCommittees[committee] = struct{}{}
-	}
-
-	for _, committee := range committees {
-		_, ok := tempSlashingCommittees[committee.CommitteePublicKey()]
-		if !ok {
-			nonSlashingCommittees = append(nonSlashingCommittees, committee)
-		}
-	}
-
-	return nonSlashingCommittees
-}

@@ -144,7 +144,11 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					nonSlashingCInfosV2 := blockchain.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch, byte(shardToProcess))
+					beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+					nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch, byte(shardToProcess))
+					if err != nil {
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
+					}
 					err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, nonSlashingCInfosV2)
 					if err != nil {
 						return err
