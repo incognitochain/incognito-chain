@@ -421,6 +421,11 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		Logger.log.Errorf("[ReplaceFeeRequest]: replace fee amount has to be divisible by 10 with Fee - %v", meta.Fee)
 		return [][]string{rejectInst}, nil
 	}
+	if uint64(meta.Fee) > portalParams.MaxUnshieldFees[tokenIDStr] {
+		Logger.log.Errorf("[ReplaceFeeRequest]: replace fee amount %v greater than Max unshield fee %v",
+			meta.Fee, portalParams.MaxUnshieldFees[tokenIDStr])
+		return [][]string{rejectInst}, nil
+	}
 
 	portalTokenProcessor := portalParams.PortalTokens[tokenIDStr]
 	if len(unshieldBatch.GetUTXOs()) == 0 {

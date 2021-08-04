@@ -168,6 +168,9 @@ var localPortalParam = PortalParams{
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
 			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
+			MaxUnshieldFees: map[string]uint64{
+				LocalPortalV4BTCID: 1000000, // 1000000 nano pbtc = 100000 satoshi
+			},
 			PortalV4TokenIDs: []string{
 				LocalPortalV4BTCID,
 			},
@@ -222,21 +225,24 @@ var testnet1PortalParams = PortalParams{
 			},
 			PortalTokens: initPortalTokensV4ForTestNet(),
 			DefaultFeeUnshields: map[string]uint64{
-				TestnetPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
+				TestnetPortalV4BTCID: 50000, // nano pbtc
 			},
 			MinShieldAmts: map[string]uint64{
-				TestnetPortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
+				TestnetPortalV4BTCID: 100000, // nano pbtc
 			},
 			MinUnshieldAmts: map[string]uint64{
-				TestnetPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
+				TestnetPortalV4BTCID: 100000, // nano pbtc
 			},
 			DustValueThreshold: map[string]uint64{
-				TestnetPortalV4BTCID: 1000000, // 1000000 nano pbtc = 100000 satoshi
+				TestnetPortalV4BTCID: 100000, // nano pbtc
 			},
-			BatchNumBlks:                15, // ~ 2.5 mins
+			BatchNumBlks:                20,
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
-			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
-			TimeSpaceForFeeReplacement:  5 * time.Minute,
+			MaxFeePercentageForEachStep: 10, // ~ 10% from previous fee
+			TimeSpaceForFeeReplacement:  10 * time.Minute,
+			MaxUnshieldFees: map[string]uint64{
+				TestnetPortalV4BTCID: 100000, // pbtc
+			},
 			PortalV4TokenIDs: []string{
 				TestnetPortalV4BTCID,
 			},
@@ -291,21 +297,24 @@ var testnet2PortalParams = PortalParams{
 			},
 			PortalTokens: initPortalTokensV4ForTestNet2(),
 			DefaultFeeUnshields: map[string]uint64{
-				Testnet2PortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
+				Testnet2PortalV4BTCID: 50000, // nano pbtc
 			},
 			MinShieldAmts: map[string]uint64{
-				Testnet2PortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
+				Testnet2PortalV4BTCID: 100000, // nano pbtc
 			},
 			MinUnshieldAmts: map[string]uint64{
-				Testnet2PortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
+				Testnet2PortalV4BTCID: 100000, // nano pbtc
 			},
 			DustValueThreshold: map[string]uint64{
-				Testnet2PortalV4BTCID: 1000000, // 1000000 nano pbtc = 100000 satoshi
+				Testnet2PortalV4BTCID: 100000, // nano pbtc
 			},
-			BatchNumBlks:                15, // ~ 2.5 mins
+			BatchNumBlks:                20, //
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
-			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
-			TimeSpaceForFeeReplacement:  5 * time.Minute,
+			MaxFeePercentageForEachStep: 10, // ~ 20% from previous fee
+			TimeSpaceForFeeReplacement:  10 * time.Minute,
+			MaxUnshieldFees: map[string]uint64{
+				Testnet2PortalV4BTCID: 100000, // pbtc
+			},
 			PortalV4TokenIDs: []string{
 				Testnet2PortalV4BTCID,
 			},
@@ -357,18 +366,21 @@ var mainnetPortalParam = PortalParams{
 				MainnetPortalV4BTCID: 50000, // 50000 nano pbtc = 5000 satoshi
 			},
 			MinShieldAmts: map[string]uint64{
-				MainnetPortalV4BTCID: 5000, // 5000 nano pbtc = 500 satoshi
+				MainnetPortalV4BTCID: 100000, // 5000 nano pbtc = 500 satoshi
 			},
 			MinUnshieldAmts: map[string]uint64{
-				MainnetPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
+				MainnetPortalV4BTCID: 100000, // 500000 nano pbtc = 50000 satoshi
 			},
 			DustValueThreshold: map[string]uint64{
-				MainnetPortalV4BTCID: 1000000, // 1000000 nano pbtc = 100000 satoshi
+				MainnetPortalV4BTCID: 100000, // 1000000 nano pbtc = 100000 satoshi
 			},
-			BatchNumBlks:                15, // ~ 2.5 mins
+			BatchNumBlks:                45, // ~ 30 mins
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
-			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
-			TimeSpaceForFeeReplacement:  5 * time.Minute,
+			MaxFeePercentageForEachStep: 10, // ~ 20% from previous fee
+			TimeSpaceForFeeReplacement:  20 * time.Minute,
+			MaxUnshieldFees: map[string]uint64{
+				MainnetPortalV4BTCID: 100000, // pbtc
+			},
 			PortalV4TokenIDs: []string{
 				MainnetPortalV4BTCID,
 			},
@@ -460,7 +472,7 @@ func initPortalTokensV4ForLocal() map[string]portaltokensv4.PortalTokenProcessor
 				MultipleTokenAmount: 10,
 				ExternalInputSize:   130,
 				ExternalOutputSize:  43,
-				ExternalTxMaxSize:   2048,
+				ExternalTxMaxSize:   5120,
 			},
 			ChainParam:    &chaincfg.TestNet3Params,
 			PortalTokenID: LocalPortalV4BTCID,
@@ -477,7 +489,7 @@ func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcess
 				MultipleTokenAmount: 10,
 				ExternalInputSize:   130,
 				ExternalOutputSize:  43,
-				ExternalTxMaxSize:   2048,
+				ExternalTxMaxSize:   5120,
 			},
 			ChainParam:    &chaincfg.TestNet3Params,
 			PortalTokenID: TestnetPortalV4BTCID,
@@ -494,7 +506,7 @@ func initPortalTokensV4ForTestNet2() map[string]portaltokensv4.PortalTokenProces
 				MultipleTokenAmount: 10,
 				ExternalInputSize:   130,
 				ExternalOutputSize:  43,
-				ExternalTxMaxSize:   2048,
+				ExternalTxMaxSize:   5120,
 			},
 			ChainParam:    &chaincfg.TestNet3Params,
 			PortalTokenID: Testnet2PortalV4BTCID,
@@ -511,7 +523,7 @@ func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcess
 				MultipleTokenAmount: 10,
 				ExternalInputSize:   192,
 				ExternalOutputSize:  43,
-				ExternalTxMaxSize:   2048,
+				ExternalTxMaxSize:   5120,
 			},
 			ChainParam:    &chaincfg.MainNetParams,
 			PortalTokenID: MainnetPortalV4BTCID,
