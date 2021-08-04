@@ -1,43 +1,34 @@
 package pdexv3
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 type WithdrawalLPFeeResponse struct {
 	metadataCommon.MetadataBase
-	RequestStatus       string             `json:"RequestStatus"`
-	ReqTxID             common.Hash        `json:"ReqTxID"`
-	PairID              string             `json:"PairID"`
-	NfctTokenID         string             `json:"NfctTokenID"`
-	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
-	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
-	FeeReceiverAmount   FeeReceiverAmount  `json:"FeeReceiverAmount"`
+	TokenType string      `json:"TokenType"`
+	ReqTxID   common.Hash `json:"ReqTxID"`
 }
 
 func NewPdexv3WithdrawalLPFeeResponse(
 	metaType int,
-	requestStatus string,
+	tokenType string,
 	reqTxID common.Hash,
-	pairID string,
-	nfctTokenID string,
-	nfctReceiverAddress string,
-	feeReceiverAddress FeeReceiverAddress,
-	feeReceiverAmount FeeReceiverAmount,
 ) *WithdrawalLPFeeResponse {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
 
 	return &WithdrawalLPFeeResponse{
-		MetadataBase:        *metadataBase,
-		RequestStatus:       requestStatus,
-		ReqTxID:             reqTxID,
-		PairID:              pairID,
-		NfctTokenID:         nfctTokenID,
-		NfctReceiverAddress: nfctReceiverAddress,
-		FeeReceiverAddress:  feeReceiverAddress,
-		FeeReceiverAmount:   feeReceiverAmount,
+		MetadataBase: *metadataBase,
+		TokenType:    tokenType,
+		ReqTxID:      reqTxID,
 	}
 }
 
@@ -77,13 +68,8 @@ func (withdrawalResponse WithdrawalLPFeeResponse) ValidateMetadataByItself() boo
 
 func (withdrawalResponse WithdrawalLPFeeResponse) Hash() *common.Hash {
 	record := withdrawalResponse.MetadataBase.Hash().String()
-	record += withdrawalResponse.RequestStatus
+	record += withdrawalResponse.TokenType
 	record += withdrawalResponse.ReqTxID.String()
-	record += withdrawalResponse.PairID
-	record += withdrawalResponse.NfctTokenID
-	record += withdrawalResponse.NfctReceiverAddress
-	record += withdrawalResponse.FeeReceiverAddress.ToString()
-	record += withdrawalResponse.FeeReceiverAmount.ToString()
 
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -102,6 +88,88 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
-	// TODO: verify mining tx with the request tx
+	// verify mining tx with the request tx
+	idx := -1
+	for i, inst := range mintData.Insts {
+		if len(inst) < 4 { // this is not PortalUnshieldResponse instruction
+			continue
+		}
+		instMetaType := inst[0]
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeResponseMeta)) {
+			continue
+		}
+		instReqStatus := inst[2]
+		if withdrawalResponse.TokenType != instReqStatus ||
+			(instReqStatus != PRVStr && instReqStatus != PDEXStr && instReqStatus != Token0Str && instReqStatus != Token1Str && instReqStatus != NcftTokenStr) {
+			continue
+		}
+
+		contentBytes := []byte(inst[3])
+		var instContent WithdrawalLPFeeContent
+		err := json.Unmarshal(contentBytes, &instContent)
+		if err != nil {
+			continue
+		}
+		shardIDFromInst := instContent.ShardID
+		txReqIDFromInst := instContent.TxReqID
+
+		receiver := ReceiverInfo{}
+		isExisted := false
+		switch instReqStatus {
+		case Token0Str:
+			receiver, isExisted = instContent.Receivers[Token0Str]
+		case Token1Str:
+			receiver, isExisted = instContent.Receivers[Token1Str]
+		case PRVStr:
+			receiver, isExisted = instContent.Receivers[PRVStr]
+		case PDEXStr:
+			receiver, isExisted = instContent.Receivers[PDEXStr]
+		case NcftTokenStr:
+			receiver, isExisted = instContent.Receivers[NcftTokenStr]
+		default:
+			isExisted = false
+		}
+		if !isExisted {
+			continue
+		}
+
+		receiverAddress, err := isValidReceiverAddressStr(receiver.AddressStr, shardIDFromInst)
+		if err != nil {
+			continue
+		}
+
+		if !bytes.Equal(withdrawalResponse.ReqTxID[:], txReqIDFromInst[:]) ||
+			shardID != shardIDFromInst {
+			continue
+		}
+
+		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
+		if err != nil {
+			continue
+		}
+		if !isMinted {
+			continue
+		}
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
+		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+
+		publicKey := receiverAddress.PublicKey
+		txRandom := receiverAddress.TxRandom
+
+		if !bytes.Equal(publicKey.ToBytesS(), pk[:]) ||
+			receiver.Amount != paidAmount ||
+			!bytes.Equal(txR[:], txRandom[:]) ||
+			receiver.TokenID != *assetID {
+			continue
+		}
+
+		idx = i
+		break
+	}
+	if idx == -1 { // not found the issuance request tx for this response
+		return false, fmt.Errorf(fmt.Sprintf("No WithdrawalLPFee instruction found for WithdrawalLPFeeResponse tx %s", tx.Hash().String()))
+	}
+	mintData.InstsUsed[idx] = 1
 	return true, nil
 }

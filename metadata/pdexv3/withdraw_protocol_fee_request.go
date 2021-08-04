@@ -17,10 +17,10 @@ type WithdrawalProtocolFeeRequest struct {
 }
 
 type WithdrawalProtocolFeeContent struct {
-	PairID             string             `json:"PairID"`
-	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
-	TxReqID            common.Hash        `json:"TxReqID"`
-	ShardID            byte               `json:"ShardID"`
+	PairID    string                  `json:"PairID"`
+	Receivers map[string]ReceiverInfo `json:"Receivers"`
+	TxReqID   common.Hash             `json:"TxReqID"`
+	ShardID   byte                    `json:"ShardID"`
 }
 
 type WithdrawalProtocolFeeStatus struct {
@@ -96,7 +96,24 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 protocol fee withdrawal must be version 2"))
 	}
 
-	// TODO: Check OTA address string and tx random is valid
+	// Check OTA address string and tx random is valid
+	shardID := byte(tx.GetValidationEnv().ShardID())
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.Token0ReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.Token1ReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.PRVReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.PDEXReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
 
 	return true, true, nil
 }

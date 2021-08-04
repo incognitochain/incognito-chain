@@ -18,12 +18,10 @@ type WithdrawalLPFeeRequest struct {
 }
 
 type WithdrawalLPFeeContent struct {
-	PairID              string             `json:"PairID"`
-	NfctTokenID         string             `json:"NfctTokenID"`
-	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
-	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
-	TxReqID             common.Hash        `json:"TxReqID"`
-	ShardID             byte               `json:"ShardID"`
+	PairID    string                  `json:"PairID"`
+	Receivers map[string]ReceiverInfo `json:"Receivers"`
+	TxReqID   common.Hash             `json:"TxReqID"`
+	ShardID   byte                    `json:"ShardID"`
 }
 
 type WithdrawalLPFeeStatus struct {
@@ -106,7 +104,28 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
-	// TODO: Check OTA address string and tx random is valid
+	// Check OTA address string and tx random is valid
+	shardID := byte(tx.GetValidationEnv().ShardID())
+	_, err = isValidReceiverAddressStr(withdrawal.NfctReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.Token0ReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.Token1ReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.PRVReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
+	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.PDEXReceiverAddress, shardID)
+	if err != nil {
+		return false, false, err
+	}
 
 	return true, true, nil
 }

@@ -11,3 +11,12 @@ const (
 	ParamsModifyingFailedStatus  = 0
 	ParamsModifyingSuccessStatus = 1
 )
+
+// Receiving token type
+const (
+	Token0Str    = "Token0"
+	Token1Str    = "Token1"
+	PRVStr       = "PRV"
+	PDEXStr      = "PDEX"
+	NcftTokenStr = "NcftToken"
+)

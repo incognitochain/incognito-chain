@@ -1,6 +1,8 @@
 package pdexv3
 
-import "strconv"
+import (
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 type FeeReceiverAddress struct {
 	Token0ReceiverAddress string `json:"Token0ReceiverAddress"`
@@ -9,11 +11,10 @@ type FeeReceiverAddress struct {
 	PDEXReceiverAddress   string `json:"PDEXReceiverAddress"`
 }
 
-type FeeReceiverAmount struct {
-	Token0ReceiverAmount uint64 `json:"Token0ReceiverAmount"`
-	Token1ReceiverAmount uint64 `json:"Token1ReceiverAmount"`
-	PRVReceiverAmount    uint64 `json:"PRVReceiverAmount"`
-	PDEXReceiverAmount   uint64 `json:"PDEXReceiverAmount"`
+type ReceiverInfo struct {
+	TokenID    common.Hash `json:"TokenID"`
+	AddressStr string      `json:"AddressStr"`
+	Amount     uint64      `json:"Amount"`
 }
 
 func (feeReceiverAddress *FeeReceiverAddress) ToString() string {
@@ -21,11 +22,4 @@ func (feeReceiverAddress *FeeReceiverAddress) ToString() string {
 		feeReceiverAddress.Token1ReceiverAddress + "," +
 		feeReceiverAddress.PRVReceiverAddress + "," +
 		feeReceiverAddress.PDEXReceiverAddress
-}
-
-func (feeReceiverAmount *FeeReceiverAmount) ToString() string {
-	return strconv.FormatUint(feeReceiverAmount.Token0ReceiverAmount, 10) + "," +
-		strconv.FormatUint(feeReceiverAmount.Token1ReceiverAmount, 10) + "," +
-		strconv.FormatUint(feeReceiverAmount.PRVReceiverAmount, 10) + "," +
-		strconv.FormatUint(feeReceiverAmount.PDEXReceiverAmount, 10)
 }

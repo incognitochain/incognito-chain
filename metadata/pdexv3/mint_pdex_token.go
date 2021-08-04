@@ -1,11 +1,14 @@
 package pdexv3
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type MintPDEXGenesisResponse struct {
@@ -91,7 +94,54 @@ func (mintResponse MintPDEXGenesisResponse) VerifyMinerCreatedTxBeforeGettingInB
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
-	// TODO: verify mining tx with the instruction
+	// verify mining tx with the request tx
+	idx := -1
+	for i, inst := range mintData.Insts {
+		if len(inst) < 4 { // this is not PortalUnshieldResponse instruction
+			continue
+		}
+		instMetaType := inst[0]
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintPDEXGenesisMeta)) {
+			continue
+		}
+		instReqStatus := inst[2]
+		if instReqStatus != RequestAcceptedChainStatus {
+			continue
+		}
+
+		contentBytes := []byte(inst[3])
+		var instContent MintPDEXGenesisContent
+		err := json.Unmarshal(contentBytes, &instContent)
+		if err != nil {
+			continue
+		}
+		shardIDFromInst := instContent.ShardID
+
+		if shardID != shardIDFromInst {
+			continue
+		}
+
+		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || *assetID != common.PDEXCoinID {
+			continue
+		}
+
+		keyWallet, err := wallet.Base58CheckDeserialize(instContent.MintingPaymentAddress)
+		if err != nil {
+			continue
+		}
+		paymentAddress := keyWallet.KeySet.PaymentAddress
+		if ok := mintCoin.CheckCoinValid(paymentAddress, mintResponse.SharedRandom, mintResponse.MintingAmount); !ok {
+			continue
+		}
+
+		idx = i
+		break
+	}
+	if idx == -1 { // not found the issuance request tx for this response
+		return false, fmt.Errorf(fmt.Sprintf("No MintingPDEXGenesis instruction found for MintPDEXGenesisResponse tx %s", tx.Hash().String()))
+	}
+	mintData.InstsUsed[idx] = 1
 	return true, nil
 }
 
