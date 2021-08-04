@@ -21,29 +21,6 @@ type AddOrderRequest struct {
 	metadataCommon.MetadataBase
 }
 
-type AddOrderAction struct {
-	Metadata    AddOrderRequest `json:"Metadata"`
-	ShardID     byte            `json:"ShardID"`
-	RequestTxID common.Hash     `json:"RequestTxID"`
-}
-
-type AcceptedAddOrder struct {
-	TokenToBuy          common.Hash `json:"TokenToBuy"`
-	PairID              string      `json:"PairID"`
-	SellAmount          uint64      `json:"SellAmount"`
-	MinAcceptableAmount uint64      `json:"MinAcceptableAmount"`
-	ShardID             byte        `json:"ShardID"`
-	RequestTxID         common.Hash `json:"RequestTxID"`
-}
-
-type RefundedAddOrder struct {
-	Receiver    privacy.OTAReceiver `json:"Receiver"`
-	TokenToSell common.Hash         `json:"TokenToSell"`
-	Amount      uint64              `json:"Amount"`
-	ShardID     byte                `json:"ShardID"`
-	RequestTxID common.Hash         `json:"RequestTxID"`
-}
-
 func NewAddOrderRequest(
 	tokenToBuy common.Hash,
 	tokenToSell common.Hash,

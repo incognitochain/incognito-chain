@@ -34,6 +34,10 @@ func (recv OTAReceiver) IsValid() bool {
 }
 
 func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
+	if recv == nil {
+		return errors.New("OTAReceiver not initialized")
+	}
+
 	targetShardID := common.GetShardIDFromLastByte(addr.Pk[len(addr.Pk)-1])
 	otaRand := operation.RandomScalar()
 	concealRand := operation.RandomScalar()
@@ -71,9 +75,6 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 // FromString() returns a new OTAReceiver parsed from the input string,
 // or error on failure
 func (recv *OTAReceiver) FromString(data string) error {
-	if recv == nil {
-		return errors.New("OTAReceiver not initialized")
-	}
 	raw, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
 		return err

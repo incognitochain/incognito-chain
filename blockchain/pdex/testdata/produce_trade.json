@@ -1,0 +1,11 @@
+[
+{
+    "name": "Produce accepted trade request",
+    "data": "{\"metadata\":{\"TradePath\":[\"pair0\"],\"TokenToSell\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"SellAmount\":190,\"MinAcceptableAmount\":280,\"TradingFee\":40,\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"RefundReceiver\":\"15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP\",\"Type\":275}}",
+    "expected": "{\"instructions\":[[\"275\",\"1\",\"0\",\"{\\\"Content\\\":{\\\"Receiver\\\":\\\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\\\",\\\"Amount\\\":300,\\\"TradePath\\\":[\\\"pair0\\\"],\\\"TokenToBuy\\\":\\\"0000000000000000000000000000000000000000000000000000000000000200\\\",\\\"PairChanges\\\":[[0,0]],\\\"OrderChanges\\\":[{\\\"Order 2\\\":[150,-300]}]},\\\"RequestTxID\\\":\\\"044bbfdcf9cbfb0d094f73c73933052f6f66b510d3b1c507e8015d31aea2b8a5\\\"}\"]]}"
+},
+{
+    "name": "Produce refunded trade - sell amount too large",
+    "data": "{\"metadata\":{\"TradePath\":[\"pair0\"],\"TokenToSell\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"SellAmount\":5000,\"MinAcceptableAmount\":280,\"TradingFee\":40,\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"RefundReceiver\":\"15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP\",\"Type\":275}}",
+    "expected": "{\"instructions\":[[\"275\",\"0\",\"0\",\"{\\\"Content\\\":{\\\"Receiver\\\":\\\"15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP\\\",\\\"TokenToSell\\\":\\\"0000000000000000000000000000000000000000000000000000000000000100\\\",\\\"Amount\\\":5000},\\\"RequestTxID\\\":\\\"ad4f87b3a1c8f655d07c240b520cd4c2bd6d703d88aa53107950e8d53c15b451\\\"}\"]]}"
+}]

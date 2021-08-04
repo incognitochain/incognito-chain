@@ -54,8 +54,9 @@ var (
 
 	// pdex v3
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
-	pdexv3ParamsPrefix                      = []byte("pdexv3-params-")
 	pdexv3ParamsModifyingPrefix             = []byte("pdexv3-paramsmodifyingstatus-")
+	pdexv3TradeStatusPrefix                 = []byte("pdexv3-trade-status-")
+	pdexv3ParamsPrefix                      = []byte("pdexv3-params-")
 	pdexv3WaitingContributionsPrefix        = []byte("pdexv3-waitingContributions-")
 	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
 	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
@@ -551,6 +552,10 @@ func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 // pDex v3 prefix for status
 func Pdexv3ParamsModifyingStatusPrefix() []byte {
 	return pdexv3ParamsModifyingPrefix
+}
+
+func Pdexv3TradeStatusPrefix() []byte {
+	return pdexv3TradeStatusPrefix
 }
 
 func Pdexv3WithdrawalLPFeeStatusPrefix() []byte {

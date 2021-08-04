@@ -3,9 +3,8 @@ package pdex
 import (
 	"errors"
 	"reflect"
-	"strconv"
-
 	"sort"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -23,19 +22,8 @@ type stateV2 struct {
 	poolPairs                   map[string]PoolPairState //
 	params                      Params
 	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
-	orders                      map[int64][]Order
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
-}
-
-type Order struct {
-	tick            int64
-	tokenBuyID      string
-	tokenBuyAmount  uint64
-	tokenSellAmount uint64
-	ota             string
-	txRandom        string
-	fee             uint64
 }
 
 type Params struct {
@@ -76,14 +64,12 @@ func newStateV2WithValue(
 	poolPairs map[string]PoolPairState,
 	params Params,
 	stakingPoolsState map[string]StakingPoolState,
-	orders map[int64][]Order,
 ) *stateV2 {
 	return &stateV2{
 		waitingContributions:        waitingContributions,
 		deletedWaitingContributions: deletedWaitingContributions,
 		poolPairs:                   poolPairs,
 		stakingPoolsState:           stakingPoolsState,
-		orders:                      orders,
 		params:                      params,
 	}
 }
@@ -133,8 +119,10 @@ func initStateV2(
 			}
 			shares[k] = *NewShareWithValue(value.Amount(), tradingFees, value.LastUpdatedBeaconHeight())
 		}
+		// TODO: read order book from storage
+		orderbook := Orderbook{}
 		poolPair := NewPoolPairStateWithValue(
-			v.Value(), shares,
+			v.Value(), shares, orderbook,
 		)
 		poolPairs[k] = *poolPair
 	}
@@ -144,7 +132,7 @@ func initStateV2(
 		make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs,
 		params,
-		nil, nil,
+		nil,
 	), nil
 }
 
@@ -217,6 +205,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.waitingContributions,
 				s.deletedWaitingContributions,
 			)
+		case metadataCommon.Pdexv3TradeRequestMeta:
+			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
+				s.poolPairs,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -232,9 +224,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 	addLiquidityTxs := []metadata.Transaction{}
 	addLiquidityInstructions := [][]string{}
-	var err error
 	modifyParamsTxs := []metadata.Transaction{}
+	tradeTxs := []metadata.Transaction{}
 
+	var err error
 	pdexv3Txs := env.ListTxs()
 	keys := []int{}
 
@@ -258,6 +251,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 					return instructions, errors.New("Can not parse params modifying metadata")
 				}
 				modifyParamsTxs = append(modifyParamsTxs, tx)
+			case metadataCommon.Pdexv3TradeRequestMeta:
+				tradeTxs = append(tradeTxs, tx)
 			}
 		}
 	}
@@ -308,6 +303,16 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, modifyParamsInstructions...)
+
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
 
 	return instructions, nil
 }
