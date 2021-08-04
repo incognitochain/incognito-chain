@@ -237,9 +237,9 @@ var testnet1PortalParams = PortalParams{
 				TestnetPortalV4BTCID: 100000, // nano pbtc
 			},
 			BatchNumBlks:                20,
-			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
+			PortalReplacementAddress:    "12sv8WUvkvFfD5SW3aaXDSPs8yx2SxPdbv6a2LAU6FJb2kBKqmLcCuQ6ZQst4fg7THBTBtERaqMpJ7KBgsnRYobmysFEM2pbMwLE2kGzwyxgSijnZT7VQGeuUxBryC1Z6ebd8EWqDUkxwpW7Gqt8",
 			MaxFeePercentageForEachStep: 10, // ~ 10% from previous fee
-			TimeSpaceForFeeReplacement:  10 * time.Minute,
+			TimeSpaceForFeeReplacement:  5 * time.Minute,
 			MaxUnshieldFees: map[string]uint64{
 				TestnetPortalV4BTCID: 100000, // pbtc
 			},
@@ -309,7 +309,7 @@ var testnet2PortalParams = PortalParams{
 				Testnet2PortalV4BTCID: 100000, // nano pbtc
 			},
 			BatchNumBlks:                20, //
-			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
+			PortalReplacementAddress:    "12sv8WUvkvFfD5SW3aaXDSPs8yx2SxPdbv6a2LAU6FJb2kBKqmLcCuQ6ZQst4fg7THBTBtERaqMpJ7KBgsnRYobmysFEM2pbMwLE2kGzwyxgSijnZT7VQGeuUxBryC1Z6ebd8EWqDUkxwpW7Gqt8",
 			MaxFeePercentageForEachStep: 10, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  10 * time.Minute,
 			MaxUnshieldFees: map[string]uint64{
@@ -535,7 +535,7 @@ const (
 	// relaying header chain
 	TestnetBNBChainID        = "Binance-Chain-Ganges"
 	TestnetBTCChainID        = "Bitcoin-Testnet"
-	TestnetBTCDataFolderName = "btcrelayingv14"
+	TestnetBTCDataFolderName = "btcrelayingv15"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
@@ -565,7 +565,6 @@ const (
 	MainnetBNBFullNodePort     = "443"
 	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
 
-	// @@NOTE: should update tokenID before deploying
 	// portal token v4
 	LocalPortalV4BTCID    = "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b"
 	TestnetPortalV4BTCID  = "4584d5e9b2fc0337dfb17f4b5bb025e5b82c38cfa4f54e8a3d4fcdd03954ff82"
