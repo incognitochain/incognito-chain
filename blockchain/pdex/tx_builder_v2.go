@@ -31,14 +31,14 @@ func (txBuilder *TxBuilderV2) Build(
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
 		case strconv.Itoa(metadataPdexv3.TradeAcceptedStatus):
-			action := instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
+			action := instruction.Action{Content: &metadataPdexv3.AcceptedTrade{}}
 			err := action.FromStringSlice(inst)
 			if err != nil {
 				return nil, err
 			}
 			tx, err = v2.TradeAcceptTx(action, producerPrivateKey, shardID, transactionStateDB)
 		case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
-			action := instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
+			action := instruction.Action{Content: &metadataPdexv3.RefundedTrade{}}
 			err := action.FromStringSlice(inst)
 			if err != nil {
 				return nil, err

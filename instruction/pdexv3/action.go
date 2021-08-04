@@ -40,7 +40,7 @@ func (acn *Action) FromStringSlice(source []string) error {
 	}
 
 	// Content must be of the correct concrete type before entering FromStrings()
-	if mdType, err := strconv.Atoi(source[1]); err != nil || mdType != int(acn.GetType()) {
+	if mdType, err := strconv.Atoi(source[0]); err != nil || mdType != int(acn.GetType()) {
 		return fmt.Errorf("Metadata type mismatch")
 	}
 
