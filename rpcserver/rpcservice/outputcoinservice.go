@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -581,6 +582,37 @@ func (coinService CoinService) GetOutputCoinByIndex(tokenID common.Hash, idxList
 
 		result[idx] = outCoin
 	}
+
+	return result, nil
+}
+
+func (coinService CoinService) GetOTACoinLength() (map[common.Hash]map[byte]uint64, *RPCError) {
+	prvRes := make(map[byte]uint64)
+	tokenRes := make(map[byte]uint64)
+
+	var prvCoinLength, tokenCoinLength *big.Int
+	var err error
+	var shardID byte
+	for shard := 0; shard < common.MaxShardNumber; shard++ {
+		shardID = byte(shard)
+		db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+
+		prvCoinLength, err = statedb.GetOTACoinLength(db, common.PRVCoinID, shardID)
+		if err != nil {
+			return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length of PRV for shard %v", shardID))
+		}
+		prvRes[shardID] = prvCoinLength.Uint64()
+
+		tokenCoinLength, err = statedb.GetOTACoinLength(db, common.ConfidentialAssetID, shardID)
+		if err != nil {
+			return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length of token for shard %v", shardID))
+		}
+		tokenRes[shardID] = tokenCoinLength.Uint64()
+	}
+
+	result := make(map[common.Hash]map[byte]uint64)
+	result[common.PRVCoinID] = prvRes
+	result[common.ConfidentialAssetID] = tokenRes
 
 	return result, nil
 }
