@@ -244,8 +244,7 @@ func (sp *stateProducerV2) modifyParams(
 func (sp *stateProducerV2) trade(
 	txs []metadata.Transaction,
 	pairs map[string]PoolPairState,
-	orderbooks map[string]Orderbook,
-) ([][]string, map[string]PoolPairState, map[string]Orderbook, error) {
+) ([][]string, map[string]PoolPairState, error) {
 	result := [][]string{}
 
 	// TODO: sort
@@ -258,7 +257,7 @@ func (sp *stateProducerV2) trade(
 	for _, tx := range txs {
 		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
 		if !ok {
-			return result, pairs, orderbooks, errors.New("Can not parse add liquidity metadata")
+			return result, pairs, errors.New("Can not parse add liquidity metadata")
 		}
 		
 		currentAction := instruction.NewAction(
@@ -273,7 +272,7 @@ func (sp *stateProducerV2) trade(
 		var refundInst []string = currentAction.StringSlice()
 
 		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
-			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs, orderbooks)
+			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		// anytime the trade handler fails, add a refund instruction
 		if err != nil {
 			Logger.log.Warnf("Error preparing trade path: %v", err)
@@ -294,7 +293,7 @@ func (sp *stateProducerV2) trade(
 		result = append(result, acceptedInst)
 	}
 
-	return result, pairs, orderbooks, nil
+	return result, pairs, nil
 }
 
 func (sp *stateProducerV2) addOrder(

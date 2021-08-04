@@ -360,8 +360,7 @@ func (sp *stateProcessorV2) trade(
 	stateDB *statedb.StateDB,
 	inst []string,
 	pairs map[string]PoolPairState,
-	orderbooks map[string]Orderbook,
-) (map[string]PoolPairState, map[string]Orderbook, error) {
+) (map[string]PoolPairState, error) {
 	var currentTrade *instruction.Action
 	var trackedStatus metadataPdexv3.TradeStatus
 	switch inst[1] {
@@ -369,7 +368,7 @@ func (sp *stateProcessorV2) trade(
 		currentTrade = &instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
-			return pairs, orderbooks, err
+			return pairs, err
 		}
 
 		// skip error checking since concrete type is specified above
@@ -377,18 +376,15 @@ func (sp *stateProcessorV2) trade(
 		for index, pairID := range md.TradePath {
 			pair, exists := pairs[pairID]
 			if !exists {
-				return pairs, orderbooks, fmt.Errorf("Cannot find pair %s for trade", pairID)
+				return pairs, fmt.Errorf("Cannot find pair %s for trade", pairID)
 			}
 			reserveState := &v2.TradingPair{&pair.state}
 			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
 			if err != nil {
-				return pairs, orderbooks, err
+				return pairs, err
 			}
 
-			orderbook, exists := orderbooks[pairID]
-			if !exists {
-				return pairs, orderbooks, fmt.Errorf("Cannot find orderbook %s for trade", pairID)
-			}
+			orderbook := pair.orderbook
 			ordersById := make(map[string]*Order)
 			for _, ord := range orderbook.orders {
 				ordersById[ord.Id()] = ord
@@ -396,11 +392,11 @@ func (sp *stateProcessorV2) trade(
 			for id, change := range md.OrderChanges[index] {
 				currentOrder, exists := ordersById[id]
 				if !exists {
-					return pairs, orderbooks, fmt.Errorf("Cannot find order ID %s for trade", id)
+					return pairs, fmt.Errorf("Cannot find order ID %s for trade", id)
 				}
 				err := (&v2.MatchingOrder{currentOrder}).ApplyBalanceChanges(change[0], change[1])
 				if err != nil {
-					return pairs, orderbooks, err
+					return pairs, err
 				}
 			}
 		}
@@ -413,17 +409,17 @@ func (sp *stateProcessorV2) trade(
 		currentTrade = &instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
-			return pairs, orderbooks, err
+			return pairs, err
 		}
 	default:
-		return pairs, orderbooks, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
 
 	// store tracked trade status
 	trackedStatus.Status = currentTrade.GetStatus()
 	marshaledTrackedStatus, err := json.Marshal(trackedStatus)
 	if err != nil {
-		return pairs, orderbooks, err
+		return pairs, err
 	}
 	err = statedb.TrackPdexv3Status(
 		stateDB,
@@ -431,7 +427,7 @@ func (sp *stateProcessorV2) trade(
 		currentTrade.RequestTxID[:],
 		marshaledTrackedStatus,
 	)
-	return pairs, orderbooks, nil
+	return pairs, nil
 }
 
 func (sp *stateProcessorV2) addOrder(

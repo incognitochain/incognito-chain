@@ -622,7 +622,6 @@ func tradePathFromState(
 	sellToken common.Hash,
 	tradePath []string,
 	pairs map[string]PoolPairState,
-	orderbookState map[string]Orderbook,
 ) ([]*rawdbv2.Pdexv3PoolPair, []v2.OrderBookIterator, []byte, common.Hash, error) {
 	var results []*rawdbv2.Pdexv3PoolPair
 	var orderbookList []v2.OrderBookIterator
@@ -632,10 +631,7 @@ func tradePathFromState(
 	for _, pairID := range tradePath {
 		if pair, exists := pairs[pairID]; exists {
 			results = append(results, &pair.state)
-			ob, exists := orderbookState[pairID]
-			if !exists {
-				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Orderbook missing for pair %s", pairID)
-			}
+			ob := pair.orderbook
 			orderbookList = append(orderbookList, &ob)
 			var td byte
 			switch nextTokenToSell {

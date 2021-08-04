@@ -55,9 +55,9 @@ func TestSortOrder(t *testing.T) {
 	testcases = append(testcases, sortOrderTestcases...)
 
 	testState := newStateV2WithValue(nil, nil, make(map[string]PoolPairState),
-		Params{}, nil, make(map[string]Orderbook))
+		Params{}, nil)
 	blankPairID := "pair0"
-	testState.orderbooks[blankPairID] = Orderbook{}
+	testState.poolPairs[blankPairID] = PoolPairState{orderbook: Orderbook{[]*Order{}}}
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
@@ -73,11 +73,11 @@ func TestSortOrder(t *testing.T) {
 			testdata.Orders = orderbookPerm
 
 			for _, item := range testdata.Orders {
-				ob := testState.orderbooks[blankPairID]
-				ob.InsertOrder(item)
-				testState.orderbooks[blankPairID] = ob
+				pair := testState.poolPairs[blankPairID]
+				pair.orderbook.InsertOrder(item)
+				testState.poolPairs[blankPairID] = pair
 			}
-			encodedResult, _ := json.Marshal(TestResult{testState.orderbooks[blankPairID].orders})
+			encodedResult, _ := json.Marshal(TestResult{testState.poolPairs[blankPairID].orderbook.orders})
 			Equal(t, testcase.Expected, string(encodedResult))
 		})
 	}
@@ -116,7 +116,7 @@ func metadataToBeacon(md metadataCommon.Metadata, shardID byte) StateEnvironment
 	valEnv = tx_generic.WithShardID(valEnv, int(shardID))
 	mytx.SetMetadata(md)
 	mytx.SetValidationEnv(valEnv)
-	
+
 	return NewStateEnvBuilder().
 		BuildBeaconHeight(10).
 		BuildListTxs(map[byte][]metadataCommon.Transaction{shardID: []metadataCommon.Transaction{mytx}}).
@@ -162,12 +162,9 @@ func mustReadState(filename string) *stateV2 {
 	}
 
 	s := newStateV2WithValue(nil, nil, make(map[string]PoolPairState),
-		Params{}, nil, make(map[string]Orderbook))
+		Params{}, nil)
 	for k, v := range temp.PoolPairs {
-		s.poolPairs[k] = PoolPairState{state: v}
-	}
-	for k, v := range temp.Orderbooks {
-		s.orderbooks[k] = v
+		s.poolPairs[k] = PoolPairState{state: v, orderbook: temp.Orderbooks[k]}
 	}
 	return s
 }
