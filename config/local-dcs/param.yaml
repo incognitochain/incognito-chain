@@ -40,6 +40,7 @@ consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
+  assign_rule_v3_height: 1000000000000
   enable_slashing_height_v2: 1
   staking_flow_v3_height: 1000000000000
   timeslot: 10
