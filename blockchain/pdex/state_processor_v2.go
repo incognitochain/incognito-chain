@@ -365,7 +365,7 @@ func (sp *stateProcessorV2) trade(
 	var trackedStatus metadataPdexv3.TradeStatus
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.TradeAcceptedStatus):
-		currentTrade = &instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
+		currentTrade = &instruction.Action{Content: &metadataPdexv3.AcceptedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
 			return pairs, err
@@ -399,6 +399,8 @@ func (sp *stateProcessorV2) trade(
 					return pairs, err
 				}
 			}
+			// write changes to state
+			pairs[pairID] = pair
 		}
 
 		trackedStatus = metadataPdexv3.TradeStatus{
@@ -406,7 +408,7 @@ func (sp *stateProcessorV2) trade(
 			TokenToBuy: md.TokenToBuy,
 		}
 	case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
-		currentTrade = &instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
+		currentTrade = &instruction.Action{Content: &metadataPdexv3.RefundedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
 			return pairs, err
