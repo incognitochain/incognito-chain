@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -71,6 +72,7 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 		Params:               pDexv3State.Reader().Params(),
 		PoolPairs:            poolPairs,
 		WaitingContributions: waitingContributions,
+		NftIDs:               pDexv3State.Reader().NftIDs(),
 	}
 	return result, nil
 }
@@ -278,7 +280,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if !ok {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("array param is not valid"))
 	}
-	addLiquidityRequest := PDEAddLiquidityV3Request{}
+	addLiquidityRequest := Pdexv3AddLiquidityRequest{}
 	// Convert map to json string
 	addLiquidityParamData, err := json.Marshal(addLiquidityParam)
 	if err != nil {
@@ -305,10 +307,17 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
 	tokenHash, err := common.Hash{}.NewHashFromStr(addLiquidityRequest.TokenID)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	nftID := utils.EmptyString
+	if addLiquidityRequest.NftID != utils.EmptyString {
+		nftHash, err := common.Hash{}.NewHashFromStr(addLiquidityRequest.NftID)
+		if err != nil {
+			return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		nftID = nftHash.String()
 	}
 
 	receiverAddress := privacy.OTAReceiver{}
@@ -334,7 +343,7 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,
 		receiverAddressStr, refundAddressStr,
-		tokenHash.String(),
+		tokenHash.String(), nftID,
 		tokenAmount,
 		uint(amplifier),
 	)

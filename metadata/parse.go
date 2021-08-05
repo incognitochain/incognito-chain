@@ -180,7 +180,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case metadataCommon.Pdexv3AddOrderResponseMeta:
 		md = &metadataPdexv3.AddOrderResponse{}
 	default:
-		Logger.Log.Debug("[db] parse meta err: %+v\n", meta)
+		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
 	}
 

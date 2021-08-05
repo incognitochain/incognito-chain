@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type AddLiquidityRequest struct {
@@ -19,6 +20,7 @@ type AddLiquidityRequest struct {
 	receiveAddress string // receive nfct
 	refundAddress  string // refund pToken
 	tokenID        string
+	nftID          string
 	tokenAmount    uint64
 	amplifier      uint // only set for the first contribution
 	metadataCommon.MetadataBase
@@ -31,7 +33,7 @@ func NewAddLiquidity() *AddLiquidityRequest {
 func NewAddLiquidityRequestWithValue(
 	poolPairID, pairHash,
 	receiveAddress, refundAddress,
-	tokenID string, tokenAmount uint64, amplifier uint,
+	tokenID, nftID string, tokenAmount uint64, amplifier uint,
 ) *AddLiquidityRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
@@ -42,6 +44,7 @@ func NewAddLiquidityRequestWithValue(
 		receiveAddress: receiveAddress,
 		refundAddress:  refundAddress,
 		tokenID:        tokenID,
+		nftID:          nftID,
 		tokenAmount:    tokenAmount,
 		amplifier:      amplifier,
 		MetadataBase:   metadataBase,
@@ -76,6 +79,15 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 	}
 	if tokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
+	}
+	if request.nftID != utils.EmptyString {
+		nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
+		if err != nil {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
+		if nftID.IsZeroValue() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
+		}
 	}
 	receiveAddress := privacy.OTAReceiver{}
 	err = receiveAddress.FromString(request.receiveAddress)
@@ -128,6 +140,7 @@ func (request *AddLiquidityRequest) Hash() *common.Hash {
 	record += request.receiveAddress
 	record += request.refundAddress
 	record += request.tokenID
+	record += request.nftID
 	record += strconv.FormatUint(uint64(request.amplifier), 10)
 	record += strconv.FormatUint(request.tokenAmount, 10)
 	// final hash
@@ -146,6 +159,7 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
 		RefundAddress  string `json:"RefundAddress"`  // refund pToken
 		TokenID        string `json:"TokenID"`
+		NftID          string `json:"NftID"`
 		TokenAmount    uint64 `json:"TokenAmount"`
 		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
@@ -155,6 +169,7 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 		ReceiveAddress: request.receiveAddress,
 		RefundAddress:  request.refundAddress,
 		TokenID:        request.tokenID,
+		NftID:          request.nftID,
 		TokenAmount:    request.tokenAmount,
 		Amplifier:      request.amplifier,
 		MetadataBase:   request.MetadataBase,
@@ -172,6 +187,7 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
 		RefundAddress  string `json:"RefundAddress"`  // refund pToken
 		TokenID        string `json:"TokenID"`
+		NftID          string `json:"NftID"`
 		TokenAmount    uint64 `json:"TokenAmount"`
 		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
@@ -185,6 +201,7 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	request.receiveAddress = temp.ReceiveAddress
 	request.refundAddress = temp.RefundAddress
 	request.tokenID = temp.TokenID
+	request.nftID = temp.NftID
 	request.tokenAmount = temp.TokenAmount
 	request.amplifier = temp.Amplifier
 	request.MetadataBase = temp.MetadataBase
@@ -217,6 +234,10 @@ func (request *AddLiquidityRequest) TokenAmount() uint64 {
 
 func (request *AddLiquidityRequest) Amplifier() uint {
 	return request.amplifier
+}
+
+func (request *AddLiquidityRequest) NftID() string {
+	return request.nftID
 }
 
 type AddLiquidityResponse struct {

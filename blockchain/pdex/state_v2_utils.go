@@ -72,16 +72,27 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (share *Share) getDiff(nfctID string, compareShare *Share, stateChange *StateChange) *StateChange {
+func (share *Share) getDiff(
+	nftID string,
+	beaconHeight uint64,
+	compareShare *Share,
+	stateChange *StateChange,
+) *StateChange {
 	newStateChange := stateChange
-	for k, v := range share.tradingFees {
-		if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange.tokenIDs[k] = true
+	if share.amount != compareShare.amount || share.lastUpdatedBeaconHeight != compareShare.lastUpdatedBeaconHeight {
+		newStateChange.shares[nftID][beaconHeight] = &ShareChange{
+			isChanged: true,
 		}
 	}
-	if share.amount != compareShare.amount || share.lastUpdatedBeaconHeight != compareShare.lastUpdatedBeaconHeight {
-		newStateChange.nfctIDs[nfctID] = true
+	for k, v := range share.tradingFees {
+		if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
+			if newStateChange.shares[nftID][beaconHeight].tokenIDs == nil {
+				newStateChange.shares[nftID][beaconHeight].tokenIDs = make(map[string]bool)
+			}
+			newStateChange.shares[nftID][beaconHeight].tokenIDs[k] = true
+		}
 	}
+
 	return newStateChange
 }
 
@@ -91,10 +102,15 @@ type StakingInfo struct {
 	lastUpdatedBeaconHeight uint64
 }
 
+type ShareChange struct {
+	isChanged bool
+	tokenIDs  map[string]bool
+}
+
 type StateChange struct {
 	poolPairIDs map[string]bool
-	nfctIDs     map[string]bool
-	tokenIDs    map[string]bool
+	shares      map[string]map[uint64]*ShareChange
+	orders      map[string]map[int]bool
 }
 
 type StakingPoolState struct {

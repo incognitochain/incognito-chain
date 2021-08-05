@@ -16,11 +16,11 @@ import (
 )
 
 type TxBuilderV2 struct {
-	nfctIDs map[string]bool
+	nftIDs map[string]bool
 }
 
 func (txBuilder *TxBuilderV2) ClearCache() {
-	txBuilder.nfctIDs = make(map[string]bool)
+	txBuilder.nftIDs = make(map[string]bool)
 }
 
 func (txBuilder *TxBuilderV2) Build(
@@ -57,7 +57,7 @@ func (txBuilder *TxBuilderV2) Build(
 				res = append(res, tx)
 			}
 		case common.PDEContributionMatchedNReturnedChainStatus:
-			txs, err := buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB, txBuilder.nfctIDs)
+			txs, err := buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB, txBuilder.nftIDs)
 			if err != nil {
 				return res, err
 			}
@@ -163,7 +163,7 @@ func buildMatchContributionTxv2(
 		return tx, err
 	}
 	tx, err = buildMintTokenTxs(
-		matchInst.NfctID(), 1,
+		matchInst.NftID(), 1,
 		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
 	)
 	if err != nil {
@@ -179,7 +179,7 @@ func buildMatchAndReturnContributionTxv2(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	nfctIDs map[string]bool,
+	nftIDs map[string]bool,
 ) ([]metadata.Transaction, error) {
 	res := []metadata.Transaction{}
 	matchAndReturnInst := instruction.NewMatchAndReturnAddLiquidity()
@@ -196,14 +196,14 @@ func buildMatchAndReturnContributionTxv2(
 		common.PDEContributionMatchedChainStatus,
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
-	if !nfctIDs[matchAndReturnInst.NfctID().String()] {
+	if !nftIDs[matchAndReturnInst.NftID().String()] {
 		receiveAddress := privacy.OTAReceiver{}
 		err = receiveAddress.FromString(matchAndReturnContributionValue.ReceiveAddress())
 		if err != nil {
 			return res, err
 		}
 		tx0, err := buildMintTokenTxs(
-			matchAndReturnInst.NfctID(), 1,
+			matchAndReturnInst.NftID(), 1,
 			receiveAddress, producerPrivateKey, transactionStateDB, metaData,
 		)
 		if err != nil {
@@ -211,7 +211,7 @@ func buildMatchAndReturnContributionTxv2(
 			return res, err
 		}
 		res = append(res, tx0)
-		nfctIDs[matchAndReturnInst.NfctID().String()] = true
+		nftIDs[matchAndReturnInst.NftID().String()] = true
 	}
 	refundAddress := privacy.OTAReceiver{}
 	err = refundAddress.FromString(matchAndReturnContributionValue.RefundAddress())

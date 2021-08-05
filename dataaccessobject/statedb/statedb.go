@@ -1939,10 +1939,10 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pd
 }
 
 func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (
-	map[string]Pdexv3ShareState,
+	map[string]map[uint64]Pdexv3ShareState,
 	error,
 ) {
-	shares := map[string]Pdexv3ShareState{}
+	shares := map[string]map[uint64]Pdexv3ShareState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -1954,8 +1954,10 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (
 		if err != nil {
 			return shares, err
 		}
-		shares[shareState.nfctID.String()] = *shareState
-
+		if shares[shareState.nftID.String()] == nil {
+			shares[shareState.nftID.String()] = make(map[uint64]Pdexv3ShareState)
+		}
+		shares[shareState.nftID.String()][shareState.beaconHeight] = *shareState
 	}
 	return shares, nil
 }
@@ -1979,4 +1981,22 @@ func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (
 		tradingFees[tradingFeeState.tokenID.String()] = *tradingFeeState
 	}
 	return tradingFees, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Nfts(prefix []byte) (map[string]bool, error) {
+	res := map[string]bool{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		nftState := NewPdexv3NftState()
+		err := json.Unmarshal(newValue, nftState)
+		if err != nil {
+			return res, err
+		}
+		res[string(nftState.id.String())] = true
+	}
+	return res, nil
 }

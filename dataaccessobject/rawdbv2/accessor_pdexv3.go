@@ -16,7 +16,12 @@ type Pdexv3Contribution struct {
 	amount         uint64
 	amplifier      uint
 	txReqID        common.Hash
+	nftID          *common.Hash
 	shardID        byte
+}
+
+func (contribution *Pdexv3Contribution) NftID() *common.Hash {
+	return contribution.nftID
 }
 
 func (contribution *Pdexv3Contribution) ShardID() byte {
@@ -57,14 +62,15 @@ func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID     string      `json:"PoolPairID"`
-		ReceiveAddress string      `json:"ReceiveAddress"`
-		RefundAddress  string      `json:"RefundAddress"`
-		TokenID        common.Hash `json:"TokenID"`
-		Amount         uint64      `json:"Amount"`
-		Amplifier      uint        `json:"Amplifier"`
-		TxReqID        common.Hash `json:"TxReqID"`
-		ShardID        byte        `json:"ShardID"`
+		PoolPairID     string       `json:"PoolPairID"`
+		ReceiveAddress string       `json:"ReceiveAddress"`
+		RefundAddress  string       `json:"RefundAddress"`
+		TokenID        common.Hash  `json:"TokenID"`
+		Amount         uint64       `json:"Amount"`
+		Amplifier      uint         `json:"Amplifier"`
+		TxReqID        common.Hash  `json:"TxReqID"`
+		NftID          *common.Hash `json:"NftID"`
+		ShardID        byte         `json:"ShardID"`
 	}{
 		PoolPairID:     contribution.poolPairID,
 		ReceiveAddress: contribution.receiveAddress,
@@ -73,6 +79,7 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 		Amount:         contribution.amount,
 		TxReqID:        contribution.txReqID,
 		Amplifier:      contribution.amplifier,
+		NftID:          contribution.nftID,
 		ShardID:        contribution.shardID,
 	})
 	if err != nil {
@@ -83,14 +90,15 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 
 func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID     string      `json:"PoolPairID"`
-		ReceiveAddress string      `json:"ReceiveAddress"`
-		RefundAddress  string      `json:"RefundAddress"`
-		TokenID        common.Hash `json:"TokenID"`
-		Amount         uint64      `json:"Amount"`
-		Amplifier      uint        `json:"Amplifier"`
-		TxReqID        common.Hash `json:"TxReqID"`
-		ShardID        byte        `json:"ShardID"`
+		PoolPairID     string       `json:"PoolPairID"`
+		ReceiveAddress string       `json:"ReceiveAddress"`
+		RefundAddress  string       `json:"RefundAddress"`
+		TokenID        common.Hash  `json:"TokenID"`
+		Amount         uint64       `json:"Amount"`
+		Amplifier      uint         `json:"Amplifier"`
+		TxReqID        common.Hash  `json:"TxReqID"`
+		NftID          *common.Hash `json:"NftID"`
+		ShardID        byte         `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -104,13 +112,14 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	contribution.txReqID = temp.TxReqID
 	contribution.amplifier = temp.Amplifier
 	contribution.shardID = temp.ShardID
+	contribution.nftID = temp.NftID
 	return nil
 }
 
 func (contribution *Pdexv3Contribution) Clone() *Pdexv3Contribution {
 	return NewPdexv3ContributionWithValue(
 		contribution.poolPairID, contribution.receiveAddress, contribution.refundAddress,
-		contribution.tokenID, contribution.txReqID,
+		contribution.tokenID, contribution.txReqID, contribution.nftID,
 		contribution.amount, contribution.amplifier, contribution.shardID,
 	)
 }
@@ -121,7 +130,7 @@ func NewPdexv3Contribution() *Pdexv3Contribution {
 
 func NewPdexv3ContributionWithValue(
 	poolPairID, receiveAddress, refundAddress string,
-	tokenID, txReqID common.Hash,
+	tokenID, txReqID common.Hash, nftID *common.Hash,
 	amount uint64, amplifier uint, shardID byte,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
@@ -142,7 +151,6 @@ type Pdexv3PoolPair struct {
 	token1ID            common.Hash
 	token0RealAmount    uint64
 	token1RealAmount    uint64
-	nextContributionID  uint64
 	token0VirtualAmount *big.Int
 	token1VirtualAmount *big.Int
 	amplifier           uint
@@ -176,10 +184,6 @@ func (pp *Pdexv3PoolPair) Token1RealAmount() uint64 {
 	return pp.token1RealAmount
 }
 
-func (pp *Pdexv3PoolPair) NextContributionID() uint64 {
-	return pp.nextContributionID
-}
-
 func (pp *Pdexv3PoolPair) Token0VirtualAmount() *big.Int {
 	return pp.token0VirtualAmount
 }
@@ -196,10 +200,6 @@ func (pp *Pdexv3PoolPair) SetToken1RealAmount(amount uint64) {
 	pp.token1RealAmount = amount
 }
 
-func (pp *Pdexv3PoolPair) SetNextContributionID(id uint64) {
-	pp.nextContributionID = id
-}
-
 func (pp *Pdexv3PoolPair) SetToken0VirtualAmount(amount *big.Int) {
 	pp.token0VirtualAmount = amount
 }
@@ -214,7 +214,6 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 		Token1ID            common.Hash `json:"Token1ID"`
 		Token0RealAmount    uint64      `json:"Token0RealAmount"`
 		Token1RealAmount    uint64      `json:"Token1RealAmount"`
-		NextContributionID  uint64      `json:"NextContributionID"`
 		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
 		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
 		Amplifier           uint        `json:"Amplifier"`
@@ -224,7 +223,6 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 		Token1ID:            pp.token1ID,
 		Token0RealAmount:    pp.token0RealAmount,
 		Token1RealAmount:    pp.token1RealAmount,
-		NextContributionID:  pp.nextContributionID,
 		Token0VirtualAmount: pp.token0VirtualAmount,
 		Token1VirtualAmount: pp.token1VirtualAmount,
 		Amplifier:           pp.amplifier,
@@ -242,7 +240,6 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 		Token1ID            common.Hash `json:"Token1ID"`
 		Token0RealAmount    uint64      `json:"Token0RealAmount"`
 		Token1RealAmount    uint64      `json:"Token1RealAmount"`
-		NextContributionID  uint64      `json:"CurrentContributionID"`
 		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
 		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
 		Amplifier           uint        `json:"Amplifier"`
@@ -256,7 +253,6 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	pp.token1ID = temp.Token1ID
 	pp.token0RealAmount = temp.Token0RealAmount
 	pp.token1RealAmount = temp.Token1RealAmount
-	pp.nextContributionID = temp.NextContributionID
 	pp.token0VirtualAmount = temp.Token0VirtualAmount
 	pp.token1VirtualAmount = temp.Token1VirtualAmount
 	pp.amplifier = temp.Amplifier
@@ -267,7 +263,7 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
 	return NewPdexv3PoolPairWithValue(
 		pp.token0ID, pp.token1ID, pp.shareAmount,
-		pp.token0RealAmount, pp.token1RealAmount, pp.nextContributionID,
+		pp.token0RealAmount, pp.token1RealAmount,
 		pp.token0VirtualAmount, pp.token1VirtualAmount, pp.amplifier,
 	)
 }
@@ -278,7 +274,7 @@ func NewPdexv3PoolPair() *Pdexv3PoolPair {
 
 func NewPdexv3PoolPairWithValue(
 	token0ID, token1ID common.Hash,
-	shareAmount, token0RealAmount, token1RealAmount, nextContributionID uint64,
+	shareAmount, token0RealAmount, token1RealAmount uint64,
 	token0VirtualAmount, token1VirtualAmount *big.Int,
 	amplifier uint,
 ) *Pdexv3PoolPair {
@@ -287,7 +283,6 @@ func NewPdexv3PoolPairWithValue(
 		token1ID:            token1ID,
 		token0RealAmount:    token0RealAmount,
 		token1RealAmount:    token1RealAmount,
-		nextContributionID:  nextContributionID,
 		token0VirtualAmount: token0VirtualAmount,
 		token1VirtualAmount: token1VirtualAmount,
 		amplifier:           amplifier,

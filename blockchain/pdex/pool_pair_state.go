@@ -13,14 +13,14 @@ import (
 
 type PoolPairState struct {
 	state     rawdbv2.Pdexv3PoolPair
-	shares    map[string]*Share
+	shares    map[string]map[uint64]*Share
 	orderbook Orderbook
 }
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State  rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares map[string]*Share      `json:"Shares"`
+		State  rawdbv2.Pdexv3PoolPair       `json:"State"`
+		Shares map[string]map[uint64]*Share `json:"Shares"`
 	}{
 		State:  poolPairState.state,
 		Shares: poolPairState.shares,
@@ -33,8 +33,8 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State  rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares map[string]*Share      `json:"Shares"`
+		State  rawdbv2.Pdexv3PoolPair       `json:"State"`
+		Shares map[string]map[uint64]*Share `json:"Shares"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -62,21 +62,20 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 	poolPairState := rawdbv2.NewPdexv3PoolPairWithValue(
 		contributions[0].TokenID(), contributions[1].TokenID(),
 		0, contributions[0].Amount(), contributions[1].Amount(),
-		0,
 		token0VirtualAmount, token1VirtualAmount,
 		contributions[0].Amplifier(),
 	)
 
 	return NewPoolPairStateWithValue(
 		*poolPairState,
-		make(map[string]*Share),
+		make(map[string]map[uint64]*Share),
 		Orderbook{[]*Order{}},
 	)
 }
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
-		shares:    make(map[string]*Share),
+		shares:    make(map[string]map[uint64]*Share),
 		state:     *rawdbv2.NewPdexv3PoolPair(),
 		orderbook: Orderbook{[]*Order{}},
 	}
@@ -84,7 +83,7 @@ func NewPoolPairState() *PoolPairState {
 
 func NewPoolPairStateWithValue(
 	state rawdbv2.Pdexv3PoolPair,
-	shares map[string]*Share,
+	shares map[string]map[uint64]*Share,
 	orderbook Orderbook,
 ) *PoolPairState {
 	return &PoolPairState{
@@ -212,39 +211,55 @@ func (p *PoolPairState) updateReserveAndCalculateShare(
 
 }
 
-func (p *PoolPairState) addShare(key string, amount, beaconHeight uint64) common.Hash {
-	nfctID := genNFT(key, p.state.NextContributionID(), beaconHeight)
-	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
-	p.shares[nfctID.String()] = share
-	p.state.SetNextContributionID(p.state.NextContributionID() + 1)
-	p.state.SetShareAmount(p.state.ShareAmount() + amount)
-	return nfctID
-}
+func (p *PoolPairState) addShare(
+	nftID string,
+	nftIDs map[string]bool,
+	amount, beaconHeight uint64,
+) common.Hash {
+	newNftID := genNFT(nftID, nftIDs, beaconHeight)
+	addNftIDToList(newNftID.String(), nftIDs)
 
-func genNFT(key string, id, beaconHeight uint64) common.Hash {
-	hash := append([]byte(key), append(common.Uint64ToBytes(id), common.Uint64ToBytes(beaconHeight)...)...)
-	return common.HashH(hash)
+	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
+	if p.shares[newNftID.String()] == nil {
+		p.shares[newNftID.String()] = make(map[uint64]*Share)
+	}
+	p.shares[newNftID.String()][beaconHeight] = share
+	p.state.SetShareAmount(p.state.ShareAmount() + amount)
+	return newNftID
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
 	res := NewPoolPairState()
 	res.state = *p.state.Clone()
 	for k, v := range p.shares {
-		res.shares[k] = v.Clone()
+		res.shares[k] = make(map[uint64]*Share)
+		for key, value := range v {
+			res.shares[k][key] = value.Clone()
+		}
 	}
+	//TODO: clone order book here
 	return res
 }
 
-func (p *PoolPairState) getDiff(poolPairID string, comparePoolPair *PoolPairState, stateChange *StateChange) *StateChange {
+func (p *PoolPairState) getDiff(
+	poolPairID string,
+	comparePoolPair *PoolPairState,
+	stateChange *StateChange,
+) *StateChange {
 	newStateChange := stateChange
-	for k, v := range p.shares {
-		if m, ok := comparePoolPair.shares[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange = v.getDiff(k, m, newStateChange)
-		}
-	}
 	if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 		newStateChange.poolPairIDs[poolPairID] = true
 	}
+	for k, v := range p.shares {
+		if m, ok := comparePoolPair.shares[k]; !ok || !reflect.DeepEqual(m, v) {
+			for height, share := range v {
+				if compareShare, ok := m[height]; !ok || !reflect.DeepEqual(compareShare, v) {
+					newStateChange = share.getDiff(k, height, compareShare, newStateChange)
+				}
+			}
+		}
+	}
+
 	return newStateChange
 }
 
