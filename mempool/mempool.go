@@ -214,6 +214,10 @@ func (tp *TxPool) MonitorPool() {
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+	_, _, _, _, _, err := tp.config.BlockChain.GetTransactionByHash(*(tx.Hash()))
+	if err == nil {
+		return nil, nil, fmt.Errorf("tx %v found in block", tx.Hash().String())
+	}
 	//beaconView.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
