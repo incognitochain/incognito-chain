@@ -11,30 +11,27 @@ import (
 
 // AddOrderRequest
 type AddOrderRequest struct {
-	TokenToSell         common.Hash         `json:"TokenToSell"`
-	TokenToBuy          common.Hash         `json:"TokenToBuy"`
-	PairID              string              `json:"PairID"`
-	SellAmount          uint64              `json:"SellAmount"`
-	MinAcceptableAmount uint64              `json:"MinAcceptableAmount"`
-	TradingFee          uint64              `json:"TradingFee"`
-	RefundReceiver      privacy.OTAReceiver `json:"RefundReceiver"`
+	TokenToSell         common.Hash                         `json:"TokenToSell"`
+	PoolPairID          string                              `json:"PoolPairID"`
+	SellAmount          uint64                              `json:"SellAmount"`
+	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
+	TradingFee          uint64                              `json:"TradingFee"`
+	RefundReceiver      map[common.Hash]privacy.OTAReceiver `json:"RefundReceiver"`
 	metadataCommon.MetadataBase
 }
 
 func NewAddOrderRequest(
-	tokenToBuy common.Hash,
 	tokenToSell common.Hash,
 	pairID string,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	tradingFee uint64,
-	refundRecv privacy.OTAReceiver,
+	refundRecv map[common.Hash]privacy.OTAReceiver,
 	metaType int,
 ) (*AddOrderRequest, error) {
-	pdeTradeRequest := &AddOrderRequest{
+	r := &AddOrderRequest{
 		TokenToSell:         tokenToSell,
-		TokenToBuy:          tokenToBuy,
-		PairID:              pairID,
+		PoolPairID:          pairID,
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
@@ -43,7 +40,7 @@ func NewAddOrderRequest(
 			Type: metaType,
 		},
 	}
-	return pdeTradeRequest, nil
+	return r, nil
 }
 
 func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
@@ -70,10 +67,13 @@ func (req *AddOrderRequest) CalculateSize() uint64 {
 
 func (req *AddOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	sellingToken := common.ConfidentialAssetID
-	if req.TokenToSell == common.PRVCoinID {
-		sellingToken = common.PRVCoinID
+	for currentTokenID, val := range req.RefundReceiver {
+		if currentTokenID != common.PRVCoinID {
+			currentTokenID = common.ConfidentialAssetID
+		}
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
 	}
-	result = append(result, metadataCommon.OTADeclaration{PublicKey: req.RefundReceiver.PublicKey.ToBytes(), TokenID: sellingToken})
 	return result
 }

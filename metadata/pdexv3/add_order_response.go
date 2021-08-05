@@ -13,8 +13,7 @@ import (
 // For refunded `add order` requests, all fields except Status are ignored
 type AddOrderStatus struct {
 	Status     int         `json:"Status"`
-	BuyAmount  uint64      `json:"BuyAmount"`
-	TokenToBuy common.Hash `json:"TokenToBuy"`
+	OrderID        string `json:"OrderID"`
 }
 
 // AddOrderResponse is the metadata inside response tx for `add order` (applicable for refunded case only)
@@ -26,12 +25,13 @@ type AddOrderResponse struct {
 
 // AcceptedAddOrder is added as Content for produced beacon instruction after to handling an order successfully
 type AcceptedAddOrder struct {
-	TokenToBuy          common.Hash `json:"TokenToBuy"`
-	PoolPairID          string      `json:"PoolPairID"`
-	SellAmount          uint64      `json:"SellAmount"`
-	MinAcceptableAmount uint64      `json:"MinAcceptableAmount"`
-	ShardID             byte        `json:"ShardID"`
-	RequestTxID         common.Hash `json:"RequestTxID"`
+	PoolPairID     string `json:"PoolPairID"`
+	OrderID        string `json:"OrderID"`
+	Token0Rate     uint64 `json:"Token0Rate"`
+	Token1Rate     uint64 `json:"Token1Rate"`
+	Token0Balance  uint64 `json:"Token0Balance"`
+	Token1Balance  uint64 `json:"Token1Balance"`
+	TradeDirection byte   `json:"TradeDirection"`
 }
 
 func (md AcceptedAddOrder) GetType() int {
@@ -44,11 +44,9 @@ func (md AcceptedAddOrder) GetStatus() int {
 
 // RefundedAddOrder is added as Content for produced beacon instruction after failure to handle an order
 type RefundedAddOrder struct {
-	Receiver    privacy.OTAReceiver `json:"Receiver"`
-	TokenToSell common.Hash         `json:"TokenToSell"`
-	Amount      uint64              `json:"Amount"`
-	ShardID     byte                `json:"ShardID"`
-	RequestTxID common.Hash         `json:"RequestTxID"`
+	Receiver privacy.OTAReceiver `json:"Receiver"`
+	TokenID  common.Hash         `json:"TokenID"`
+	Amount   uint64              `json:"Amount"`
 }
 
 func (md RefundedAddOrder) GetType() int {
