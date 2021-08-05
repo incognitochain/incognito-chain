@@ -532,7 +532,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 
 func (ci *CoinIndexer) GetIndexedOutCoin(otaKey privacy.OTAKey, tokenID *common.Hash, txDb *statedb.StateDB, shardID byte) ([]privacy.Coin, int, error) {
 	vkb := OTAKeyToRaw(otaKey)
-	utils.Logger.Log.Infof("Retrieve re-indexed coins for %x from db %v", vkb, ci.db)
 	_, processing := ci.HasOTAKey(vkb)
 	if processing == 1 {
 		return nil, 1, fmt.Errorf("OTA Key %x not ready : Sync still in progress", otaKey)
