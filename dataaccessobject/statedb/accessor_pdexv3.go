@@ -145,6 +145,14 @@ func StorePdexv3StakingPools() error {
 	return nil
 }
 
+func StorePdexv3Order(
+	stateDB *StateDB,
+	orderState Pdexv3OrderState,
+) error {
+	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), orderState.Value().Id())
+	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, orderState)
+}
+
 func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	prefixHash := GetPdexv3WaitingContributionsPrefix()
 	return stateDB.iterateWithPdexv3Contributions(prefixHash)
@@ -169,4 +177,12 @@ func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nfctID string) (
 ) {
 	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nfctID)
 	return stateDB.iterateWithPdexv3TradingFees(prefixHash)
+}
+
+func GetPdexv3Orders(stateDB *StateDB, poolPairID string) (
+	map[string]Pdexv3OrderState,
+	error,
+) {
+	prefixHash := generatePdexv3OrderObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3Orders(prefixHash)
 }

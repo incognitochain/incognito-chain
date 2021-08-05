@@ -190,6 +190,7 @@ func (p *PoolPairState) Clone() PoolPairState {
 	for k, v := range p.shares {
 		res.shares[k] = *v.Clone()
 	}
+	res.orderbook = p.orderbook.Clone()
 	return *res
 }
 
@@ -203,6 +204,7 @@ func (p *PoolPairState) getDiff(poolPairID string, comparePoolPair *PoolPairStat
 	if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 		newStateChange.poolPairIDs[poolPairID] = true
 	}
+	newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	return newStateChange
 }
 

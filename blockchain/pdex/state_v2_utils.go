@@ -59,6 +59,7 @@ type StakingInfo struct {
 type StateChange struct {
 	poolPairIDs map[string]bool
 	nfctIDs     map[string]bool
+	orderIDs    map[string]bool
 	tokenIDs    map[string]bool
 }
 

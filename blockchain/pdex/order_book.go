@@ -2,9 +2,10 @@ package pdex
 
 import (
 	"encoding/json"
-	"sort"
-	"math/big"
 	"fmt"
+	"math/big"
+	"reflect"
+	"sort"
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -86,4 +87,29 @@ func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, 
 	default:
 		return nil, "", fmt.Errorf("Invalid trade direction %d", tradeDirection)
 	}
+}
+
+func (ob *Orderbook) getDiff(otherBook *Orderbook,
+	stateChange *StateChange) *StateChange {
+	newStateChange := stateChange
+	ordersById := make(map[string]*Order)
+	for _, ord := range otherBook.orders {
+		ordersById[ord.Id()] = ord
+	}
+	for _, ord := range ob.orders {
+		if existingOrder, exists := ordersById[ord.Id()]; !exists ||
+			!reflect.DeepEqual(*ord, *existingOrder) {
+			newStateChange.orderIDs[ord.Id()] = true
+		}
+	}
+	return newStateChange
+}
+
+func (ob *Orderbook) Clone() Orderbook {
+	result := &Orderbook{make([]*Order, len(ob.orders))}
+	for index, item := range ob.orders {
+		var temp Order = *item
+		result.orders[index] = &temp
+	}
+	return *result
 }

@@ -368,6 +368,26 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 					}
 				}
 			}
+			for tokenID, tradingFee := range share.tradingFees {
+			if stateChange.tokenIDs[tokenID] {
+				err := statedb.StorePdexv3TradingFee(
+					env.StateDB(), poolPairID, nfctID, tokenID, tradingFee,
+				)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		}
+
+		for _, order := range poolPairState.orderbook.orders {
+			if stateChange.orderIDs[order.Id()] {
+				orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
+				err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 
