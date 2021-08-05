@@ -70,7 +70,7 @@ func OrderRefundTx(
 	}
 	md := metadataPdexv3.AddOrderResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{acn.GetType()}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: refundedOrder.Amount, ReceiverAddress: nil, PublicKey: &refundedOrder.Receiver.PublicKey, TxRandom: &refundedOrder.Receiver.TxRandom, TokenID: &refundedOrder.TokenToSell, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: refundedOrder.Amount, ReceiverAddress: nil, PublicKey: &refundedOrder.Receiver.PublicKey, TxRandom: &refundedOrder.Receiver.TxRandom, TokenID: &refundedOrder.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },

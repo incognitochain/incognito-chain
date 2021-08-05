@@ -436,24 +436,56 @@ func (sp *stateProcessorV2) addOrder(
 	stateDB *statedb.StateDB,
 	inst []string,
 	pairs map[string]PoolPairState,
-	orderbooks map[string]Orderbook,
-) (map[string]PoolPairState, map[string]Orderbook, error) {
+) (map[string]PoolPairState, error) {
+	var currentOrder *instruction.Action
+	var trackedStatus metadataPdexv3.AddOrderStatus
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
-		currentTrade := &instruction.Action{Content: metadataPdexv3.AcceptedAddOrder{}}
-		err := currentTrade.FromStringSlice(inst)
+		currentOrder = &instruction.Action{Content: &metadataPdexv3.AcceptedAddOrder{}}
+		err := currentOrder.FromStringSlice(inst)
 		if err != nil {
-			return pairs, orderbooks, err
+			return pairs, err
 		}
+
+		// skip error checking since concrete type is specified above
+		md, _ := currentOrder.Content.(*metadataPdexv3.AcceptedAddOrder)
+		trackedStatus.OrderID = md.OrderID
+
+		pair, exists := pairs[md.PoolPairID]
+		if !exists {
+			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
+		}
+		
+		orderbook := pair.orderbook
+		// fee for this request is deducted right away, while the fee stored in the order itself
+		// starts from 0 and will accumulate over time
+		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, md.Token0Rate, md.Token1Rate,
+			md.Token0Balance, md.Token1Balance, md.TradeDirection, 0)
+		orderbook.InsertOrder(newOrder)
+
+		// write changes to state
+		pairs[md.PoolPairID] = pair
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
-		currentTrade := &instruction.Action{Content: metadataPdexv3.RefundedAddOrder{}}
-		err := currentTrade.FromStringSlice(inst)
+		currentOrder = &instruction.Action{Content: &metadataPdexv3.RefundedAddOrder{}}
+		err := currentOrder.FromStringSlice(inst)
 		if err != nil {
-			return pairs, orderbooks, err
+			return pairs, err
 		}
 	default:
-		return pairs, orderbooks, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
-	// TODO : apply state changes
-	return pairs, orderbooks, nil
+
+	// store tracked order status
+	trackedStatus.Status = currentOrder.GetStatus()
+	marshaledTrackedStatus, err := json.Marshal(trackedStatus)
+	if err != nil {
+		return pairs, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3AddOrderStatusPrefix(),
+		currentOrder.RequestTxID[:],
+		marshaledTrackedStatus,
+	)
+	return pairs, nil
 }

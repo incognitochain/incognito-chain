@@ -48,6 +48,20 @@ func (txBuilder *TxBuilderV2) Build(
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
+
+	case metadataCommon.Pdexv3AddOrderRequestMeta:
+		switch inst[1] {
+		case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
+			action := instruction.Action{Content: &metadataPdexv3.RefundedAddOrder{}}
+			err := action.FromStringSlice(inst)
+			if err != nil {
+				return nil, err
+			}
+			tx, err = v2.OrderRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
+
+		default:
+			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		}
 	}
 
 	return tx, err
