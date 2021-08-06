@@ -443,6 +443,11 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
 
 	if !operation.IsPointEqual(LHS, RHS) {
+		Logger.Log.Errorf("[BUGLOG9] y: %v\n", y.String())
+		Logger.Log.Errorf("[BUGLOG9] z: %v\n", z.String())
+		Logger.Log.Errorf("[BUGLOG9] x: %v\n", x.String())
+		Logger.Log.Errorf("[BUGLOG9] LHS: %v\n", LHS.String())
+		Logger.Log.Errorf("[BUGLOG9] RHS: %v\n", RHS.String())
 		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
