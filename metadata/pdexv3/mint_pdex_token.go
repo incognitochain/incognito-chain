@@ -97,7 +97,7 @@ func (mintResponse MintPDEXGenesisResponse) VerifyMinerCreatedTxBeforeGettingInB
 	// verify mining tx with the request tx
 	idx := -1
 	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not PortalUnshieldResponse instruction
+		if len(inst) < 4 { // this is not MintPDEXGenesisResponse instruction
 			continue
 		}
 		instMetaType := inst[0]

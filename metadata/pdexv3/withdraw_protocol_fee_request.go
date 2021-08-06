@@ -17,28 +17,11 @@ type WithdrawalProtocolFeeRequest struct {
 }
 
 type WithdrawalProtocolFeeContent struct {
-	PairID    string                  `json:"PairID"`
-	Receivers map[string]ReceiverInfo `json:"Receivers"`
-	TxReqID   common.Hash             `json:"TxReqID"`
-	ShardID   byte                    `json:"ShardID"`
-}
-
-type WithdrawalProtocolFeeStatus struct {
-	Status             int                `json:"Status"`
-	PairID             string             `json:"PairID"`
-	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
-}
-
-func NewPdexv3WithdrawalProtocolFeeStatus(
-	status int,
-	pairID string,
-	feeReceiverAddress FeeReceiverAddress,
-) *WithdrawalProtocolFeeStatus {
-	return &WithdrawalProtocolFeeStatus{
-		PairID:             pairID,
-		FeeReceiverAddress: feeReceiverAddress,
-		Status:             status,
-	}
+	PairID    string       `json:"PairID"`
+	TokenType string       `json:"TokenType"`
+	Receiver  ReceiverInfo `json:"Receiver"`
+	TxReqID   common.Hash  `json:"TxReqID"`
+	ShardID   byte         `json:"ShardID"`
 }
 
 func NewPdexv3WithdrawalProtocolFeeRequest(

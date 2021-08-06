@@ -12,46 +12,24 @@ import (
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
 	PairID              string             `json:"PairID"`
-	NfctTokenID         string             `json:"NfctTokenID"`
+	NfctTokenID         common.Hash        `json:"NfctTokenID"`
 	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
 	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PairID    string                  `json:"PairID"`
-	Receivers map[string]ReceiverInfo `json:"Receivers"`
-	TxReqID   common.Hash             `json:"TxReqID"`
-	ShardID   byte                    `json:"ShardID"`
-}
-
-type WithdrawalLPFeeStatus struct {
-	Status              int                `json:"Status"`
-	PairID              string             `json:"PairID"`
-	NfctTokenID         string             `json:"NfctTokenID"`
-	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
-	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
-}
-
-func NewPdexv3WithdrawalLPFeeStatus(
-	status int,
-	pairID string,
-	nfctTokenID string,
-	nfctReceiverAddress string,
-	feeReceiverAddress FeeReceiverAddress,
-) *WithdrawalLPFeeStatus {
-	return &WithdrawalLPFeeStatus{
-		PairID:              pairID,
-		NfctTokenID:         nfctTokenID,
-		NfctReceiverAddress: nfctReceiverAddress,
-		FeeReceiverAddress:  feeReceiverAddress,
-		Status:              status,
-	}
+	PairID      string       `json:"PairID"`
+	NcftTokenID common.Hash  `json:"NcftTokenID"`
+	TokenType   string       `json:"TokenType"`
+	Receiver    ReceiverInfo `json:"Receiver"`
+	TxReqID     common.Hash  `json:"TxReqID"`
+	ShardID     byte         `json:"ShardID"`
 }
 
 func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
-	nfctTokenID string,
+	nfctTokenID common.Hash,
 	nfctReceiverAddress string,
 	feeReceiverAddress FeeReceiverAddress,
 ) (*WithdrawalLPFeeRequest, error) {
@@ -99,8 +77,8 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
 	}
 	burningAmt := burnedCoin.GetValue()
-	burningTokenID := burnedToken.String()
-	if burningAmt != 1 || burningTokenID != withdrawal.NfctTokenID {
+	burningTokenID := burnedToken
+	if burningAmt != 1 || *burningTokenID != withdrawal.NfctTokenID {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
@@ -137,7 +115,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
 	record += withdrawal.PairID
-	record += withdrawal.NfctTokenID
+	record += withdrawal.NfctTokenID.String()
 	record += withdrawal.NfctReceiverAddress
 	record += withdrawal.FeeReceiverAddress.ToString()
 

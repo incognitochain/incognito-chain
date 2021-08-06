@@ -310,7 +310,6 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 
 func (sp *stateProcessorV2) modifyParams(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	inst []string,
 	params Params,
 ) (Params, error) {
@@ -350,7 +349,7 @@ func (sp *stateProcessorV2) modifyParams(
 		modifyingReqStatusBytes,
 	)
 	if err != nil {
-		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking shielding request tx - Error: %v", err)
+		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking request tx - Error: %v", err)
 	}
 
 	return params, nil
@@ -454,4 +453,111 @@ func (sp *stateProcessorV2) addOrder(
 	}
 	// TODO : apply state changes
 	return pairs, orderbooks, nil
+}
+
+func (sp *stateProcessorV2) withdrawLPFee(
+	stateDB *statedb.StateDB,
+	inst []string,
+	beaconHeight uint64,
+	pairs map[string]PoolPairState,
+) (map[string]PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.WithdrawalLPFeeContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	withdrawalStatus := inst[2]
+	var reqTrackStatus int
+	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+		// check conditions
+		poolPair, isExisted := pairs[actionData.PairID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PairID)
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		share, isExisted := poolPair.shares[actionData.NcftTokenID.String()]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NcftTokenID.String())
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		share.tradingFees = map[string]uint64{}
+		share.lastUpdatedBeaconHeight = beaconHeight
+		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
+	} else {
+		reqTrackStatus = metadataPdexv3.WithdrawLPFeeFailedStatus
+	}
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawalLPFeeStatusPrefix(),
+		[]byte(actionData.TxReqID.String()),
+		[]byte{byte(reqTrackStatus)},
+	)
+	if err != nil {
+		Logger.log.Errorf("PDex v3 Withdrawal LP Fee: An error occurred while tracking request tx - Error: %v", err)
+	}
+	return pairs, err
+}
+
+func (sp *stateProcessorV2) withdrawProtocolFee(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]PoolPairState,
+) (map[string]PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.WithdrawalProtocolFeeContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	withdrawalStatus := inst[2]
+	var reqTrackStatus int
+	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+		// check conditions
+		poolPair, isExisted := pairs[actionData.PairID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PairID)
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		poolPair.state.SetProtocolFees(map[common.Hash]uint64{})
+		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeSuccessStatus
+	} else {
+		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeFailedStatus
+	}
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawalProtocolFeeStatusPrefix(),
+		[]byte(actionData.TxReqID.String()),
+		[]byte{byte(reqTrackStatus)},
+	)
+	if err != nil {
+		Logger.log.Errorf("PDex v3 Withdrawal Protocol Fee: An error occurred while tracking request tx - Error: %v", err)
+	}
+	return pairs, err
 }

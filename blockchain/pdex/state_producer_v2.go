@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -22,26 +23,6 @@ import (
 
 type stateProducerV2 struct {
 	stateProducerBase
-}
-
-func buildModifyParamsInst(
-	params metadataPdexv3.Pdexv3Params,
-	shardID byte,
-	reqTxID common.Hash,
-	status string,
-) []string {
-	modifyingParamsReqContent := metadataPdexv3.ParamsModifyingContent{
-		Content: params,
-		TxReqID: reqTxID,
-		ShardID: shardID,
-	}
-	modifyingParamsReqContentBytes, _ := json.Marshal(modifyingParamsReqContent)
-	return []string{
-		strconv.Itoa(metadataCommon.Pdexv3ModifyParamsMeta),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(modifyingParamsReqContentBytes),
-	}
 }
 
 func isValidPdexv3Params(params Params) bool {
@@ -261,7 +242,7 @@ func (sp *stateProducerV2) modifyParams(
 			status = metadataPdexv3.RequestRejectedChainStatus
 		}
 
-		inst := buildModifyParamsInst(
+		inst := v2utils.BuildModifyParamsInst(
 			metadataParams,
 			shardID,
 			txReqID,
@@ -356,4 +337,168 @@ func (sp *stateProducerV2) addOrder(
 	}
 
 	return result, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawLPFee(
+	txs []metadata.Transaction,
+	beaconHeight uint64,
+	pairs map[string]PoolPairState,
+) ([][]string, map[string]PoolPairState, error) {
+	instructions := [][]string{}
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := *tx.Hash()
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalLPFeeRequest)
+		if !ok {
+			return instructions, pairs, errors.New("Can not parse withdrawal LP fee metadata")
+		}
+
+		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
+			metaData.PairID,
+			metaData.NfctTokenID,
+			map[string]metadataPdexv3.ReceiverInfo{
+				metadataPdexv3.NcftTokenType: {
+					TokenID:    metaData.NfctTokenID,
+					AddressStr: metaData.NfctReceiverAddress,
+					Amount:     1,
+				},
+			},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestRejectedChainStatus,
+		)
+
+		// check conditions
+		poolPair, isExisted := pairs[metaData.PairID]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		share, isExisted := poolPair.shares[metaData.NfctTokenID.String()]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		// TODO: compute amount of received LP fee
+		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
+			metaData.PairID,
+			metaData.NfctTokenID,
+			map[string]metadataPdexv3.ReceiverInfo{
+				metadataPdexv3.Token0Type: {
+					TokenID:    poolPair.state.Token0ID(),
+					AddressStr: metaData.FeeReceiverAddress.Token0ReceiverAddress,
+					Amount:     1,
+				},
+				metadataPdexv3.Token1Type: {
+					TokenID:    poolPair.state.Token1ID(),
+					AddressStr: metaData.FeeReceiverAddress.Token1ReceiverAddress,
+					Amount:     1,
+				},
+				metadataPdexv3.PRVType: {
+					TokenID:    common.PRVCoinID,
+					AddressStr: metaData.FeeReceiverAddress.PRVReceiverAddress,
+					Amount:     1,
+				},
+				metadataPdexv3.PDEXType: {
+					TokenID:    common.PDEXCoinID,
+					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
+					Amount:     1,
+				},
+				metadataPdexv3.NcftTokenType: {
+					TokenID:    metaData.NfctTokenID,
+					AddressStr: metaData.NfctReceiverAddress,
+					Amount:     1,
+				},
+			},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestAcceptedChainStatus,
+		)
+
+		// update state after fee withdrawal
+		share.tradingFees = map[string]uint64{}
+		share.lastUpdatedBeaconHeight = beaconHeight
+
+		instructions = append(instructions, acceptedInst...)
+	}
+
+	return instructions, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawProtocolFee(
+	txs []metadata.Transaction,
+	pairs map[string]PoolPairState,
+) ([][]string, map[string]PoolPairState, error) {
+	instructions := [][]string{}
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := *tx.Hash()
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalProtocolFeeRequest)
+		if !ok {
+			return instructions, pairs, errors.New("Can not parse withdrawal protocol fee metadata")
+		}
+
+		rejectInst := v2utils.BuildWithdrawProtocolFeeInsts(
+			metaData.PairID,
+			map[string]metadataPdexv3.ReceiverInfo{},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestRejectedChainStatus,
+		)
+
+		// check conditions
+		pair, isExisted := pairs[metaData.PairID]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		protocolFeeAmount := func(poolPair PoolPairState, tokenID common.Hash) uint64 {
+			amount, isExisted := poolPair.state.ProtocolFees()[tokenID]
+			if !isExisted {
+				amount = 0
+			}
+			return amount
+		}
+
+		acceptedInst := v2utils.BuildWithdrawProtocolFeeInsts(
+			metaData.PairID,
+			map[string]metadataPdexv3.ReceiverInfo{
+				metadataPdexv3.Token0Type: {
+					TokenID:    pair.state.Token0ID(),
+					AddressStr: metaData.FeeReceiverAddress.Token0ReceiverAddress,
+					Amount:     protocolFeeAmount(pair, pair.state.Token0ID()),
+				},
+				metadataPdexv3.Token1Type: {
+					TokenID:    pair.state.Token1ID(),
+					AddressStr: metaData.FeeReceiverAddress.Token1ReceiverAddress,
+					Amount:     protocolFeeAmount(pair, pair.state.Token1ID()),
+				},
+				metadataPdexv3.PRVType: {
+					TokenID:    common.PRVCoinID,
+					AddressStr: metaData.FeeReceiverAddress.PRVReceiverAddress,
+					Amount:     protocolFeeAmount(pair, common.PRVCoinID),
+				},
+				metadataPdexv3.PDEXType: {
+					TokenID:    common.PDEXCoinID,
+					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
+					Amount:     protocolFeeAmount(pair, common.PDEXCoinID),
+				},
+			},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestAcceptedChainStatus,
+		)
+
+		// update state after fee withdrawal
+		pair.state.SetProtocolFees(map[common.Hash]uint64{})
+
+		instructions = append(instructions, acceptedInst...)
+	}
+
+	return instructions, pairs, nil
 }

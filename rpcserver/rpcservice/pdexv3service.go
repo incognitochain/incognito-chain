@@ -27,7 +27,7 @@ func (blockService BlockService) GetPdexv3ParamsModifyingRequestStatus(reqTxID s
 	return &status, nil
 }
 
-func (blockService BlockService) GetPdexv3WithdrawalLPFeeStatus(reqTxID string) (*metadataPdexv3.WithdrawalLPFeeStatus, error) {
+func (blockService BlockService) GetPdexv3WithdrawalLPFeeStatus(reqTxID string) (int, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
@@ -35,19 +35,13 @@ func (blockService BlockService) GetPdexv3WithdrawalLPFeeStatus(reqTxID string) 
 		[]byte(reqTxID),
 	)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	var status metadataPdexv3.WithdrawalLPFeeStatus
-	err = json.Unmarshal(data, &status)
-	if err != nil {
-		return nil, err
-	}
-
-	return &status, nil
+	return int(data[0]), nil
 }
 
-func (blockService BlockService) GetPdexv3WithdrawalProtocolFeeStatus(reqTxID string) (*metadataPdexv3.WithdrawalProtocolFeeStatus, error) {
+func (blockService BlockService) GetPdexv3WithdrawalProtocolFeeStatus(reqTxID string) (int, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
@@ -55,14 +49,7 @@ func (blockService BlockService) GetPdexv3WithdrawalProtocolFeeStatus(reqTxID st
 		[]byte(reqTxID),
 	)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-
-	var status metadataPdexv3.WithdrawalProtocolFeeStatus
-	err = json.Unmarshal(data, &status)
-	if err != nil {
-		return nil, err
-	}
-
-	return &status, nil
+	return int(data[0]), nil
 }

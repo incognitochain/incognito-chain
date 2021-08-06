@@ -308,8 +308,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
-	nfctTokenID, ok := tokenParamsRaw["NfctTokenID"].(string)
+	nfctTokenIDStr, ok := tokenParamsRaw["NfctTokenID"].(string)
 	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
+	}
+	nfctTokenID, err := common.Hash{}.NewHashFromStr(nfctTokenIDStr)
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
 	}
 
@@ -378,7 +382,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
-		nfctTokenID,
+		*nfctTokenID,
 		nfctReceiverAddressStr,
 		metadataPdexv3.FeeReceiverAddress{
 			Token0ReceiverAddress: token0ReceiverAddressStr,

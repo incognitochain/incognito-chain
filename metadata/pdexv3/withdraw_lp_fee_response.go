@@ -91,16 +91,11 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 	// verify mining tx with the request tx
 	idx := -1
 	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not PortalUnshieldResponse instruction
+		if len(inst) < 4 { // this is not WithdrawalLPFeeResponse instruction
 			continue
 		}
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeResponseMeta)) {
-			continue
-		}
-		instReqStatus := inst[2]
-		if withdrawalResponse.TokenType != instReqStatus ||
-			(instReqStatus != PRVStr && instReqStatus != PDEXStr && instReqStatus != Token0Str && instReqStatus != Token1Str && instReqStatus != NcftTokenStr) {
 			continue
 		}
 
@@ -110,28 +105,15 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 		if err != nil {
 			continue
 		}
-		shardIDFromInst := instContent.ShardID
-		txReqIDFromInst := instContent.TxReqID
 
-		receiver := ReceiverInfo{}
-		isExisted := false
-		switch instReqStatus {
-		case Token0Str:
-			receiver, isExisted = instContent.Receivers[Token0Str]
-		case Token1Str:
-			receiver, isExisted = instContent.Receivers[Token1Str]
-		case PRVStr:
-			receiver, isExisted = instContent.Receivers[PRVStr]
-		case PDEXStr:
-			receiver, isExisted = instContent.Receivers[PDEXStr]
-		case NcftTokenStr:
-			receiver, isExisted = instContent.Receivers[NcftTokenStr]
-		default:
-			isExisted = false
-		}
-		if !isExisted {
+		tokenType := instContent.TokenType
+		if withdrawalResponse.TokenType != tokenType {
 			continue
 		}
+
+		shardIDFromInst := instContent.ShardID
+		txReqIDFromInst := instContent.TxReqID
+		receiver := instContent.Receiver
 
 		receiverAddress, err := isValidReceiverAddressStr(receiver.AddressStr, shardIDFromInst)
 		if err != nil {

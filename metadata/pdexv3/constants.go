@@ -10,15 +10,21 @@ const (
 
 	ParamsModifyingFailedStatus  = 0
 	ParamsModifyingSuccessStatus = 1
+
+	WithdrawLPFeeFailedStatus  = 0
+	WithdrawLPFeeSuccessStatus = 1
+
+	WithdrawProtocolFeeFailedStatus  = 0
+	WithdrawProtocolFeeSuccessStatus = 1
 )
 
 // receiving token type
 const (
-	Token0Str    = "Token0"
-	Token1Str    = "Token1"
-	PRVStr       = "PRV"
-	PDEXStr      = "PDEX"
-	NcftTokenStr = "NcftToken"
+	Token0Type    = "Token0"
+	Token1Type    = "Token1"
+	PRVType       = "PRV"
+	PDEXType      = "PDEX"
+	NcftTokenType = "NcftToken"
 )
 
 // trade status

@@ -187,13 +187,6 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadataCommon.Pdexv3ModifyParamsMeta:
-			s.params, err = s.processor.modifyParams(
-				env.StateDB(),
-				env.BeaconHeight(),
-				inst,
-				s.params,
-			)
 		case metadataCommon.Pdexv3AddLiquidityResponseMeta:
 			s.poolPairs,
 				s.waitingContributions,
@@ -208,6 +201,25 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
 				s.poolPairs,
+			)
+		case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
+			s.poolPairs, err = s.processor.withdrawLPFee(
+				env.StateDB(),
+				inst,
+				env.BeaconHeight(),
+				s.poolPairs,
+			)
+		case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:
+			s.poolPairs, err = s.processor.withdrawProtocolFee(
+				env.StateDB(),
+				inst,
+				s.poolPairs,
+			)
+		case metadataCommon.Pdexv3ModifyParamsMeta:
+			s.params, err = s.processor.modifyParams(
+				env.StateDB(),
+				inst,
+				s.params,
 			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
@@ -224,8 +236,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 	addLiquidityTxs := []metadata.Transaction{}
 	addLiquidityInstructions := [][]string{}
-	modifyParamsTxs := []metadata.Transaction{}
 	tradeTxs := []metadata.Transaction{}
+	withdrawLPFeeTxs := []metadata.Transaction{}
+	withdrawlProtocolFeeTxs := []metadata.Transaction{}
+	modifyParamsTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -245,14 +259,14 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 					return instructions, errors.New("Can not parse add liquidity metadata")
 				}
 				addLiquidityTxs = append(addLiquidityTxs, tx)
-			case metadataCommon.Pdexv3ModifyParamsMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
-				if !ok {
-					return instructions, errors.New("Can not parse params modifying metadata")
-				}
-				modifyParamsTxs = append(modifyParamsTxs, tx)
 			case metadataCommon.Pdexv3TradeRequestMeta:
 				tradeTxs = append(tradeTxs, tx)
+			case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
+				withdrawLPFeeTxs = append(withdrawLPFeeTxs, tx)
+			case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:
+				withdrawlProtocolFeeTxs = append(withdrawlProtocolFeeTxs, tx)
+			case metadataCommon.Pdexv3ModifyParamsMeta:
+				modifyParamsTxs = append(modifyParamsTxs, tx)
 			}
 		}
 	}
@@ -292,7 +306,38 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		// TODO: update state here
 	}
 
-	// handle modify params
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
+
+	var withdrawLPFeeInstructions [][]string
+	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
+		withdrawLPFeeTxs,
+		env.BeaconHeight(),
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawLPFeeInstructions...)
+
+	var withdrawProtocolFeeInstructions [][]string
+	withdrawProtocolFeeInstructions, s.poolPairs, err = s.producer.withdrawProtocolFee(
+		withdrawlProtocolFeeTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawProtocolFeeInstructions...)
+
+	// handle modify params: at the end of beacon block
 	var modifyParamsInstructions [][]string
 	modifyParamsInstructions, s.params, err = s.producer.modifyParams(
 		modifyParamsTxs,
@@ -303,16 +348,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, modifyParamsInstructions...)
-
-	var tradeInstructions [][]string
-	tradeInstructions, s.poolPairs, err = s.producer.trade(
-		tradeTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, tradeInstructions...)
 
 	return instructions, nil
 }
