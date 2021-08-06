@@ -269,19 +269,19 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight)
 	//==========
-	if err != nil {
-		Logger.log.Error(err)
-	} else {
-		if tp.IsBlockGenStarted {
-			if tp.IsUnlockMempool {
-				go func(tx metadata.Transaction) {
-					tp.CPendingTxs <- tx
-				}(tx)
-			}
-		}
-		// Publish Message
-		go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
-	}
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//} else {
+	//	if tp.IsBlockGenStarted {
+	//		if tp.IsUnlockMempool {
+	//			go func(tx metadata.Transaction) {
+	//				tp.CPendingTxs <- tx
+	//			}(tx)
+	//		}
+	//	}
+	//	// Publish Message
+	//	go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
+	//}
 	return hash, txDesc, err
 }
 
