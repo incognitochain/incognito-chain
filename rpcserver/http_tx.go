@@ -78,28 +78,27 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58 check data is invalid"))
 	}
 
-	_, _, _, err := httpServer.txService.SendRawTransaction(base58CheckData)
+	txMsg, txHash, LastBytePubKeySender, err := httpServer.txService.SendRawTransaction(base58CheckData)
 	if err != nil {
 		return nil, err
 	}
-	return true, nil
-	//messageHex, err1 := encodeMessage(txMsg)
-	//if err1 != nil {
-	//	Logger.log.Error(err)
-	//}
-	//httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
-	//err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
-	//if err2 == nil {
-	//	Logger.log.Infof("handleSendRawTransaction broadcast tx %v to shard %v successfully, msgHash %v", txHash.String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
-	//	if !httpServer.txService.BlockChain.UsingNewPool() {
-	//		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
-	//	}
-	//} else {
-	//	Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
-	//}
-	//
-	//result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
-	//return result, nil
+	messageHex, err1 := encodeMessage(txMsg)
+	if err1 != nil {
+		Logger.log.Error(err)
+	}
+	httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
+	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	if err2 == nil {
+		Logger.log.Infof("handleSendRawTransaction broadcast tx %v to shard %v successfully, msgHash %v", txHash.String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		}
+	} else {
+		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
+	}
+
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	return result, nil
 }
 
 func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2Transaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1107,36 +1106,35 @@ func (httpServer *HttpServer) 	handleSendRawPrivacyCustomTokenTransaction(params
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
-	_, _, err1 := httpServer.txService.SendRawPrivacyCustomTokenTransaction(base58CheckData)
+	txMsg, tx, err1 := httpServer.txService.SendRawPrivacyCustomTokenTransaction(base58CheckData)
 	if err1 != nil {
 		return nil, err1
 	}
-	return true, nil
-	//httpServer.config.Server.OnTxPrivacyToken(nil, txMsg.(*wire.MessageTxPrivacyToken))
-	//LastBytePubKeySender := tx.GetSenderAddrLastByte()
-	//err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
-	//messageHex, err := encodeMessage(txMsg)
-	//if err != nil {
-	//	Logger.log.Error(err)
-	//}
-	////Mark forwarded message
-	//if err == nil {
-	//	Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v successfully, msgHash %v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
-	//	if !httpServer.txService.BlockChain.UsingNewPool() {
-	//		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
-	//	}
-	//} else {
-	//	Logger.log.Errorf("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v with error %+v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), err)
-	//}
-	//tokenData := tx.GetTxTokenData()
-	//result := jsonresult.CreateTransactionTokenResult{
-	//	TxID:        tx.Hash().String(),
-	//	TokenID:     tokenData.PropertyID.String(),
-	//	TokenName:   tokenData.PropertyName,
-	//	TokenAmount: tokenData.Amount,
-	//	ShardID:     common.GetShardIDFromLastByte(tx.GetTxBase().GetSenderAddrLastByte()),
-	//}
-	//return result, nil
+	httpServer.config.Server.OnTxPrivacyToken(nil, txMsg.(*wire.MessageTxPrivacyToken))
+	LastBytePubKeySender := tx.GetSenderAddrLastByte()
+	err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	messageHex, err := encodeMessage(txMsg)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	//Mark forwarded message
+	if err == nil {
+		Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v successfully, msgHash %v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		}
+	} else {
+		Logger.log.Errorf("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v with error %+v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), err)
+	}
+	tokenData := tx.GetTxTokenData()
+	result := jsonresult.CreateTransactionTokenResult{
+		TxID:        tx.Hash().String(),
+		TokenID:     tokenData.PropertyID.String(),
+		TokenName:   tokenData.PropertyName,
+		TokenAmount: tokenData.Amount,
+		ShardID:     common.GetShardIDFromLastByte(tx.GetTxBase().GetSenderAddrLastByte()),
+	}
+	return result, nil
 }
 
 // handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
