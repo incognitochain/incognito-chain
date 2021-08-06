@@ -435,10 +435,10 @@ func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, b
 	txFee := tx.GetTxFee()
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
-	err = tp.addTx(txD, isStore)
-	if err != nil {
-		return nil, nil, err
-	}
+	//err = tp.addTx(txD, isStore)
+	//if err != nil {
+	//	return nil, nil, err
+	//}
 	if isNewTransaction {
 		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
 	}
@@ -603,36 +603,36 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		return NewMempoolTxError(RejectSanityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
 	}
 
-	// Condition 2: Don't accept the transaction if it already exists in the pool.
-	isTxInPool := tp.isTxInPool(txHash)
-	if isTxInPool {
-		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("already had transaction %+v in mempool", txHash.String()))
-	}
-	// Condition 3: A standalone transaction must not be a salary transaction.
-	isSalaryTx := tx.IsSalaryTx()
-	if isSalaryTx {
-		return NewMempoolTxError(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-	}
-	// Condition 4: check fee PRV of tx
-	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
-	if !validFee {
-		return NewMempoolTxError(RejectInvalidFee,
-			fmt.Errorf("transaction %+v has invalid fees", tx.Hash().String()))
-	}
-	// Condition 5: check tx with all txs in current mempool
-	err = tx.ValidateTxWithCurrentMempool(tp)
-	if err != nil {
-		replaceErr, isReplacedTx := tp.validateTransactionReplacement(tx)
-		// if replace tx success (no replace error found) then continue with next validate condition
-		if isReplacedTx {
-			if replaceErr != nil {
-				return replaceErr
-			}
-		} else {
-			// replace fail
-			return NewMempoolTxError(RejectDoubleSpendWithMempoolTx, err)
-		}
-	}
+	//// Condition 2: Don't accept the transaction if it already exists in the pool.
+	//isTxInPool := tp.isTxInPool(txHash)
+	//if isTxInPool {
+	//	return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("already had transaction %+v in mempool", txHash.String()))
+	//}
+	//// Condition 3: A standalone transaction must not be a salary transaction.
+	//isSalaryTx := tx.IsSalaryTx()
+	//if isSalaryTx {
+	//	return NewMempoolTxError(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
+	//}
+	//// Condition 4: check fee PRV of tx
+	//validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
+	//if !validFee {
+	//	return NewMempoolTxError(RejectInvalidFee,
+	//		fmt.Errorf("transaction %+v has invalid fees", tx.Hash().String()))
+	//}
+	//// Condition 5: check tx with all txs in current mempool
+	//err = tx.ValidateTxWithCurrentMempool(tp)
+	//if err != nil {
+	//	replaceErr, isReplacedTx := tp.validateTransactionReplacement(tx)
+	//	// if replace tx success (no replace error found) then continue with next validate condition
+	//	if isReplacedTx {
+	//		if replaceErr != nil {
+	//			return replaceErr
+	//		}
+	//	} else {
+	//		// replace fail
+	//		return NewMempoolTxError(RejectDoubleSpendWithMempoolTx, err)
+	//	}
+	//}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
 		boolParams := make(map[string]bool)
@@ -646,21 +646,21 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
 		}
 	}
-	// Condition 7: validate tx with data of blockchain
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
-	if err != nil {
-		// parse error
-		e1, ok := err.(*transaction.TransactionError)
-		if ok {
-			switch e1.Code {
-			case transaction.RejectTxMedataWithBlockChain:
-				{
-					return NewMempoolTxError(RejectMetadataWithBlockchainTx, err)
-				}
-			}
-		}
-		return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
-	}
+	//// Condition 7: validate tx with data of blockchain
+	//err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
+	//if err != nil {
+	//	// parse error
+	//	e1, ok := err.(*transaction.TransactionError)
+	//	if ok {
+	//		switch e1.Code {
+	//		case transaction.RejectTxMedataWithBlockChain:
+	//			{
+	//				return NewMempoolTxError(RejectMetadataWithBlockchainTx, err)
+	//			}
+	//		}
+	//	}
+	//	return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
+	//}
 	// Condition 9: check duplicate stake public key ONLY with staking transaction
 	pubkey := ""
 	foundPubkey := -1
