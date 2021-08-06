@@ -271,10 +271,6 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 		if (sBState.BestBlock == nil) || (sBState.BestBlock.GetProposeTime() < (time.Now().Unix() - int64(time.Hour.Seconds()))) {
 			return
 		}
-		err := netSync.config.Server.PushMessageToShard(msg, sID)
-		if err != nil {
-			Logger.log.Error(err)
-		}
 		if !netSync.usingNewPool {
 			hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
 			if err != nil {
