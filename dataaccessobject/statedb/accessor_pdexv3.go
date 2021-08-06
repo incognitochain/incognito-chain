@@ -143,18 +143,12 @@ func StorePdexv3StakingPools() error {
 	return nil
 }
 
-func StorePdexv3Nfts(stateDB *StateDB, ids map[string]bool) error {
-	for id := range ids {
-		tokenHash, err := common.Hash{}.NewHashFromStr(id)
-		if err != nil {
-			return NewStatedbError(StorePdexv3NftError, err)
-		}
-		key := GeneratePdexv3NftObjectKey(*tokenHash)
-		nftState := NewPdexv3NftStateWithValue(*tokenHash)
-		err = stateDB.SetStateObject(Pdexv3NftObjectType, key, nftState)
-		if err != nil {
-			return NewStatedbError(StorePdexv3NftError, err)
-		}
+func StorePdexv3NftIndex(stateDB *StateDB, nextIndex uint64) error {
+	key := GeneratePdexv3NftIndexObjectKey()
+	value := NewPdexv3NftIndexWithValue(nextIndex)
+	err := stateDB.SetStateObject(Pdexv3NftIndexObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePdexv3NftIndexError, err)
 	}
 	return nil
 }
@@ -185,7 +179,14 @@ func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nftID string, beaconHeig
 	return stateDB.iterateWithPdexv3TradingFees(prefixHash)
 }
 
-func GetPdexv3Nfts(stateDB *StateDB) (map[string]bool, error) {
-	prefixHash := GetPdexv3NftPrefix()
-	return stateDB.iterateWithPdexv3Nfts(prefixHash)
+func GetPdexv3NftIndex(stateDB *StateDB) (*Pdexv3NftIndexState, error) {
+	key := GeneratePdexv3NftIndexObjectKey()
+	s, has, err := stateDB.getPdexv3NftIndexByKey(key)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, fmt.Errorf("could not found pDex v3 params in statedb")
+	}
+	return s, nil
 }

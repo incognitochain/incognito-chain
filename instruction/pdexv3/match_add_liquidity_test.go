@@ -18,7 +18,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+			common.PRVCoinID, common.PRVCoinID, nil, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
 	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id", common.PRVCoinID)
@@ -28,7 +28,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 	type fields struct {
 		contribution  statedb.Pdexv3ContributionState
 		newPoolPairID string
-		nfctID        common.Hash
+		nftID         common.Hash
 	}
 	type args struct {
 		source []string
@@ -76,7 +76,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 			fieldsAfterProcess: fields{
 				contribution:  contributionState,
 				newPoolPairID: "pool_pair_id",
-				nfctID:        common.PRVCoinID,
+				nftID:         common.PRVCoinID,
 			},
 			args: args{
 				source: []string{
@@ -93,7 +93,7 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 			m := &MatchAddLiquidity{
 				contribution:  tt.fields.contribution,
 				newPoolPairID: tt.fields.newPoolPairID,
-				nfctID:        tt.fields.nfctID,
+				nftID:         tt.fields.nftID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
@@ -107,8 +107,8 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				t.Errorf("newPoolPairID expect = %v, but get %v", tt.fieldsAfterProcess.newPoolPairID, m.newPoolPairID)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(m.nfctID, tt.fieldsAfterProcess.nfctID) {
-				t.Errorf("nfctID expect = %v, but get %v", tt.fieldsAfterProcess.nfctID, m.nfctID)
+			if !tt.wantErr && !reflect.DeepEqual(m.nftID, tt.fieldsAfterProcess.nftID) {
+				t.Errorf("nftID expect = %v, but get %v", tt.fieldsAfterProcess.nftID, m.nftID)
 				return
 			}
 		})
@@ -119,7 +119,7 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+			common.PRVCoinID, common.PRVCoinID, nil, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
 	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id", common.PRVCoinID)
@@ -129,7 +129,7 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 	type fields struct {
 		contribution  statedb.Pdexv3ContributionState
 		newPoolPairID string
-		nfctID        common.Hash
+		nftID         common.Hash
 	}
 	tests := []struct {
 		name    string
@@ -142,7 +142,7 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 			fields: fields{
 				contribution:  contributionState,
 				newPoolPairID: "pool_pair_id",
-				nfctID:        common.PRVCoinID,
+				nftID:         common.PRVCoinID,
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
@@ -157,7 +157,7 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 			m := &MatchAddLiquidity{
 				contribution:  tt.fields.contribution,
 				newPoolPairID: tt.fields.newPoolPairID,
-				nfctID:        tt.fields.nfctID,
+				nftID:         tt.fields.nftID,
 			}
 			got, err := m.StringSlice()
 			if (err != nil) != tt.wantErr {

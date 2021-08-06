@@ -654,15 +654,15 @@ func tradePathFromState(
 	return results, orderbookList, tradeDirections, nextTokenToSell, nil
 }
 
-func addNftIDToList(nftID string, nftIDs map[string]bool) {
-	nftIDs[nftID] = true
+func calculateNextNftIndex(nftIndex uint64) uint64 {
+	return nftIndex + 1
 }
 
-func genNFT(nftID string, nftIDs map[string]bool, beaconHeight uint64) common.Hash {
+func genNFT(nftID string, nftIndex, beaconHeight uint64) (common.Hash, uint64) {
 	if nftID != utils.EmptyString {
 		hash, _ := common.Hash{}.NewHashFromStr(nftID)
-		return *hash
+		return *hash, nftIndex
 	}
-	hash := append(common.Uint64ToBytes(uint64(len(nftIDs))), common.Uint64ToBytes(beaconHeight)...)
-	return common.HashH(hash)
+	hash := append(common.Uint64ToBytes(nftIndex), common.Uint64ToBytes(beaconHeight)...)
+	return common.HashH(append(hashPrefix, hash...)), calculateNextNftIndex(nftIndex)
 }

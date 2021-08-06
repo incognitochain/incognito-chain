@@ -212,20 +212,16 @@ func (p *PoolPairState) updateReserveAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	nftID string,
-	nftIDs map[string]bool,
-	amount, beaconHeight uint64,
-) common.Hash {
-	newNftID := genNFT(nftID, nftIDs, beaconHeight)
-	addNftIDToList(newNftID.String(), nftIDs)
-
+	nftID string, nextNftIndex, amount, beaconHeight uint64,
+) (common.Hash, uint64) {
+	newNftID, newNextNftIndex := genNFT(nftID, nextNftIndex, beaconHeight)
 	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
 	if p.shares[newNftID.String()] == nil {
 		p.shares[newNftID.String()] = make(map[uint64]*Share)
 	}
 	p.shares[newNftID.String()][beaconHeight] = share
 	p.state.SetShareAmount(p.state.ShareAmount() + amount)
-	return newNftID
+	return newNftID, newNextNftIndex
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {

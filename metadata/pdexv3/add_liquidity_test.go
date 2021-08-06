@@ -12,7 +12,6 @@ import (
 )
 
 func TestAddLiquidity_ValidateSanityData(t *testing.T) {
-
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
 
@@ -50,6 +49,7 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		receiveAddress string
 		refundAddress  string
 		tokenID        string
+		nftID          string
 		tokenAmount    uint64
 		amplifier      uint
 		MetadataBase   metadataCommon.MetadataBase
@@ -84,6 +84,18 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			fields: fields{
 				pairHash: "pair hash",
 				tokenID:  "asdb",
+			},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "Invalid tokenID",
+			fields: fields{
+				pairHash: "pair hash",
+				tokenID:  tokenHash.String(),
+				nftID:    "abacv",
 			},
 			args:    args{},
 			want:    false,
@@ -219,7 +231,6 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			want1:   false,
 			wantErr: true,
 		},
-
 		{
 			name: "Custom token tx && tokenID == prv",
 			fields: fields{
@@ -263,6 +274,7 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				receiveAddress: tt.fields.receiveAddress,
 				refundAddress:  tt.fields.refundAddress,
 				tokenID:        tt.fields.tokenID,
+				nftID:          tt.fields.nftID,
 				tokenAmount:    tt.fields.tokenAmount,
 				amplifier:      tt.fields.amplifier,
 				MetadataBase:   tt.fields.MetadataBase,
@@ -331,106 +343,6 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 			}
 			if got := al.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("AddLiquidity.ValidateMetadataByItself() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestAddLiquidityRequest_ValidateSanityData(t *testing.T) {
-	type fields struct {
-		poolPairID     string
-		pairHash       string
-		receiveAddress string
-		refundAddress  string
-		tokenID        string
-		tokenAmount    uint64
-		amplifier      uint
-		MetadataBase   metadataCommon.MetadataBase
-	}
-	type args struct {
-		chainRetriever      metadataCommon.ChainRetriever
-		shardViewRetriever  metadataCommon.ShardViewRetriever
-		beaconViewRetriever metadataCommon.BeaconViewRetriever
-		beaconHeight        uint64
-		tx                  metadataCommon.Transaction
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    bool
-		want1   bool
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			request := &AddLiquidityRequest{
-				poolPairID:     tt.fields.poolPairID,
-				pairHash:       tt.fields.pairHash,
-				receiveAddress: tt.fields.receiveAddress,
-				refundAddress:  tt.fields.refundAddress,
-				tokenID:        tt.fields.tokenID,
-				tokenAmount:    tt.fields.tokenAmount,
-				amplifier:      tt.fields.amplifier,
-				MetadataBase:   tt.fields.MetadataBase,
-			}
-			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AddLiquidityRequest.ValidateSanityData() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("AddLiquidityRequest.ValidateSanityData() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("AddLiquidityRequest.ValidateSanityData() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func TestAddLiquidityResponse_ValidateSanityData(t *testing.T) {
-	type fields struct {
-		MetadataBase metadataCommon.MetadataBase
-		status       string
-		txReqID      string
-	}
-	type args struct {
-		chainRetriever      metadataCommon.ChainRetriever
-		shardViewRetriever  metadataCommon.ShardViewRetriever
-		beaconViewRetriever metadataCommon.BeaconViewRetriever
-		beaconHeight        uint64
-		tx                  metadataCommon.Transaction
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    bool
-		want1   bool
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			response := &AddLiquidityResponse{
-				MetadataBase: tt.fields.MetadataBase,
-				status:       tt.fields.status,
-				txReqID:      tt.fields.txReqID,
-			}
-			got, got1, err := response.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AddLiquidityResponse.ValidateSanityData() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("AddLiquidityResponse.ValidateSanityData() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("AddLiquidityResponse.ValidateSanityData() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

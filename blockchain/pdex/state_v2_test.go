@@ -14,6 +14,7 @@ import (
 	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +28,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
 		validOTAReceiver0, validOTAReceiver1,
-		token0ID.String(), 100, 20000,
+		token0ID.String(), utils.EmptyString, 100, 20000,
 	)
 	assert.Nil(t, err)
 	contributionTx := &metadataMocks.Transaction{}
@@ -40,7 +41,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, 100, 20000, 1,
+			*token0ID, *firstTxHash, nil, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -81,7 +82,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, 100, 20000, 1,
+						*token0ID, *firstTxHash, nil, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -152,7 +153,7 @@ func Test_stateV2_Process(t *testing.T) {
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
 		validOTAReceiver0, validOTAReceiver1,
-		token0ID.String(), 100, 20000,
+		token0ID.String(), utils.EmptyString, 100, 20000,
 	)
 	assert.Nil(t, err)
 	contributionTx := &metadataMocks.Transaction{}
@@ -165,7 +166,7 @@ func Test_stateV2_Process(t *testing.T) {
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, 100, 20000, 1,
+			*token0ID, *firstTxHash, nil, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -220,7 +221,7 @@ func Test_stateV2_Process(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, 100, 20000, 1,
+						*token0ID, *firstTxHash, nil, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},

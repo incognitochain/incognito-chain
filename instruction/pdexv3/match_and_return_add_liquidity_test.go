@@ -15,11 +15,13 @@ import (
 )
 
 func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
-	tokenHash, _ := common.Hash{}.NewHashFromStr("abc")
+	tokenHash, err := common.Hash{}.NewHashFromStr("abc")
+	assert.Nil(t, err)
+
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+			common.PRVCoinID, common.PRVCoinID, nil, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
 	inst := NewMatchAndReturnAddLiquidityWithValue(
@@ -38,7 +40,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		existedTokenActualAmount uint64
 		existedTokenReturnAmount uint64
 		existedTokenID           common.Hash
-		nfctID                   common.Hash
+		nftID                    common.Hash
 	}
 	type args struct {
 		source []string
@@ -90,7 +92,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				existedTokenActualAmount: 200,
 				existedTokenReturnAmount: 100,
 				existedTokenID:           *tokenHash,
-				nfctID:                   common.PRVCoinID,
+				nftID:                    common.PRVCoinID,
 			},
 			args: args{
 				source: []string{
@@ -111,7 +113,7 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
-				nfctID:                   tt.fields.nfctID,
+				nftID:                    tt.fields.nftID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAndReturnAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
@@ -125,7 +127,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-			common.PRVCoinID, common.PRVCoinID, 100, metadataPdexv3.BaseAmplifier, 1,
+			common.PRVCoinID, common.PRVCoinID, nil, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
 	inst := NewMatchAndReturnAddLiquidityWithValue(
@@ -144,7 +146,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		existedTokenActualAmount uint64
 		existedTokenReturnAmount uint64
 		existedTokenID           common.Hash
-		nfctID                   common.Hash
+		nftID                    common.Hash
 	}
 	tests := []struct {
 		name    string
@@ -161,7 +163,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				existedTokenActualAmount: 200,
 				existedTokenReturnAmount: 100,
 				existedTokenID:           *tokenHash,
-				nfctID:                   common.PRVCoinID,
+				nftID:                    common.PRVCoinID,
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
@@ -180,7 +182,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
-				nfctID:                   tt.fields.nfctID,
+				nftID:                    tt.fields.nftID,
 			}
 			got, err := m.StringSlice()
 			if (err != nil) != tt.wantErr {

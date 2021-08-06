@@ -55,7 +55,7 @@ func TestSortOrder(t *testing.T) {
 	testcases = append(testcases, sortOrderTestcases...)
 
 	testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		Params{}, nil)
+		Params{}, nil, 1)
 	blankPairID := "pair0"
 	testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
 	for _, testcase := range testcases {
@@ -162,7 +162,7 @@ func mustReadState(filename string) *stateV2 {
 	}
 
 	s := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		Params{}, nil)
+		Params{}, nil, 1)
 	for k, v := range temp.PoolPairs {
 		s.poolPairs[k] = &PoolPairState{state: v, orderbook: temp.Orderbooks[k]}
 	}
