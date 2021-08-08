@@ -39,16 +39,16 @@ Result—success or error
 func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams==nil || len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 1 element"))
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 1 element"))
 	}
 	key, ok := arrayParams[0].(string)
 	if !ok{
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA key is invalid"))
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA key is invalid"))
 	}
 
 	result, err := httpServer.walletService.SubmitKey(key, "", false, nil)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	return result, nil
@@ -61,17 +61,17 @@ func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-ch
 func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams==nil || len(arrayParams) < 2 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 2 elements"))
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 2 elements"))
 	}
 	key, ok := arrayParams[0].(string)
 	if !ok{
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA key is invalid"))
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA key is invalid"))
 	}
 
 	var accessToken string
 	accessToken, ok = arrayParams[1].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("access token is invalid"))
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("access token is invalid"))
 	}
 
 	var syncFrom uint64
@@ -80,7 +80,7 @@ func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, clos
 		if ok {
 			syncFrom = uint64(tmpSyncFrom)
 		} else {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("syncFrom (params[2]) must be a float64"))
+			return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("syncFrom (params[2]) must be a float64"))
 		}
 	}
 
@@ -96,7 +96,7 @@ func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, clos
 
 	result, err := httpServer.walletService.SubmitKey(key, accessToken, isReset, &syncFrom)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CacheQueueError, err)
+		return false, rpcservice.NewRPCError(rpcservice.CacheQueueError, err)
 	}
 
 	return result, nil

@@ -13,8 +13,7 @@ func SliceToArray(slice []byte) [operation.Ed25519KeySize]byte {
 }
 
 func ArrayToSlice(array [operation.Ed25519KeySize]byte) []byte {
-	var slice []byte
-	slice = array[:]
+	var slice = array[:]
 	return slice
 }
 
@@ -52,17 +51,17 @@ func (viewKey ViewingKey) GetPrivateView() *operation.Scalar {
 }
 
 // OTAKey is a pair of keys used to recover coin's one-time-address
-type OTAKey struct{
-	pk        PublicKey //32 bytes: used to
+type OTAKey struct {
+	pk        PublicKey // 32 bytes: used to
 	otaSecret PrivateOTAKey
 }
 
 func (otaKey OTAKey) GetPublicSpend() *operation.Point {
 	pubSpend, err := new(operation.Point).FromBytesS(otaKey.pk)
-	if err != nil{
+	if err != nil {
 		return nil
 	}
-	if pubSpend.PointValid(){
+	if pubSpend.PointValid() {
 		return pubSpend
 	}
 	return nil
@@ -70,29 +69,29 @@ func (otaKey OTAKey) GetPublicSpend() *operation.Point {
 
 func (otaKey OTAKey) GetOTASecretKey() *operation.Scalar {
 	otaSecret := new(operation.Scalar).FromBytesS(otaKey.otaSecret)
-	if otaSecret.ScalarValid(){
+	if otaSecret.ScalarValid() {
 		return otaSecret
 	}
 	return nil
 }
 
-func (otaKey *OTAKey) SetOTASecretKey(otaSecretKey []byte){
-	if len(otaKey.otaSecret) == 0{
+func (otaKey *OTAKey) SetOTASecretKey(otaSecretKey []byte) {
+	if len(otaKey.otaSecret) == 0 {
 		otaKey.otaSecret = append([]byte{}, otaSecretKey...)
 	}
 }
 
-func (otaKey *OTAKey) SetPublicSpend(publicSpend []byte){
-	if len(otaKey.pk) == 0{
+func (otaKey *OTAKey) SetPublicSpend(publicSpend []byte) {
+	if len(otaKey.pk) == 0 {
 		otaKey.pk = append([]byte{}, publicSpend...)
 	}
 }
 
 // PaymentAddress is an address of the payee
 type PaymentAddress struct {
-	Pk PublicKey       // 32 bytes, use to receive coin (CoinV1)
-	Tk TransmissionKey // 32 bytes, use to encrypt pointByte
-	OTAPublic PublicOTAKey  `json:"OTAPublic,omitempty"`//32 bytes, used to receive coin (CoinV2)
+	Pk        PublicKey       // 32 bytes, use to receive coin (CoinV1)
+	Tk        TransmissionKey // 32 bytes, use to encrypt pointByte
+	OTAPublic PublicOTAKey    `json:"OTAPublic,omitempty"` // 32 bytes, used to receive coin (CoinV2)
 }
 
 // Bytes converts payment address to bytes array
@@ -106,16 +105,16 @@ func (addr *PaymentAddress) Bytes() []byte {
 
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) error {
-	if len(bytes) != 2*operation.Ed25519KeySize && len(bytes) != 3*operation.Ed25519KeySize{
+	if len(bytes) != 2*operation.Ed25519KeySize && len(bytes) != 3*operation.Ed25519KeySize {
 		return errors.New("length of payment address not valid")
 	}
 	// the first 33 bytes are public key
 	addr.Pk = bytes[:operation.Ed25519KeySize]
 	// the last 33 bytes are transmission key
-	addr.Tk = bytes[operation.Ed25519KeySize:2*operation.Ed25519KeySize]
-	if len(bytes) == 3 * operation.Ed25519KeySize{
+	addr.Tk = bytes[operation.Ed25519KeySize : 2*operation.Ed25519KeySize]
+	if len(bytes) == 3*operation.Ed25519KeySize {
 		addr.OTAPublic = bytes[2*operation.Ed25519KeySize:]
-	}else{
+	} else {
 		addr.OTAPublic = nil
 	}
 	return nil
@@ -124,7 +123,7 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) error {
 // String encodes a payment address as a hex string
 func (addr PaymentAddress) String() string {
 	byteArrays := addr.Bytes()
-	return hex.EncodeToString(byteArrays[:])
+	return hex.EncodeToString(byteArrays)
 }
 
 func (addr PaymentAddress) GetPublicSpend() *operation.Point {
@@ -137,12 +136,12 @@ func (addr PaymentAddress) GetPublicView() *operation.Point {
 	return pubView
 }
 
-func(addr PaymentAddress) GetOTAPublicKey() *operation.Point{
-	if len(addr.OTAPublic)  == 0 {
+func (addr PaymentAddress) GetOTAPublicKey() *operation.Point {
+	if len(addr.OTAPublic) == 0 {
 		return nil
 	}
 	encryptionKey, _ := new(operation.Point).FromBytesS(addr.OTAPublic)
-	return  encryptionKey
+	return encryptionKey
 }
 
 // PaymentInfo contains an address of a payee and a value of coins he/she will receive
@@ -155,8 +154,8 @@ type PaymentInfo struct {
 func InitPaymentInfo(addr PaymentAddress, amount uint64, message []byte) *PaymentInfo {
 	return &PaymentInfo{
 		PaymentAddress: addr,
-		Amount: amount,
-		Message: message,
+		Amount:         amount,
+		Message:        message,
 	}
 }
 
@@ -176,7 +175,7 @@ func GeneratePublicKey(privateKey []byte) PublicKey {
 
 // GenerateReceivingKey generates a 32-byte receiving key
 func GenerateReceivingKey(privateKey []byte) ReceivingKey {
-	receivingKey := operation.HashToScalar(privateKey[:])
+	receivingKey := operation.HashToScalar(privateKey)
 	return receivingKey.ToBytesS()
 }
 
@@ -206,7 +205,7 @@ func GeneratePublicOTAKey(privateOTAKey PrivateOTAKey) PublicOTAKey {
 	return new(operation.Point).ScalarMultBase(privateOTAScalar).ToBytesS()
 }
 
-func GenerateOTAKey(privateKey []byte) OTAKey{
+func GenerateOTAKey(privateKey []byte) OTAKey {
 	var otaKey OTAKey
 	otaKey.pk = GeneratePublicKey(privateKey)
 	otaKey.otaSecret = GeneratePrivateOTAKey(privateKey)

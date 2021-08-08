@@ -1,4 +1,4 @@
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"github.com/incognitochain/incognito-chain/common"

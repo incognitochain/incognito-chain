@@ -30,4 +30,3 @@ type Proof interface {
 
 	Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error)
 }
-

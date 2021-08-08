@@ -15,6 +15,11 @@ import (
 	"testing"
 )
 
+var _ = func() (_ struct{}) {
+	common.MaxShardNumber = 1
+	return
+}()
+
 //func TestIsCoinBelong(t *testing.T) {
 //	privateKey0 := key.GeneratePrivateKey([]byte{0})
 //	keyset0 := new(incognitokey.KeySet)
@@ -43,7 +48,6 @@ import (
 //	assert.Equal(t, false, IsCoinBelongToViewKey(c0, keyset1.ReadonlyKey))
 //	assert.Equal(t, false, IsCoinBelongToViewKey(c1, keyset0.ReadonlyKey))
 //}
-
 
 // TEST VER 2
 
@@ -84,14 +88,13 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		assert.Equal(t, true, operation.IsPointEqual(rConcealPrime, rConceal))
 		assert.Equal(t, i, iPrime)
 
-
 		// test byte-marshalling of concealed coins
 		privateKey := key.GeneratePrivateKey([]byte{byte(i)})
 		keyset := new(incognitokey.KeySet)
 		err = keyset.InitFromPrivateKey(&privateKey)
 		assert.Equal(t, nil, err)
 		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, 3000, []byte{})
-		coin,err = NewCoinFromPaymentInfo(paymentInfo)
+		coin, err = NewCoinFromPaymentInfo(paymentInfo)
 		coin.ConcealOutputCoin(keyset.PaymentAddress.GetPublicView())
 		b = coin.Bytes()
 		coinByBytes = new(CoinV2).Init()
@@ -133,7 +136,7 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 
 		// Conceal
 		err = c.ConcealOutputCoin(keyset.PaymentAddress.GetPublicView())
-		if err != nil{
+		if err != nil {
 			panic(err)
 		}
 		assert.Equal(t, true, c.IsEncrypted())
@@ -141,7 +144,7 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 		assert.NotEqual(t, val, c.GetValue())
 
 		// ensure tampered coins fail to decrypt
-		testCoinV2ConcealedTampered(c,keyset,t)
+		testCoinV2ConcealedTampered(c, keyset, t)
 
 		var pc PlainCoin
 		pc, err = c.Decrypt(keyset)
@@ -151,7 +154,7 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 	}
 }
 
-func testCoinV2ConcealedTampered(c *CoinV2, ks *incognitokey.KeySet, t *testing.T){
+func testCoinV2ConcealedTampered(c *CoinV2, ks *incognitokey.KeySet, t *testing.T) {
 	saved := c.GetAmount()
 	c.SetAmount(operation.RandomScalar())
 	_, err := c.Decrypt(ks)
@@ -169,33 +172,31 @@ func testCoinV2ConcealedTampered(c *CoinV2, ks *incognitokey.KeySet, t *testing.
 }
 
 func TestTxRandomGroup(t *testing.T) {
-	for i := 0; i < 5; i += 1 {
-		group := NewTxRandom()
-		r := operation.RandomPoint()
-		i := uint32(common.RandInt() & ((1 << 32) - 1))
-		group.SetTxConcealRandomPoint(r)
-		group.SetIndex(i)
+	group := NewTxRandom()
+	r := operation.RandomPoint()
+	i := uint32(common.RandInt() & ((1 << 32) - 1))
+	group.SetTxConcealRandomPoint(r)
+	group.SetIndex(i)
 
-		rPrime, err := group.GetTxOTARandomPoint()
-		assert.Equal(t, err, nil)
-		assert.Equal(t, true, operation.IsPointEqual(rPrime, r))
+	rPrime, err := group.GetTxConcealRandomPoint()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, true, operation.IsPointEqual(rPrime, r))
 
-		iPrime, err := group.GetIndex()
-		assert.Equal(t, err, nil)
-		assert.Equal(t, i, iPrime)
+	iPrime, err := group.GetIndex()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, i, iPrime)
 
-		b := group.Bytes()
-		var group2 TxRandom
-		err = group2.SetBytes(b)
-		assert.Equal(t, nil, err)
-		rPrime, err = group.GetTxOTARandomPoint()
-		assert.Equal(t, err, nil)
-		assert.Equal(t, true, operation.IsPointEqual(rPrime, r))
+	b := group.Bytes()
+	var group2 TxRandom
+	err = group2.SetBytes(b)
+	assert.Equal(t, nil, err)
+	rPrime, err = group.GetTxConcealRandomPoint()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, true, operation.IsPointEqual(rPrime, r))
 
-		iPrime, err = group.GetIndex()
-		assert.Equal(t, err, nil)
-		assert.Equal(t, i, iPrime)
-	}
+	iPrime, err = group.GetIndex()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, i, iPrime)
 }
 
 func TestCoinV2_IsCoinBelongToKeySet(t *testing.T) {
@@ -206,7 +207,6 @@ func TestCoinV2_IsCoinBelongToKeySet(t *testing.T) {
 	assert.Equal(t, true, operation.IsPointEqual(keySet.PaymentAddress.GetOTAPublicKey(), new(operation.Point).ScalarMultBase(keySet.OTAKey.GetOTASecretKey())))
 	assert.Equal(t, true, operation.IsPointEqual(keySet.PaymentAddress.GetPublicView(), new(operation.Point).ScalarMultBase(keySet.ReadonlyKey.GetPrivateView())))
 	assert.Equal(t, true, operation.IsPointEqual(keySet.PaymentAddress.GetPublicSpend(), new(operation.Point).ScalarMultBase(new(operation.Scalar).FromBytesS(keySet.PrivateKey))))
-
 
 	paymentInfo := key.PaymentInfo{Amount: 10000, PaymentAddress: keySet.PaymentAddress, Message: []byte("Hello world")}
 

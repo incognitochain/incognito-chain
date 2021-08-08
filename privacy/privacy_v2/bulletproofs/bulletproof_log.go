@@ -2,13 +2,13 @@ package bulletproofs
 
 import "github.com/incognitochain/incognito-chain/common"
 
-type BulletproofsLogger struct {
+type logger struct {
 	Log common.Logger
 }
 
-func (logger *BulletproofsLogger) Init(inst common.Logger) {
-	logger.Log = inst
+func (lg *logger) Init(inst common.Logger) {
+	lg.Log = inst
 }
 
 // Global instant to use
-var Logger = BulletproofsLogger{}
+var Logger = logger{}

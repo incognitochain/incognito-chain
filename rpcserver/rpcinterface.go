@@ -71,6 +71,7 @@ var HttpHandler = map[string]httpHandler{
 	createConvertCoinVer1ToVer2Transaction:  (*HttpServer).handleCreateConvertCoinVer1ToVer2Transaction,
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
+	getEncodedTransactionsByHashes:          (*HttpServer).handleGetEncodedTransactionsByHashes,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
 	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
