@@ -63,13 +63,12 @@ const (
 	BridgeBSCTxObjectType
 
 	// pDex v3
-	Pdexv3StatusObjectType
+	Pdexv3StatusObjectType // 41
 	Pdexv3ParamsObjectType
 	Pdexv3ContributionObjectType
 	Pdexv3PoolPairObjectType
 	Pdexv3ShareObjectType
 	Pdexv3TradingFeeObjectType
-	Pdexv3NftIndexObjectType
 )
 
 // Prefix length

@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"math/big"
 	"reflect"
 	"strconv"
 	"testing"
@@ -41,7 +42,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, nil, 100, 20000, 1,
+			*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -82,7 +83,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, nil, 100, 20000, 1,
+						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -166,7 +167,7 @@ func Test_stateV2_Process(t *testing.T) {
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, nil, 100, 20000, 1,
+			*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -221,7 +222,7 @@ func Test_stateV2_Process(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, nil, 100, 20000, 1,
+						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -293,6 +294,14 @@ func Test_stateV2_Clone(t *testing.T) {
 }
 
 func Test_stateV2_StoreToDB(t *testing.T) {
+	initDB()
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+
 	type fields struct {
 		stateBase                   stateBase
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
@@ -300,7 +309,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 		poolPairs                   map[string]*PoolPairState
 		params                      Params
 		stakingPoolsState           map[string]*StakingPoolState
-		orders                      map[int64][]Order
+		nftIDs                      map[string]bool
 		producer                    stateProducerV2
 		processor                   stateProcessorV2
 	}
@@ -314,7 +323,54 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Store pool pair + trading fees",
+			fields: fields{
+				stateBase: stateBase{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]map[uint64]*Share{
+							nftID: map[uint64]*Share{
+								11: &Share{
+									amount: 200,
+									tradingFees: map[string]uint64{
+										common.PRVIDStr: 10,
+									},
+									lastUpdatedBeaconHeight: 11,
+								},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+			},
+			args: args{
+				env: &stateEnvironment{
+					stateDB: sDB,
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{
+						poolPairID: true,
+					},
+					shares: map[string]map[uint64]*ShareChange{
+						nftID: map[uint64]*ShareChange{
+							11: &ShareChange{
+								isChanged: true,
+								tokenIDs: map[string]bool{
+									common.PRVIDStr: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -325,64 +381,12 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
+				nftIDs:                      tt.fields.nftIDs,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
 			if err := s.StoreToDB(tt.args.env, tt.args.stateChange); (err != nil) != tt.wantErr {
 				t.Errorf("stateV2.StoreToDB() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_stateV2_GetDiff(t *testing.T) {
-	type fields struct {
-		stateBase                   stateBase
-		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
-		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
-		poolPairs                   map[string]*PoolPairState
-		params                      Params
-		stakingPoolsState           map[string]*StakingPoolState
-		orders                      map[int64][]Order
-		producer                    stateProducerV2
-		processor                   stateProcessorV2
-	}
-	type args struct {
-		compareState State
-		stateChange  *StateChange
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    State
-		want1   *StateChange
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &stateV2{
-				stateBase:                   tt.fields.stateBase,
-				waitingContributions:        tt.fields.waitingContributions,
-				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
-				poolPairs:                   tt.fields.poolPairs,
-				params:                      tt.fields.params,
-				stakingPoolsState:           tt.fields.stakingPoolsState,
-				producer:                    tt.fields.producer,
-				processor:                   tt.fields.processor,
-			}
-			got, got1, err := s.GetDiff(tt.args.compareState, tt.args.stateChange)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("stateV2.GetDiff() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("stateV2.GetDiff() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("stateV2.GetDiff() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

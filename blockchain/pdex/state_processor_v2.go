@@ -27,41 +27,40 @@ func (sp *stateProcessorV2) addLiquidity(
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	nextNftIndex uint64,
+	nftIDs map[string]bool,
 ) (
 	map[string]*PoolPairState,
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
-	uint64, error,
+	map[string]bool, error,
 ) {
-	newNextNftIndex := nextNftIndex
 	var err error
 	switch inst[1] {
 	case common.PDEContributionWaitingChainStatus:
 		waitingContributions, _, err = sp.waitingContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
 		if err != nil {
-			return poolPairs, waitingContributions, deletedWaitingContributions, newNextNftIndex, err
+			return poolPairs, waitingContributions, deletedWaitingContributions, nftIDs, err
 		}
 	case common.PDEContributionRefundChainStatus:
 		waitingContributions, deletedWaitingContributions, _, err = sp.refundContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
 		if err != nil {
-			return poolPairs, waitingContributions, deletedWaitingContributions, newNextNftIndex, err
+			return poolPairs, waitingContributions, deletedWaitingContributions, nftIDs, err
 		}
 	case common.PDEContributionMatchedChainStatus:
-		waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, _, err = sp.matchContribution(
-			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs, nextNftIndex)
+		waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, _, err = sp.matchContribution(
+			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs, nftIDs)
 		if err != nil {
-			return poolPairs, waitingContributions, deletedWaitingContributions, newNextNftIndex, err
+			return poolPairs, waitingContributions, deletedWaitingContributions, nftIDs, err
 		}
 	case common.PDEContributionMatchedNReturnedChainStatus:
 		waitingContributions,
-			deletedWaitingContributions, poolPairs, newNextNftIndex, _, err = sp.matchAndReturnContribution(
+			deletedWaitingContributions, poolPairs, nftIDs, _, err = sp.matchAndReturnContribution(
 			stateDB, inst, beaconHeight,
-			waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex)
+			waitingContributions, deletedWaitingContributions, poolPairs, nftIDs)
 		if err != nil {
-			return poolPairs, waitingContributions, deletedWaitingContributions, newNextNftIndex, err
+			return poolPairs, waitingContributions, deletedWaitingContributions, nftIDs, err
 		}
 	}
-	return poolPairs, waitingContributions, deletedWaitingContributions, newNextNftIndex, nil
+	return poolPairs, waitingContributions, deletedWaitingContributions, nftIDs, nil
 }
 
 func (sp *stateProcessorV2) waitingContribution(
@@ -168,28 +167,27 @@ func (sp *stateProcessorV2) matchContribution(
 	beaconHeight uint64,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	poolPairs map[string]*PoolPairState, nextNftIndex uint64,
+	poolPairs map[string]*PoolPairState, nftIDs map[string]bool,
 ) (
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
-	map[string]*PoolPairState, uint64,
+	map[string]*PoolPairState, map[string]bool,
 	*metadata.PDEContributionStatus, error,
 ) {
-	newNextNftIndex := nextNftIndex
 	matchAddLiquidityInst := instruction.MatchAddLiquidity{}
 	err := matchAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {
-		return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 	matchContribution := matchAddLiquidityInst.Contribution()
 	existingWaitingContribution, found := waitingContributions[matchContribution.PairHash()]
 	if !found {
 		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", matchContribution.PairHash())
-		return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 	_, found = deletedWaitingContributions[matchContribution.PairHash()]
 	if found {
 		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", matchContribution.PairHash())
-		return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 
 	matchContributionValue := matchContribution.Value()
@@ -204,7 +202,7 @@ func (sp *stateProcessorV2) matchContribution(
 		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-	_, newNextNftIndex = poolPair.addShare(matchAddLiquidityInst.NftID().String(), newNextNftIndex, shareAmount, beaconHeight)
+	_, nftIDs = poolPair.addShare(matchAddLiquidityInst.NftID(), nftIDs, shareAmount, beaconHeight)
 	poolPairs[poolPairID] = poolPair
 
 	deletedWaitingContributions[matchContribution.PairHash()] = existingWaitingContribution
@@ -222,10 +220,10 @@ func (sp *stateProcessorV2) matchContribution(
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
-		return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 
-	return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, &contribStatus, nil
+	return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, &contribStatus, nil
 }
 
 func (sp *stateProcessorV2) matchAndReturnContribution(
@@ -235,18 +233,17 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]*PoolPairState,
-	nextNftIndex uint64,
+	nftIDs map[string]bool,
 ) (
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
-	map[string]*PoolPairState, uint64,
+	map[string]*PoolPairState, map[string]bool,
 	*metadata.PDEContributionStatus,
 	error,
 ) {
-	newNextNftIndex := nextNftIndex
 	matchAndReturnAddLiquidity := instruction.MatchAndReturnAddLiquidity{}
 	err := matchAndReturnAddLiquidity.FromStringSlice(inst)
 	if err != nil {
-		return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 	matchAndReturnContribution := matchAndReturnAddLiquidity.Contribution()
 	matchAndReturnContributionValue := matchAndReturnContribution.Value()
@@ -255,7 +252,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	if found {
 		if matchAndReturnContributionValue.PoolPairID() != waitingContribution.PoolPairID() {
 			err := fmt.Errorf("Expect poolPairID %v but get %v", waitingContribution.PoolPairID(), matchAndReturnContributionValue.PoolPairID())
-			return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 		}
 		poolPair := poolPairs[waitingContribution.PoolPairID()]
 		var amount0, amount1 uint64
@@ -267,9 +264,9 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			amount0 = matchAndReturnContributionValue.Amount()
 		}
 		poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
-		_, newNextNftIndex = poolPair.addShare(
-			matchAndReturnAddLiquidity.NftID().String(),
-			newNextNftIndex,
+		_, nftIDs = poolPair.addShare(
+			matchAndReturnAddLiquidity.NftID(),
+			nftIDs,
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 		)
@@ -300,7 +297,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 
 		contribStatusBytes, err := json.Marshal(contribStatus)
 		if err != nil {
-			return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 		}
 
 		err = statedb.TrackPDEContributionStatus(
@@ -311,11 +308,11 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
-			return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, nil, err
+			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 		}
 	}
 
-	return waitingContributions, deletedWaitingContributions, poolPairs, newNextNftIndex, &contribStatus, nil
+	return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, &contribStatus, nil
 }
 
 func (sp *stateProcessorV2) modifyParams(

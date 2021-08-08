@@ -1902,17 +1902,6 @@ func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bo
 	return NewPdexv3Params(), false, nil
 }
 
-func (stateDB *StateDB) getPdexv3NftIndexByKey(key common.Hash) (*Pdexv3NftIndexState, bool, error) {
-	pDexv3NftIndexState, err := stateDB.getStateObject(Pdexv3ParamsObjectType, key)
-	if err != nil {
-		return nil, false, err
-	}
-	if pDexv3NftIndexState != nil {
-		return pDexv3NftIndexState.GetValue().(*Pdexv3NftIndexState), true, nil
-	}
-	return NewPdexv3NftIndexState(), false, nil
-}
-
 func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	res := map[string]rawdbv2.Pdexv3Contribution{}
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -1949,7 +1938,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pd
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (
+func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte, nftIDs map[string]bool) (
 	map[string]map[uint64]Pdexv3ShareState,
 	error,
 ) {
@@ -1965,6 +1954,7 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (
 		if err != nil {
 			return shares, err
 		}
+		nftIDs[shareState.nftID.String()] = true
 		if shares[shareState.nftID.String()] == nil {
 			shares[shareState.nftID.String()] = make(map[uint64]Pdexv3ShareState)
 		}

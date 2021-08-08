@@ -16,11 +16,11 @@ type Pdexv3Contribution struct {
 	amount         uint64
 	amplifier      uint
 	txReqID        common.Hash
-	nftID          *common.Hash
+	nftID          common.Hash
 	shardID        byte
 }
 
-func (contribution *Pdexv3Contribution) NftID() *common.Hash {
+func (contribution *Pdexv3Contribution) NftID() common.Hash {
 	return contribution.nftID
 }
 
@@ -62,15 +62,15 @@ func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID     string       `json:"PoolPairID"`
-		ReceiveAddress string       `json:"ReceiveAddress"`
-		RefundAddress  string       `json:"RefundAddress"`
-		TokenID        common.Hash  `json:"TokenID"`
-		Amount         uint64       `json:"Amount"`
-		Amplifier      uint         `json:"Amplifier"`
-		TxReqID        common.Hash  `json:"TxReqID"`
-		NftID          *common.Hash `json:"NftID"`
-		ShardID        byte         `json:"ShardID"`
+		PoolPairID     string      `json:"PoolPairID"`
+		ReceiveAddress string      `json:"ReceiveAddress"`
+		RefundAddress  string      `json:"RefundAddress"`
+		TokenID        common.Hash `json:"TokenID"`
+		Amount         uint64      `json:"Amount"`
+		Amplifier      uint        `json:"Amplifier"`
+		TxReqID        common.Hash `json:"TxReqID"`
+		NftID          common.Hash `json:"NftID"`
+		ShardID        byte        `json:"ShardID"`
 	}{
 		PoolPairID:     contribution.poolPairID,
 		ReceiveAddress: contribution.receiveAddress,
@@ -90,15 +90,15 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 
 func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID     string       `json:"PoolPairID"`
-		ReceiveAddress string       `json:"ReceiveAddress"`
-		RefundAddress  string       `json:"RefundAddress"`
-		TokenID        common.Hash  `json:"TokenID"`
-		Amount         uint64       `json:"Amount"`
-		Amplifier      uint         `json:"Amplifier"`
-		TxReqID        common.Hash  `json:"TxReqID"`
-		NftID          *common.Hash `json:"NftID"`
-		ShardID        byte         `json:"ShardID"`
+		PoolPairID     string      `json:"PoolPairID"`
+		ReceiveAddress string      `json:"ReceiveAddress"`
+		RefundAddress  string      `json:"RefundAddress"`
+		TokenID        common.Hash `json:"TokenID"`
+		Amount         uint64      `json:"Amount"`
+		Amplifier      uint        `json:"Amplifier"`
+		TxReqID        common.Hash `json:"TxReqID"`
+		NftID          common.Hash `json:"NftID"`
+		ShardID        byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -130,7 +130,7 @@ func NewPdexv3Contribution() *Pdexv3Contribution {
 
 func NewPdexv3ContributionWithValue(
 	poolPairID, receiveAddress, refundAddress string,
-	tokenID, txReqID common.Hash, nftID *common.Hash,
+	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{

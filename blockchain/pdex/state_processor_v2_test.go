@@ -46,7 +46,7 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, nil, 100, 20000, 1,
+			*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -63,7 +63,7 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 		poolPairs                   map[string]*PoolPairState
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
-		nextNftIndex                uint64
+		nftIDs                      map[string]bool
 	}
 	tests := []struct {
 		name    string
@@ -90,12 +90,13 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 				poolPairs:                   map[string]*PoolPairState{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				nftIDs:                      map[string]bool{},
 			},
 			want: map[string]*PoolPairState{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, nil, 100, 20000, 1,
+					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2:   map[string]rawdbv2.Pdexv3Contribution{},
@@ -112,7 +113,7 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 				tt.args.stateDB, tt.args.inst,
 				tt.args.beaconHeight, tt.args.poolPairs,
 				tt.args.waitingContributions, tt.args.deletedWaitingContributions,
-				tt.args.nextNftIndex,
+				tt.args.nftIDs,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.addLiquidity() error = %v, wantErr %v", err, tt.wantErr)
@@ -128,7 +129,7 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 				t.Errorf("stateProcessorV2.addLiquidity() got2 = %v, want %v", got2, tt.want2)
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("stateProcessorV2.addLiquidity() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("stateProcessorV2.addLiquidity() got3 = %v, want %v", got3, tt.want3)
 			}
 		})
 	}
@@ -160,7 +161,7 @@ func Test_stateProcessorV2_waitingContribution(t *testing.T) {
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, nil, 100, 20000, 1,
+			*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -202,7 +203,7 @@ func Test_stateProcessorV2_waitingContribution(t *testing.T) {
 			want: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, nil, 100, 20000, 1,
+					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want1: &metadata.PDEContributionStatus{
@@ -261,7 +262,7 @@ func Test_stateProcessorV2_refundContribution(t *testing.T) {
 	refundContributionSanityState := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *firstTxHash, nil, 100, 20000, 1,
+			*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 		),
 		"pair_hash")
 	refundContributionSanityInst := instruction.NewRefundAddLiquidityWithValue(*refundContributionSanityState)
@@ -301,7 +302,7 @@ func Test_stateProcessorV2_refundContribution(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, nil, 100, 20000, 1,
+						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -310,7 +311,7 @@ func Test_stateProcessorV2_refundContribution(t *testing.T) {
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, nil, 100, 20000, 1,
+					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2: &metadata.PDEContributionStatus{
@@ -353,7 +354,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 	assert.Nil(t, err)
 	secondTxHash, err := common.Hash{}.NewHashFromStr("aaa")
 	assert.Nil(t, err)
-	initNfctHash, err := common.Hash{}.NewHashFromStr(initNfctID)
+	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 	assert.Nil(t, err)
 
 	initDB()
@@ -376,10 +377,10 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 	matchContributionState := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0, validOTAReceiver1,
-			*token1ID, *secondTxHash, nil, 400, 20000, 1,
+			*token1ID, *secondTxHash, common.Hash{}, 400, 20000, 1,
 		),
 		"pair_hash")
-	matchContributionInst := instruction.NewMatchAddLiquidityWithValue(*matchContributionState, poolPairID, *initNfctHash)
+	matchContributionInst := instruction.NewMatchAddLiquidityWithValue(*matchContributionState, poolPairID, *nftHash)
 	matchContributionInstBytes, err := json.Marshal(matchContributionInst)
 	//
 
@@ -393,7 +394,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
-		nextNftIndex                uint64
+		nftIDs                      map[string]bool
 	}
 	tests := []struct {
 		name    string
@@ -422,17 +423,18 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, nil, 100, 20000, 1,
+						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs:                      map[string]bool{},
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, nil, 100, 20000, 1,
+					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2: map[string]*PoolPairState{
@@ -443,8 +445,8 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 						big.NewInt(0).SetUint64(800), 20000,
 					),
 					shares: map[string]map[uint64]*Share{
-						initNfctID: map[uint64]*Share{
-							10: &Share{
+						nftID: map[uint64]*Share{
+							11: &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -454,7 +456,9 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 					orderbook: Orderbook{[]*Order{}},
 				},
 			},
-			want3: map[string]bool{},
+			want3: map[string]bool{
+				nftID: true,
+			},
 			want4: &metadata.PDEContributionStatus{
 				Status: byte(common.PDEContributionAcceptedStatus),
 			},
@@ -470,7 +474,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 				tt.args.stateDB, tt.args.inst,
 				tt.args.beaconHeight, tt.args.waitingContributions,
 				tt.args.deletedWaitingContributions, tt.args.poolPairs,
-				tt.args.nextNftIndex,
+				tt.args.nftIDs,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.matchContribution() error = %v, wantErr %v", err, tt.wantErr)
@@ -509,7 +513,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 	assert.Nil(t, err)
 	secondTxHash, err := common.Hash{}.NewHashFromStr("aaa")
 	assert.Nil(t, err)
-	nfctHash, err := common.Hash{}.NewHashFromStr(nfctID)
+	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 	assert.Nil(t, err)
 
 	initDB()
@@ -533,11 +537,11 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 	matchAndReturnContribution0State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *secondTxHash, nil, 50, 20000, 1,
+			*token0ID, *secondTxHash, common.Hash{}, 50, 20000, 1,
 		),
 		"pair_hash")
 	matchAndReturnContritubtion0Inst := instruction.NewMatchAndReturnAddLiquidityWithValue(
-		*matchAndReturnContribution0State, 100, 0, 200, 0, *token1ID, *nfctHash)
+		*matchAndReturnContribution0State, 100, 0, 200, 0, *token1ID, *nftHash)
 	matchAndReturnContritubtion0InstBytes, err := json.Marshal(matchAndReturnContritubtion0Inst)
 	//
 
@@ -551,7 +555,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
-		nextNftIndex                uint64
+		nftIDs                      map[string]bool
 	}
 	tests := []struct {
 		name    string
@@ -560,7 +564,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 		want    map[string]rawdbv2.Pdexv3Contribution
 		want1   map[string]rawdbv2.Pdexv3Contribution
 		want2   map[string]*PoolPairState
-		want3   uint64
+		want3   map[string]bool
 		want4   *metadata.PDEContributionStatus
 		wantErr bool
 	}{
@@ -580,7 +584,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, nil, 100, 20000, 1,
+						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -592,7 +596,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 							big.NewInt(0).SetUint64(800), 20000,
 						),
 						shares: map[string]map[uint64]*Share{
-							initNfctID: map[uint64]*Share{
+							nftID: map[uint64]*Share{
 								10: &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
@@ -602,12 +606,13 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						},
 					},
 				},
+				nftIDs: map[string]bool{},
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					poolPairID, validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, nil, 100, 20000, 1,
+					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2: map[string]*PoolPairState{
@@ -618,14 +623,12 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					shares: map[string]map[uint64]*Share{
-						initNfctID: map[uint64]*Share{
+						nftID: map[uint64]*Share{
 							10: &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
 							},
-						},
-						nfctHash.String(): map[uint64]*Share{
 							11: &Share{
 								amount:                  100,
 								tradingFees:             map[string]uint64{},
@@ -635,7 +638,9 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					},
 				},
 			},
-			want3:   10,
+			want3: map[string]bool{
+				nftID: true,
+			},
 			want4:   &metadata.PDEContributionStatus{},
 			wantErr: false,
 		},
@@ -656,7 +661,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, nil, 100, 20000, 1,
+						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				poolPairs: map[string]*PoolPairState{
@@ -667,16 +672,13 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
 						shares: map[string]map[uint64]*Share{
-							initNfctID: map[uint64]*Share{
+							nftID: map[uint64]*Share{
 								10: &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 10,
 								},
-							},
-
-							nfctHash.String(): map[uint64]*Share{
-								10: &Share{
+								11: &Share{
 									amount:                  100,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 11,
@@ -685,12 +687,15 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						},
 					},
 				},
+				nftIDs: map[string]bool{
+					nftID: true,
+				},
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					poolPairID, validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, nil, 100, 20000, 1,
+					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2: map[string]*PoolPairState{
@@ -701,16 +706,13 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					shares: map[string]map[uint64]*Share{
-						initNfctID: map[uint64]*Share{
+						nftID: map[uint64]*Share{
 							10: &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
 							},
-						},
-
-						nfctHash.String(): map[uint64]*Share{
-							10: &Share{
+							11: &Share{
 								amount:                  100,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -718,6 +720,9 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						},
 					},
 				},
+			},
+			want3: map[string]bool{
+				nftID: true,
 			},
 			want4: &metadata.PDEContributionStatus{
 				TokenID1Str:        token0ID.String(),
@@ -738,7 +743,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				tt.args.stateDB, tt.args.inst,
 				tt.args.beaconHeight, tt.args.waitingContributions,
 				tt.args.deletedWaitingContributions, tt.args.poolPairs,
-				tt.args.nextNftIndex,
+				tt.args.nftIDs,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.matchAndReturnContribution() error = %v, wantErr %v", err, tt.wantErr)

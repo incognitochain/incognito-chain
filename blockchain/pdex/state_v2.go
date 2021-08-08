@@ -23,7 +23,7 @@ type stateV2 struct {
 	poolPairs                   map[string]*PoolPairState
 	params                      Params
 	stakingPoolsState           map[string]*StakingPoolState // tokenID -> StakingPoolState
-	nextNftIndex                uint64
+	nftIDs                      map[string]bool
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
@@ -57,6 +57,7 @@ func newStateV2() *stateV2 {
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
 		stakingPoolsState:           make(map[string]*StakingPoolState),
+		nftIDs:                      make(map[string]bool),
 	}
 }
 
@@ -66,7 +67,7 @@ func newStateV2WithValue(
 	poolPairs map[string]*PoolPairState,
 	params Params,
 	stakingPoolsState map[string]*StakingPoolState,
-	nextNftIndex uint64,
+	nftIDs map[string]bool,
 ) *stateV2 {
 	return &stateV2{
 		waitingContributions:        waitingContributions,
@@ -74,7 +75,7 @@ func newStateV2WithValue(
 		poolPairs:                   poolPairs,
 		stakingPoolsState:           stakingPoolsState,
 		params:                      params,
-		nextNftIndex:                nextNftIndex,
+		nftIDs:                      nftIDs,
 	}
 }
 
@@ -105,9 +106,10 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
+	nftIDs := make(map[string]bool)
 	poolPairs := make(map[string]*PoolPairState)
 	for poolPairID, poolPairState := range poolPairsStates {
-		allShareStates, err := statedb.GetPdexv3Shares(stateDB, poolPairID)
+		allShareStates, err := statedb.GetPdexv3Shares(stateDB, poolPairID, nftIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -135,14 +137,10 @@ func initStateV2(
 		poolPair := NewPoolPairStateWithValue(poolPairState.Value(), shares, orderbook)
 		poolPairs[poolPairID] = poolPair
 	}
-	nextNftIndexState, err := statedb.GetPdexv3NftIndex(stateDB)
-	if err != nil {
-		return nil, err
-	}
 
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs, params, nil, nextNftIndexState.NextIndex(),
+		poolPairs, params, nil, nftIDs,
 	), nil
 }
 
@@ -152,7 +150,6 @@ func (s *stateV2) Version() uint {
 
 func (s *stateV2) Clone() State {
 	res := newStateV2()
-
 	res.params = s.params
 	clonedFeeRateBPS := map[string]uint{}
 	for k, v := range s.params.FeeRateBPS {
@@ -177,7 +174,9 @@ func (s *stateV2) Clone() State {
 	for k, v := range s.poolPairs {
 		res.poolPairs[k] = v.Clone()
 	}
-	res.nextNftIndex = s.nextNftIndex
+	for k, v := range s.nftIDs {
+		res.nftIDs[k] = v
+	}
 	res.producer = s.producer
 	res.processor = s.processor
 
@@ -207,12 +206,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 			s.poolPairs,
 				s.waitingContributions,
-				s.deletedWaitingContributions, s.nextNftIndex, err = s.processor.addLiquidity(
+				s.deletedWaitingContributions, s.nftIDs, err = s.processor.addLiquidity(
 				env.StateDB(),
 				inst,
 				env.BeaconHeight(),
 				s.poolPairs,
-				s.waitingContributions, s.deletedWaitingContributions, s.nextNftIndex,
+				s.waitingContributions, s.deletedWaitingContributions, s.nftIDs,
 			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
@@ -257,12 +256,12 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
-	addLiquidityInstructions, s.poolPairs, s.waitingContributions, s.nextNftIndex, err = s.producer.addLiquidity(
+	addLiquidityInstructions, s.poolPairs, s.waitingContributions, s.nftIDs, err = s.producer.addLiquidity(
 		addLiquidityTxs,
 		env.BeaconHeight(),
 		s.poolPairs,
 		s.waitingContributions,
-		s.nextNftIndex,
+		s.nftIDs,
 	)
 	if err != nil {
 		return instructions, err
@@ -335,20 +334,23 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		}
 		for nftID, share := range poolPairState.shares {
 			for height, v := range share {
+				if stateChange.shares[nftID] == nil || stateChange.shares[nftID][height] == nil {
+					continue
+				}
 				if stateChange.shares[nftID][height].isChanged {
 					nftID, err := common.Hash{}.NewHashFromStr(nftID)
-					shareState := statedb.NewPdexv3ShareStateWithValue(
-						*nftID,
-						env.BeaconHeight(),
-						v.amount,
-						v.lastUpdatedBeaconHeight,
+					err = statedb.StorePdexv3Share(
+						env.StateDB(), poolPairID,
+						*nftID, env.BeaconHeight(), v.amount, v.lastUpdatedBeaconHeight,
 					)
-					err = statedb.StorePdexv3Share(env.StateDB(), poolPairID, *shareState)
 					if err != nil {
 						return err
 					}
 				}
 				for tokenID, tradingFee := range v.tradingFees {
+					if stateChange.shares[nftID][height].tokenIDs == nil {
+						continue
+					}
 					if stateChange.shares[nftID][height].tokenIDs[tokenID] {
 						err := statedb.StorePdexv3TradingFee(
 							env.StateDB(), poolPairID, nftID, tokenID, env.BeaconHeight(), tradingFee,
@@ -364,12 +366,6 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 	err = statedb.StorePdexv3StakingPools()
 	if err != nil {
 		return err
-	}
-	if s.nextNftIndex != 0 {
-		err = statedb.StorePdexv3NftIndex(env.StateDB(), s.nextNftIndex)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -420,8 +416,10 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 			res.stakingPoolsState[k] = v.Clone()
 		}
 	}
-	if s.nextNftIndex != compareStateV2.nextNftIndex {
-		res.nextNftIndex = s.nextNftIndex
+	for k, v := range s.nftIDs {
+		if m, ok := compareStateV2.nftIDs[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.nftIDs[k] = true
+		}
 	}
 
 	return res, newStateChange, nil
@@ -440,14 +438,15 @@ func NewContributionWithMetaData(
 	metaData metadataPdexv3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
 ) *rawdbv2.Pdexv3Contribution {
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
-	var nftHash *common.Hash
+	nftID := common.Hash{}
 	if metaData.NftID() != utils.EmptyString {
-		nftHash, _ = common.Hash{}.NewHashFromStr(metaData.NftID())
+		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
+		nftID = *nftHash
 	}
 
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
-		*tokenHash, txReqID, nftHash,
+		*tokenHash, txReqID, nftID,
 		metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
 	)

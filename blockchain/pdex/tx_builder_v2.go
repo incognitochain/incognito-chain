@@ -150,7 +150,7 @@ func buildMatchContributionTxv2(
 
 	matchContribution := matchInst.Contribution()
 	matchContributionValue := matchContribution.Value()
-	if matchContributionValue.ShardID() != shardID {
+	if matchContributionValue.ShardID() != shardID || matchInst.NftID().IsZeroValue() {
 		return tx, nil
 	}
 	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
@@ -196,7 +196,7 @@ func buildMatchAndReturnContributionTxv2(
 		common.PDEContributionMatchedChainStatus,
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
-	if !nftIDs[matchAndReturnInst.NftID().String()] {
+	if !nftIDs[matchAndReturnInst.NftID().String()] || matchAndReturnInst.NftID().IsZeroValue() {
 		receiveAddress := privacy.OTAReceiver{}
 		err = receiveAddress.FromString(matchAndReturnContributionValue.ReceiveAddress())
 		if err != nil {

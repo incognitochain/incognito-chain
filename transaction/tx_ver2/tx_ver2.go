@@ -4,8 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/wallet"
+
+	"math"
+	"math/big"
+	"strconv"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,10 +20,6 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	"math"
-	"math/big"
-	"strconv"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )

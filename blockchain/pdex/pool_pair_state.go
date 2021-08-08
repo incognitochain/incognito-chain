@@ -19,10 +19,10 @@ type PoolPairState struct {
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State  rawdbv2.Pdexv3PoolPair       `json:"State"`
+		State  *rawdbv2.Pdexv3PoolPair      `json:"State"`
 		Shares map[string]map[uint64]*Share `json:"Shares"`
 	}{
-		State:  poolPairState.state,
+		State:  &poolPairState.state,
 		Shares: poolPairState.shares,
 	})
 	if err != nil {
@@ -33,7 +33,7 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State  rawdbv2.Pdexv3PoolPair       `json:"State"`
+		State  *rawdbv2.Pdexv3PoolPair      `json:"State"`
 		Shares map[string]map[uint64]*Share `json:"Shares"`
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -41,7 +41,9 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	poolPairState.shares = temp.Shares
-	poolPairState.state = temp.State
+	if temp.State != nil {
+		poolPairState.state = *temp.State
+	}
 	return nil
 }
 
@@ -136,6 +138,7 @@ func (p *PoolPairState) computeActualContributedAmounts(
 	return actualContribution0Amt, contribution0.Amount() - actualContribution0Amt, actualContribution1Amt, contribution1.Amount() - actualContribution1Amt
 }
 
+//update both real and virtual amount
 func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) {
 	p.state.SetToken0RealAmount(p.state.Token0RealAmount() + amount0)
 	p.state.SetToken1RealAmount(p.state.Token1RealAmount() + amount1)
@@ -212,16 +215,23 @@ func (p *PoolPairState) updateReserveAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	nftID string, nextNftIndex, amount, beaconHeight uint64,
-) (common.Hash, uint64) {
-	newNftID, newNextNftIndex := genNFT(nftID, nextNftIndex, beaconHeight)
-	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
-	if p.shares[newNftID.String()] == nil {
-		p.shares[newNftID.String()] = make(map[uint64]*Share)
+	nftID common.Hash, nftIDs map[string]bool, amount, beaconHeight uint64,
+) (common.Hash, map[string]bool) {
+	newNftID := genNFT(nftID, nftIDs, beaconHeight)
+	nftIDStr := ""
+	if newNftID.IsZeroValue() {
+		nftIDStr = nftID.String()
+	} else {
+		nftIDStr = newNftID.String()
 	}
-	p.shares[newNftID.String()][beaconHeight] = share
+	if p.shares[nftIDStr] == nil {
+		p.shares[nftIDStr] = make(map[uint64]*Share)
+	}
+	nftIDs[nftIDStr] = true
+	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
+	p.shares[nftIDStr][beaconHeight] = share
 	p.state.SetShareAmount(p.state.ShareAmount() + amount)
-	return newNftID, newNextNftIndex
+	return newNftID, nftIDs
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -243,19 +253,27 @@ func (p *PoolPairState) getDiff(
 	stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
-	if !reflect.DeepEqual(p.state, comparePoolPair.state) {
+	if comparePoolPair == nil {
 		newStateChange.poolPairIDs[poolPairID] = true
-	}
-	for k, v := range p.shares {
-		if m, ok := comparePoolPair.shares[k]; !ok || !reflect.DeepEqual(m, v) {
-			for height, share := range v {
-				if compareShare, ok := m[height]; !ok || !reflect.DeepEqual(compareShare, v) {
-					newStateChange = share.getDiff(k, height, compareShare, newStateChange)
+		for nftID, allshares := range p.shares {
+			for height, share := range allshares {
+				newStateChange = share.getDiff(nftID, height, nil, newStateChange)
+			}
+		}
+	} else {
+		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
+			newStateChange.poolPairIDs[poolPairID] = true
+		}
+		for k, v := range p.shares {
+			if m, ok := comparePoolPair.shares[k]; !ok || !reflect.DeepEqual(m, v) {
+				for height, share := range v {
+					if compareShare, ok := m[height]; !ok || !reflect.DeepEqual(compareShare, v) {
+						newStateChange = share.getDiff(k, height, compareShare, newStateChange)
+					}
 				}
 			}
 		}
 	}
-
 	return newStateChange
 }
 

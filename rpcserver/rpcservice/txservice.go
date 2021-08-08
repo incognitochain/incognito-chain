@@ -2518,6 +2518,7 @@ func (txService TxService) BuildRawPrivacyTokenTransaction(
 	if tokenParams == nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("can not build token params for request"))
 	}
+
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	var inputCoins []coin.PlainCoin
 	realFeePRV := uint64(0)
@@ -2572,6 +2573,7 @@ func (txService TxService) BuildPrivacyTokenParam(
 		Amount:      uint64(tokenAmount),
 		TokenInput:  nil,
 		Fee:         uint64(fee),
+		PropertyID:  tokenID,
 	}
 	voutsAmount := int64(0)
 	var err1 error
@@ -2585,7 +2587,6 @@ func (txService TxService) BuildPrivacyTokenParam(
 	if err != nil {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 	}
-
 	isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(), *tokenHash)
 	if !isExisted {
 		var isBridgeToken bool

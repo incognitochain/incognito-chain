@@ -16,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataPdexV3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 func InitVersionByBeaconHeight(beaconHeight uint64) State {
@@ -654,15 +653,10 @@ func tradePathFromState(
 	return results, orderbookList, tradeDirections, nextTokenToSell, nil
 }
 
-func calculateNextNftIndex(nftIndex uint64) uint64 {
-	return nftIndex + 1
-}
-
-func genNFT(nftID string, nftIndex, beaconHeight uint64) (common.Hash, uint64) {
-	if nftID != utils.EmptyString {
-		hash, _ := common.Hash{}.NewHashFromStr(nftID)
-		return *hash, nftIndex
+func genNFT(nftID common.Hash, nftIDs map[string]bool, beaconHeight uint64) common.Hash {
+	if !nftID.IsZeroValue() {
+		return common.Hash{}
 	}
-	hash := append(common.Uint64ToBytes(nftIndex), common.Uint64ToBytes(beaconHeight)...)
-	return common.HashH(append(hashPrefix, hash...)), calculateNextNftIndex(nftIndex)
+	hash := append(common.Uint64ToBytes(uint64(len(nftIDs))), common.Uint64ToBytes(beaconHeight)...)
+	return common.HashH(append(hashPrefix, hash...))
 }

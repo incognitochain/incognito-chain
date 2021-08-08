@@ -19,7 +19,7 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-			common.PRVCoinID, common.PRVCoinID, nil, 100, metadataPdexv3.BaseAmplifier, 1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
 	inst := NewWaitingAddLiquidityWithValue(contributionState)
@@ -116,7 +116,7 @@ func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
-			common.PRVCoinID, common.PRVCoinID, nil, 100, metadataPdexv3.BaseAmplifier, 1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
 	inst := NewWaitingAddLiquidityWithValue(contributionState)

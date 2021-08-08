@@ -67,14 +67,13 @@ func (sp *stateProducerV2) addLiquidity(
 	beaconHeight uint64,
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	nextNftIndex uint64,
+	nftIDs map[string]bool,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
 	map[string]rawdbv2.Pdexv3Contribution,
-	uint64, error,
+	map[string]bool, error,
 ) {
-	newNextNftIndex := nextNftIndex
 	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
@@ -83,12 +82,20 @@ func (sp *stateProducerV2) addLiquidity(
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
 		)
+		if metaData.NftID() != utils.EmptyString && !nftIDs[metaData.NftID()] {
+			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
+			if err != nil {
+				return res, poolPairs, waitingContributions, nftIDs, err
+			}
+			res = append(res, refundInst)
+			continue
+		}
 		waitingContribution, found := waitingContributions[metaData.PairHash()]
 		if !found {
 			waitingContributions[metaData.PairHash()] = incomingContribution
 			inst, err := instruction.NewWaitingAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, newNextNftIndex, err
+				return res, poolPairs, waitingContributions, nftIDs, err
 			}
 			res = append(res, inst)
 			continue
@@ -103,16 +110,21 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.NftID().String() != incomingContribution.NftID().String() {
 			refundInst0, err := instruction.NewRefundAddLiquidityWithValue(waitingContributionState).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, newNextNftIndex, err
+				return res, poolPairs, waitingContributions, nftIDs, err
 			}
 			res = append(res, refundInst0)
 			refundInst1, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, newNextNftIndex, err
+				return res, poolPairs, waitingContributions, nftIDs, err
 			}
 			res = append(res, refundInst1)
 			continue
 		}
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
+		if err != nil {
+			return res, poolPairs, waitingContributions, nftIDs, err
+		}
+		nftID := *nftHash
 
 		poolPairID := utils.EmptyString
 		if waitingContribution.PoolPairID() == utils.EmptyString {
@@ -128,14 +140,13 @@ func (sp *stateProducerV2) addLiquidity(
 				big.NewInt(0).SetUint64(incomingContribution.Amount()),
 			)
 			shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-			nftID := common.Hash{}
-			nftID, newNextNftIndex = newPoolPair.addShare(metaData.NftID(), newNextNftIndex, shareAmount, beaconHeight)
+			nftID, nftIDs = newPoolPair.addShare(nftID, nftIDs, shareAmount, beaconHeight)
 			poolPairs[poolPairID] = newPoolPair
 			inst, err := instruction.NewMatchAddLiquidityWithValue(
 				incomingContributionState, poolPairID, nftID,
 			).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, newNextNftIndex, err
+				return res, poolPairs, waitingContributions, nftIDs, err
 			}
 			res = append(res, inst)
 			continue
@@ -160,31 +171,31 @@ func (sp *stateProducerV2) addLiquidity(
 				token0ContributionState,
 			).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, newNextNftIndex, err
+				return res, poolPairs, waitingContributions, nftIDs, err
 			}
 			res = append(res, refundInst0)
 			refundInst1, err := instruction.NewRefundAddLiquidityWithValue(
 				token1ContributionState,
 			).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, newNextNftIndex, err
+				return res, poolPairs, waitingContributions, nftIDs, err
 			}
 			res = append(res, refundInst1)
 			continue
 		}
-
 		shareAmount := poolPair.updateReserveAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
-		nftID, newNextNftIndex := poolPair.addShare(token0Contribution.NftID().String(), newNextNftIndex, shareAmount, beaconHeight)
+		nftID, nftIDs = poolPair.addShare(nftID, nftIDs, shareAmount, beaconHeight)
+
 		matchAndReturnInst0, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 			token0ContributionState, shareAmount, returnedToken0ContributionAmount,
 			actualToken1ContributionAmount, returnedToken1ContributionAmount,
 			token1Contribution.TokenID(), nftID,
 		).StringSlice()
 		if err != nil {
-			return res, poolPairs, waitingContributions, newNextNftIndex, err
+			return res, poolPairs, waitingContributions, nftIDs, err
 		}
 		res = append(res, matchAndReturnInst0)
 		matchAndReturnInst1, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
@@ -193,11 +204,11 @@ func (sp *stateProducerV2) addLiquidity(
 			token0Contribution.TokenID(), nftID,
 		).StringSlice()
 		if err != nil {
-			return res, poolPairs, waitingContributions, newNextNftIndex, err
+			return res, poolPairs, waitingContributions, nftIDs, err
 		}
 		res = append(res, matchAndReturnInst1)
 	}
-	return res, poolPairs, waitingContributions, newNextNftIndex, nil
+	return res, poolPairs, waitingContributions, nftIDs, nil
 }
 
 func (sp *stateProducerV2) modifyParams(
