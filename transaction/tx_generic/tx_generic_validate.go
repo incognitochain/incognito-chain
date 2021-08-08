@@ -1,4 +1,4 @@
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"errors"
@@ -37,11 +37,11 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 		}
 	}
 
-	//if type is reward and not have metadata
+	// if type is reward and not have metadata
 	if tx.GetType() == common.TxRewardType && meta == nil {
 		return false, nil
 	}
-	//if type is return staking and not have metadata
+	// if type is return staking and not have metadata
 	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
 		return false, nil
 	}
@@ -77,10 +77,10 @@ func GetTxBurnData(tx metadata.Transaction) (bool, privacy.Coin, *common.Hash, e
 		return false, nil, nil, err
 	}
 	// remove rule only accept maximum 2 outputs in tx burn
-	//if len(outputCoins) > 2 {
-	//	utils.Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
-	//	return false, nil, nil, err
-	//}
+	// if len(outputCoins) > 2 {
+	// 	utils.Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
+	// 	return false, nil, nil, err
+	// }
 	for _, coin := range outputCoins {
 		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
 			return true, coin, &common.PRVCoinID, nil
@@ -114,12 +114,11 @@ func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *st
 		if hasPrivacy && tx.GetVersion() <= 1 {
 			return false, errors.New("Metadata can only exist in non-privacy tx")
 		}
-		validateMetadata := meta.ValidateMetadataByItself()
-		if validateMetadata {
-			return validateMetadata, nil
-		} else {
-			return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid"))
+		validMetadata := meta.ValidateMetadataByItself()
+		if validMetadata {
+			return validMetadata, nil
 		}
+		return validMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid"))
 	}
 	return true, nil
 }
@@ -149,7 +148,7 @@ func MdValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetr
 }
 
 func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	//check version
+	// check version
 	if tx.GetVersion() > utils.TxVersion2Number {
 		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), utils.CurrentTxVersion))
 	}
@@ -197,7 +196,7 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 
 	// check Type is normal or salary tx
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxTokenConversionType, common.TxReturnStakingType, common.TxConversionType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxTokenConversionType, common.TxReturnStakingType, common.TxConversionType: // is valid
 	default:
 		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.GetType()))
 	}
@@ -216,45 +215,44 @@ func GetTxActualSizeInBytes(tx metadata.Transaction) uint64 {
 	}
 	var sizeTx = uint64(0)
 	txTokenBase, ok := tx.(*TxTokenBase)
-	if ok { //TxTokenBase
+	if ok { // TxTokenBase
 		sizeTx += GetTxActualSizeInBytes(txTokenBase.Tx)
 
-		if &txTokenBase.TxTokenData != nil {
-			sizeTx += GetTxActualSizeInBytes(txTokenBase.TxTokenData.TxNormal)
-			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyName))
-			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertySymbol))
-			sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyID))
-			sizeTx += 4 // Type
-			sizeTx += 1 // Mintable
-			sizeTx += 8 // Amount
-		}
+		sizeTx += GetTxActualSizeInBytes(txTokenBase.TxTokenData.TxNormal)
+		sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyName))
+		sizeTx += uint64(len(txTokenBase.TxTokenData.PropertySymbol))
+		sizeTx += uint64(len(txTokenBase.TxTokenData.PropertyID))
+		sizeTx += 4 // Type
+		sizeTx++    // Mintable
+		sizeTx += 8 // Amount
 		meta := txTokenBase.GetMetadata()
 		if meta != nil {
 			sizeTx += meta.CalculateSize()
 		}
 
 		return sizeTx
-	} else { //TxBase
-		sizeTx += uint64(1)                     //version
-		sizeTx += uint64(len(tx.GetType()) + 1) //type string
-		sizeTx += uint64(8)                     //locktime
-		sizeTx += uint64(8)                     //fee
-		sizeTx += uint64(len(tx.GetInfo()))     //info
-
-		sizeTx += uint64(len(tx.GetSigPubKey())) //sigpubkey
-		sizeTx += uint64(len(tx.GetSig()))       //signature
-		sizeTx += uint64(1)                      //pubkeylastbytesender
-
-		//paymentproof
-		if tx.GetProof() != nil {
-			sizeTx += uint64(len(tx.GetProof().Bytes()))
-		}
-
-		//metadata
-		if tx.GetMetadata() != nil {
-			sizeTx += tx.GetMetadata().CalculateSize()
-		}
-
-		return sizeTx
 	}
+
+	// TxBase
+	sizeTx += uint64(1)                     // version
+	sizeTx += uint64(len(tx.GetType()) + 1) // type string
+	sizeTx += uint64(8)                     // locktime
+	sizeTx += uint64(8)                     // fee
+	sizeTx += uint64(len(tx.GetInfo()))     // info
+
+	sizeTx += uint64(len(tx.GetSigPubKey())) // sigpubkey
+	sizeTx += uint64(len(tx.GetSig()))       // signature
+	sizeTx += uint64(1)                      // pubkeylastbytesender
+
+	// paymentproof
+	if tx.GetProof() != nil {
+		sizeTx += uint64(len(tx.GetProof().Bytes()))
+	}
+
+	// metadata
+	if tx.GetMetadata() != nil {
+		sizeTx += tx.GetMetadata().CalculateSize()
+	}
+
+	return sizeTx
 }

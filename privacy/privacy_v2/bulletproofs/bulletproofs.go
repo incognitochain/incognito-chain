@@ -1,3 +1,4 @@
+//nolint:revive // skip linter for functions in this file
 // Package bulletproofs manages the creation, proving & verification of Bulletproofs.
 // This is a class of compact-sized range proof that require no trusted setup.
 package bulletproofs
@@ -122,7 +123,7 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 }
 
 // GetCommitments is the getter for cmsValueGetCommitments() []*operation.Point
-func (proof AggregatedRangeProof) GetCommitments() []*operation.Point {return proof.cmsValue}
+func (proof AggregatedRangeProof) GetCommitments() []*operation.Point { return proof.cmsValue }
 
 func (proof *AggregatedRangeProof) SetCommitments(cmsValue []*operation.Point) {
 	proof.cmsValue = cmsValue
@@ -139,7 +140,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.cmsValue = make([]*operation.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
-		if offset+operation.Ed25519KeySize > len(bytes){
+		if offset+operation.Ed25519KeySize > len(bytes) {
 			return errors.New("Range Proof unmarshaling from bytes failed")
 		}
 		proof.cmsValue[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -149,7 +150,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 		offset += operation.Ed25519KeySize
 	}
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.a, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -158,7 +159,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.s, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -167,7 +168,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.t1, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -176,7 +177,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.t2, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -185,32 +186,31 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.tauX = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.tHat = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.mu = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
-	if offset >= len(bytes){
+	if offset >= len(bytes) {
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 
 	proof.innerProductProof = new(InnerProductProof)
 	err = proof.innerProductProof.SetBytes(bytes[offset:])
 	// it's the last check, so we just return it
-	//operation.Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
 	return err
 }
 
@@ -314,10 +314,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	var r0, r1 []*operation.Scalar
 	if r0, err = vectorAdd(hadaProduct, vectorSum); err != nil {
 		return nil, err
-	} else {
-		if r1, err = hadamardProduct(yVector, sR); err != nil {
-			return nil, err
-		}
+	} else if r1, err = hadamardProduct(yVector, sR); err != nil {
+		return nil, err
 	}
 
 	// t(X) = <l(X), r(X)> = t0 + t1*X + t2*X^2
@@ -463,14 +461,14 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	}
 	tmpHPrime := new(operation.Point).MultiScalarMult(vectorSum, HPrime)
 	tmpG := new(operation.Point).Set(aggParam.g[0])
-	for i:= 1; i < N; i++ {
+	for i := 1; i < N; i++ {
 		tmpG.Add(tmpG, aggParam.g[i])
 	}
 	ASx := new(operation.Point).Add(proof.a, new(operation.Point).ScalarMult(proof.s, x))
 	P := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
 	P.Add(P, ASx)
 	P.Add(P, new(operation.Point).ScalarMult(uPrime, proof.tHat))
-	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu) )
+	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu))
 
 	if !operation.IsPointEqual(P, PPrime) {
 		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
@@ -522,7 +520,6 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	HPrime := computeHPrime(y, N, aggParam.h)
 	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
 
-
 	// Verify eq (65)
 	LHS := operation.PedCom.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
 	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
@@ -546,14 +543,14 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	}
 	tmpHPrime := new(operation.Point).MultiScalarMult(vectorSum, HPrime)
 	tmpG := new(operation.Point).Set(aggParam.g[0])
-	for i:= 1; i < N; i++ {
+	for i := 1; i < N; i++ {
 		tmpG.Add(tmpG, aggParam.g[i])
 	}
 	ASx := new(operation.Point).Add(proof.a, new(operation.Point).ScalarMult(proof.s, x))
 	P := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
 	P.Add(P, ASx)
 	P.Add(P, new(operation.Point).ScalarMult(uPrime, proof.tHat))
-	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu) )
+	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu))
 
 	if !operation.IsPointEqual(P, PPrime) {
 		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
@@ -789,8 +786,6 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	RHS := new(operation.Point).Add(part1, part2)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(list_zSquare, list_V))
 	RHSPrime.Add(RHSPrime, RHS)
-	//fmt.Println("Batch Verification ", LHSPrime)
-	//fmt.Println("Batch Verification ", RHSPrime)
 
 	if !operation.IsPointEqual(LHSPrime, RHSPrime) {
 		Logger.Log.Errorf("batch verify aggregated range proof failed")

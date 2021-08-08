@@ -1,4 +1,4 @@
-package coin_indexer
+package coinIndexer
 
 import (
 	"bytes"

@@ -65,6 +65,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPDEStatusObjectWithValue(db, hash, value)
 	case BridgeEthTxObjectType:
 		return newBridgeEthTxObjectWithValue(db, hash, value)
+	case BridgeBSCTxObjectType:
+		return newBridgeBSCTxObjectWithValue(db, hash, value)
 	case BridgeTokenInfoObjectType:
 		return newBridgeTokenInfoObjectWithValue(db, hash, value)
 	case BridgeStatusObjectType:
@@ -99,6 +101,16 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
+	case PortalV4StatusObjectType:
+		return newPortalV4StatusObjectWithValue(db, hash, value)
+	case PortalV4UTXOObjectType:
+		return newUTXOObjectWithValue(db, hash, value)
+	case PortalV4ShieldRequestObjectType:
+		return newShieldingRequestObjectWithValue(db, hash, value)
+	case PortalWaitingUnshieldObjectType:
+		return newWaitingUnshieldObjectWithValue(db, hash, value)
+	case PortalProcessedUnshieldRequestBatchObjectType:
+		return newProcessUnshieldRequestBatchObjectWithValue(db, hash, value)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObjectWithValue(db, hash, value)
 	default:
@@ -148,6 +160,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPDEStatusObject(db, hash)
 	case BridgeEthTxObjectType:
 		return newBridgeEthTxObject(db, hash)
+	case BridgeBSCTxObjectType:
+		return newBridgeBSCTxObject(db, hash)
 	case BridgeTokenInfoObjectType:
 		return newBridgeTokenInfoObject(db, hash)
 	case BridgeStatusObjectType:
@@ -180,6 +194,16 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPortalConfirmProofStateObject(db, hash)
 	case StakerObjectType:
 		return newStakerObject(db, hash)
+	case PortalV4StatusObjectType:
+		return newPortalV4StatusObject(db, hash)
+	case PortalV4UTXOObjectType:
+		return newUTXOObject(db, hash)
+	case PortalV4ShieldRequestObjectType:
+		return newShieldingRequestObject(db, hash)
+	case PortalWaitingUnshieldObjectType:
+		return newWaitingUnshieldObject(db, hash)
+	case PortalProcessedUnshieldRequestBatchObjectType:
+		return newProcessUnshieldRequestBatchObject(db, hash)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObject(db, hash)
 	default:

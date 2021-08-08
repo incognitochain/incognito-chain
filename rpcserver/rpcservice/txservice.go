@@ -235,12 +235,14 @@ func (txService TxService) chooseCoinsTokenVer1ByKeySet(keySet *incognitokey.Key
 }
 
 // chooseOutsCoinByKeyset returns list of input coins native token to spent
+//
+// TODO: this function is used to estimate the fee for token conversion transaction only, should we consider to change its name?
 func (txService TxService) chooseOutsCoinVer2ByKeyset(
 	paymentInfos []*privacy.PaymentInfo,
 	unitFeeNativeToken int64, numBlock uint64, keySet *incognitokey.KeySet, shardIDSender byte,
 	hasPrivacy bool,
 	metadataParam metadata.Metadata,
-	privacyCustomTokenParams *transaction.TokenParam,
+	numTokenCoins int,
 ) ([]coin.PlainCoin, uint64, *RPCError) {
 	// estimate fee according to 8 recent block
 	if numBlock == 0 {
@@ -290,10 +292,17 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 	realFee, _, _, err := txService.EstimateFee(2, unitFeeNativeToken, false, candidatePlainCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
-		privacyCustomTokenParams, int64(beaconHeight))
+		nil, int64(beaconHeight))
 	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
+
+	// Set the fee to be higher for making sure tx will be confirmed
+	// This is a work-around solution only, and it only applies to the case where unitFeeNativeToken < 0.
+	if unitFeeNativeToken < 0 {
+		realFee += uint64(math.Ceil(float64(numTokenCoins)/2))
+	}
+
 	if totalAmmount == 0 && realFee == 0 {
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
@@ -304,10 +313,6 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 				}
 			}
 			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee))
-		}
-		if privacyCustomTokenParams != nil {
-			// for privacy token
-			return nil, 0, nil
 		}
 	}
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
@@ -527,12 +532,14 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	if defaultFee == 0 {
 		return uint64(defaultFee), nil
 	}
-	unitFee := uint64(0)
+	unitFee := uint64(1)
 	if defaultFee == -1 {
 		// estimate fee on the blocks before (in native token or in pToken)
 		if _, ok := txService.FeeEstimator[shardID]; ok {
 			temp, _ := txService.FeeEstimator[shardID].EstimateFee(numBlock, tokenId)
-			unitFee = uint64(temp)
+			if temp > 0 {
+				unitFee = temp
+			}
 		}
 	} else {
 		// get default fee (in native token or in ptoken)
@@ -686,9 +693,18 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		if int(sID) < len(txService.BlockChain.ShardChain) {
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
+				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
+				if isDoubleSpend {
+					if !canReplaceOldTx {
+						return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
+					}
+				}
+
 				sView := sChain.GetBestState()
 				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
 				if err == nil {
+					valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
+					tx.SetValidationEnv(valEnv)
 					ok, e := sChain.TxsVerifier.FullValidateTransactions(
 						txService.BlockChain,
 						sView,
@@ -1049,7 +1065,7 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 	paymentFeeInfo := []*privacy.PaymentInfo{}
 	inputCoins, realFeePRV, errFeeCoins := txService.chooseOutsCoinVer2ByKeyset(paymentFeeInfo,
 		params.EstimateFeeCoinPerKb, 0, params.SenderKeySet,
-		params.ShardIDSender, false, nil, nil)
+		params.ShardIDSender, false, nil, len(inputTokenCoins))
 	if errFeeCoins != nil {
 		return nil, nil, 0, errFeeCoins
 	}
@@ -1477,6 +1493,43 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
+// GetEncodedTransactionsByHashes returns a list of base58-encoded transactions given their hashes.
+func (txService TxService) GetEncodedTransactionsByHashes(txHashList []string) (map[string]string, *RPCError) {
+	res := make(map[string]string)
+	for _, txHashStr := range txHashList {
+		if _, ok := res[txHashStr]; ok {
+			continue
+		}
+		txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
+		if err != nil {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("tx hash %v is invalid", txHashStr))
+		}
+		Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
+		_, _, _, _, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
+		if err != nil {
+			if txService.BlockChain.UsingNewPool() {
+				pM := txService.BlockChain.GetPoolManager()
+				if pM != nil {
+					tx, err = pM.GetTransactionByHash(txHashStr)
+				} else {
+					err = errors.New("PoolManager is nil")
+				}
+			} else {
+				tx, err = txService.TxMemPool.GetTx(txHash)
+			}
+			if err != nil {
+				return nil, NewRPCError(TxNotExistedInMemAndBLockError, fmt.Errorf("tx %v is not existed in block or mempool", txHashStr))
+			}
+		}
+		txBytes, err := json.Marshal(tx)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, fmt.Errorf("cannot marshal tx %v", txHashStr))
+		}
+		res[txHashStr] = base58.Base58Check{}.Encode(txBytes, common.ZeroByte)
+	}
+	return res, nil
+}
+
 func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) (map[string]string, *RPCError) {
 	txList := make(map[string]string, 0)
 	if int(shardID) >= common.MaxShardNumber {//If the shardID is not provided, just retrieve with all shards
@@ -1855,6 +1908,8 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	beaconBestState, err := txService.BlockChain.GetClonedBeaconBestState()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	} else {
+		Logger.log.Errorf("SendRawPrivacyCustomTokenTransaction can not get beacon best state with error %+v", err)
 	}
 
 	hash := tx.Hash()
@@ -1863,8 +1918,19 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 		if int(sID) < len(txService.BlockChain.ShardChain) {
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
+				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
+				if isDoubleSpend {
+					if !canReplaceOldTx {
+						return nil, nil, NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
+					}
+				}
+
 				sView := sChain.GetBestState()
 				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
+				tx.SetValidationEnv(valEnv)
+				valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
+				tx.GetTxNormal().SetValidationEnv(valEnvCustom)
 				if err == nil {
 					ok, e := sChain.TxsVerifier.FullValidateTransactions(
 						txService.BlockChain,
@@ -2260,7 +2326,16 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	if err != nil {
 		// maybe tx is still in tx mempool -> check mempool
 		var errM error
-		tx, errM = txService.TxMemPool.GetTx(txHash)
+		if txService.BlockChain.UsingNewPool() {
+			pM := txService.BlockChain.GetPoolManager()
+			if pM != nil {
+				tx, errM = pM.GetTransactionByHash(txHashStr)
+			} else {
+				errM = errors.New("PoolManager is nil")
+			}
+		} else {
+			tx, errM = txService.TxMemPool.GetTx(txHash)
+		}
 		if errM != nil {
 			return nil, NewRPCError(TxNotExistedInMemAndBLockError, errors.New("Tx is not existed in block or mempool"))
 		}

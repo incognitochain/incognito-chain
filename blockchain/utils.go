@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 
@@ -42,4 +43,13 @@ func GetShardSwapInstructionKeyListV2(epoch uint64, minCommitteeSize int, active
 		allShardSwapInstructionKeyListV2[shardID] = shardSwapInstructionKeyListV2
 	}
 	return allShardSwapInstructionKeyListV2, allShardNewKeyListV2
+}
+
+func IsBridgeTxHashUsedInBlock(uniqTx []byte, uniqTxsUsed [][]byte) bool {
+	for _, item := range uniqTxsUsed {
+		if bytes.Equal(uniqTx, item) {
+			return true
+		}
+	}
+	return false
 }

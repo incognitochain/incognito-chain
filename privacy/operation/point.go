@@ -12,15 +12,19 @@ import (
 type Point struct {
 	key C25519.Key
 }
-
+var curveOrder = new(Scalar).SetKeyUnsafe(&C25519.L)
 func RandomPoint() *Point {
 	sc := RandomScalar()
 	return new(Point).ScalarMultBase(sc)
 }
-
 func (p Point) PointValid() bool {
 	var point C25519.ExtendedGroupElement
-	return point.FromBytes(&p.key)
+	isValid := point.FromBytes(&p.key)
+	if !isValid {
+		return false
+	}
+	lP := new(Point).ScalarMult(&p, curveOrder)
+	return lP.IsIdentity()
 }
 
 func (p Point) GetKey() C25519.Key {

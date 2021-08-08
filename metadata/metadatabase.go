@@ -23,6 +23,10 @@ func (mb *MetadataBase) VerifyMetadataSignature(publicKey []byte, tx Transaction
 	return true, nil
 }
 
+func (mb *MetadataBase) SetSharedRandom(_ []byte) {
+	return
+}
+
 type MetadataBaseWithSignature struct {
 	MetadataBase
 	Sig []byte 		`json:"Sig,omitempty"`

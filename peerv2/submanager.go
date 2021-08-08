@@ -300,12 +300,13 @@ func (sub *SubManager) processIncomingTxs(txSubs *pubsub.Subscription) {
 	msgCh := make(chan *pubsub.Message, 1000)
 	go getMsgTxsFromSub(txSubs, msgCh)
 	for msg := range msgCh {
-		go func() {
+		go func(msg *pubsub.Message) {
+			Logger.Infof("Received msg tx, data hash %v", common.HashH(msg.Data).String())
 			err := sub.disp.processInMessageString(string(msg.Data))
 			if err != nil {
-				Logger.Errorf("Process msg %v return error %v", msg, err)
+				Logger.Errorf("Process msg %v return error %v", common.HashH(msg.Data).String(), err)
 			}
-		}()
+		}(msg)
 	}
 }
 

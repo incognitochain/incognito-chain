@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
 type ShardChain struct {
@@ -73,6 +74,29 @@ func (chain *ShardChain) GetViewByHash(hash common.Hash) multiview.View {
 
 func (chain *ShardChain) GetBestState() *ShardBestState {
 	return chain.multiView.GetBestView().(*ShardBestState)
+}
+
+func (chain *ShardChain) AddView(view multiview.View) bool {
+	curBestView := chain.multiView.GetBestView()
+	added := chain.multiView.AddView(view)
+	if (curBestView != nil) && (added) {
+		go func(chain *ShardChain, curBestView multiview.View) {
+			sBestView := chain.GetBestState()
+			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
+				return
+			}
+			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
+				bcHash := sBestView.GetBeaconHash()
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true)
+				if err != nil {
+					Logger.log.Errorf("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
+				} else {
+					chain.TxPool.FilterWithNewView(chain.Blockchain, sBestView, bcView)
+				}
+			}
+		}(chain, curBestView)
+	}
+	return added
 }
 
 func (s *ShardChain) GetEpoch() uint64 {
@@ -341,6 +365,10 @@ func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, commit
 
 func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
 //CommitteesV2 get committees by block for shardChain

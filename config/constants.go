@@ -13,6 +13,7 @@ const (
 	GethHostKey       = "GETH_NAME"
 	GethPortKey       = "GETH_PORT"
 	GethProtocolKey   = "GETH_PROTOCOL"
+	BSCHostKey        = "BSC_HOST"
 )
 
 // default config
@@ -59,6 +60,7 @@ const (
 
 const (
 	LocalNetwork          = "local"
+	LocalDCSNetwork       = "local-dcs"
 	TestNetNetwork        = "testnet"
 	MainnetNetwork        = "mainnet"
 	TestNetVersion1       = "1"

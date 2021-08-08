@@ -72,14 +72,12 @@ var ErrCodeMessage = map[int]struct {
 	VerifyOneOutOfManyProofFailedErr:          {-9205, "Verify one out of many proof failed"},
 	VerifySerialNumberPrivacyProofFailedErr:   {-9206, "Verify serial number privacy proof failed"},
 	VerifyAggregatedProofFailedErr:            {-9207, "Verify aggregated proof failed"},
-	VerifyAggregatedProofNewFailedErr:            {-9209, "Verify aggregated proof new failed"},
+	VerifyAggregatedProofNewFailedErr:         {-9209, "Verify aggregated proof new failed"},
 	VerifyAmountPrivacyFailedErr:              {-9208, "Sum of input coins' amount is not equal sum of output coins' amount when creating private tx"},
 
-	InvalidPrivateKeyErr:			{-9300, "Invalid private key"},
+	InvalidPrivateKeyErr:           {-9300, "Invalid private key"},
 	ParseKeyImageWithPrivateKeyErr: {-9301, "Cannot parse key image with private key"},
-
-
-	}
+}
 
 type PrivacyError struct {
 	Code    int

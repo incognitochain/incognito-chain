@@ -7,14 +7,17 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/portal"
-	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 // build instructions at beacon chain before syncing to shards
@@ -40,6 +43,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		case metadata.InitTokenRequestMeta,
 			metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
+			metadata.IssuingBSCRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -71,7 +75,12 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalCustodianTopupMetaV3,
 			metadata.PortalTopUpWaitingPortingRequestMetaV3,
 			metadata.PortalRequestPortingMetaV3,
-			metadata.PortalRedeemRequestMetaV3:
+			metadata.PortalRedeemRequestMetaV3,
+			metadata.PortalV4ShieldingRequestMeta,
+			metadata.PortalV4UnshieldingRequestMeta,
+			metadata.PortalV4FeeReplacementRequestMeta,
+			metadata.PortalV4SubmitConfirmedTxMeta,
+			metadata.PortalV4ConvertVaultRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -113,13 +122,21 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB()
+	relayingHeaderState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(
+		featureStateDB,
+		beaconBestState.portalStateV4,
+		portalParams.GetPortalParamsV4(beaconHeight))
 	if err != nil {
 		Logger.log.Error(err)
 	}
 
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
+		UniqBSCTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
 	}
@@ -149,7 +166,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			contentStr := action[1]
 			newInst := [][]string{}
 
-			// group portal instructions
+			// group portal instructions (both portal relaying, portal v3, portal v4)
 			isCollected := portal.CollectPortalInstructions(pm, metaType, action, shardID)
 			if isCollected {
 				continue
@@ -161,9 +178,41 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
+			case metadata.IssuingETHRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqETHTxsUsed,
+					config.Param().EthContractAddressStr,
+					"",
+					statedb.IsETHTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqBSCTxsUsed,
+					config.Param().BscContractAddressStr,
+					common.BSCPrefix,
+					statedb.IsBSCTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
+				}
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
 					pdeContributionActionsByShardID,
@@ -232,17 +281,17 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	// handle portal instructions
-	// include portal v3, portal relaying header chain
+	// include portal v3, portal v4, portal relaying header chain
 	portalInsts, err := blockchain.handlePortalInsts(
 		featureStateDB,
 		beaconHeight-1,
 		currentPortalStateV3,
+		currentPortalStateV4,
 		relayingHeaderState,
 		rewardForCustodianByEpoch,
 		portalParams,
 		pm,
 	)
-
 	if err != nil {
 		Logger.log.Error(err)
 		return instructions
@@ -500,22 +549,24 @@ func (blockchain *BlockChain) handlePDEInsts(
 		}
 	}
 
-	// handle trade
-	sortedTradesActions := sortPDETradeInstsByFee(
-		beaconHeight,
-		currentPDEState,
-		pdeTradeActionsByShardID,
-	)
-	for _, tradeAction := range sortedTradesActions {
-		actionContentBytes, _ := json.Marshal(tradeAction)
-		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-		newInst, err := blockchain.buildInstructionsForPDETrade(actionContentBase64Str, tradeAction.ShardID, metadata.PDETradeRequestMeta, currentPDEState, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			continue
-		}
-		if len(newInst) > 0 {
-			instructions = append(instructions, newInst...)
+	if !blockchain.IsAfterPrivacyV2CheckPoint(beaconHeight) { // disable old pDEX trades after privacy V2 break point
+		// handle trade
+		sortedTradesActions := sortPDETradeInstsByFee(
+			beaconHeight,
+			currentPDEState,
+			pdeTradeActionsByShardID,
+		)
+		for _, tradeAction := range sortedTradesActions {
+			actionContentBytes, _ := json.Marshal(tradeAction)
+			actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+			newInst, err := blockchain.buildInstructionsForPDETrade(actionContentBase64Str, tradeAction.ShardID, metadata.PDETradeRequestMeta, currentPDEState, beaconHeight)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
 		}
 	}
 
@@ -558,24 +609,26 @@ func (blockchain *BlockChain) handlePDEInsts(
 		}
 	}
 
-	// handle contribution
-	var ctKeys []int
-	for k := range pdeContributionActionsByShardID {
-		ctKeys = append(ctKeys, int(k))
-	}
-	sort.Ints(ctKeys)
-	for _, value := range ctKeys {
-		shardID := byte(value)
-		actions := pdeContributionActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
+	if !blockchain.IsAfterPrivacyV2CheckPoint(beaconHeight) { // disable old pDEX contribution after privacy V2 break point
+		// handle contribution
+		var ctKeys []int
+		for k := range pdeContributionActionsByShardID {
+			ctKeys = append(ctKeys, int(k))
+		}
+		sort.Ints(ctKeys)
+		for _, value := range ctKeys {
+			shardID := byte(value)
+			actions := pdeContributionActionsByShardID[shardID]
+			for _, action := range actions {
+				contentStr := action[1]
+				newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				if len(newInst) > 0 {
+					instructions = append(instructions, newInst...)
+				}
 			}
 		}
 	}

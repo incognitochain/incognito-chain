@@ -71,6 +71,7 @@ var HttpHandler = map[string]httpHandler{
 	createConvertCoinVer1ToVer2Transaction:  (*HttpServer).handleCreateConvertCoinVer1ToVer2Transaction,
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
+	getEncodedTransactionsByHashes:          (*HttpServer).handleGetEncodedTransactionsByHashes,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
 	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
@@ -113,6 +114,7 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeList:         (*HttpServer).handleGetCommitteeList,
 	getShardBestState:        (*HttpServer).handleGetShardBestState,
 	getShardBestStateDetail:  (*HttpServer).handleGetShardBestStateDetail,
+	getBeaconViewByHash:      (*HttpServer).handleGetBeaconViewByHash,
 	getBeaconBestState:       (*HttpServer).handleGetBeaconBestState,
 	getBeaconBestStateDetail: (*HttpServer).handleGetBeaconBestStateDetail,
 	// getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
@@ -148,6 +150,7 @@ var HttpHandler = map[string]httpHandler{
 	getETHHeaderByHash:                (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:            (*HttpServer).handleGetBridgeReqWithStatus,
 	generateTokenID:                   (*HttpServer).handleGenerateTokenID,
+	checkBSCHashIssued:                (*HttpServer).handleCheckBSCHashIssued,
 
 	// wallet
 	getPublicKeyFromPaymentAddress:     (*HttpServer).handleGetPublicKeyFromPaymentAddress,
@@ -161,6 +164,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningRequestV2:      (*HttpServer).handleCreateAndSendBurningRequestV2,
 	createAndSendTxWithIssuingETHReq:   (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 	createAndSendTxWithIssuingETHReqV2: (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
+	createAndSendTxWithIssuingBSCReq:   (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
+	createAndSendBurningBSCRequest:     (*HttpServer).handleCreateAndSendBurningBSCRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -168,6 +173,7 @@ var HttpHandler = map[string]httpHandler{
 	getBridgeSwapProof:       (*HttpServer).handleGetBridgeSwapProof,
 	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
 	getBurnProof:             (*HttpServer).handleGetBurnProof,
+	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -288,6 +294,23 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// portal v4
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
+	createAndSendTxWithPortalReplacementFee:    (*HttpServer).handleCreateAndSendTxWithPortalReplaceUnshieldFee,
+	getPortalReplacementFeeStatus:              (*HttpServer).handleGetPortalReplacementFeeRequestStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx: (*HttpServer).handleCreateAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx:                 (*HttpServer).handleGetPortalPortalSubmitConfirmedTxStatus,
+	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
+	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
+	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
+	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

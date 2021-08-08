@@ -9,13 +9,13 @@ import (
 const (
 	UnexpectedError = iota
 
-	IssuingEthRequestDecodeInstructionError
-	IssuingEthRequestUnmarshalJsonError
-	IssuingEthRequestNewIssuingETHRequestFromMapEror
-	IssuingEthRequestValidateTxWithBlockChainError
-	IssuingEthRequestValidateSanityDataError
-	IssuingEthRequestBuildReqActionsError
-	IssuingEthRequestVerifyProofAndParseReceipt
+	IssuingEvmRequestDecodeInstructionError
+	IssuingEvmRequestUnmarshalJsonError
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError
+	IssuingEvmRequestValidateTxWithBlockChainError
+	IssuingEvmRequestValidateSanityDataError
+	IssuingEvmRequestBuildReqActionsError
+	IssuingEvmRequestVerifyProofAndParseReceipt
 
 	IssuingRequestDecodeInstructionError
 	IssuingRequestUnmarshalJsonError
@@ -79,6 +79,16 @@ const (
 	PortalCustodianDepositV3ValidateSanityDataError
 	NewPortalCustodianDepositV3MetaFromMapError
 	PortalUnlockOverRateCollateralsError
+
+	// portal v4
+	PortalV4ShieldRequestValidateSanityDataError
+	PortalV4UnshieldRequestValidateSanityDataError
+	PortalV4FeeReplacementRequestMetaError
+	PortalV4SubmitConfirmedTxRequestMetaError
+	PortalV4ConvertVaultRequestMetaError
+
+	// relaying header
+	RelayingHeaderMetaError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -88,13 +98,13 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedError: {-1, "Unexpected error"},
 
 	// -1xxx issuing eth request
-	IssuingEthRequestDecodeInstructionError:          {-1001, "Can not decode instruction"},
-	IssuingEthRequestUnmarshalJsonError:              {-1002, "Can not unmarshall json"},
-	IssuingEthRequestNewIssuingETHRequestFromMapEror: {-1003, "Can no new issuing eth request from map"},
-	IssuingEthRequestValidateTxWithBlockChainError:   {-1004, "Validate tx with block chain error"},
-	IssuingEthRequestValidateSanityDataError:         {-1005, "Validate sanity data error"},
-	IssuingEthRequestBuildReqActionsError:            {-1006, "Build request action error"},
-	IssuingEthRequestVerifyProofAndParseReceipt:      {-1007, "Verify proof and parse receipt"},
+	IssuingEvmRequestDecodeInstructionError:           {-1001, "Can not decode instruction"},
+	IssuingEvmRequestUnmarshalJsonError:               {-1002, "Can not unmarshall json"},
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError: {-1003, "Can no new issuing evm request from map"},
+	IssuingEvmRequestValidateTxWithBlockChainError:    {-1004, "Validate tx with block chain error"},
+	IssuingEvmRequestValidateSanityDataError:          {-1005, "Validate sanity data error"},
+	IssuingEvmRequestBuildReqActionsError:             {-1006, "Build request action error"},
+	IssuingEvmRequestVerifyProofAndParseReceipt:       {-1007, "Verify proof and parse receipt"},
 
 	// -2xxx issuing eth request
 	IssuingRequestDecodeInstructionError:        {-2001, "Can not decode instruction"},
@@ -158,6 +168,16 @@ var ErrCodeMessage = map[int]struct {
 	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
 	NewPortalCustodianDepositV3MetaFromMapError:     {-9003, "New portal custodian deposit v3 metadata from map error"},
 	PortalUnlockOverRateCollateralsError:            {-9004, "Validate with blockchain tx portal custodian unlock over rate v3 error"},
+
+	// portal v4
+	PortalV4ShieldRequestValidateSanityDataError:   {-10001, "Validate sanity data portal v4 shielding request error"},
+	PortalV4UnshieldRequestValidateSanityDataError: {-10002, "Validate sanity data portal v4 unshielding request error"},
+	PortalV4FeeReplacementRequestMetaError:         {-10003, "Portal batch unshield request metadata error"},
+	PortalV4SubmitConfirmedTxRequestMetaError:      {-10004, "Portal submit external confirmed tx metadata error"},
+	PortalV4ConvertVaultRequestMetaError:           {-10005, "Portal convert vault tx metadata error"},
+
+	// relaying header
+	RelayingHeaderMetaError: {-11005, " relaying header metadata error"},
 }
 
 type MetadataTxError struct {

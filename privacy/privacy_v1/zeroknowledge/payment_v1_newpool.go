@@ -112,12 +112,15 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
 			if !valid {
-				Logger.Log.Errorf("Verify serial number no privacy proof failed")
+				Logger.Log.Errorf("Verify serial number no privacy proof failed, beacon height %v", vEnv.BeaconHeight())
 				return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, err)
 			}
 		} else {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			valid, err := proof.serialNumberNoPrivacyProof[i].VerifyOld(nil)
+			if err != nil {
+				Logger.Log.Errorf("Verify old serial number no privacy proof failed, beacon height %v", vEnv.BeaconHeight())
+			}
 			if !valid {
 				valid2, err2 := proof.serialNumberNoPrivacyProof[i].Verify(nil)
 				if !valid2 {
@@ -214,6 +217,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 
 	isNewZKP := IsNewZKP(vEnv.BeaconHeight())
 	shardID := byte(vEnv.ShardID())
+	Logger.Log.Infof("[env] isNewZKP %v, beacon height %v, confirmed time %v", isNewZKP, vEnv.BeaconHeight(), vEnv.ConfirmedTime())
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		Logger.Log.Debugf("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
 		Logger.Log.Debugf("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy_util.CommitmentRingSize:i*privacy_util.CommitmentRingSize+8])

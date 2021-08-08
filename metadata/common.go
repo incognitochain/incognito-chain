@@ -3,11 +3,13 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -37,8 +39,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 
 	var md Metadata
-	typeFloat,ok := mtTemp["Type"].(float64)
-	if !ok{
+	typeFloat, ok := mtTemp["Type"].(float64)
+	if !ok {
 		return nil, errors.Errorf("Could not parse metadata with type: %v", mtTemp["Type"])
 	}
 	theType := int(typeFloat)
@@ -54,14 +56,20 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
 	case IssuingETHRequestMeta:
-		md = &IssuingETHRequest{}
+		md = &IssuingEVMRequest{}
+	case IssuingBSCRequestMeta:
+		md = &IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
-		md = &IssuingETHResponse{}
+		md = &IssuingEVMResponse{}
+	case IssuingBSCResponseMeta:
+		md = &IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 	case BurningRequestMeta:
 		md = &BurningRequest{}
 	case BurningRequestMetaV2:
+		md = &BurningRequest{}
+	case BurningPBSCRequestMeta:
 		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
@@ -171,6 +179,20 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case PortalV4ShieldingRequestMeta:
+		md = &PortalShieldingRequest{}
+	case PortalV4ShieldingResponseMeta:
+		md = &PortalShieldingResponse{}
+	case PortalV4UnshieldingRequestMeta:
+		md = &PortalUnshieldRequest{}
+	case PortalV4UnshieldingResponseMeta:
+		md = &PortalUnshieldResponse{}
+	case PortalV4FeeReplacementRequestMeta:
+		md = &PortalReplacementFeeRequest{}
+	case PortalV4SubmitConfirmedTxMeta:
+		md = &PortalSubmitConfirmedTxRequest{}
+	case PortalV4ConvertVaultRequestMeta:
+		md = &PortalConvertVaultRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
@@ -180,7 +202,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return md, nil
 }
 
@@ -191,6 +213,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningConfirmMetaV2),
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
+	strconv.Itoa(BurningBSCConfirmMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {
@@ -247,6 +270,7 @@ func buildMetaInfo() {
 		ReturnStakingMeta,
 
 		IssuingETHResponseMeta,
+		IssuingBSCResponseMeta,
 		IssuingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -272,6 +296,7 @@ func buildMetaInfo() {
 
 		BurningRequestMeta,
 		BurningRequestMetaV2,
+		BurningPBSCRequestMeta,
 		BurningForDepositToSCRequestMeta,
 		BurningForDepositToSCRequestMetaV2,
 		ContractingRequestMeta,
@@ -347,6 +372,7 @@ func buildMetaInfo() {
 
 		IssuingRequestMeta,
 		IssuingETHRequestMeta,
+		IssuingBSCRequestMeta,
 		ContractingRequestMeta,
 
 		ShardStakingMeta,
@@ -436,7 +462,9 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingResponseMeta,
 		IssuingETHRequestMeta,
+		IssuingBSCRequestMeta,
 		IssuingETHResponseMeta,
+		IssuingBSCResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,
@@ -652,6 +680,11 @@ func IsPortalRelayingMetaType(metaType int) bool {
 	return res
 }
 
+func IsPortalMetaTypeV4(metaType int) bool {
+	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
+	return res
+}
+
 //genTokenID generates a (deterministically) random tokenID for the request transaction.
 //From now on, users cannot generate their own tokenID.
 //The generated tokenID is calculated as the hash of the following components:
@@ -665,6 +698,22 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 }
 
 type OTADeclaration struct {
-	PublicKey 	[32]byte
-	TokenID 	common.Hash
+	PublicKey [32]byte
+	TokenID   common.Hash
+}
+
+func checkIncognitoAddress(address, txRandom string) (bool, error, int) {
+	version := 0
+	if len(txRandom) > 0 {
+		version = 2
+		_, _, err := coin.ParseOTAInfoFromString(address, txRandom)
+		if err != nil {
+			return false, err, version
+		}
+	} else {
+		version = 1
+		_, err := AssertPaymentAddressAndTxVersion(address, 1)
+		return err == nil, err, version
+	}
+	return true, nil, version
 }

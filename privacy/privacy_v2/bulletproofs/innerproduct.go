@@ -1,3 +1,5 @@
+//nolint:gocritic // skip "gocritic" linter since this file has some capitalized variable names
+// to match names in the crypto protocol
 package bulletproofs
 
 import (
@@ -21,17 +23,17 @@ type InnerProductProof struct {
 	p *operation.Point
 }
 
-func (inner *InnerProductProof) Init() *InnerProductProof {
-	if inner == nil {
-		inner = new(InnerProductProof)
+func (proof *InnerProductProof) Init() *InnerProductProof {
+	if proof == nil {
+		proof = new(InnerProductProof)
 	}
-	inner.l = []*operation.Point{}
-	inner.r = []*operation.Point{}
-	inner.a = new(operation.Scalar)
-	inner.b = new(operation.Scalar)
-	inner.p = new(operation.Point).Identity()
+	proof.l = []*operation.Point{}
+	proof.r = []*operation.Point{}
+	proof.a = new(operation.Scalar)
+	proof.b = new(operation.Scalar)
+	proof.p = new(operation.Point).Identity()
 
-	return inner
+	return proof
 }
 
 func (proof InnerProductProof) ValidateSanity() bool {
@@ -79,7 +81,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 
 	proof.l = make([]*operation.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
-		if offset+operation.Ed25519KeySize > len(bytes){
+		if offset+operation.Ed25519KeySize > len(bytes) {
 			return errors.New("Inner Product Proof byte unmarshaling failed")
 		}
 		proof.l[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -91,7 +93,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 
 	proof.r = make([]*operation.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
-		if offset+operation.Ed25519KeySize > len(bytes){
+		if offset+operation.Ed25519KeySize > len(bytes) {
 			return errors.New("Inner Product Proof byte unmarshaling failed")
 		}
 		proof.r[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -101,19 +103,19 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 		offset += operation.Ed25519KeySize
 	}
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Inner Product Proof byte unmarshaling failed")
 	}
 	proof.a = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Inner Product Proof byte unmarshaling failed")
 	}
 	proof.b = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
-	if offset+operation.Ed25519KeySize > len(bytes){
+	if offset+operation.Ed25519KeySize > len(bytes) {
 		return errors.New("Inner Product Proof byte unmarshaling failed")
 	}
 	proof.p, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
@@ -275,6 +277,7 @@ func (proof InnerProductProof) Verify(GParam []*operation.Point, HParam []*opera
 	return res
 }
 
+//nolint:revive // This function uses underscore in variable name
 func (proof InnerProductProof) VerifyFaster(GParam []*operation.Point, HParam []*operation.Point, uParam *operation.Point, hashCache []byte) bool {
 	//var aggParam = newBulletproofParams(1)
 	p := new(operation.Point)

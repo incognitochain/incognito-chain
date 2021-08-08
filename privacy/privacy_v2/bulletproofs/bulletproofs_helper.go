@@ -20,11 +20,12 @@ func ConvertUint64ToBinary(number uint64, n int) []*operation.Scalar {
 
 	for i := 0; i < n; i++ {
 		binary[i] = new(operation.Scalar).FromUint64(number % 2)
-		number = number / 2
+		number /= 2
 	}
 	return binary
 }
 
+//nolint:gocritic // This function uses capitalized variable name
 func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operation.Point {
 	yInverse := new(operation.Scalar).Invert(y)
 	HPrime := make([]*operation.Point, N)
@@ -36,6 +37,7 @@ func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operatio
 	return HPrime
 }
 
+//nolint:gocritic // This function uses capitalized variable name
 func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N int) (*operation.Scalar, error) {
 	oneNumber := new(operation.Scalar).FromUint64(1)
 	twoNumber := new(operation.Scalar).FromUint64(2)
@@ -71,7 +73,7 @@ func innerProduct(a []*operation.Scalar, b []*operation.Scalar) (*operation.Scal
 	}
 	result := new(operation.Scalar).FromUint64(uint64(0))
 	for i := range a {
-		//res = a[i]*b[i] + res % l
+		// res = a[i]*b[i] + res % l
 		result.MulAdd(a[i], b[i], result)
 	}
 	return result, nil
@@ -88,6 +90,7 @@ func vectorAdd(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scala
 	return result, nil
 }
 
+//nolint:gocritic // This function uses capitalized variable name
 func setAggregateParams(N int) *bulletproofParams {
 	aggParam := new(bulletproofParams)
 	aggParam.g = AggParam.g[0:N]
@@ -100,16 +103,15 @@ func setAggregateParams(N int) *bulletproofParams {
 func roundUpPowTwo(v int) int {
 	if v == 0 {
 		return 1
-	} else {
-		v--
-		v |= v >> 1
-		v |= v >> 2
-		v |= v >> 4
-		v |= v >> 8
-		v |= v >> 16
-		v++
-		return v
 	}
+	v--
+	v |= v >> 1
+	v |= v >> 2
+	v |= v >> 4
+	v |= v >> 8
+	v |= v >> 16
+	v++
+	return v
 }
 
 func hadamardProduct(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {

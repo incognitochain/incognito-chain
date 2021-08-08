@@ -1,5 +1,7 @@
 package rpcserver
 
+import "github.com/incognitochain/incognito-chain/common"
+
 // rpc cmd method
 const (
 	// test rpc server
@@ -76,6 +78,7 @@ const (
 	listUnspentCustomToken                     = "listunspentcustomtoken"
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
+	getEncodedTransactionsByHashes             = "getencodedtransactionsbyhashes"
 	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
 	gettransactionhashbyreceiverv2             = "gettransactionhashbyreceiverv2"
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
@@ -132,6 +135,7 @@ const (
 
 	getShardBestState        = "getshardbeststate"
 	getShardBestStateDetail  = "getshardbeststatedetail"
+	getBeaconViewByHash      = "getbeaconviewbyhash"
 	getBeaconBestState       = "getbeaconbeststate"
 	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 
@@ -181,6 +185,9 @@ const (
 	getAllBridgeTokensByHeight         = "getallbridgetokensbyheight"
 	getETHHeaderByHash                 = "getethheaderbyhash"
 	getBridgeReqWithStatus             = "getbridgereqwithstatus"
+	createAndSendTxWithIssuingBSCReq   = "createandsendtxwithissuingbscreq"
+	createAndSendBurningBSCRequest     = "createandsendburningbscrequest"
+	checkBSCHashIssued                 = "checkbschashissued"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -188,6 +195,7 @@ const (
 	getBridgeSwapProof       = "getbridgeswapproof"
 	getLatestBridgeSwapProof = "getlatestbridgeswapproof"
 	getBurnProof             = "getburnproof"
+	getBSCBurnProof          = "getbscburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
@@ -310,6 +318,23 @@ const (
 	//validator state
 	getValKeyState = "getvalkeystate"
 
+	// portal v4
+	getPortalV4State                           = "getportalv4state"
+	getPortalV4Params                          = "getportalv4params"
+	createAndSendTxWithShieldingRequest        = "createandsendtxshieldingrequest"
+	getPortalShieldingRequestStatus            = "getportalshieldingrequeststatus"
+	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"
+	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
+	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
+	getSignedRawTransactionByBatchID           = "getportalsignedrawtransaction"
+	createAndSendTxWithPortalReplacementFee    = "createandsendtxwithportalreplacebyfee"
+	getPortalReplacementFeeStatus              = "getportalreplacebyfeestatus"
+	createAndSendTxWithPortalSubmitConfirmedTx = "createandsendtxwithportalsubmitconfirmedtx"
+	getPortalSubmitConfirmedTx                 = "getportalsubmitconfirmedtxstatus"
+	getSignedRawReplaceFeeTransaction          = "getportalsignedrawreplacebyfeetransaction"
+	createAndSendTxPortalConvertVaultRequest   = "createandsendtxportalconvertvault"
+	getPortalConvertVaultTxStatus              = "getportalconvertvaultstatus"
+
 	// stake
 	unstake = "createunstaketransaction"
 )
@@ -336,62 +361,81 @@ const (
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )
 
-var PortalV3RPCs = []string{
-	createAndSendTxWithCustodianDeposit,
-	createAndSendTxWithReqPToken,
-	getPortalState,
-	getPortalCustodianDepositStatus,
-	createAndSendRegisterPortingPublicTokens,
-	createAndSendPortalExchangeRates,
-	getPortalFinalExchangeRates,
-	getPortalPortingRequestByKey,
-	getPortalPortingRequestByPortingId,
-	convertExchangeRates,
-	getPortalReqPTokenStatus,
-	getPortingRequestFees,
-	createAndSendTxWithRedeemReq,
-	createAndSendTxWithReqUnlockCollateral,
-	getPortalReqUnlockCollateralStatus,
-	getPortalReqRedeemStatus,
-	createAndSendCustodianWithdrawRequest,
-	getCustodianWithdrawByTxId,
-	getCustodianLiquidationStatus,
-	createAndSendTxWithReqWithdrawRewardPortal,
-	createAndSendTxRedeemFromLiquidationPoolV3,
-	createAndSendCustodianTopup,
-	createAndSendTopUpWaitingPorting,
-	createAndSendCustodianTopupV3,
-	createAndSendTopUpWaitingPortingV3,
-	getTopupAmountForCustodian,
-	getLiquidationExchangeRatesPool,
-	getPortalReward,
-	getRequestWithdrawPortalRewardStatus,
-	createAndSendTxWithReqMatchingRedeem,
-	getReqMatchingRedeemStatus,
-	getPortalCustodianTopupStatus,
-	getPortalCustodianTopupStatusV3,
-	getPortalCustodianTopupWaitingPortingStatus,
-	getPortalCustodianTopupWaitingPortingStatusV3,
-	getAmountTopUpWaitingPorting,
-	getPortalReqRedeemByTxIDStatus,
-	getReqRedeemFromLiquidationPoolByTxIDStatus,
-	getReqRedeemFromLiquidationPoolByTxIDStatusV3,
-	getPortalCustodianDepositStatusV3,
-	checkPortalExternalHashSubmitted,
-	createAndSendTxWithCustodianWithdrawRequestV3,
-	getCustodianWithdrawRequestStatusV3ByTxId,
-	getPortalWithdrawCollateralProof,
-	createAndSendUnlockOverRateCollaterals,
-	getPortalUnlockOverRateCollateralsStatus,
-	getRewardFeature,
-}
-
-var PortalRelayingRPCs = []string{
-	createAndSendTxWithRelayingBNBHeader,
-	createAndSendTxWithRelayingBTCHeader,
-	getRelayingBNBHeaderState,
-	getRelayingBNBHeaderByBlockHeight,
-	getBTCRelayingBestState,
-	getBTCBlockByHash,
-	getLatestBNBHeaderBlockHeight,
+// add method names when add new feature flags
+var FeatureFlagWithMethodNames = map[string][]string{
+	common.PortalRelayingFlag: {
+		createAndSendTxWithRelayingBNBHeader,
+		createAndSendTxWithRelayingBTCHeader,
+		getRelayingBNBHeaderState,
+		getRelayingBNBHeaderByBlockHeight,
+		getBTCRelayingBestState,
+		getBTCBlockByHash,
+		getLatestBNBHeaderBlockHeight,
+	},
+	common.PortalV3Flag: {
+		createAndSendTxWithCustodianDeposit,
+		createAndSendTxWithReqPToken,
+		getPortalState,
+		getPortalCustodianDepositStatus,
+		createAndSendRegisterPortingPublicTokens,
+		createAndSendPortalExchangeRates,
+		getPortalFinalExchangeRates,
+		getPortalPortingRequestByKey,
+		getPortalPortingRequestByPortingId,
+		convertExchangeRates,
+		getPortalReqPTokenStatus,
+		getPortingRequestFees,
+		createAndSendTxWithRedeemReq,
+		createAndSendTxWithReqUnlockCollateral,
+		getPortalReqUnlockCollateralStatus,
+		getPortalReqRedeemStatus,
+		createAndSendCustodianWithdrawRequest,
+		getCustodianWithdrawByTxId,
+		getCustodianLiquidationStatus,
+		createAndSendTxWithReqWithdrawRewardPortal,
+		createAndSendTxRedeemFromLiquidationPoolV3,
+		createAndSendCustodianTopup,
+		createAndSendTopUpWaitingPorting,
+		createAndSendCustodianTopupV3,
+		createAndSendTopUpWaitingPortingV3,
+		getTopupAmountForCustodian,
+		getLiquidationExchangeRatesPool,
+		getPortalReward,
+		getRequestWithdrawPortalRewardStatus,
+		createAndSendTxWithReqMatchingRedeem,
+		getReqMatchingRedeemStatus,
+		getPortalCustodianTopupStatus,
+		getPortalCustodianTopupStatusV3,
+		getPortalCustodianTopupWaitingPortingStatus,
+		getPortalCustodianTopupWaitingPortingStatusV3,
+		getAmountTopUpWaitingPorting,
+		getPortalReqRedeemByTxIDStatus,
+		getReqRedeemFromLiquidationPoolByTxIDStatus,
+		getReqRedeemFromLiquidationPoolByTxIDStatusV3,
+		getPortalCustodianDepositStatusV3,
+		checkPortalExternalHashSubmitted,
+		createAndSendTxWithCustodianWithdrawRequestV3,
+		getCustodianWithdrawRequestStatusV3ByTxId,
+		getPortalWithdrawCollateralProof,
+		createAndSendUnlockOverRateCollaterals,
+		getPortalUnlockOverRateCollateralsStatus,
+		getRewardFeature,
+	},
+	common.PortalV4Flag: {
+		getPortalV4State,
+		createAndSendTxWithShieldingRequest,
+		getPortalShieldingRequestStatus,
+		createAndSendTxWithPortalV4UnshieldRequest,
+		getPortalUnshieldingRequestStatus,
+		getPortalBatchUnshieldingRequestStatus,
+		getSignedRawTransactionByBatchID,
+		createAndSendTxWithPortalReplacementFee,
+		getPortalReplacementFeeStatus,
+		createAndSendTxWithPortalSubmitConfirmedTx,
+		getPortalSubmitConfirmedTx,
+		getSignedRawReplaceFeeTransaction,
+		createAndSendTxPortalConvertVaultRequest,
+		getPortalConvertVaultTxStatus,
+		getPortalV4Params,
+	},
 }

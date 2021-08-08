@@ -1,9 +1,11 @@
 package rpcserver
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -80,10 +82,14 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	if err != nil {
 		return nil, err
 	}
+	messageHex, err1 := encodeMessage(txMsg)
+	if err1 != nil {
+		Logger.log.Error(err)
+	}
 	httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
 	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
-		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
+		Logger.log.Infof("handleSendRawTransaction broadcast tx %v to shard %v successfully, msgHash %v", txHash.String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
 		if !httpServer.txService.BlockChain.UsingNewPool() {
 			httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 		}
@@ -316,6 +322,44 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx hash is invalid"))
 	}
 	return httpServer.txService.GetTransactionByHash(txHashStr)
+}
+
+// handleGetEncodedTransactionsByHashes handles the request getEncodedTransactionByHashes.
+func (httpServer *HttpServer) handleGetEncodedTransactionsByHashes(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("there is no param to proceed"))
+	}
+
+	paramList, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	//Get txHashList
+	txListKey := "TxHashList"
+	if _, ok = paramList[txListKey]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("%v not found in %v", txListKey, paramList))
+	}
+	txHashListInterface, ok := paramList[txListKey].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, not a []interface{}: %v", paramList[txListKey]))
+	}
+
+	txHashList := make([]string, 0)
+	for _, sn := range txHashListInterface {
+		if tmp, ok := sn.(string); !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, %v is not a string", sn))
+		} else {
+			txHashList = append(txHashList, tmp)
+		}
+	}
+
+	if len(txHashList) > 100 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("support at most 100 txs, got %v", len(txHashList)))
+	}
+
+	return httpServer.txService.GetEncodedTransactionsByHashes(txHashList)
 }
 
 //Get transaction by serial numbers
@@ -1065,9 +1109,18 @@ func (httpServer *HttpServer) 	handleSendRawPrivacyCustomTokenTransaction(params
 	httpServer.config.Server.OnTxPrivacyToken(nil, txMsg.(*wire.MessageTxPrivacyToken))
 	LastBytePubKeySender := tx.GetSenderAddrLastByte()
 	err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	messageHex, err := encodeMessage(txMsg)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	//Mark forwarded message
 	if err == nil {
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v successfully, msgHash %v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		}
+	} else {
+		Logger.log.Errorf("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v with error %+v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), err)
 	}
 	tokenData := tx.GetTxTokenData()
 	result := jsonresult.CreateTransactionTokenResult{
@@ -1553,4 +1606,43 @@ func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params i
 	result, err2 := httpServer.txService.DecryptOutputCoinByKeyByTransaction(keySet, txId.String())
 
 	return result, err2
+}
+
+func encodeMessage(msg wire.Message) (string, error) {
+	// NOTE: copy from peerConn.outMessageHandler
+	// Create messageHex
+	messageBytes, err := msg.JsonSerialize()
+	if err != nil {
+		Logger.log.Error("Can not serialize json format for messageHex:"+msg.MessageType(), err)
+		return "", err
+	}
+
+	// Add 24 bytes headerBytes into messageHex
+	headerBytes := make([]byte, wire.MessageHeaderSize)
+	// add command type of message
+	cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(msg))
+	if messageErr != nil {
+		Logger.log.Error("Can not get cmd type for "+msg.MessageType(), messageErr)
+		return "", err
+	}
+	copy(headerBytes[:], []byte(cmdType))
+	// add forward type of message at 13st byte
+	forwardType := byte('s')
+	forwardValue := byte(0)
+	copy(headerBytes[wire.MessageCmdTypeSize:], []byte{forwardType})
+	copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{forwardValue})
+	messageBytes = append(messageBytes, headerBytes...)
+	// Logger.Infof("Encoded message TYPE %s CONTENT %s", cmdType, string(messageBytes))
+
+	// zip data before send
+	messageBytes, err = common.GZipFromBytes(messageBytes)
+	if err != nil {
+		Logger.log.Error("Can not gzip for messageHex:"+msg.MessageType(), err)
+		return "", err
+	}
+	messageHex := hex.EncodeToString(messageBytes)
+	//log.Debugf("Content in hex encode: %s", string(messageHex))
+	// add end character to messageHex (delim '\n')
+	// messageHex += "\n"
+	return messageHex, nil
 }

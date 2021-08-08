@@ -23,6 +23,7 @@ require (
 	github.com/etcd-io/bbolt v1.3.3 // indirect
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.0
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.2
@@ -51,6 +52,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
+	github.com/smartystreets/goconvey v1.6.4
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa // indirect
 	github.com/spf13/viper v1.3.2
 	github.com/stathat/consistent v1.0.0 // indirect
