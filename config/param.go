@@ -3,8 +3,12 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/spf13/viper"
@@ -43,9 +47,9 @@ type param struct {
 	ReplaceStakingTxHeight           uint64             `mapstructure:"replace_staking_tx_height"`
 	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
 	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
-	BCHeightBreakPointPrivacyV2		 uint64				`mapstructure:"bc_height_break_point_privacy_v2"`
-	CoinVersion2LowestHeight		 uint64				`mapstructure:"coin_v2_lowest_height"`
-	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
+	BCHeightBreakPointPrivacyV2      uint64             `mapstructure:"bc_height_break_point_privacy_v2"`
+	CoinVersion2LowestHeight         uint64             `mapstructure:"coin_v2_lowest_height"`
+	EnableFeatureFlags               map[string]uint64  `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	GethParam                        gethParam          `mapstructure:"geth_param"`
@@ -105,6 +109,7 @@ type swapCommitteeParam struct {
 type consensusParam struct {
 	ConsensusV2Epoch          uint64   `mapstructure:"consensus_v2_epoch"`
 	StakingFlowV2Height       uint64   `mapstructure:"staking_flow_v2_height"`
+	AssignRuleV3Height        uint64   `mapstructure:"assign_rule_v3_height"`
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
@@ -112,17 +117,10 @@ type consensusParam struct {
 
 func LoadParam() *param {
 
-	p = &param{
-		GenesisParam: &genesisParam{
-			SelectBeaconNodeSerializedPubkeyV2:         map[uint64][]string{},
-			SelectBeaconNodeSerializedPaymentAddressV2: map[uint64][]string{},
-			SelectShardNodeSerializedPubkeyV2:          map[uint64][]string{},
-			SelectShardNodeSerializedPaymentAddressV2:  map[uint64][]string{},
-		},
-	}
 	network := c.Network()
+	p = NewDefaultParam(network)
 
-	//read config from file
+	//read config from file to overwrite default param
 	viper.SetConfigName(utils.GetEnv(ParamFileKey, DefaultParamFile))                         // name of config file (without extension)
 	viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
 	viper.AddConfigPath(filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
@@ -133,33 +131,46 @@ func LoadParam() *param {
 				panic(err)
 			}
 		} else {
-			panic(err)
+			log.Println("Using default network param for " + network)
 		}
 	} else {
+		log.Println("Using network param file for " + network)
+		//p has default param, below function only update fields which is specified in the param file
 		err = viper.Unmarshal(&p)
 		if err != nil {
 			panic(err)
 		}
 	}
-	initTx := new(initTx)
-	initTx.load()
-	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-
+	common.TIMESLOT = p.ConsensusParam.Timeslot
+	common.MaxShardNumber = p.ActiveShards
 	return p
 }
 
-func (p *param) LoadKey() {
+//key1,key2 : default key of the network
+func (p *param) LoadKey(key1 []byte, key2 []byte) {
 	network := c.Network()
 	configPath := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
 
+	//load from file, otherwise use default setup
 	keyData, err := ioutil.ReadFile(filepath.Join(configPath, KeyListFileName))
 	if err != nil {
-		panic(err)
+		if strings.Index(err.Error(), "no such file or directory") > -1 && key1 != nil {
+			keyData = key1
+			log.Println("Using default keylist 1 for " + network)
+		} else {
+			panic(err)
+		}
 	}
 
+	//load from file, otherwise use default setup
 	keyDataV2, err := ioutil.ReadFile(filepath.Join(configPath, KeyListV2FileName))
 	if err != nil {
-		panic(err)
+		if strings.Index(err.Error(), "no such file or directory") > -1 && key2 != nil {
+			keyDataV2 = key2
+			log.Println("Using default keylist 2 for " + network)
+		} else {
+			panic(err)
+		}
 	}
 
 	type AccountKey struct {
