@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -413,38 +414,70 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 
 	pkb := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
-	if outcoinIndexer.IsValidAccessToken(accessToken) {//if the token is authorized
-		if outcoinIndexer.IsQueueFull(shardID) {
-			return fmt.Errorf("the current authorized queue is full, please check back later")
+
+	if accessToken != "" {
+		if outcoinIndexer.IsValidAccessToken(accessToken) {//if the token is authorized
+			if outcoinIndexer.IsQueueFull(shardID) {
+				return fmt.Errorf("the current authorized queue is full, please check back later")
+			}
+
+			bss := blockchain.GetBestStateShard(shardID)
+			transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
+
+			lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
+			if heightToSyncFrom < lowestHeightForV2 {
+				heightToSyncFrom = lowestHeightForV2
+			}
+
+			if heightToSyncFrom > bss.ShardHeight {
+				return fmt.Errorf("fromHeight (%v) is larger than the current shard height (%v)", heightToSyncFrom, bss.ShardHeight)
+			}
+
+			idxParams := coinIndexer.IndexParam{
+				FromHeight: heightToSyncFrom,
+				ToHeight:   bss.ShardHeight,
+				OTAKey:     otaKey,
+				TxDb:       transactionStateDB,
+				ShardID:    shardID,
+				IsReset:    isReset,
+			}
+
+			outcoinIndexer.IdxChan <- idxParams
+
+			Logger.log.Infof("Authorized OTA Key Submission %x", otaKey)
+			return nil
+		} else {
+			return fmt.Errorf("invalid access token")
 		}
+	} else {
+		Logger.log.Infof("OTA Key Submission %x", otaKey)
+		return outcoinIndexer.AddOTAKey(otaKey)
+	}
+}
 
-		bss := blockchain.GetBestStateShard(shardID)
-		transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
-
-		lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
-		if heightToSyncFrom < lowestHeightForV2 {
-			heightToSyncFrom = lowestHeightForV2
-		}
-
-		if heightToSyncFrom > bss.ShardHeight {
-			return fmt.Errorf("fromHeight (%v) is larger than the current shard height (%v)", heightToSyncFrom, bss.ShardHeight)
-		}
-
-		idxParams := coinIndexer.IndexParam{
-			FromHeight: heightToSyncFrom,
-			ToHeight:   bss.ShardHeight,
-			OTAKey:     otaKey,
-			TxDb:       transactionStateDB,
-			ShardID:    shardID,
-			IsReset:    isReset,
-		}
-
-		outcoinIndexer.IdxChan <- idxParams
-		return nil
+func (blockchain *BlockChain) GetKeySubmissionInfo(keyStr string) (int, error) {
+	if !EnableIndexingCoinByOTAKey {
+		return 0, fmt.Errorf("OTA key submission not supported by this node configuration")
 	}
 
-	Logger.log.Infof("OTA Key Submission %x", otaKey)
-	return outcoinIndexer.AddOTAKey(otaKey)
+	w, err := wallet.Base58CheckDeserialize(keyStr)
+	if err != nil {
+		return 0, fmt.Errorf("cannot deserialize key")
+	}
+
+	otaKey := w.KeySet.OTAKey
+	if otaKey.GetPublicSpend() == nil || otaKey.GetOTASecretKey() == nil {
+		return 0, fmt.Errorf("otaKey is not valid")
+	}
+
+	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
+	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
+
+	if !keyExists {
+		return 0, fmt.Errorf("ota key hasn't been submitted")
+	}
+
+	return processing, nil
 }
 
 // GetAllOutputCoinsByKeyset retrieves and tries to decrypt all output coins of a key-set.
