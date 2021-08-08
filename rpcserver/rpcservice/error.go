@@ -39,6 +39,7 @@ const (
 	NetworkError
 	TokenIsInvalidError
 	GetClonedBeaconBestStateError
+	GetBeaconViewByBlockHashError
 	GetBeaconBestBlockHashError
 	GetBeaconBestBlockError
 	GetClonedShardBestStateError
@@ -132,6 +133,16 @@ const (
 
 	GetTotalStakerError
 
+	// Portal v4
+	GetPortalV4StateError
+	GetPortalV4ParamsError
+	GetPortalV4ShieldReqStatusError
+	GetPortalV4UnshieldReqStatusError
+	GetPortalV4BatchUnshieldReqStatusError
+	GetPortalV4FeeReplacementReqStatusError
+	GetPortalV4SubmitConfirmedTxStatusError
+	GetPortalV4ConvertVaultTxStatusError
+
 	CacheQueueError
 )
 
@@ -169,7 +180,7 @@ var ErrCodeMessage = map[int]struct {
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
 	GetOutputCoinsVer1Error:               {-1022, "Get output coins of ver 1 in database error"},
-	GetOutputCoinsVer2Error:			   {-1023, "Get output coins of ver 2 in database error"},
+	GetOutputCoinsVer2Error:               {-1023, "Get output coins of ver 2 in database error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:        {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:          {-2001, "Get shard block by hash error"},
@@ -265,7 +276,15 @@ var ErrCodeMessage = map[int]struct {
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
 	GetTotalStakerError:                           {-12010, "Get total staker return error"},
 
-	CacheQueueError:                               {-13001, "Full node cache error"},
+	// Portal v4
+	GetPortalV4ShieldReqStatusError:         {-12501, "Get portal v4 shielding request status error"},
+	GetPortalV4UnshieldReqStatusError:       {-12502, "Get portal v4 unshielding request status error"},
+	GetPortalV4BatchUnshieldReqStatusError:  {-12503, "Get portal v4 batch unshielding request status error"},
+	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
+	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
+	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
+
+	CacheQueueError: {-13001, "Full node cache error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
