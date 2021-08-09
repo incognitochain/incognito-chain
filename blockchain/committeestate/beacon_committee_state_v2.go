@@ -340,25 +340,3 @@ func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
 	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
 	return res
 }
-
-func SFV2VersionAssignRule(beaconHeight, assignRuleV2, assignRuleV3 uint64) AssignRuleProcessor {
-	if beaconHeight < assignRuleV2 && beaconHeight < assignRuleV3 {
-		Logger.log.Infof("Beacon Height %+v, using Assign Rule V1", beaconHeight)
-		return NewNilAssignRule()
-	}
-
-	if beaconHeight >= assignRuleV3 {
-		Logger.log.Infof("Beacon Height %+v, using Assign Rule V3", beaconHeight)
-		return NewAssignRuleV3()
-
-	}
-
-	Logger.log.Infof("Beacon Height %+v, using Assign Rule V2", beaconHeight)
-
-	if beaconHeight >= assignRuleV2 {
-
-		return NewAssignRuleV2()
-	}
-
-	return NewAssignRuleV2()
-}

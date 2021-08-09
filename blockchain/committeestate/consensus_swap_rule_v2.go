@@ -140,3 +140,25 @@ func (s *swapRuleV2) swapInAfterSwapOut(committees, substitutes []string, maxCom
 	substitutes = substitutes[vacantSlot:]
 	return committees, substitutes, newCommittees
 }
+
+func (s *swapRuleV2) CalculateAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+	assignPerShard := s.getSwapOutOffset(
+		lenShardSubstitute,
+		lenCommittees,
+		numberOfFixedValidators,
+		minCommitteeSize,
+	)
+
+	if assignPerShard == 0 && lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT_V2 {
+		assignPerShard = 1
+	}
+	return assignPerShard
+}
+
+func (s *swapRuleV2) clone() SwapRuleProcessor {
+	return &swapRuleV2{}
+}
+
+func (s *swapRuleV2) Version() int {
+	return swapRuleSlashingVersion
+}

@@ -29,5 +29,3 @@ type NodeInterface interface {
 	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 	GetSelfPeerID() peer.ID
 }
-
-//

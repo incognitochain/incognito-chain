@@ -68,6 +68,8 @@ const (
 	PortalV4ShieldRequestObjectType               = 43
 	PortalWaitingUnshieldObjectType               = 44
 	PortalProcessedUnshieldRequestBatchObjectType = 45
+
+	RewardRequestV3ObjectType = 46
 )
 
 // Prefix length
