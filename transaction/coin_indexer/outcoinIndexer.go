@@ -18,7 +18,7 @@ import (
 )
 
 type CoinIndexer struct {
-	numWorkers          int
+	numWorkers          int // the maximum number of indexing go-routines for the enhanced cache.
 	sem                 *semaphore.Weighted
 	mtx                 *sync.RWMutex
 	db                  incdb.Database
@@ -592,6 +592,11 @@ func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoin
 	return nil
 }
 
+// Start starts the CoinIndexer in case the authorized cache is employed.
+// It is a hub to
+//	- record key submission from users;
+//	- record the indexing status of keys;
+//	- collect keys into batches and index them all together in a batching way.
 func (ci *CoinIndexer) Start() {
 	ci.mtx.Lock()
 	if ci.isAuthorizedRunning {
@@ -617,7 +622,10 @@ func (ci *CoinIndexer) Start() {
 	for {
 		select {
 		case status := <-ci.statusChan:
+			ci.mtx.Lock()
 			numWorking--
+			ci.mtx.Unlock()
+
 			otaKeyBytes := OTAKeyToRaw(status.otaKey)
 			if status.err != nil {
 				utils.Logger.Log.Errorf("IndexOutCoin for otaKey %x failed: %v\n", otaKeyBytes, status.err)
@@ -632,6 +640,7 @@ func (ci *CoinIndexer) Start() {
 		case idxParams := <-ci.IdxChan:
 			otaKeyBytes := OTAKeyToRaw(idxParams.OTAKey)
 			utils.Logger.Log.Infof("New authorized OTAKey received: %x\n", otaKeyBytes)
+
 			ci.mtx.Lock()
 			ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
 			ci.queueSize++
@@ -641,6 +650,7 @@ func (ci *CoinIndexer) Start() {
 			ci.mtx.Lock()
 			ci.isAuthorizedRunning = false
 			ci.mtx.Unlock()
+
 			utils.Logger.Log.Infof("Stopped coinIndexer!!\n")
 			return
 		default:
@@ -650,16 +660,26 @@ func (ci *CoinIndexer) Start() {
 					continue
 				}
 				remainingWorker := ci.numWorkers - numWorking
-				workersForEach := ci.splitWorkers(remainingWorker)
-				for shard, numWorkers := range workersForEach {
-					if numWorkers != 0 {
-						numWorking += numWorkers
-						ci.queueSize -= numWorkers
-						idxParams := ci.idxQueue[shard][:numWorkers]
-						ci.idxQueue[shard] = ci.idxQueue[shard][numWorkers:]
+				// get idxParams for the ci
+				workersForEach := ci.getIdxParamsForIndexing(remainingWorker)
+				for shard, numParams := range workersForEach {
+					if numParams != 0 {
+						ci.mtx.Lock()
 
-						utils.Logger.Log.Infof("Re-index for %v new OTA keys, shard %v\n", numWorkers, shard)
+						// decrease the queue size
+						ci.queueSize -= numParams
+
+						idxParams := ci.idxQueue[shard][:numParams]
+						ci.idxQueue[shard] = ci.idxQueue[shard][numParams:]
+
+						utils.Logger.Log.Infof("Re-index for %v new OTA keys, shard %v\n", numParams, shard)
+
+						// increase 1 go-routine
+
+						numWorking += 1
 						go ci.ReIndexOutCoinBatch(idxParams, idxParams[0].TxDb)
+
+						ci.mtx.Unlock()
 					}
 				}
 				start = time.Now()

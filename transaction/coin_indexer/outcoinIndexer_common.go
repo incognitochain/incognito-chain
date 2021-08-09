@@ -158,6 +158,8 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	return outCoins, nil
 }
 
+// QueryBatchDbCoinVer2 queries the db to get v2 coins for `shardHeight` to `destHeight` and checks if the coins belong
+// to any of the given IndexParam's using the given filters.
 func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, cachedCoins map[string]interface{}, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
 	// avoid overlap; unless lower height is 0
 	start := shardHeight + 1
@@ -174,24 +176,26 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v\n", err)
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
 			cv2 := &privacy.CoinV2{}
-			err := cv2.SetBytes(coinBytes)
+			err = cv2.SetBytes(coinBytes)
 			if err != nil {
-				utils.Logger.Log.Error("Get outcoins ver 2 from bytes", err)
+				utils.Logger.Log.Error("Get outCoins ver 2 from bytes", err)
 				return nil, err
 			}
 
 			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {
+				// coin has already been cached, so we skip.
 				countSkipped++
 				continue
 			}
 
 			for otaStr, idxParam := range idxParams {
 				if height < idxParam.FromHeight || height > idxParam.ToHeight {
+					// Outside the required range, so we skip.
 					continue
 				}
 
@@ -205,6 +209,8 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 				for _, f := range filters {
 					if !f(cv2, params) {
 						pass = false
+					} else {
+						break
 					}
 				}
 				if pass {
@@ -220,43 +226,45 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 }
 
 //nolint:gocritic
-// splitWorkers chooses the number of workers for each shard queue based on the current size.
-func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
+// getIdxParamsForIndexing chooses the IdxParams for each shard queue based on the current size and the
+// number of free workers.
+func (ci *CoinIndexer) getIdxParamsForIndexing(totalWorker int) map[byte]int {
 	res := make(map[byte]int)
 	for i := 0; i < common.MaxShardNumber; i++ {
 		res[byte(i)] = 0
 	}
 
-	numForEach := totalWorker / common.MaxShardNumber
-	if totalWorker == 0 {
-		return res
-	}
-
-	totalChosen := 0
-	remaining := totalWorker
-	for shard := 0; shard < common.MaxShardNumber; shard++ {
-		shardID := byte(shard)
-		tmpNumForShard := numForEach //nolint:ineffassign
-		if totalWorker > ci.queueSize {
-			tmpNumForShard = len(ci.idxQueue[shardID])
-		} else if numForEach <= len(ci.idxQueue[shardID]) {
-			tmpNumForShard = numForEach
-		} else {
-			tmpNumForShard = len(ci.idxQueue[shardID])
+	if totalWorker <= common.MaxShardNumber {
+		remainingWorker := totalWorker
+		attempt := 0
+		for remainingWorker > 0 {
+			if attempt == 10 {
+				// already loop with enough attempts but cannot find more, so we break.
+				break
+			}
+			r := common.RandInt() % common.MaxShardNumber
+			shardID := byte(r)
+			if res[shardID] > 0 || len(ci.idxQueue[shardID]) == 0 {
+				attempt += 1
+				continue
+			} else if len(ci.idxQueue[shardID]) < IndexingBatchSize {
+				res[shardID] = len(ci.idxQueue[shardID])
+			} else {
+				res[shardID] = IndexingBatchSize
+			}
+			remainingWorker--
+			attempt = 0
 		}
-
-		res[shardID] = tmpNumForShard
-		remaining -= tmpNumForShard
-		totalChosen += tmpNumForShard
-	}
-
-	for remaining > 0 && totalWorker < ci.queueSize && totalChosen < ci.queueSize {
-		r := common.RandInt() % common.MaxShardNumber
-		shardID := byte(r)
-		if len(ci.idxQueue[shardID]) > res[shardID] {
-			res[shardID]++
-			remaining--
-			totalChosen++
+	} else {
+		for shard := 0; shard < common.MaxShardNumber; shard++ {
+			shardID := byte(shard)
+			if len(ci.idxQueue[shardID]) == 0 {
+				continue
+			} else if len(ci.idxQueue[shardID]) < IndexingBatchSize {
+				res[shardID] = len(ci.idxQueue[shardID])
+			} else {
+				res[shardID] = IndexingBatchSize
+			}
 		}
 	}
 
