@@ -150,7 +150,7 @@ func StorePdexv3Order(
 	orderState Pdexv3OrderState,
 ) error {
 	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), orderState.Value().Id())
-	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, orderState)
+	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, &orderState)
 }
 
 func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]rawdbv2.Pdexv3Contribution, error) {

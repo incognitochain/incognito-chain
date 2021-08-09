@@ -218,6 +218,7 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3ParamsModifyingStatus:        (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
 	pdexv3AddLiquidityV3:                  (*HttpServer).handleAddLiquidityV3,
 	getPdexv3ContributionStatus:           (*HttpServer).handleGetPdexv3ContributionStatus,
+	pdexv3TxTrade:                         (*HttpServer).handlePdexv3TxTradeRequest,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

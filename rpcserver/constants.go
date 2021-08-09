@@ -241,6 +241,7 @@ const (
 	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
 	pdexv3AddLiquidityV3                  = "pdexv3_txAddLiquidity"
 	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
+	pdexv3TxTrade                         = "pdexv3_txTrade"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
