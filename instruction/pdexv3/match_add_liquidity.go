@@ -13,7 +13,7 @@ import (
 type MatchAddLiquidity struct {
 	contribution  statedb.Pdexv3ContributionState
 	newPoolPairID string
-	nfctID        common.Hash
+	nftID         common.Hash
 }
 
 func NewMatchAddLiquidity() *MatchAddLiquidity {
@@ -23,12 +23,12 @@ func NewMatchAddLiquidity() *MatchAddLiquidity {
 func NewMatchAddLiquidityWithValue(
 	contribution statedb.Pdexv3ContributionState,
 	newPoolPairID string,
-	nfctID common.Hash,
+	nftID common.Hash,
 ) *MatchAddLiquidity {
 	return &MatchAddLiquidity{
 		contribution:  contribution,
 		newPoolPairID: newPoolPairID,
-		nfctID:        nfctID,
+		nftID:         nftID,
 	}
 }
 
@@ -63,13 +63,13 @@ func (m *MatchAddLiquidity) StringSlice() ([]string, error) {
 
 func (m *MatchAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Contribution  statedb.Pdexv3ContributionState `json:"Contribution"`
-		NewPoolPairID string                          `json:"NewPoolPairID"`
-		NfctID        common.Hash                     `json:"NfctID"`
+		Contribution  *statedb.Pdexv3ContributionState `json:"Contribution"`
+		NewPoolPairID string                           `json:"NewPoolPairID"`
+		NftID         common.Hash                      `json:"NftID"`
 	}{
-		Contribution:  m.contribution,
+		Contribution:  &m.contribution,
 		NewPoolPairID: m.newPoolPairID,
-		NfctID:        m.nfctID,
+		NftID:         m.nftID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -79,17 +79,19 @@ func (m *MatchAddLiquidity) MarshalJSON() ([]byte, error) {
 
 func (m *MatchAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Contribution  statedb.Pdexv3ContributionState `json:"Contribution"`
-		NewPoolPairID string                          `json:"NewPoolPairID"`
-		NfctID        common.Hash                     `json:"NfctID"`
+		Contribution  *statedb.Pdexv3ContributionState `json:"Contribution"`
+		NewPoolPairID string                           `json:"NewPoolPairID"`
+		NftID         common.Hash                      `json:"NftID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	m.contribution = temp.Contribution
+	if temp.Contribution != nil {
+		m.contribution = *temp.Contribution
+	}
 	m.newPoolPairID = temp.NewPoolPairID
-	m.nfctID = temp.NfctID
+	m.nftID = temp.NftID
 	return nil
 }
 
@@ -97,8 +99,8 @@ func (m *MatchAddLiquidity) NewPoolPairID() string {
 	return m.newPoolPairID
 }
 
-func (m *MatchAddLiquidity) NfctID() common.Hash {
-	return m.nfctID
+func (m *MatchAddLiquidity) NftID() common.Hash {
+	return m.nftID
 }
 
 func (m *MatchAddLiquidity) Contribution() statedb.Pdexv3ContributionState {

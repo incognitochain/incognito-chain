@@ -1,28 +1,46 @@
 package pdexv3
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
-	tokenID, _ := common.Hash{}.NewHashFromStr("123")
-	metaData := metadataPdexv3.NewAddLiquidityWithValue(
-		"pool_pair_id", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
-		common.PRVIDStr, 300, 10000,
+	tokenHash, err := common.Hash{}.NewHashFromStr("abc")
+	assert.Nil(t, err)
+
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
+	inst := NewMatchAndReturnAddLiquidityWithValue(
+		contributionState,
+		100, 100, 200, 100,
+		*tokenHash,
+		common.PRVCoinID,
+	)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
-		Base                     Base
+		shareAmount              uint64
+		contribution             statedb.Pdexv3ContributionState
 		returnAmount             uint64
 		existedTokenActualAmount uint64
 		existedTokenReturnAmount uint64
-		existedTokenID           string
-		nfctID                   string
+		existedTokenID           common.Hash
+		nftID                    common.Hash
 	}
 	type args struct {
 		source []string
@@ -35,180 +53,53 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "Length of source < 6",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
+			name:    "Invalid length",
+			fields:  fields{},
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name:   "Invalid metadata type",
+			fields: fields{},
 			args: args{
-				source: []string{},
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
+					common.PDEContributionRefundChainStatus,
+					string(data),
+				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Invalid Base Instruction",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
+			name:   "Invalid status",
+			fields: fields{},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionRefundChainStatus,
+					string(data),
 				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			fieldsAfterProcess: fields{
+				contribution:             contributionState,
+				shareAmount:              100,
+				returnAmount:             100,
+				existedTokenActualAmount: 200,
+				existedTokenReturnAmount: 100,
+				existedTokenID:           *tokenHash,
+				nftID:                    common.PRVCoinID,
 			},
 			args: args{
 				source: []string{
-					"",
-					"",
-					"",
-					"",
-					"",
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionMatchedNReturnedChainStatus,
+					string(data),
 				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid return amount",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"abc", "200", tokenID.String(), common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid existedTokenActualAmount",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "abc", tokenID.String(), common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid existedTokenReturnAmount",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "abc", tokenID.String(), common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid ExistedTokenID",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "50", "abc",
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Empty ExistedTokenID",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "50", common.Hash{}.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid NfctID",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "50", tokenID.String(), "fasd",
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Empty NfctID",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "50", tokenID.String(), common.Hash{}.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid status",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "50", tokenID.String(), common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionRefundStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Valid Input",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"100", "200", "50", tokenID.String(), common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus),
-				),
-			},
-			fieldsAfterProcess: fields{
-				Base: Base{
-					metaData: metaData,
-					txReqID:  "tx_req_id",
-					shardID:  1,
-				},
-				returnAmount:             100,
-				existedTokenActualAmount: 200,
-				existedTokenReturnAmount: 50,
-				existedTokenID:           tokenID.String(),
-				nfctID:                   common.PRVCoinID.String(),
 			},
 			wantErr: false,
 		},
@@ -216,101 +107,89 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MatchAndReturnAddLiquidity{
-				Base:                     tt.fields.Base,
+				shareAmount:              tt.fields.shareAmount,
+				contribution:             tt.fields.contribution,
 				returnAmount:             tt.fields.returnAmount,
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
-				nfctID:                   tt.fields.nfctID,
+				nftID:                    tt.fields.nftID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAndReturnAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.metaData, tt.fieldsAfterProcess.Base.metaData) {
-				t.Errorf("metaData got = %v, expected = %v", m.metaData, tt.fieldsAfterProcess.Base.metaData)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.txReqID, tt.fieldsAfterProcess.Base.txReqID) {
-				t.Errorf("txReqID got = %v, expected = %v", m.txReqID, tt.fieldsAfterProcess.Base.txReqID)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.shardID, tt.fieldsAfterProcess.Base.shardID) {
-				t.Errorf("shardID got = %v, expected = %v", m.shardID, tt.fieldsAfterProcess.Base.shardID)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.returnAmount, tt.fieldsAfterProcess.returnAmount) {
-				t.Errorf("returnAmount got = %v, expected = %v", m.returnAmount, tt.fieldsAfterProcess.returnAmount)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.existedTokenActualAmount, tt.fieldsAfterProcess.existedTokenActualAmount) {
-				t.Errorf("existedTokenActualAmount got = %v, expected = %v", m.existedTokenActualAmount, tt.fieldsAfterProcess.existedTokenActualAmount)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.existedTokenReturnAmount, tt.fieldsAfterProcess.existedTokenReturnAmount) {
-				t.Errorf("existedTokenReturnAmount got = %v, expected = %v", m.existedTokenReturnAmount, tt.fieldsAfterProcess.existedTokenReturnAmount)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.existedTokenID, tt.fieldsAfterProcess.existedTokenID) {
-				t.Errorf("existedTokenID got = %v, expected = %v", m.existedTokenID, tt.fieldsAfterProcess.existedTokenID)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.nfctID, tt.fieldsAfterProcess.nfctID) {
-				t.Errorf("nfctID got = %v, expected = %v", m.nfctID, tt.fieldsAfterProcess.nfctID)
-				return
 			}
 		})
 	}
 }
 
 func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
-	metaData := metadataPdexv3.NewAddLiquidityWithValue(
-		"pool_pair_id", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
-		common.PRVIDStr, 300, 10000,
+	tokenHash, _ := common.Hash{}.NewHashFromStr("abc")
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
+	inst := NewMatchAndReturnAddLiquidityWithValue(
+		contributionState,
+		100, 100, 200, 100,
+		*tokenHash,
+		common.PRVCoinID,
+	)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
-		Base                     Base
+		shareAmount              uint64
+		contribution             statedb.Pdexv3ContributionState
 		returnAmount             uint64
 		existedTokenActualAmount uint64
 		existedTokenReturnAmount uint64
-		existedTokenID           string
-		nfctID                   string
+		existedTokenID           common.Hash
+		nftID                    common.Hash
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []string
+		name    string
+		fields  fields
+		want    []string
+		wantErr bool
 	}{
 		{
 			name: "Valid Input",
 			fields: fields{
-				Base: Base{
-					metaData: metaData,
-					txReqID:  "tx_req_id",
-					shardID:  1,
-				},
+				contribution:             contributionState,
+				shareAmount:              100,
 				returnAmount:             100,
 				existedTokenActualAmount: 200,
-				existedTokenReturnAmount: 50,
-				existedTokenID:           common.PRVIDStr,
-				nfctID:                   "nfct_id",
+				existedTokenReturnAmount: 100,
+				existedTokenID:           *tokenHash,
+				nftID:                    common.PRVCoinID,
 			},
-			want: append(metaData.StringSlice(),
-				"tx_req_id", "1", "100", "200", "50",
-				common.PRVIDStr, "nfct_id", strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
+			want: []string{
+				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+				common.PDEContributionMatchedNReturnedChainStatus,
+				string(data),
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MatchAndReturnAddLiquidity{
-				Base:                     tt.fields.Base,
+				shareAmount:              tt.fields.shareAmount,
+				contribution:             tt.fields.contribution,
 				returnAmount:             tt.fields.returnAmount,
-				nfctID:                   tt.fields.nfctID,
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
+				nftID:                    tt.fields.nftID,
 			}
-			if got := m.StringSlice(); !reflect.DeepEqual(got, tt.want) {
+			got, err := m.StringSlice()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MatchAndReturnAddLiquidity.StringSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MatchAndReturnAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
 			}
 		})

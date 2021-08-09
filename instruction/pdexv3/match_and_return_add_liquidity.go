@@ -17,7 +17,7 @@ type MatchAndReturnAddLiquidity struct {
 	existedTokenActualAmount uint64
 	existedTokenReturnAmount uint64
 	existedTokenID           common.Hash
-	nfctID                   common.Hash
+	nftID                    common.Hash
 }
 
 func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
@@ -27,7 +27,7 @@ func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
 func NewMatchAndReturnAddLiquidityWithValue(
 	contribution statedb.Pdexv3ContributionState,
 	shareAmount, returnAmount, existedTokenActualAmount, existedTokenReturnAmount uint64,
-	existedTokenID, nfctID common.Hash,
+	existedTokenID, nftID common.Hash,
 ) *MatchAndReturnAddLiquidity {
 	return &MatchAndReturnAddLiquidity{
 		shareAmount:              shareAmount,
@@ -36,7 +36,7 @@ func NewMatchAndReturnAddLiquidityWithValue(
 		existedTokenActualAmount: existedTokenActualAmount,
 		existedTokenID:           existedTokenID,
 		existedTokenReturnAmount: existedTokenReturnAmount,
-		nfctID:                   nfctID,
+		nftID:                    nftID,
 	}
 }
 
@@ -71,21 +71,21 @@ func (m *MatchAndReturnAddLiquidity) StringSlice() ([]string, error) {
 
 func (m *MatchAndReturnAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		ShareAmount              uint64                          `json:"ShareAmount"`
-		Contribution             statedb.Pdexv3ContributionState `json:"Contribution"`
-		ReturnAmount             uint64                          `json:"ReturnAmount"`
-		ExistedTokenActualAmount uint64                          `json:"ExistedTokenActualAmount"`
-		ExistedTokenReturnAmount uint64                          `json:"ExistedTokenReturnAmount"`
-		ExistedTokenID           common.Hash                     `json:"ExistedTokenID"`
-		NfctID                   common.Hash                     `json:"NfctID"`
+		ShareAmount              uint64                           `json:"ShareAmount"`
+		Contribution             *statedb.Pdexv3ContributionState `json:"Contribution"`
+		ReturnAmount             uint64                           `json:"ReturnAmount"`
+		ExistedTokenActualAmount uint64                           `json:"ExistedTokenActualAmount"`
+		ExistedTokenReturnAmount uint64                           `json:"ExistedTokenReturnAmount"`
+		ExistedTokenID           common.Hash                      `json:"ExistedTokenID"`
+		NftID                    common.Hash                      `json:"NftID"`
 	}{
 		ShareAmount:              m.shareAmount,
-		Contribution:             m.contribution,
+		Contribution:             &m.contribution,
 		ReturnAmount:             m.returnAmount,
 		ExistedTokenActualAmount: m.existedTokenActualAmount,
 		ExistedTokenReturnAmount: m.existedTokenReturnAmount,
 		ExistedTokenID:           m.existedTokenID,
-		NfctID:                   m.nfctID,
+		NftID:                    m.nftID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -95,25 +95,27 @@ func (m *MatchAndReturnAddLiquidity) MarshalJSON() ([]byte, error) {
 
 func (m *MatchAndReturnAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		ShareAmount              uint64                          `json:"ShareAmount"`
-		Contribution             statedb.Pdexv3ContributionState `json:"Contribution"`
-		ReturnAmount             uint64                          `json:"ReturnAmount"`
-		ExistedTokenActualAmount uint64                          `json:"ExistedTokenActualAmount"`
-		ExistedTokenReturnAmount uint64                          `json:"ExistedTokenReturnAmount"`
-		ExistedTokenID           common.Hash                     `json:"ExistedTokenID"`
-		NfctID                   common.Hash                     `json:"NfctID"`
+		ShareAmount              uint64                           `json:"ShareAmount"`
+		Contribution             *statedb.Pdexv3ContributionState `json:"Contribution"`
+		ReturnAmount             uint64                           `json:"ReturnAmount"`
+		ExistedTokenActualAmount uint64                           `json:"ExistedTokenActualAmount"`
+		ExistedTokenReturnAmount uint64                           `json:"ExistedTokenReturnAmount"`
+		ExistedTokenID           common.Hash                      `json:"ExistedTokenID"`
+		NftID                    common.Hash                      `json:"NftID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	m.shareAmount = temp.ShareAmount
-	m.contribution = temp.Contribution
+	if temp.Contribution != nil {
+		m.contribution = *temp.Contribution
+	}
 	m.returnAmount = temp.ReturnAmount
 	m.existedTokenActualAmount = temp.ExistedTokenActualAmount
 	m.existedTokenReturnAmount = temp.ExistedTokenReturnAmount
 	m.existedTokenID = temp.ExistedTokenID
-	m.nfctID = temp.NfctID
+	m.nftID = temp.NftID
 	return nil
 }
 
@@ -121,8 +123,8 @@ func (m *MatchAndReturnAddLiquidity) ReturnAmount() uint64 {
 	return m.returnAmount
 }
 
-func (m *MatchAndReturnAddLiquidity) NfctID() common.Hash {
-	return m.nfctID
+func (m *MatchAndReturnAddLiquidity) NftID() common.Hash {
+	return m.nftID
 }
 
 func (m *MatchAndReturnAddLiquidity) ExistedTokenActualAmount() uint64 {

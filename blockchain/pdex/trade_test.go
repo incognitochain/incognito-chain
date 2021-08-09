@@ -59,10 +59,10 @@ func TestSortOrder(t *testing.T) {
 	var testcases []Testcase
 	testcases = append(testcases, sortOrderTestcases...)
 
-	testState := newStateV2WithValue(nil, nil, make(map[string]PoolPairState),
-		Params{}, nil)
+	testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
+		Params{}, nil, map[string]bool{})
 	blankPairID := "pair0"
-	testState.poolPairs[blankPairID] = PoolPairState{orderbook: Orderbook{[]*Order{}}}
+	testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData

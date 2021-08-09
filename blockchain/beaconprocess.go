@@ -856,7 +856,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 
-	pdexStateChange := &pdex.StateChange{}
+	pdexStateChange := pdex.NewStateChange()
 	diffState, pdexStateChange, err := newBestState.pdeState.GetDiff(curView.pdeState, pdexStateChange)
 	if err != nil {
 		Logger.log.Error(err)

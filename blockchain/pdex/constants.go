@@ -15,3 +15,7 @@ const (
 	InitStakingPoolRewardPercent = 10
 	InitStakingPoolsShare        = 0
 )
+
+var (
+	hashPrefix = []byte("pdex-v3")
+)

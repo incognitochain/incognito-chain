@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strconv"
@@ -429,31 +430,24 @@ func (s *stateV1) GetDiff(compareState State, stateChange *StateChange) (State, 
 	return res, stateChange, nil
 }
 
-func (s *stateV1) WaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
-	res := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
+func (s *stateV1) WaitingContributionsV1() []byte {
+	temp := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
 	for k, v := range s.waitingContributions {
-		res[k] = new(rawdbv2.PDEContribution)
-		*res[k] = *v
+		temp[k] = new(rawdbv2.PDEContribution)
+		*temp[k] = *v
 	}
-	return res
+	data, _ := json.Marshal(temp)
+	return data
 }
 
-func (s *stateV1) DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution {
-	res := make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
-	for k, v := range s.deletedWaitingContributions {
-		res[k] = new(rawdbv2.PDEContribution)
-		*res[k] = *v
-	}
-	return res
-}
-
-func (s *stateV1) PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair {
-	res := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
+func (s *stateV1) PoolPairs() []byte {
+	temp := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
 	for k, v := range s.poolPairs {
-		res[k] = new(rawdbv2.PDEPoolForPair)
-		*res[k] = *v
+		temp[k] = new(rawdbv2.PDEPoolForPair)
+		*temp[k] = *v
 	}
-	return res
+	data, _ := json.Marshal(temp)
+	return data
 }
 
 func (s *stateV1) Shares() map[string]uint64 {

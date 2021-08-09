@@ -1,8 +1,8 @@
 package pdex
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -13,15 +13,17 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateV2 struct {
 	stateBase
 	waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
-	poolPairs                   map[string]PoolPairState //
+	poolPairs                   map[string]*PoolPairState
 	params                      Params
-	stakingPoolsState           map[string]StakingPoolState // tokenID -> StakingPoolState
+	stakingPoolsState           map[string]*StakingPoolState // tokenID -> StakingPoolState
+	nftIDs                      map[string]bool
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
@@ -53,17 +55,19 @@ func newStateV2() *stateV2 {
 		},
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs:                   make(map[string]PoolPairState),
-		stakingPoolsState:           make(map[string]StakingPoolState),
+		poolPairs:                   make(map[string]*PoolPairState),
+		stakingPoolsState:           make(map[string]*StakingPoolState),
+		nftIDs:                      make(map[string]bool),
 	}
 }
 
 func newStateV2WithValue(
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	poolPairs map[string]PoolPairState,
+	poolPairs map[string]*PoolPairState,
 	params Params,
-	stakingPoolsState map[string]StakingPoolState,
+	stakingPoolsState map[string]*StakingPoolState,
+	nftIDs map[string]bool,
 ) *stateV2 {
 	return &stateV2{
 		waitingContributions:        waitingContributions,
@@ -71,6 +75,7 @@ func newStateV2WithValue(
 		poolPairs:                   poolPairs,
 		stakingPoolsState:           stakingPoolsState,
 		params:                      params,
+		nftIDs:                      nftIDs,
 	}
 }
 
@@ -97,31 +102,39 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
-	poolPairsState, err := statedb.GetPdexv3PoolPairs(stateDB)
+	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	poolPairs := make(map[string]PoolPairState)
-	for k, v := range poolPairsState {
-		sharesState, err := statedb.GetPdexv3Shares(stateDB, k)
+	nftIDs := make(map[string]bool)
+	poolPairs := make(map[string]*PoolPairState)
+	for poolPairID, poolPairState := range poolPairsStates {
+		allShareStates, err := statedb.GetPdexv3Shares(stateDB, poolPairID, nftIDs)
 		if err != nil {
 			return nil, err
 		}
-		shares := make(map[string]Share)
-		for key, value := range sharesState {
-			tradingFeesState, err := statedb.GetPdexv3TradingFees(stateDB, k, key)
-			if err != nil {
-				return nil, err
+		shares := make(map[string]map[uint64]*Share)
+		for nftID, shareStates := range allShareStates {
+			for beaconHeight, shareState := range shareStates {
+				shares[nftID] = make(map[uint64]*Share)
+				tradingFeesState, err := statedb.GetPdexv3TradingFees(
+					stateDB, poolPairID, nftID, beaconHeight)
+				if err != nil {
+					return nil, err
+				}
+				tradingFees := make(map[string]uint64)
+				for tradingFeesKey, tradingFeesValue := range tradingFeesState {
+					tradingFees[tradingFeesKey] = tradingFeesValue.Amount()
+				}
+				shares[nftID][beaconHeight] = NewShareWithValue(
+					shareState.Amount(),
+					tradingFees, shareState.LastUpdatedBeaconHeight(),
+				)
 			}
-			tradingFees := make(map[string]uint64)
-			for tradingFeesKey, tradingFeesValue := range tradingFeesState {
-				tradingFees[tradingFeesKey] = tradingFeesValue.Amount()
-			}
-			shares[k] = *NewShareWithValue(value.Amount(), tradingFees, value.LastUpdatedBeaconHeight())
 		}
 
 		orderbook := &Orderbook{[]*Order{}}
-		orderMap, err := statedb.GetPdexv3Orders(stateDB, v.PoolPairID())
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairState.PoolPairID())
 		if err != nil {
 			return nil, err
 		}
@@ -129,17 +142,14 @@ func initStateV2(
 			orderbook.InsertOrder(item.Value())
 		}
 		poolPair := NewPoolPairStateWithValue(
-			v.Value(), shares, *orderbook,
+			poolPairState.Value(), shares, *orderbook,
 		)
-		poolPairs[k] = *poolPair
+		poolPairs[poolPairID] = poolPair
 	}
 
 	return newStateV2WithValue(
-		waitingContributions,
-		make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs,
-		params,
-		nil,
+		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
+		poolPairs, params, nil, nftIDs,
 	), nil
 }
 
@@ -149,7 +159,6 @@ func (s *stateV2) Version() uint {
 
 func (s *stateV2) Clone() State {
 	res := newStateV2()
-
 	res.params = s.params
 	clonedFeeRateBPS := map[string]uint{}
 	for k, v := range s.params.FeeRateBPS {
@@ -174,7 +183,9 @@ func (s *stateV2) Clone() State {
 	for k, v := range s.poolPairs {
 		res.poolPairs[k] = v.Clone()
 	}
-
+	for k, v := range s.nftIDs {
+		res.nftIDs[k] = v
+	}
 	res.producer = s.producer
 	res.processor = s.processor
 
@@ -201,16 +212,15 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.params,
 			)
-		case metadataCommon.Pdexv3AddLiquidityResponseMeta:
+		case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 			s.poolPairs,
 				s.waitingContributions,
-				s.deletedWaitingContributions, err = s.processor.addLiquidity(
+				s.deletedWaitingContributions, s.nftIDs, err = s.processor.addLiquidity(
 				env.StateDB(),
 				inst,
 				env.BeaconHeight(),
 				s.poolPairs,
-				s.waitingContributions,
-				s.deletedWaitingContributions,
+				s.waitingContributions, s.deletedWaitingContributions, s.nftIDs,
 			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
@@ -249,19 +259,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	sort.Ints(keys)
 	for _, key := range keys {
 		for _, tx := range pdexv3Txs[byte(key)] {
-			// TODO: @pdex get metadata here and build instructions from transactions here
 			switch tx.GetMetadataType() {
 			case metadataCommon.Pdexv3AddLiquidityRequestMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexv3.AddLiquidity)
-				if !ok {
-					return instructions, errors.New("Can not parse add liquidity metadata")
-				}
 				addLiquidityTxs = append(addLiquidityTxs, tx)
 			case metadataCommon.Pdexv3ModifyParamsMeta:
-				_, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
-				if !ok {
-					return instructions, errors.New("Can not parse params modifying metadata")
-				}
 				modifyParamsTxs = append(modifyParamsTxs, tx)
 			case metadataCommon.Pdexv3TradeRequestMeta:
 				tradeTxs = append(tradeTxs, tx)
@@ -271,11 +272,12 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
-	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
+	addLiquidityInstructions, s.poolPairs, s.waitingContributions, s.nftIDs, err = s.producer.addLiquidity(
 		addLiquidityTxs,
 		env.BeaconHeight(),
 		s.poolPairs,
 		s.waitingContributions,
+		s.nftIDs,
 	)
 	if err != nil {
 		return instructions, err
@@ -349,7 +351,6 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 	if err != nil {
 		return err
 	}
-
 	for poolPairID, poolPairState := range s.poolPairs {
 		if stateChange.poolPairIDs[poolPairID] {
 			err := statedb.StorePdexv3PoolPair(env.StateDB(), poolPairID, poolPairState.state)
@@ -357,32 +358,32 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 				return err
 			}
 		}
-		for nfctID, share := range poolPairState.shares {
-			if stateChange.nfctIDs[nfctID] {
-				nfctIDHash, err := common.Hash{}.NewHashFromStr(nfctID)
-				share := statedb.NewPdexv3ShareStateWithValue(*nfctIDHash, share.amount, share.lastUpdatedBeaconHeight)
-				err = statedb.StorePdexv3Share(env.StateDB(), poolPairID, *share)
-				if err != nil {
-					return err
+		for nftID, share := range poolPairState.shares {
+			for height, v := range share {
+				if stateChange.shares[nftID] == nil || stateChange.shares[nftID][height] == nil {
+					continue
 				}
-			}
-			for tokenID, tradingFee := range share.tradingFees {
-				if stateChange.tokenIDs[tokenID] {
-					err := statedb.StorePdexv3TradingFee(
-						env.StateDB(), poolPairID, nfctID, tokenID, tradingFee,
+				if stateChange.shares[nftID][height].isChanged {
+					nftID, err := common.Hash{}.NewHashFromStr(nftID)
+					err = statedb.StorePdexv3Share(
+						env.StateDB(), poolPairID,
+						*nftID, env.BeaconHeight(), v.amount, v.lastUpdatedBeaconHeight,
 					)
 					if err != nil {
 						return err
 					}
 				}
-			}
-			for tokenID, tradingFee := range share.tradingFees {
-				if stateChange.tokenIDs[tokenID] {
-					err := statedb.StorePdexv3TradingFee(
-						env.StateDB(), poolPairID, nfctID, tokenID, tradingFee,
-					)
-					if err != nil {
-						return err
+				for tokenID, tradingFee := range v.tradingFees {
+					if stateChange.shares[nftID][height].tokenIDs == nil {
+						continue
+					}
+					if stateChange.shares[nftID][height].tokenIDs[tokenID] {
+						err := statedb.StorePdexv3TradingFee(
+							env.StateDB(), poolPairID, nftID, tokenID, env.BeaconHeight(), tradingFee,
+						)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -398,12 +399,10 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 			}
 		}
 	}
-
 	err = statedb.StorePdexv3StakingPools()
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -444,13 +443,18 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	}
 	for k, v := range s.poolPairs {
 		if m, ok := compareStateV2.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange = v.getDiff(k, &m, newStateChange)
+			newStateChange = v.getDiff(k, m, newStateChange)
 			res.poolPairs[k] = v.Clone()
 		}
 	}
 	for k, v := range s.stakingPoolsState {
 		if m, ok := compareStateV2.stakingPoolsState[k]; !ok || !reflect.DeepEqual(m, v) {
 			res.stakingPoolsState[k] = v.Clone()
+		}
+	}
+	for k, v := range s.nftIDs {
+		if m, ok := compareStateV2.nftIDs[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.nftIDs[k] = true
 		}
 	}
 
@@ -467,13 +471,39 @@ func (s *stateV2) Reader() StateReader {
 }
 
 func NewContributionWithMetaData(
-	metaData metadataPdexv3.AddLiquidity, txReqID common.Hash, shardID byte,
+	metaData metadataPdexv3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
 ) *rawdbv2.Pdexv3Contribution {
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
+	nftID := common.Hash{}
+	if metaData.NftID() != utils.EmptyString {
+		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
+		nftID = *nftHash
+	}
 
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
-		*tokenHash, txReqID, metaData.TokenAmount(), metaData.Amplifier(),
+		*tokenHash, txReqID, nftID,
+		metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
 	)
 }
+
+func (s *stateV2) WaitingContributions() []byte {
+	temp := make(map[string]*rawdbv2.Pdexv3Contribution, len(s.waitingContributions))
+	for k, v := range s.waitingContributions {
+		temp[k] = v.Clone()
+	}
+	data, _ := json.Marshal(temp)
+	return data
+}
+
+func (s *stateV2) PoolPairs() []byte {
+	temp := make(map[string]*PoolPairState, len(s.poolPairs))
+	for k, v := range s.poolPairs {
+		temp[k] = v.Clone()
+	}
+	data, _ := json.Marshal(temp)
+	return data
+}
+
+func (s *stateV2) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {}
