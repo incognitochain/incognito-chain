@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -1935,6 +1934,6 @@ func CloneUTXOs(utxos map[string]map[string]*statedb.UTXO) map[string]map[string
 	return newReqs
 }
 
-func TestPortalSuiteV4(t *testing.T) {
-	suite.Run(t, new(PortalTestSuiteV4))
-}
+//func TestPortalSuiteV4(t *testing.T) {
+//	suite.Run(t, new(PortalTestSuiteV4))
+//}

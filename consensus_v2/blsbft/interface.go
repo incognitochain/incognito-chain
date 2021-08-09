@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
 	"time"
@@ -84,6 +85,7 @@ type Chain interface {
 		committees []incognitokey.CommitteePublicKey,
 		blockVersion int,
 	) []incognitokey.CommitteePublicKey
+	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
 }
 
 type CommitteeChainHandler interface {

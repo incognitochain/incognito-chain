@@ -258,16 +258,16 @@ func (actorV1 *actorV1) run() error {
 							actorV1.roundData.lockVotes.Unlock()
 							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
 								v := vote{
-									BLS:          voteMsg.Bls,
-									BRI:          voteMsg.Bri,
+									BLS:          voteMsg.BLS,
+									BRI:          voteMsg.BRI,
 									Confirmation: voteMsg.Confirmation,
 								}
 								if err := actorV1.preValidateVote(blockHash.GetBytes(), &v, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									actorV1.logger.Error(err)
 									return
 								}
-								if len(voteMsg.Bri) != 0 {
-									if err := validateSingleBriSig(&blockHash, voteMsg.Bri, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+								if len(voteMsg.BRI) != 0 {
+									if err := validateSingleBriSig(&blockHash, voteMsg.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										actorV1.logger.Error(err)
 										return
 									}
@@ -514,8 +514,8 @@ func (actorV1 *actorV1) addVote(voteMsg BFTVote) {
 	actorV1.roundData.lockVotes.Lock()
 	defer actorV1.roundData.lockVotes.Unlock()
 	v := vote{
-		BLS:          voteMsg.Bls,
-		BRI:          voteMsg.Bri,
+		BLS:          voteMsg.BLS,
+		BRI:          voteMsg.BRI,
 		Confirmation: voteMsg.Confirmation,
 	}
 	actorV1.roundData.votes[voteMsg.Validator] = v
@@ -530,8 +530,8 @@ func (actorV1 *actorV1) addEarlyVote(voteMsg BFTVote) {
 		actorV1.earlyVotes[voteMsg.RoundKey] = make(map[string]vote)
 	}
 	v := vote{
-		BLS:          voteMsg.Bls,
-		BRI:          voteMsg.Bri,
+		BLS:          voteMsg.BLS,
+		BRI:          voteMsg.BRI,
 		Confirmation: voteMsg.Confirmation,
 	}
 	actorV1.earlyVotes[voteMsg.RoundKey][voteMsg.Validator] = v

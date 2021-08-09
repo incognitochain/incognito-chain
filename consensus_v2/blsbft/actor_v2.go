@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"reflect"
 	"sort"
@@ -586,7 +587,7 @@ func (a *actorV2) voteValidBlock(
 			continue
 		}
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(a.GetConsensusName()), committeeBLSString) != -1 {
-			err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.signingCommittees)
+			err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.signingCommittees, a.chain.GetPortalParamsV4(0))
 			if err != nil {
 				a.logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
@@ -602,7 +603,9 @@ func (a *actorV2) voteValidBlock(
 func createVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey) (*BFTVote, error) {
+	committees []incognitokey.CommitteePublicKey,
+	portalParamsV4 portalv4.PortalParams,
+) (*BFTVote, error) {
 	var vote = new(BFTVote)
 	bytelist := []blsmultisig.PublicKey{}
 	selfIdx := 0
@@ -626,8 +629,15 @@ func createVote(
 		}
 	}
 
-	vote.Bls = blsSig
-	vote.Bri = bridgeSig
+	// check and sign on unshielding external tx for Portal v4
+	portalSigs, err := portalprocessv4.CheckAndSignPortalUnshieldExternalTx(userKey.PriKey[common.BridgeConsensus], block.GetInstructions(), portalParamsV4)
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+
+	vote.BLS = blsSig
+	vote.BRI = bridgeSig
+	vote.PortalSigs = portalSigs
 	vote.BlockHash = block.Hash().String()
 	vote.Validator = userBLSPk
 	vote.PrevBlockHash = block.GetPrevHash().String()
@@ -677,6 +687,12 @@ func (a *actorV2) proposeBlock(
 	}
 
 	var validationData consensustypes.ValidationData
+	portalParam := a.chain.GetPortalParamsV4(0)
+	portalSigs, err := portalprocessv4.CheckAndSignPortalUnshieldExternalTx(userMiningKey.PriKey[common.BridgeConsensus], block.GetInstructions(), portalParam)
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	validationData.PortalSig = portalSigs
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
@@ -777,8 +793,8 @@ func (a *actorV2) proposeShardBlock(
 func (a *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candidate []byte) error {
 	data := []byte{}
 	data = append(data, blockHash...)
-	data = append(data, vote.Bls...)
-	data = append(data, vote.Bri...)
+	data = append(data, vote.BLS...)
+	data = append(data, vote.BRI...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, vote.Confirmation, candidate)
 	return err
@@ -816,9 +832,14 @@ func (a *actorV2) getCommitteeForBlock(
 	return signingCommittees, committees, err
 }
 
-func (a *actorV2) sendVote(userKey *signatureschemes2.MiningKey, block types.BlockInterface, signingCommittees []incognitokey.CommitteePublicKey) error {
+func (a *actorV2) sendVote(
+	userKey *signatureschemes2.MiningKey,
+	block types.BlockInterface,
+	signingCommittees []incognitokey.CommitteePublicKey,
+	portalParamV4 portalv4.PortalParams,
+) error {
 
-	Vote, err := createVote(userKey, block, signingCommittees)
+	Vote, err := createVote(userKey, block, signingCommittees, portalParamV4)
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -998,7 +1019,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 					if err == nil {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
-							err := a.sendVote(&userKey, b.block, b.signingCommittees) // => send vote
+							err := a.sendVote(&userKey, b.block, b.signingCommittees, a.chain.GetPortalParamsV4(0)) // => send vote
 							if err != nil {
 								a.logger.Error(err)
 							} else {
@@ -1222,8 +1243,8 @@ func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (
 
 	sort.Ints(validatorIdx)
 	for _, idx := range validatorIdx {
-		blsSigList = append(blsSigList, votes[committees[idx]].Bls)
-		brigSigs = append(brigSigs, votes[committees[idx]].Bri)
+		blsSigList = append(blsSigList, votes[committees[idx]].BLS)
+		brigSigs = append(brigSigs, votes[committees[idx]].BRI)
 	}
 
 	aggSig, err = blsmultisig.Combine(blsSigList)

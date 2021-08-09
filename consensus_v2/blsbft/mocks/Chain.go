@@ -12,6 +12,8 @@ import (
 
 	multiview "github.com/incognitochain/incognito-chain/multiview"
 
+	portalv4 "github.com/incognitochain/incognito-chain/portal/portalv4"
+
 	time "time"
 
 	types "github.com/incognitochain/incognito-chain/blockchain/types"
@@ -369,6 +371,20 @@ func (_m *Chain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]incognitokey.CommitteePublicKey)
 		}
+	}
+
+	return r0
+}
+
+// GetPortalParamsV4 provides a mock function with given fields: beaconHeight
+func (_m *Chain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	ret := _m.Called(beaconHeight)
+
+	var r0 portalv4.PortalParams
+	if rf, ok := ret.Get(0).(func(uint64) portalv4.PortalParams); ok {
+		r0 = rf(beaconHeight)
+	} else {
+		r0 = ret.Get(0).(portalv4.PortalParams)
 	}
 
 	return r0

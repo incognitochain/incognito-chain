@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -25,11 +26,14 @@ type BFTVote struct {
 	PrevBlockHash string
 	BlockHash     string
 	Validator     string
-	Bls           []byte
-	Bri           []byte
+	BLS           []byte
+	BRI           []byte
 	Confirmation  []byte
 	IsValid       int // 0 not process, 1 valid, -1 not valid
 	TimeSlot      uint64
+
+	// Portal v4
+	PortalSigs []*portalprocessv4.PortalSig
 }
 
 type BFTRequestBlock struct {
@@ -40,8 +44,8 @@ type BFTRequestBlock struct {
 func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 	data := []byte{}
 	data = append(data, s.BlockHash...)
-	data = append(data, s.Bls...)
-	data = append(data, s.Bri...)
+	data = append(data, s.BLS...)
+	data = append(data, s.BRI...)
 	data = common.HashB(data)
 	var err error
 	s.Confirmation, err = key.BriSignData(data)
@@ -51,8 +55,8 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	data := []byte{}
 	data = append(data, s.BlockHash...)
-	data = append(data, s.Bls...)
-	data = append(data, s.Bri...)
+	data = append(data, s.BLS...)
+	data = append(data, s.BRI...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err
