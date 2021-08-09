@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -118,10 +119,17 @@ func initStateV2(
 			}
 			shares[k] = *NewShareWithValue(value.Amount(), tradingFees, value.LastUpdatedBeaconHeight())
 		}
-		// TODO: read order book from storage
-		orderbook := Orderbook{}
+
+		orderbook := &Orderbook{[]*Order{}}
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, v.PoolPairID())
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range orderMap {
+			orderbook.InsertOrder(item.Value())
+		}
 		poolPair := NewPoolPairStateWithValue(
-			v.Value(), shares, orderbook,
+			v.Value(), shares, *orderbook,
 		)
 		poolPairs[k] = *poolPair
 	}
@@ -297,8 +305,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, tradeInstructions...)
 
 	var addOrderInstructions [][]string
-	addOrderInstructions, s.poolPairs, err = s.producer.trade(
-		tradeTxs,
+	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
+		addOrderTxs,
 		s.poolPairs,
 	)
 	if err != nil {
@@ -369,15 +377,15 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 				}
 			}
 			for tokenID, tradingFee := range share.tradingFees {
-			if stateChange.tokenIDs[tokenID] {
-				err := statedb.StorePdexv3TradingFee(
-					env.StateDB(), poolPairID, nfctID, tokenID, tradingFee,
-				)
-				if err != nil {
-					return err
+				if stateChange.tokenIDs[tokenID] {
+					err := statedb.StorePdexv3TradingFee(
+						env.StateDB(), poolPairID, nfctID, tokenID, tradingFee,
+					)
+					if err != nil {
+						return err
+					}
 				}
 			}
-		}
 		}
 
 		for _, order := range poolPairState.orderbook.orders {

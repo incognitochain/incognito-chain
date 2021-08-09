@@ -343,7 +343,14 @@ TransactionLoop:
 			}
 		}
 
+		if currentOrderReq.TradingFee >= currentOrderReq.SellAmount {
+			Logger.log.Warnf("Order %s cannot afford trading fee of %d", orderID, currentOrderReq.TradingFee)
+			result = append(result, refundInst)
+			continue TransactionLoop
+		}
 		// prepare order data
+		sellAmountAfterFee := currentOrderReq.SellAmount - currentOrderReq.TradingFee
+
 		var tradeDirection byte
 		var token0Rate, token1Rate uint64
 		var token0Balance, token1Balance uint64
@@ -351,25 +358,25 @@ TransactionLoop:
 			tradeDirection = v2.TradeDirectionSell0
 			// set order's rates according to request, then set selling token's balance to sellAmount
 			// and buying token to 0
-			token0Rate = currentOrderReq.SellAmount
+			token0Rate = sellAmountAfterFee
 			token1Rate = currentOrderReq.MinAcceptableAmount
-			token0Balance = currentOrderReq.SellAmount
+			token0Balance = sellAmountAfterFee
 			token1Balance = 0
 		} else {
 			tradeDirection = v2.TradeDirectionSell1
-			token1Rate = currentOrderReq.SellAmount
+			token1Rate = sellAmountAfterFee
 			token0Rate = currentOrderReq.MinAcceptableAmount
-			token1Balance = currentOrderReq.SellAmount
+			token1Balance = sellAmountAfterFee
 			token0Balance = 0
 		}
 
-		acceptedMd := metadataPdexv3.AcceptedAddOrder {
-			PoolPairID: currentOrderReq.PoolPairID,
-			OrderID: orderID,
-			Token0Rate: token0Rate,
-			Token1Rate: token1Rate,
-			Token0Balance: token0Balance,
-			Token1Balance: token1Balance,
+		acceptedMd := metadataPdexv3.AcceptedAddOrder{
+			PoolPairID:     currentOrderReq.PoolPairID,
+			OrderID:        orderID,
+			Token0Rate:     token0Rate,
+			Token1Rate:     token1Rate,
+			Token0Balance:  token0Balance,
+			Token1Balance:  token1Balance,
 			TradeDirection: tradeDirection,
 		}
 

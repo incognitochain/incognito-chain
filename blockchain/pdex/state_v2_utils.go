@@ -63,6 +63,12 @@ type StateChange struct {
 	tokenIDs    map[string]bool
 }
 
+func NewStateChange() *StateChange {
+	return &StateChange{
+		make(map[string]bool), make(map[string]bool), make(map[string]bool), make(map[string]bool),
+	}
+}
+
 type StakingPoolState struct {
 	liquidity        uint64
 	stakers          map[string]StakingInfo // nfst -> amount staking
