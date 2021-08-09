@@ -49,6 +49,547 @@ package blockchain
 //	portalParams                  portalv3.PortalParams
 //	blockChain                    *BlockChain
 //}
+
+func exchangeRates(amount uint64, tokenIDFrom string, tokenIDTo string, finalExchangeRate *statedb.FinalExchangeRatesState, portalParams portalv3.PortalParams) uint64 {
+	convertTool := portalprocessv3.NewPortalExchangeRateTool(finalExchangeRate, portalParams)
+	res, _ := convertTool.Convert(tokenIDFrom, tokenIDTo, amount)
+	return res
+}
+
+func getLockedCollateralAmount(
+	portingAmount uint64, tokenID string, collateralTokenID string, finalExchangeRate *statedb.FinalExchangeRatesState, percent uint64, portalParams portalv3.PortalParams) uint64 {
+	amount := portalprocessv3.UpPercent(portingAmount, percent)
+	return exchangeRates(amount, tokenID, collateralTokenID, finalExchangeRate, portalParams)
+}
+
+func getMinFee(amount uint64, tokenID string, finalExchangeRate *statedb.FinalExchangeRatesState, percent float64, portalParams portalv3.PortalParams) uint64 {
+	amountInPRV := exchangeRates(amount, tokenID, common.PRVIDStr, finalExchangeRate, portalParams)
+	fee := float64(amountInPRV) * percent / float64(100)
+	return uint64(math.Round(fee))
+}
+
+func getUnlockAmount(totalLockedAmount uint64, totalPTokenAmount uint64, pTokenAmount uint64) uint64 {
+	amount := new(big.Int).Mul(new(big.Int).SetUint64(pTokenAmount), new(big.Int).SetUint64(totalLockedAmount))
+	amount = amount.Div(amount, new(big.Int).SetUint64(totalPTokenAmount))
+	return amount.Uint64()
+}
+
+func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
+	portingAmount := uint64(30 * 1e9)
+	tokenID := pCommon.PortalBNBIDStr
+	collateralTokenID := USDT_ID
+
+	percent := s.portalParams.MinPercentLockedCollateral
+	amount := getLockedCollateralAmount(portingAmount, tokenID, collateralTokenID, s.currentPortalStateForProducer.FinalExchangeRatesState, percent, s.portalParams)
+	fmt.Println("Result from TestGetLockedCollateralAmount: ", amount)
+}
+
+func (s *PortalTestSuiteV3) TestGetMinFee() {
+	amount := uint64(140 * 1e9)
+	tokenID := pCommon.PortalBNBIDStr
+	percent := s.portalParams.MinPercentPortingFee
+
+	fee := getMinFee(amount, tokenID, s.currentPortalStateForProducer.FinalExchangeRatesState, percent, s.portalParams)
+	fmt.Println("Result from TestGetMinFee: ", fee)
+}
+
+func (s *PortalTestSuiteV3) TestGetUnlockAmount() {
+	totalLockedAmount := uint64(40000000000)
+	totalPTokenAmount := uint64(1 * 1e9)
+	pTokenAmount := uint64(0.3 * 1e9)
+
+	unlockAmount := getUnlockAmount(totalLockedAmount, totalPTokenAmount, pTokenAmount)
+	fmt.Println("Result from TestGetUnlockAmount: ", unlockAmount)
+}
+
+func (s *PortalTestSuiteV3) TestExchangeRate() {
+	// uncomment this code to update final exchange rate for converting
+	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
+		map[string]statedb.FinalExchangeRatesDetail{
+			common.PRVIDStr:        {Amount: 1000000000},
+			pCommon.PortalBNBIDStr: {Amount: 35000000000}, // x1.75
+			pCommon.PortalBTCIDStr: {Amount: 10000000000000},
+			ETH_ID:                 {Amount: 400000000000},
+			USDT_ID:                {Amount: 1000000000},
+			DAI_ID:                 {Amount: 1000000000},
+		})
+	s.currentPortalStateForProducer.FinalExchangeRatesState = finalExchangeRate
+
+	amount := uint64(13500000000)
+	tokenIDFrom := pCommon.PortalBNBIDStr
+	tokenIDTo := USDT_ID
+	convertAmount := exchangeRates(amount, tokenIDFrom, tokenIDTo, s.currentPortalStateForProducer.FinalExchangeRatesState, s.portalParams)
+	fmt.Println("Result from TestExchangeRate: ", convertAmount)
+}
+
+type instructionForProducer struct {
+	inst         []string
+	optionalData map[string]interface{}
+}
+
+func producerPortalInstructions(
+	blockchain metadata.ChainRetriever,
+	beaconHeight uint64,
+	shardHeights map[byte]uint64,
+	insts []instructionForProducer,
+	currentPortalState *portalprocessv3.CurrentPortalState,
+	portalParams portalv3.PortalParams,
+	shardID byte,
+	pm map[int]portalprocessv3.PortalInstructionProcessorV3,
+) ([][]string, error) {
+	var newInsts [][]string
+
+	for _, item := range insts {
+		inst := item.inst
+		optionalData := item.optionalData
+
+		metaType, _ := strconv.Atoi(inst[0])
+		contentStr := inst[1]
+		portalProcessor := portalprocessv3.GetPortalInstProcessorByMetaType(pm, metaType)
+		newInst, err := portalProcessor.BuildNewInsts(
+			blockchain,
+			contentStr,
+			shardID,
+			currentPortalState,
+			beaconHeight,
+			shardHeights,
+			portalParams,
+			optionalData,
+		)
+		if err != nil {
+			Logger.log.Error(err)
+			return newInsts, err
+		}
+
+		newInsts = append(newInsts, newInst...)
+	}
+
+	return newInsts, nil
+}
+
+func processPortalInstructions(
+	blockchain metadata.ChainRetriever,
+	beaconHeight uint64,
+	insts [][]string,
+	portalStateDB *statedb.StateDB,
+	currentPortalState *portalprocessv3.CurrentPortalState,
+	portalParams portalv3.PortalParams,
+	pm map[int]portalprocessv3.PortalInstructionProcessorV3,
+) error {
+	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
+	//todo
+	epoch := uint64(100)
+	for _, inst := range insts {
+		if len(inst) < 4 {
+			continue // Not error, just not Portal instruction
+		}
+
+		var err error
+		metaType, _ := strconv.Atoi(inst[0])
+		processor := portalprocessv3.GetPortalInstProcessorByMetaType(pm, metaType)
+		if processor != nil {
+			err = processor.ProcessInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
+			if err != nil {
+				Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
+			}
+			continue
+		}
+
+		switch inst[0] {
+		// ============ Reward ============
+		// portal reward
+		case strconv.Itoa(metadata.PortalRewardMeta), strconv.Itoa(metadata.PortalRewardMetaV3):
+			err = portalprocessv3.ProcessPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
+		// total custodian reward instruction
+		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
+			err = portalprocessv3.ProcessPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
+
+		// ============ Portal smart contract ============
+		// todo: add more metadata need to unlock token from sc
+		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
+			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
+			strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
+			err = portalprocessv3.ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalv3.PortalParams{}) //@tin TODO: fill data here
+		}
+
+		if err != nil {
+			Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
+		}
+
+	}
+
+	// pick the final exchangeRates
+	portalprocessv3.PickExchangesRatesFinal(currentPortalState)
+
+	// update info of bridge portal token
+	for _, updatingInfo := range updatingInfoByTokenID {
+		var updatingAmt uint64
+		var updatingType string
+		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
+			updatingType = "+"
+		}
+		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
+			updatingType = "-"
+		}
+		err := statedb.UpdateBridgeTokenInfo(
+			portalStateDB,
+			updatingInfo.TokenID,
+			updatingInfo.ExternalTokenID,
+			updatingInfo.IsCentralized,
+			updatingAmt,
+			updatingType,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	// store updated currentPortalState to leveldb with new beacon height
+	err := portalprocessv3.StorePortalStateToDB(portalStateDB, currentPortalState)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+
+	return nil
+}
+
+func buildPortalRelayExchangeRateAction(
+	incAddressStr string,
+	rates []*metadata.ExchangeRateInfo,
+	shardID byte,
+) []string {
+	data := metadata.PortalExchangeRates{
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				Type: metadata.PortalExchangeRatesMeta,
+			},
+		},
+		SenderAddress: incAddressStr,
+		Rates:         rates,
+	}
+
+	actionContent := metadata.PortalExchangeRatesAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalExchangeRatesMeta), actionContentBase64Str}
+}
+
+func buildPortalCustodianDepositAction(
+	incAddressStr string,
+	remoteAddress map[string]string,
+	depositAmount uint64,
+	shardID byte,
+) []string {
+	data := metadata.PortalCustodianDeposit{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalCustodianDepositMeta,
+		},
+		IncogAddressStr: incAddressStr,
+		RemoteAddresses: remoteAddress,
+		DepositedAmount: depositAmount,
+	}
+
+	actionContent := metadata.PortalCustodianDepositAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalCustodianDepositMeta), actionContentBase64Str}
+}
+
+func buildPortalCustodianDepositActionV3(
+	remoteAddress map[string]string,
+	blockHash eCommon.Hash,
+	txIndex uint,
+	proofStrs []string,
+	shardID byte,
+) []string {
+	data := metadata.PortalCustodianDepositV3{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalCustodianDepositMetaV3,
+		},
+		RemoteAddresses: remoteAddress,
+		BlockHash:       blockHash,
+		TxIndex:         txIndex,
+		ProofStrs:       proofStrs,
+	}
+
+	actionContent := metadata.PortalCustodianDepositActionV3{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalCustodianDepositMetaV3), actionContentBase64Str}
+}
+
+func buildPortalCustodianWithdrawActionV3(
+	custodianIncAddress string,
+	custodianExternalAddress string,
+	externalTokenID string,
+	amount uint64,
+	shardID byte,
+) []string {
+	data := metadata.PortalCustodianWithdrawRequestV3{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalCustodianWithdrawRequestMetaV3,
+		},
+		CustodianIncAddress:      custodianIncAddress,
+		CustodianExternalAddress: custodianExternalAddress,
+		ExternalTokenID:          externalTokenID,
+		Amount:                   amount,
+	}
+
+	actionContent := metadata.PortalCustodianWithdrawRequestActionV3{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3), actionContentBase64Str}
+}
+
+func buildPortalUserRegisterAction(
+	portingID string,
+	incAddressStr string,
+	pTokenID string,
+	portingAmount uint64,
+	portingFee uint64,
+	shardID byte,
+	shardHeight uint64,
+) []string {
+	data := metadata.PortalUserRegister{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalRequestPortingMetaV3,
+		},
+		UniqueRegisterId: portingID,
+		IncogAddressStr:  incAddressStr,
+		PTokenId:         pTokenID,
+		RegisterAmount:   portingAmount,
+		PortingFee:       portingFee,
+	}
+
+	actionContent := metadata.PortalUserRegisterActionV3{
+		Meta:        data,
+		TxReqID:     common.Hash{},
+		ShardID:     shardID,
+		ShardHeight: shardHeight,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalRequestPortingMetaV3), actionContentBase64Str}
+}
+
+func buildPortalUserReqPTokenAction(
+	portingID string,
+	incAddressStr string,
+	pTokenID string,
+	portingAmount uint64,
+	portingProof string,
+	shardID byte,
+) []string {
+	data := metadata.PortalRequestPTokens{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalUserRequestPTokenMeta,
+		},
+		UniquePortingID: portingID,
+		TokenID:         pTokenID,
+		IncogAddressStr: incAddressStr,
+		PortingAmount:   portingAmount,
+		PortingProof:    portingProof,
+	}
+
+	actionContent := metadata.PortalRequestPTokensAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalUserRequestPTokenMeta), actionContentBase64Str}
+}
+
+func buildTopupWaitingPortingAction(
+	incAddressStr string,
+	portingID string,
+	ptokenID string,
+	depositAmount uint64,
+	shardID byte,
+	freeCollateralAmount uint64,
+) []string {
+	data := metadata.PortalTopUpWaitingPortingRequest{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalTopUpWaitingPortingRequestMeta,
+		},
+		IncogAddressStr:      incAddressStr,
+		PortingID:            portingID,
+		PTokenID:             ptokenID,
+		DepositedAmount:      depositAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+	}
+
+	actionContent := metadata.PortalTopUpWaitingPortingRequestAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta), actionContentBase64Str}
+}
+
+func buildPortalTopupCustodianAction(
+	incAddressStr string,
+	ptokenID string,
+	depositAmount uint64,
+	shardID byte,
+	freeCollateralAmount uint64,
+) []string {
+	data := metadata.PortalLiquidationCustodianDepositV2{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalCustodianTopupMetaV2,
+		},
+		IncogAddressStr:      incAddressStr,
+		PTokenId:             ptokenID,
+		DepositedAmount:      depositAmount,
+		FreeCollateralAmount: freeCollateralAmount,
+	}
+
+	actionContent := metadata.PortalLiquidationCustodianDepositActionV2{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalCustodianTopupMetaV2), actionContentBase64Str}
+}
+
+func buildPortalRequestRedeemActionV3(
+	uniqueRedeemID string,
+	tokenID string,
+	redeemAmount uint64,
+	redeemerIncAddressStr string,
+	remoteAddress string,
+	redeemFee uint64,
+	redeemerExternalAddress string,
+	shardID byte,
+	shardHeight uint64,
+) []string {
+	data := metadata.PortalRedeemRequestV3{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalRedeemRequestMetaV3,
+		},
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		RedeemerIncAddressStr:   redeemerIncAddressStr,
+		RemoteAddress:           remoteAddress,
+		RedeemFee:               redeemFee,
+		RedeemerExternalAddress: redeemerExternalAddress,
+	}
+
+	actionContent := metadata.PortalRedeemRequestActionV3{
+		Meta:        data,
+		TxReqID:     common.Hash{},
+		ShardID:     shardID,
+		ShardHeight: shardHeight,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalRedeemRequestMetaV3), actionContentBase64Str}
+}
+
+func buildPortalRequestMatchingWRedeemActionV3(
+	uniqueRedeemID string,
+	custodianIncAddress string,
+	shardID byte,
+) []string {
+	data := metadata.PortalReqMatchingRedeem{
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				Type: metadata.PortalReqMatchingRedeemMeta,
+			},
+		},
+		CustodianAddressStr: custodianIncAddress,
+		RedeemID:            uniqueRedeemID,
+	}
+
+	actionContent := metadata.PortalReqMatchingRedeemAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalReqMatchingRedeemMeta), actionContentBase64Str}
+}
+
+func buildPortalRequestUnlockCollateralsActionV3(
+	uniqueRedeemID string,
+	portalTokenID string,
+	custodianIncAddress string,
+	redeemAmount uint64,
+	redeemProof string,
+	shardID byte,
+) []string {
+	data := metadata.PortalRequestUnlockCollateral{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalRequestUnlockCollateralMetaV3,
+		},
+		UniqueRedeemID:      uniqueRedeemID,
+		TokenID:             portalTokenID,
+		CustodianAddressStr: custodianIncAddress,
+		RedeemAmount:        redeemAmount,
+		RedeemProof:         redeemProof,
+	}
+
+	actionContent := metadata.PortalRequestUnlockCollateralAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalRequestUnlockCollateralMetaV3), actionContentBase64Str}
+}
+
+/*
+	Feature 0: Relay exchange rate
+*/
+type TestCaseRelayExchangeRate struct {
+	senderAddressStr string
+	rates            []*metadata.ExchangeRateInfo
+}
+
+func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shardID byte) [][]string {
+	insts := [][]string{}
+
+	for _, tc := range tcs {
+		inst := buildPortalRelayExchangeRateAction(tc.senderAddressStr, tc.rates, shardID)
+		insts = append(insts, inst)
+	}
+
+	return insts
+}
+
+//func (s *PortalTestSuiteV3) TestRelayExchangeRate() {
+//	fmt.Println("Running TestRelayExchangeRate - beacon height 999 ...")
+//	bc := s.blockChain
+//	pm := NewPortalManager()
+//	beaconHeight := uint64(999)
+//	shardID := byte(0)
+//	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 //
 //const USER_INC_ADDRESS_1 = "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC"
 //const USER_INC_ADDRESS_2 = "12S1a8VnkwhDTQWZ5PhdpySwiFZj7p8sKdG7oAQFZ3dLsWaV6fhDWk5aSFHpt1jcPBjY4sYgwqAqRzx3oTYDZCvCei1LSCdJARXWiyK"

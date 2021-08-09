@@ -1,5 +1,4 @@
 package blockchain
-
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"

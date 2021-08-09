@@ -1347,3 +1347,4 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err
 }
+

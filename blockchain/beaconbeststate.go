@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	finishsync "github.com/incognitochain/incognito-chain/blockchain/finishsync"
+	"github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"reflect"
 	"time"
 
@@ -79,7 +80,8 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeState *CurrentPDEState
+	pdeState      *CurrentPDEState
+	portalStateV4 *portalprocess.CurrentPortalStateV4
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -456,6 +458,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.FinishSyncManager = target.FinishSyncManager.Clone()
 	if target.pdeState != nil {
 		beaconBestState.pdeState = target.pdeState.Copy()
+	}
+	if target.portalStateV4 != nil {
+		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
 	}
 
 	return nil

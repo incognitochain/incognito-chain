@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -181,6 +184,15 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 
 func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
 	return blsbft.ExtractBridgeValidationData(block)
+}
+
+func (engine *Engine) ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+	if block.GetVersion() == 2 {
+		return blsbftv2.ExtractPortalV4ValidationData(block)
+	} else if block.GetVersion() == 3 {
+		return blsbftv3.ExtractPortalV4ValidationData(block)
+	}
+	return nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
 
 func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {

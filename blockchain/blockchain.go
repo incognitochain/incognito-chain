@@ -12,6 +12,11 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/config"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/finishsync"
@@ -49,7 +54,7 @@ type BlockChain struct {
 	committeeByEpochCache *lru.Cache
 }
 
-// Config is a descriptor which specifies the blockchain instance configuration.
+// Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
 type Config struct {
 	BTCChain      *btcrelaying.BlockChain
 	BNBChainState *bnbrelaying.BNBChainState
@@ -742,10 +747,6 @@ func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
 }
 
-func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight)
-}
-
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
 	return blockchain.config.DataBase[common.BeaconChainID]
 }
@@ -783,10 +784,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)
-	}
-	sID := []int{}
-	for i := 0; i < config.Param().ActiveShards; i++ {
-		sID = append(sID, i)
 	}
 	return beaconView, err
 }

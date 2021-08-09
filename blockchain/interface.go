@@ -9,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/multiview"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
@@ -40,6 +42,7 @@ type ConsensusEngine interface {
 	GetCurrentMiningPublicKey() (string, string)
 	GetAllMiningPublicKeys() []string
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
+	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
 }

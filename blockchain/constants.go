@@ -16,7 +16,7 @@ const (
 	MinCommitteeSize                   = 3 // min size to run bft
 	WorkerNumber                       = 5
 	MAX_S2B_BLOCK                      = 30
-	MAX_BEACON_BLOCK                   = 5
+	MAX_BEACON_BLOCK                   = 20
 	LowerBoundPercentForIncDAO         = 3
 	UpperBoundPercentForIncDAO         = 10
 	TestRandom                         = true
@@ -53,4 +53,8 @@ var (
 	beaconVerifyPostProcessingTimer         = metrics.NewRegisteredTimer("beacon/verify/postprocessing", nil)
 	beaconStoreBlockTimer                   = metrics.NewRegisteredTimer("beacon/storeblock", nil)
 	beaconUpdateBestStateTimer              = metrics.NewRegisteredTimer("beacon/updatebeststate", nil)
+)
+
+const (
+	Duration = 1000000
 )
