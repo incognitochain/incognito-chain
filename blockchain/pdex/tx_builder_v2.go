@@ -16,11 +16,6 @@ import (
 )
 
 type TxBuilderV2 struct {
-	nftIDs map[string]bool
-}
-
-func (txBuilder *TxBuilderV2) ClearCache() {
-	txBuilder.nftIDs = make(map[string]bool)
 }
 
 func (txBuilder *TxBuilderV2) Build(
@@ -29,41 +24,26 @@ func (txBuilder *TxBuilderV2) Build(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-) ([]metadata.Transaction, error) {
+) (metadata.Transaction, error) {
 
-	res := []metadata.Transaction{}
+	var tx metadata.Transaction
 	var err error
 
 	switch metaType {
+	case metadataCommon.Pdexv3MintNft:
+		if len(inst) != 2 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
+		}
+		tx, err = buildPdev3MintFnt(inst, producerPrivateKey, shardID, transactionStateDB)
 	case metadataCommon.Pdexv3AddLiquidityRequestMeta:
-		if len(inst) < 3 {
-			return res, fmt.Errorf("Length of instruction is invalid expectm equal or greater than %v but get %v", 3, len(inst))
+		if len(inst) != 3 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
 		switch inst[1] {
 		case common.PDEContributionRefundChainStatus:
-			tx, err := buildRefundContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
-			if err != nil {
-				return res, err
-			}
-			if tx != nil {
-				res = append(res, tx)
-			}
-		case common.PDEContributionMatchedChainStatus:
-			tx, err := buildMatchContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
-			if err != nil {
-				return res, err
-			}
-			if tx != nil {
-				res = append(res, tx)
-			}
+			tx, err = buildRefundContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
 		case common.PDEContributionMatchedNReturnedChainStatus:
-			txs, err := buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB, txBuilder.nftIDs)
-			if err != nil {
-				return res, err
-			}
-			if len(txs) != 0 {
-				res = append(res, txs...)
-			}
+			tx, err = buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
 		}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
@@ -71,30 +51,22 @@ func (txBuilder *TxBuilderV2) Build(
 			action := instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
 			err := action.FromStringSlice(inst)
 			if err != nil {
-				return res, err
+				return tx, err
 			}
-			tx, err := v2.TradeAcceptTx(action, producerPrivateKey, shardID, transactionStateDB)
-			if err != nil {
-				return res, err
-			}
-			res = append(res, tx)
+			tx, err = v2.TradeAcceptTx(action, producerPrivateKey, shardID, transactionStateDB)
 		case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
 			action := instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
 			err := action.FromStringSlice(inst)
 			if err != nil {
-				return nil, err
+				return tx, err
 			}
-			tx, err := v2.TradeRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
-			if err != nil {
-				return res, err
-			}
-			res = append(res, tx)
+			tx, err = v2.TradeRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
 	}
 
-	return res, err
+	return tx, err
 }
 
 func buildRefundContributionTxv2(
@@ -130,47 +102,41 @@ func buildRefundContributionTxv2(
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
-		return tx, err
 	}
-	return tx, nil
+	return tx, err
 }
 
-func buildMatchContributionTxv2(
+func buildPdev3MintFnt(
 	inst []string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	var tx metadata.Transaction
-	matchInst := instruction.NewMatchAddLiquidity()
-	err := matchInst.FromStringSlice(inst)
+	mintNftInst := instruction.NewMintNft()
+	err := mintNftInst.FromStringSlice(inst)
 	if err != nil {
 		return tx, err
 	}
 
-	matchContribution := matchInst.Contribution()
-	matchContributionValue := matchContribution.Value()
-	if matchContributionValue.ShardID() != shardID || matchInst.NftID().IsZeroValue() {
+	if mintNftInst.ShardID() != shardID || mintNftInst.NftID().IsZeroValue() {
 		return tx, nil
 	}
-	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
-		common.PDEContributionMatchedChainStatus,
-		matchContributionValue.TxReqID().String(),
-	)
+
 	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromString(matchContributionValue.ReceiveAddress())
+	err = otaReceiver.FromString(mintNftInst.OtaReceiver())
 	if err != nil {
 		return tx, err
 	}
+	metaData := metadataPdexv3.NewMintNftWithValue(mintNftInst.NftID().String(), mintNftInst.OtaReceiver())
 	tx, err = buildMintTokenTxs(
-		matchInst.NftID(), 1,
+		mintNftInst.NftID(), 1,
 		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
-		return tx, err
 	}
-	return tx, nil
+	return tx, err
 
 }
 
@@ -179,9 +145,8 @@ func buildMatchAndReturnContributionTxv2(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	nftIDs map[string]bool,
-) ([]metadata.Transaction, error) {
-	res := []metadata.Transaction{}
+) (metadata.Transaction, error) {
+	var res metadata.Transaction
 	matchAndReturnInst := instruction.NewMatchAndReturnAddLiquidity()
 	err := matchAndReturnInst.FromStringSlice(inst)
 	if err != nil {
@@ -196,38 +161,19 @@ func buildMatchAndReturnContributionTxv2(
 		common.PDEContributionMatchedChainStatus,
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
-	if !nftIDs[matchAndReturnInst.NftID().String()] || matchAndReturnInst.NftID().IsZeroValue() {
-		receiveAddress := privacy.OTAReceiver{}
-		err = receiveAddress.FromString(matchAndReturnContributionValue.ReceiveAddress())
-		if err != nil {
-			return res, err
-		}
-		tx0, err := buildMintTokenTxs(
-			matchAndReturnInst.NftID(), 1,
-			receiveAddress, producerPrivateKey, transactionStateDB, metaData,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
-			return res, err
-		}
-		res = append(res, tx0)
-		nftIDs[matchAndReturnInst.NftID().String()] = true
-	}
 	refundAddress := privacy.OTAReceiver{}
 	err = refundAddress.FromString(matchAndReturnContributionValue.RefundAddress())
 	if err != nil {
 		return res, err
 	}
-	tx1, err := buildMintTokenTxs(
+	res, err = buildMintTokenTxs(
 		matchAndReturnContributionValue.TokenID(), matchAndReturnInst.ReturnAmount(),
 		refundAddress, producerPrivateKey, transactionStateDB, metaData,
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
-		return res, err
 	}
-	res = append(res, tx1)
-	return res, nil
+	return res, err
 }
 
 func buildMintTokenTxs(

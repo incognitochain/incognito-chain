@@ -202,7 +202,11 @@ func (sp *stateProcessorV2) matchContribution(
 		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-	_, nftIDs = poolPair.addShare(matchAddLiquidityInst.NftID(), nftIDs, shareAmount, beaconHeight)
+	_, nftIDs, err = poolPair.addShare(matchAddLiquidityInst.NftID(), nftIDs, shareAmount, beaconHeight)
+
+	if err != nil {
+		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
+	}
 	poolPairs[poolPairID] = poolPair
 
 	deletedWaitingContributions[matchContribution.PairHash()] = existingWaitingContribution
@@ -263,13 +267,19 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			amount1 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
 			amount0 = matchAndReturnContributionValue.Amount()
 		}
-		poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
-		_, nftIDs = poolPair.addShare(
-			matchAndReturnAddLiquidity.NftID(),
+		err = poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
+		if err != nil {
+			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
+		}
+		_, nftIDs, err = poolPair.addShare(
+			waitingContribution.NftID(),
 			nftIDs,
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 		)
+		if err != nil {
+			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
+		}
 		deletedWaitingContributions[matchAndReturnContribution.PairHash()] = waitingContribution
 		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {

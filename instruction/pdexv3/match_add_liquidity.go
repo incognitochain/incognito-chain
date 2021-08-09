@@ -99,10 +99,10 @@ func (m *MatchAddLiquidity) NewPoolPairID() string {
 	return m.newPoolPairID
 }
 
-func (m *MatchAddLiquidity) NftID() common.Hash {
-	return m.nftID
-}
-
 func (m *MatchAddLiquidity) Contribution() statedb.Pdexv3ContributionState {
 	return m.contribution
+}
+
+func (m *MatchAddLiquidity) NftID() common.Hash {
+	return m.nftID
 }

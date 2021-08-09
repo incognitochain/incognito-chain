@@ -660,3 +660,10 @@ func genNFT(nftID common.Hash, nftIDs map[string]bool, beaconHeight uint64) comm
 	hash := append(common.Uint64ToBytes(uint64(len(nftIDs))), common.Uint64ToBytes(beaconHeight)...)
 	return common.HashH(append(hashPrefix, hash...))
 }
+
+func chooseNftStr(oldNftID, newNftID common.Hash) string {
+	if newNftID.IsZeroValue() {
+		return oldNftID.String()
+	}
+	return newNftID.String()
+}

@@ -3,8 +3,6 @@ package pdexv3
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -160,93 +158,5 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
-	fmt.Println("[pdex] 100")
-	idx := -1
-	for i, inst := range mintData.Insts {
-		if len(inst) != 3 { // this is not PDEContribution instruction
-			continue
-		}
-		if mintData.InstsUsed[i] > 0 {
-			continue
-		}
-		if inst[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta) {
-			continue
-		}
-
-		status := inst[1]
-		if status != common.PDEContributionRefundChainStatus && status != common.PDEContributionMatchedChainStatus && status != common.PDEContributionMatchedNReturnedChainStatus {
-			continue
-		}
-
-		/*var shardIDFromInst byte*/
-		//var txReqIDFromInst common.Hash
-
-		//switch status {
-		//case common.PDEContributionRefundChainStatus:
-		//var refundAddLiquidity RefundAddLiquidity
-		//err := json.Unmarshal([]byte(inst[2]), &refundAddLiquidity)
-		//if err != nil {
-		//return false, err
-		//}
-		//value := refundAddLiquidity.Contribution.Value()
-		//shardIDFromInst = value.ShardID()
-		//txReqIDFromInst = value.TxReqID()
-		//receiverAddrStrFromInst = value.RefundAddress()
-		//receivingTokenIDStr = value.TokenID().String()
-		//receivingAmtFromInst = value.Amount()
-		//case common.PDEContributionMatchedChainStatus:
-		//var matchAddLiquidity MatchAddLiquidity
-		//err := json.Unmarshal([]byte(inst[2]), &matchAddLiquidity)
-		//if err != nil {
-		//return false, err
-		//}
-
-		//contributionValue := matchAddLiquidity.Contribution.Value()
-		//if matchAddLiquidity.NftID.IsZeroValue() && !contributionValue.NftID().IsZeroValue() {
-		//if !contributionValue.NftID().IsZeroValue() {
-		//return true, nil
-		//} else {
-		//return false, errors.New("NftID of contribution and return are invalid")
-		//}
-		//}
-		//shardIDFromInst = contributionValue.ShardID()
-		//txReqIDFromInst = contributionValue.TxReqID()
-		//receiverAddrStrFromInst = contributionValue.ReceiveAddress()
-		//receivingTokenIDStr = matchAddLiquidity.NftID.String()
-		//receivingAmtFromInst = 1
-		//case common.PDEContributionMatchedNReturnedChainStatus:
-		//var matchAndReturnAddLiquidity MatchAndReturnAddLiquidity
-		//err := json.Unmarshal([]byte(inst[2]), &matchAndReturnAddLiquidity)
-		//if err != nil {
-		//return false, err
-		//}
-
-		//contributionValue := matchAndReturnAddLiquidity.Contribution.Value()
-		//if matchAndReturnAddLiquidity.NftID.IsZeroValue() && !contributionValue.NftID().IsZeroValue() {
-		//if !contributionValue.NftID().IsZeroValue() {
-		//return true, nil
-		//} else {
-		//return false, errors.New("NftID of contribution and return are invalid")
-		//}
-		//}
-		//shardIDFromInst = contributionValue.ShardID()
-		//txReqIDFromInst = contributionValue.TxReqID()
-		//receiverAddrStrFromInst = contributionValue.RefundAddress()
-		//receivingTokenIDStr = contributionValue.TokenID().String()
-		//receivingAmtFromInst = matchAndReturnAddLiquidity.ReturnAmount
-		//nftIDStr = matchAndReturnAddLiquidity.NftID.String()
-		/*}*/
-
-		/*if response.TxReqID() != txReqIDFromInst.String() || shardID != shardIDFromInst {*/
-		//continue
-		/*}*/
-
-		idx = i
-		break
-	}
-	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PDEContribution or PDEPRVRequiredContributionRequestMeta instruction found for PDEContributionResponse tx %s", tx.Hash().String()))
-	}
-	mintData.InstsUsed[idx] = 1
 	return true, nil
 }

@@ -443,7 +443,6 @@ func NewContributionWithMetaData(
 		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 		nftID = *nftHash
 	}
-
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
 		*tokenHash, txReqID, nftID,

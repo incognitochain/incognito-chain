@@ -123,10 +123,6 @@ func (m *MatchAndReturnAddLiquidity) ReturnAmount() uint64 {
 	return m.returnAmount
 }
 
-func (m *MatchAndReturnAddLiquidity) NftID() common.Hash {
-	return m.nftID
-}
-
 func (m *MatchAndReturnAddLiquidity) ExistedTokenActualAmount() uint64 {
 	return m.existedTokenActualAmount
 }
@@ -145,4 +141,8 @@ func (m *MatchAndReturnAddLiquidity) Contribution() statedb.Pdexv3ContributionSt
 
 func (m *MatchAndReturnAddLiquidity) ShareAmount() uint64 {
 	return m.shareAmount
+}
+
+func (m *MatchAndReturnAddLiquidity) NftID() common.Hash {
+	return m.nftID
 }
