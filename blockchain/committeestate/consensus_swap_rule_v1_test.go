@@ -34,6 +34,7 @@ func TestShuffleShardCandidate(t *testing.T) {
 		t.Fatalf("Expect shuffled unassignedCommonPool to be %+v \n but get %+v", priorityKeys, shuffledCandiates)
 	}
 }
+
 func TestAssignShardCandidate(t *testing.T) {
 	numberOfPendingValidator := make(map[byte]int)
 	numberOfPendingValidator[0] = 0

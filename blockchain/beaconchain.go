@@ -1,4 +1,4 @@
-  package blockchain
+package blockchain
 
 import (
 	"encoding/json"
@@ -361,6 +361,8 @@ func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(
 ) (incognitokey.CommitteePublicKey, int, error) {
 	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
 	return committees[id], id, nil
+}
+
 func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
@@ -369,13 +371,13 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
 	var committees []incognitokey.CommitteePublicKey
 	var err error
-	res, has := chain.committeeCache.Get(getCommitteeCacheKey(hash, shardID))
+	res, has := chain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
 	if !has {
 		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
 		if err != nil {
 			return committees, err
 		}
-		chain.committeeCache.Add(getCommitteeCacheKey(hash, shardID), committees)
+		chain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
 	} else {
 		committees = res.([]incognitokey.CommitteePublicKey)
 	}
@@ -414,12 +416,6 @@ func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 
 func (chain *BeaconChain) CommitteeEngineVersion() int {
 	return chain.multiView.GetBestView().CommitteeStateVersion()
-}
-
-func (chain *BeaconChain) CommitteesFromViewHashForShard(
-	committeeHash common.Hash, shardID byte,
-) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.getShardCommitteeFromBeaconHash(committeeHash, shardID)
 }
 
 func getCommitteeCacheKey(hash common.Hash, shardID byte) string {

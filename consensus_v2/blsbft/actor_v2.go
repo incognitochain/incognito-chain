@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"reflect"
 	"sort"
 	"time"
@@ -1272,4 +1273,12 @@ func (a *actorV2) makeBFTRequestBlk(request BFTRequestBlock, peerID string, chai
 	msg.(*wire.MessageBFT).Content = requestCtnBytes
 	msg.(*wire.MessageBFT).Type = MsgRequestBlk
 	return msg, nil
+}
+
+func ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	return valData.PortalSig, nil
 }
