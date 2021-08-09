@@ -31,7 +31,7 @@ func (txBuilder *TxBuilderV2) Build(
 
 	switch metaType {
 	case metadataCommon.Pdexv3MintNft:
-		if len(inst) != 2 {
+		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
 		tx, err = buildPdev3MintFnt(inst, producerPrivateKey, shardID, transactionStateDB)
@@ -158,7 +158,7 @@ func buildMatchAndReturnContributionTxv2(
 		return res, nil
 	}
 	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
-		common.PDEContributionMatchedChainStatus,
+		common.PDEContributionMatchedNReturnedChainStatus,
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
 	refundAddress := privacy.OTAReceiver{}

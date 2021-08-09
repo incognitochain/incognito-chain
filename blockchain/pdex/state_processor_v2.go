@@ -179,7 +179,7 @@ func (sp *stateProcessorV2) matchContribution(
 		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 	matchContribution := matchAddLiquidityInst.Contribution()
-	existingWaitingContribution, found := waitingContributions[matchContribution.PairHash()]
+	existedWaitingContribution, found := waitingContributions[matchContribution.PairHash()]
 	if !found {
 		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", matchContribution.PairHash())
 		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
@@ -191,25 +191,25 @@ func (sp *stateProcessorV2) matchContribution(
 	}
 
 	matchContributionValue := matchContribution.Value()
-	poolPair := initPoolPairState(existingWaitingContribution, matchContribution.Value())
+	poolPair := initPoolPairState(existedWaitingContribution, matchContribution.Value())
 	poolPairID := generatePoolPairKey(
-		existingWaitingContribution.TokenID().String(),
+		existedWaitingContribution.TokenID().String(),
 		matchContributionValue.TokenID().String(),
-		existingWaitingContribution.TxReqID().String(),
+		existedWaitingContribution.TxReqID().String(),
 	)
 	tempAmt := big.NewInt(0).Mul(
-		big.NewInt(0).SetUint64(existingWaitingContribution.Amount()),
+		big.NewInt(0).SetUint64(existedWaitingContribution.Amount()),
 		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-	_, nftIDs, err = poolPair.addShare(matchAddLiquidityInst.NftID(), nftIDs, shareAmount, beaconHeight)
+	_, nftIDs, err = poolPair.addShare(existedWaitingContribution.NftID(), nftIDs, shareAmount, beaconHeight)
 
 	if err != nil {
 		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 	}
 	poolPairs[poolPairID] = poolPair
 
-	deletedWaitingContributions[matchContribution.PairHash()] = existingWaitingContribution
+	deletedWaitingContributions[matchContribution.PairHash()] = existedWaitingContribution
 	delete(waitingContributions, matchContribution.PairHash())
 
 	contribStatus := metadata.PDEContributionStatus{

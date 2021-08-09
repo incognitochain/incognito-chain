@@ -1,13 +1,17 @@
 package pdexv3
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 type MintNft struct {
@@ -133,6 +137,12 @@ func (mintNft *MintNft) NftID() string {
 	return mintNft.nftID
 }
 
+type MintNftData struct {
+	NftID       common.Hash `json:"NftID"`
+	OtaReceiver string      `json:"OtaReceiver"`
+	ShardID     byte        `json:"ShardID"`
+}
+
 func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,
@@ -142,5 +152,74 @@ func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
+	idx := -1
+	metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", mintNft)
+	metadataCommon.Logger.Log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
+	for i, inst := range mintData.Insts {
+		if len(inst) != 3 { // this is not PDEContribution instruction
+			continue
+		}
+
+		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
+
+		instMetaType := inst[0]
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintNft) {
+			continue
+		}
+
+		var shardIDFromInst byte
+		var receiverAddrStrFromInst string
+		var receivingAmtFromInst uint64
+		var receivingTokenIDStr string
+
+		contentBytes := []byte(inst[2])
+		var mintNftData MintNftData
+		err := json.Unmarshal(contentBytes, &mintNftData)
+		if err != nil {
+			return false, err
+		}
+		shardIDFromInst = mintNftData.ShardID
+		receiverAddrStrFromInst = mintNftData.OtaReceiver
+		receivingTokenIDStr = mintNftData.NftID.String()
+		receivingAmtFromInst = 1
+
+		if shardID != shardIDFromInst {
+			metadataCommon.Logger.Log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
+			continue
+		}
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil {
+			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
+			return false, err
+		}
+		if !isMinted {
+			metadataCommon.Logger.Log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
+			return false, errors.New("This is not tx mint")
+		}
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
+
+		otaReceiver := coin.OTAReceiver{}
+		err = otaReceiver.FromString(receiverAddrStrFromInst)
+		if err != nil {
+			return false, errors.New("Invalid ota receiver")
+		}
+
+		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
+			receivingAmtFromInst != paidAmount ||
+			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
+			receivingTokenIDStr != coinID.String() {
+			return false, errors.New("Coin is invalid")
+		}
+		idx = i
+		break
+	}
+	if idx == -1 { // not found the issuance request tx for this response
+		metadataCommon.Logger.Log.Debugf("[pdex] mint nft %s error", mintNft.nftID)
+		return false, fmt.Errorf("Can't mint nft with hash %s", mintNft.nftID)
+	}
+	mintData.InstsUsed[idx] = 1
 	return true, nil
 }
