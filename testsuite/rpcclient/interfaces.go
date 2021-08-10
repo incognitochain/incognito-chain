@@ -2,6 +2,8 @@ package rpcclient //This file is auto generated. Please do not change if you don
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -45,4 +47,9 @@ type ClientInterface interface {
 	CreateConvertCoinVer1ToVer2Transaction(privateKey string) error
 	GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error)
 	CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error)
+	GetPortalShieldingRequestStatus(tx string) (res *metadata.PortalShieldingRequestStatus, err error)
+	CreateAndSendTxWithPortalV4UnshieldRequest(privatekey string, tokenID string, amount string, paymentAddress string, remoteAddress string) (res jsonresult.CreateTransactionTokenResult, err error)
+	GetPortalUnshieldRequestStatus(tx string) (res *metadata.PortalUnshieldRequestStatus, err error)
+	GetPortalV4State(beaconheight string) (rpcserver.CurrentPortalState, error)
+	GetPortalSignedRawTransaction(batchID string) (rpcserver.GetSignedTxResult, error)
 }
