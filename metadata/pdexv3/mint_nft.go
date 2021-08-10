@@ -217,7 +217,7 @@ func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		metadataCommon.Logger.Log.Debugf("[pdex] mint nft %s error", mintNft.nftID)
+		metadataCommon.Logger.Log.Debugf("mint nft %s error", mintNft.nftID)
 		return false, fmt.Errorf("Can't mint nft with hash %s", mintNft.nftID)
 	}
 	mintData.InstsUsed[idx] = 1

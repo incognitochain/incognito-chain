@@ -250,7 +250,7 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		metadataCommon.Logger.Log.Debugf("[pdex] no Pdexv3 addliquidity instruction tx %s", tx.Hash().String())
+		metadataCommon.Logger.Log.Debugf("no Pdexv3 addliquidity instruction tx %s", tx.Hash().String())
 		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 addliquidity instruction tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1

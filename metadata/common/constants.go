@@ -64,7 +64,7 @@ const (
 	Pdexv3AddOrderResponseMeta          = 278
 	Pdexv3WithdrawOrderRequestMeta      = 279
 	Pdexv3WithdrawOrderResponseMeta     = 280
-	Pdexv3MintNft                       = 281
+	Pdexv3MintNft                       = 282
 
 	// portal
 	PortalCustodianDepositMeta                  = 100
