@@ -201,7 +201,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 }
 
 func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height uint64, shardID byte) (*types.ShardBlock, error) {
-	blkhash, err := blockchain.GetShardBlockHashByView(blockchain.ShardChain[shardID].GetFinalView(), height)
+	blkhash, err := blockchain.GetShardBlockHashByView(view, height)
 	if err != nil {
 		return nil, err
 	}
@@ -322,15 +322,17 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 
 func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*types.ShardBlock, error) {
 	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
+
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
 		limitTxs := map[int]int{}
 		shardBlocks := []*types.ShardBlock{}
 		lastEpoch := uint64(0)
 		for _, height := range requiredShardBlockHeight {
-			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
+			shardBlock, err := blockchain.GetShardBlockByView(blockchain.GetChain(int(shardID)).GetFinalView(), height, shardID)
 			if err != nil {
 				return nil, err
 			}
+
 			if ok := checkLimitTxAction(true, limitTxs, shardBlock); !ok {
 				return nil, errors.Errorf("Total txs of range ShardBlocks [%v..%v] is lager than limit", requiredShardBlockHeight[0], requiredShardBlockHeight[len(requiredShardBlockHeight)-1])
 			}

@@ -46,6 +46,7 @@ type ChainInterface interface {
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
 	CreateNewBlock(
+		view multiview.View,
 		version int,
 		proposer string,
 		round int,

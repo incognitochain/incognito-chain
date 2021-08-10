@@ -37,6 +37,11 @@ fi
 if [ -z "$PUBLIC_IP" ]; then
     PUBLIC_IP=`dig -4 @resolver1.opendns.com A myip.opendns.com. +short`;
 fi
+
+if [ -z "$NUM_INDEXER_WORKERS" ]; then
+    NUM_INDEXER_WORKERS=1;
+fi
+
 CONTRACT_IP=`echo $PUBLIC_IP | cut -d '.' -f 1,4`
 
 if [ -z "$RPC_PORT" ]; then RPC_PORT=9334; fi

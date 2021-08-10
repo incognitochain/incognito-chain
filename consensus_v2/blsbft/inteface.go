@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"github.com/incognitochain/incognito-chain/multiview"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -36,6 +37,7 @@ type ChainInterface interface {
 
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	CreateNewBlock(
+		view multiview.View,
 		version int,
 		proposer string,
 		round int,

@@ -16,7 +16,6 @@ import (
 
 type blockValidation interface {
 	types.BlockInterface
-	AddValidationField(validationData string)
 }
 
 type ValidationData struct {
@@ -87,7 +86,8 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	}
 	valid := CheckValidationDataWithCommittee(valData, committee)
 	if !valid {
-		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committee)))
+		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committeeStr)))
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {

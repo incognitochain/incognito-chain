@@ -88,7 +88,25 @@ CONTINUE_VERIFY:
 	if err != nil {
 		return err
 	}
-	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions); err != nil {
+
+	// get shard to beacon blocks from pool
+	allRequiredShardBlockHeight := make(map[byte][]uint64)
+	for shardID, shardstates := range beaconBlock.Body.ShardState {
+		heights := []uint64{}
+		for _, state := range shardstates {
+			heights = append(heights, state.Height)
+		}
+		sort.Slice(heights, func(i, j int) bool {
+			return heights[i] < heights[j]
+		})
+		allRequiredShardBlockHeight[shardID] = heights
+	}
+	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
+	}
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions, allShardBlocks); err != nil {
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
@@ -104,16 +122,16 @@ CONTINUE_VERIFY:
 // var bcStart time.Time
 // var bcAllTime time.Duration
 
-func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
+func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, validationMode int) error {
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if config.Config().IsFullValidation {
-		shouldValidate = true
+		validationMode = common.FULL_VALIDATION
 	}
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
-	startTimeStoreBeaconBlock := time.Now()
+
 	//check view if exited
 	checkView := blockchain.BeaconChain.GetViewByHash(*beaconBlock.Hash())
 	if checkView != nil {
@@ -134,25 +152,24 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return errors.New("Not expected height")
 	}
 
-	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if shouldValidate {
-		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, curView); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	// Verify beaconBlock with previous best state
-	if shouldValidate {
-		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Verify beaconBlock with previous best state
 		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	// Backup beststate
@@ -167,13 +184,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return err
 	}
 
-	if shouldValidate {
-		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		if err = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -193,8 +210,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
-	// For masternode: broadcast new committee to highways
-	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
+
 	return nil
 }
 
@@ -301,7 +317,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //		* Block Reward Instruction
 //	+ Generate Instruction Hash from all recently got instructions
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string, confirmShardBlocks map[byte][]*types.ShardBlock) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 
 	//check previous pdestate state consistency
@@ -320,29 +336,11 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	portalParams := portal.GetPortalParams()
 
-	// get shard to beacon blocks from pool
-	allRequiredShardBlockHeight := make(map[byte][]uint64)
-	for shardID, shardstates := range beaconBlock.Body.ShardState {
-		heights := []uint64{}
-		for _, state := range shardstates {
-			heights = append(heights, state.Height)
-		}
-		sort.Slice(heights, func(i, j int) bool {
-			return heights[i] < heights[j]
-		})
-		allRequiredShardBlockHeight[shardID] = heights
-	}
-
-	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
-	if err != nil {
-		Logger.log.Error(err)
-		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
-	}
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
 		*portalParams,
-		allShardBlocks,
+		confirmShardBlocks,
 	)
 
 	if len(incurredInstructions) != 0 {
@@ -722,7 +720,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
 ) error {
-	startTimeProcessStoreBeaconBlock := time.Now()
+
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 
@@ -957,10 +955,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
-	blockchain.BeaconChain.multiView.AddView(newBestState)
+	_, newFinalView := blockchain.BeaconChain.multiView.NewViewAfterAdd(newBestState)
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
-
-	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
 
@@ -976,15 +972,15 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
+		prevView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if prevView == nil {
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
 				// panic("Database is corrupt")
 				return err
 			}
 		} else {
-			storeBlock = newFinalView.GetBlock()
+			storeBlock = prevView.GetBlock()
 		}
 	}
 
@@ -993,7 +989,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
-	err = blockchain.BackupBeaconViews(batch)
+	err = blockchain.BackupBeaconViews(batch, newFinalView, newBestState)
 	if err != nil {
 		// panic("Backup shard view error")
 		return err
@@ -1002,29 +998,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
-
-	if !config.Config().ForceBackup {
-		return nil
-	}
-
-	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
-
-		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-
-		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-
-	}
-
+	blockchain.BeaconChain.multiView.AddView(newBestState)
 	return nil
 }
 

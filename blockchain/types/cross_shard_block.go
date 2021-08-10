@@ -26,6 +26,10 @@ type CrossShardBlock struct {
 	CrossTxTokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 
+func (block CrossShardBlock) AddValidationField(validationData string) {
+	panic("implement me")
+}
+
 type CrossOutputCoin struct {
 	BlockHeight uint64
 	BlockHash   common.Hash

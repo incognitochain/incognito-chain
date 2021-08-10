@@ -463,7 +463,7 @@ func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.Blo
 			return
 		}
 
-		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
+		block, err = e.Chain.CreateNewBlock(nil, 1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {
