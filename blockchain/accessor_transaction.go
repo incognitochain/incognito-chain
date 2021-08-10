@@ -400,7 +400,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 
 	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
 	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
-	if keyExists && !isReset {
+	if keyExists && !isReset && processing != 2 {
 		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
 	}
 
@@ -466,7 +466,6 @@ func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.Key
 		}
 	}
 	outCoins, state, err := outcoinIndexer.GetIndexedOutCoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
-	Logger.log.Infof("current cache state: %v\n", state)
 	switch state {
 	case 2, 3:
 		var decryptedResults []privacy.PlainCoin
@@ -485,7 +484,7 @@ func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.Key
 				otherResults = append(otherResults, outCoin)
 			}
 		}
-		Logger.log.Infof("Retrieved output coins ver2 for view key %v", keyset.OTAKey.GetOTASecretKey())
+		Logger.log.Infof("Retrieved output coins ver2 for view key %v, status %v", keyset.OTAKey.GetOTASecretKey(), state)
 		return decryptedResults, otherResults, nil
 	case 1:
 		return nil, nil, err

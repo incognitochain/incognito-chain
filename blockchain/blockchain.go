@@ -5,16 +5,15 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -48,7 +47,7 @@ type BlockChain struct {
 	committeeByEpochCache *lru.Cache
 }
 
-// Config is a descriptor which specifies the blockchain instance configuration.
+// Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
 type Config struct {
 	BTCChain      *btcrelaying.BlockChain
 	BNBChainState *bnbrelaying.BNBChainState
@@ -114,9 +113,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
+	EnableIndexingCoinByOTAKey = (config.OutCoinByOTAKeyDb != nil)
 	if EnableIndexingCoinByOTAKey {
-		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, withAccessToken %v\n", config.IndexerWorkers, len(config.IndexerToken) == 64)
 		var err error
 		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
 		if err != nil {
@@ -270,9 +268,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
 	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
+		assignRule := committeestate.SFV2VersionAssignRule(
+			1,
+			config.Param().ConsensusParam.StakingFlowV2Height,
+			config.Param().ConsensusParam.AssignRuleV3Height)
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
-				committeestate.NewBeaconCommitteeStateV2())
+				committeestate.NewBeaconCommitteeStateV2(assignRule))
 	} else {
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV1(
@@ -782,10 +784,6 @@ func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
 }
 
-func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight)
-}
-
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
 	return blockchain.config.DataBase[common.BeaconChainDataBaseID]
 }
@@ -822,10 +820,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)
-	}
-	sID := []int{}
-	for i := 0; i < config.Param().ActiveShards; i++ {
-		sID = append(sID, i)
 	}
 	return beaconView, err
 }

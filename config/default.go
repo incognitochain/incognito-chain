@@ -20,8 +20,8 @@ var MainnetParam = &param{
 	CommitteeSize: committeeSize{
 		MaxShardCommitteeSize:            32,
 		MinShardCommitteeSize:            22,
-		MaxBeaconCommitteeSize:           7,
-		MinBeaconCommitteeSize:           32,
+		MaxBeaconCommitteeSize:           32,
+		MinBeaconCommitteeSize:           7,
 		InitShardCommitteeSize:           22,
 		InitBeaconCommitteeSize:          7,
 		ShardCommitteeSizeKeyListV2:      22,
@@ -34,7 +34,7 @@ var MainnetParam = &param{
 		MinBeaconBlockInterval: 40 * time.Second,
 		MaxBeaconBlockCreation: 10 * time.Second,
 	},
-	StakingAmountShard: 1750,
+	StakingAmountShard: 1750000000000,
 	ActiveShards:       8,
 	BasicReward:        1386666000,
 	EpochParam: epochParam{
@@ -45,7 +45,7 @@ var MainnetParam = &param{
 		RandomTimeV2:           1e9,
 	},
 	EthContractAddressStr:            "0x43D037A562099A4C2c95b1E2120cc43054450629",
-	BscContractAddressStr:            "0x43D037A562099A4C2c95b1E2120cc43054450629",
+	BscContractAddressStr:            "",
 	IncognitoDAOAddress:              "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3",
 	CentralizedWebsitePaymentAddress: "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885",
 	SwapCommitteeParam: swapCommitteeParam{
@@ -64,12 +64,16 @@ var MainnetParam = &param{
 	ReplaceStakingTxHeight:         559380,
 	ETHRemoveBridgeSigEpoch:        1973,
 	BCHeightBreakPointNewZKP:       934858,
-	EnableFeatureFlags:             map[int]uint64{0: 1, 1: 0},
-	BCHeightBreakPointPortalV3:     10000000,
-	TxPoolVersion:                  0,
+	EnableFeatureFlags: map[string]uint64{
+		"PortalRelaying": 1,
+		"PortalV3":       0,
+		"PortalV4":       0,
+	},
+	BCHeightBreakPointPortalV3: 10000000,
+	TxPoolVersion:              0,
 	GethParam: gethParam{
-		Host:     "eth-fullnode.incognito.org",
-		Protocol: "https",
+		Host:     "https://eth-fullnode.incognito.org",
+		Protocol: "",
 		Port:     "",
 	},
 	BSCParam: bscParam{
@@ -108,7 +112,7 @@ var Testnet1Param = &param{
 		MinBeaconBlockInterval: 10 * time.Second,
 		MaxBeaconBlockCreation: 6 * time.Second,
 	},
-	StakingAmountShard: 1750,
+	StakingAmountShard: 1750000000000,
 	ActiveShards:       8,
 	BasicReward:        400000000,
 	EpochParam: epochParam{
@@ -138,9 +142,13 @@ var Testnet1Param = &param{
 	ReplaceStakingTxHeight:         1,
 	ETHRemoveBridgeSigEpoch:        2085,
 	BCHeightBreakPointNewZKP:       1148608,
-	EnableFeatureFlags:             map[int]uint64{0: 1, 1: 0},
-	BCHeightBreakPointPortalV3:     1328816,
-	TxPoolVersion:                  0,
+	EnableFeatureFlags: map[string]uint64{
+		"PortalRelaying": 1,
+		"PortalV3":       0,
+		"PortalV4":       0,
+	},
+	BCHeightBreakPointPortalV3: 1328816,
+	TxPoolVersion:              0,
 	GethParam: gethParam{
 		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
 		Protocol: "https",
@@ -182,7 +190,7 @@ var Tesnet2Param = &param{
 		MinBeaconBlockInterval: 10 * time.Second,
 		MaxBeaconBlockCreation: 6 * time.Second,
 	},
-	StakingAmountShard: 1750,
+	StakingAmountShard: 1750000000000,
 	ActiveShards:       8,
 	BasicReward:        400000000,
 	EpochParam: epochParam{
@@ -212,9 +220,13 @@ var Tesnet2Param = &param{
 	ReplaceStakingTxHeight:         1,
 	ETHRemoveBridgeSigEpoch:        2085,
 	BCHeightBreakPointNewZKP:       1148608,
-	EnableFeatureFlags:             map[int]uint64{0: 1, 1: 0},
-	BCHeightBreakPointPortalV3:     1328816,
-	TxPoolVersion:                  0,
+	EnableFeatureFlags: map[string]uint64{
+		"PortalRelaying": 1,
+		"PortalV3":       0,
+		"PortalV4":       0,
+	},
+	BCHeightBreakPointPortalV3: 1328816,
+	TxPoolVersion:              0,
 	GethParam: gethParam{
 		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
 		Protocol: "https",
@@ -240,7 +252,7 @@ func NewDefaultParam(network string) *param {
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet1InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-	case "testnet-2":
+	case "testnet-2", "local":
 		p = Tesnet2Param
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet2InitTx)

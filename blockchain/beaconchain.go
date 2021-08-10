@@ -22,6 +22,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
 type BeaconChain struct {
@@ -746,6 +747,10 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (types.BlockInterfa
 
 func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS(chain.multiView.GetFinalView())
+}
+
+func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
 //CommitteesByShardID ...
