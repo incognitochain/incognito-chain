@@ -16,6 +16,7 @@ const (
 )
 
 type JobStatus struct {
+	id     string // id of the indexing go-routine
 	otaKey privacy.OTAKey
 	err    error
 }
