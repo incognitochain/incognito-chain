@@ -41,7 +41,7 @@ type ClientInterface interface {
 	DefragmentAccount(privateKey string, maxValue float64, fee float64, privacy float64) (jsonresult.CreateTransactionResult, error)
 	DefragmentAccountToken(privateKey string, receiver map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}, p1 string, pPrivacy float64) (jsonresult.CreateTransactionTokenResult, error)
 
-	SubmitKey(privateKey string) error
+	SubmitKey(privateKey string) (bool, error)
 	CreateConvertCoinVer1ToVer2Transaction(privateKey string) error
 	GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error)
 	CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error)

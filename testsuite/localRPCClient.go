@@ -21,14 +21,14 @@ func (r *LocalRPCClient) GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err e
 	return resI.(*jsonresult.GetMempoolInfo), nil
 }
 
-func (r *LocalRPCClient) SubmitKey(privateKey string) (err error) {
+func (r *LocalRPCClient) SubmitKey(privateKey string) (b bool, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.LimitedHttpHandler["submitkey"]
 	_, rpcERR := c(httpServer, []interface{}{privateKey}, nil)
 	if rpcERR != nil {
-		return errors.New(rpcERR.Error())
+		return false, errors.New(rpcERR.Error())
 	}
-	return nil
+	return true, nil
 }
 
 func (r *LocalRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey string) (err error) {

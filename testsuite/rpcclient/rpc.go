@@ -34,10 +34,10 @@ func mapUintToInterface(m map[string]uint64) map[string]interface{} {
 	}
 	return mfl
 }
-func (r *RPCClient) API_SubmitKey(privateKey string) error {
-	err := r.Client.SubmitKey(privateKey)
+func (r *RPCClient) API_SubmitKey(privateKey string) (bool, error) {
+	b, err := r.Client.SubmitKey(privateKey)
 	time.Sleep(time.Millisecond)
-	return err
+	return b, err
 }
 
 func (r *RPCClient) API_CreateConvertCoinVer1ToVer2Transaction(privateKey string) error {
@@ -232,7 +232,7 @@ func (sim *RPCClient) SendPRV(args ...interface{}) (string, error) {
 						amountF64 := args[i+1].(float64)
 						amount = uint64(amountF64)
 					}
-					receivers[arg.(account.Account).PaymentAddress] = amount
+					receivers[arg.(account.Account).PaymentAddressv2] = amount
 				}
 			}
 		}
@@ -417,7 +417,7 @@ func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float
 
 func (r *RPCClient) API_SendTxWithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
 
-	txResp, err := r.Client.WithdrawReward(privateKey, nil, 0, 0, map[string]interface{}{
+	txResp, err := r.Client.WithdrawReward(privateKey, nil, 10, 0, map[string]interface{}{
 		"PaymentAddress": paymentAddress, "TokenID": "0000000000000000000000000000000000000000000000000000000000000004", "Version": 0,
 	})
 	if err != nil {

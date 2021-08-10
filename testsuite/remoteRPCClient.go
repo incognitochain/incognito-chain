@@ -3,6 +3,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -12,6 +13,45 @@ import (
 
 type RemoteRPCClient struct {
 	Endpoint string
+}
+
+func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey string) (err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createconvertcoinver1tover2transaction",
+		"params":  []interface{}{privateKey, -1},
+		"id":      1,
+	})
+	if err != nil {
+		return errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result bool
+		Error  *ErrMsg
+	}{}
+	fmt.Println(string(body))
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return err
+}
+
+func (r *RemoteRPCClient) GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error) {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error) {
+	panic("implement me")
 }
 
 type ErrMsg struct {
@@ -77,6 +117,65 @@ func (r *RemoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int)
 		}
 		return resp.Result, nil
 	}
+}
+func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "submitkey",
+		"params":  []interface{}{privateKey},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result bool
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) AuthorizedSubmitKey(privateKey string) (res bool, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "authorizedsubmitkey",
+		"params":  []interface{}{privateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, true},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result bool
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
 }
 
 func (r *RemoteRPCClient) GetBalanceByPrivateKey(privateKey string) (res uint64, err error) {
