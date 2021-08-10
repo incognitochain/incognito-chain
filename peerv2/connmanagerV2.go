@@ -42,6 +42,7 @@ func (cm *ConnManager) StartV2(bg BlockGetter) {
 }
 
 func (cm *ConnManager) disconnectAction(nw network.Network, conn network.Conn) {
+	id := common.RandInt()
 	cm.hwLocker.RLock()
 	if cm.currentHW == nil {
 		cm.hwLocker.RUnlock()
@@ -51,30 +52,31 @@ func (cm *ConnManager) disconnectAction(nw network.Network, conn network.Conn) {
 	cm.hwLocker.RUnlock()
 	addrInfo, err := getAddressInfo(hwAddr.Libp2pAddr)
 	if err != nil {
-		Logger.Errorf("Retry connect to HW %v failed, err: %v", err)
+		Logger.Errorf("Retry connect to HW %v failed, err: %v, id %v", err, id)
 		return
 	}
-	Logger.Infof("Disconnected, network local peer %v, peer conn .local %v %v, .remote %v %v; hwAddr.libp2pAddr %v", nw.LocalPeer().Pretty(), conn.LocalMultiaddr().String(), conn.LocalPeer().Pretty(), conn.RemoteMultiaddr().String(), conn.RemotePeer().Pretty(), addrInfo.ID.Pretty())
+	Logger.Infof("Disconnected, network local peer %v, peer conn .local %v %v, .remote %v %v; hwAddr.libp2pAddr %v id %v", nw.LocalPeer().Pretty(), conn.LocalMultiaddr().String(), conn.LocalPeer().Pretty(), conn.RemoteMultiaddr().String(), conn.RemotePeer().Pretty(), addrInfo.ID.Pretty(), id)
 	if conn.RemotePeer().Pretty() != addrInfo.ID.Pretty() {
 		return
 	}
 	cm.CloseConnToCurHW(true)
-	err = cm.tryToConnectHW(&hwAddr)
+	err = cm.tryToConnectHW(&hwAddr, id)
 	if err != nil {
-		Logger.Errorf("Cannot retry connection to HW %v", addrInfo.ID.Pretty())
+		Logger.Errorf("Cannot retry connection to HW %v id %v", addrInfo.ID.Pretty(), id)
 		cm.keeper.IgnoreAddress(hwAddr)
 		cm.reqPickHW <- nil
 	}
 }
 
 func (cm *ConnManager) PickHighway() error {
-	Logger.Infof("[newpeerv2] start pick HW")
-	defer Logger.Infof("[newpeerv2] pick HW done")
+	id := common.RandInt()
+	Logger.Infof("[newpeerv2] start pick HW thread ID %v", id)
+	defer Logger.Infof("[newpeerv2] pick HW done ID %v", id)
 	newHW, err := cm.keeper.GetHighway(&cm.peerID)
 	var hwAddrInfo *peer.AddrInfo
 	gotNewHW := false
 	if err == nil {
-		Logger.Infof("[newpeerv2] Got new HW = %v", newHW.Libp2pAddr)
+		Logger.Infof("[newpeerv2] Got new HW = %v %v", newHW.Libp2pAddr, id)
 		cm.hwLocker.RLock()
 		if (cm.currentHW != nil) && (newHW.Libp2pAddr == cm.currentHW.Libp2pAddr) {
 			Logger.Infof("[newpeerv2] currentHW == new HW")
@@ -83,9 +85,9 @@ func (cm *ConnManager) PickHighway() error {
 		}
 		cm.hwLocker.RUnlock()
 		hwAddrInfo, err = getAddressInfo(newHW.Libp2pAddr)
-		Logger.Infof("[newpeerv2] get address info %v %v", hwAddrInfo, err)
+		Logger.Infof("[newpeerv2] get address info %v %v %v", hwAddrInfo, err, id)
 		if err == nil {
-			err = cm.tryToConnectHW(newHW)
+			err = cm.tryToConnectHW(newHW, id)
 			if err == nil {
 				gotNewHW = true
 			}
@@ -125,22 +127,22 @@ func (cm *ConnManager) tryToConnect(hwAddrInfo *peer.AddrInfo) error {
 	return err
 }
 
-func (cm *ConnManager) tryToConnectHW(hwAddr *rpcclient.HighwayAddr) error {
+func (cm *ConnManager) tryToConnectHW(hwAddr *rpcclient.HighwayAddr, id int) error {
 	var err error
 	hwAddrInfo, err := getAddressInfo(hwAddr.Libp2pAddr)
 	if err != nil {
 		return err
 	}
-	Logger.Infof("Try to connect new HW %v", hwAddr.Libp2pAddr)
+	Logger.Infof("Try to connect new HW %v, thread id %v", hwAddr.Libp2pAddr, id)
 	for i := 0; i < MaxConnectionRetry; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
 		if err = cm.LocalHost.Host.Connect(ctx, *hwAddrInfo); err != nil {
-			Logger.Errorf("Could not connect to highway: %v %v, failed times %v", err, hwAddrInfo, i)
+			Logger.Errorf("Could not connect to highway: %v %v, failed times %v id %v", err, hwAddrInfo, i, id)
 		} else {
-			err = cm.Requester.ConnectNewHW(hwAddrInfo)
+			err = cm.Requester.ConnectNewHW(hwAddrInfo, id)
 			if err == nil {
 				cm.newHighway <- hwAddr
-				Logger.Infof("Connected to HW %v", hwAddrInfo.ID)
+				Logger.Infof("Connected to HW %v %v", hwAddrInfo.ID, id)
 				cancel()
 				return nil
 			}

@@ -44,16 +44,16 @@ func NewRequester(prtc GRPCDialer) *BlockRequester {
 	return req
 }
 
-func (c *BlockRequester) closeConnection() {
+func (c *BlockRequester) closeConnection(id int) {
 	c.Lock()
 	defer c.Unlock()
 	if c.conn == nil {
 		return
 	}
-	Logger.Info("Closing old requester connection")
+	Logger.Infof("Closing old requester connection %v", id)
 	err := c.conn.Close()
 	if err != nil {
-		Logger.Errorf("Failed closing old requester connection: %+v", err)
+		Logger.Errorf("Failed closing old requester connection: %+v - %v", err, id)
 	}
 	c.conn = nil
 }
@@ -62,7 +62,8 @@ func (c *BlockRequester) keepConnection() {
 	currentHWID := peer.ID("")
 	watchTimestep := time.NewTicker(RequesterDialTimestep)
 	defer watchTimestep.Stop()
-
+	id := common.RandInt()
+	Logger.Infof("Start keep connection, thread ID %v ", id)
 	for {
 		select {
 		case <-watchTimestep.C:
@@ -72,7 +73,7 @@ func (c *BlockRequester) keepConnection() {
 			}
 
 			Logger.Warn("BlockRequester is not ready, dialing")
-			c.closeConnection()
+			c.closeConnection(id)
 			ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
 			if conn, err := c.prtc.Dial(
 				ctx,
@@ -95,7 +96,7 @@ func (c *BlockRequester) keepConnection() {
 		case hwID := <-c.peerIDs:
 			Logger.Infof("Received new highway peerID, old = %s, new = %s", currentHWID.String(), hwID.String())
 			if hwID != currentHWID && c.conn != nil {
-				c.closeConnection()
+				c.closeConnection(id)
 			}
 			if currentHWID == "" && c.conn == nil {
 				ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
@@ -121,7 +122,7 @@ func (c *BlockRequester) keepConnection() {
 			currentHWID = hwID
 		case <-c.stop:
 			Logger.Info("Stop keeping blockrequester connection to highway")
-			c.closeConnection()
+			c.closeConnection(id)
 			return
 		}
 	}
@@ -369,26 +370,26 @@ func (c *BlockRequester) tryToDial(hwAddrInfo *peer.AddrInfo) (conn *grpc.Client
 	return nil, err
 }
 
-func (c *BlockRequester) ConnectNewHW(hwAddrInfo *peer.AddrInfo) (err error) {
-	Logger.Infof("[debugGRPC] Connecting to new HW %v", hwAddrInfo.ID.Pretty())
+func (c *BlockRequester) ConnectNewHW(hwAddrInfo *peer.AddrInfo, id int) (err error) {
+	Logger.Infof("[debugGRPC] Connecting to new HW %v id %v", hwAddrInfo.ID.Pretty(), id)
 	var conn *grpc.ClientConn
 	conn, err = c.tryToDial(hwAddrInfo)
 	if err == nil {
-		Logger.Infof("[debugGRPC] Connected to new HW %v", hwAddrInfo.ID.Pretty())
-		c.closeConnection()
+		Logger.Infof("[debugGRPC] Connected to new HW %v, id %v", hwAddrInfo.ID.Pretty(), id)
+		c.closeConnection(id)
 		Logger.Infof("[debugGRPC] Closed old connection")
 		c.Lock()
 		c.conn = conn
 		c.Unlock()
-		Logger.Infof("[debugGRPC] ~~> Set new conn done, conn state %v", c.conn.GetState().String())
-		go c.WatchConnection(hwAddrInfo.ID)
+		Logger.Infof("[debugGRPC] ~~> Set new conn done, conn state %v id %v", c.conn.GetState().String(), id)
+		go c.WatchConnection(hwAddrInfo.ID, id)
 	}
 	return err
 }
 
-func (c *BlockRequester) retryDial(retryFailedCounter int, hwAddrInfo *peer.AddrInfo) (conn *grpc.ClientConn, retryFailedCounterN int, err error) {
+func (c *BlockRequester) retryDial(retryFailedCounter int, hwAddrInfo *peer.AddrInfo, id int) (conn *grpc.ClientConn, retryFailedCounterN int, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
-	Logger.Infof("retry dial to new HW %v", hwAddrInfo.ID.Pretty())
+	Logger.Infof("retry dial to new HW %v - %v", hwAddrInfo.ID.Pretty(), id)
 	if conn, err = c.prtc.Dial(
 		ctx,
 		hwAddrInfo.ID,
@@ -399,7 +400,7 @@ func (c *BlockRequester) retryDial(retryFailedCounter int, hwAddrInfo *peer.Addr
 			Timeout: RequesterKeepaliveTimeout,
 		}),
 	); err != nil {
-		Logger.Error("Could not dial to highway grpc server:", err, hwAddrInfo.ID)
+		Logger.Error("Could not dial to highway grpc server:", err, hwAddrInfo.ID, id)
 	}
 	cancel()
 	if (conn != nil) && (conn.GetState() != connectivity.Ready) {
@@ -408,12 +409,12 @@ func (c *BlockRequester) retryDial(retryFailedCounter int, hwAddrInfo *peer.Addr
 	if (conn != nil) && (conn.GetState() == connectivity.Ready) {
 		return conn, 0, nil
 	}
-	Logger.Error("Could not dial to highway grpc server:", err, hwAddrInfo.ID)
+	Logger.Error("Could not dial to highway grpc server:", err, hwAddrInfo.ID, id)
 	return nil, retryFailedCounter + 1, err
 }
 
-func (c *BlockRequester) WatchConnection(currentHW peer.ID) {
-	x := common.RandInt()
+func (c *BlockRequester) WatchConnection(currentHW peer.ID, id int) {
+	x := id
 	c.isRunning = true
 	Logger.Infof("[debugGRPC] Start WatchConnection to HW %v - %v", currentHW.Pretty(), x)
 	defer Logger.Infof("[debugGRPC] End WatchConnection to HW %v - %v", currentHW.Pretty(), x)
@@ -421,10 +422,10 @@ func (c *BlockRequester) WatchConnection(currentHW peer.ID) {
 	defer ticker.Stop()
 	reqRetry := make(chan bool)
 	ctx, cancel := context.WithCancel(context.Background())
-	Logger.Infof("%v", ctx)
-	Logger.Infof("%v", currentHW)
-	Logger.Infof("%v", reqRetry)
-	Logger.Infof("%v", c.conn)
+	Logger.Infof("%v - %v", ctx, x)
+	Logger.Infof("%v - %v", currentHW, x)
+	Logger.Infof("%v - %v", reqRetry, x)
+	Logger.Infof("%v - %v", c.conn, x)
 	go c.watchConnection(ctx, currentHW, reqRetry, x)
 	needToRetry := false
 	failedCounter := 0
@@ -432,8 +433,8 @@ func (c *BlockRequester) WatchConnection(currentHW peer.ID) {
 		select {
 		case <-ticker.C:
 			if needToRetry {
-				Logger.Infof("[debugGRPC] needtoRetry: retry dial to new HW %v", currentHW.Pretty())
-				conn, failedCounter, err := c.retryDial(failedCounter, &peer.AddrInfo{ID: currentHW})
+				Logger.Infof("[debugGRPC] needtoRetry: retry dial to new HW %v - %v", currentHW.Pretty(), x)
+				conn, failedCounter, err := c.retryDial(failedCounter, &peer.AddrInfo{ID: currentHW}, x)
 				if failedCounter >= MaxConnectionRetry {
 					if c.disconnectNoti != nil {
 						c.disconnectNoti <- true
@@ -443,14 +444,14 @@ func (c *BlockRequester) WatchConnection(currentHW peer.ID) {
 					return
 				} else {
 					if (err == nil) && (conn != nil) {
-						Logger.Infof("[debugGRPC]  needtoRetry: retry ok, connected to new HW %v, conn %v", currentHW.Pretty(), conn)
+						Logger.Infof("[debugGRPC]  needtoRetry: retry ok, connected to new HW %v, conn %v - %v", currentHW.Pretty(), conn, x)
 						c.Lock()
 						c.conn = conn
 						c.Unlock()
 						go c.watchConnection(ctx, currentHW, reqRetry, x)
 						needToRetry = false
 					} else {
-						Logger.Errorf("Retry connection failed %v times, error %v", failedCounter, err)
+						Logger.Errorf("Retry connection failed %v times, error %v, %v", failedCounter, err, x)
 					}
 				}
 
@@ -458,13 +459,13 @@ func (c *BlockRequester) WatchConnection(currentHW peer.ID) {
 		case <-c.stop:
 			Logger.Infof("[debugGRPC] Received stop WatchConnection signal, id %v", x)
 			cancel()
-			c.closeConnection()
+			c.closeConnection(x)
 			c.isRunning = false
 			Logger.Infof("[debugGRPC] Received stop WatchConnection signal, id %v DONE", x)
 			return
 		case <-reqRetry:
 			Logger.Infof("[debugGRPC] Received requestRetry WatchConnection signal, id %v", x)
-			c.closeConnection()
+			c.closeConnection(x)
 			needToRetry = true
 		}
 	}
