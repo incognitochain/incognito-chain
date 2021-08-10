@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 	"time"
 
@@ -112,8 +113,12 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 				firstInsert = false
 			} else {
 				validationMode := common.BYPASS_VALIDATION
-				if batchingValidate == false {
-					validationMode = common.BASIC_VALIDATION
+				if config.Config().IsFullValidation { // node run with mode full validation
+					validationMode = common.FULL_VALIDATION
+				} else { //else only run basic validation if block created less than 24h
+					if batchingValidate == false {
+						validationMode = common.BASIC_VALIDATION
+					}
 				}
 				err = chain.InsertBlock(v, validationMode)
 			}
