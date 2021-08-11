@@ -16,7 +16,7 @@ type AddOrderRequest struct {
 	SellAmount          uint64                              `json:"SellAmount"`
 	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
 	TradingFee          uint64                              `json:"TradingFee"`
-	RefundReceiver      map[common.Hash]privacy.OTAReceiver `json:"RefundReceiver"`
+	Receiver            map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
 	metadataCommon.MetadataBase
 }
 
@@ -35,7 +35,7 @@ func NewAddOrderRequest(
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
-		RefundReceiver:      refundRecv,
+		Receiver:            refundRecv,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -67,7 +67,7 @@ func (req *AddOrderRequest) CalculateSize() uint64 {
 
 func (req *AddOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	for currentTokenID, val := range req.RefundReceiver {
+	for currentTokenID, val := range req.Receiver {
 		if currentTokenID != common.PRVCoinID {
 			currentTokenID = common.ConfidentialAssetID
 		}

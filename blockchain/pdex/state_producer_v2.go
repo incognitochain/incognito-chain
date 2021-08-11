@@ -269,10 +269,14 @@ func (sp *stateProducerV2) trade(
 		if !ok {
 			return result, pairs, errors.New("Can not parse add liquidity metadata")
 		}
+		refundReceiver, exists := currentTrade.Receiver[currentTrade.TokenToSell]
+		if !exists {
+			return result, pairs, errors.New("Refund receiver not found in Trade Request")
+		}
 
 		currentAction := instruction.NewAction(
 			metadataPdexv3.RefundedTrade{
-				Receiver:    currentTrade.RefundReceiver,
+				Receiver:    refundReceiver,
 				TokenToSell: currentTrade.TokenToSell,
 				Amount:      currentTrade.SellAmount,
 			},
@@ -283,8 +287,9 @@ func (sp *stateProducerV2) trade(
 
 		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+		tradeOutputReceiver, exists := currentTrade.Receiver[tokenToBuy]
 		// anytime the trade handler fails, add a refund instruction
-		if err != nil {
+		if err != nil || !exists {
 			Logger.log.Warnf("Error preparing trade path: %v", err)
 			result = append(result, refundInst)
 			continue
@@ -292,17 +297,17 @@ func (sp *stateProducerV2) trade(
 
 		acceptedInst, _, err :=
 			v2.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee,
-				currentTrade.TradePath, currentTrade.Receiver, reserves,
+				currentTrade.TradePath, tradeOutputReceiver, reserves,
 				tradeDirections, tokenToBuy, orderbookList)
 		if err != nil {
 			Logger.log.Warnf("Error handling trade: %v", err)
 			result = append(result, refundInst)
 			continue
 		}
-
 		result = append(result, acceptedInst)
 	}
 
+	Logger.log.Debugf("Finished handling trade: %v", result)
 	return result, pairs, nil
 }
 
@@ -319,9 +324,9 @@ TransactionLoop:
 		}
 
 		// TODO : PRV-based fee
-		refundReceiver, exists := currentOrderReq.RefundReceiver[currentOrderReq.TokenToSell]
+		refundReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenToSell]
 		if !exists {
-			return result, pairs, errors.New("Receiver for fee refund not found")
+			return result, pairs, errors.New("Refund receiver not found in AddOrder Request")
 		}
 
 		currentAction := instruction.NewAction(
@@ -396,8 +401,8 @@ TransactionLoop:
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 		result = append(result, acceptedAction.StringSlice())
-
 	}
 
+	Logger.log.Debugf("Finished handling order: %v", result)
 	return result, pairs, nil
 }

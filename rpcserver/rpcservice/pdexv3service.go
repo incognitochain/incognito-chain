@@ -2,7 +2,7 @@ package rpcservice
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -33,6 +33,7 @@ func (blockService BlockService) GetPdexv3ParamsModifyingRequestStatus(reqTxID s
 	return &status, nil
 }
 
+// paramSelector helps to wrap transaction creation steps (v2 only)
 type paramSelector struct {
 	TokenID        common.Hash
 	PRV            *bean.CreateRawTxParam
@@ -46,11 +47,12 @@ func (sel *paramSelector) SetTokenID(id common.Hash)                  { sel.Toke
 func (sel *paramSelector) SetTokenReceivers(r []*privacy.PaymentInfo) { sel.TokenReceivers = r }
 func (sel *paramSelector) SetMetadata(md metadataCommon.Metadata)     { sel.Metadata = md }
 
+// PdexTxService extends TxService with wrappers to build TX with cleaner syntax
 type PdexTxService struct {
 	*TxService
 }
 
-func (svc *PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interface{}) (*paramSelector, error) {
+func (svc PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interface{}) (*paramSelector, error) {
 	var err error
 	// token id defaults to PRV
 	sel := paramSelector{TokenID: common.PRVCoinID}
@@ -65,9 +67,9 @@ func (svc *PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interfa
 
 	arrayParams := common.InterfaceSlice(raw)
 	if len(arrayParams) >= 5 {
-		rawMd, ok := arrayParams[4].(json.RawMessage)
-		if !ok {
-			return nil, errors.New("Cannot cast metadata")
+		rawMd, err := json.Marshal(arrayParams[4])
+		if err != nil {
+			return nil, fmt.Errorf("Cannot parse metadata - %v", err)
 		}
 		err = json.Unmarshal(rawMd, metadataReader)
 	}
@@ -75,12 +77,30 @@ func (svc *PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interfa
 	return &sel, err
 }
 
-func (svc PdexTxService) BuildTransaction(sel *paramSelector, md metadataCommon.Metadata) (metadataCommon.Transaction, *RPCError) {
+func (svc PdexTxService) BuildTransaction(
+	sel *paramSelector, md metadataCommon.Metadata,
+) (metadataCommon.Transaction, *RPCError) {
 	if sel.TokenID == common.PRVCoinID {
 		return svc.BuildRawTransaction(sel.PRV, md)
 	} else {
 		return buildTokenTransaction(svc, sel)
 	}
+}
+
+func (svc PdexTxService) GenerateOTAReceivers(
+	tokens []common.Hash, addr privacy.PaymentAddress,
+) (map[common.Hash]privacy.OTAReceiver, error) {
+	result := make(map[common.Hash]privacy.OTAReceiver)
+	var err error
+	for _, tokenID := range tokens {
+		temp := privacy.OTAReceiver{}
+		err = temp.FromAddress(addr)
+		if err != nil {
+			return nil, err
+		}
+		result[tokenID] = temp
+	}
+	return result, nil
 }
 
 func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommon.Transaction, *RPCError) {
@@ -97,6 +117,7 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 	if err != nil {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
+
 	var totalTokenTransferred uint64
 	for _, payment := range sel.TokenReceivers {
 		totalTokenTransferred += payment.Amount
@@ -107,6 +128,7 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 	if err != nil {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
+
 	tokenParams := &transaction.TokenParam{
 		TokenTxType: int(transaction.CustomTokenTransfer),
 		// amount will default to sum of payments

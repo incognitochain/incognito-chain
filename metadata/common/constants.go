@@ -167,6 +167,8 @@ var minerCreatedMetaTypes = []int{
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
 	InitTokenResponseMeta,
+	Pdexv3TradeResponseMeta,
+	Pdexv3AddOrderResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

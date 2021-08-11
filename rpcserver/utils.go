@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -177,4 +179,24 @@ type Pdexv3AddLiquidityRequest struct {
 	Amplifier   string `json:"Amplifier"`
 	PairHash    string `json:"PairHash"`
 	NftID       string `json:"NftID"`
+}
+
+// Uint64Reader wraps the unmarshaling of uint64 numbers from both integer & string formats.
+type Uint64Reader uint64
+
+func (u Uint64Reader) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u)
+}
+func (u *Uint64Reader) UnmarshalJSON(raw []byte) error {
+	var theNum uint64
+	err := json.Unmarshal(raw, &theNum)
+	if err != nil {
+		var theStr string
+		json.Unmarshal(raw, &theStr)
+		temp, err := strconv.ParseUint(theStr, 10, 64)
+		*u = Uint64Reader(temp)
+		return err
+	}
+	*u = Uint64Reader(theNum)
+	return err
 }

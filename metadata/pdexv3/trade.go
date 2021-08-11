@@ -11,31 +11,31 @@ import (
 
 // TradeRequest
 type TradeRequest struct {
-	TradePath           []string            `json:"TradePath"`
-	TokenToSell         common.Hash         `json:"TokenToSell"`
-	SellAmount          uint64              `json:"SellAmount"`
-	MinAcceptableAmount uint64              `json:"MinAcceptableAmount"`
-	TradingFee          uint64              `json:"TradingFee"`
-	Receiver            privacy.OTAReceiver `json:"Receiver"`
-	RefundReceiver      privacy.OTAReceiver `json:"RefundReceiver"`
+	TradePath           []string                            `json:"TradePath"`
+	TokenToSell         common.Hash                         `json:"TokenToSell"`
+	SellAmount          uint64                              `json:"SellAmount"`
+	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
+	TradingFee          uint64                              `json:"TradingFee"`
+	Receiver            map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
 	metadataCommon.MetadataBase
 }
 
 func NewTradeRequest(
 	tradePath []string,
+	tokenToSell common.Hash,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	tradingFee uint64,
-	recv, refundRecv privacy.OTAReceiver,
+	recv map[common.Hash]privacy.OTAReceiver,
 	metaType int,
 ) (*TradeRequest, error) {
 	pdeTradeRequest := &TradeRequest{
 		TradePath:           tradePath,
+		TokenToSell:         tokenToSell,
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
 		Receiver:            recv,
-		RefundReceiver:      refundRecv,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -67,11 +67,13 @@ func (req *TradeRequest) CalculateSize() uint64 {
 
 func (req TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	sellingToken := common.ConfidentialAssetID
-	if req.TokenToSell == common.PRVCoinID {
-		sellingToken = common.PRVCoinID
+	for currentTokenID, val := range req.Receiver {
+		if currentTokenID != common.PRVCoinID {
+			currentTokenID = common.ConfidentialAssetID
+		}
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
 	}
-	result = append(result, metadataCommon.OTADeclaration{PublicKey: req.Receiver.PublicKey.ToBytes(), TokenID: sellingToken})
-	result = append(result, metadataCommon.OTADeclaration{PublicKey: req.RefundReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID})
 	return result
 }
