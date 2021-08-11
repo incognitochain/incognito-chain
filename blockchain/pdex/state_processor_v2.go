@@ -202,7 +202,11 @@ func (sp *stateProcessorV2) matchContribution(
 		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-	_, nftIDs, err = poolPair.addShare(existedWaitingContribution.NftID(), nftIDs, shareAmount, beaconHeight)
+	_, nftIDs, err = poolPair.addShare(
+		existedWaitingContribution.NftID(),
+		nftIDs, shareAmount, beaconHeight,
+		existedWaitingContribution.TxReqID().String(),
+	)
 
 	if err != nil {
 		return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
@@ -276,6 +280,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			nftIDs,
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
+			waitingContribution.TxReqID().String(),
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
@@ -445,6 +450,13 @@ func (sp *stateProcessorV2) trade(
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
+}
+
+func (sp *stateProcessorV2) withdrawLiquidity(
+	stateDB *statedb.StateDB,
+	inst []string,
+) error {
+	return nil
 }
 
 func (sp *stateProcessorV2) addOrder(

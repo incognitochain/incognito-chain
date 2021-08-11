@@ -126,15 +126,16 @@ func newPdexv3TradingFeeObjectWithValue(db *StateDB, key common.Hash, data inter
 	}, nil
 }
 
-func generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID string, beaconHeight uint64) []byte {
-	str := string(GetPdexv3TradingFeesPrefix()) + "-" + poolPairID + "-" + nftID
-	temp := append([]byte(str), common.Uint64ToBytes(beaconHeight)...)
-	h := common.HashH(temp)
+func generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID, txHash string) []byte {
+	b := append(GetPdexv3TradingFeesPrefix(), []byte(poolPairID)...)
+	b = append(b, []byte(nftID)...)
+	b = append(b, []byte(txHash)...)
+	h := common.HashH(b)
 	return h[:prefixHashKeyLength]
 }
 
-func GeneratePdexv3TradingFeesObjectKey(poolPairID, nftID, tokenID string, beaconHeight uint64) common.Hash {
-	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID, beaconHeight)
+func GeneratePdexv3TradingFeesObjectKey(poolPairID, nftID, tokenID, txHash string) common.Hash {
+	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID, txHash)
 	valueHash := common.HashH([]byte(tokenID))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }

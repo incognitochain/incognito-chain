@@ -1939,10 +1939,10 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pd
 }
 
 func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte, nftIDs map[string]bool) (
-	map[string]map[uint64]Pdexv3ShareState,
+	map[string]map[string]Pdexv3ShareState,
 	error,
 ) {
-	shares := map[string]map[uint64]Pdexv3ShareState{}
+	shares := map[string]map[string]Pdexv3ShareState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -1956,9 +1956,9 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte, nftIDs map[string
 		}
 		nftIDs[shareState.nftID.String()] = true
 		if shares[shareState.nftID.String()] == nil {
-			shares[shareState.nftID.String()] = make(map[uint64]Pdexv3ShareState)
+			shares[shareState.nftID.String()] = make(map[string]Pdexv3ShareState)
 		}
-		shares[shareState.nftID.String()][shareState.beaconHeight] = *shareState
+		shares[shareState.nftID.String()][shareState.txHash.String()] = *shareState
 	}
 	return shares, nil
 }

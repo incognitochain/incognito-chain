@@ -19,7 +19,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 
 	type fields struct {
 		state  rawdbv2.Pdexv3PoolPair
-		shares map[string]map[uint64]*Share
+		shares map[string]map[string]*Share
 	}
 	type args struct {
 		token0ID     string
@@ -44,9 +44,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(800),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -62,9 +62,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(1200),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -90,9 +90,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(800),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -108,9 +108,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(1200),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -164,7 +164,7 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 
 	type fields struct {
 		state  rawdbv2.Pdexv3PoolPair
-		shares map[string]map[uint64]*Share
+		shares map[string]map[string]*Share
 	}
 	type args struct {
 		amount0 uint64
@@ -186,9 +186,9 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(800),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -224,7 +224,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 
 	type fields struct {
 		state  rawdbv2.Pdexv3PoolPair
-		shares map[string]map[uint64]*Share
+		shares map[string]map[string]*Share
 	}
 	type args struct {
 		amount0     uint64
@@ -247,9 +247,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -265,9 +265,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -291,9 +291,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(800),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,
@@ -309,9 +309,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(1200),
 					20000,
 				),
-				shares: map[string]map[uint64]*Share{
-					"123": map[uint64]*Share{
-						10: &Share{
+				shares: map[string]map[string]*Share{
+					"123": map[string]*Share{
+						"10": &Share{
 							amount:                  200,
 							tradingFees:             map[string]uint64{},
 							lastUpdatedBeaconHeight: 10,

@@ -25,7 +25,6 @@ func (txBuilder *TxBuilderV2) Build(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
-
 	var tx metadata.Transaction
 	var err error
 
@@ -44,6 +43,16 @@ func (txBuilder *TxBuilderV2) Build(
 			tx, err = buildRefundContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
 		case common.PDEContributionMatchedNReturnedChainStatus:
 			tx, err = buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
+		}
+	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
+		if len(inst) != 3 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
+		}
+		switch inst[1] {
+		case common.PDEWithdrawalAcceptedChainStatus:
+			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB)
+		case common.PDEWithdrawalRejectedChainStatus:
+			tx, err = buildRejectedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB)
 		}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
@@ -195,4 +204,22 @@ func buildMintTokenTxs(
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
 		return meta
 	})
+}
+
+func buildAcceptedWithdrawLiquidity(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	return nil, nil
+}
+
+func buildRejectedWithdrawLiquidity(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	return nil, nil
 }

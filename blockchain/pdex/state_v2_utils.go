@@ -74,36 +74,36 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 
 func (share *Share) getDiff(
 	nftID string,
-	beaconHeight uint64,
+	txHash string,
 	compareShare *Share,
 	stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
 	if stateChange.shares[nftID] == nil {
-		stateChange.shares[nftID] = make(map[uint64]*ShareChange)
+		stateChange.shares[nftID] = make(map[string]*ShareChange)
 	}
 	if compareShare == nil {
-		newStateChange.shares[nftID][beaconHeight] = &ShareChange{
+		newStateChange.shares[nftID][txHash] = &ShareChange{
 			isChanged: true,
 		}
 		for tokenID := range share.tradingFees {
-			if newStateChange.shares[nftID][beaconHeight].tokenIDs == nil {
-				newStateChange.shares[nftID][beaconHeight].tokenIDs = make(map[string]bool)
+			if newStateChange.shares[nftID][txHash].tokenIDs == nil {
+				newStateChange.shares[nftID][txHash].tokenIDs = make(map[string]bool)
 			}
-			newStateChange.shares[nftID][beaconHeight].tokenIDs[tokenID] = true
+			newStateChange.shares[nftID][txHash].tokenIDs[tokenID] = true
 		}
 	} else {
 		if share.amount != compareShare.amount || share.lastUpdatedBeaconHeight != compareShare.lastUpdatedBeaconHeight {
-			newStateChange.shares[nftID][beaconHeight] = &ShareChange{
+			newStateChange.shares[nftID][txHash] = &ShareChange{
 				isChanged: true,
 			}
 		}
 		for k, v := range share.tradingFees {
 			if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
-				if newStateChange.shares[nftID][beaconHeight].tokenIDs == nil {
-					newStateChange.shares[nftID][beaconHeight].tokenIDs = make(map[string]bool)
+				if newStateChange.shares[nftID][txHash].tokenIDs == nil {
+					newStateChange.shares[nftID][txHash].tokenIDs = make(map[string]bool)
 				}
-				newStateChange.shares[nftID][beaconHeight].tokenIDs[k] = true
+				newStateChange.shares[nftID][txHash].tokenIDs[k] = true
 			}
 		}
 	}
@@ -123,14 +123,14 @@ type ShareChange struct {
 
 type StateChange struct {
 	poolPairIDs map[string]bool
-	shares      map[string]map[uint64]*ShareChange
+	shares      map[string]map[string]*ShareChange
 	orders      map[string]map[int]bool
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
 		poolPairIDs: make(map[string]bool),
-		shares:      make(map[string]map[uint64]*ShareChange),
+		shares:      make(map[string]map[string]*ShareChange),
 		orders:      make(map[string]map[int]bool),
 	}
 }

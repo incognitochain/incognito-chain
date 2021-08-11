@@ -240,6 +240,7 @@ const (
 	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
 	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
 	pdexv3AddLiquidityV3                  = "pdexv3_txAddLiquidity"
+	pdexv3WithdrawLiquidityV3             = "pdexv3_txWithdrawLiquidity"
 	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
 
 	// get burning address
