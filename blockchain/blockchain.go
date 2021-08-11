@@ -982,44 +982,37 @@ func (blockchain *BlockChain) getShardCommitteeFromBeaconHash(
 ) (
 	[]incognitokey.CommitteePublicKey, error,
 ) {
-	tempCommitteeInfo, err := blockchain.getShardCommitteeForBlockProducing(hash, shardID)
+	committees, err := blockchain.getShardCommitteeForBlockProducing(hash, shardID)
 	if err != nil {
 		return []incognitokey.CommitteePublicKey{}, err
 	}
-	return tempCommitteeInfo.Committees(), nil
+	return committees, nil
 }
 
 func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
 	hash common.Hash, shardID byte,
-) (*committeestate.ShardCommitteeForBlockProducing, error) {
-	shardCommitteeForBlockProducing := committeestate.NewTempCommitteeInfo()
+) ([]incognitokey.CommitteePublicKey, error) {
+	committees := []incognitokey.CommitteePublicKey{}
 	res, has := blockchain.BeaconChain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
 	if !has {
-		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(hash)
-		if err != nil {
-			return shardCommitteeForBlockProducing, err
-		}
-
 		bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), hash)
 		if err != nil {
-			return shardCommitteeForBlockProducing, err
+			return committees, err
 		}
 
 		stateDB, err := statedb.NewWithPrefixTrie(
 			bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 		if err != nil {
-			return shardCommitteeForBlockProducing, err
+			return committees, err
 		}
-		committees := statedb.GetOneShardCommittee(stateDB, shardID)
+		committees = statedb.GetOneShardCommittee(stateDB, shardID)
 
-		shardCommitteeForBlockProducing = committeestate.NewTempCommitteeInfoWithValue(
-			hash, committees, shardID, beaconBlock.Header.Height)
-		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), shardCommitteeForBlockProducing)
+		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
 	} else {
-		shardCommitteeForBlockProducing = res.(*committeestate.ShardCommitteeForBlockProducing)
+		committees = res.([]incognitokey.CommitteePublicKey)
 	}
 
-	return shardCommitteeForBlockProducing, nil
+	return committees, nil
 }
 
 // AddFinishedSyncValidators add finishedSyncValidators from message to all current beacon views

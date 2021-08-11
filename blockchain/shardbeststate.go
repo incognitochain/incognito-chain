@@ -601,27 +601,26 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	case committeestate.SELF_SWAP_SHARD_VERSION:
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	case committeestate.SLASHING_VERSION:
-		shardCommitteeForBlockProducing, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
-		return shardCommitteeForBlockProducing.Committees(), shardCommitteeForBlockProducing.Committees(), nil
+		return committees, committees, nil
 	case committeestate.DCS_VERSION:
-		shardCommitteeForBlockProducing, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
-		committees := shardCommitteeForBlockProducing.Committees()
 		timeSlot := common.CalculateTimeSlot(shardBlock.Header.ProposeTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
 			GetProposerLength(),
 		)
-		res := FilterSigningCommitteeV3(
-			shardCommitteeForBlockProducing.Committees(),
+		signingCommitteeV3 := FilterSigningCommitteeV3(
+			committees,
 			proposerIndex)
-		return shardCommitteeForBlockProducing.Committees(), res, nil
+		return committees, signingCommitteeV3, nil
 	default:
 		panic("shardBestState.CommitteeState is not a valid version")
 	}
