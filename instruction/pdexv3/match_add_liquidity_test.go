@@ -1,24 +1,34 @@
 package pdexv3
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
-	metaData := metadataPdexv3.NewAddLiquidityWithValue(
-		"pool_pair_id", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
-		common.PRVIDStr, 300, 10000,
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
+	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id", common.PRVCoinID)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
-		Base          Base
+		contribution  statedb.Pdexv3ContributionState
 		newPoolPairID string
-		nfctID        string
+		nftID         common.Hash
 	}
 	type args struct {
 		source []string
@@ -31,117 +41,49 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "Length of source < 4",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
+			name:    "Invalid length",
+			fields:  fields{},
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name:   "Invalid metadata type",
+			fields: fields{},
 			args: args{
-				source: []string{},
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
+					common.PDEContributionRefundChainStatus,
+					string(data),
+				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Invalid Base Instruction",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
+			name:   "Invalid status",
+			fields: fields{},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
+					common.PDEContributionMatchedNReturnedChainStatus,
+					string(data),
 				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			fieldsAfterProcess: fields{
+				contribution:  contributionState,
+				newPoolPairID: "pool_pair_id",
+				nftID:         common.PRVCoinID,
 			},
 			args: args{
 				source: []string{
-					"",
-					"",
-					"",
-					"",
-					"",
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionMatchedChainStatus,
+					string(data),
 				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Pool pair id is empty",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"", common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid Token ID",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"new_pool_pair_id", "basv",
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Empty Token ID",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"new_pool_pair_id", common.Hash{}.String(),
-					strconv.Itoa(common.PDEContributionMatchedNReturnedStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid status",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"new_pool_pair_id", common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionRefundStatus)),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Valid Input",
-			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1",
-					"new_pool_pair_id", common.PRVCoinID.String(),
-					strconv.Itoa(common.PDEContributionAcceptedStatus),
-				),
-			},
-			fieldsAfterProcess: fields{
-				Base: Base{
-					metaData: metaData,
-					txReqID:  "tx_req_id",
-					shardID:  1,
-				},
-				newPoolPairID: "new_pool_pair_id",
-				nfctID:        common.PRVCoinID.String(),
 			},
 			wantErr: false,
 		},
@@ -149,31 +91,24 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MatchAddLiquidity{
-				Base:          tt.fields.Base,
+				contribution:  tt.fields.contribution,
 				newPoolPairID: tt.fields.newPoolPairID,
-				nfctID:        tt.fields.nfctID,
+				nftID:         tt.fields.nftID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.metaData, tt.fieldsAfterProcess.Base.metaData) {
-				t.Errorf("metaData got = %v, expected = %v", m.metaData, tt.fieldsAfterProcess.Base.metaData)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(m.txReqID, tt.fieldsAfterProcess.Base.txReqID) {
-				t.Errorf("txReqID got = %v, expected = %v", m.txReqID, tt.fieldsAfterProcess.Base.txReqID)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(m.shardID, tt.fieldsAfterProcess.Base.shardID) {
-				t.Errorf("shardID got = %v, expected = %v", m.shardID, tt.fieldsAfterProcess.Base.shardID)
+			if !tt.wantErr && !reflect.DeepEqual(m.contribution, tt.fieldsAfterProcess.contribution) {
+				t.Errorf("contribution expect = %v, but get %v", tt.fieldsAfterProcess.contribution, m.contribution)
 				return
 			}
 			if !tt.wantErr && !reflect.DeepEqual(m.newPoolPairID, tt.fieldsAfterProcess.newPoolPairID) {
-				t.Errorf("newPoolPairID got = %v, expected = %v", m.newPoolPairID, tt.fieldsAfterProcess.newPoolPairID)
+				t.Errorf("newPoolPairID expect = %v, but get %v", tt.fieldsAfterProcess.newPoolPairID, m.newPoolPairID)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(m.nfctID, tt.fieldsAfterProcess.nfctID) {
-				t.Errorf("nfctID got = %v, expected = %v", m.nfctID, tt.fieldsAfterProcess.nfctID)
+			if !tt.wantErr && !reflect.DeepEqual(m.nftID, tt.fieldsAfterProcess.nftID) {
+				t.Errorf("nftID expect = %v, but get %v", tt.fieldsAfterProcess.nftID, m.nftID)
 				return
 			}
 		})
@@ -181,45 +116,55 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 }
 
 func TestMatchAddLiquidity_StringSlice(t *testing.T) {
-	metaData := metadataPdexv3.NewAddLiquidityWithValue(
-		"pool_pair_id", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
-		common.PRVIDStr, 300, 10000,
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
+	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id", common.PRVCoinID)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
-		Base          Base
+		contribution  statedb.Pdexv3ContributionState
 		newPoolPairID string
-		nfctID        string
+		nftID         common.Hash
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []string
+		name    string
+		fields  fields
+		want    []string
+		wantErr bool
 	}{
 		{
 			name: "Valid Input",
 			fields: fields{
-				Base: Base{
-					metaData: metaData,
-					txReqID:  "tx_req_id",
-					shardID:  1,
-				},
-				newPoolPairID: "new_pool_pair_id",
-				nfctID:        "nfct_id",
+				contribution:  contributionState,
+				newPoolPairID: "pool_pair_id",
+				nftID:         common.PRVCoinID,
 			},
-			want: append(metaData.StringSlice(),
-				"tx_req_id", "1",
-				"new_pool_pair_id", "nfct_id", strconv.Itoa(common.PDEContributionAcceptedStatus)),
+			want: []string{
+				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+				common.PDEContributionMatchedChainStatus,
+				string(data),
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MatchAddLiquidity{
-				Base:          tt.fields.Base,
+				contribution:  tt.fields.contribution,
 				newPoolPairID: tt.fields.newPoolPairID,
-				nfctID:        tt.fields.nfctID,
+				nftID:         tt.fields.nftID,
 			}
-			if got := m.StringSlice(); !reflect.DeepEqual(got, tt.want) {
+			got, err := m.StringSlice()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MatchAddLiquidity.StringSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MatchAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
 			}
 		})

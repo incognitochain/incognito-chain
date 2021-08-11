@@ -4,20 +4,42 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
 )
 
-const (
-	paymentAddress0 = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
-	tempPToken      = "41fe8c2f89cce24c0b798ec0fa10ac9cd6f0d273249922e92cb26412df989830"
+var (
+	wrarperDB statedb.DatabaseAccessWarper
+	diskDB    incdb.Database
 )
+
+const (
+	paymentAddress0   = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
+	tempPToken        = "41fe8c2f89cce24c0b798ec0fa10ac9cd6f0d273249922e92cb26412df989830"
+	validOTAReceiver0 = "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
+	validOTAReceiver1 = "15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP"
+	nftID             = "9b2966a3ef898ebcd1fc41369cd00165624e6d8f555cdd7a2aae274380b1ea79"
+	nftID1            = "06b9bb459f200a5db378630186f595da2944959813ee3b2d3d0a4f1519bfda8e"
+	poolPairID        = "0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000456-0000000000000000000000000000000000000000000000000000000000000abc"
+)
+
+func initDB() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "data")
+	if err != nil {
+		panic(err)
+	}
+	diskDB, _ = incdb.Open("leveldb", dbPath)
+	wrarperDB = statedb.NewDatabaseAccessWarper(diskDB)
+}
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
 // create roll files in the same directory.  It must be called before the

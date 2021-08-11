@@ -170,11 +170,11 @@ func interfaceAddrs() ([]net.Addr, error) {
 	return net.InterfaceAddrs()
 }
 
-type PDEAddLiquidityV3Request struct {
+type Pdexv3AddLiquidityRequest struct {
 	TokenID     string `json:"TokenID"`
 	TokenAmount string `json:"TokenAmount"`
 	PoolPairID  string `json:"PoolPairID"`
 	Amplifier   string `json:"Amplifier"`
 	PairHash    string `json:"PairHash"`
-	Fee         string `json:"Fee"`
+	NftID       string `json:"NftID"`
 }

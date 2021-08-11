@@ -1,10 +1,5 @@
 package pdex
 
-import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-)
-
 type State interface {
 	Version() uint
 	Clone() State
@@ -20,12 +15,8 @@ type State interface {
 
 type StateReader interface {
 	Params() Params
-	WaitingContributionsV1() map[string]*rawdbv2.PDEContribution
-	DeletedWaitingContributionsV1() map[string]*rawdbv2.PDEContribution
-	PoolPairsV1() map[string]*rawdbv2.PDEPoolForPair
-	WaitingContributionsV2() map[string]statedb.Pdexv3ContributionState
-	DeletedWaitingContributionsV2() map[string]statedb.Pdexv3ContributionState
-	PoolPairsV2() map[string]PoolPairState
+	WaitingContributions() []byte
+	PoolPairs() []byte
 	Shares() map[string]uint64
 	TradingFees() map[string]uint64
 }

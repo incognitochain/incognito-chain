@@ -607,11 +607,11 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, 
 		new(big.Int).SetUint64(uint64(metadataPdexV3.BaseAmplifier)),
 	)
 	vAmount1.Mul(
-		new(big.Int).SetUint64(amount0),
+		new(big.Int).SetUint64(amount1),
 		new(big.Int).SetUint64(uint64(amplifier)),
 	)
 	vAmount1.Div(
-		vAmount0,
+		vAmount1,
 		new(big.Int).SetUint64(uint64(metadataPdexV3.BaseAmplifier)),
 	)
 
@@ -621,7 +621,7 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, 
 func tradePathFromState(
 	sellToken common.Hash,
 	tradePath []string,
-	pairs map[string]PoolPairState,
+	pairs map[string]*PoolPairState,
 ) ([]*rawdbv2.Pdexv3PoolPair, []v2.OrderBookIterator, []byte, common.Hash, error) {
 	var results []*rawdbv2.Pdexv3PoolPair
 	var orderbookList []v2.OrderBookIterator
@@ -651,4 +651,19 @@ func tradePathFromState(
 		}
 	}
 	return results, orderbookList, tradeDirections, nextTokenToSell, nil
+}
+
+func genNFT(nftID common.Hash, nftIDs map[string]bool, beaconHeight uint64) common.Hash {
+	if !nftID.IsZeroValue() {
+		return common.Hash{}
+	}
+	hash := append(common.Uint64ToBytes(uint64(len(nftIDs))), common.Uint64ToBytes(beaconHeight)...)
+	return common.HashH(append(hashPrefix, hash...))
+}
+
+func chooseNftStr(oldNftID, newNftID common.Hash) string {
+	if newNftID.IsZeroValue() {
+		return oldNftID.String()
+	}
+	return newNftID.String()
 }

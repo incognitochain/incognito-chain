@@ -713,11 +713,23 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
+
+	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
+	err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	waitingContributions := make(map[string]*rawdbv2.PDEContribution)
+	err = json.Unmarshal(pdeState.Reader().WaitingContributions(), &waitingContributions)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+
 	result := jsonresult.CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
-		PDEPoolPairs:            pdeState.Reader().PoolPairsV1(),
+		PDEPoolPairs:            poolPairs,
 		PDEShares:               pdeState.Reader().Shares(),
-		WaitingPDEContributions: pdeState.Reader().WaitingContributionsV1(),
+		WaitingPDEContributions: waitingContributions,
 		PDETradingFees:          pdeState.Reader().TradingFees(),
 	}
 	return result, nil
@@ -1250,7 +1262,12 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	poolPairs := pdeState.Reader().PoolPairsV1()
+	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
+	err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+
 	results := []*ConvertedPrice{}
 	if toTokenIDStr != "all" {
 		convertedPrice := convertPrice(

@@ -23,7 +23,6 @@ func (txBuilder *TxBuilderV1) Build(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 
 	var tx metadata.Transaction
@@ -31,80 +30,85 @@ func (txBuilder *TxBuilderV1) Build(
 
 	switch metaType {
 	case metadata.PDETradeRequestMeta:
-		if len(inst) == 4 {
-			tx, err = buildTradeIssuanceTx(
-				inst[2],
-				inst[3],
-				producerPrivateKey,
-				shardID,
-				transactionStateDB,
-				featureStateDB,
-			)
-		} else {
+		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		tx, err = buildTradeIssuanceTx(
+			inst[2],
+			inst[3],
+			producerPrivateKey,
+			shardID,
+			transactionStateDB,
+		)
+		if err != nil {
+			return tx, err
 		}
 	case metadata.PDECrossPoolTradeRequestMeta:
-		if len(inst) == 4 {
-			tx, err = buildCrossPoolTradeIssuanceTx(
-				inst[2],
+		if len(inst) != 4 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		tx, err = buildCrossPoolTradeIssuanceTx(
+			inst[2],
+			inst[3],
+			producerPrivateKey,
+			shardID,
+			transactionStateDB,
+		)
+		if err != nil {
+			return tx, err
+		}
+	case metadata.PDEWithdrawalRequestMeta:
+		if len(inst) != 4 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		if inst[2] == common.PDEWithdrawalAcceptedChainStatus {
+			tx, err = buildWithdrawalTx(
 				inst[3],
 				producerPrivateKey,
 				shardID,
 				transactionStateDB,
-				featureStateDB,
 			)
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
-		}
-	case metadata.PDEWithdrawalRequestMeta:
-		if len(inst) == 4 {
-			if inst[2] == common.PDEWithdrawalAcceptedChainStatus {
-				tx, err = buildWithdrawalTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
+			if err != nil {
+				return tx, err
 			}
-		} else {
-			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	case metadata.PDEFeeWithdrawalRequestMeta:
-		if len(inst) == 4 {
-			if inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
-				tx, err = buildFeeWithdrawalTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
-			}
-		} else {
+		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
+		tx, err = buildFeeWithdrawalTx(
+			inst[3],
+			producerPrivateKey,
+			shardID,
+			transactionStateDB,
+		)
+		if err != nil {
+			return tx, err
+		}
 	case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-		if len(inst) == 4 {
-			if inst[2] == common.PDEContributionRefundChainStatus {
-				tx, err = buildRefundContributionTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
-			} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
-				tx, err = buildMatchedAndReturnedContributionTx(
-					inst[3],
-					producerPrivateKey,
-					shardID,
-					transactionStateDB,
-					featureStateDB,
-				)
-			}
-		} else {
+		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+		if inst[2] == common.PDEContributionRefundChainStatus {
+			tx, err = buildRefundContributionTx(
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+			if err != nil {
+				return tx, err
+			}
+		} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
+			tx, err = buildMatchedAndReturnedContributionTx(
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+			if err != nil {
+				return tx, err
+			}
 		}
 	}
 
@@ -117,7 +121,6 @@ func buildTradeIssuanceTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Trade] Starting...")
 	if instStatus == common.PDETradeRefundChainStatus {
@@ -127,7 +130,6 @@ func buildTradeIssuanceTx(
 			producerPrivateKey,
 			shardID,
 			transactionStateDB,
-			featureStateDB,
 		)
 	}
 	return buildTradeAcceptedTx(
@@ -136,7 +138,6 @@ func buildTradeIssuanceTx(
 		producerPrivateKey,
 		shardID,
 		transactionStateDB,
-		featureStateDB,
 	)
 }
 
@@ -146,7 +147,6 @@ func buildTradeRefundTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	tradeRequestAction, err := parseTradeRefundContent(contentStr)
 	if err != nil {
@@ -186,7 +186,6 @@ func buildTradeAcceptedTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	tradeAcceptedContent, err := parseTradeAcceptedContent(contentStr)
 	if err != nil {
@@ -319,7 +318,6 @@ func buildCrossPoolTradeIssuanceTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Cross Pool Trade] Starting...")
 	if instStatus == common.PDECrossPoolTradeFeeRefundChainStatus || instStatus == common.PDECrossPoolTradeSellingTokenRefundChainStatus {
@@ -329,7 +327,6 @@ func buildCrossPoolTradeIssuanceTx(
 			producerPrivateKey,
 			shardID,
 			transactionStateDB,
-			featureStateDB,
 		)
 	}
 	return buildCrossPoolTradeAcceptedTx(
@@ -338,7 +335,6 @@ func buildCrossPoolTradeIssuanceTx(
 		producerPrivateKey,
 		shardID,
 		transactionStateDB,
-		featureStateDB,
 	)
 }
 
@@ -348,7 +344,6 @@ func buildCrossPoolTradeRefundTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	crossPoolTradeRefundContent, err := parseCrossPoolTradeRefundContent(contentStr)
 	if err != nil {
@@ -387,7 +382,6 @@ func buildCrossPoolTradeAcceptedTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	crossPoolTradeAcceptedContents, err := parseCrossPoolTradeAcceptedContent(contentStr)
 	if err != nil {
@@ -433,7 +427,6 @@ func buildWithdrawalTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Withdrawal] Starting...")
 	contentBytes := []byte(contentStr)
@@ -480,7 +473,6 @@ func buildFeeWithdrawalTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Fee Withdrawal] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -529,7 +521,6 @@ func buildRefundContributionTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Refund contribution] Starting...")
 	contentBytes := []byte(contentStr)
@@ -578,7 +569,6 @@ func buildMatchedAndReturnedContributionTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Matched and Returned contribution] Starting...")
 	contentBytes := []byte(contentStr)
