@@ -401,10 +401,16 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*types.BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
+	curView *ShardBestState,
+	beaconBlocks []*types.BeaconBlock,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) ([]metadata.Transaction, [][]string, error) {
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
+
 	for _, beaconBlock := range beaconBlocks {
 		blockHash := beaconBlock.Header.Hash()
 		beaconRootHashes, err := GetBeaconRootsHashByBlockHash(
@@ -419,6 +425,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 		if err != nil {
 			return nil, nil, err
 		}
+
 		for _, inst := range beaconBlock.Body.Instructions {
 			if len(inst) <= 2 {
 				continue
@@ -512,24 +519,22 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 			default:
 				if metadataCommon.IsPDEType(metaType) {
-					txBuilder := new(pdex.TxBuilderV1)
-					newTx, err = txBuilder.Build(
+					pdeTxBuilderV1 := pdex.TxBuilderV1{}
+					newTx, err = pdeTxBuilderV1.Build(
 						metaType,
 						inst,
 						producerPrivateKey,
 						shardID,
 						curView.GetCopiedTransactionStateDB(),
-						featureStateDB,
 					)
 				} else if metadataCommon.IsPdexv3Type(metaType) {
-					txBuilder := new(pdex.TxBuilderV2)
-					newTx, err = txBuilder.Build(
+					pdeTxBuilderV2 := pdex.TxBuilderV2{}
+					newTx, err = pdeTxBuilderV2.Build(
 						metaType,
 						inst,
 						producerPrivateKey,
 						shardID,
 						curView.GetCopiedTransactionStateDB(),
-						featureStateDB,
 					)
 				}
 			}

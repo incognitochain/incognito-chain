@@ -64,11 +64,12 @@ const (
 	Pdexv3AddOrderResponseMeta            = 278
 	Pdexv3WithdrawOrderRequestMeta        = 279
 	Pdexv3WithdrawOrderResponseMeta       = 280
-	Pdexv3WithdrawLPFeeRequestMeta        = 281
-	Pdexv3WithdrawLPFeeResponseMeta       = 282
-	Pdexv3WithdrawProtocolFeeRequestMeta  = 283
-	Pdexv3WithdrawProtocolFeeResponseMeta = 284
-	Pdexv3MintPDEXGenesisMeta             = 285
+	Pdexv3MintNft                         = 282
+	Pdexv3WithdrawLPFeeRequestMeta        = 283
+	Pdexv3WithdrawLPFeeResponseMeta       = 284
+	Pdexv3WithdrawProtocolFeeRequestMeta  = 285
+	Pdexv3WithdrawProtocolFeeResponseMeta = 286
+	Pdexv3MintPDEXGenesisMeta             = 287
 
 	// portal
 	PortalCustodianDepositMeta                  = 100
@@ -172,6 +173,8 @@ var minerCreatedMetaTypes = []int{
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
 	InitTokenResponseMeta,
+	Pdexv3AddLiquidityResponseMeta,
+	Pdexv3MintNft,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

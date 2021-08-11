@@ -1,22 +1,33 @@
 package pdexv3
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
-	metaData := metadataPdexv3.NewAddLiquidityWithValue(
-		"pool_pair_id", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
-		common.PRVIDStr, 300, 10000,
+
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
+	inst := NewWaitingAddLiquidityWithValue(contributionState)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
-		Base Base
+		contribution statedb.Pdexv3ContributionState
 	}
 	type args struct {
 		source []string
@@ -29,11 +40,9 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "Length of source < 2",
+			name: "Invalid length",
 			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
+				contribution: *statedb.NewPdexv3ContributionState(),
 			},
 			args: args{
 				source: []string{},
@@ -41,14 +50,13 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid Base",
+			name: "Invalid metaType",
 			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
+				contribution: *statedb.NewPdexv3ContributionState(),
 			},
 			args: args{
 				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 					"",
 					"",
 				},
@@ -56,34 +64,32 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid status",
+			name: "Invalid Status",
 			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
+				contribution: *statedb.NewPdexv3ContributionState(),
 			},
 			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1", strconv.Itoa(common.PDEContributionAcceptedStatus)),
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionRefundChainStatus,
+					"",
+				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Valid Input",
 			fields: fields{
-				Base: Base{
-					metaData: metadataPdexv3.NewAddLiquidity(),
-				},
-			},
-			args: args{
-				source: append(metaData.StringSlice(),
-					"tx_req_id", "1", strconv.Itoa(common.PDEContributionWaitingStatus)),
+				contribution: *statedb.NewPdexv3ContributionState(),
 			},
 			fieldsAfterProcess: fields{
-				Base: Base{
-					metaData: metaData,
-					txReqID:  "tx_req_id",
-					shardID:  1,
+				contribution: contributionState,
+			},
+			args: args{
+				source: []string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionWaitingChainStatus,
+					string(data),
 				},
 			},
 			wantErr: false,
@@ -92,21 +98,14 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &WaitingAddLiquidity{
-				Base: tt.fields.Base,
+				contribution: tt.fields.contribution,
 			}
 			if err := w.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("WaitingAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && !reflect.DeepEqual(w.metaData, tt.fieldsAfterProcess.Base.metaData) {
-				t.Errorf("metaData got = %v, expected %v", w.metaData, tt.fieldsAfterProcess.Base.metaData)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(w.txReqID, tt.fieldsAfterProcess.Base.txReqID) {
-				t.Errorf("txReqID got = %v, expected %v", w.txReqID, tt.fieldsAfterProcess.Base.txReqID)
-				return
-			}
-			if !tt.wantErr && !reflect.DeepEqual(w.shardID, tt.fieldsAfterProcess.Base.shardID) {
-				t.Errorf("shardID got = %v, expected %v", w.shardID, tt.fieldsAfterProcess.Base.shardID)
+			if !tt.wantErr && !reflect.DeepEqual(w.contribution, tt.fieldsAfterProcess.contribution) {
+				t.Errorf("fieldsAfterProcess expect = %v, but get %v", tt.fieldsAfterProcess.contribution, w.contribution)
 				return
 			}
 		})
@@ -114,38 +113,51 @@ func TestWaitingAddLiquidity_FromStringSlice(t *testing.T) {
 }
 
 func TestWaitingAddLiquidity_StringSlice(t *testing.T) {
-	metaData := metadataPdexv3.NewAddLiquidityWithValue(
-		"pool_pair_id", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
-		common.PRVIDStr, 300, 10000,
+	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			"pool_pair_id", validOTAReceiver0, validOTAReceiver1,
+			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
+		), "pair_hash",
 	)
+	inst := NewWaitingAddLiquidityWithValue(contributionState)
+	data, err := json.Marshal(inst)
+	assert.Nil(t, err)
+
 	type fields struct {
-		Base Base
+		contribution statedb.Pdexv3ContributionState
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   []string
+		name    string
+		fields  fields
+		want    []string
+		wantErr bool
 	}{
 		{
 			name: "Valid Input",
 			fields: fields{
-				Base: Base{
-					metaData: metaData,
-					txReqID:  "tx_req_id",
-					shardID:  1,
-				},
+				contribution: contributionState,
 			},
-			want: append(metaData.StringSlice(), "tx_req_id", "1", strconv.Itoa(common.PDEContributionWaitingStatus)),
+			want: []string{
+				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+				common.PDEContributionWaitingChainStatus,
+				string(data),
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &WaitingAddLiquidity{
-				Base: tt.fields.Base,
+				contribution: tt.fields.contribution,
 			}
-			if got := w.StringSlice(); !reflect.DeepEqual(got, tt.want) {
+			got, err := w.StringSlice()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("WaitingAddLiquidity.StringSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("WaitingAddLiquidity.StringSlice() = %v, want %v", got, tt.want)
+				return
 			}
 		})
 	}

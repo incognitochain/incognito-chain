@@ -241,7 +241,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := StoreCommitments(tt.args.stateDB, tt.args.tokenID, []byte{}, tt.args.commitments, tt.args.shardID); (err != nil) != tt.wantErr {
+			if err := StoreCommitments(tt.args.stateDB, tt.args.tokenID, tt.args.commitments, tt.args.shardID); (err != nil) != tt.wantErr {
 				t.Errorf("StoreCommitments() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				if len(stateDB.GetStateObjectMapForTestOnly()) != 21 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 21 {
@@ -254,7 +254,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 
 	// Actually store
 	for _, tt := range tests {
-		err := StoreCommitments(tt.args.stateDB, tt.args.tokenID, []byte{}, tt.args.commitments, tt.args.shardID)
+		err := StoreCommitments(tt.args.stateDB, tt.args.tokenID, tt.args.commitments, tt.args.shardID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -326,7 +326,7 @@ func TestStateDB_ListCommitment(t *testing.T) {
 		tempWantCommitmentIndexM := make(map[common.Hash]map[uint64]string)
 		for _, tokenID := range wantTokenID {
 			commitments := testGenerateCommitmentList(100)
-			err = StoreCommitments(stateDB, tokenID, []byte{}, commitments, shardID)
+			err = StoreCommitments(stateDB, tokenID, commitments, shardID)
 			if err != nil {
 				t.Fatal(err)
 			}

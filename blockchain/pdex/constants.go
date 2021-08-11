@@ -37,6 +37,8 @@ const (
 )
 
 var (
+	hashPrefix = []byte("pdex-v3")
+
 	TotalPDEXReward         = MintingBlockReward * math.Pow(10, common.PDEXDenominatingDecimal)
 	DecayRate               = float64(DecayRateBPS) / float64(BPS)
 	PDEXRewardFirstInterval = uint64(TotalPDEXReward * DecayRate / (1 - math.Pow(1-DecayRate, DecayIntervals)))

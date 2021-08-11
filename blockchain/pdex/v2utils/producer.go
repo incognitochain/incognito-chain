@@ -31,6 +31,7 @@ func BuildModifyParamsInst(
 
 func BuildWithdrawLPFeeInsts(
 	pairID string,
+	index uint64,
 	ncftTokenID common.Hash,
 	receivers map[string]metadataPdexv3.ReceiverInfo,
 	shardID byte,
@@ -42,6 +43,7 @@ func BuildWithdrawLPFeeInsts(
 	for tokenType, receiver := range receivers {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PairID:      pairID,
+			Index:       index,
 			NcftTokenID: ncftTokenID,
 			TokenType:   tokenType,
 			Receiver:    receiver,

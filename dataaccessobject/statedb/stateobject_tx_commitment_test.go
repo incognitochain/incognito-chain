@@ -224,7 +224,7 @@ func TestStateDB_StoreCommitments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreCommitments(sDB, tokenID, []byte{}, commitments, shardID)
+	err = StoreCommitments(sDB, tokenID, commitments, shardID)
 	if err != nil {
 		t.Fatal(err)
 	}

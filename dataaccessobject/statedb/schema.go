@@ -63,6 +63,7 @@ var (
 	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
+	pdexv3NftIndexPrefix                    = []byte("pdexv3-nft-index-")
 	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
 	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
 
@@ -577,27 +578,32 @@ func GetPdexv3ParamsPrefix() []byte {
 }
 
 func GetPdexv3WaitingContributionsPrefix() []byte {
-	return pdexv3WaitingContributionsPrefix
-}
-
-func GetPdexv3DeletedWaitingContributionsPrefix() []byte {
-	return pdexv3DeletedWaitingContributionsPrefix
+	hash := common.HashH(pdexv3WaitingContributionsPrefix)
+	return hash[:prefixHashKeyLength]
 }
 
 func GetPdexv3PoolPairsPrefix() []byte {
-	return pdexv3PoolPairsPrefix
+	hash := common.HashH(pdexv3PoolPairsPrefix)
+	return hash[:prefixHashKeyLength]
 }
 
 func GetPdexv3SharesPrefix() []byte {
-	return pdexv3SharesPrefix
+	hash := common.HashH(pdexv3SharesPrefix)
+	return hash[:prefixHashKeyLength]
 }
 
 func GetPdexv3TradingFeesPrefix() []byte {
-	return pdexv3TradingFeesPrefix
+	hash := common.HashH(pdexv3TradingFeesPrefix)
+	return hash[:prefixHashKeyLength]
 }
 
 func GetPdexv3StakingPoolsPrefix() []byte {
-	return pdexv3StakingPoolsPrefix
+	hash := common.HashH(pdexv3StakingPoolsPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3NftIndexPrefix() []byte {
+	return pdexv3ParamsPrefix
 }
 
 var _ = func() (_ struct{}) {

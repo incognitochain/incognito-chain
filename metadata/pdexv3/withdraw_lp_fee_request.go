@@ -3,6 +3,7 @@ package pdexv3
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,6 +13,7 @@ import (
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
 	PairID              string             `json:"PairID"`
+	Index               uint64             `json:"Index"`
 	NfctTokenID         common.Hash        `json:"NfctTokenID"`
 	NfctReceiverAddress string             `json:"NfctReceiverAddress"`
 	FeeReceiverAddress  FeeReceiverAddress `json:"FeeReceiverAddress"`
@@ -19,6 +21,7 @@ type WithdrawalLPFeeRequest struct {
 
 type WithdrawalLPFeeContent struct {
 	PairID      string       `json:"PairID"`
+	Index       uint64       `json:"Index"`
 	NcftTokenID common.Hash  `json:"NcftTokenID"`
 	TokenType   string       `json:"TokenType"`
 	Receiver    ReceiverInfo `json:"Receiver"`
@@ -29,6 +32,7 @@ type WithdrawalLPFeeContent struct {
 func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
+	index uint64,
 	nfctTokenID common.Hash,
 	nfctReceiverAddress string,
 	feeReceiverAddress FeeReceiverAddress,
@@ -38,6 +42,7 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	return &WithdrawalLPFeeRequest{
 		MetadataBase:        *metadataBase,
 		PairID:              pairID,
+		Index:               index,
 		NfctTokenID:         nfctTokenID,
 		NfctReceiverAddress: nfctReceiverAddress,
 		FeeReceiverAddress:  feeReceiverAddress,
@@ -115,6 +120,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
 	record += withdrawal.PairID
+	record += strconv.FormatUint(withdrawal.Index, 10)
 	record += withdrawal.NfctTokenID.String()
 	record += withdrawal.NfctReceiverAddress
 	record += withdrawal.FeeReceiverAddress.ToString()

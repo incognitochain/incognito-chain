@@ -55,9 +55,9 @@ func (r *RefundAddLiquidity) StringSlice() ([]string, error) {
 
 func (r *RefundAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Contribution statedb.Pdexv3ContributionState `json:"Contribution"`
+		Contribution *statedb.Pdexv3ContributionState `json:"Contribution"`
 	}{
-		Contribution: r.contribution,
+		Contribution: &r.contribution,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -67,13 +67,15 @@ func (r *RefundAddLiquidity) MarshalJSON() ([]byte, error) {
 
 func (r *RefundAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Contribution statedb.Pdexv3ContributionState `json:"Contribution"`
+		Contribution *statedb.Pdexv3ContributionState `json:"Contribution"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	r.contribution = temp.Contribution
+	if temp.Contribution != nil {
+		r.contribution = *temp.Contribution
+	}
 	return nil
 }
 
