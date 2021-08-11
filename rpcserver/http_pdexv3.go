@@ -338,7 +338,6 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-
 	metaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		addLiquidityRequest.PoolPairID,
 		addLiquidityRequest.PairHash,

@@ -382,6 +382,8 @@ func IsPdexv3Type(metadataType int) bool {
 	switch metadataType {
 	case Pdexv3ModifyParamsMeta:
 		return true
+	case Pdexv3MintNft:
+		return true
 	case Pdexv3AddLiquidityRequestMeta:
 		return true
 	case Pdexv3AddLiquidityResponseMeta:

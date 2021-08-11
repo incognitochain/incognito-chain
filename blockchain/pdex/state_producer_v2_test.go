@@ -204,6 +204,11 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchAndReturnContribution2Tx.On("GetValidationEnv").Return(valEnv)
 	matchAndReturnContribution2Tx.On("Hash").Return(fourthTxHash)
 
+	nftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	assert.Nil(t, err)
+	nft1Inst, err := instruction.NewMintNftWithValue(*nft1Hash, validOTAReceiver0, 1).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	assert.Nil(t, err)
+
 	matchAndReturnContribution0State2 := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0, validOTAReceiver1,
@@ -332,6 +337,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					common.PDEContributionMatchedChainStatus,
 					string(matchContributionInstBytes),
 				},
+				nftInst,
 			},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
@@ -390,7 +396,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, *nft1Hash, 100, 20000, 1,
+						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 					),
 				},
 				nftIDs: map[string]bool{
@@ -642,6 +648,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					common.PDEContributionMatchedNReturnedChainStatus,
 					string(matchAndReturnContritubtion1InstBytes2),
 				},
+				nft1Inst,
 			},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{

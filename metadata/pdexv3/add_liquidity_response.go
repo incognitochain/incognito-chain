@@ -1,6 +1,7 @@
 package pdexv3
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 type AddLiquidityResponse struct {
@@ -135,12 +137,6 @@ type RefundAddLiquidity struct {
 	Contribution *statedb.Pdexv3ContributionState `json:"Contribution"`
 }
 
-type MatchAddLiquidity struct {
-	Contribution  statedb.Pdexv3ContributionState `json:"Contribution"`
-	NewPoolPairID string                          `json:"NewPoolPairID"`
-	NftID         common.Hash                     `json:"NftID"`
-}
-
 type MatchAndReturnAddLiquidity struct {
 	ShareAmount              uint64                           `json:"ShareAmount"`
 	Contribution             *statedb.Pdexv3ContributionState `json:"Contribution"`
@@ -160,92 +156,102 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
-	fmt.Println("[pdex] 100")
 	idx := -1
+	metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", response)
+	metadataCommon.Logger.Log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) != 3 { // this is not PDEContribution instruction
 			continue
 		}
-		if mintData.InstsUsed[i] > 0 {
+		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
+		instMetaType := inst[0]
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta) {
 			continue
 		}
-		if inst[0] != strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta) {
+		instContributionStatus := inst[1]
+		if instContributionStatus != response.status ||
+			(instContributionStatus != common.PDEContributionRefundChainStatus && instContributionStatus != common.PDEContributionMatchedNReturnedChainStatus) {
 			continue
 		}
 
-		status := inst[1]
-		if status != common.PDEContributionRefundChainStatus && status != common.PDEContributionMatchedChainStatus && status != common.PDEContributionMatchedNReturnedChainStatus {
+		var shardIDFromInst byte
+		var txReqIDFromInst common.Hash
+		var receiverAddrStrFromInst string
+		var receivingAmtFromInst uint64
+		var receivingTokenIDStr string
+
+		switch instContributionStatus {
+		case common.PDEContributionRefundChainStatus:
+			contentBytes := []byte(inst[2])
+			var refundAddLiquidity RefundAddLiquidity
+			err := json.Unmarshal(contentBytes, &refundAddLiquidity)
+			if err != nil {
+				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
+				return false, err
+			}
+			contribution := refundAddLiquidity.Contribution
+			value := contribution.Value()
+			shardIDFromInst = value.ShardID()
+			txReqIDFromInst = value.TxReqID()
+			receiverAddrStrFromInst = value.RefundAddress()
+			receivingTokenIDStr = value.TokenID().String()
+			receivingAmtFromInst = value.Amount()
+		case common.PDEContributionMatchedNReturnedChainStatus:
+			contentBytes := []byte(inst[2])
+			var matchAndReturnAddLiquidity MatchAndReturnAddLiquidity
+			err := json.Unmarshal(contentBytes, &matchAndReturnAddLiquidity)
+			if err != nil {
+				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
+				return false, err
+			}
+			contribution := matchAndReturnAddLiquidity.Contribution
+			value := contribution.Value()
+			shardIDFromInst = value.ShardID()
+			txReqIDFromInst = value.TxReqID()
+			receiverAddrStrFromInst = value.RefundAddress()
+			receivingTokenIDStr = value.TokenID().String()
+			receivingAmtFromInst = matchAndReturnAddLiquidity.ReturnAmount
+		default:
+			return false, errors.New("Not find status")
+		}
+
+		if response.TxReqID() != txReqIDFromInst.String() || shardID != shardIDFromInst {
+			metadataCommon.Logger.Log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
 			continue
 		}
 
-		/*var shardIDFromInst byte*/
-		//var txReqIDFromInst common.Hash
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil {
+			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
+			return false, err
+		}
+		if !isMinted {
+			metadataCommon.Logger.Log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
+			return false, errors.New("This is not tx mint")
+		}
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
 
-		//switch status {
-		//case common.PDEContributionRefundChainStatus:
-		//var refundAddLiquidity RefundAddLiquidity
-		//err := json.Unmarshal([]byte(inst[2]), &refundAddLiquidity)
-		//if err != nil {
-		//return false, err
-		//}
-		//value := refundAddLiquidity.Contribution.Value()
-		//shardIDFromInst = value.ShardID()
-		//txReqIDFromInst = value.TxReqID()
-		//receiverAddrStrFromInst = value.RefundAddress()
-		//receivingTokenIDStr = value.TokenID().String()
-		//receivingAmtFromInst = value.Amount()
-		//case common.PDEContributionMatchedChainStatus:
-		//var matchAddLiquidity MatchAddLiquidity
-		//err := json.Unmarshal([]byte(inst[2]), &matchAddLiquidity)
-		//if err != nil {
-		//return false, err
-		//}
+		otaReceiver := coin.OTAReceiver{}
+		err = otaReceiver.FromString(receiverAddrStrFromInst)
+		if err != nil {
+			return false, errors.New("Invalid ota receiver")
+		}
 
-		//contributionValue := matchAddLiquidity.Contribution.Value()
-		//if matchAddLiquidity.NftID.IsZeroValue() && !contributionValue.NftID().IsZeroValue() {
-		//if !contributionValue.NftID().IsZeroValue() {
-		//return true, nil
-		//} else {
-		//return false, errors.New("NftID of contribution and return are invalid")
-		//}
-		//}
-		//shardIDFromInst = contributionValue.ShardID()
-		//txReqIDFromInst = contributionValue.TxReqID()
-		//receiverAddrStrFromInst = contributionValue.ReceiveAddress()
-		//receivingTokenIDStr = matchAddLiquidity.NftID.String()
-		//receivingAmtFromInst = 1
-		//case common.PDEContributionMatchedNReturnedChainStatus:
-		//var matchAndReturnAddLiquidity MatchAndReturnAddLiquidity
-		//err := json.Unmarshal([]byte(inst[2]), &matchAndReturnAddLiquidity)
-		//if err != nil {
-		//return false, err
-		//}
-
-		//contributionValue := matchAndReturnAddLiquidity.Contribution.Value()
-		//if matchAndReturnAddLiquidity.NftID.IsZeroValue() && !contributionValue.NftID().IsZeroValue() {
-		//if !contributionValue.NftID().IsZeroValue() {
-		//return true, nil
-		//} else {
-		//return false, errors.New("NftID of contribution and return are invalid")
-		//}
-		//}
-		//shardIDFromInst = contributionValue.ShardID()
-		//txReqIDFromInst = contributionValue.TxReqID()
-		//receiverAddrStrFromInst = contributionValue.RefundAddress()
-		//receivingTokenIDStr = contributionValue.TokenID().String()
-		//receivingAmtFromInst = matchAndReturnAddLiquidity.ReturnAmount
-		//nftIDStr = matchAndReturnAddLiquidity.NftID.String()
-		/*}*/
-
-		/*if response.TxReqID() != txReqIDFromInst.String() || shardID != shardIDFromInst {*/
-		//continue
-		/*}*/
-
+		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
+			receivingAmtFromInst != paidAmount ||
+			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
+			receivingTokenIDStr != coinID.String() {
+			return false, errors.New("Coin is invalid")
+		}
 		idx = i
+		fmt.Println("BUGLOG Verify Metadata --- OK")
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PDEContribution or PDEPRVRequiredContributionRequestMeta instruction found for PDEContributionResponse tx %s", tx.Hash().String()))
+		metadataCommon.Logger.Log.Debugf("no Pdexv3 addliquidity instruction tx %s", tx.Hash().String())
+		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 addliquidity instruction tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil

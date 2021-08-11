@@ -411,10 +411,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
 
-	pdeTxBuilderV1 := new(pdex.TxBuilderV1)
-	pdeTxBuilderV2 := new(pdex.TxBuilderV2)
-	pdeTxBuilderV2.ClearCache()
-
 	for _, beaconBlock := range beaconBlocks {
 		blockHash := beaconBlock.Header.Hash()
 		beaconRootHashes, err := GetBeaconRootsHashByBlockHash(
@@ -523,6 +519,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				}
 			default:
 				if metadataCommon.IsPDEType(metaType) {
+					pdeTxBuilderV1 := pdex.TxBuilderV1{}
 					newTx, err = pdeTxBuilderV1.Build(
 						metaType,
 						inst,
@@ -531,15 +528,14 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						curView.GetCopiedTransactionStateDB(),
 					)
 				} else if metadataCommon.IsPdexv3Type(metaType) {
-					newTxs := []metadata.Transaction{}
-					newTxs, err = pdeTxBuilderV2.Build(
+					pdeTxBuilderV2 := pdex.TxBuilderV2{}
+					newTx, err = pdeTxBuilderV2.Build(
 						metaType,
 						inst,
 						producerPrivateKey,
 						shardID,
 						curView.GetCopiedTransactionStateDB(),
 					)
-					responsedTxs = append(responsedTxs, newTxs...)
 				}
 			}
 			if err != nil {

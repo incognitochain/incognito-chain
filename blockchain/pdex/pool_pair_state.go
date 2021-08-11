@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"reflect"
 	"sort"
@@ -139,9 +140,17 @@ func (p *PoolPairState) computeActualContributedAmounts(
 }
 
 //update both real and virtual amount
-func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) {
-	p.state.SetToken0RealAmount(p.state.Token0RealAmount() + amount0)
-	p.state.SetToken1RealAmount(p.state.Token1RealAmount() + amount1)
+func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) error {
+	newToken0RealAmount := p.state.Token0RealAmount() + amount0
+	newToken1RealAmount := p.state.Token1RealAmount() + amount1
+	if newToken0RealAmount < p.state.Token0RealAmount() {
+		return fmt.Errorf("newToken0RealAmount is out of range")
+	}
+	if newToken1RealAmount < p.state.Token1RealAmount() {
+		return fmt.Errorf("newToken1RealAmount is out of range")
+	}
+	p.state.SetToken0RealAmount(newToken0RealAmount)
+	p.state.SetToken1RealAmount(newToken1RealAmount)
 
 	newToken0VirtualAmount := big.NewInt(0)
 	newToken1VirtualAmount := big.NewInt(0)
@@ -193,6 +202,7 @@ func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64) 
 	}
 	p.state.SetToken0VirtualAmount(newToken0VirtualAmount)
 	p.state.SetToken1VirtualAmount(newToken1VirtualAmount)
+	return nil
 }
 
 func (p *PoolPairState) updateReserveAndCalculateShare(
@@ -216,22 +226,21 @@ func (p *PoolPairState) updateReserveAndCalculateShare(
 
 func (p *PoolPairState) addShare(
 	nftID common.Hash, nftIDs map[string]bool, amount, beaconHeight uint64,
-) (common.Hash, map[string]bool) {
+) (common.Hash, map[string]bool, error) {
 	newNftID := genNFT(nftID, nftIDs, beaconHeight)
-	nftIDStr := ""
-	if newNftID.IsZeroValue() {
-		nftIDStr = nftID.String()
-	} else {
-		nftIDStr = newNftID.String()
-	}
+	nftIDStr := chooseNftStr(nftID, newNftID)
 	if p.shares[nftIDStr] == nil {
 		p.shares[nftIDStr] = make(map[uint64]*Share)
 	}
 	nftIDs[nftIDStr] = true
 	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
 	p.shares[nftIDStr][beaconHeight] = share
-	p.state.SetShareAmount(p.state.ShareAmount() + amount)
-	return newNftID, nftIDs
+	newShareAmount := p.state.ShareAmount() + amount
+	if newShareAmount < p.state.ShareAmount() {
+		return newNftID, nftIDs, fmt.Errorf("Share amount is out of range")
+	}
+	p.state.SetShareAmount(newShareAmount)
+	return newNftID, nftIDs, nil
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {

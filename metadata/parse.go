@@ -179,6 +179,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.AddOrderRequest{}
 	case metadataCommon.Pdexv3AddOrderResponseMeta:
 		md = &metadataPdexv3.AddOrderResponse{}
+	case metadataCommon.Pdexv3MintNft:
+		md = &metadataPdexv3.MintNft{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

@@ -37,11 +37,9 @@ func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 		beaconViewRetriever := blockchain.GetBeaconBestState()
 		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(mintData, shardID, blockchain, accumulatedValues, shardViewRetriever, beaconViewRetriever)
 		if err != nil {
-			Logger.log.Info("[pdex] err:", err)
 			return nil, err
 		}
 		if !ok {
-			Logger.log.Info("[pdex] Not ok!")
 			invalidTxs = append(invalidTxs, tx)
 		}
 	}

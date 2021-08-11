@@ -140,6 +140,7 @@ func NewPdexv3ContributionWithValue(
 		tokenID:        tokenID,
 		amount:         amount,
 		txReqID:        txReqID,
+		nftID:          nftID,
 		amplifier:      amplifier,
 		shardID:        shardID,
 	}

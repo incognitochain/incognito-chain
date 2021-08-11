@@ -115,8 +115,8 @@ func initStateV2(
 		}
 		shares := make(map[string]map[uint64]*Share)
 		for nftID, shareStates := range allShareStates {
+			shares[nftID] = make(map[uint64]*Share)
 			for beaconHeight, shareState := range shareStates {
-				shares[nftID] = make(map[uint64]*Share)
 				tradingFeesState, err := statedb.GetPdexv3TradingFees(
 					stateDB, poolPairID, nftID, beaconHeight)
 				if err != nil {
@@ -367,7 +367,8 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 					nftID, err := common.Hash{}.NewHashFromStr(nftID)
 					err = statedb.StorePdexv3Share(
 						env.StateDB(), poolPairID,
-						*nftID, env.BeaconHeight(), v.amount, v.lastUpdatedBeaconHeight,
+						*nftID, env.BeaconHeight(),
+						v.amount, v.lastUpdatedBeaconHeight,
 					)
 					if err != nil {
 						return err
@@ -452,11 +453,6 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 			res.stakingPoolsState[k] = v.Clone()
 		}
 	}
-	for k, v := range s.nftIDs {
-		if m, ok := compareStateV2.nftIDs[k]; !ok || !reflect.DeepEqual(m, v) {
-			res.nftIDs[k] = true
-		}
-	}
 
 	return res, newStateChange, nil
 
@@ -479,7 +475,6 @@ func NewContributionWithMetaData(
 		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 		nftID = *nftHash
 	}
-
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.ReceiveAddress(), metaData.RefundAddress(),
 		*tokenHash, txReqID, nftID,
