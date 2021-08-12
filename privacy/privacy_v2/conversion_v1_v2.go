@@ -34,7 +34,6 @@ func (proof ConversionProofVer1ToVer2) MarshalJSON() ([]byte, error) {
 }
 
 func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
-	Logger.Log.Infof("Unmarshalling ConversionProof: %v\n", string(data))
 	dataStr := common.EmptyString
 	errJSON := json.Unmarshal(data, &dataStr)
 	if errJSON != nil {
@@ -43,12 +42,12 @@ func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	}
 	temp, err := base64.StdEncoding.DecodeString(dataStr)
 	if err != nil {
-		Logger.Log.Errorf("PaymentProofV2 decodeing string dataStr error: %v\n", err)
+		Logger.Log.Errorf("PaymentProofV2 decoding string dataStr error: %v\n", err)
 		return err
 	}
 	errSetBytes := proof.SetBytes(temp)
 	if errSetBytes != nil {
-		Logger.Log.Errorf("PaymentProofV2 setbytes error: %v\n", errSetBytes)
+		Logger.Log.Errorf("PaymentProofV2 setBytes error: %v\n", errSetBytes)
 		return errSetBytes
 	}
 	return nil

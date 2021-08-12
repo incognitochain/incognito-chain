@@ -91,6 +91,7 @@ const (
 	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
 	listUnspentOutputTokens                    = "listunspentoutputtokens"
+	getOTACoinLength                           = "getotacoinlength"
 	getOTACoinsByIndices                       = "getotacoinsbyindices"
 	customTokenTxs                             = "customtoken"
 	listCustomTokenHolders                     = "customtokenholder"
