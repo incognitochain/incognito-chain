@@ -71,6 +71,7 @@ var HttpHandler = map[string]httpHandler{
 	createConvertCoinVer1ToVer2Transaction:  (*HttpServer).handleCreateConvertCoinVer1ToVer2Transaction,
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
+	getEncodedTransactionsByHashes:          (*HttpServer).handleGetEncodedTransactionsByHashes,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
 	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
@@ -113,6 +114,7 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeList:         (*HttpServer).handleGetCommitteeList,
 	getShardBestState:        (*HttpServer).handleGetShardBestState,
 	getShardBestStateDetail:  (*HttpServer).handleGetShardBestStateDetail,
+	getBeaconViewByHash:      (*HttpServer).handleGetBeaconViewByHash,
 	getBeaconBestState:       (*HttpServer).handleGetBeaconBestState,
 	getBeaconBestStateDetail: (*HttpServer).handleGetBeaconBestStateDetail,
 	// getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
@@ -293,6 +295,23 @@ var HttpHandler = map[string]httpHandler{
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
 
+	// portal v4
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
+	createAndSendTxWithPortalReplacementFee:    (*HttpServer).handleCreateAndSendTxWithPortalReplaceUnshieldFee,
+	getPortalReplacementFeeStatus:              (*HttpServer).handleGetPortalReplacementFeeRequestStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx: (*HttpServer).handleCreateAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx:                 (*HttpServer).handleGetPortalPortalSubmitConfirmedTxStatus,
+	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
+	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
+	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
+	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 }
@@ -318,6 +337,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 	submitKey:                        (*HttpServer).handleSubmitKey,
 	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
+	getKeySubmissionInfo:             (*HttpServer).handleGetKeySubmissionInfo,
 }
 
 var WsHandler = map[string]wsHandler{

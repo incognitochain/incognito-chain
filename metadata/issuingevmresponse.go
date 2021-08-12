@@ -114,10 +114,12 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			issuingETHAcceptedInst.IssuingAmount != paidAmount ||
-			!bytes.Equal(issuingETHAcceptedInst.IncTokenID[:], assetID[:]) {
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != issuingETHAcceptedInst.IncTokenID.String() {
+			continue
+		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingETHAcceptedInst.IssuingAmount); !ok {
 			continue
 		}
 		idx = i

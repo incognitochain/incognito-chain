@@ -7,8 +7,6 @@
 #		PORT_NODE
 #		VALIDATOR_K
 #		GETH_NAME
-#		GETH_PROTOCOl
-#		GETH_PORT
 #		CHECK_INTERVAL
 #       FULLNODE
 #	2. To install, reinstall, make changes, run:
@@ -21,28 +19,26 @@
 if [ $(whoami) != root ]; then
 cat << EOF
 	!!! Please run with sudo or su, otherwise it won't work
-	!!! Script now exit exits
+	!!! Script now exits
 EOF
 	exit 1
 fi
 
 # change config here:
-BOOTNODE="mainnet-bootnode.incognito.org:9330"
-PORT_RPC="8334"
-PORT_NODE="9433"
-VALIDATOR_K="12mF1dVuaGCrgkQkzm3h4e9zFCCpkNhmEQ3WnM2yJ5GzLuT9cy5"
-GETH_NAME="mainnet.infura.io/v3/xxxyyy" #infura link
-GETH_PROTOCOL="https"
-GETH_PORT="80"
+BOOTNODE="mainnet-bootnode.incognito.org:9330"  # this should be left as default
+PORT_RPC="8334"  # change this if you prefer other port
+PORT_NODE="9433"  # change this if you prefer other port
+VALIDATOR_K="xxx"  # mandatory if you want to run a validator node
+GETH_NAME="https://mainnet.infura.io/v3/xxxyyy"  # infura link (*) (follow step 3 on this thread to setup infura https://we.incognito.org/t/194)
 CHECK_INTERVAL="3600" # 1 hour
-FULLNODE=0  # set to 1 to run as a full node, 0 or empty to run as normal node
+FULLNODE=""  # set to 1 to run as a full node, empty to run as normal node
 
 # Do not edit lines below unless you know what you're doing
 USER="incognito"
 SCRIPT="/bin/run_node.sh"
 SERVICE="/etc/systemd/system/IncognitoUpdater.service"
 DATA_DIR="/home/$USER/node_data"
-TMP="/tmp/inc_node_latest_tag"
+TMP="/home/$USER/inc_node_latest_tag"
 systemctl stop $(basename $SERVICE) 2> /dev/null
 
 function uninstall {
@@ -123,7 +119,6 @@ EOF
 echo " # Creating run node script"
 cat << EOF > $SCRIPT
 #!/bin/bash
-check_interval=$CHECK_INTERVAL
 TMP=$TMP
 run()
 {
@@ -133,8 +128,8 @@ run()
   rpc_port=$PORT_RPC
   node_port=$PORT_NODE
   geth_name=$GETH_NAME
-  geth_port=$GETH_PORT
-  geth_proto=$GETH_PROTOCOL
+  geth_port=""
+  geth_proto=""
   fullnode=$FULLNODE
 EOF
 cat << 'EOF' >> $SCRIPT
@@ -150,7 +145,6 @@ cat << 'EOF' >> $SCRIPT
     rpc_port="9334";
   fi
 
-  docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
   echo "Remove old container"
   docker rm -f inc_mainnet
 
@@ -180,7 +174,7 @@ cat << 'EOF' >> $SCRIPT
 
 current_latest_tag=$(cat $TMP)
 echo "Getting Incognito docker tags"
-tags=$(curl -s -X GET https://registry.hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  \
+tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  \
 	| sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g')
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
 latest_tag=${sorted_tags[0]}

@@ -16,6 +16,7 @@ const (
 )
 
 type JobStatus struct {
+	id     string // id of the indexing go-routine
 	otaKey privacy.OTAKey
 	err    error
 }
@@ -29,6 +30,7 @@ type IndexParam struct {
 	IsReset    bool
 }
 
+// CoinMatcher is an interface for matching a v2 coin and given parameter(s).
 type CoinMatcher func(*privacy.CoinV2, map[string]interface{}) bool
 
 // getCoinFilterByOTAKey returns a functions that filters if an output coin belongs to an OTAKey.
@@ -51,6 +53,7 @@ func getCoinFilterByOTAKey() CoinMatcher {
 }
 
 // GetCoinFilterByOTAKeyAndToken returns a functions that filters if an output coin is of a specific token and belongs to an OTAKey.
+// If the given token is the generic `common.ConfidentialAssetID`, it immediately returns true after the belonging check.
 func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool {
 		entry, exists := kvargs["otaKey"]
@@ -73,6 +76,9 @@ func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 		ks.OTAKey = vk
 
 		if pass, sharedSecret := c.DoesCoinBelongToKeySet(ks); pass {
+			if tokenID.String() == common.ConfidentialAssetID.String() {
+				return true
+			}
 			pass, _ = c.ValidateAssetTag(sharedSecret, tokenID)
 			return pass
 		}
@@ -80,6 +86,7 @@ func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 	}
 }
 
+// GetNextLowerHeight returns the next upper height in querying v2 coins given the current upper height and the base height.
 func GetNextLowerHeight(upper, floor uint64) uint64 {
 	if upper > utils.MaxOutcoinQueryInterval+floor {
 		return upper - utils.MaxOutcoinQueryInterval
@@ -101,18 +108,20 @@ func OTAKeyFromRaw(b [64]byte) privacy.OTAKey {
 	return *result
 }
 
-func QueryDbCoinVer1(pubKey []byte, shardID byte, tokenID *common.Hash, db *statedb.StateDB) ([]privacy.Coin, error) {
+// QueryDbCoinVer1 returns all v1 output coins of a public key on the given tokenID.
+func QueryDbCoinVer1(pubKey []byte, tokenID *common.Hash, db *statedb.StateDB) ([]privacy.Coin, error) {
+	shardID := common.GetShardIDFromLastByte(pubKey[len(pubKey) - 1])
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(db, *tokenID, pubKey, shardID)
 	if err != nil {
-		utils.Logger.Log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
+		utils.Logger.Log.Errorf("get outCoins by pubKey error: %v\n", err)
 		return nil, err
 	}
 	var outCoins []privacy.Coin
 	for _, item := range outCoinsBytes {
 		outCoin := &privacy.CoinV1{}
-		err := outCoin.SetBytes(item)
+		err = outCoin.SetBytes(item)
 		if err != nil {
-			utils.Logger.Log.Errorf("Cannot create coin from byte %v", err)
+			utils.Logger.Log.Errorf("cannot create coin from byte %v", err)
 			return nil, err
 		}
 		outCoins = append(outCoins, outCoin)
@@ -120,34 +129,42 @@ func QueryDbCoinVer1(pubKey []byte, shardID byte, tokenID *common.Hash, db *stat
 	return outCoins, nil
 }
 
-func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) ([]privacy.Coin, error) {
+// QueryDbCoinVer2 returns all v2 output coins of a public key on the given tokenID for heights from `startHeight` to
+// `destHeight` using the given list of filters.
+func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) ([]privacy.Coin, error) {
+	pubKeyBytes := otaKey.GetPublicSpend().ToBytesS()
+	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes) - 1])
+
 	var outCoins []privacy.Coin
 	// avoid overlap; unless lower height is 0
-	start := shardHeight + 1
-	if shardHeight == 0 {
+	start := startHeight + 1
+	if startHeight == 0 {
 		start = 0
 	}
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
+			utils.Logger.Log.Errorf("get outCoins ver 2 bytes by height error: %v\n", err)
 			return nil, err
 		}
+
+		// create parameter(s) for CoinMatcher filters.
 		params := make(map[string]interface{})
 		params["otaKey"] = otaKey
 		params["db"] = db
 		params["tokenID"] = tokenID
 		for _, coinBytes := range currentHeightCoins {
 			cv2 := &privacy.CoinV2{}
-			err := cv2.SetBytes(coinBytes)
+			err = cv2.SetBytes(coinBytes)
 			if err != nil {
-				utils.Logger.Log.Error("Get outcoins ver 2 from bytes", err)
+				utils.Logger.Log.Error("get outCoins ver 2 from bytes error: %v\n", err)
 				return nil, err
 			}
-			pass := true
+			pass := false
 			for _, f := range filters {
-				if !f(cv2, params) {
-					pass = false
+				if f(cv2, params) {
+					pass = true
+					break
 				}
 			}
 			if pass {
@@ -158,10 +175,14 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	return outCoins, nil
 }
 
-func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, cachedCoins map[string]interface{}, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+// QueryBatchDbCoinVer2 queries the db to get v2 coins for `shardHeight` to `destHeight` and checks if the coins belong
+// to any of the given IndexParam's using the given filters.
+//
+// The wider the range [startHeight: desHeight] is, the longer time this function should take.
+func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins map[string]interface{}, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
 	// avoid overlap; unless lower height is 0
-	start := shardHeight + 1
-	if shardHeight == 0 {
+	start := startHeight + 1
+	if startHeight == 0 {
 		start = 0
 	}
 
@@ -174,37 +195,41 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v\n", err)
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
 			cv2 := &privacy.CoinV2{}
-			err := cv2.SetBytes(coinBytes)
+			err = cv2.SetBytes(coinBytes)
 			if err != nil {
-				utils.Logger.Log.Error("Get outcoins ver 2 from bytes", err)
+				utils.Logger.Log.Error("Get outCoins ver 2 from bytes", err)
 				return nil, err
 			}
 
 			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {
+				// coin has already been cached, so we skip.
 				countSkipped++
 				continue
 			}
 
 			for otaStr, idxParam := range idxParams {
 				if height < idxParam.FromHeight || height > idxParam.ToHeight {
+					// Outside the required range, so we skip.
 					continue
 				}
 
+				// create parameter(s) for CoinMatcher filters.
 				otaKey := idxParam.OTAKey
 				params := make(map[string]interface{})
 				params["otaKey"] = otaKey
 				params["db"] = db
 				params["tokenID"] = tokenID
 
-				pass := true
+				pass := false
 				for _, f := range filters {
-					if !f(cv2, params) {
-						pass = false
+					if f(cv2, params) {
+						pass = true
+						break
 					}
 				}
 				if pass {
@@ -220,43 +245,45 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 }
 
 //nolint:gocritic
-// splitWorkers chooses the number of workers for each shard queue based on the current size.
-func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
+// getIdxParamsForIndexing chooses the IndexParam's for each shard queue based on the current size and the
+// number of free workers.
+func (ci *CoinIndexer) getIdxParamsForIndexing(totalWorker int) map[byte]int {
 	res := make(map[byte]int)
 	for i := 0; i < common.MaxShardNumber; i++ {
 		res[byte(i)] = 0
 	}
 
-	numForEach := totalWorker / common.MaxShardNumber
-	if totalWorker == 0 {
-		return res
-	}
-
-	totalChosen := 0
-	remaining := totalWorker
-	for shard := 0; shard < common.MaxShardNumber; shard++ {
-		shardID := byte(shard)
-		tmpNumForShard := numForEach //nolint:ineffassign
-		if totalWorker > ci.queueSize {
-			tmpNumForShard = len(ci.idxQueue[shardID])
-		} else if numForEach <= len(ci.idxQueue[shardID]) {
-			tmpNumForShard = numForEach
-		} else {
-			tmpNumForShard = len(ci.idxQueue[shardID])
+	if totalWorker <= common.MaxShardNumber {
+		remainingWorker := totalWorker
+		attempt := 0
+		for remainingWorker > 0 {
+			if attempt == 10 {
+				// already loop with enough attempts but cannot find more, so we break.
+				break
+			}
+			r := common.RandInt() % common.MaxShardNumber
+			shardID := byte(r)
+			if res[shardID] > 0 || len(ci.idxQueue[shardID]) == 0 {
+				attempt += 1
+				continue
+			} else if len(ci.idxQueue[shardID]) < IndexingBatchSize {
+				res[shardID] = len(ci.idxQueue[shardID])
+			} else {
+				res[shardID] = IndexingBatchSize
+			}
+			remainingWorker--
+			attempt = 0
 		}
-
-		res[shardID] = tmpNumForShard
-		remaining -= tmpNumForShard
-		totalChosen += tmpNumForShard
-	}
-
-	for remaining > 0 && totalWorker < ci.queueSize && totalChosen < ci.queueSize {
-		r := common.RandInt() % common.MaxShardNumber
-		shardID := byte(r)
-		if len(ci.idxQueue[shardID]) > res[shardID] {
-			res[shardID]++
-			remaining--
-			totalChosen++
+	} else {
+		for shard := 0; shard < common.MaxShardNumber; shard++ {
+			shardID := byte(shard)
+			if len(ci.idxQueue[shardID]) == 0 {
+				continue
+			} else if len(ci.idxQueue[shardID]) < IndexingBatchSize {
+				res[shardID] = len(ci.idxQueue[shardID])
+			} else {
+				res[shardID] = IndexingBatchSize
+			}
 		}
 	}
 
