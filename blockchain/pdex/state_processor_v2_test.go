@@ -446,7 +446,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"11": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -513,6 +513,8 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 	assert.Nil(t, err)
 	secondTxHash, err := common.Hash{}.NewHashFromStr("aaa")
 	assert.Nil(t, err)
+	thirdTxHash, err := common.Hash{}.NewHashFromStr("abb")
+	assert.Nil(t, err)
 	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 	assert.Nil(t, err)
 
@@ -532,12 +534,12 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 	matchAndReturnContributionTx := &metadataMocks.Transaction{}
 	matchAndReturnContributionTx.On("GetMetadata").Return(matchAndReturnContributionMetaData)
 	matchAndReturnContributionTx.On("GetValidationEnv").Return(valEnv)
-	matchAndReturnContributionTx.On("Hash").Return(secondTxHash)
+	matchAndReturnContributionTx.On("Hash").Return(thirdTxHash)
 
 	matchAndReturnContribution0State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0, validOTAReceiver1,
-			*token0ID, *secondTxHash, common.Hash{}, 50, 20000, 1,
+			*token0ID, *thirdTxHash, common.Hash{}, 50, 20000, 1,
 		),
 		"pair_hash")
 	matchAndReturnContritubtion0Inst := instruction.NewMatchAndReturnAddLiquidityWithValue(
@@ -584,7 +586,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
+						*token0ID, *secondTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -597,7 +599,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						),
 						shares: map[string]map[string]*Share{
 							nftID: map[string]*Share{
-								"10": &Share{
+								firstTxHash.String(): &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 10,
@@ -612,7 +614,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					poolPairID, validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
+					*token0ID, *secondTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2: map[string]*PoolPairState{
@@ -624,12 +626,12 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"10": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
 							},
-							"11": &Share{
+							secondTxHash.String(): &Share{
 								amount:                  100,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -661,7 +663,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0, validOTAReceiver1,
-						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
+						*token0ID, *secondTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
 				poolPairs: map[string]*PoolPairState{
@@ -673,12 +675,12 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						),
 						shares: map[string]map[string]*Share{
 							nftID: map[string]*Share{
-								"10": &Share{
+								firstTxHash.String(): &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 10,
 								},
-								"11": &Share{
+								secondTxHash.String(): &Share{
 									amount:                  100,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 11,
@@ -695,7 +697,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 			want1: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					poolPairID, validOTAReceiver0, validOTAReceiver1,
-					*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
+					*token0ID, *secondTxHash, common.Hash{}, 100, 20000, 1,
 				),
 			},
 			want2: map[string]*PoolPairState{
@@ -707,12 +709,12 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"10": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
 							},
-							"11": &Share{
+							secondTxHash.String(): &Share{
 								amount:                  100,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,

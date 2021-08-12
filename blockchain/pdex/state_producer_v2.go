@@ -146,7 +146,8 @@ func (sp *stateProducerV2) addLiquidity(
 					waitingContribution.TxReqID().String(),
 				)
 				if err != nil {
-					return res, poolPairs, waitingContributions, nftIDs, err
+					Logger.log.Debug("[pdex] err:", err)
+					continue
 				}
 				poolPairs[poolPairID] = newPoolPair
 				insts, err := v2utils.BuildMatchAddLiquidityInstructions(incomingContributionState, poolPairID, nftID)
@@ -191,7 +192,7 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		shareAmount := poolPair.updateReserveAndCalculateShare(
+		shareAmount := poolPair.addReserveDataAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
@@ -210,6 +211,9 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken1ContributionAmount,
 			nftID,
 		)
+		if err != nil {
+			return res, poolPairs, waitingContributions, nftIDs, err
+		}
 		res = append(res, insts...)
 	}
 	return res, poolPairs, waitingContributions, nftIDs, nil
@@ -342,6 +346,64 @@ func (sp *stateProducerV2) addOrder(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction,
-) ([][]string, error) {
-	return nil, nil
+	poolPairs map[string]*PoolPairState,
+) (
+	[][]string,
+	map[string]*PoolPairState,
+	error,
+) {
+	res := [][]string{}
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
+		txReqID := *tx.Hash()
+		poolPair, ok := poolPairs[metaData.PoolPairID()]
+		if !ok || poolPair == nil {
+			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, poolPairs, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+		shares, ok := poolPair.shares[metaData.NftID()]
+		if !ok || shares == nil {
+			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, poolPairs, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+		share, ok := shares[metaData.Index()]
+		if !ok || share == nil {
+			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, poolPairs, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+		shareAmount := poolPair.calculateShareAmount(metaData.Token0Amount(), metaData.Token1Amount())
+		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(metaData.NftID(), metaData.Index(), shareAmount)
+		if err != nil {
+			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, poolPairs, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+
+		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
+			*metaData,
+			poolPair.state.Token0ID(), poolPair.state.Token1ID(),
+			token0Amount, token1Amount, shareAmount,
+			txReqID, shardID)
+		if err != nil {
+			return res, poolPairs, err
+		}
+		res = append(res, insts...)
+	}
+	return res, poolPairs, nil
 }

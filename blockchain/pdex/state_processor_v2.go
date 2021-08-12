@@ -271,7 +271,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			amount1 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
 			amount0 = matchAndReturnContributionValue.Amount()
 		}
-		err = poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
+		err = poolPair.addReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 		}
@@ -455,8 +455,75 @@ func (sp *stateProcessorV2) trade(
 func (sp *stateProcessorV2) withdrawLiquidity(
 	stateDB *statedb.StateDB,
 	inst []string,
+	poolPairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	var err error
+	switch inst[1] {
+	case common.PDEWithdrawalRejectedChainStatus:
+		err = sp.rejectWithdrawLiquidity(stateDB, inst)
+	case common.PDEWithdrawalAcceptedChainStatus:
+		poolPairs, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs)
+	}
+	if err != nil {
+		return poolPairs, err
+	}
+
+	return poolPairs, err
+}
+
+func (sp *stateProcessorV2) rejectWithdrawLiquidity(
+	stateDB *statedb.StateDB, inst []string,
 ) error {
-	return nil
+	rejectWithdrawLiquidity := instruction.NewRejectWithdrawLiquidity()
+	err := rejectWithdrawLiquidity.FromStringSlice(inst)
+	if err != nil {
+		return err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawLiquidityStatusPrefix(),
+		[]byte(rejectWithdrawLiquidity.TxReqID().String()),
+		[]byte{byte(common.PDEWithdrawalRejectedStatus)},
+	)
+	return err
+}
+
+func (sp *stateProcessorV2) acceptWithdrawLiquidity(
+	stateDB *statedb.StateDB, inst []string,
+	poolPairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
+	err := acceptWithdrawLiquidity.FromStringSlice(inst)
+	if err != nil {
+		return poolPairs, err
+	}
+	poolPair, ok := poolPairs[acceptWithdrawLiquidity.PoolPairID()]
+	if !ok || poolPair == nil {
+		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
+		return poolPairs, err
+	}
+	shares, ok := poolPair.shares[acceptWithdrawLiquidity.NftID().String()]
+	if !ok || shares == nil {
+		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
+		return poolPairs, err
+	}
+	share, ok := shares[acceptWithdrawLiquidity.Index().String()]
+	if !ok || share == nil {
+		err := fmt.Errorf("Can't find txHash %s", acceptWithdrawLiquidity.Index())
+		return poolPairs, err
+	}
+	_, _, _, err = poolPair.deductShare(
+		acceptWithdrawLiquidity.NftID().String(),
+		acceptWithdrawLiquidity.Index().String(),
+		acceptWithdrawLiquidity.ShareAmount(),
+	)
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawLiquidityStatusPrefix(),
+		[]byte(acceptWithdrawLiquidity.TxReqID().String()),
+		[]byte{byte(common.PDEWithdrawalAcceptedStatus)},
+	)
+	return poolPairs, err
 }
 
 func (sp *stateProcessorV2) addOrder(

@@ -133,8 +133,8 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				state:  tt.fields.state,
 				shares: tt.fields.shares,
 			}
-			if got := p.updateReserveAndCalculateShare(tt.args.token0ID, tt.args.token1ID, tt.args.token0Amount, tt.args.token1Amount); got != tt.want {
-				t.Errorf("PoolPairState.updateReserveAndShares() = %v, want %v", got, tt.want)
+			if got := p.addReserveDataAndCalculateShare(tt.args.token0ID, tt.args.token1ID, tt.args.token0Amount, tt.args.token1Amount); got != tt.want {
+				t.Errorf("PoolPairState.addReserveDataAndCalculateShare() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(tt.fieldsAfterProcess.state.Token0VirtualAmount(), p.state.Token0VirtualAmount()) {
 				t.Errorf("token0VirtualAmount expect %v but get %v", tt.fieldsAfterProcess.state.Token0VirtualAmount(), p.state.Token0VirtualAmount())
@@ -332,7 +332,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				state:  tt.fields.state,
 				shares: tt.fields.shares,
 			}
-			p.updateReserveData(tt.args.amount0, tt.args.amount1, tt.args.shareAmount)
+			p.addReserveData(tt.args.amount0, tt.args.amount1, tt.args.shareAmount)
 			if !reflect.DeepEqual(tt.fieldsAfterProcess.state.Token0VirtualAmount(), p.state.Token0VirtualAmount()) {
 				t.Errorf("token0VirtualAmount expect %v but get %v", tt.fieldsAfterProcess.state.Token0VirtualAmount(), p.state.Token0VirtualAmount())
 				return

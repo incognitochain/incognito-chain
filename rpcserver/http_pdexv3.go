@@ -468,10 +468,6 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	beaconHeightIndex, err := common.AssertAndConvertNumber(withdrawLiquidityRequest.Index)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
 	token0Amount, err := common.AssertAndConvertNumber(withdrawLiquidityRequest.Token0Amount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -495,7 +491,7 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		withdrawLiquidityRequest.PoolPairID,
 		withdrawLiquidityRequest.TokenID,
 		otaReceiveNftStr,
-		beaconHeightIndex, token0Amount, token1Amount,
+		withdrawLiquidityRequest.Index, token0Amount, token1Amount,
 		otaReceiveTradingFees,
 	)
 

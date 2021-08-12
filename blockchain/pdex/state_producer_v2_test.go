@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -348,7 +349,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"11": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -383,7 +384,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						),
 						shares: map[string]map[string]*Share{
 							nftID: map[string]*Share{
-								"10": &Share{
+								firstTxHash.String(): &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 10,
@@ -419,7 +420,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"10": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
@@ -436,7 +437,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"11": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -539,7 +540,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						),
 						shares: map[string]map[string]*Share{
 							nftID: map[string]*Share{
-								"10": &Share{
+								firstTxHash.String(): &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 10,
@@ -579,12 +580,12 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"10": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
 							},
-							"11": &Share{
+							thirdTxHash.String(): &Share{
 								amount:                  100,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 11,
@@ -618,7 +619,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						),
 						shares: map[string]map[string]*Share{
 							nftID: map[string]*Share{
-								"10": &Share{
+								firstTxHash.String(): &Share{
 									amount:                  200,
 									tradingFees:             map[string]uint64{},
 									lastUpdatedBeaconHeight: 10,
@@ -659,13 +660,13 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					),
 					shares: map[string]map[string]*Share{
 						nftID: map[string]*Share{
-							"10": &Share{
+							firstTxHash.String(): &Share{
 								amount:                  200,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 10,
 							}},
 						nftID1: map[string]*Share{
-							"12": &Share{
+							thirdTxHash.String(): &Share{
 								amount:                  100,
 								tradingFees:             map[string]uint64{},
 								lastUpdatedBeaconHeight: 12,
@@ -701,8 +702,12 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				for k, v := range got1 {
-					if !reflect.DeepEqual(v.orderbook, tt.want1[k].orderbook) {
-						t.Errorf("shares got1 = %v, want %v", v.orderbook, tt.want1[k].orderbook)
+					if !reflect.DeepEqual(v.shares, tt.want1[k].shares) {
+						for key, value := range v.shares {
+							fmt.Println("key & value:", key, value)
+							fmt.Println("want value:", tt.want1[k].shares[key])
+						}
+						t.Errorf("shares got1 = %v, want %v", v.shares, tt.want1[k].shares)
 					}
 				}
 				t.Errorf("stateProducerV2.addLiquidity() got1 = %v, want %v", got1, tt.want1)
