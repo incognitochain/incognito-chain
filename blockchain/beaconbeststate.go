@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	finishsync "github.com/incognitochain/incognito-chain/blockchain/finishsync"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"reflect"
 	"time"
@@ -950,25 +951,27 @@ func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []string, shardID byte) []string {
+func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []*consensus.Validator, shardID byte) ([]*consensus.Validator, []string) {
 	if len(validatorFromUserKeys) == 0 {
-		return []string{}
+		return []*consensus.Validator{}, []string{}
 	}
 	syncingValidators := beaconBestState.beaconCommitteeState.GetSyncingValidators()[shardID]
-	syncingValidatorsString, _ := incognitokey.CommitteeKeyListToString(syncingValidators)
-	finishedSyncValidator := []string{}
+	finishedSyncUserKeys := []*consensus.Validator{}
+	finishedSyncValidators := []string{}
 
-	for i, v := range syncingValidators {
+	for _, v := range syncingValidators {
 		blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
 		for _, userKey := range validatorFromUserKeys {
-			if blsKey == userKey {
-				finishedSyncValidator = append(finishedSyncValidator, syncingValidatorsString[i])
+			if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+				finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+				temp, _ := v.ToBase58()
+				finishedSyncValidators = append(finishedSyncValidators, temp)
 				break
 			}
 		}
 	}
 
-	return finishedSyncValidator
+	return finishedSyncUserKeys, finishedSyncValidators
 }
 
 func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeChange *committeestate.CommitteeChange) {

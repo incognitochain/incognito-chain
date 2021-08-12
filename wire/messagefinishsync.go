@@ -11,11 +11,12 @@ import (
 
 type MessageFinishSync struct {
 	CommitteePublicKey []string
+	Signature          [][]byte
 	ShardID            byte
 }
 
-func NewMessageFinishSync(committeePublicKey []string, shardID byte) *MessageFinishSync {
-	return &MessageFinishSync{CommitteePublicKey: committeePublicKey, ShardID: shardID}
+func NewMessageFinishSync(committeePublicKey []string, signature [][]byte, shardID byte) *MessageFinishSync {
+	return &MessageFinishSync{CommitteePublicKey: committeePublicKey, Signature: signature, ShardID: shardID}
 }
 
 func (msg *MessageFinishSync) Hash() string {

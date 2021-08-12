@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
+	"github.com/incognitochain/incognito-chain/wire"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -1016,16 +1018,36 @@ func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
 }
 
 // AddFinishedSyncValidators add finishedSyncValidators from message to all current beacon views
-func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) {
+func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []string, signatures [][]byte, shardID byte) {
+	validCommitteePublicKeys := verifyFinishedSyncValidatorsSign(committeePublicKeys, signatures)
 	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
 		beaconView := view.(*BeaconBestState)
 		syncPool, _ := incognitokey.CommitteeKeyListToString(beaconView.beaconCommitteeState.GetSyncingValidators()[shardID])
 		beaconView.FinishSyncManager.AddFinishedSyncValidators(
-			committeePublicKeys,
+			validCommitteePublicKeys,
 			syncPool,
 			shardID,
 		)
 	}
+}
+
+func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [][]byte) []string {
+	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	validFinishedSyncValidators := []string{}
+	for i, key := range committeePublicKeyStructs {
+		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], []byte(wire.CmdMsgFinishSync), signatures[i])
+		if err != nil {
+			Logger.log.Errorf("Verify finish Sync Validator Sign failed, err", committeePublicKeys[i], signatures[i], err)
+			continue
+		}
+		if !isValid {
+			Logger.log.Errorf("Verify finish Sync Validator Sign failed", committeePublicKeys[i], signatures[i])
+			continue
+		}
+		validFinishedSyncValidators = append(validFinishedSyncValidators, committeePublicKeys[i])
+	}
+
+	return validFinishedSyncValidators
 }
 
 func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*statedb.StakerInfo, error) {

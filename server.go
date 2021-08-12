@@ -974,9 +974,11 @@ var finishSyncMessageHistory = metrics.NewRegisteredCounter("message/finish-sync
 
 //OnFinishSync handle finish sync message
 func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
+	Logger.log.Info("Receive a MsgFinishSync", msg.CommitteePublicKey)
 	finishSyncMessageHistory.Inc(1)
-	Logger.log.Debug("Receive a MsgFinishSync", msg.CommitteePublicKey)
-	serverObj.blockChain.AddFinishedSyncValidators(msg.CommitteePublicKey, msg.ShardID)
+	if len(msg.CommitteePublicKey) > 0 {
+		serverObj.blockChain.AddFinishedSyncValidators(msg.CommitteePublicKey, msg.Signature, msg.ShardID)
+	}
 }
 
 // OnBlock is invoked when a peer receives a block message.  It

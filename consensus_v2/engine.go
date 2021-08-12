@@ -45,10 +45,10 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 	return s.validators
 }
 
-func (s *Engine) SyncingValidatorsByShardID(shardID int) []string {
-	res := []string{}
+func (s *Engine) GetSyncingValidators() []*consensus.Validator {
+	res := []*consensus.Validator{}
 	for _, validator := range s.validators {
-		res = append(res, validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
+		res = append(res, validator)
 	}
 	return res
 }

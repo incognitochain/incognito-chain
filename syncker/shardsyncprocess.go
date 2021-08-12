@@ -236,9 +236,22 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 	if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {
 		if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
 			s.finalBeaconBlockHeight = committeeView.BeaconHeight
-			validatorFromUserKeys := s.consensus.SyncingValidatorsByShardID(s.shardID)
-			finishedSyncValidator := committeeView.ExtractFinishSyncingValidators(validatorFromUserKeys, byte(s.shardID))
-			msg := wire.NewMessageFinishSync(finishedSyncValidator, byte(s.shardID))
+			validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
+				s.consensus.GetSyncingValidators(), byte(s.shardID))
+			finishedSyncValidators := []string{}
+			finishedSyncSignatures := [][]byte{}
+			for i, v := range validatorFromUserKeys {
+				signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+				if err != nil {
+					continue
+				}
+				finishedSyncSignatures = append(finishedSyncSignatures, signature)
+				finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
+			}
+			if len(finishedSyncValidators) == 0 {
+				return
+			}
+			msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
 			s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
 		}
 	}
