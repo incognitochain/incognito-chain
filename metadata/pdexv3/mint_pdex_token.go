@@ -18,6 +18,11 @@ type MintPDEXGenesisResponse struct {
 	SharedRandom          []byte `json:"SharedRandom"`
 }
 
+type MintPDEXBlockRewardContent struct {
+	PairID string `json:"PairID"`
+	Amount uint   `json:"Amount"`
+}
+
 type MintPDEXGenesisContent struct {
 	MintingPaymentAddress string `json:"MintingPaymentAddress"`
 	MintingAmount         uint64 `json:"MintingAmount"`

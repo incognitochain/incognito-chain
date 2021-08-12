@@ -11,14 +11,16 @@ import (
 
 func BuildModifyParamsInst(
 	params metadataPdexv3.Pdexv3Params,
+	errorMsg string,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
 ) []string {
 	modifyingParamsReqContent := metadataPdexv3.ParamsModifyingContent{
-		Content: params,
-		TxReqID: reqTxID,
-		ShardID: shardID,
+		Content:  params,
+		ErrorMsg: errorMsg,
+		TxReqID:  reqTxID,
+		ShardID:  shardID,
 	}
 	modifyingParamsReqContentBytes, _ := json.Marshal(modifyingParamsReqContent)
 	return []string{
@@ -26,6 +28,26 @@ func BuildModifyParamsInst(
 		strconv.Itoa(int(shardID)),
 		status,
 		string(modifyingParamsReqContentBytes),
+	}
+}
+
+func BuildMintPDEXInst(
+	pairID string,
+	mintingAmount uint,
+) [][]string {
+	reqContent := metadataPdexv3.MintPDEXBlockRewardContent{
+		PairID: pairID,
+		Amount: mintingAmount,
+	}
+	reqContentBytes, _ := json.Marshal(reqContent)
+
+	return [][]string{
+		{
+			strconv.Itoa(metadataCommon.Pdexv3MintPDEXBlockRewardMeta),
+			strconv.Itoa(-1),
+			metadataPdexv3.RequestAcceptedChainStatus,
+			string(reqContentBytes),
+		},
 	}
 }
 

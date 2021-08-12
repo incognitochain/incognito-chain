@@ -197,6 +197,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
+		case metadataCommon.Pdexv3MintPDEXBlockRewardMeta:
+			s.poolPairs, err = s.processor.mintPDEX(
+				env.StateDB(),
+				inst,
+				s.poolPairs,
+			)
 		case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 			s.poolPairs,
 				s.waitingContributions,
@@ -308,7 +314,16 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	if pdexBlockRewards > 0 {
-		// TODO: update state here
+		var mintInstructions [][]string
+		mintInstructions, s.poolPairs, err = s.producer.mintPDEX(
+			pdexBlockRewards,
+			s.params,
+			s.poolPairs,
+		)
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, mintInstructions...)
 	}
 
 	var tradeInstructions [][]string
@@ -324,6 +339,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	var withdrawLPFeeInstructions [][]string
 	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
 		withdrawLPFeeTxs,
+		env.StateDB(),
 		env.BeaconHeight(),
 		s.poolPairs,
 	)
@@ -348,6 +364,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		modifyParamsTxs,
 		env.BeaconHeight(),
 		s.params,
+		s.poolPairs,
+		s.stakingPoolsState,
 	)
 	if err != nil {
 		return instructions, err

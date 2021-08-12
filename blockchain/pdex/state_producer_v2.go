@@ -3,6 +3,7 @@ package pdex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -25,25 +26,45 @@ type stateProducerV2 struct {
 	stateProducerBase
 }
 
-func isValidPdexv3Params(params Params) bool {
+func isValidPdexv3Params(
+	params Params,
+	pairs map[string]*PoolPairState,
+	stakingPools map[string]*StakingPoolState,
+) (bool, string) {
 	if params.DefaultFeeRateBPS > MaxFeeRateBPS {
-		return false
+		return false, "Default fee rate is too high"
 	}
-	for _, feeRate := range params.FeeRateBPS {
+	for pairID, feeRate := range params.FeeRateBPS {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v is not existed", pairID)
+		}
 		if feeRate > MaxFeeRateBPS {
-			return false
+			return false, fmt.Sprintf("Fee rate of pair %v is too high", pairID)
 		}
 	}
 	if params.PRVDiscountPercent > MaxPRVDiscountPercent {
-		return false
+		return false, "PRV discount percent is too high"
 	}
 	if params.TradingStakingPoolRewardPercent+params.TradingProtocolFeePercent > 100 {
-		return false
+		return false, "Sum of trading's staking pool + protocol fee is invalid"
 	}
 	if params.LimitProtocolFeePercent+params.LimitStakingPoolRewardPercent > 100 {
-		return false
+		return false, "Sum of limit order's staking pool + protocol fee is invalid"
 	}
-	return true
+	for pairID := range params.PDEXRewardPoolPairsShare {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v is not existed", pairID)
+		}
+	}
+	for stakingPoolID := range params.StakingPoolsShare {
+		_, isExisted := stakingPools[stakingPoolID]
+		if !isExisted {
+			return false, fmt.Sprintf("Staking pool %v is not existed", stakingPoolID)
+		}
+	}
+	return true, ""
 }
 
 func (sp *stateProducerV2) addLiquidity(
@@ -303,6 +324,8 @@ func (sp *stateProducerV2) modifyParams(
 	txs []metadata.Transaction,
 	beaconHeight uint64,
 	params Params,
+	pairs map[string]*PoolPairState,
+	stakingPools map[string]*StakingPoolState,
 ) ([][]string, Params, error) {
 	instructions := [][]string{}
 
@@ -317,7 +340,7 @@ func (sp *stateProducerV2) modifyParams(
 		// check conditions
 		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
-		isValidParams := isValidPdexv3Params(newParams)
+		isValidParams, errorMsg := isValidPdexv3Params(newParams, pairs, stakingPools)
 
 		status := ""
 		if isValidParams {
@@ -329,6 +352,7 @@ func (sp *stateProducerV2) modifyParams(
 
 		inst := v2utils.BuildModifyParamsInst(
 			metadataParams,
+			errorMsg,
 			shardID,
 			txReqID,
 			status,
@@ -337,6 +361,51 @@ func (sp *stateProducerV2) modifyParams(
 	}
 
 	return instructions, params, nil
+}
+
+func (sp *stateProducerV2) mintPDEX(
+	mintingAmount uint64,
+	params Params,
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	instructions := [][]string{}
+
+	totalRewardShare := uint64(0)
+	for _, shareAmount := range params.PDEXRewardPoolPairsShare {
+		totalRewardShare += uint64(shareAmount)
+	}
+
+	for pairID, shareRewardAmount := range params.PDEXRewardPoolPairsShare {
+		pair, isExisted := pairs[pairID]
+		if !isExisted {
+			return instructions, pairs, fmt.Errorf("Could not find pair %v for distributing PDEX reward", pairID)
+		}
+
+		// pairReward = mintingAmount * shareRewardAmount / totalRewardShare
+		pairReward := new(big.Int).Mul(new(big.Int).SetUint64(mintingAmount), new(big.Int).SetUint64(uint64(shareRewardAmount)))
+		pairReward = new(big.Int).Div(pairReward, new(big.Int).SetUint64(totalRewardShare))
+
+		// update state of PDEX token in pool pair state
+		oldLPFeesPerShare, isExisted := pair.state.LPFeesPerShare()[common.PDEXCoinID]
+		if !isExisted {
+			oldLPFeesPerShare = big.NewInt(0)
+		}
+
+		// delta (fee / LP share) = pairReward * BASE / totalLPShare
+		deltaLPFeesPerShare := new(big.Int).Mul(pairReward, BaseLPFeesPerShare)
+		deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(pair.state.ShareAmount()))
+
+		// update accumulated sum of (fee / LP share)
+		newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
+		tempLPFeesPerShare := pair.state.LPFeesPerShare()
+		tempLPFeesPerShare[common.PDEXCoinID] = newLPFeesPerShare
+
+		pair.state.SetLPFeesPerShare(tempLPFeesPerShare)
+
+		instructions = append(instructions, v2utils.BuildMintPDEXInst(pairID, uint(pairReward.Int64()))...)
+	}
+
+	return instructions, pairs, nil
 }
 
 func (sp *stateProducerV2) trade(
@@ -426,6 +495,7 @@ func (sp *stateProducerV2) addOrder(
 
 func (sp *stateProducerV2) withdrawLPFee(
 	txs []metadata.Transaction,
+	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	pairs map[string]*PoolPairState,
 ) ([][]string, map[string]*PoolPairState, error) {

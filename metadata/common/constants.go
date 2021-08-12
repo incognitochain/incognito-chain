@@ -70,6 +70,7 @@ const (
 	Pdexv3WithdrawProtocolFeeRequestMeta  = 285
 	Pdexv3WithdrawProtocolFeeResponseMeta = 286
 	Pdexv3MintPDEXGenesisMeta             = 287
+	Pdexv3MintPDEXBlockRewardMeta         = 288
 
 	// portal
 	PortalCustodianDepositMeta                  = 100

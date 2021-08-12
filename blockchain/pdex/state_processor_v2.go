@@ -356,6 +356,7 @@ func (sp *stateProcessorV2) modifyParams(
 
 	modifyingReqStatus := metadataPdexv3.ParamsModifyingRequestStatus{
 		Status:       reqTrackStatus,
+		ErrorMsg:     actionData.ErrorMsg,
 		Pdexv3Params: metadataPdexv3.Pdexv3Params(actionData.Content),
 	}
 	modifyingReqStatusBytes, _ := json.Marshal(modifyingReqStatus)
@@ -583,5 +584,54 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 	if err != nil {
 		Logger.log.Errorf("PDex v3 Withdrawal Protocol Fee: An error occurred while tracking request tx - Error: %v", err)
 	}
+	return pairs, err
+}
+
+func (sp *stateProcessorV2) mintPDEX(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.MintPDEXBlockRewardContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	pair, isExisted := pairs[actionData.PairID]
+	if !isExisted {
+		msg := fmt.Sprintf("Could not find pair %s for minting", actionData.PairID)
+		Logger.log.Errorf(msg)
+		return pairs, fmt.Errorf(msg)
+	}
+
+	// update state of PDEX token in pool pair state
+	oldLPFeesPerShare, isExisted := pair.state.LPFeesPerShare()[common.PDEXCoinID]
+	if !isExisted {
+		oldLPFeesPerShare = big.NewInt(0)
+	}
+
+	pairReward := new(big.Int).SetUint64(uint64(actionData.Amount))
+
+	// delta (fee / LP share) = pairReward * BASE / totalLPShare
+	deltaLPFeesPerShare := new(big.Int).Mul(pairReward, BaseLPFeesPerShare)
+	deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(pair.state.ShareAmount()))
+
+	// update accumulated sum of (fee / LP share)
+	newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
+	tempLPFeesPerShare := pair.state.LPFeesPerShare()
+	tempLPFeesPerShare[common.PDEXCoinID] = newLPFeesPerShare
+
+	pair.state.SetLPFeesPerShare(tempLPFeesPerShare)
+
 	return pairs, err
 }
