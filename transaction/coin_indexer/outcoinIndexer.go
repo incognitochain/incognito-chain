@@ -428,14 +428,16 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	}
 }
 
+// GetIndexedOutCoin returns the indexed (i.e, cached) output coins of an otaKey w.r.t a tokenID.
+// It returns an error if the otaKey hasn't been submitted (state = 0) or the indexing is in progress (state = 1).
 func (ci *CoinIndexer) GetIndexedOutCoin(otaKey privacy.OTAKey, tokenID *common.Hash, txDb *statedb.StateDB, shardID byte) ([]privacy.Coin, int, error) {
 	vkb := OTAKeyToRaw(otaKey)
 	utils.Logger.Log.Infof("Retrieve re-indexed coins for %x from db %v", vkb, ci.db)
-	_, processing := ci.HasOTAKey(vkb)
-	if processing == 1 {
+	_, status := ci.HasOTAKey(vkb)
+	if status == 1 {
 		return nil, 1, fmt.Errorf("OTA Key %x not ready : Sync still in progress", otaKey)
 	}
-	if processing == 0 {
+	if status == 0 {
 		// this is a new view key
 		return nil, 0, fmt.Errorf("OTA Key %x not synced", otaKey)
 	}
@@ -461,7 +463,7 @@ func (ci *CoinIndexer) GetIndexedOutCoin(otaKey privacy.OTAKey, tokenID *common.
 			}
 		}
 	}
-	return result, 2, nil
+	return result, status, nil
 }
 
 // StoreIndexedOutputCoins stores output coins that have been indexed into the cache db. It also keep tracks of each
