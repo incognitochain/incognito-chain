@@ -198,7 +198,7 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
 		nextHeight := height + utils.MaxOutcoinQueryInterval
 
 		// query token output coins
-		currentOutputCoinsToken, err := QueryDbCoinVer2(idxParams.OTAKey, idxParams.ShardID, &common.ConfidentialAssetID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
+		currentOutputCoinsToken, err := QueryDbCoinVer2(idxParams.OTAKey, &common.ConfidentialAssetID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
 		if err != nil {
 			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v\n", err)
 
@@ -208,7 +208,7 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
 		}
 
 		// query PRV output coins
-		currentOutputCoinsPRV, err := QueryDbCoinVer2(idxParams.OTAKey, idxParams.ShardID, &common.PRVCoinID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
+		currentOutputCoinsPRV, err := QueryDbCoinVer2(idxParams.OTAKey, &common.PRVCoinID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
 		if err != nil {
 			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
 
