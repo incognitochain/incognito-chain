@@ -110,7 +110,7 @@ func OTAKeyFromRaw(b [64]byte) privacy.OTAKey {
 
 // QueryDbCoinVer1 returns all v1 output coins of a public key on the given tokenID.
 func QueryDbCoinVer1(pubKey []byte, tokenID *common.Hash, db *statedb.StateDB) ([]privacy.Coin, error) {
-	shardID := common.GetShardIDFromLastByte(pubKey[len(pubKey) - 1])
+	shardID := common.GetShardIDFromLastByte(pubKey[len(pubKey)-1])
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(db, *tokenID, pubKey, shardID)
 	if err != nil {
 		utils.Logger.Log.Errorf("get outCoins by pubKey error: %v\n", err)
@@ -133,7 +133,7 @@ func QueryDbCoinVer1(pubKey []byte, tokenID *common.Hash, db *statedb.StateDB) (
 // `destHeight` using the given list of filters.
 func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) ([]privacy.Coin, error) {
 	pubKeyBytes := otaKey.GetPublicSpend().ToBytesS()
-	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes) - 1])
+	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
 
 	var outCoins []privacy.Coin
 	// avoid overlap; unless lower height is 0

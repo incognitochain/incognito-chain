@@ -20,7 +20,7 @@ func TestCoinIndexer_getIdxParamsForIndexing(t *testing.T) {
 		//Prepare data
 		scaleFactor := 50
 
-		numWorkers := common.RandInt() % 10 + 1
+		numWorkers := common.RandInt()%10 + 1
 		fmt.Printf("totalNumWorkers: %v\n", numWorkers)
 		ci := CoinIndexer{numWorkers: numWorkers}
 		ci.IdxChan = make(chan IndexParam, scaleFactor*ci.numWorkers)

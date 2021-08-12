@@ -1,3 +1,9 @@
+// Package coinIndexer implements a UTXO cache for v2 output coins.
+// Privacy V2 boosted up the the privacy of a transaction but also resulted in retrieving output coins of users becoming
+// more and more costly in terms of time and computing resources. This cache layer makes the retrieval easier.
+// However, users have to submit their OTA keys to the cache (for the cache to be able to tell which output coins belong to them).
+// This also reduces the anonymity level of a user. The good news is that the cache layer only knows which output coins
+// belong to an OTAKey, it does not know their values.
 package coinIndexer
 
 import (
@@ -16,6 +22,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+// CoinIndexer implements a UTXO cache for v2 output coins.
 type CoinIndexer struct {
 	numWorkers          int // the maximum number of indexing go-routines for the enhanced cache.
 	mtx                 *sync.RWMutex
