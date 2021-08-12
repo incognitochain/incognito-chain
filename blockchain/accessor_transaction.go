@@ -429,9 +429,9 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 	}
 
 	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
-	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
-	if keyExists && !isReset && processing != 2 {
-		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
+	keyExists, state := outcoinIndexer.HasOTAKey(otaBytes)
+	if keyExists && !isReset && state != coinIndexer.StatusKeySubmittedUsual {
+		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, state)
 	}
 
 	if accessToken != "" && !outcoinIndexer.IsAuthorizedRunning() {
@@ -439,7 +439,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 	}
 
 	otaKeyStr := fmt.Sprintf("%x", otaBytes)
-	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaKeyStr, keyExists, processing, isReset)
+	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaKeyStr, keyExists, state, isReset)
 
 	pkb := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
@@ -500,13 +500,13 @@ func (blockchain *BlockChain) GetKeySubmissionInfo(keyStr string) (int, error) {
 	}
 
 	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
-	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
+	keyExists, state := outcoinIndexer.HasOTAKey(otaBytes)
 
 	if !keyExists {
 		return 0, fmt.Errorf("ota key hasn't been submitted")
 	}
 
-	return processing, nil
+	return state, nil
 }
 
 // GetAllOutputCoinsByKeyset retrieves and tries to decrypt all output coins of a key-set.
