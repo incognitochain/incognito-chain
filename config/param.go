@@ -144,6 +144,7 @@ func LoadParam() *param {
 			panic(err)
 		}
 	}
+	p.LoadKeyByNetwork(network)
 	common.TIMESLOT = p.ConsensusParam.Timeslot
 	common.MaxShardNumber = p.ActiveShards
 	return p
