@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -207,6 +208,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 
 	for i := 0; i < p.ActiveShards; i++ {
 		for j := 0; j < p.CommitteeSize.InitShardCommitteeSize; j++ {
+			fmt.Println("i, j--------------------------------", i, j, keylist.Shard[i][j].CommitteePublicKey)
 			p.GenesisParam.PreSelectShardNodeSerializedPubkey =
 				append(p.GenesisParam.PreSelectShardNodeSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
 			p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress =
