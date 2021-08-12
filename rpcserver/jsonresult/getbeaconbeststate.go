@@ -4,6 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -42,6 +43,7 @@ type GetBeaconBestState struct {
 	FinishSyncManager                      map[byte][]string                            `json:"FinishSyncManager"`
 	NumberOfMissingSignature               map[string]signaturecounter.MissingSignature `json:"MissingSignature"`
 	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"`
+	Config                                 map[string]interface{}                       `json:"Config"`
 }
 
 func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState {
@@ -178,7 +180,9 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	}
 
 	result.FinishSyncManager = data.GetFinishSyncValidators()
-
+	result.Config = make(map[string]interface{})
+	result.Config["EnableSlashingHeightV1"] = config.Param().ConsensusParam.EnableSlashingHeight
+	result.Config["InitShardCommitteeSize"] = config.Param().CommitteeSize.InitShardCommitteeSize
 	return result
 }
 
