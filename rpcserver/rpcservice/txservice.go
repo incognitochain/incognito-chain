@@ -1819,6 +1819,9 @@ func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string
 	}
 
 	for _, v := range balances {
+		if v.Amount == 0 {
+			continue
+		}
 		res.ListCustomTokenBalance = append(res.ListCustomTokenBalance, v)
 	}
 	return res, nil
