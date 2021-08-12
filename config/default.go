@@ -238,25 +238,35 @@ var Tesnet2Param = &param{
 	IsBackup: false,
 }
 
-func NewDefaultParam(network string) *param {
-	var p *param
+func (p *param) LoadKeyByNetwork(network string) {
 	initTx := new(initTx)
 	switch network {
 	case "mainnet":
-		p = MainnetParam
 		p.LoadKey(MainnetKeylist, Mainnetv2Keylist) //if there is keylist file in config folder, this default keylist will be not used
 		initTx.load(MainnetInitTx)                  //if there is init_tx file in config folder, this default init_tx  will be not used
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 	case "testnet-1":
-		p = Testnet1Param
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet1InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 	case "testnet-2", "local":
-		p = Tesnet2Param
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet2InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+	default:
+		panic("Cannot recognize network")
+	}
+}
+
+func NewDefaultParam(network string) *param {
+	var p *param
+	switch network {
+	case "mainnet":
+		p = MainnetParam
+	case "testnet-1":
+		p = Testnet1Param
+	case "testnet-2", "local":
+		p = Tesnet2Param
 	default:
 		panic("Cannot recognize network")
 	}
