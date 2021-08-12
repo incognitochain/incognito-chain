@@ -145,13 +145,13 @@ func (ci *CoinIndexer) RemoveOTAKey(otaKey privacy.OTAKey) error {
 }
 
 // AddOTAKey adds a new OTAKey to the cache list.
-func (ci *CoinIndexer) AddOTAKey(otaKey privacy.OTAKey) error {
+func (ci *CoinIndexer) AddOTAKey(otaKey privacy.OTAKey, state int) error {
 	keyBytes := OTAKeyToRaw(otaKey)
 	err := rawdbv2.StoreIndexedOTAKey(ci.db, keyBytes[:])
 	if err != nil {
 		return err
 	}
-	ci.ManagedOTAKeys.Store(keyBytes, 2)
+	ci.ManagedOTAKeys.Store(keyBytes, state)
 	return nil
 }
 
@@ -258,7 +258,7 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
 	}
 
 	// write
-	err := rawdbv2.StoreIndexedOTAKey(ci.db, vkb[:])
+	err := ci.AddOTAKey(idxParams.OTAKey, StatusIndexingFinished)
 	if err == nil {
 		err = ci.StoreIndexedOutputCoins(idxParams.OTAKey, allOutputCoins, idxParams.ShardID)
 		if err != nil {
@@ -276,7 +276,6 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
 		return
 	}
 
-	ci.ManagedOTAKeys.Store(vkb, StatusIndexingFinished)
 	utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, timeElapsed: %v\n", vkb, time.Since(start).Seconds())
 
 	status.err = nil
@@ -419,7 +418,8 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	for otaStr, idxParam := range mapIdxParams {
 		vkb := OTAKeyToRaw(idxParam.OTAKey)
 		allOutputCoins := mapOutputCoins[otaStr]
-		err := rawdbv2.StoreIndexedOTAKey(ci.db, vkb[:])
+
+		err := ci.AddOTAKey(idxParam.OTAKey, StatusIndexingFinished)
 		if err == nil {
 			utils.Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x\n", len(allOutputCoins), vkb)
 			err = ci.StoreIndexedOutputCoins(idxParam.OTAKey, allOutputCoins, shardID)
@@ -446,7 +446,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 			continue
 		}
 
-		ci.ManagedOTAKeys.Store(vkb, StatusIndexingFinished)
 		utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, len(allOutputCoins), time.Since(start).Seconds())
 
 		ci.statusChan <- mapStatuses[otaStr]
@@ -577,12 +576,15 @@ func (ci *CoinIndexer) Start() {
 			utils.Logger.Log.Infof("New authorized OTAKey received: %x\n", otaKeyBytes)
 
 			// update the state of the OTAKey to Indexing
-			ci.ManagedOTAKeys.Store(otaKeyBytes, StatusIndexing)
-
-			ci.mtx.Lock()
-			ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
-			ci.queueSize++
-			ci.mtx.Unlock()
+			err = ci.AddOTAKey(idxParams.OTAKey, StatusIndexing)
+			if err != nil {
+				utils.Logger.Log.Errorf("Adding OTAKey %x error: %v\n", otaKeyBytes, err)
+			} else {
+				ci.mtx.Lock()
+				ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
+				ci.queueSize++
+				ci.mtx.Unlock()
+			}
 
 		case <-ci.quitChan:
 			ci.mtx.Lock()

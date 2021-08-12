@@ -479,8 +479,8 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 			return fmt.Errorf("invalid access token")
 		}
 	} else {
-		Logger.log.Infof("OTA Key Submission %x", otaKey)
-		return outcoinIndexer.AddOTAKey(otaKey)
+		Logger.log.Infof("OTA Key Submission %x using the regular cache", otaKey)
+		return outcoinIndexer.AddOTAKey(otaKey, coinIndexer.StatusKeySubmittedUsual)
 	}
 }
 
