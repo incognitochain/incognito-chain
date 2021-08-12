@@ -183,6 +183,8 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	result.Config = make(map[string]interface{})
 	result.Config["EnableSlashingHeightV1"] = config.Param().ConsensusParam.EnableSlashingHeight
 	result.Config["InitShardCommitteeSize"] = config.Param().CommitteeSize.InitShardCommitteeSize
+	result.Config["NumberOfBlockInEpoch"] = config.Param().EpochParam.NumberOfBlockInEpoch
+	result.Config["RandomTime"] = config.Param().EpochParam.RandomTime
 	return result
 }
 
