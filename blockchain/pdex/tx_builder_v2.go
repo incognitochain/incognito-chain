@@ -73,11 +73,10 @@ func (txBuilder *TxBuilderV2) Build(
 			if err != nil {
 				return nil, err
 			}
-			tx, err := v2.OrderRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
+			tx, err = v2.OrderRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
 			if err != nil {
-				return res, err
+				return nil, err
 			}
-			res = append(res, tx)
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
