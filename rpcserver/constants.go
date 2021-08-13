@@ -243,6 +243,8 @@ const (
 	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
 	pdexv3TxTrade                         = "pdexv3_txTrade"
 	pdexv3TxAddOrder                      = "pdexv3_txAddOrder"
+	pdexv3GetTradeStatus                  = "pdexv3_getTradeStatus"
+	pdexv3GetAddOrderStatus               = "pdexv3_getAddOrderStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

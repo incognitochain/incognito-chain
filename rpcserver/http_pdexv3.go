@@ -407,6 +407,8 @@ func (httpServer *HttpServer) handleGetPdexv3ContributionStatus(params interface
 	return httpServer.handleGetPDEContributionStatusV2(params, closeChan)
 }
 
+// --- Trade - Order ---
+
 func (httpServer *HttpServer) handlePdexv3TxTradeRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// create tx
 	data, isPRV, err := createPdexv3TradeRequestTransaction(httpServer, params)
@@ -428,6 +430,64 @@ func (httpServer *HttpServer) handlePdexv3TxAddOrderRequest(params interface{}, 
 	createTxResult := []interface{}{data.Base58CheckData}
 	// send tx
 	return sendCreatedTransaction(httpServer, createTxResult, isPRV, closeChan)
+}
+
+func (httpServer *HttpServer) handlePdexv3GetTradeStatus(params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3TradeStatusPrefix(),
+		txID[:],
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Cannot get TradeStatus data"))
+	}
+
+	return string(data), nil
+}
+
+func (httpServer *HttpServer) handlePdexv3GetAddOrderStatus(params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3AddOrderStatusPrefix(),
+		txID[:],
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Cannot get AddOrderStatus data"))
+	}
+
+	return string(data), nil
 }
 
 // --- Helpers ---
