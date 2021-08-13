@@ -137,6 +137,8 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 	pubKeyBytes := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
 
+	burningPubKey := wallet.GetBurningPublicKey()
+
 	var outCoins []privacy.Coin
 	// avoid overlap; unless lower height is 0
 	start := startHeight + 1
@@ -162,6 +164,12 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 				utils.Logger.Log.Error("get outCoins ver 2 from bytes error: %v\n", err)
 				return nil, err
 			}
+
+			// check if the output coin was sent to the burning address
+			if bytes.Equal(cv2.GetPublicKey().ToBytesS(), burningPubKey) {
+				continue
+			}
+
 			pass := false
 			for _, f := range filters {
 				if f(cv2, params) {
