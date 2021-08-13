@@ -14,7 +14,7 @@ type State interface {
 }
 
 type StateReader interface {
-	Params() Params
+	Params() *Params
 	WaitingContributions() []byte
 	PoolPairs() []byte
 	Shares() map[string]uint64

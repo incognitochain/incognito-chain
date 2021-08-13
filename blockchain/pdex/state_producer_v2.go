@@ -26,47 +26,6 @@ type stateProducerV2 struct {
 	stateProducerBase
 }
 
-func isValidPdexv3Params(
-	params Params,
-	pairs map[string]*PoolPairState,
-	stakingPools map[string]*StakingPoolState,
-) (bool, string) {
-	if params.DefaultFeeRateBPS > MaxFeeRateBPS {
-		return false, "Default fee rate is too high"
-	}
-	for pairID, feeRate := range params.FeeRateBPS {
-		_, isExisted := pairs[pairID]
-		if !isExisted {
-			return false, fmt.Sprintf("Pair %v is not existed", pairID)
-		}
-		if feeRate > MaxFeeRateBPS {
-			return false, fmt.Sprintf("Fee rate of pair %v is too high", pairID)
-		}
-	}
-	if params.PRVDiscountPercent > MaxPRVDiscountPercent {
-		return false, "PRV discount percent is too high"
-	}
-	if params.TradingStakingPoolRewardPercent+params.TradingProtocolFeePercent > 100 {
-		return false, "Sum of trading's staking pool + protocol fee is invalid"
-	}
-	if params.LimitProtocolFeePercent+params.LimitStakingPoolRewardPercent > 100 {
-		return false, "Sum of limit order's staking pool + protocol fee is invalid"
-	}
-	for pairID := range params.PDEXRewardPoolPairsShare {
-		_, isExisted := pairs[pairID]
-		if !isExisted {
-			return false, fmt.Sprintf("Pair %v is not existed", pairID)
-		}
-	}
-	for stakingPoolID := range params.StakingPoolsShare {
-		_, isExisted := stakingPools[stakingPoolID]
-		if !isExisted {
-			return false, fmt.Sprintf("Staking pool %v is not existed", stakingPoolID)
-		}
-	}
-	return true, ""
-}
-
 func (sp *stateProducerV2) addLiquidity(
 	txs []metadata.Transaction,
 	beaconHeight uint64,
@@ -323,10 +282,10 @@ func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
 func (sp *stateProducerV2) modifyParams(
 	txs []metadata.Transaction,
 	beaconHeight uint64,
-	params Params,
+	params *Params,
 	pairs map[string]*PoolPairState,
 	stakingPools map[string]*StakingPoolState,
-) ([][]string, Params, error) {
+) ([][]string, *Params, error) {
 	instructions := [][]string{}
 
 	for _, tx := range txs {
@@ -340,12 +299,12 @@ func (sp *stateProducerV2) modifyParams(
 		// check conditions
 		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
-		isValidParams, errorMsg := isValidPdexv3Params(newParams, pairs, stakingPools)
+		isValidParams, errorMsg := isValidPdexv3Params(&newParams, pairs, stakingPools)
 
 		status := ""
 		if isValidParams {
 			status = metadataPdexv3.RequestAcceptedChainStatus
-			params = newParams
+			params = &newParams
 		} else {
 			status = metadataPdexv3.RequestRejectedChainStatus
 		}
@@ -365,7 +324,7 @@ func (sp *stateProducerV2) modifyParams(
 
 func (sp *stateProducerV2) mintPDEX(
 	mintingAmount uint64,
-	params Params,
+	params *Params,
 	pairs map[string]*PoolPairState,
 ) ([][]string, map[string]*PoolPairState, error) {
 	instructions := [][]string{}

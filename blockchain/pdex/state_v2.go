@@ -22,38 +22,16 @@ type stateV2 struct {
 	waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 	poolPairs                   map[string]*PoolPairState
-	params                      Params
+	params                      *Params
 	stakingPoolsState           map[string]*StakingPoolState // tokenID -> StakingPoolState
 	nftIDs                      map[string]bool
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
 
-type Params struct {
-	DefaultFeeRateBPS               uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
-	FeeRateBPS                      map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
-	PRVDiscountPercent              uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
-	LimitProtocolFeePercent         uint            // percent of fees from limit orders
-	LimitStakingPoolRewardPercent   uint            // percent of fees from limit orders
-	TradingProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
-	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
-	PDEXRewardPoolPairsShare        map[string]uint // map: pool pair ID -> PDEX reward share weight
-	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
-}
-
 func newStateV2() *stateV2 {
 	return &stateV2{
-		params: Params{
-			DefaultFeeRateBPS:               InitFeeRateBPS,
-			FeeRateBPS:                      map[string]uint{},
-			PRVDiscountPercent:              InitPRVDiscountPercent,
-			LimitProtocolFeePercent:         InitProtocolFeePercent,
-			LimitStakingPoolRewardPercent:   InitStakingPoolRewardPercent,
-			TradingProtocolFeePercent:       InitProtocolFeePercent,
-			TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
-			PDEXRewardPoolPairsShare:        map[string]uint{},
-			StakingPoolsShare:               map[string]uint{},
-		},
+		params:                      NewParams(),
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
@@ -66,7 +44,7 @@ func newStateV2WithValue(
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]*PoolPairState,
-	params Params,
+	params *Params,
 	stakingPoolsState map[string]*StakingPoolState,
 	nftIDs map[string]bool,
 ) *stateV2 {
@@ -84,18 +62,8 @@ func initStateV2(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (*stateV2, error) {
-	stateObject, err := statedb.GetPdexv3Params(stateDB)
-	params := Params{
-		DefaultFeeRateBPS:               stateObject.DefaultFeeRateBPS(),
-		FeeRateBPS:                      stateObject.FeeRateBPS(),
-		PRVDiscountPercent:              stateObject.PRVDiscountPercent(),
-		LimitProtocolFeePercent:         stateObject.LimitProtocolFeePercent(),
-		LimitStakingPoolRewardPercent:   stateObject.LimitStakingPoolRewardPercent(),
-		TradingProtocolFeePercent:       stateObject.TradingProtocolFeePercent(),
-		TradingStakingPoolRewardPercent: stateObject.TradingStakingPoolRewardPercent(),
-		PDEXRewardPoolPairsShare:        stateObject.PDEXRewardPoolPairsShare(),
-		StakingPoolsShare:               stateObject.StakingPoolsShare(),
-	}
+	paramsState, err := statedb.GetPdexv3Params(stateDB)
+	params := NewParamsWithValue(paramsState)
 	if err != nil {
 		return nil, err
 	}
@@ -151,17 +119,7 @@ func (s *stateV2) Version() uint {
 
 func (s *stateV2) Clone() State {
 	res := newStateV2()
-	res.params = s.params
-	clonedFeeRateBPS := map[string]uint{}
-	for k, v := range s.params.FeeRateBPS {
-		clonedFeeRateBPS[k] = v
-	}
-	clonedStakingPoolsShare := map[string]uint{}
-	for k, v := range s.params.StakingPoolsShare {
-		clonedStakingPoolsShare[k] = v
-	}
-	res.params.FeeRateBPS = clonedFeeRateBPS
-	res.params.StakingPoolsShare = clonedStakingPoolsShare
+	res.params = s.params.Clone()
 
 	for k, v := range s.stakingPoolsState {
 		res.stakingPoolsState[k] = v.Clone()
@@ -504,7 +462,7 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 
 }
 
-func (s *stateV2) Params() Params {
+func (s *stateV2) Params() *Params {
 	return s.params
 }
 

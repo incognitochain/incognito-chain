@@ -54,7 +54,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
-		params                      Params
+		params                      *Params
 		stakingPoolsState           map[string]*StakingPoolState
 		orders                      map[int64][]Order
 		producer                    stateProducerV2
@@ -178,7 +178,7 @@ func Test_stateV2_Process(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
-		params                      Params
+		params                      *Params
 		stakingPoolsState           map[string]*StakingPoolState
 		orders                      map[int64][]Order
 		producer                    stateProducerV2
@@ -263,7 +263,7 @@ func Test_stateV2_Clone(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
-		params                      Params
+		params                      *Params
 		stakingPoolsState           map[string]*StakingPoolState
 		orders                      map[int64][]Order
 		producer                    stateProducerV2
@@ -307,7 +307,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
-		params                      Params
+		params                      *Params
 		stakingPoolsState           map[string]*StakingPoolState
 		nftIDs                      map[string]bool
 		producer                    stateProducerV2

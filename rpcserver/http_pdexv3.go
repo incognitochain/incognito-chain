@@ -69,7 +69,7 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 	beaconBlock := beaconBlocks[0]
 	result := jsonresult.Pdexv3State{
 		BeaconTimeStamp:      beaconBlock.Header.Timestamp,
-		Params:               pDexv3State.Reader().Params(),
+		Params:               *pDexv3State.Reader().Params(),
 		PoolPairs:            poolPairs,
 		WaitingContributions: waitingContributions,
 	}
@@ -154,15 +154,15 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TradingStakingPoolRewardPercent is invalid"))
 	}
 
-	pdexRewardPoolPairsShareTemp, ok := newParams["pdexRewardPoolPairsShare"].(map[string]interface{})
+	pdexRewardPoolPairsShareTemp, ok := newParams["PDEXRewardPoolPairsShare"].(map[string]interface{})
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolsShare is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PDEXRewardPoolPairsShare is invalid"))
 	}
 	pdexRewardPoolPairsShare := map[string]uint{}
 	for key, share := range pdexRewardPoolPairsShareTemp {
 		value, err := common.AssertAndConvertStrToNumber(share)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("pdexRewardPoolPairsShare is invalid"))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PDEXRewardPoolPairsShare is invalid"))
 		}
 		pdexRewardPoolPairsShare[key] = uint(value)
 	}

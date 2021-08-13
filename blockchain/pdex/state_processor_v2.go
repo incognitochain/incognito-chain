@@ -328,8 +328,8 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 func (sp *stateProcessorV2) modifyParams(
 	stateDB *statedb.StateDB,
 	inst []string,
-	params Params,
-) (Params, error) {
+	params *Params,
+) (*Params, error) {
 	if len(inst) != 4 {
 		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
 		Logger.log.Errorf(msg)
@@ -348,7 +348,7 @@ func (sp *stateProcessorV2) modifyParams(
 	modifyingStatus := inst[2]
 	var reqTrackStatus int
 	if modifyingStatus == metadataPdexv3.RequestAcceptedChainStatus {
-		params = Params(actionData.Content)
+		*params = Params(actionData.Content)
 		reqTrackStatus = metadataPdexv3.ParamsModifyingSuccessStatus
 	} else {
 		reqTrackStatus = metadataPdexv3.ParamsModifyingFailedStatus
