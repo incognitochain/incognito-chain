@@ -502,19 +502,13 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
 		return poolPairs, err
 	}
-	shares, ok := poolPair.shares[acceptWithdrawLiquidity.NftID().String()]
-	if !ok || shares == nil {
-		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
-		return poolPairs, err
-	}
-	share, ok := shares[acceptWithdrawLiquidity.Index().String()]
+	share, ok := poolPair.shares[acceptWithdrawLiquidity.NftID().String()]
 	if !ok || share == nil {
-		err := fmt.Errorf("Can't find txHash %s", acceptWithdrawLiquidity.Index())
+		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
 		return poolPairs, err
 	}
 	_, _, _, err = poolPair.deductShare(
 		acceptWithdrawLiquidity.NftID().String(),
-		acceptWithdrawLiquidity.Index().String(),
 		acceptWithdrawLiquidity.ShareAmount(),
 	)
 	err = statedb.TrackPdexv3Status(

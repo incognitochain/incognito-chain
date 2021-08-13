@@ -15,14 +15,14 @@ import (
 
 type PoolPairState struct {
 	state     rawdbv2.Pdexv3PoolPair
-	shares    map[string]map[string]*Share
+	shares    map[string]*Share
 	orderbook Orderbook
 }
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State  *rawdbv2.Pdexv3PoolPair      `json:"State"`
-		Shares map[string]map[string]*Share `json:"Shares"`
+		State  *rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares map[string]*Share       `json:"Shares"`
 	}{
 		State:  &poolPairState.state,
 		Shares: poolPairState.shares,
@@ -35,8 +35,8 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State  *rawdbv2.Pdexv3PoolPair      `json:"State"`
-		Shares map[string]map[string]*Share `json:"Shares"`
+		State  *rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares map[string]*Share       `json:"Shares"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -50,7 +50,6 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 }
 
 func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) *PoolPairState {
-
 	cloneContribution0 := contribution0.Clone()
 	cloneContribution1 := contribution1.Clone()
 
@@ -69,17 +68,16 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		token0VirtualAmount, token1VirtualAmount,
 		contributions[0].Amplifier(),
 	)
-
 	return NewPoolPairStateWithValue(
 		*poolPairState,
-		make(map[string]map[string]*Share),
+		make(map[string]*Share),
 		Orderbook{[]*Order{}},
 	)
 }
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
-		shares:    make(map[string]map[string]*Share),
+		shares:    make(map[string]*Share),
 		state:     *rawdbv2.NewPdexv3PoolPair(),
 		orderbook: Orderbook{[]*Order{}},
 	}
@@ -87,7 +85,7 @@ func NewPoolPairState() *PoolPairState {
 
 func NewPoolPairStateWithValue(
 	state rawdbv2.Pdexv3PoolPair,
-	shares map[string]map[string]*Share,
+	shares map[string]*Share,
 	orderbook Orderbook,
 ) *PoolPairState {
 	return &PoolPairState{
@@ -234,12 +232,18 @@ func (p *PoolPairState) addShare(
 ) (common.Hash, map[string]bool, error) {
 	newNftID := genNFT(nftID, nftIDs, beaconHeight)
 	nftIDStr := chooseNftStr(nftID, newNftID)
-	if p.shares[nftIDStr] == nil {
-		p.shares[nftIDStr] = make(map[string]*Share)
-	}
 	nftIDs[nftIDStr] = true
-	share := NewShareWithValue(amount, make(map[string]uint64), beaconHeight)
-	p.shares[nftIDStr][txHash] = share
+	var shareAmount uint64
+	var newBeaconHeight uint64
+	if p.shares[nftIDStr] == nil {
+		shareAmount = amount
+		newBeaconHeight = beaconHeight
+	} else {
+		shareAmount = p.shares[nftIDStr].amount + amount
+		newBeaconHeight = p.shares[nftIDStr].lastUpdatedBeaconHeight
+	}
+	share := NewShareWithValue(shareAmount, make(map[string]uint64), newBeaconHeight)
+	p.shares[nftIDStr] = share
 	newShareAmount := p.state.ShareAmount() + amount
 	if newShareAmount < p.state.ShareAmount() {
 		return newNftID, nftIDs, fmt.Errorf("Share amount is out of range")
@@ -252,10 +256,7 @@ func (p *PoolPairState) Clone() *PoolPairState {
 	res := NewPoolPairState()
 	res.state = *p.state.Clone()
 	for k, v := range p.shares {
-		res.shares[k] = make(map[string]*Share)
-		for key, value := range v {
-			res.shares[k][key] = value.Clone()
-		}
+		res.shares[k] = v.Clone()
 	}
 	//TODO: clone order book here
 	return res
@@ -269,22 +270,16 @@ func (p *PoolPairState) getDiff(
 	newStateChange := stateChange
 	if comparePoolPair == nil {
 		newStateChange.poolPairIDs[poolPairID] = true
-		for nftID, allshares := range p.shares {
-			for txHash, share := range allshares {
-				newStateChange = share.getDiff(nftID, txHash, nil, newStateChange)
-			}
+		for nftID, share := range p.shares {
+			newStateChange = share.getDiff(nftID, nil, newStateChange)
 		}
 	} else {
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 			newStateChange.poolPairIDs[poolPairID] = true
 		}
-		for k, v := range p.shares {
-			if m, ok := comparePoolPair.shares[k]; !ok || !reflect.DeepEqual(m, v) {
-				for height, share := range v {
-					if compareShare, ok := m[height]; !ok || !reflect.DeepEqual(compareShare, v) {
-						newStateChange = share.getDiff(k, height, compareShare, newStateChange)
-					}
-				}
+		for nftID, share := range p.shares {
+			if m, ok := comparePoolPair.shares[nftID]; !ok || !reflect.DeepEqual(m, share) {
+				newStateChange = share.getDiff(nftID, m, newStateChange)
 			}
 		}
 	}
@@ -382,10 +377,10 @@ func (p *PoolPairState) deductReserveData(amount0, amount1, shareAmount uint64) 
 }
 
 func (p *PoolPairState) deductShare(
-	nftID, index string,
+	nftID string,
 	shareAmount uint64,
 ) (uint64, uint64, uint64, error) {
-	share := p.shares[nftID][index]
+	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
@@ -406,9 +401,13 @@ func (p *PoolPairState) deductShare(
 		big.NewInt(0).SetUint64(tempShareAmount),
 	)
 	token1Amount = token1Amount.Div(token1Amount, big.NewInt(0).SetUint64(p.state.ShareAmount()))
+	err := p.deductReserveData(token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount)
+	if err != nil {
+		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
+	}
 	share.amount -= tempShareAmount
 	if share.amount >= tempShareAmount {
 		return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, errors.New("share.amount is our of range")
 	}
-	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, p.deductReserveData(token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount)
+	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, nil
 }

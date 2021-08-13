@@ -12,10 +12,10 @@ import (
 type AcceptWithdrawLiquidity struct {
 	poolPairID  string
 	nftID       common.Hash
-	index       common.Hash
 	tokenID     common.Hash
 	tokenAmount uint64
 	shareAmount uint64
+	otaReceive  string
 	txReqID     common.Hash
 	shardID     byte
 }
@@ -26,19 +26,20 @@ func NewAcceptWithdrawLiquidity() *AcceptWithdrawLiquidity {
 
 func NewAcceptWithdrawLiquidityWithValue(
 	poolPairID string,
-	nftID, index, tokenID common.Hash,
+	nftID, tokenID common.Hash,
 	tokenAmount, shareAmount uint64,
+	otaReceive string,
 	txReqID common.Hash, shardID byte,
 ) *AcceptWithdrawLiquidity {
 	return &AcceptWithdrawLiquidity{
 		poolPairID:  poolPairID,
 		nftID:       nftID,
-		index:       index,
 		txReqID:     txReqID,
 		shardID:     shardID,
 		tokenID:     tokenID,
 		tokenAmount: tokenAmount,
 		shareAmount: shareAmount,
+		otaReceive:  otaReceive,
 	}
 }
 
@@ -72,19 +73,19 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID  string      `json:"PoolPairID"`
 		NftID       common.Hash `json:"NftID"`
-		Index       common.Hash `json:"Index"`
 		TokenID     common.Hash `json:"TokenID"`
 		TokenAmount uint64      `json:"TokenAmount"`
 		ShareAmount uint64      `json:"ShareAmount"`
+		OtaReceive  string      `json:"OtaReceive"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `jdon:"ShardID"`
 	}{
 		PoolPairID:  a.poolPairID,
 		NftID:       a.nftID,
-		Index:       a.index,
 		TokenID:     a.tokenID,
 		TokenAmount: a.tokenAmount,
 		ShareAmount: a.shareAmount,
+		OtaReceive:  a.otaReceive,
 		TxReqID:     a.txReqID,
 		ShardID:     a.shardID,
 	})
@@ -98,9 +99,9 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID  string      `json:"PoolPairID"`
 		NftID       common.Hash `json:"NftID"`
-		Index       common.Hash `json:"Index"`
 		TokenID     common.Hash `json:"TokenID"`
 		TokenAmount uint64      `json:"TokenAmount"`
+		OtaReceive  string      `json:"OtaReceive"`
 		ShareAmount uint64      `json:"ShareAmount"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `jdon:"ShardID"`
@@ -113,8 +114,8 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	a.tokenAmount = temp.TokenAmount
 	a.poolPairID = temp.PoolPairID
 	a.nftID = temp.NftID
-	a.index = temp.Index
 	a.shareAmount = temp.ShareAmount
+	a.otaReceive = temp.OtaReceive
 	a.txReqID = temp.TxReqID
 	a.shardID = temp.ShardID
 	return nil
@@ -144,10 +145,10 @@ func (a *AcceptWithdrawLiquidity) TokenAmount() uint64 {
 	return a.tokenAmount
 }
 
-func (a *AcceptWithdrawLiquidity) Index() common.Hash {
-	return a.index
-}
-
 func (a *AcceptWithdrawLiquidity) ShareAmount() uint64 {
 	return a.shareAmount
+}
+
+func (a *AcceptWithdrawLiquidity) OtaReceive() string {
+	return a.otaReceive
 }

@@ -74,36 +74,32 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 
 func (share *Share) getDiff(
 	nftID string,
-	txHash string,
 	compareShare *Share,
 	stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
-	if stateChange.shares[nftID] == nil {
-		stateChange.shares[nftID] = make(map[string]*ShareChange)
-	}
 	if compareShare == nil {
-		newStateChange.shares[nftID][txHash] = &ShareChange{
+		newStateChange.shares[nftID] = &ShareChange{
 			isChanged: true,
 		}
 		for tokenID := range share.tradingFees {
-			if newStateChange.shares[nftID][txHash].tokenIDs == nil {
-				newStateChange.shares[nftID][txHash].tokenIDs = make(map[string]bool)
+			if newStateChange.shares[nftID].tokenIDs == nil {
+				newStateChange.shares[nftID].tokenIDs = make(map[string]bool)
 			}
-			newStateChange.shares[nftID][txHash].tokenIDs[tokenID] = true
+			newStateChange.shares[nftID].tokenIDs[tokenID] = true
 		}
 	} else {
 		if share.amount != compareShare.amount || share.lastUpdatedBeaconHeight != compareShare.lastUpdatedBeaconHeight {
-			newStateChange.shares[nftID][txHash] = &ShareChange{
+			newStateChange.shares[nftID] = &ShareChange{
 				isChanged: true,
 			}
 		}
 		for k, v := range share.tradingFees {
 			if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
-				if newStateChange.shares[nftID][txHash].tokenIDs == nil {
-					newStateChange.shares[nftID][txHash].tokenIDs = make(map[string]bool)
+				if newStateChange.shares[nftID].tokenIDs == nil {
+					newStateChange.shares[nftID].tokenIDs = make(map[string]bool)
 				}
-				newStateChange.shares[nftID][txHash].tokenIDs[k] = true
+				newStateChange.shares[nftID].tokenIDs[k] = true
 			}
 		}
 	}
@@ -123,14 +119,14 @@ type ShareChange struct {
 
 type StateChange struct {
 	poolPairIDs map[string]bool
-	shares      map[string]map[string]*ShareChange
+	shares      map[string]*ShareChange
 	orders      map[string]map[int]bool
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
 		poolPairIDs: make(map[string]bool),
-		shares:      make(map[string]map[string]*ShareChange),
+		shares:      make(map[string]*ShareChange),
 		orders:      make(map[string]map[int]bool),
 	}
 }

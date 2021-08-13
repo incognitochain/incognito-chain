@@ -54,7 +54,7 @@ func (r *RejectWithdrawLiquidity) StringSlice() ([]string, error) {
 func (r *RejectWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		TxReqID common.Hash `json:"TxReqID"`
-		ShardID byte        `json:"TxReqID"`
+		ShardID byte        `json:"ShardID"`
 	}{
 		TxReqID: r.txReqID,
 		ShardID: r.shardID,
@@ -68,7 +68,7 @@ func (r *RejectWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 func (r *RejectWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		TxReqID common.Hash `json:"TxReqID"`
-		ShardID byte        `json:"TxReqID"`
+		ShardID byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

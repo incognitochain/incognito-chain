@@ -486,12 +486,30 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
+	otaReceiveToken0 := privacy.OTAReceiver{}
+	err = otaReceiveToken0.FromAddress(keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	otaReceiveToken0Str, err := otaReceiveToken0.String()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	otaReceiveToken1 := privacy.OTAReceiver{}
+	err = otaReceiveNft.FromAddress(keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	otaReceiveToken1Str, err := otaReceiveToken1.String()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
 	otaReceiveTradingFees := make(map[string]string)
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		withdrawLiquidityRequest.PoolPairID,
 		withdrawLiquidityRequest.TokenID,
-		otaReceiveNftStr,
-		withdrawLiquidityRequest.Index, token0Amount, token1Amount,
+		otaReceiveNftStr, otaReceiveToken0Str, otaReceiveToken1Str,
+		token0Amount, token1Amount,
 		otaReceiveTradingFees,
 	)
 

@@ -444,13 +444,11 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
 					),
-					shares: map[string]map[string]*Share{
-						nftID: map[string]*Share{
-							firstTxHash.String(): &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
-							},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:                  200,
+							tradingFees:             map[string]uint64{},
+							lastUpdatedBeaconHeight: 11,
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -508,8 +506,6 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
-	assert.Nil(t, err)
-	firstTxHash, err := common.Hash{}.NewHashFromStr("abc")
 	assert.Nil(t, err)
 	secondTxHash, err := common.Hash{}.NewHashFromStr("aaa")
 	assert.Nil(t, err)
@@ -597,13 +593,11 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
 						),
-						shares: map[string]map[string]*Share{
-							nftID: map[string]*Share{
-								firstTxHash.String(): &Share{
-									amount:                  200,
-									tradingFees:             map[string]uint64{},
-									lastUpdatedBeaconHeight: 10,
-								},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:                  200,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 10,
 							},
 						},
 					},
@@ -624,18 +618,11 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
-					shares: map[string]map[string]*Share{
-						nftID: map[string]*Share{
-							firstTxHash.String(): &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
-							},
-							secondTxHash.String(): &Share{
-								amount:                  100,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
-							},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:                  300,
+							tradingFees:             map[string]uint64{},
+							lastUpdatedBeaconHeight: 10,
 						},
 					},
 				},
@@ -673,18 +660,11 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
-						shares: map[string]map[string]*Share{
-							nftID: map[string]*Share{
-								firstTxHash.String(): &Share{
-									amount:                  200,
-									tradingFees:             map[string]uint64{},
-									lastUpdatedBeaconHeight: 10,
-								},
-								secondTxHash.String(): &Share{
-									amount:                  100,
-									tradingFees:             map[string]uint64{},
-									lastUpdatedBeaconHeight: 11,
-								},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:                  300,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 10,
 							},
 						},
 					},
@@ -707,18 +687,11 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
-					shares: map[string]map[string]*Share{
-						nftID: map[string]*Share{
-							firstTxHash.String(): &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
-							},
-							secondTxHash.String(): &Share{
-								amount:                  100,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
-							},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:                  300,
+							tradingFees:             map[string]uint64{},
+							lastUpdatedBeaconHeight: 10,
 						},
 					},
 				},

@@ -375,17 +375,8 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		share, ok := shares[metaData.Index()]
-		if !ok || share == nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
-			continue
-		}
 		shareAmount := poolPair.calculateShareAmount(metaData.Token0Amount(), metaData.Token1Amount())
-		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(metaData.NftID(), metaData.Index(), shareAmount)
+		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(metaData.NftID(), shareAmount)
 		if err != nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 			if err != nil {

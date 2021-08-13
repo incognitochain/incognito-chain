@@ -18,9 +18,10 @@ type WithdrawLiquidityRequest struct {
 	poolPairID            string
 	nftID                 string
 	otaReceiveNft         string
-	index                 string
 	token0Amount          uint64
+	otaReceiveToken0      string
 	token1Amount          uint64
+	otaReceiveToken1      string
 	otaReceiveTradingFees map[string]string
 }
 
@@ -34,7 +35,8 @@ func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
 }
 
 func NewWithdrawLiquidityRequestWithValue(
-	poolPairID, nftID, otaReceiveNft, index string,
+	poolPairID, nftID, otaReceiveNft,
+	otaReceiveToken0, otaReceiveToken1 string,
 	token0Amount, token1Amount uint64,
 	otaReceiveTradingFees map[string]string,
 ) *WithdrawLiquidityRequest {
@@ -45,9 +47,10 @@ func NewWithdrawLiquidityRequestWithValue(
 		poolPairID:            poolPairID,
 		nftID:                 nftID,
 		otaReceiveNft:         otaReceiveNft,
-		index:                 index,
 		token0Amount:          token0Amount,
+		otaReceiveToken0:      otaReceiveToken0,
 		token1Amount:          token1Amount,
+		otaReceiveToken1:      otaReceiveToken1,
 		otaReceiveTradingFees: otaReceiveTradingFees,
 	}
 }
@@ -89,12 +92,21 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if !otaReceiveNft.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiveNft is not valid"))
 	}
-	txIndex, err := common.Hash{}.NewHashFromStr(request.index)
+	otaReceiveToken0 := privacy.OTAReceiver{}
+	err = otaReceiveToken0.FromString(request.otaReceiveToken0)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if txIndex.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
+	if !otaReceiveToken0.IsValid() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiveNft is not valid"))
+	}
+	otaReceiveToken1 := privacy.OTAReceiver{}
+	err = otaReceiveToken1.FromString(request.otaReceiveToken1)
+	if err != nil {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if !otaReceiveToken1.IsValid() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiveNft is not valid"))
 	}
 	if request.token0Amount == 0 {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("token0Amount can not be 0"))
@@ -133,8 +145,12 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 		err := fmt.Errorf("Burnt amount is not valid expect %v but get %v", 1, burnCoin.GetValue())
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType || nftID.String() == common.PRVCoinID.String() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
+	if tx.GetType() != common.TxCustomTokenPrivacyType {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
+	} else {
+		if nftID.String() == common.PRVCoinID.String() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
+		}
 	}
 	return true, true, nil
 }
@@ -147,9 +163,11 @@ func (request *WithdrawLiquidityRequest) Hash() *common.Hash {
 	record := request.MetadataBase.Hash().String()
 	record += request.poolPairID
 	record += request.nftID
-	record += request.index
+	record += request.otaReceiveNft
 	record += strconv.FormatUint(uint64(request.token0Amount), 10)
 	record += strconv.FormatUint(uint64(request.token1Amount), 10)
+	record += request.otaReceiveToken0
+	record += request.otaReceiveToken1
 	data, _ := json.Marshal(request.otaReceiveTradingFees)
 	record += string(data)
 	// final hash
@@ -165,17 +183,21 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID            string            `json:"PoolPairID"`
 		NftID                 string            `json:"NftID"`
-		Index                 string            `json:"Index"`
+		OtaReceiveNft         string            `json:"OtaReceiveNft"`
 		Token0Amount          uint64            `json:"Token0Amount"`
+		OtaReceiveToken0      string            `json:"OtaReceiveToken0"`
 		Token1Amount          uint64            `json:"Token1Amount"`
+		OtaReceiveToken1      string            `json:"OtaReceiveToken1"`
 		OtaReceiveTradingFees map[string]string `json:"OtaReceiveTradingFees"`
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:            request.poolPairID,
 		NftID:                 request.nftID,
-		Index:                 request.index,
+		OtaReceiveNft:         request.otaReceiveNft,
 		Token0Amount:          request.token0Amount,
+		OtaReceiveToken0:      request.otaReceiveToken0,
 		Token1Amount:          request.token1Amount,
+		OtaReceiveToken1:      request.otaReceiveToken1,
 		OtaReceiveTradingFees: request.otaReceiveTradingFees,
 		MetadataBase:          request.MetadataBase,
 	})
@@ -189,9 +211,11 @@ func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID            string            `json:"PoolPairID"`
 		NftID                 string            `json:"NftID"`
-		Index                 string            `json:"Index"`
+		OtaReceiveNft         string            `json:"OtaReceiveNft"`
 		Token0Amount          uint64            `json:"Token0Amount"`
+		OtaReceiveToken0      string            `json:"OtaReceiveToken0"`
 		Token1Amount          uint64            `json:"Token1Amount"`
+		OtaReceiveToken1      string            `json:"OtaReceiveToken1"`
 		OtaReceiveTradingFees map[string]string `json:"OtaReceiveTradingFees"`
 		metadataCommon.MetadataBase
 	}{}
@@ -201,22 +225,20 @@ func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
 	}
 	request.poolPairID = temp.PoolPairID
 	request.nftID = temp.NftID
-	request.index = temp.Index
 	request.token0Amount = temp.Token0Amount
 	request.token1Amount = temp.Token1Amount
 	if temp.OtaReceiveTradingFees != nil {
 		request.otaReceiveTradingFees = temp.OtaReceiveTradingFees
 	}
+	request.otaReceiveNft = temp.OtaReceiveNft
+	request.otaReceiveToken0 = temp.OtaReceiveToken0
+	request.otaReceiveToken1 = temp.OtaReceiveToken1
 	request.MetadataBase = temp.MetadataBase
 	return nil
 }
 
 func (request *WithdrawLiquidityRequest) PoolPairID() string {
 	return request.poolPairID
-}
-
-func (request *WithdrawLiquidityRequest) Index() string {
-	return request.index
 }
 
 func (request *WithdrawLiquidityRequest) OtaReceiveNft() string {
@@ -237,4 +259,12 @@ func (request *WithdrawLiquidityRequest) OtaReceiveTradingFees() map[string]stri
 
 func (request *WithdrawLiquidityRequest) NftID() string {
 	return request.nftID
+}
+
+func (request *WithdrawLiquidityRequest) OtaReceiveToken0() string {
+	return request.otaReceiveToken0
+}
+
+func (request *WithdrawLiquidityRequest) OtaReceiveToken1() string {
+	return request.otaReceiveToken1
 }

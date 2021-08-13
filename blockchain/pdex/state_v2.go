@@ -109,28 +109,25 @@ func initStateV2(
 	nftIDs := make(map[string]bool)
 	poolPairs := make(map[string]*PoolPairState)
 	for poolPairID, poolPairState := range poolPairsStates {
-		allShareStates, err := statedb.GetPdexv3Shares(stateDB, poolPairID, nftIDs)
+		shares := make(map[string]*Share)
+		shareStates := make(map[string]statedb.Pdexv3ShareState)
+		shareStates, nftIDs, err = statedb.GetPdexv3Shares(stateDB, poolPairID, nftIDs)
 		if err != nil {
 			return nil, err
 		}
-		shares := make(map[string]map[string]*Share)
-		for nftID, shareStates := range allShareStates {
-			shares[nftID] = make(map[string]*Share)
-			for txHash, shareState := range shareStates {
-				tradingFeesState, err := statedb.GetPdexv3TradingFees(
-					stateDB, poolPairID, nftID, txHash)
-				if err != nil {
-					return nil, err
-				}
-				tradingFees := make(map[string]uint64)
-				for tradingFeesKey, tradingFeesValue := range tradingFeesState {
-					tradingFees[tradingFeesKey] = tradingFeesValue.Amount()
-				}
-				shares[nftID][txHash] = NewShareWithValue(
-					shareState.Amount(),
-					tradingFees, shareState.LastUpdatedBeaconHeight(),
-				)
+		for nftID, shareState := range shareStates {
+			tradingFeesState, err := statedb.GetPdexv3TradingFees(stateDB, poolPairID, nftID)
+			if err != nil {
+				return nil, err
 			}
+			tradingFees := make(map[string]uint64)
+			for tradingFeesKey, tradingFeesValue := range tradingFeesState {
+				tradingFees[tradingFeesKey] = tradingFeesValue.Amount()
+			}
+			shares[nftID] = NewShareWithValue(
+				shareState.Amount(),
+				tradingFees, shareState.LastUpdatedBeaconHeight(),
+			)
 		}
 		// TODO: read order book from storage
 		orderbook := Orderbook{}
@@ -344,36 +341,31 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 			}
 		}
 		for nftID, share := range poolPairState.shares {
-			for txHash, v := range share {
-				if stateChange.shares[nftID] == nil || stateChange.shares[nftID][txHash] == nil {
+			if stateChange.shares[nftID] == nil {
+				continue
+			}
+			if stateChange.shares[nftID].isChanged {
+
+				nftID, err := common.Hash{}.NewHashFromStr(nftID)
+				err = statedb.StorePdexv3Share(
+					env.StateDB(), poolPairID,
+					*nftID,
+					share.amount, share.lastUpdatedBeaconHeight,
+				)
+				if err != nil {
+					return err
+				}
+			}
+			for tokenID, tradingFee := range share.tradingFees {
+				if stateChange.shares[nftID].tokenIDs == nil {
 					continue
 				}
-				if stateChange.shares[nftID][txHash].isChanged {
-					txID, err := common.Hash{}.NewHashFromStr(txHash)
-					if err != nil {
-						return err
-					}
-					nftID, err := common.Hash{}.NewHashFromStr(nftID)
-					err = statedb.StorePdexv3Share(
-						env.StateDB(), poolPairID,
-						*nftID, *txID,
-						v.amount, v.lastUpdatedBeaconHeight,
+				if stateChange.shares[nftID].tokenIDs[tokenID] {
+					err := statedb.StorePdexv3TradingFee(
+						env.StateDB(), poolPairID, nftID, tokenID, tradingFee,
 					)
 					if err != nil {
 						return err
-					}
-				}
-				for tokenID, tradingFee := range v.tradingFees {
-					if stateChange.shares[nftID][txHash].tokenIDs == nil {
-						continue
-					}
-					if stateChange.shares[nftID][txHash].tokenIDs[tokenID] {
-						err := statedb.StorePdexv3TradingFee(
-							env.StateDB(), poolPairID, nftID, tokenID, txHash, tradingFee,
-						)
-						if err != nil {
-							return err
-						}
 					}
 				}
 			}

@@ -10,7 +10,6 @@ import (
 
 type Pdexv3ShareState struct {
 	nftID                   common.Hash
-	txHash                  common.Hash
 	amount                  uint64
 	lastUpdatedBeaconHeight uint64
 }
@@ -30,12 +29,10 @@ func (ps *Pdexv3ShareState) LastUpdatedBeaconHeight() uint64 {
 func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		NftID                   common.Hash `json:"NftID"`
-		TxHash                  common.Hash `json:"TxHash"`
 		Amount                  uint64      `json:"Amount"`
 		LastUpdatedBeaconHeight uint64      `json:"LastUpdatedBeaconHeight"`
 	}{
 		NftID:                   ps.nftID,
-		TxHash:                  ps.txHash,
 		Amount:                  ps.amount,
 		LastUpdatedBeaconHeight: ps.lastUpdatedBeaconHeight,
 	})
@@ -48,7 +45,6 @@ func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		NftID                   common.Hash `json:"NftID"`
-		TxHash                  common.Hash `json:"TxHash"`
 		Amount                  uint64      `json:"Amount"`
 		LastUpdatedBeaconHeight uint64      `json:"LastUpdatedBeaconHeight"`
 	}{}
@@ -57,7 +53,6 @@ func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	ps.nftID = temp.NftID
-	ps.txHash = temp.TxHash
 	ps.amount = temp.Amount
 	ps.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
 	return nil
@@ -68,11 +63,10 @@ func NewPdexv3ShareState() *Pdexv3ShareState {
 }
 
 func NewPdexv3ShareStateWithValue(
-	nftID, txHash common.Hash, amount, lastUpdatedBeaconHeight uint64,
+	nftID common.Hash, amount, lastUpdatedBeaconHeight uint64,
 ) *Pdexv3ShareState {
 	return &Pdexv3ShareState{
 		nftID:                   nftID,
-		txHash:                  txHash,
 		amount:                  amount,
 		lastUpdatedBeaconHeight: lastUpdatedBeaconHeight,
 	}
@@ -81,7 +75,6 @@ func NewPdexv3ShareStateWithValue(
 func (ps *Pdexv3ShareState) Clone() *Pdexv3ShareState {
 	return &Pdexv3ShareState{
 		nftID:                   ps.nftID,
-		txHash:                  ps.txHash,
 		amount:                  ps.amount,
 		lastUpdatedBeaconHeight: ps.lastUpdatedBeaconHeight,
 	}
@@ -151,9 +144,9 @@ func generatePdexv3ShareObjectPrefix(poolPairID string) []byte {
 	return h[:prefixHashKeyLength]
 }
 
-func GeneratePdexv3ShareObjectKey(poolPairID, nftID, txHash string) common.Hash {
+func GeneratePdexv3ShareObjectKey(poolPairID, nftID string) common.Hash {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
-	valueHash := common.HashH(append([]byte(nftID), []byte(txHash)...))
+	valueHash := common.HashH([]byte(nftID))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 

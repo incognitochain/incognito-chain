@@ -334,15 +334,13 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
 						),
-						shares: map[string]map[string]*Share{
-							nftID: map[string]*Share{
-								"11": &Share{
-									amount: 200,
-									tradingFees: map[string]uint64{
-										common.PRVIDStr: 10,
-									},
-									lastUpdatedBeaconHeight: 11,
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount: 200,
+								tradingFees: map[string]uint64{
+									common.PRVIDStr: 10,
 								},
+								lastUpdatedBeaconHeight: 11,
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -357,13 +355,11 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 					poolPairIDs: map[string]bool{
 						poolPairID: true,
 					},
-					shares: map[string]map[string]*ShareChange{
-						nftID: map[string]*ShareChange{
-							"11": &ShareChange{
-								isChanged: true,
-								tokenIDs: map[string]bool{
-									common.PRVIDStr: true,
-								},
+					shares: map[string]*ShareChange{
+						nftID: &ShareChange{
+							isChanged: true,
+							tokenIDs: map[string]bool{
+								common.PRVIDStr: true,
 							},
 						},
 					},

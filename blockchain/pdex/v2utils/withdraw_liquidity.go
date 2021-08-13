@@ -41,23 +41,19 @@ func BuildAcceptWithdrawLiquidityInstructions(
 	if err != nil {
 		return res, err
 	}
-	index, err := common.Hash{}.NewHashFromStr(metaData.Index())
-	if err != nil {
-		return res, err
-	}
 	inst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		metaData.PoolPairID(), *nftHash, *index,
+		metaData.PoolPairID(), *nftHash,
 		token0ID, token0Amount, shareAmount,
-		txReqID, shardID,
+		metaData.OtaReceiveToken0(), txReqID, shardID,
 	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, inst0)
 	inst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		metaData.PoolPairID(), *nftHash, *index,
+		metaData.PoolPairID(), *nftHash,
 		token1ID, token1Amount, shareAmount,
-		txReqID, shardID,
+		metaData.OtaReceiveToken1(), txReqID, shardID,
 	).StringSlice()
 	if err != nil {
 		return res, err
