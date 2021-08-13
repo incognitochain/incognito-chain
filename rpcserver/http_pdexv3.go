@@ -258,9 +258,9 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, 
 	// if !ok {
 	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	// }
-	// nfctTokenID, ok := data["NfctTokenID"].(string)
+	// nftTokenID, ok := data["NftTokenID"].(string)
 	// if !ok {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
+	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftTokenID is invalid"))
 	// }
 
 	// beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
@@ -328,13 +328,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	nfctTokenIDStr, ok := tokenParamsRaw["NfctTokenID"].(string)
+	nftTokenIDStr, ok := tokenParamsRaw["NftTokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftTokenID is invalid"))
 	}
-	nfctTokenID, err := common.Hash{}.NewHashFromStr(nfctTokenIDStr)
+	nftTokenID, err := common.Hash{}.NewHashFromStr(nftTokenIDStr)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NfctTokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftTokenID is invalid"))
 	}
 
 	// payment address v2
@@ -351,13 +351,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address is invalid"))
 	}
 
-	nfctReceiverAddress := privacy.OTAReceiver{}
+	nftReceiverAddress := privacy.OTAReceiver{}
 	token0ReceiverAddress := privacy.OTAReceiver{}
 	token1ReceiverAddress := privacy.OTAReceiver{}
 	prvReceiverAddress := privacy.OTAReceiver{}
 	pdexReceiverAddress := privacy.OTAReceiver{}
 
-	err = nfctReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
+	err = nftReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -378,7 +378,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	nfctReceiverAddressStr, err := nfctReceiverAddress.String()
+	nft, err := nftReceiverAddress.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -403,8 +403,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
 		index,
-		*nfctTokenID,
-		nfctReceiverAddressStr,
+		*nftTokenID,
+		nft,
 		metadataPdexv3.FeeReceiverAddress{
 			Token0ReceiverAddress: token0ReceiverAddressStr,
 			Token1ReceiverAddress: token1ReceiverAddressStr,

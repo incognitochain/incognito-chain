@@ -17,7 +17,7 @@ import (
 type AddLiquidityRequest struct {
 	poolPairID     string // only "" for the first contribution of pool
 	pairHash       string
-	receiveAddress string // receive nfct
+	receiveAddress string // receive nft
 	refundAddress  string // refund pToken
 	tokenID        string
 	nftID          string
@@ -156,7 +156,7 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
 		PairHash       string `json:"PairHash"`
-		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
+		ReceiveAddress string `json:"ReceiveAddress"` // receive nft
 		RefundAddress  string `json:"RefundAddress"`  // refund pToken
 		TokenID        string `json:"TokenID"`
 		NftID          string `json:"NftID"`
@@ -184,7 +184,7 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
 		PairHash       string `json:"PairHash"`
-		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
+		ReceiveAddress string `json:"ReceiveAddress"` // receive nft
 		RefundAddress  string `json:"RefundAddress"`  // refund pToken
 		TokenID        string `json:"TokenID"`
 		NftID          string `json:"NftID"`

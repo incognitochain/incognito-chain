@@ -512,11 +512,11 @@ func (sp *stateProducerV2) withdrawLPFee(
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PairID,
 			metaData.Index,
-			metaData.NfctTokenID,
+			metaData.NftTokenID,
 			map[string]metadataPdexv3.ReceiverInfo{
-				metadataPdexv3.NcftTokenType: {
-					TokenID:    metaData.NfctTokenID,
-					AddressStr: metaData.NfctReceiverAddress,
+				metadataPdexv3.NftTokenType: {
+					TokenID:    metaData.NftTokenID,
+					AddressStr: metaData.NftReceiverAddress,
 					Amount:     1,
 				},
 			},
@@ -532,7 +532,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 			continue
 		}
 
-		share, isExisted := poolPair.shares[metaData.NfctTokenID.String()]
+		share, isExisted := poolPair.shares[metaData.NftTokenID.String()]
 		if !isExisted {
 			instructions = append(instructions, rejectInst...)
 			continue
@@ -547,7 +547,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PairID,
 			metaData.Index,
-			metaData.NfctTokenID,
+			metaData.NftTokenID,
 			map[string]metadataPdexv3.ReceiverInfo{
 				metadataPdexv3.Token0Type: {
 					TokenID:    poolPair.state.Token0ID(),
@@ -569,9 +569,9 @@ func (sp *stateProducerV2) withdrawLPFee(
 					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
 					Amount:     1,
 				},
-				metadataPdexv3.NcftTokenType: {
-					TokenID:    metaData.NfctTokenID,
-					AddressStr: metaData.NfctReceiverAddress,
+				metadataPdexv3.NftTokenType: {
+					TokenID:    metaData.NftTokenID,
+					AddressStr: metaData.NftReceiverAddress,
 					Amount:     1,
 				},
 			},

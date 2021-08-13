@@ -505,16 +505,16 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			return pairs, errors.New(msg)
 		}
 
-		share, isExisted := poolPair.shares[actionData.NcftTokenID.String()]
+		share, isExisted := poolPair.shares[actionData.NftTokenID.String()]
 		if !isExisted {
-			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NcftTokenID.String())
+			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NftTokenID.String())
 			Logger.log.Errorf(msg)
 			return pairs, errors.New(msg)
 		}
 
 		_, isExisted = share[actionData.Index]
 		if !isExisted {
-			msg := fmt.Sprintf("Could not find index %v of share %v for withdrawal", actionData.Index, actionData.NcftTokenID.String())
+			msg := fmt.Sprintf("Could not find index %v of share %v for withdrawal", actionData.Index, actionData.NftTokenID.String())
 			Logger.log.Errorf(msg)
 			return pairs, errors.New(msg)
 		}

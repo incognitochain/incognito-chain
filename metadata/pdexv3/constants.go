@@ -20,11 +20,11 @@ const (
 
 // receiving token type
 const (
-	Token0Type    = "Token0"
-	Token1Type    = "Token1"
-	PRVType       = "PRV"
-	PDEXType      = "PDEX"
-	NcftTokenType = "NcftToken"
+	Token0Type   = "Token0"
+	Token1Type   = "Token1"
+	PRVType      = "PRV"
+	PDEXType     = "PDEX"
+	NftTokenType = "NftToken"
 )
 
 // trade status
