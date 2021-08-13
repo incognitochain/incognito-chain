@@ -18,6 +18,10 @@ type PoolPairState struct {
 	orderbook Orderbook
 }
 
+func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
+	return poolPairState.state
+}
+
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		State  *rawdbv2.Pdexv3PoolPair      `json:"State"`
@@ -310,4 +314,51 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 		return liquidityToken0.Uint64()
 	}
 	return liquidityToken1.Uint64()
+}
+
+func (p *PoolPairState) GetShare(nftTokenID string, index uint64) (*Share, error) {
+	if _, ok := p.shares[nftTokenID]; ok {
+		if share, ok := p.shares[nftTokenID][index]; ok {
+			return share, nil
+		}
+	}
+	return nil, fmt.Errorf("Share not found")
+}
+
+func (p *PoolPairState) GetLPPerShare() map[common.Hash]*big.Int {
+	return p.state.LPFeesPerShare()
+}
+
+func (p *PoolPairState) GetLPFee(
+	shareAmount uint64,
+	tradingFees map[string]uint64,
+	listTokenIDs []common.Hash,
+	oldLPFeesPerShare map[common.Hash]*big.Int,
+) (map[common.Hash]uint64, error) {
+	curLPFeesPerShare := p.GetLPPerShare()
+
+	result := map[common.Hash]uint64{}
+	for _, tokenID := range listTokenIDs {
+		tradingFee, isExisted := tradingFees[tokenID.String()]
+		if !isExisted {
+			tradingFee = 0
+		}
+		oldFees, isExisted := oldLPFeesPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees, isExisted := curLPFeesPerShare[tokenID]
+		if !isExisted {
+			newFees = big.NewInt(0)
+		}
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
+		reward = new(big.Int).Div(reward, BaseLPFeesPerShare)
+		reward = new(big.Int).Add(reward, new(big.Int).SetUint64(tradingFee))
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		result[tokenID] = reward.Uint64()
+	}
+	return result, nil
 }

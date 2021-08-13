@@ -250,35 +250,83 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, 
 	if len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	// data, ok := arrayParams[0].(map[string]interface{})
-	// if !ok {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
-	// }
-	// pairID, ok := data["PairID"].(string)
-	// if !ok {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
-	// }
-	// nftTokenID, ok := data["NftTokenID"].(string)
-	// if !ok {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftTokenID is invalid"))
-	// }
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	pairID, ok := data["PairID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
+	}
+	nftTokenID, ok := data["NftTokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftTokenID is invalid"))
+	}
+	index, err := common.AssertAndConvertNumber(data["Index"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
 
-	// beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	// if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
-	// }
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
+	}
 
-	// beaconFeatureStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	beaconFeatureStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	// pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
-	// if err != nil {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
-	// }
+	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	}
 
-	result := map[string]uint64{}
-	// TODO
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
 
-	return result, nil
+	if _, ok := poolPairs[pairID]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("PairID is invalid"))
+	}
+	curPairState := poolPairs[pairID]
+
+	curShare, err := curPairState.GetShare(nftTokenID, index)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	}
+
+	// get old state
+	lastUpdatedBeaconHeight := curShare.LastUpdatedBeaconHeight()
+	pDexv3State, err = pdex.InitStateFromDB(beaconFeatureStateDB, uint64(lastUpdatedBeaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	}
+
+	poolPairs = make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
+
+	if _, ok := poolPairs[pairID]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("PairID is invalid"))
+	}
+	oldPairState := poolPairs[pairID]
+
+	poolPairState := curPairState.State()
+	result, err := curPairState.GetLPFee(
+		curShare.Amount(),
+		curShare.TradingFees(),
+		[]common.Hash{
+			poolPairState.Token0ID(),
+			poolPairState.Token1ID(),
+			common.PRVCoinID,
+			common.PDEXCoinID,
+		},
+		oldPairState.GetLPPerShare(),
+	)
+
+	return result, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPdexv3WithdrawLPFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

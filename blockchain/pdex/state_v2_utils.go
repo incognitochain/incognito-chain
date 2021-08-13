@@ -29,6 +29,18 @@ func NewShareWithValue(
 	}
 }
 
+func (s *Share) Amount() uint64 {
+	return s.amount
+}
+
+func (s *Share) TradingFees() map[string]uint64 {
+	return s.tradingFees
+}
+
+func (s *Share) LastUpdatedBeaconHeight() uint64 {
+	return s.lastUpdatedBeaconHeight
+}
+
 func (share *Share) Clone() *Share {
 	res := NewShare()
 	res.amount = share.amount
