@@ -499,6 +499,7 @@ func createPdexv3TradeRequestTransaction(
 	mdReader := &struct {
 		TradePath           []string
 		TokenToSell         common.Hash
+		TokenToBuy          common.Hash
 		SellAmount          Uint64Reader
 		MinAcceptableAmount Uint64Reader
 		TradingFee          Uint64Reader
@@ -519,12 +520,9 @@ func createPdexv3TradeRequestTransaction(
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 	paramSelect.SetTokenID(md.TokenToSell)
 	isPRV := md.TokenToSell == common.PRVCoinID
-	refundableTokenList := []common.Hash{common.PRVCoinID}
-	if !isPRV {
-		refundableTokenList = append(refundableTokenList, md.TokenToSell)
-	}
+	tokenList := []common.Hash{md.TokenToSell, mdReader.TokenToBuy}
 	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
-		refundableTokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -601,12 +599,9 @@ func createPdexv3AddOrderRequestTransaction(
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 	paramSelect.SetTokenID(md.TokenToSell)
 	isPRV := md.TokenToSell == common.PRVCoinID
-	refundableTokenList := []common.Hash{common.PRVCoinID}
-	if !isPRV {
-		refundableTokenList = append(refundableTokenList, md.TokenToSell)
-	}
+	tokenList := []common.Hash{md.TokenToSell}
 	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
-		refundableTokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}

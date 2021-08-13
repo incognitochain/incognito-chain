@@ -136,6 +136,7 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		Receiver:   sel.TokenReceivers,
 		Fee:        0,
 		TokenInput: candidateOutputTokens,
+		PropertyID: sel.TokenID.String(),
 	}
 
 	// choose PRV inputs
