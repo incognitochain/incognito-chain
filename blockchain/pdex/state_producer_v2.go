@@ -331,7 +331,6 @@ func (sp *stateProducerV2) trade(
 	pairs map[string]*PoolPairState,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
-
 	// TODO: sort
 	// tradeRequests := sortByFee(
 	// 	tradeRequests,
@@ -342,7 +341,7 @@ func (sp *stateProducerV2) trade(
 	for _, tx := range txs {
 		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
 		if !ok {
-			return result, pairs, errors.New("Can not parse add liquidity metadata")
+			return result, pairs, errors.New("Cannot parse trade metadata")
 		}
 		refundReceiver, exists := currentTrade.Receiver[currentTrade.TokenToSell]
 		if !exists {
@@ -373,7 +372,7 @@ func (sp *stateProducerV2) trade(
 		acceptedInst, _, err :=
 			v2.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee,
 				currentTrade.TradePath, tradeOutputReceiver, reserves,
-				tradeDirections, tokenToBuy, orderbookList)
+				tradeDirections, tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList)
 		if err != nil {
 			Logger.log.Warnf("Error handling trade: %v", err)
 			result = append(result, refundInst)
@@ -381,8 +380,7 @@ func (sp *stateProducerV2) trade(
 		}
 		result = append(result, acceptedInst)
 	}
-
-	Logger.log.Debugf("Finished handling trade: %v", result)
+	Logger.log.Warnf("Trade instructions: %v", result)
 	return result, pairs, nil
 }
 
@@ -395,7 +393,7 @@ TransactionLoop:
 	for _, tx := range txs {
 		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
 		if !ok {
-			return result, pairs, errors.New("Can not parse add liquidity metadata")
+			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
 
 		// TODO : PRV-based fee
@@ -478,6 +476,6 @@ TransactionLoop:
 		result = append(result, acceptedAction.StringSlice())
 	}
 
-	Logger.log.Debugf("Finished handling order: %v", result)
+	Logger.log.Warnf("AddOrder instructions: %v", result)
 	return result, pairs, nil
 }
