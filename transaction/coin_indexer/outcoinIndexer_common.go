@@ -1,11 +1,13 @@
 package coinIndexer
 
 import (
+	"bytes"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 const (
@@ -191,6 +193,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 		res[otaStr] = make([]privacy.Coin, 0)
 	}
 
+	burningPubKey := wallet.GetBurningPublicKey()
 	countSkipped := 0
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
@@ -204,6 +207,12 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 			if err != nil {
 				utils.Logger.Log.Error("Get outCoins ver 2 from bytes", err)
 				return nil, err
+			}
+
+			// check if the output coin was sent to the burning address
+			if bytes.Equal(cv2.GetPublicKey().ToBytesS(), burningPubKey) {
+				countSkipped++
+				continue
 			}
 
 			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {
