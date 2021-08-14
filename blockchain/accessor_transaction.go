@@ -464,7 +464,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 
 			idxParams := coinIndexer.IndexParam{
 				FromHeight: heightToSyncFrom,
-				ToHeight:   bss.ShardHeight,
+				ToHeight:   bss.ShardHeight + 1,
 				OTAKey:     otaKey,
 				TxDb:       transactionStateDB,
 				ShardID:    shardID,

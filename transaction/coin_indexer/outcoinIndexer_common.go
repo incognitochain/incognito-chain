@@ -55,7 +55,8 @@ func getCoinFilterByOTAKey() CoinMatcher {
 }
 
 // GetCoinFilterByOTAKeyAndToken returns a functions that filters if an output coin is of a specific token and belongs to an OTAKey.
-// If the given token is the generic `common.ConfidentialAssetID`, it immediately returns true after the belonging check.
+// If the given token is the generic `common.ConfidentialAssetID` and the retrieved coin has an asset tag field,
+// it immediately returns true after the belonging check.
 func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool {
 		entry, exists := kvargs["otaKey"]
@@ -78,7 +79,7 @@ func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 		ks.OTAKey = vk
 
 		if pass, sharedSecret := c.DoesCoinBelongToKeySet(ks); pass {
-			if tokenID.String() == common.ConfidentialAssetID.String() {
+			if tokenID.String() == common.ConfidentialAssetID.String() && c.GetAssetTag() != nil {
 				return true
 			}
 			pass, _ = c.ValidateAssetTag(sharedSecret, tokenID)
