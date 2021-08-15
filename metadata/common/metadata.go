@@ -402,6 +402,8 @@ func IsPdexv3Type(metadataType int) bool {
 		return true
 	case Pdexv3WithdrawLiquidityRequestMeta:
 		return true
+	case Pdexv3WithdrawLiquidityResponseMeta:
+		return true
 	default:
 		return false
 	}

@@ -789,9 +789,16 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 	assert.Nil(t, err)
 	//
 
-	// invalid insturction
-	acceptWithdrawLiquidityInst, err := instruction.NewAcceptWithdrawLiquidityWithValue(
+	// valid insturction
+	acceptWithdrawLiquidityInst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
 		poolPairID, *nftHash, *token0ID, 50, 100, validOTAReceiver0,
+		*txHash, 1,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	// valid insturction
+	acceptWithdrawLiquidityInst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
+		poolPairID, *nftHash, *token1ID, 200, 100, validOTAReceiver1,
 		*txHash, 1,
 	).StringSlice()
 	assert.Nil(t, err)
@@ -988,16 +995,59 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:   "Valid Input",
+			name:   "Valid Input - Token 0",
 			fields: fields{},
 			args: args{
 				stateDB: sDB,
-				inst:    acceptWithdrawLiquidityInst,
+				inst:    acceptWithdrawLiquidityInst0,
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:                  300,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+			},
+			want: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 100, 600,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:                  300,
+							tradingFees:             map[string]uint64{},
+							lastUpdatedBeaconHeight: 11,
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Valid Input - Token 1",
+			fields: fields{},
+			args: args{
+				stateDB: sDB,
+				inst:    acceptWithdrawLiquidityInst1,
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 100, 600,
+							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
 						shares: map[string]*Share{

@@ -507,10 +507,15 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
 		return poolPairs, err
 	}
-	_, _, _, err = poolPair.deductShare(
-		acceptWithdrawLiquidity.NftID().String(),
+	poolPair.deductSingleToken(
+		acceptWithdrawLiquidity.TokenID(),
+		acceptWithdrawLiquidity.TokenAmount(),
 		acceptWithdrawLiquidity.ShareAmount(),
 	)
+	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
+		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.deductShareAmount(
+			acceptWithdrawLiquidity.ShareAmount(), share)
+	}
 	if err != nil {
 		return poolPairs, err
 	}

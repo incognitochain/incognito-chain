@@ -22,7 +22,7 @@ type WithdrawLiquidityResponse struct {
 func NewWithdrawLiquidityResponse() *WithdrawLiquidityResponse {
 	return &WithdrawLiquidityResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.WithDrawRewardResponseMeta,
+			Type: metadataCommon.Pdexv3WithdrawLiquidityResponseMeta,
 		},
 	}
 }
@@ -30,7 +30,7 @@ func NewWithdrawLiquidityResponse() *WithdrawLiquidityResponse {
 func NewWithdrawLiquidityResponseWithValue(status, txReqID string) *WithdrawLiquidityResponse {
 	return &WithdrawLiquidityResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.WithDrawRewardResponseMeta,
+			Type: metadataCommon.Pdexv3WithdrawLiquidityResponseMeta,
 		},
 		status:  status,
 		txReqID: txReqID,
@@ -155,7 +155,7 @@ func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBl
 	metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", response)
 	metadataCommon.Logger.Log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
-		if len(inst) != 3 { // this is not PDEContribution instruction
+		if len(inst) != 3 {
 			continue
 		}
 		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
@@ -168,7 +168,7 @@ func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBl
 			continue
 		}
 
-		contentBytes := []byte(inst[3])
+		contentBytes := []byte(inst[2])
 		var instContent AcceptWithdrawLiquidity
 		err := json.Unmarshal(contentBytes, &instContent)
 		if err != nil {
@@ -193,6 +193,7 @@ func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		paidAmount := mintCoin.GetValue()
 
 		otaReceiver := coin.OTAReceiver{}
+		metadataCommon.Logger.Log.Info("instContent.OtaReceive:", instContent.OtaReceive)
 		err = otaReceiver.FromString(instContent.OtaReceive)
 		if err != nil {
 			return false, errors.New("Invalid ota receiver")
@@ -202,7 +203,7 @@ func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
 			instContent.TokenAmount != paidAmount ||
 			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
-			instContent.TxReqID.String() != coinID.String() {
+			instContent.TokenID.String() != coinID.String() {
 			return false, errors.New("Coin is invalid")
 		}
 		idx = i

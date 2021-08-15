@@ -374,7 +374,6 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		if !ok {
 			return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
 		}
-
 		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyTokenTransaction(
 			params,
 			metaData,
@@ -512,9 +511,6 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		token0Amount, token1Amount,
 		otaReceiveTradingFees,
 	)
-
-	var byteArrays []byte
-	var txHashStr string
 	receiverAddresses, ok := arrayParams[1].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
@@ -531,12 +527,12 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		Logger.log.Error(rpcErr)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, rpcErr)
 	}
-	byteArrays, err = json.Marshal(customTokenTx)
+	byteArrays, err := json.Marshal(customTokenTx)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	txHashStr = customTokenTx.Hash().String()
+	txHashStr := customTokenTx.Hash().String()
 
 	res := &jsonresult.CreateTransactionResult{
 		TxID:            txHashStr,

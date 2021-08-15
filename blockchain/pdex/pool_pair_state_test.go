@@ -489,6 +489,8 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 		orderbook Orderbook
 	}
 	type args struct {
+		token0ID    common.Hash
+		token1ID    common.Hash
 		amount0     uint64
 		amount1     uint64
 		shareAmount uint64
@@ -520,6 +522,8 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				orderbook: Orderbook{},
 			},
 			args: args{
+				token0ID:    *token0ID,
+				token1ID:    *token1ID,
 				amount0:     50,
 				amount1:     200,
 				shareAmount: 100,
@@ -563,6 +567,8 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				orderbook: Orderbook{},
 			},
 			args: args{
+				token0ID:    *token0ID,
+				token1ID:    *token1ID,
 				amount0:     50,
 				amount1:     200,
 				shareAmount: 100,
@@ -594,7 +600,10 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				shares:    tt.fields.shares,
 				orderbook: tt.fields.orderbook,
 			}
-			if err := p.deductReserveData(tt.args.amount0, tt.args.amount1, tt.args.shareAmount); (err != nil) != tt.wantErr {
+			if err := p.deductReserveData(
+				tt.args.token0ID, tt.args.token1ID,
+				tt.args.amount0, tt.args.amount1, tt.args.shareAmount,
+			); (err != nil) != tt.wantErr {
 				t.Errorf("PoolPairState.deductReserveData() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(p.state, tt.fieldsAfterProcess.state) {

@@ -310,70 +310,18 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 	return liquidityToken1.Uint64()
 }
 
-func (p *PoolPairState) deductReserveData(amount0, amount1, shareAmount uint64) error {
-	newToken0RealAmount := p.state.Token0RealAmount() - amount0
-	newToken1RealAmount := p.state.Token1RealAmount() - amount1
-	if newToken0RealAmount >= p.state.Token0RealAmount() {
-		return fmt.Errorf("newToken0RealAmount is out of range")
+func (p *PoolPairState) deductReserveData(
+	token0ID, token1ID common.Hash,
+	amount0, amount1, shareAmount uint64,
+) error {
+	err := p.deductSingleToken(token0ID, amount0, shareAmount)
+	if err != nil {
+		return err
 	}
-	if newToken1RealAmount >= p.state.Token1RealAmount() {
-		return fmt.Errorf("newToken1RealAmount is out of range")
+	err = p.deductSingleToken(token1ID, amount1, shareAmount)
+	if err != nil {
+		return err
 	}
-	p.state.SetToken0RealAmount(newToken0RealAmount)
-	p.state.SetToken1RealAmount(newToken1RealAmount)
-	newToken0VirtualAmount := big.NewInt(0)
-	newToken1VirtualAmount := big.NewInt(0)
-
-	if p.state.Amplifier() != metadataPdexv3.BaseAmplifier {
-		tempShareAmount := p.state.ShareAmount() - shareAmount
-		if tempShareAmount >= p.state.ShareAmount() {
-			return fmt.Errorf("tempShareAmount is out of range")
-		}
-
-		token0VirtualAmount := p.state.Token0VirtualAmount()
-		token1VirtualAmount := p.state.Token1VirtualAmount()
-		tempToken0VirtualAmount := big.NewInt(0).Mul(
-			token0VirtualAmount,
-			big.NewInt(0).SetUint64(tempShareAmount),
-		)
-		tempToken0VirtualAmount = tempToken0VirtualAmount.Div(
-			tempToken0VirtualAmount,
-			big.NewInt(0).SetUint64(p.state.ShareAmount()),
-		)
-		tempToken1VirtualAmount := big.NewInt(0).Mul(
-			token1VirtualAmount,
-			big.NewInt(0).SetUint64(tempShareAmount),
-		)
-		tempToken1VirtualAmount = tempToken1VirtualAmount.Div(
-			tempToken1VirtualAmount,
-			big.NewInt(0).SetUint64(p.state.ShareAmount()),
-		)
-		if tempToken0VirtualAmount.Uint64() > p.state.Token0RealAmount() {
-			newToken0VirtualAmount = tempToken0VirtualAmount
-		} else {
-			newToken0VirtualAmount.SetUint64(p.state.Token0RealAmount())
-		}
-		if tempToken1VirtualAmount.Uint64() > p.state.Token1RealAmount() {
-			newToken1VirtualAmount = tempToken1VirtualAmount
-		} else {
-			newToken1VirtualAmount.SetUint64(p.state.Token1RealAmount())
-		}
-	} else {
-		oldToken0VirtualAmount := p.state.Token0VirtualAmount()
-		newToken0VirtualAmount = big.NewInt(0).Sub(
-			oldToken0VirtualAmount,
-			big.NewInt(0).SetUint64(amount0),
-		)
-
-		oldToken1VirtualAmount := p.state.Token1VirtualAmount()
-		newToken1VirtualAmount = big.NewInt(0)
-		newToken1VirtualAmount.Sub(
-			oldToken1VirtualAmount,
-			big.NewInt(0).SetUint64(amount1),
-		)
-	}
-	p.state.SetToken0VirtualAmount(newToken0VirtualAmount)
-	p.state.SetToken1VirtualAmount(newToken1VirtualAmount)
 	return nil
 }
 
@@ -389,7 +337,6 @@ func (p *PoolPairState) deductShare(
 	if share.amount < shareAmount {
 		tempShareAmount = share.amount
 	}
-
 	token0Amount := big.NewInt(0)
 	token0Amount = token0Amount.Mul(
 		big.NewInt(0).SetUint64(p.state.Token0RealAmount()),
@@ -402,7 +349,10 @@ func (p *PoolPairState) deductShare(
 		big.NewInt(0).SetUint64(tempShareAmount),
 	)
 	token1Amount = token1Amount.Div(token1Amount, big.NewInt(0).SetUint64(p.state.ShareAmount()))
-	err := p.deductReserveData(token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount)
+	err := p.deductReserveData(
+		p.state.Token0ID(), p.state.Token1ID(),
+		token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount,
+	)
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
@@ -423,4 +373,54 @@ func (p *PoolPairState) deductShareAmount(shareAmount uint64, share *Share) (*Sh
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
 	return newShare, nil
+}
+
+func (p *PoolPairState) deductSingleToken(tokenID common.Hash, amount, shareAmount uint64) error {
+	var realAmount uint64
+	virtualAmount := big.NewInt(0)
+	switch tokenID.String() {
+	case p.state.Token0ID().String():
+		realAmount = p.state.Token0RealAmount()
+		virtualAmount = p.state.Token0VirtualAmount()
+	case p.state.Token1ID().String():
+		realAmount = p.state.Token1RealAmount()
+		virtualAmount = p.state.Token1VirtualAmount()
+	default:
+		return errors.New("Can't find tokenID")
+	}
+	tempShareAmount := p.state.ShareAmount() - shareAmount
+	if tempShareAmount >= p.state.ShareAmount() {
+		return fmt.Errorf("tempShareAmount is out of range")
+	}
+	newRealAmount := realAmount - amount
+	if newRealAmount >= realAmount {
+		return fmt.Errorf("newRealAmount is out of range")
+	}
+	newVirtualAmount := big.NewInt(0)
+	if p.state.Amplifier() != metadataPdexv3.BaseAmplifier {
+		tempVirtualAmount := big.NewInt(0).Mul(
+			virtualAmount,
+			big.NewInt(0).SetUint64(tempShareAmount),
+		)
+		tempVirtualAmount = tempVirtualAmount.Div(
+			tempVirtualAmount,
+			big.NewInt(0).SetUint64(p.state.ShareAmount()),
+		)
+		if tempVirtualAmount.Uint64() > newRealAmount {
+			newVirtualAmount = tempVirtualAmount
+		} else {
+			newVirtualAmount.SetUint64(newRealAmount)
+		}
+	} else {
+		newVirtualAmount = big.NewInt(0).Sub(virtualAmount, big.NewInt(0).SetUint64(amount))
+	}
+	switch tokenID.String() {
+	case p.state.Token0ID().String():
+		p.state.SetToken0RealAmount(newRealAmount)
+		p.state.SetToken0VirtualAmount(newVirtualAmount)
+	case p.state.Token1ID().String():
+		p.state.SetToken1RealAmount(newRealAmount)
+		p.state.SetToken1VirtualAmount(newVirtualAmount)
+	}
+	return nil
 }
