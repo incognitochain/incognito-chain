@@ -511,6 +511,9 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		acceptWithdrawLiquidity.NftID().String(),
 		acceptWithdrawLiquidity.ShareAmount(),
 	)
+	if err != nil {
+		return poolPairs, err
+	}
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawLiquidityStatusPrefix(),

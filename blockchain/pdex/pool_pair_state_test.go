@@ -326,3 +326,286 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 		})
 	}
 }
+
+func TestPoolPairState_deductShare(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+
+	type fields struct {
+		state     rawdbv2.Pdexv3PoolPair
+		shares    map[string]*Share
+		orderbook Orderbook
+	}
+	type args struct {
+		nftID       string
+		shareAmount uint64
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+		args               args
+		want               uint64
+		want1              uint64
+		want2              uint64
+		wantErr            bool
+	}{
+		{
+			name: "BaseAmplifier",
+			fields: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					300, 150, 600,
+					big.NewInt(0).SetUint64(150),
+					big.NewInt(0).SetUint64(600),
+					metadataPdexv3.BaseAmplifier,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  300,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+			args: args{
+				nftID:       nftID,
+				shareAmount: 100,
+			},
+			want:  50,
+			want1: 200,
+			want2: 100,
+			fieldsAfterProcess: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					200, 100, 400,
+					big.NewInt(0).SetUint64(100),
+					big.NewInt(0).SetUint64(400),
+					metadataPdexv3.BaseAmplifier,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  200,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Not BaseAmplifier",
+			fields: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					300, 150, 600,
+					big.NewInt(0).SetUint64(300),
+					big.NewInt(0).SetUint64(1200),
+					20000,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  300,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+			args: args{
+				nftID:       nftID,
+				shareAmount: 100,
+			},
+			want:  50,
+			want1: 200,
+			want2: 100,
+			fieldsAfterProcess: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					200, 100, 400,
+					big.NewInt(0).SetUint64(200),
+					big.NewInt(0).SetUint64(800),
+					20000,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  200,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &PoolPairState{
+				state:     tt.fields.state,
+				shares:    tt.fields.shares,
+				orderbook: tt.fields.orderbook,
+			}
+			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PoolPairState.deductShare() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("PoolPairState.deductShare() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("PoolPairState.deductShare() got1 = %v, want %v", got1, tt.want1)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("PoolPairState.deductShare() got2 = %v, want %v", got2, tt.want2)
+			}
+			if !reflect.DeepEqual(p.state, tt.fieldsAfterProcess.state) {
+				t.Errorf("fieldsAfterProcess.state got = %v, want %v", p.state, tt.fieldsAfterProcess.state)
+			}
+			if !reflect.DeepEqual(p.shares, tt.fieldsAfterProcess.shares) {
+				t.Errorf("fieldsAfterProcess.state got = %v, want %v", p.shares, tt.fieldsAfterProcess.shares)
+			}
+			if !reflect.DeepEqual(p.orderbook, tt.fieldsAfterProcess.orderbook) {
+				t.Errorf("fieldsAfterProcess.state got = %v, want %v", p.orderbook, tt.fieldsAfterProcess.orderbook)
+			}
+		})
+	}
+}
+
+func TestPoolPairState_deductReserveData(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+
+	type fields struct {
+		state     rawdbv2.Pdexv3PoolPair
+		shares    map[string]*Share
+		orderbook Orderbook
+	}
+	type args struct {
+		amount0     uint64
+		amount1     uint64
+		shareAmount uint64
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+		args               args
+		wantErr            bool
+	}{
+		{
+			name: "BaseAmplifier",
+			fields: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					300, 150, 600,
+					big.NewInt(0).SetUint64(150),
+					big.NewInt(0).SetUint64(600),
+					metadataPdexv3.BaseAmplifier,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  300,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+			args: args{
+				amount0:     50,
+				amount1:     200,
+				shareAmount: 100,
+			},
+			wantErr: false,
+			fieldsAfterProcess: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					300, 100, 400,
+					big.NewInt(0).SetUint64(100),
+					big.NewInt(0).SetUint64(400),
+					metadataPdexv3.BaseAmplifier,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  300,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+		},
+		{
+			name: "Not BaseAmplifier",
+			fields: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					300, 150, 600,
+					big.NewInt(0).SetUint64(300),
+					big.NewInt(0).SetUint64(1200),
+					20000,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  300,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+			args: args{
+				amount0:     50,
+				amount1:     200,
+				shareAmount: 100,
+			},
+			wantErr: false,
+			fieldsAfterProcess: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					300, 100, 400,
+					big.NewInt(0).SetUint64(200),
+					big.NewInt(0).SetUint64(800),
+					20000,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:                  300,
+						tradingFees:             map[string]uint64{},
+						lastUpdatedBeaconHeight: 10,
+					},
+				},
+				orderbook: Orderbook{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &PoolPairState{
+				state:     tt.fields.state,
+				shares:    tt.fields.shares,
+				orderbook: tt.fields.orderbook,
+			}
+			if err := p.deductReserveData(tt.args.amount0, tt.args.amount1, tt.args.shareAmount); (err != nil) != tt.wantErr {
+				t.Errorf("PoolPairState.deductReserveData() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(p.state, tt.fieldsAfterProcess.state) {
+				t.Errorf("fieldsAfterProcess.state got = %v, expect %v", p.state, tt.fieldsAfterProcess.state)
+			}
+			if !reflect.DeepEqual(p.shares, tt.fieldsAfterProcess.shares) {
+				t.Errorf("fieldsAfterProcess.shares got = %v, expect %v", p.shares, tt.fieldsAfterProcess.shares)
+			}
+			if !reflect.DeepEqual(p.orderbook, tt.fieldsAfterProcess.orderbook) {
+				t.Errorf("fieldsAfterProcess.orderbook got = %v, expect %v", p.orderbook, tt.fieldsAfterProcess.orderbook)
+			}
+		})
+	}
+}

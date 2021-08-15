@@ -329,6 +329,7 @@ func (p *PoolPairState) deductReserveData(amount0, amount1, shareAmount uint64) 
 		if tempShareAmount >= p.state.ShareAmount() {
 			return fmt.Errorf("tempShareAmount is out of range")
 		}
+
 		token0VirtualAmount := p.state.Token0VirtualAmount()
 		token1VirtualAmount := p.state.Token1VirtualAmount()
 		tempToken0VirtualAmount := big.NewInt(0).Mul(
@@ -405,9 +406,21 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	share.amount -= tempShareAmount
-	if share.amount >= tempShareAmount {
-		return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, errors.New("share.amount is our of range")
+	p.shares[nftID], err = p.deductShareAmount(tempShareAmount, share)
+	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
+}
+
+func (p *PoolPairState) deductShareAmount(shareAmount uint64, share *Share) (*Share, error) {
+	newShare := share
+	tempShareAmount := newShare.amount - shareAmount
+	if tempShareAmount >= newShare.amount {
+		return newShare, errors.New("tempShareAmount is our of range")
 	}
-	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, nil
+	newShare.amount = tempShareAmount
+	poolPairShareAmount := p.state.ShareAmount() - shareAmount
+	if poolPairShareAmount >= p.state.ShareAmount() {
+		return newShare, fmt.Errorf("PoolPairState share amount is out of range")
+	}
+	p.state.SetShareAmount(poolPairShareAmount)
+	return newShare, nil
 }
