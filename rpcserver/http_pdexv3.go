@@ -503,13 +503,11 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveTradingFees := make(map[string]string)
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		withdrawLiquidityRequest.PoolPairID,
 		withdrawLiquidityRequest.TokenID,
 		otaReceiveNftStr, otaReceiveToken0Str, otaReceiveToken1Str,
 		token0Amount, token1Amount,
-		otaReceiveTradingFees,
 	)
 	receiverAddresses, ok := arrayParams[1].(map[string]interface{})
 	if !ok {
