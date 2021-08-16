@@ -248,7 +248,6 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
 	newCommitteeChange, candidates := b.getCandidatesForRandomAssignment(committeeChange)
-	Logger.log.Infof("getCandidatesForRandomAssignment, %+v", candidates)
 	newCommitteeChange = b.assign(candidates, rand, numberOfValidator, newCommitteeChange)
 	return newCommitteeChange
 }
