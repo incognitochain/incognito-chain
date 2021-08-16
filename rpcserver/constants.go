@@ -86,6 +86,7 @@ const (
 	gettransactionbyserialnumber               = "gettransactionbyserialnumber"
 	gettransactionbypublickey                  = "gettransactionbypublickey"
 	listUnspentOutputTokens                    = "listunspentoutputtokens"
+	getOTACoinLength                           = "getotacoinlength"
 	getOTACoinsByIndices                       = "getotacoinsbyindices"
 	randomCommitments                          = "randomcommitments"
 	hasSerialNumbers                           = "hasserialnumbers"

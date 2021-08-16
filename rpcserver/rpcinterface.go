@@ -137,6 +137,7 @@ var HttpHandler = map[string]httpHandler{
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
 	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
 	listUnspentOutputTokens:                    (*HttpServer).handleListUnspentOutputTokens,
+	getOTACoinLength:                           (*HttpServer).handleGetOTACoinLength,
 	getOTACoinsByIndices:                       (*HttpServer).handleGetOTACoinsByIndices,
 
 	// Bridge
