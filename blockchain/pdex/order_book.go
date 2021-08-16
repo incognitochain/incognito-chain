@@ -89,6 +89,15 @@ func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, 
 	}
 }
 
+// RemoveOrder() removes one order by its index
+func (ob *Orderbook) RemoveOrder(index int) error {
+	if index < 0 || index >= len(ob.orders) {
+		return fmt.Errorf("Invalid order index %d for orderbook length %d", index, len(ob.orders))
+	}
+	ob.orders = append(ob.orders[:index], ob.orders[index+1:]...)
+	return nil
+}
+
 func (ob *Orderbook) getDiff(otherBook *Orderbook,
 	stateChange *StateChange) *StateChange {
 	newStateChange := stateChange

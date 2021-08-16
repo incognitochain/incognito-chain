@@ -293,6 +293,7 @@ func NewPdexv3PoolPairWithValue(
 
 type Pdexv3Order struct {
 	id             string
+	nftID          common.Hash
 	token0Rate     uint64
 	token1Rate     uint64
 	token0Balance  uint64
@@ -302,6 +303,7 @@ type Pdexv3Order struct {
 }
 
 func (o *Pdexv3Order) Id() string            { return o.id }
+func (o *Pdexv3Order) NftID() common.Hash    { return o.nftID }
 func (o *Pdexv3Order) Token0Rate() uint64    { return o.token0Rate }
 func (o *Pdexv3Order) Token1Rate() uint64    { return o.token1Rate }
 func (o *Pdexv3Order) Token0Balance() uint64 { return o.token0Balance }
@@ -316,13 +318,14 @@ func (o *Pdexv3Order) SetToken1Balance(b uint64) { o.token1Balance = b }
 func (o *Pdexv3Order) SetFee(fee uint64)         { o.fee = fee }
 
 func NewPdexv3OrderWithValue(
-	id string,
+	id string, nftID common.Hash,
 	token0Rate, token1Rate, token0Balance, token1Balance uint64,
 	tradeDirection byte,
 	fee uint64,
 ) *Pdexv3Order {
 	return &Pdexv3Order{
 		id:             id,
+		nftID:          nftID,
 		token0Rate:     token0Rate,
 		token1Rate:     token1Rate,
 		token0Balance:  token0Balance,
@@ -334,15 +337,17 @@ func NewPdexv3OrderWithValue(
 
 func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Id             string `json:"Id"`
-		Token0Rate     uint64 `json:"Token0Rate"`
-		Token1Rate     uint64 `json:"Token1Rate"`
-		Token0Balance  uint64 `json:"Token0Balance"`
-		Token1Balance  uint64 `json:"Token1Balance"`
-		TradeDirection byte   `json:"TradeDirection"`
-		Fee            uint64 `json:"Fee"`
+		Id             string      `json:"Id"`
+		NftID          common.Hash `json:"NftID"`
+		Token0Rate     uint64      `json:"Token0Rate"`
+		Token1Rate     uint64      `json:"Token1Rate"`
+		Token0Balance  uint64      `json:"Token0Balance"`
+		Token1Balance  uint64      `json:"Token1Balance"`
+		TradeDirection byte        `json:"TradeDirection"`
+		Fee            uint64      `json:"Fee"`
 	}{
 		Id:             o.id,
+		NftID:          o.nftID,
 		Token0Rate:     o.token0Rate,
 		Token1Rate:     o.token1Rate,
 		Token0Balance:  o.token0Balance,
@@ -358,10 +363,11 @@ func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
 
 func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 	var temp struct {
-		Id             string `json:"Id"`
-		Token0Rate     uint64 `json:"Token0Rate"`
-		Token1Rate     uint64 `json:"Token1Rate"`
-		Token0Balance  uint64 `json:"Token0Balance"`
+		Id             string      `json:"Id"`
+		NftID          common.Hash `json:"NftID"`
+		Token0Rate     uint64      `json:"Token0Rate"`
+		Token1Rate     uint64      `json:"Token1Rate"`
+		Token0Balance  uint64      `json:"Token0Balance"`
 		Token1Balance  uint64 `json:"Token1Balance"`
 		TradeDirection byte   `json:"TradeDirection"`
 		Fee            uint64 `json:"Fee"`
@@ -373,6 +379,7 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 
 	*o = Pdexv3Order{
 		id:             temp.Id,
+		nftID:          temp.NftID,
 		token0Rate:     temp.Token0Rate,
 		token1Rate:     temp.Token1Rate,
 		token0Balance:  temp.Token0Balance,
@@ -384,6 +391,6 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 }
 
 func (o *Pdexv3Order) Clone() *Pdexv3Order {
-	return NewPdexv3OrderWithValue(o.id, o.token0Rate, o.token1Rate,
+	return NewPdexv3OrderWithValue(o.id, o.nftID, o.token0Rate, o.token1Rate,
 		o.token0Balance, o.token1Balance, o.tradeDirection, o.fee)
 }

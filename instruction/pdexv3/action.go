@@ -2,7 +2,6 @@ package pdexv3
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -22,19 +21,19 @@ type Action struct {
 
 func NewAction(c Content, txID common.Hash, shardID byte) *Action {
 	return &Action{
-		Content: c,
+		Content:     c,
 		RequestTxID: txID,
-		shardID: shardID,
+		shardID:     shardID,
 	}
 }
 
 func (acn Action) ShardID() byte { return acn.shardID }
 
 func (acn *Action) FromStringSlice(source []string) error {
-	if len(source) != 4 {
-		return errors.New("Invalid action length")
+	if len(source) != 5 {
+		return fmt.Errorf("Invalid action length %d, expect 5", len(source))
 	}
-	err := json.Unmarshal([]byte(source[3]), acn)
+	err := json.Unmarshal([]byte(source[4]), acn)
 	if err != nil {
 		return err
 	}
@@ -43,15 +42,27 @@ func (acn *Action) FromStringSlice(source []string) error {
 	if mdType, err := strconv.Atoi(source[0]); err != nil || mdType != int(acn.GetType()) {
 		return fmt.Errorf("Metadata type mismatch")
 	}
+	if status, err := strconv.Atoi(source[1]); err != nil || status != int(acn.GetStatus()) {
+		return fmt.Errorf("Metadata status mismatch")
+	}
 
-	shardID, err := strconv.Atoi(source[2])
-	acn.shardID = byte(shardID)
+	if _, err := acn.RequestTxID.NewHashFromStr(source[3]); err != nil {
+		return fmt.Errorf("Invalid RequestTxID %v", source[3])
+	}
+
+	if res, err := strconv.Atoi(source[2]); err != nil {
+		return fmt.Errorf("Invalid shardID %v", source[2])
+	} else {
+		acn.shardID = byte(res)
+	}
+	// acn.shardID = byte(shardID)
 
 	return nil
 }
 
 func (acn *Action) StringSlice() []string {
-	result := []string{strconv.Itoa(acn.GetType()), strconv.Itoa(acn.GetStatus()), strconv.Itoa(int(acn.shardID))}
+	result := []string{strconv.Itoa(acn.GetType()), strconv.Itoa(acn.GetStatus()),
+		strconv.Itoa(int(acn.shardID)), acn.RequestTxID.String()}
 	jsonBytes, _ := json.Marshal(acn)
 	result = append(result, string(jsonBytes))
 	return result

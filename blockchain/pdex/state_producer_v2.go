@@ -349,7 +349,7 @@ func (sp *stateProducerV2) trade(
 		}
 
 		currentAction := instruction.NewAction(
-			metadataPdexv3.RefundedTrade{
+			&metadataPdexv3.RefundedTrade{
 				Receiver:    refundReceiver,
 				TokenToSell: currentTrade.TokenToSell,
 				Amount:      currentTrade.SellAmount,
@@ -387,6 +387,7 @@ func (sp *stateProducerV2) trade(
 func (sp *stateProducerV2) addOrder(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
+	nftIDs map[string]bool,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 TransactionLoop:
@@ -403,7 +404,7 @@ TransactionLoop:
 		}
 
 		currentAction := instruction.NewAction(
-			metadataPdexv3.RefundedAddOrder{
+			&metadataPdexv3.RefundedAddOrder{
 				Receiver: refundReceiver,
 				TokenID:  currentOrderReq.TokenToSell,
 				Amount:   currentOrderReq.SellAmount,
@@ -412,6 +413,12 @@ TransactionLoop:
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 		var refundInst []string = currentAction.StringSlice()
+
+		if exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
+			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
+			result = append(result, refundInst)
+			continue TransactionLoop
+		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
 		if !exists {
@@ -461,6 +468,7 @@ TransactionLoop:
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
 			OrderID:        orderID,
+			NftID:          currentOrderReq.NftID,
 			Token0Rate:     token0Rate,
 			Token1Rate:     token1Rate,
 			Token0Balance:  token0Balance,
@@ -477,5 +485,80 @@ TransactionLoop:
 	}
 
 	Logger.log.Warnf("AddOrder instructions: %v", result)
+	return result, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawOrder(
+	txs []metadata.Transaction,
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	result := [][]string{}
+TransactionLoop:
+	for _, tx := range txs {
+		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawOrderRequest)
+		if !ok {
+			return result, pairs, errors.New("Cannot parse AddOrder metadata")
+		}
+
+		// default to reject
+		currentAction := instruction.NewAction(
+			&metadataPdexv3.RejectedWithdrawOrder{
+				PoolPairID: currentOrderReq.PoolPairID,
+				OrderID:    currentOrderReq.OrderID,
+			},
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+
+		pair, exists := pairs[currentOrderReq.PoolPairID]
+		if !exists {
+			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
+			result = append(result, currentAction.StringSlice())
+			continue TransactionLoop
+		}
+
+		orderID := currentOrderReq.OrderID
+		for _, ord := range pair.orderbook.orders {
+			if ord.Id() == orderID {
+				if ord.NftID() == currentOrderReq.NftID {
+					var currentBalance uint64
+					switch currentOrderReq.TokenID {
+					case pair.state.Token0ID():
+						currentBalance = ord.Token0Balance()
+					case pair.state.Token1ID():
+						currentBalance = ord.Token1Balance()
+					default:
+						Logger.log.Warnf("Invalid withdraw tokenID %v for order %s",
+							currentOrderReq.TokenID, orderID)
+						result = append(result, currentAction.StringSlice())
+						continue TransactionLoop
+					}
+
+					withdrawAmount := currentOrderReq.Amount
+					if currentBalance < currentOrderReq.Amount {
+						withdrawAmount = currentBalance
+					}
+					// accepted
+					currentAction.Content = &metadataPdexv3.AcceptedWithdrawOrder{
+						PoolPairID: currentOrderReq.PoolPairID,
+						OrderID:    currentOrderReq.OrderID,
+						Receiver:   currentOrderReq.Receiver,
+						TokenID:    currentOrderReq.TokenID,
+						Amount:     withdrawAmount,
+					}
+				} else {
+					Logger.log.Warnf("Incorrect NftID %v for withdrawing order %s",
+						currentOrderReq.NftID, orderID)
+				}
+				result = append(result, currentAction.StringSlice())
+				continue TransactionLoop
+			}
+		}
+
+		Logger.log.Warnf("No order with ID %s found for withdrawal", orderID)
+		result = append(result, currentAction.StringSlice())
+	}
+
+	Logger.log.Warnf("WithdrawOrder instructions: %v", result)
 	return result, pairs, nil
 }

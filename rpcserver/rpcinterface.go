@@ -220,8 +220,10 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3ContributionStatus:           (*HttpServer).handleGetPdexv3ContributionStatus,
 	pdexv3TxTrade:                         (*HttpServer).handlePdexv3TxTradeRequest,
 	pdexv3TxAddOrder:                      (*HttpServer).handlePdexv3TxAddOrderRequest,
+	pdexv3TxWithdrawOrder:                 (*HttpServer).handlePdexv3TxWithdrawOrderRequest,
 	pdexv3GetTradeStatus:                  (*HttpServer).handlePdexv3GetTradeStatus,
 	pdexv3GetAddOrderStatus:               (*HttpServer).handlePdexv3GetAddOrderStatus,
+	pdexv3GetWithdrawOrderStatus:          (*HttpServer).handlePdexv3GetWithdrawOrderStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

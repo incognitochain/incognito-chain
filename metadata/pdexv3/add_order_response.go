@@ -2,6 +2,8 @@ package pdexv3
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,8 +14,8 @@ import (
 // AddOrderStatus containns the info tracked by feature statedb, which is then displayed in RPC status queries.
 // For refunded `add order` requests, all fields except Status are ignored
 type AddOrderStatus struct {
-	Status     int         `json:"Status"`
-	OrderID        string `json:"OrderID"`
+	Status  int    `json:"Status"`
+	OrderID string `json:"OrderID"`
 }
 
 // AddOrderResponse is the metadata inside response tx for `add order` (applicable for refunded case only)
@@ -25,13 +27,14 @@ type AddOrderResponse struct {
 
 // AcceptedAddOrder is added as Content for produced beacon instruction after to handling an order successfully
 type AcceptedAddOrder struct {
-	PoolPairID     string `json:"PoolPairID"`
-	OrderID        string `json:"OrderID"`
-	Token0Rate     uint64 `json:"Token0Rate"`
-	Token1Rate     uint64 `json:"Token1Rate"`
-	Token0Balance  uint64 `json:"Token0Balance"`
-	Token1Balance  uint64 `json:"Token1Balance"`
-	TradeDirection byte   `json:"TradeDirection"`
+	PoolPairID     string      `json:"PoolPairID"`
+	OrderID        string      `json:"OrderID"`
+	NftID          common.Hash `json:"NftID"`
+	Token0Rate     uint64      `json:"Token0Rate"`
+	Token1Rate     uint64      `json:"Token1Rate"`
+	Token0Balance  uint64      `json:"Token0Balance"`
+	Token1Balance  uint64      `json:"Token1Balance"`
+	TradeDirection byte        `json:"TradeDirection"`
 }
 
 func (md AcceptedAddOrder) GetType() int {
@@ -63,6 +66,44 @@ func (res AddOrderResponse) CheckTransactionFee(tx metadataCommon.Transaction, m
 }
 
 func (res AddOrderResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadataCommon.MintData, shardID byte, tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, ac *metadataCommon.AccumulatedValues, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever) (bool, error) {
+	// look for the instruction associated with this response
+	matchedInstructionIndex := -1
+
+	for i, inst := range mintData.Insts {
+		// match common data from instruction before parsing accepted / refunded metadata
+		// use layout from instruction.Action
+		if mintData.InstsUsed[i] > 0 ||
+			inst[0] != strconv.Itoa(metadataCommon.Pdexv3AddOrderRequestMeta) ||
+			inst[1] != strconv.Itoa(res.Status) ||
+			inst[2] != strconv.Itoa(int(shardID)) ||
+			inst[3] != res.RequestTxID.String() {
+			// upon any error, skip to next instruction
+			continue
+		}
+		switch res.Status {
+		case OrderRefundedStatus:
+			var md RefundedAddOrder
+			err := json.Unmarshal([]byte(inst[4]), &md)
+			if err != nil {
+				metadataCommon.Logger.Log.Warnf("Error matching instruction %s as refunded order - %v", inst[4], err)
+				continue
+			}
+			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenID, tx)
+			if valid {
+				matchedInstructionIndex = i
+				break
+			} else {
+				metadataCommon.Logger.Log.Warnf(msg)
+			}
+		default:
+			metadataCommon.Logger.Log.Warnf("Unrecognized AddOrder status %v for response", res.Status)
+		}
+	}
+
+	if matchedInstructionIndex == -1 {
+		return false, fmt.Errorf("Instruction not found for AddOrder Response TX %s", tx.Hash().String())
+	}
+	mintData.InstsUsed[matchedInstructionIndex] = 1
 	return true, nil
 }
 

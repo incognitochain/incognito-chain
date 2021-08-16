@@ -230,6 +230,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.addOrder(env.StateDB(), inst,
 				s.poolPairs,
 			)
+		case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+			s.poolPairs, err = s.processor.withdrawOrder(env.StateDB(), inst,
+				s.poolPairs,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -248,6 +252,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	modifyParamsTxs := []metadata.Transaction{}
 	tradeTxs := []metadata.Transaction{}
 	addOrderTxs := []metadata.Transaction{}
+	withdrawOrderTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -268,6 +273,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				tradeTxs = append(tradeTxs, tx)
 			case metadataCommon.Pdexv3AddOrderRequestMeta:
 				addOrderTxs = append(addOrderTxs, tx)
+			case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+				addOrderTxs = append(withdrawOrderTxs, tx)
 			}
 		}
 	}
@@ -310,11 +317,22 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
 		addOrderTxs,
 		s.poolPairs,
+		s.nftIDs,
 	)
 	if err != nil {
 		return instructions, err
 	}
 	instructions = append(instructions, addOrderInstructions...)
+
+	var withdrawOrderInstructions [][]string
+	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
+		withdrawOrderTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawOrderInstructions...)
 
 	return instructions, nil
 }

@@ -80,6 +80,21 @@ func (txBuilder *TxBuilderV2) Build(
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
+	case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+		switch inst[1] {
+		case strconv.Itoa(metadataPdexv3.WithdrawOrderAcceptedStatus):
+			action := instruction.Action{Content: &metadataPdexv3.AcceptedWithdrawOrder{}}
+			err := action.FromStringSlice(inst)
+			if err != nil {
+				return nil, err
+			}
+			tx, err = v2.WithdrawOrderAcceptTx(action, producerPrivateKey, shardID, transactionStateDB)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		}
 	}
 
 	return tx, err

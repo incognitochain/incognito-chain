@@ -57,6 +57,7 @@ var (
 	pdexv3ParamsModifyingPrefix             = []byte("pdexv3-paramsmodifyingstatus-")
 	pdexv3TradeStatusPrefix                 = []byte("pdexv3-trade-status-")
 	pdexv3AddOrderStatusPrefix              = []byte("pdexv3-addorder-status-")
+	pdexv3WithdrawOrderStatusPrefix         = []byte("pdexv3-withdraworder-status-")
 	pdexv3ParamsPrefix                      = []byte("pdexv3-params-")
 	pdexv3WaitingContributionsPrefix        = []byte("pdexv3-waitingContributions-")
 	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
@@ -561,6 +562,10 @@ func Pdexv3TradeStatusPrefix() []byte {
 
 func Pdexv3AddOrderStatusPrefix() []byte {
 	return pdexv3AddOrderStatusPrefix
+}
+
+func Pdexv3WithdrawOrderStatusPrefix() []byte {
+	return pdexv3WithdrawOrderStatusPrefix
 }
 
 // pDex v3 prefix hash of the key

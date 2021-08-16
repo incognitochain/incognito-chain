@@ -76,3 +76,29 @@ func OrderRefundTx(
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
 	)
 }
+
+func WithdrawOrderAcceptTx(
+	acn instructionPdexv3.Action,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadataCommon.Transaction, error) {
+	if shardID != acn.ShardID() {
+		return nil, nil
+	}
+	acceptedWithdrawOrder, ok := acn.Content.(*metadataPdexv3.AcceptedWithdrawOrder)
+	if !ok {
+		return nil, fmt.Errorf("Incorrect metadata type. Expected Accepted Trade")
+	}
+	md := metadataPdexv3.WithdrawOrderResponse{acn.GetStatus(), acn.RequestTxID,
+		metadataCommon.MetadataBase{metadataCommon.Pdexv3WithdrawOrderResponseMeta}}
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount: acceptedWithdrawOrder.Amount, ReceiverAddress: nil,
+		PublicKey: &acceptedWithdrawOrder.Receiver.PublicKey, TxRandom: &acceptedWithdrawOrder.Receiver.TxRandom,
+		TokenID: &acceptedWithdrawOrder.TokenID, Info: []byte{}}
+
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
+		func(c privacy.Coin) metadataCommon.Metadata { return &md },
+	)
+}
