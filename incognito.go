@@ -41,8 +41,8 @@ func getBTCRelayingChain(btcRelayingChainID, btcDataFolderName string) (*btcrela
 		portal.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		portal.TestnetBTCChainID:  int32(1896910),
-		portal.Testnet2BTCChainID: int32(1863675),
+		portal.TestnetBTCChainID:  int32(2063133),
+		portal.Testnet2BTCChainID: int32(2064989),
 		portal.MainnetBTCChainID:  int32(634140),
 	}
 	return btcrelaying.GetChainV2(
@@ -168,11 +168,11 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
-	useOutcoinDb := len(cfg.UseOutcoinDatabase)>=1
+	useOutcoinDb := len(cfg.UseOutcoinDatabase) >= 1
 	var outcoinDb *incdb.Database = nil
-	if useOutcoinDb{
+	if useOutcoinDb {
 		temp, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.OutcoinDatabaseDir))
-		if err!=nil{
+		if err != nil {
 			Logger.log.Error("could not open leveldb instance for coin storing")
 		}
 		outcoinDb = &temp
