@@ -100,6 +100,8 @@ type BeaconViewRetriever interface {
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	IsValidNftID(string, string) error
+	IsValidPoolPairID(string) error
 }
 
 type ShardViewRetriever interface {

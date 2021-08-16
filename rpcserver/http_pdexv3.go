@@ -503,11 +503,31 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
+	beaconBestView, err := httpServer.blockService.GetBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(beaconBestView.PdeState().Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
+	poolPair, found := poolPairs[withdrawLiquidityRequest.PoolPairID]
+	if !found {
+		err = fmt.Errorf("Can't find poolPairID %s", withdrawLiquidityRequest.PoolPairID)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
+	poolPairState := poolPair.State()
+
+	shareAmount := pdex.CalculateShareAmount(
+		poolPairState.Token0RealAmount(), poolPairState.Token1RealAmount(),
+		token0Amount, token1Amount, poolPairState.ShareAmount(),
+	)
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		withdrawLiquidityRequest.PoolPairID,
 		withdrawLiquidityRequest.TokenID,
 		otaReceiveNftStr, otaReceiveToken0Str, otaReceiveToken1Str,
-		token0Amount, token1Amount,
+		shareAmount,
 	)
 	receiverAddresses, ok := arrayParams[1].(map[string]interface{})
 	if !ok {

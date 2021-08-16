@@ -146,7 +146,6 @@ func (sp *stateProducerV2) addLiquidity(
 					waitingContribution.TxReqID().String(),
 				)
 				if err != nil {
-					Logger.log.Debug("[pdex] err:", err)
 					continue
 				}
 				poolPairs[poolPairID] = newPoolPair
@@ -192,16 +191,21 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		shareAmount := poolPair.addReserveDataAndCalculateShare(
+		shareAmount, err := poolPair.addReserveDataAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
+		if err != nil {
+			Logger.log.Debug("err:", err)
+			continue
+		}
 		nftID, nftIDs, err = poolPair.addShare(
 			nftID, nftIDs, shareAmount, beaconHeight,
 			waitingContribution.TxReqID().String(),
 		)
 		if err != nil {
-			return res, poolPairs, waitingContributions, nftIDs, err
+			Logger.log.Debug("err:", err)
+			continue
 		}
 		insts, err := v2utils.BuildMatchAndReturnAddLiquidityInstructions(
 			token0ContributionState, token1ContributionState,
@@ -375,8 +379,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		shareAmount := poolPair.calculateShareAmount(metaData.Token0Amount(), metaData.Token1Amount())
-		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(metaData.NftID(), shareAmount)
+		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
+			metaData.NftID(), metaData.ShareAmount(),
+		)
 		if err != nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 			if err != nil {

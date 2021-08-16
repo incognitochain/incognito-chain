@@ -271,7 +271,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			amount1 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
 			amount0 = matchAndReturnContributionValue.Amount()
 		}
-		err = poolPair.addReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount())
+		err = poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount(), addOperator)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 		}
@@ -507,14 +507,13 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
 		return poolPairs, err
 	}
-	poolPair.deductSingleToken(
+	poolPair.updateSingleTokenAmount(
 		acceptWithdrawLiquidity.TokenID(),
-		acceptWithdrawLiquidity.TokenAmount(),
-		acceptWithdrawLiquidity.ShareAmount(),
+		acceptWithdrawLiquidity.TokenAmount(), acceptWithdrawLiquidity.ShareAmount(), subOperator,
 	)
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
-		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.deductShareAmount(
-			acceptWithdrawLiquidity.ShareAmount(), share)
+		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.updateShareAmount(
+			acceptWithdrawLiquidity.ShareAmount(), share, subOperator)
 	}
 	if err != nil {
 		return poolPairs, err

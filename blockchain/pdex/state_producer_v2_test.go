@@ -708,8 +708,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//invalidPoolPairID
 	invalidPoolPairIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		"123", nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1,
-		50, 200, map[string]string{},
+		"123", nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
 	)
 	invalidPoolPairIDTx := &metadataMocks.Transaction{}
 	invalidPoolPairIDTx.On("GetMetadata").Return(invalidPoolPairIDMetaData)
@@ -738,8 +737,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//invalidNftID
 	invalidNftIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, common.PRVIDStr, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1,
-		50, 200, map[string]string{},
+		poolPairID, common.PRVIDStr, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
 	)
 	invalidNftIDTx := &metadataMocks.Transaction{}
 	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetaData)
@@ -749,8 +747,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//deductShareAmountFail
 	deductShareAmountFailMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1,
-		0, 0, map[string]string{},
+		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 0,
 	)
 	deductShareAmountFailTx := &metadataMocks.Transaction{}
 	deductShareAmountFailTx.On("GetMetadata").Return(deductShareAmountFailMetaData)
@@ -760,8 +757,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//validInput
 	validInputMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1,
-		50, 200, map[string]string{},
+		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
 	)
 	validInputTx := &metadataMocks.Transaction{}
 	validInputTx.On("GetMetadata").Return(validInputMetaData)

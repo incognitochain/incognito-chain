@@ -59,7 +59,12 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	// NOTE: verify supported tokens pair as needed
+	if request.poolPairID != utils.EmptyString {
+		err := beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
+		if err != nil {
+			return false, err
+		}
+	}
 	return true, nil
 }
 

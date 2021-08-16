@@ -16,6 +16,12 @@ const (
 	InitStakingPoolsShare        = 0
 )
 
+// nft hash prefix
 var (
 	hashPrefix = []byte("pdex-v3")
+)
+
+const (
+	addOperator = byte(0)
+	subOperator = byte(1)
 )
