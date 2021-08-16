@@ -19,6 +19,19 @@ type PoolPairState struct {
 	orderbook Orderbook
 }
 
+func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
+	return poolPairState.state
+}
+
+func (poolPairState *PoolPairState) Shares() map[string]*Share {
+	res := make(map[string]*Share)
+	for k, v := range poolPairState.shares {
+		res[k] = NewShare()
+		*res[k] = *v
+	}
+	return res
+}
+
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		State  *rawdbv2.Pdexv3PoolPair `json:"State"`

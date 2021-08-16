@@ -11,6 +11,22 @@ type Share struct {
 	lastUpdatedBeaconHeight uint64
 }
 
+func (share *Share) Amount() uint64 {
+	return share.amount
+}
+
+func (share *Share) LastUpdatedBeaconHeight() uint64 {
+	return share.lastUpdatedBeaconHeight
+}
+
+func (share *Share) TradingFees() map[string]uint64 {
+	res := make(map[string]uint64)
+	for k, v := range share.tradingFees {
+		res[k] = v
+	}
+	return res
+}
+
 func NewShare() *Share {
 	return &Share{
 		tradingFees: make(map[string]uint64),
