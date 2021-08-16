@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
-	"github.com/incognitochain/incognito-chain/wire"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -14,12 +12,12 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	configpkg "github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -30,9 +28,11 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
 
@@ -101,6 +101,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
+
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -135,6 +136,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 func (blockchain *BlockChain) InitChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
+
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
@@ -150,6 +152,10 @@ func (blockchain *BlockChain) InitChainState() error {
 		}
 	}
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
+
+	finishsync.NewDefaultFinishSyncMsgPool()
+	bestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView.GetSyncingValidatorsString())
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())
@@ -773,7 +779,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		FeatureStateDBRootHash:   bRH.FeatureStateDBRootHash,
 		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
 		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
-		FinishSyncManager:        finishsync.NewFinishManager(),
 	}
 
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
@@ -1020,15 +1025,14 @@ func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
 // AddFinishedSyncValidators add finishedSyncValidators from message to all current beacon views
 func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []string, signatures [][]byte, shardID byte) {
 	validCommitteePublicKeys := verifyFinishedSyncValidatorsSign(committeePublicKeys, signatures)
-	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
-		beaconView := view.(*BeaconBestState)
-		syncPool, _ := incognitokey.CommitteeKeyListToString(beaconView.beaconCommitteeState.GetSyncingValidators()[shardID])
-		beaconView.FinishSyncManager.AddFinishedSyncValidators(
-			validCommitteePublicKeys,
-			syncPool,
-			shardID,
-		)
-	}
+	bestView := blockchain.BeaconChain.multiView.GetBestView().(*BeaconBestState)
+	syncPool, _ := incognitokey.CommitteeKeyListToString(bestView.beaconCommitteeState.GetSyncingValidators()[shardID])
+	finishsync.DefaultFinishSyncMsgPool.AddFinishedSyncValidators(
+		validCommitteePublicKeys,
+		syncPool,
+		shardID,
+	)
+
 }
 
 func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [][]byte) []string {

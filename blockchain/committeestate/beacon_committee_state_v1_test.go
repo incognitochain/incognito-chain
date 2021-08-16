@@ -9,8 +9,6 @@ import (
 
 func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 
-	initLog()
-
 	type args struct {
 		env *SplitRewardEnvironment
 	}

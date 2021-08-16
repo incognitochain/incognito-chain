@@ -186,7 +186,6 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 
 func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	committeeChangeValidInput := NewCommitteeChange()
@@ -314,7 +313,6 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 func TestSnapshotShardCommonPoolV2(t *testing.T) {
 
 	initTestParams()
-	initLog()
 
 	swapRule1 := &mocks.SwapRule{}
 	swapRule1.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
@@ -442,7 +440,6 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) {
 
 	initTestParams()
-	initLog()
 
 	emptySwapShardInstruction := &mocks.SwapRule{}
 	emptySwapShardInstruction.On("Process", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(&instruction.SwapShardInstruction{}, []string{}, []string{}, []string{}, []string{})
@@ -777,7 +774,6 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	initTestParams()
-	initLog()
 
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
@@ -1523,7 +1519,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 
 	initTestParams()
-	initLog()
 
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
@@ -2038,7 +2033,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 
 	// Init data for testcases
 	initTestParams()
-	initLog()
 
 	rewardReceiverkey := incKey.GetIncKeyBase58()
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
@@ -3390,8 +3384,6 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			}
 	*/
 
-	initLog()
-
 	type args struct {
 		env *SplitRewardEnvironment
 	}
@@ -3486,7 +3478,6 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 	tempHash, _ := common.Hash{}.NewHashFromStr("456")
 	initTestParams()
-	initLog()
 
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
@@ -4507,7 +4498,6 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 	tempHash, _ := common.Hash{}.NewHashFromStr("456")
 	initTestParams()
-	initLog()
 
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)

@@ -19,7 +19,6 @@ import (
 
 func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 	initTestParams()
-	initLog()
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
@@ -1087,7 +1086,6 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	type fields struct {
@@ -1214,7 +1212,6 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 
 	initTestParams()
-	initLog()
 
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
@@ -1391,7 +1388,6 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 	initTestParams()
-	initLog()
 
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
@@ -1475,7 +1471,6 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 	initTestParams()
-	initLog()
 
 	mutex := &sync.RWMutex{}
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
@@ -1636,7 +1631,6 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
@@ -2079,7 +2073,6 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 }
 
 func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
-	initLog()
 	initTestParams()
 
 	finalMutex := &sync.RWMutex{}
@@ -2789,7 +2782,6 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	finalMutex := &sync.RWMutex{}
@@ -4618,7 +4610,6 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
@@ -4969,7 +4960,6 @@ func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	type fields struct {

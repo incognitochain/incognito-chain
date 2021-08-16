@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	finishsync "github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"reflect"
 	"sort"
 	"strconv"
@@ -654,7 +653,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		}
 	}
 
-	beaconBestState.FinishSyncManager = finishsync.NewFinishManager()
 	beaconBestState.Epoch = 1
 
 	return nil

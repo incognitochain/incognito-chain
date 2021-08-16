@@ -9,7 +9,6 @@ import (
 )
 
 func Test_swapRuleV3_Process(t *testing.T) {
-	initLog()
 	initTestParams()
 
 	type args struct {

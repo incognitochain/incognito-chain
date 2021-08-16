@@ -16,7 +16,6 @@ import (
 func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 
 	initTestParams()
-	initLog()
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 	hash, _ := common.Hash{}.NewHashFromStr("123")
@@ -177,7 +176,6 @@ func Test_beaconCommitteeStateSlashingBase_processSwap(t *testing.T) {
 
 func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 
-	initLog()
 	initTestParams()
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})

@@ -2,6 +2,10 @@ package blockchain
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/common/consensus"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"testing"
@@ -10,9 +14,10 @@ import (
 )
 
 var (
-	keys    []string
-	blsKeys []string
-	incKeys []incognitokey.CommitteePublicKey
+	keys       []string
+	blsKeys    []string
+	validators []*consensus.Validator
+	incKeys    []incognitokey.CommitteePublicKey
 )
 
 var _ = func() (_ struct{}) {
@@ -48,6 +53,15 @@ var _ = func() (_ struct{}) {
 		"1PyLBmvbX41bXiX5nCTAHcXDUkkRCHMw99f9QChmhWF3bM8mcc9cx7mToNziLBdEgtkPYLcB8gCbeY8jJwg19gAE1TSRBwJ1TrDtf1Yw9QVWSXAvV23ov34m6TkNmCNizoCqRZb7SZoRiWzDae6bJoX2tLUx2zRwWhgSdPJtnbWdEiFY7PPEE",
 		"1Jacy9jGVoo4VFbfbuhMBasR4o8cTFTRC6DDoLHrG3vhme3Bi8MGMXtztv9GJaXeogPvYzq2dAYSkUCUxGwhZUPDiZKzhhQoPXGPr5fz6JzEwK1c2nUykrBBLfUJao2uJYWxhgi9yoDYNgzx6dB88kSGwJKhgcGoJHHoPLkdri2B4Jee72Csc",
 		"15oWX3wnKEYWJZZPR2dGuvUWni8AK2DMf1gt49XPQSEepAhQLti7y2Hu6CC7iJsvU2XBgXLmmZB65FSL7iESxCEbyUrL5ZKi1bfMas3LaZLqZafLCo8sNVLbUqJD8XEhSca6Xv15BJ5jaQBzKQp5iRfNhXLuqLHtS7msbmnNeBzCnb6uxppem",
+	}
+	for _, blsKey := range blsKeys {
+		validator := new(consensus.Validator)
+		temp, _, _ := base58.Base58Check{}.Decode(blsKey)
+		validator.MiningKey = signatureschemes.MiningKey{}
+		validator.MiningKey.PubKey = make(map[string][]byte)
+		validator.MiningKey.PubKey[common.BlsConsensus] = temp
+		validator.MiningKey.PubKey[common.BridgeConsensus] = []byte{}
+		validators = append(validators, validator)
 	}
 	return
 }()
@@ -93,7 +107,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 		beaconCommitteeState committeestate.BeaconCommitteeState
 	}
 	type args struct {
-		validatorFromUserKeys []string
+		validatorFromUserKeys []*consensus.Validator
 		shardID               byte
 	}
 	tests := []struct {
@@ -108,7 +122,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 				beaconCommitteeState: beaconCommitteeStateMocks1,
 			},
 			args: args{
-				validatorFromUserKeys: blsKeys[:5],
+				validatorFromUserKeys: validators[:5],
 				shardID:               0,
 			},
 			want: []string{},
@@ -119,7 +133,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 				beaconCommitteeState: beaconCommitteeStateMocks2,
 			},
 			args: args{
-				validatorFromUserKeys: blsKeys[:5],
+				validatorFromUserKeys: validators[:5],
 				shardID:               0,
 			},
 			want: keys[:5],
@@ -130,7 +144,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 				beaconCommitteeState: beaconCommitteeStateMocks3,
 			},
 			args: args{
-				validatorFromUserKeys: blsKeys[:4],
+				validatorFromUserKeys: validators[:4],
 				shardID:               0,
 			},
 			want: keys[3:4],
@@ -141,7 +155,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 				beaconCommitteeState: beaconCommitteeStateMocks4,
 			},
 			args: args{
-				validatorFromUserKeys: []string{},
+				validatorFromUserKeys: []*consensus.Validator{},
 				shardID:               0,
 			},
 			want: []string{},
@@ -152,7 +166,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 				beaconCommitteeState: beaconCommitteeStateMocks5,
 			},
 			args: args{
-				validatorFromUserKeys: blsKeys[2:10],
+				validatorFromUserKeys: validators[2:10],
 				shardID:               0,
 			},
 			want: keys[2:10],
@@ -163,7 +177,7 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 			beaconBestState := &BeaconBestState{
 				beaconCommitteeState: tt.fields.beaconCommitteeState,
 			}
-			if got := beaconBestState.ExtractFinishSyncingValidators(tt.args.validatorFromUserKeys, tt.args.shardID); !reflect.DeepEqual(got, tt.want) {
+			if _, got := beaconBestState.ExtractFinishSyncingValidators(tt.args.validatorFromUserKeys, tt.args.shardID); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ExtractFinishSyncingValidators() = %v, want %v", got, tt.want)
 			}
 		})

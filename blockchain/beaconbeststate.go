@@ -3,9 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	finishsync "github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"reflect"
 	"time"
 
@@ -61,7 +61,6 @@ type BeaconBestState struct {
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
-	FinishSyncManager       finishsync.FinishSyncManager `json:"FinishSyncManager"`
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -104,9 +103,7 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 // var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
-	beaconBestState := &BeaconBestState{
-		FinishSyncManager: finishsync.NewFinishManager(),
-	}
+	beaconBestState := &BeaconBestState{}
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
@@ -281,10 +278,6 @@ func (beaconBestState *BeaconBestState) GetCurrentShard() byte {
 	return 0
 }
 
-func (beaconBestState *BeaconBestState) GetFinishSyncValidators() map[byte][]string {
-	return beaconBestState.FinishSyncManager.GetFinishedSyncValidators()
-}
-
 func (beaconBestState *BeaconBestState) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxShardCommitteeSize < MinCommitteeSize {
@@ -431,6 +424,13 @@ func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForNextRandom() 
 func (beaconBestState *BeaconBestState) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeState.GetSyncingValidators()
 }
+func (beaconBestState *BeaconBestState) GetSyncingValidatorsString() map[byte][]string {
+	res := make(map[byte][]string)
+	for shardID, validators := range beaconBestState.beaconCommitteeState.GetSyncingValidators() {
+		res[shardID], _ = incognitokey.CommitteeKeyListToString(validators)
+	}
+	return res
+}
 
 //CommitteeStateVersion ...
 func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
@@ -456,7 +456,6 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
-	beaconBestState.FinishSyncManager = target.FinishSyncManager.Clone()
 	if target.pdeState != nil {
 		beaconBestState.pdeState = target.pdeState.Copy()
 	}
@@ -976,7 +975,7 @@ func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validator
 
 func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeChange *committeestate.CommitteeChange) {
 	for shardID, finishSyncValidators := range committeeChange.FinishedSyncValidators {
-		beaconBestState.FinishSyncManager.RemoveValidators(finishSyncValidators, byte(shardID))
+		finishsync.DefaultFinishSyncMsgPool.RemoveValidators(finishSyncValidators, byte(shardID))
 	}
 }
 

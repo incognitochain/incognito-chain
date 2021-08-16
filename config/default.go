@@ -332,7 +332,7 @@ func (p *param) LoadKeyByNetwork(network string) {
 		initTx.load(Testnet2InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 	case "local-dcs":
-		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
+		p.LoadKey(LocalDCSKeyList, LocalDCSV2Keylist)
 		initTx.load(LocalDCSInitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 	default:

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -78,7 +79,6 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	//=====END Build Header Essential Data=====
 	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
-
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
@@ -408,7 +408,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
-
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
 		randomInstructionGenerator := curView.beaconCommitteeState.(committeestate.RandomInstructionsGenerator)
@@ -497,9 +496,10 @@ func addFinishInstruction(
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 
+	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(curView.GetSyncingValidatorsString())
 	instructions := [][]string{}
 
-	for _, finishSyncInstruction := range curView.FinishSyncManager.Instructions() {
+	for _, finishSyncInstruction := range finishSyncInstructions {
 		if !finishSyncInstruction.IsEmpty() {
 			instructions = append(instructions, finishSyncInstruction.ToString())
 		}

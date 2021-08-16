@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
-	"sort"
 	"sync"
 	"testing"
 
@@ -39,6 +38,11 @@ var (
 	incKey13, incKey14, incKey15, incKey16     *incognitokey.CommitteePublicKey
 	incKey17, incKey18, incKey19               *incognitokey.CommitteePublicKey
 )
+
+var _ = func() (_ struct{}) {
+	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
 
 //initTestParams init incognito public key for testing by base 58 string
 func initTestParams() {
@@ -326,7 +330,7 @@ func TestFinishSyncManager_AddFinishedSyncValidators(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager := &FinishSyncManager{
+			manager := &FinishSyncMsgPool{
 				FinishedSyncValidators: tt.fields.finishedSyncValidators,
 				mu:                     tt.fields.mu,
 			}
@@ -502,7 +506,7 @@ func TestFinishSyncManager_RemoveValidators(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager := &FinishSyncManager{
+			manager := &FinishSyncMsgPool{
 				FinishedSyncValidators: tt.fields.finishedSyncValidators,
 				mu:                     tt.fields.mu,
 			}
@@ -516,24 +520,22 @@ func TestFinishSyncManager_RemoveValidators(t *testing.T) {
 
 func TestFinishSyncManager_Instructions(t *testing.T) {
 	res0_shard0 := []string{key, key2, key3, key8}
-	sort.Slice(res0_shard0, func(i, j int) bool {
-		return res0_shard0[i] < res0_shard0[j]
-	})
 	res0_shard1 := []string{key10, key11, key12, key13}
-	sort.Slice(res0_shard1, func(i, j int) bool {
-		return res0_shard1[i] < res0_shard1[j]
-	})
 	type fields struct {
 		finishedSyncValidators map[byte]map[string]bool
 		mu                     *sync.RWMutex
 	}
+	type args struct {
+		allSyncPool map[byte][]string
+	}
 	tests := []struct {
 		name   string
 		fields fields
+		args   args
 		want   []*instruction.FinishSyncInstruction
 	}{
 		{
-			name: " > 1 validator > 1 shard",
+			name: " > 1 msg finished sync, > 1 shard, match sync validator",
 			fields: fields{
 				finishedSyncValidators: map[byte]map[string]bool{
 					2: map[string]bool{},
@@ -553,6 +555,22 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 				},
 				mu: new(sync.RWMutex),
 			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{
+						key,
+						key2,
+						key3,
+						key8,
+					},
+					1: {
+						key10,
+						key11,
+						key12,
+						key13,
+					},
+				},
+			},
 			want: []*instruction.FinishSyncInstruction{
 				instruction.NewFinishSyncInstructionWithValue(
 					0, res0_shard0,
@@ -563,7 +581,103 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 			},
 		},
 		{
-			name: "1 validator 2 shard",
+			name: " > 1 msg finished sync, > 1 shard, sync validator > finished sync msg",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					2: map[string]bool{},
+					3: map[string]bool{},
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{
+						key,
+						key2,
+						key3,
+						key8,
+						key4,
+						key5,
+					},
+					1: {
+						key10,
+						key11,
+						key12,
+						key13,
+						key14,
+						key15,
+					},
+				},
+			},
+			want: []*instruction.FinishSyncInstruction{
+				instruction.NewFinishSyncInstructionWithValue(
+					0, res0_shard0,
+				),
+				instruction.NewFinishSyncInstructionWithValue(
+					1, res0_shard1,
+				),
+			},
+		},
+		{
+			name: " > 1 msg finished sync, > 1 shard, sync validator < finished sync msg",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					2: map[string]bool{},
+					3: map[string]bool{},
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{
+						key,
+						key8,
+						key4,
+						key5,
+					},
+					1: {
+						key10,
+						key13,
+						key14,
+						key15,
+					},
+				},
+			},
+			want: []*instruction.FinishSyncInstruction{
+				instruction.NewFinishSyncInstructionWithValue(
+					0, []string{key, key8},
+				),
+				instruction.NewFinishSyncInstructionWithValue(
+					1, []string{key10, key13},
+				),
+			},
+		},
+		{
+			name: "1 msg finished sync, 2 shard, 1 sync validator each shard",
 			fields: fields{
 				finishedSyncValidators: map[byte]map[string]bool{
 					2: map[string]bool{},
@@ -577,6 +691,22 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 				},
 				mu: new(sync.RWMutex),
 			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{
+						key,
+						key8,
+						key4,
+						key5,
+					},
+					1: {
+						key10,
+						key13,
+						key14,
+						key15,
+					},
+				},
+			},
 			want: []*instruction.FinishSyncInstruction{
 				instruction.NewFinishSyncInstructionWithValue(
 					0, []string{key},
@@ -587,7 +717,30 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 			},
 		},
 		{
-			name: "1 validator 1 shard",
+			name: "1 msg finished sync, 2 shard, 0 sync pool validators",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					2: map[string]bool{},
+					3: map[string]bool{},
+					0: map[string]bool{
+						key: true,
+					},
+					1: map[string]bool{
+						key10: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{},
+					1: {},
+				},
+			},
+			want: []*instruction.FinishSyncInstruction{},
+		},
+		{
+			name: "1 msg finished sync, 1 shard, 1 sync pool",
 			fields: fields{
 				finishedSyncValidators: map[byte]map[string]bool{
 					0: map[string]bool{},
@@ -599,20 +752,47 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 				},
 				mu: new(sync.RWMutex),
 			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{},
+					1: {key10},
+				},
+			},
 			want: []*instruction.FinishSyncInstruction{
 				instruction.NewFinishSyncInstructionWithValue(
 					1, []string{key10},
 				),
 			},
 		},
+		{
+			name: "1 msg finished sync, 1 shard, 0 sync pool",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{},
+					2: map[string]bool{},
+					3: map[string]bool{},
+					1: map[string]bool{
+						key10: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPool: map[byte][]string{
+					0: []string{},
+					1: {},
+				},
+			},
+			want: []*instruction.FinishSyncInstruction{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager := &FinishSyncManager{
+			manager := &FinishSyncMsgPool{
 				FinishedSyncValidators: tt.fields.finishedSyncValidators,
 				mu:                     tt.fields.mu,
 			}
-			got := manager.Instructions()
+			got := manager.Instructions(tt.args.allSyncPool)
 			if len(got) != len(tt.want) {
 				t.Errorf("Instructions() = %v, want %v", got, tt.want)
 			}
@@ -628,14 +808,143 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 
 func TestJsonMarshal(t *testing.T) {
 	common.MaxShardNumber = 8
-	fm := NewFinishManager()
+	fm := NewFinishSyncMsgPool()
 	key1 := "key1"
 	fm.FinishedSyncValidators[byte(0)][key1] = true
 	data, _ := json.Marshal(fm)
-	newFm := NewFinishManager()
+	newFm := NewFinishSyncMsgPool()
 	json.Unmarshal(data, &newFm)
 
 	if !reflect.DeepEqual(newFm.FinishedSyncValidators, fm.FinishedSyncValidators) {
 		t.Fatal("fail to marshall and unmarshall")
+	}
+}
+
+func TestFinishSyncMsgPool_Clean(t *testing.T) {
+	type fields struct {
+		FinishedSyncValidators map[byte]map[string]bool
+		mu                     *sync.RWMutex
+	}
+	type args struct {
+		allSyncPoolValidators map[byte][]string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[byte]map[string]bool
+	}{
+		{
+			name: "no remove finish sync validators",
+			fields: fields{
+				FinishedSyncValidators: map[byte]map[string]bool{
+					0: {
+						key0: true,
+						key:  true,
+						key2: true,
+					},
+					1: {
+						key3: true,
+						key4: true,
+						key5: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPoolValidators: map[byte][]string{
+					0: {key0, key, key2},
+					1: {key3, key4, key5},
+				},
+			},
+			want: map[byte]map[string]bool{
+				0: {
+					key0: true,
+					key:  true,
+					key2: true,
+				},
+				1: {
+					key3: true,
+					key4: true,
+					key5: true,
+				},
+			},
+		},
+		{
+			name: "remove finish sync validators 1",
+			fields: fields{
+				FinishedSyncValidators: map[byte]map[string]bool{
+					0: {
+						key0: true,
+						key:  true,
+						key2: true,
+					},
+					1: {
+						key3: true,
+						key4: true,
+						key5: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPoolValidators: map[byte][]string{
+					0: {key0, key, key2},
+				},
+			},
+			want: map[byte]map[string]bool{
+				0: {
+					key0: true,
+					key:  true,
+					key2: true,
+				},
+				1: {},
+			},
+		},
+		{
+			name: "remove finish sync validators 2",
+			fields: fields{
+				FinishedSyncValidators: map[byte]map[string]bool{
+					0: {
+						key0: true,
+						key:  true,
+						key2: true,
+					},
+					1: {
+						key3: true,
+						key4: true,
+						key5: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				allSyncPoolValidators: map[byte][]string{
+					0: {key0, key2},
+					1: {key3, key6},
+				},
+			},
+			want: map[byte]map[string]bool{
+				0: {
+					key0: true,
+					key2: true,
+				},
+				1: {
+					key3: true,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FinishSyncMsgPool{
+				FinishedSyncValidators: tt.fields.FinishedSyncValidators,
+				mu:                     tt.fields.mu,
+			}
+			f.clean(tt.args.allSyncPoolValidators)
+			if !reflect.DeepEqual(tt.want, f.FinishedSyncValidators) {
+				t.Errorf("want %+v, but got %+v", tt.want, f.FinishedSyncValidators)
+			}
+		})
 	}
 }

@@ -3,15 +3,15 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/utils"
@@ -78,6 +78,7 @@ func NewShardSyncProcess(
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
+	go s.syncFinishSyncMessage()
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
@@ -224,7 +225,6 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
-				s.trySendFinishSyncMessage()
 			}
 			time.Sleep(time.Second * 5)
 		}
@@ -233,28 +233,48 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
-	if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {
-		if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
-			s.finalBeaconBlockHeight = committeeView.BeaconHeight
-			validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
-				s.consensus.GetSyncingValidators(), byte(s.shardID))
-			finishedSyncValidators := []string{}
-			finishedSyncSignatures := [][]byte{}
-			for i, v := range validatorFromUserKeys {
-				signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
-				if err != nil {
-					continue
-				}
-				finishedSyncSignatures = append(finishedSyncSignatures, signature)
-				finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
+	if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
+		s.finalBeaconBlockHeight = committeeView.BeaconHeight
+		validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
+			s.consensus.GetSyncingValidators(), byte(s.shardID))
+		finishedSyncValidators := []string{}
+		finishedSyncSignatures := [][]byte{}
+		for i, v := range validatorFromUserKeys {
+			signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+			if err != nil {
+				continue
 			}
-			if len(finishedSyncValidators) == 0 {
-				return
-			}
-			msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
-			s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
+			finishedSyncSignatures = append(finishedSyncSignatures, signature)
+			finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
 		}
+		if len(finishedSyncValidators) == 0 {
+			return
+		}
+		msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
+		s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
 	}
+}
+
+//TODO: @hung review sync finish sync message when node in SYNC_MODE only???
+func (s *ShardSyncProcess) syncFinishSyncMessage() {
+
+	for {
+		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+		if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {
+			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
+			convertedTimeslot := time.Duration(common.TIMESLOT) * time.Second
+			now := time.Now().Unix()
+			ceiling := now + convertedTimeslot.Milliseconds()
+			floor := now - convertedTimeslot.Milliseconds()
+			if floor <= shardView.BestBlock.Header.Timestamp ||
+				shardView.BestBlock.Header.Timestamp <= ceiling {
+				s.trySendFinishSyncMessage()
+			}
+		}
+
+		time.Sleep(5 * time.Second)
+	}
+
 }
 
 func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {

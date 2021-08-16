@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -179,7 +180,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		copy(result.SyncingValidators[k], tempV)
 	}
 
-	result.FinishSyncManager = data.GetFinishSyncValidators()
+	result.FinishSyncManager = finishsync.DefaultFinishSyncMsgPool.GetFinishedSyncValidators()
 	result.Config = make(map[string]interface{})
 	result.Config["EnableSlashingHeightV1"] = config.Param().ConsensusParam.EnableSlashingHeight
 	result.Config["InitShardCommitteeSize"] = config.Param().CommitteeSize.InitShardCommitteeSize

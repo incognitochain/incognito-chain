@@ -7,14 +7,14 @@ genesis_param:
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
 committee_size:
   max_shard_committee_size: 12
-  min_shard_committee_size: 4
+  min_shard_committee_size: 8
   min_beacon_committee_size: 4
   max_beacon_committee_size: 7
-  init_shard_committee_size: 4
+  init_shard_committee_size: 8
   init_beacon_committee_size: 4
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
-  number_of_fixed_shard_block_validators: 4
+  number_of_fixed_shard_block_validators: 8
 block_time:
   min_beacon_block_interval: 10s 
   max_beacon_block_creation: 8s
@@ -40,7 +40,7 @@ consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
-  staking_flow_v3_height: 1000000000
+  staking_flow_v3_height: 1
   timeslot: 10
   epoch_break_point_swap_new_key: 
     - 1000000000
