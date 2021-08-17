@@ -667,3 +667,59 @@ func chooseNftStr(oldNftID, newNftID common.Hash) string {
 	}
 	return newNftID.String()
 }
+
+func executeOperationUint64(amount0, amount1 uint64, operator byte) (uint64, error) {
+	var res, temp uint64
+	switch operator {
+	case addOperator:
+		temp = amount0 + amount1
+		if temp < amount0 {
+			return res, errors.New("operation is out of range")
+		}
+	case subOperator:
+		temp = amount0 - amount1
+		if temp > amount0 {
+			return res, errors.New("operation is out of range")
+		}
+	default:
+		return res, errors.New("Not recognize operator")
+	}
+	res = temp
+	return res, nil
+}
+
+func executeOperationBigInt(amount0, amount1 *big.Int, operator byte) (*big.Int, error) {
+	res := big.NewInt(0)
+	switch operator {
+	case addOperator:
+		res = res.Add(amount0, amount1)
+	case subOperator:
+		res = res.Sub(amount0, amount1)
+	default:
+		return res, errors.New("Not recognize operator")
+	}
+	return res, nil
+}
+
+func CalculateShareAmount(token0Amount, token1Amount, amount0, amount1, poolPairShareAmount uint64) uint64 {
+	liquidityToken0 := big.NewInt(0).Mul(
+		big.NewInt(0).SetUint64(amount0),
+		big.NewInt(0).SetUint64(poolPairShareAmount),
+	)
+	liquidityToken0 = liquidityToken0.Div(
+		liquidityToken0,
+		big.NewInt(0).SetUint64(token0Amount),
+	)
+	liquidityToken1 := big.NewInt(0).Mul(
+		big.NewInt(0).SetUint64(amount1),
+		big.NewInt(0).SetUint64(poolPairShareAmount),
+	)
+	liquidityToken1 = liquidityToken1.Div(
+		liquidityToken1,
+		big.NewInt(0).SetUint64(token1Amount),
+	)
+	if liquidityToken0.Uint64() < liquidityToken1.Uint64() {
+		return liquidityToken0.Uint64()
+	}
+	return liquidityToken1.Uint64()
+}

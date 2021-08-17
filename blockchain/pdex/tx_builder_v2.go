@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -25,7 +26,6 @@ func (txBuilder *TxBuilderV2) Build(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
-
 	var tx metadata.Transaction
 	var err error
 
@@ -44,6 +44,16 @@ func (txBuilder *TxBuilderV2) Build(
 			tx, err = buildRefundContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
 		case common.PDEContributionMatchedNReturnedChainStatus:
 			tx, err = buildMatchAndReturnContributionTxv2(inst, producerPrivateKey, shardID, transactionStateDB)
+		}
+	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
+		if len(inst) != 3 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
+		}
+		switch inst[1] {
+		case common.PDEWithdrawalAcceptedChainStatus:
+			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB)
+		default:
+			return tx, errors.New("Invalid withdraw liquidity status")
 		}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
@@ -195,4 +205,76 @@ func buildMintTokenTxs(
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
 		return meta
 	})
+}
+
+func buildAcceptedWithdrawLiquidity(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	withdrawLiquidityInst := instruction.NewAcceptWithdrawLiquidity()
+	err := withdrawLiquidityInst.FromStringSlice(inst)
+	if err != nil {
+		return tx, err
+	}
+
+	if withdrawLiquidityInst.ShardID() != shardID {
+		return tx, nil
+	}
+	metaData := metadataPdexv3.NewWithdrawLiquidityResponseWithValue(
+		common.PDEWithdrawalAcceptedChainStatus,
+		withdrawLiquidityInst.TxReqID().String(),
+	)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromString(withdrawLiquidityInst.OtaReceive())
+	if err != nil {
+		return tx, err
+	}
+	tx, err = buildMintTokenTxs(
+		withdrawLiquidityInst.TokenID(), withdrawLiquidityInst.TokenAmount(),
+		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+	}
+	return tx, err
+}
+
+func buildRejectedWithdrawLiquidity(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	refundInst := instruction.NewRefundAddLiquidity()
+	err := refundInst.FromStringSlice(inst)
+	if err != nil {
+		return tx, err
+	}
+	refundContribution := refundInst.Contribution()
+	refundContributionValue := refundContribution.Value()
+
+	if refundContributionValue.ShardID() != shardID {
+		return tx, nil
+	}
+	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
+		common.PDEContributionRefundChainStatus,
+		refundContributionValue.TxReqID().String(),
+	)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromString(refundContributionValue.RefundAddress())
+	if err != nil {
+		return tx, err
+	}
+	tx, err = buildMintTokenTxs(
+		refundContributionValue.TokenID(), refundContributionValue.Amount(),
+		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+	}
+	return tx, err
 }

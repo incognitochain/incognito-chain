@@ -178,3 +178,12 @@ type Pdexv3AddLiquidityRequest struct {
 	PairHash    string `json:"PairHash"`
 	NftID       string `json:"NftID"`
 }
+
+type Pdexv3WithdrawLiquidityRequest struct {
+	TokenID      string `json:"TokenID"`
+	TokenAmount  string `json:"TokenAmount"`
+	PoolPairID   string `json:"PoolPairID"`
+	Index        string `json:"Index"`
+	Token0Amount string `json:"Token0Amount"`
+	Token1Amount string `json:"Token1Amount"`
+}

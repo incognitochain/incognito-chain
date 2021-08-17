@@ -170,6 +170,7 @@ var minerCreatedMetaTypes = []int{
 	InitTokenResponseMeta,
 	Pdexv3AddLiquidityResponseMeta,
 	Pdexv3MintNft,
+	Pdexv3WithdrawLiquidityResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
