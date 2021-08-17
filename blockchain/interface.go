@@ -55,6 +55,7 @@ type Server interface {
 
 type Highway interface {
 	BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
+	GetConnectionStatus() interface{}
 }
 
 type Syncker interface {

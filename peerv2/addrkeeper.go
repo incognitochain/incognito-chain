@@ -27,6 +27,16 @@ type RTTInfo struct {
 	lastIdx   int
 }
 
+type ConnectionStatus struct {
+	URL         string `json:"url"`
+	IsCurrentHW bool   `json:"iscurrenthw"`
+	RTT         string `json:"rttmetric"`
+}
+
+type AllConnectionStatus struct {
+	Status map[string][]ConnectionStatus `json:"status"`
+}
+
 // AddrKeeper stores all highway addresses for ConnManager to choose from.
 // The address can be used to:
 // 1. Make an RPC call to get a new list of highway
@@ -468,4 +478,55 @@ func (keeper *AddrKeeper) setCurrHW(addr *rpcclient.HighwayAddr) {
 	if addr != nil {
 		keeper.ignoreHW.Delete(addr.RPCUrl)
 	}
+}
+
+func (keeper *AddrKeeper) exportStatus() AllConnectionStatus {
+	listA := []ConnectionStatus{}
+	listB := []ConnectionStatus{}
+	listC := []ConnectionStatus{}
+	res := AllConnectionStatus{}
+	curHWID := peer.ID("")
+	if keeper.currentHW != nil {
+		pID, err := getAddressInfo(keeper.currentHW.Libp2pAddr)
+		if err == nil {
+			curHWID = pID.ID
+		}
+	}
+
+	for rpcUrl, addr := range keeper.addrsByRPCUrl {
+		pID, err := getAddressInfo(addr.Libp2pAddr)
+		if err != nil {
+			continue
+		}
+		isCurHW := false
+		if pID.ID.Pretty() == curHWID.Pretty() {
+			isCurHW = true
+		}
+		if _, ok := keeper.ignoreHW.Get(rpcUrl); !ok {
+			rttInfo, ok := keeper.lastRTT[*addr]
+			if (!ok) || (rttInfo.avgRTT > 500*time.Millisecond) {
+				listB = append(listB, ConnectionStatus{
+					URL:         rpcUrl,
+					RTT:         rttInfo.avgRTT.String(),
+					IsCurrentHW: isCurHW,
+				})
+			} else {
+				listA = append(listA, ConnectionStatus{
+					URL:         rpcUrl,
+					RTT:         rttInfo.avgRTT.String(),
+					IsCurrentHW: isCurHW,
+				})
+			}
+		} else {
+			listC = append(listC, ConnectionStatus{
+				URL:         rpcUrl,
+				RTT:         "1000000",
+				IsCurrentHW: isCurHW,
+			})
+		}
+	}
+	res.Status["Perfect"] = listA
+	res.Status["HighRTT"] = listB
+	res.Status["Ignored"] = listC
+	return res
 }

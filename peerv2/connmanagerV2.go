@@ -264,3 +264,7 @@ func (cm *ConnManager) keepConnectionAlive() {
 		}
 	}
 }
+
+func (cm *ConnManager) GetConnectionStatus() interface{} {
+	return cm.keeper.exportStatus()
+}

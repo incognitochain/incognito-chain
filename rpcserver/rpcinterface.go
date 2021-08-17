@@ -297,6 +297,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
+
+	connectionStatus: (*HttpServer).handleGetConnectionStatus,
 }
 
 // Commands that are available to a limited user
