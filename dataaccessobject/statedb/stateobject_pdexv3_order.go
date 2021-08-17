@@ -25,10 +25,10 @@ func (s *Pdexv3OrderState) Value() *rawdbv2.Pdexv3Order {
 func (s *Pdexv3OrderState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID string              `json:"PoolPairID"`
-		Value      rawdbv2.Pdexv3Order `json:"Value"`
+		Value      *rawdbv2.Pdexv3Order `json:"Value"`
 	}{
 		PoolPairID: s.poolPairID,
-		Value:      s.value,
+		Value:      &s.value,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -39,14 +39,16 @@ func (s *Pdexv3OrderState) MarshalJSON() ([]byte, error) {
 func (s *Pdexv3OrderState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID string              `json:"PoolPairID"`
-		Value      rawdbv2.Pdexv3Order `json:"Value"`
+		Value      *rawdbv2.Pdexv3Order `json:"Value"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	s.poolPairID = temp.PoolPairID
-	s.value = temp.Value
+	if temp.Value != nil {
+		s.value = *temp.Value
+	}
 	return nil
 }
 

@@ -444,7 +444,7 @@ TransactionLoop:
 			continue TransactionLoop
 		}
 		// prepare order data
-		sellAmountAfterFee := currentOrderReq.SellAmount - currentOrderReq.TradingFee
+		sellAmountAfterFee := currentOrderReq.SellAmount
 
 		var tradeDirection byte
 		var token0Rate, token1Rate uint64

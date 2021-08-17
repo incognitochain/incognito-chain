@@ -473,13 +473,11 @@ func (sp *stateProcessorV2) addOrder(
 			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
 		}
 		
-		orderbook := pair.orderbook
 		// fee for this request is deducted right away, while the fee stored in the order itself
 		// starts from 0 and will accumulate over time
 		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, md.NftID, md.Token0Rate, md.Token1Rate,
 			md.Token0Balance, md.Token1Balance, md.TradeDirection, 0)
-		orderbook.InsertOrder(newOrder)
-
+		pair.orderbook.InsertOrder(newOrder)
 		// write changes to state
 		pairs[md.PoolPairID] = pair
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
@@ -546,7 +544,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 					}
 				} else if md.TokenID == pair.state.Token1ID() {
-					newBalance := ord.Token1Balance()
+					newBalance := ord.Token1Balance() - md.Amount
 					if newBalance > ord.Token1Balance() {
 						return pairs, fmt.Errorf("Cannot withdraw more than current token1 balance from order %s",
 							md.OrderID)

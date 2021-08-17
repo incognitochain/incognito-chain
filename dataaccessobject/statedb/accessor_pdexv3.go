@@ -153,6 +153,14 @@ func StorePdexv3Order(
 	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, &orderState)
 }
 
+func DeletePdexv3Order(stateDB *StateDB, pairID, orderID string) error {
+	key := GeneratePdexv3OrderObjectKey(pairID, orderID)
+	if !stateDB.MarkDeleteStateObject(Pdexv3OrderObjectType, key) {
+		return fmt.Errorf("Cannot delete order with ID %v - %v", pairID, orderID)
+	}
+	return nil
+}
+
 func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	prefixHash := GetPdexv3WaitingContributionsPrefix()
 	return stateDB.iterateWithPdexv3Contributions(prefixHash)
