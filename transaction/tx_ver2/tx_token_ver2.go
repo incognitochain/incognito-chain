@@ -709,7 +709,7 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 			if err != nil {
 				return false, nil, err
 			}
-			if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenIdOnTx[:])){
+			if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenIdOnTx[:])) {
 				return false, nil, fmt.Errorf("invalid burned tokenId")
 			}
 		}

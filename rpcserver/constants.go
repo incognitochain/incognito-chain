@@ -91,6 +91,7 @@ const (
 	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
 	listUnspentOutputTokens                    = "listunspentoutputtokens"
+	getOTACoinLength                           = "getotacoinlength"
 	getOTACoinsByIndices                       = "getotacoinsbyindices"
 	customTokenTxs                             = "customtoken"
 	listCustomTokenHolders                     = "customtokenholder"
@@ -156,6 +157,7 @@ const (
 	setTxFee                        = "settxfee"
 	submitKey                       = "submitkey"
 	authorizedSubmitKey             = "authorizedsubmitkey"
+	getKeySubmissionInfo            = "getkeysubmissioninfo"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"

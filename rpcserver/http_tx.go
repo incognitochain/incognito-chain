@@ -475,7 +475,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
-	result, err := httpServer.txService.GetListPrivacyCustomTokenBalance(privateKey)
+	result, err := httpServer.txService.GetListPrivacyCustomTokenBalanceNew(privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -548,6 +548,10 @@ func (httpServer *HttpServer) handleListUnspentOutputTokens(params interface{}, 
 	}
 
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetOTACoinLength(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.outputCoinService.GetOTACoinLength()
 }
 
 func (httpServer *HttpServer) handleGetOTACoinsByIndices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
