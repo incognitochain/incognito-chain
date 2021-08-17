@@ -82,12 +82,15 @@ func (res AddOrderResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *m
 		}
 		switch res.Status {
 		case OrderRefundedStatus:
-			var md RefundedAddOrder
-			err := json.Unmarshal([]byte(inst[4]), &md)
+			var mdHolder struct {
+				Content RefundedAddOrder
+			}
+			err := json.Unmarshal([]byte(inst[4]), &mdHolder)
 			if err != nil {
 				metadataCommon.Logger.Log.Warnf("Error matching instruction %s as refunded order - %v", inst[4], err)
 				continue
 			}
+			md := &mdHolder.Content
 			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenID, tx)
 			if valid {
 				matchedInstructionIndex = i

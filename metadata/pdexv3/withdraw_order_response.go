@@ -76,12 +76,15 @@ func (res WithdrawOrderResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintDa
 		}
 		switch res.Status {
 		case WithdrawOrderAcceptedStatus:
-			var md AcceptedWithdrawOrder
-			err := json.Unmarshal([]byte(inst[4]), &md)
+			var mdHolder struct {
+				Content AcceptedWithdrawOrder
+			}
+			err := json.Unmarshal([]byte(inst[4]), &mdHolder)
 			if err != nil {
 				metadataCommon.Logger.Log.Warnf("Error matching instruction %s as accepted withdrawOrder - %v", inst[4], err)
 				continue
 			}
+			md := mdHolder.Content
 			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenID, tx)
 			if valid {
 				matchedInstructionIndex = i

@@ -77,6 +77,8 @@ func (txBuilder *TxBuilderV2) Build(
 			if err != nil {
 				return nil, err
 			}
+		case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
+			return nil, nil
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
@@ -92,6 +94,8 @@ func (txBuilder *TxBuilderV2) Build(
 			if err != nil {
 				return nil, err
 			}
+		case strconv.Itoa(metadataPdexv3.WithdrawOrderRejectedStatus):
+			return nil, nil
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}

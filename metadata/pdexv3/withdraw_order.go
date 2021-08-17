@@ -30,6 +30,7 @@ func NewWithdrawOrderRequest(
 	metaType int,
 ) (*WithdrawOrderRequest, error) {
 	r := &WithdrawOrderRequest{
+		PoolPairID: pairID,
 		OrderID:  orderID,
 		TokenID:  tokenID,
 		Amount:   amount,

@@ -82,12 +82,15 @@ func (res TradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *meta
 		}
 		switch res.Status {
 		case TradeAcceptedStatus:
-			var md AcceptedTrade
-			err := json.Unmarshal([]byte(inst[4]), &md)
+			var mdHolder struct {
+				Content AcceptedTrade
+			}
+			err := json.Unmarshal([]byte(inst[4]), &mdHolder)
 			if err != nil {
 				metadataCommon.Logger.Log.Warnf("Error matching instruction %s as accepted trade - %v", inst[4], err)
 				continue
 			}
+			md := mdHolder.Content
 			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenToBuy, tx)
 			if valid {
 				matchedInstructionIndex = i
@@ -97,12 +100,15 @@ func (res TradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *meta
 			}
 
 		case TradeRefundedStatus:
-			var md RefundedTrade
-			err := json.Unmarshal([]byte(inst[4]), &md)
+			var mdHolder struct {
+				Content RefundedTrade
+			}
+			err := json.Unmarshal([]byte(inst[4]), &mdHolder)
 			if err != nil {
 				metadataCommon.Logger.Log.Warnf("Error matching instruction %s as refunded trade - %v", inst[4], err)
 				continue
 			}
+			md := mdHolder.Content
 			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenToSell, tx)
 			if valid {
 				matchedInstructionIndex = i
