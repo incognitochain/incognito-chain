@@ -12,24 +12,24 @@ import (
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
 	PairID             string             `json:"PairID"`
-	NftTokenID         common.Hash        `json:"NftTokenID"`
+	NftID              common.Hash        `json:"NftID"`
 	NftReceiverAddress string             `json:"NftReceiverAddress"`
 	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PairID     string       `json:"PairID"`
-	NftTokenID common.Hash  `json:"NftTokenID"`
-	TokenType  string       `json:"TokenType"`
-	Receiver   ReceiverInfo `json:"Receiver"`
-	TxReqID    common.Hash  `json:"TxReqID"`
-	ShardID    byte         `json:"ShardID"`
+	PairID    string       `json:"PairID"`
+	NftID     common.Hash  `json:"NftID"`
+	TokenType string       `json:"TokenType"`
+	Receiver  ReceiverInfo `json:"Receiver"`
+	TxReqID   common.Hash  `json:"TxReqID"`
+	ShardID   byte         `json:"ShardID"`
 }
 
 func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
-	nftTokenID common.Hash,
+	nftID common.Hash,
 	nftReceiverAddress string,
 	feeReceiverAddress FeeReceiverAddress,
 ) (*WithdrawalLPFeeRequest, error) {
@@ -38,7 +38,7 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	return &WithdrawalLPFeeRequest{
 		MetadataBase:       *metadataBase,
 		PairID:             pairID,
-		NftTokenID:         nftTokenID,
+		NftID:              nftID,
 		NftReceiverAddress: nftReceiverAddress,
 		FeeReceiverAddress: feeReceiverAddress,
 	}, nil
@@ -78,7 +78,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 	}
 	burningAmt := burnedCoin.GetValue()
 	burningTokenID := burnedToken
-	if burningAmt != 1 || *burningTokenID != withdrawal.NftTokenID {
+	if burningAmt != 1 || *burningTokenID != withdrawal.NftID {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
@@ -115,7 +115,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
 	record += withdrawal.PairID
-	record += withdrawal.NftTokenID.String()
+	record += withdrawal.NftID.String()
 	record += withdrawal.NftReceiverAddress
 	record += withdrawal.FeeReceiverAddress.ToString()
 

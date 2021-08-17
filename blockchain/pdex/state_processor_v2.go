@@ -203,9 +203,11 @@ func (sp *stateProcessorV2) matchContribution(
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
 	_, nftIDs, err = poolPair.addShare(
+		poolPairID,
 		existedWaitingContribution.NftID(),
 		nftIDs, shareAmount, beaconHeight,
 		existedWaitingContribution.TxReqID().String(),
+		stateDB,
 	)
 
 	if err != nil {
@@ -276,11 +278,13 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
 		}
 		_, nftIDs, err = poolPair.addShare(
+			waitingContribution.PoolPairID(),
 			waitingContribution.NftID(),
 			nftIDs,
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 			waitingContribution.TxReqID().String(),
+			stateDB,
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nftIDs, nil, err
@@ -454,6 +458,7 @@ func (sp *stateProcessorV2) trade(
 
 func (sp *stateProcessorV2) withdrawLiquidity(
 	stateDB *statedb.StateDB,
+	beaconHeight uint64,
 	inst []string,
 	poolPairs map[string]*PoolPairState,
 ) (map[string]*PoolPairState, error) {
@@ -462,7 +467,7 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	case common.PDEWithdrawalRejectedChainStatus:
 		err = sp.rejectWithdrawLiquidity(stateDB, inst)
 	case common.PDEWithdrawalAcceptedChainStatus:
-		poolPairs, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs)
+		poolPairs, err = sp.acceptWithdrawLiquidity(stateDB, beaconHeight, inst, poolPairs)
 	}
 	if err != nil {
 		return poolPairs, err
@@ -489,7 +494,8 @@ func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 }
 
 func (sp *stateProcessorV2) acceptWithdrawLiquidity(
-	stateDB *statedb.StateDB, inst []string,
+	stateDB *statedb.StateDB, beaconHeight uint64,
+	inst []string,
 	poolPairs map[string]*PoolPairState,
 ) (map[string]*PoolPairState, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
@@ -512,8 +518,10 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		acceptWithdrawLiquidity.TokenAmount(), acceptWithdrawLiquidity.ShareAmount(), subOperator,
 	)
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
-		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.updateShareAmount(
-			acceptWithdrawLiquidity.ShareAmount(), share, subOperator)
+		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.updateShare(
+			acceptWithdrawLiquidity.PoolPairID(), acceptWithdrawLiquidity.NftID().String(),
+			acceptWithdrawLiquidity.ShareAmount(), share, subOperator,
+			beaconHeight, stateDB)
 	}
 	if err != nil {
 		return poolPairs, err
@@ -585,9 +593,9 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			return pairs, errors.New(msg)
 		}
 
-		share, isExisted := poolPair.shares[actionData.NftTokenID.String()]
+		share, isExisted := poolPair.shares[actionData.NftID.String()]
 		if !isExisted {
-			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NftTokenID.String())
+			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NftID.String())
 			Logger.log.Errorf(msg)
 			return pairs, errors.New(msg)
 		}

@@ -169,7 +169,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.waitingContributions, s.deletedWaitingContributions, s.nftIDs,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
-			s.poolPairs, err = s.processor.withdrawLiquidity(env.StateDB(), inst, s.poolPairs)
+			s.poolPairs, err = s.processor.withdrawLiquidity(env.StateDB(), env.BeaconHeight(), inst, s.poolPairs)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
 				s.poolPairs,
@@ -240,7 +240,12 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	withdrawLiquidityInstructions := [][]string{}
-	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(withdrawLiquidityTxs, s.poolPairs)
+	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
+		withdrawLiquidityTxs,
+		s.poolPairs,
+		env.BeaconHeight(),
+		env.StateDB(),
+	)
 	if err != nil {
 		return instructions, err
 	}
@@ -253,6 +258,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		s.poolPairs,
 		s.waitingContributions,
 		s.nftIDs,
+		env.StateDB(),
 	)
 	if err != nil {
 		return instructions, err
