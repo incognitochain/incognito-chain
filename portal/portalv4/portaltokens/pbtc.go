@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -85,7 +86,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 			Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
 			continue
 		}
-		if addrStr != expectedMultisigAddress {
+		if strings.ToLower(addrStr) != strings.ToLower(expectedMultisigAddress) {
 			continue
 		}
 
@@ -180,7 +181,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
 			return false, nil, "", 0, errors.New("Could not extract address from proof")
 		}
-		if addrStr != receiverAddress {
+		if strings.ToLower(addrStr) != strings.ToLower(receiverAddress) {
 			Logger.log.Error("BTC-TxProof is invalid")
 			return false, nil, "", 0, errors.New("BTC-TxProof is invalid")
 		}
