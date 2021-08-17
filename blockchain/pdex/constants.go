@@ -37,6 +37,7 @@ const (
 	DecayRateBPS         = 500 // 5%
 )
 
+// nft hash prefix
 var (
 	hashPrefix = []byte("pdex-v3")
 
@@ -45,4 +46,9 @@ var (
 	TotalPDEXReward         = MintingBlockReward * math.Pow(10, common.PDEXDenominatingDecimal)
 	DecayRate               = float64(DecayRateBPS) / float64(BPS)
 	PDEXRewardFirstInterval = uint64(TotalPDEXReward * DecayRate / (1 - math.Pow(1-DecayRate, DecayIntervals)))
+)
+
+const (
+	addOperator = byte(0)
+	subOperator = byte(1)
 )

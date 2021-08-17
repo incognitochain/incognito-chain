@@ -53,7 +53,6 @@ func BuildMintPDEXInst(
 
 func BuildWithdrawLPFeeInsts(
 	pairID string,
-	index uint64,
 	nftTokenID common.Hash,
 	receivers map[string]metadataPdexv3.ReceiverInfo,
 	shardID byte,
@@ -65,7 +64,6 @@ func BuildWithdrawLPFeeInsts(
 	for tokenType, receiver := range receivers {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PairID:     pairID,
-			Index:      index,
 			NftTokenID: nftTokenID,
 			TokenType:  tokenType,
 			Receiver:   receiver,

@@ -360,7 +360,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) &&
 		(config.Param().Net == config.LocalNet || config.Param().Net != config.TestnetNet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
-		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
+		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot.String(), txRoot.String()))
 	}
 
 	// Verify ShardTx Root

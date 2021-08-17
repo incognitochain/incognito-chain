@@ -103,13 +103,11 @@ func DeletePdexv3WaitingContributions(
 }
 
 func StorePdexv3Share(
-	stateDB *StateDB,
-	poolPairID string,
-	nftID common.Hash,
-	beaconHeight, amount, lastUpdatedBeaconHeight uint64,
+	stateDB *StateDB, poolPairID string, nftID common.Hash,
+	amount, lastUpdatedBeaconHeight uint64,
 ) error {
-	state := NewPdexv3ShareStateWithValue(nftID, beaconHeight, amount, lastUpdatedBeaconHeight)
-	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID.String(), beaconHeight)
+	state := NewPdexv3ShareStateWithValue(nftID, amount, lastUpdatedBeaconHeight)
+	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID.String())
 	return stateDB.SetStateObject(Pdexv3ShareObjectType, key, state)
 }
 
@@ -126,13 +124,13 @@ func StorePdexv3PoolPair(
 func StorePdexv3TradingFee(
 	stateDB *StateDB,
 	poolPairID, nftID, tokenID string,
-	beaconHeight, tradingFee uint64,
+	tradingFee uint64,
 ) error {
 	tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return NewStatedbError(StorePdexv3ShareError, err)
 	}
-	key := GeneratePdexv3TradingFeesObjectKey(poolPairID, nftID, tokenID, beaconHeight)
+	key := GeneratePdexv3TradingFeesObjectKey(poolPairID, nftID, tokenID)
 	tradingFeeState := NewPdexv3TradingFeeStateWithValue(*tokenHash, tradingFee)
 	err = stateDB.SetStateObject(Pdexv3TradingFeeObjectType, key, tradingFeeState)
 	if err != nil {
@@ -156,17 +154,16 @@ func GetPdexv3PoolPairs(stateDB *StateDB) (map[string]Pdexv3PoolPairState, error
 }
 
 func GetPdexv3Shares(stateDB *StateDB, poolPairID string, nftIDs map[string]bool) (
-	map[string]map[uint64]Pdexv3ShareState,
-	error,
+	map[string]Pdexv3ShareState, map[string]bool, error,
 ) {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3Shares(prefixHash, nftIDs)
 }
 
-func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nftID string, beaconHeight uint64) (
+func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nftID string) (
 	map[string]Pdexv3TradingFeeState,
 	error,
 ) {
-	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID, beaconHeight)
+	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID)
 	return stateDB.iterateWithPdexv3TradingFees(prefixHash)
 }
