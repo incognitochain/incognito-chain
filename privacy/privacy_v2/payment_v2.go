@@ -111,7 +111,6 @@ func (proof PaymentProofV2) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements JSON Unmarshaller
 func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
-	Logger.Log.Infof("Unmarshalling PaymentProofV2: %v\n", string(data))
 	dataStr := common.EmptyString
 	errJson := json.Unmarshal(data, &dataStr)
 	if errJson != nil {
