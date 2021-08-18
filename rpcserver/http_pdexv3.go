@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
@@ -413,7 +412,6 @@ func (httpServer *HttpServer) handlePdexv3TxTradeRequest(params interface{}, clo
 	// create tx
 	data, isPRV, err := createPdexv3TradeRequestTransaction(httpServer, params)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	createTxResult := []interface{}{data.Base58CheckData}
@@ -543,6 +541,7 @@ func createPdexv3TradeRequestTransaction(
 		SellAmount          Uint64Reader
 		MinAcceptableAmount Uint64Reader
 		TradingFee          Uint64Reader
+		FeeInPRV            bool
 	}{}
 
 	// parse params & metadata
@@ -587,15 +586,31 @@ func createPdexv3TradeRequestTransaction(
 	if isPRV {
 		paramSelect.PRV.PaymentInfos = burnPayments
 	} else {
-		paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
-		paramSelect.SetTokenReceivers(burnPayments)
+		if mdReader.FeeInPRV {
+			// sell amount in token
+			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.TradingFee,
+				},
+			}
+			// trading fee in PRV
+			paramSelect.SetTokenReceivers([]*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.SellAmount,
+				},
+			})
+		} else {
+			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
+			paramSelect.SetTokenReceivers(burnPayments)
+		}
 	}
 
 	// create transaction
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		fmt.Fprintf(os.Stderr, "Trade error %s\n", err1.Error())
 		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
@@ -607,7 +622,6 @@ func createPdexv3TradeRequestTransaction(
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
 	}
-	fmt.Fprintf(os.Stderr, "Created tx %s\n", string(marshaledTx))
 	return res, isPRV, nil
 }
 
@@ -622,6 +636,7 @@ func createPdexv3AddOrderRequestTransaction(
 		MinAcceptableAmount Uint64Reader
 		TradingFee          Uint64Reader
 		NftID               common.Hash
+		FeeInPRV            bool
 	}{}
 
 	// parse params & metadata
@@ -666,15 +681,31 @@ func createPdexv3AddOrderRequestTransaction(
 	if isPRV {
 		paramSelect.PRV.PaymentInfos = burnPayments
 	} else {
-		paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
-		paramSelect.SetTokenReceivers(burnPayments)
+		if mdReader.FeeInPRV {
+			// sell amount in token
+			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.TradingFee,
+				},
+			}
+			// trading fee in PRV
+			paramSelect.SetTokenReceivers([]*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.SellAmount,
+				},
+			})
+		} else {
+			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
+			paramSelect.SetTokenReceivers(burnPayments)
+		}
 	}
 
 	// create transaction
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		fmt.Fprintf(os.Stderr, "Add order error %s\n", err1.Error())
 		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
@@ -686,8 +717,6 @@ func createPdexv3AddOrderRequestTransaction(
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
 	}
-	// DEBUG
-	fmt.Fprintf(os.Stderr, "Created tx %s\n", string(marshaledTx))
 	return res, isPRV, nil
 }
 
@@ -751,7 +780,6 @@ func createPdexv3WithdrawOrderRequestTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		fmt.Fprintf(os.Stderr, "Withdraw order error %s\n", err1.Error())
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
@@ -763,8 +791,6 @@ func createPdexv3WithdrawOrderRequestTransaction(
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
 	}
-	// DEBUG
-	fmt.Fprintf(os.Stderr, "Created tx %s\n", string(marshaledTx))
 	return res, nil
 }
 

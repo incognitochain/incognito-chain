@@ -307,6 +307,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	tradeInstructions, s.poolPairs, err = s.producer.trade(
 		tradeTxs,
 		s.poolPairs,
+		s.params,
 	)
 	if err != nil {
 		return instructions, err
@@ -318,6 +319,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		addOrderTxs,
 		s.poolPairs,
 		s.nftIDs,
+		s.params,
 	)
 	if err != nil {
 		return instructions, err

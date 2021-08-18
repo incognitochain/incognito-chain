@@ -3,7 +3,9 @@ package pdex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
@@ -329,14 +331,26 @@ func (sp *stateProducerV2) modifyParams(
 func (sp *stateProducerV2) trade(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
+	params Params,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
-	// TODO: sort
-	// tradeRequests := sortByFee(
-	// 	tradeRequests,
-	// 	beaconHeight,
-	// 	pairs,
-	// )
+	var invalidTxs []metadataCommon.Transaction
+	var fees, sellAmounts []uint64
+	var err error
+	txs, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
+	if err != nil {
+		return result, pairs, fmt.Errorf("Error converting fee %v", err)
+	}
+	sort.SliceStable(txs, func(i, j int) bool {
+		// compare the fee / sellAmount ratio by comparing products
+		fi := big.NewInt(0).SetUint64(fees[i])
+		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
+		fj := big.NewInt(0).SetUint64(fees[j])
+		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
+
+		// sort descending
+		return fi.Cmp(fj) == 1
+	})
 
 	for _, tx := range txs {
 		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
@@ -380,6 +394,29 @@ func (sp *stateProducerV2) trade(
 		}
 		result = append(result, acceptedInst)
 	}
+
+	// refund invalid-by-fee tradeRequests
+	for _, tx := range invalidTxs {
+		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
+		if !ok {
+			return result, pairs, fmt.Errorf("Cannot parse trade metadata")
+		}
+		refundReceiver, exists := currentTrade.Receiver[currentTrade.TokenToSell]
+		if !exists {
+			return result, pairs, fmt.Errorf("Refund receiver not found in Trade Request")
+		}
+
+		currentAction := instruction.NewAction(
+			&metadataPdexv3.RefundedTrade{
+				Receiver:    refundReceiver,
+				TokenToSell: currentTrade.TokenToSell,
+				Amount:      currentTrade.SellAmount,
+			},
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+		result = append(result, currentAction.StringSlice())
+	}
 	Logger.log.Warnf("Trade instructions: %v", result)
 	return result, pairs, nil
 }
@@ -388,8 +425,27 @@ func (sp *stateProducerV2) addOrder(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
 	nftIDs map[string]bool,
+	params Params,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
+	var invalidTxs []metadataCommon.Transaction
+	var fees, sellAmounts []uint64
+	var err error
+	txs, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
+	if err != nil {
+		return result, pairs, fmt.Errorf("Error converting fee %v", err)
+	}
+	sort.SliceStable(txs, func(i, j int) bool {
+		// compare the fee / sellAmount ratio by comparing products
+		fi := big.NewInt(0).SetUint64(fees[i])
+		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
+		fj := big.NewInt(0).SetUint64(fees[j])
+		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
+
+		// sort descending
+		return fi.Cmp(fj) == 1
+	})
+
 TransactionLoop:
 	for _, tx := range txs {
 		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
@@ -397,7 +453,6 @@ TransactionLoop:
 			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
 
-		// TODO : PRV-based fee
 		refundReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenToSell]
 		if !exists {
 			return result, pairs, errors.New("Refund receiver not found in AddOrder Request")
@@ -482,6 +537,30 @@ TransactionLoop:
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 		result = append(result, acceptedAction.StringSlice())
+	}
+
+	// refund invalid-by-fee addOrder requests
+	for _, tx := range invalidTxs {
+		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
+		if !ok {
+			return result, pairs, fmt.Errorf("Cannot parse AddOrder metadata")
+		}
+
+		refundReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenToSell]
+		if !exists {
+			return result, pairs, fmt.Errorf("Refund receiver not found in AddOrder Request")
+		}
+
+		currentAction := instruction.NewAction(
+			&metadataPdexv3.RefundedAddOrder{
+				Receiver: refundReceiver,
+				TokenID:  currentOrderReq.TokenToSell,
+				Amount:   currentOrderReq.SellAmount,
+			},
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+		result = append(result, currentAction.StringSlice())
 	}
 
 	Logger.log.Warnf("AddOrder instructions: %v", result)
