@@ -407,7 +407,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
-			metaData.PairID,
+			metaData.PoolPairID,
 			metaData.NftID,
 			map[string]metadataPdexv3.ReceiverInfo{
 				metadataPdexv3.NftTokenType: {
@@ -422,7 +422,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		)
 
 		// check conditions
-		poolPair, isExisted := pairs[metaData.PairID]
+		poolPair, isExisted := pairs[metaData.PoolPairID]
 		if !isExisted {
 			instructions = append(instructions, rejectInst...)
 			continue
@@ -436,7 +436,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 
 		// TODO: compute amount of received LP fee
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
-			metaData.PairID,
+			metaData.PoolPairID,
 			metaData.NftID,
 			map[string]metadataPdexv3.ReceiverInfo{
 				metadataPdexv3.Token0Type: {
@@ -495,7 +495,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 		}
 
 		rejectInst := v2utils.BuildWithdrawProtocolFeeInsts(
-			metaData.PairID,
+			metaData.PoolPairID,
 			map[string]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
@@ -503,7 +503,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 		)
 
 		// check conditions
-		pair, isExisted := pairs[metaData.PairID]
+		pair, isExisted := pairs[metaData.PoolPairID]
 		if !isExisted {
 			instructions = append(instructions, rejectInst...)
 			continue
@@ -518,7 +518,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 		}
 
 		acceptedInst := v2utils.BuildWithdrawProtocolFeeInsts(
-			metaData.PairID,
+			metaData.PoolPairID,
 			map[string]metadataPdexv3.ReceiverInfo{
 				metadataPdexv3.Token0Type: {
 					TokenID:    pair.state.Token0ID(),

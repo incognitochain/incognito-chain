@@ -11,19 +11,19 @@ import (
 
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
-	PairID             string             `json:"PairID"`
+	PoolPairID         string             `json:"PoolPairID"`
 	NftID              common.Hash        `json:"NftID"`
 	NftReceiverAddress string             `json:"NftReceiverAddress"`
 	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PairID    string       `json:"PairID"`
-	NftID     common.Hash  `json:"NftID"`
-	TokenType string       `json:"TokenType"`
-	Receiver  ReceiverInfo `json:"Receiver"`
-	TxReqID   common.Hash  `json:"TxReqID"`
-	ShardID   byte         `json:"ShardID"`
+	PoolPairID string       `json:"PoolPairID"`
+	NftID      common.Hash  `json:"NftID"`
+	TokenType  string       `json:"TokenType"`
+	Receiver   ReceiverInfo `json:"Receiver"`
+	TxReqID    common.Hash  `json:"TxReqID"`
+	ShardID    byte         `json:"ShardID"`
 }
 
 func NewPdexv3WithdrawalLPFeeRequest(
@@ -37,7 +37,7 @@ func NewPdexv3WithdrawalLPFeeRequest(
 
 	return &WithdrawalLPFeeRequest{
 		MetadataBase:       *metadataBase,
-		PairID:             pairID,
+		PoolPairID:         pairID,
 		NftID:              nftID,
 		NftReceiverAddress: nftReceiverAddress,
 		FeeReceiverAddress: feeReceiverAddress,
@@ -114,7 +114,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
 
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBase.Hash().String()
-	record += withdrawal.PairID
+	record += withdrawal.PoolPairID
 	record += withdrawal.NftID.String()
 	record += withdrawal.NftReceiverAddress
 	record += withdrawal.FeeReceiverAddress.ToString()

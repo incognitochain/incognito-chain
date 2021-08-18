@@ -15,8 +15,8 @@ type Pdexv3Params struct {
 	DefaultFeeRateBPS               uint            `json:"DefaultFeeRateBPS"`
 	FeeRateBPS                      map[string]uint `json:"FeeRateBPS"`
 	PRVDiscountPercent              uint            `json:"PRVDiscountPercent"`
-	LimitProtocolFeePercent         uint            `json:"LimitProtocolFeePercent"`
-	LimitStakingPoolRewardPercent   uint            `json:"LimitStakingPoolRewardPercent"`
+	OrderProtocolFeePercent         uint            `json:"OrderProtocolFeePercent"`
+	OrderStakingPoolRewardPercent   uint            `json:"OrderStakingPoolRewardPercent"`
 	TradingProtocolFeePercent       uint            `json:"TradingProtocolFeePercent"`
 	TradingStakingPoolRewardPercent uint            `json:"TradingStakingPoolRewardPercent"`
 	PDEXRewardPoolPairsShare        map[string]uint `json:"PDEXRewardPoolPairsShare"`

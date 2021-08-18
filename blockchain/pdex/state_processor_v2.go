@@ -586,9 +586,9 @@ func (sp *stateProcessorV2) withdrawLPFee(
 	var reqTrackStatus int
 	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
 		// check conditions
-		poolPair, isExisted := pairs[actionData.PairID]
+		poolPair, isExisted := pairs[actionData.PoolPairID]
 		if !isExisted {
-			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PairID)
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PoolPairID)
 			Logger.log.Errorf(msg)
 			return pairs, errors.New(msg)
 		}
@@ -643,9 +643,9 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 	var reqTrackStatus int
 	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
 		// check conditions
-		poolPair, isExisted := pairs[actionData.PairID]
+		poolPair, isExisted := pairs[actionData.PoolPairID]
 		if !isExisted {
-			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PairID)
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PoolPairID)
 			Logger.log.Errorf(msg)
 			return pairs, errors.New(msg)
 		}
@@ -688,9 +688,9 @@ func (sp *stateProcessorV2) mintPDEX(
 		return pairs, err
 	}
 
-	pair, isExisted := pairs[actionData.PairID]
+	pair, isExisted := pairs[actionData.PoolPairID]
 	if !isExisted {
-		msg := fmt.Sprintf("Could not find pair %s for minting", actionData.PairID)
+		msg := fmt.Sprintf("Could not find pair %s for minting", actionData.PoolPairID)
 		Logger.log.Errorf(msg)
 		return pairs, fmt.Errorf(msg)
 	}

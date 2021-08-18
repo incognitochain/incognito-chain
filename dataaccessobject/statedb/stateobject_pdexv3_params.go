@@ -12,8 +12,8 @@ type Pdexv3Params struct {
 	defaultFeeRateBPS               uint
 	feeRateBPS                      map[string]uint
 	prvDiscountPercent              uint
-	limitProtocolFeePercent         uint
-	limitStakingPoolRewardPercent   uint
+	orderProtocolFeePercent         uint
+	orderStakingPoolRewardPercent   uint
 	tradingProtocolFeePercent       uint
 	tradingStakingPoolRewardPercent uint
 	pdexRewardPoolPairsShare        map[string]uint
@@ -29,11 +29,11 @@ func (pp Pdexv3Params) FeeRateBPS() map[string]uint {
 func (pp Pdexv3Params) PRVDiscountPercent() uint {
 	return pp.prvDiscountPercent
 }
-func (pp Pdexv3Params) LimitProtocolFeePercent() uint {
-	return pp.limitProtocolFeePercent
+func (pp Pdexv3Params) OrderProtocolFeePercent() uint {
+	return pp.orderProtocolFeePercent
 }
-func (pp Pdexv3Params) LimitStakingPoolRewardPercent() uint {
-	return pp.limitStakingPoolRewardPercent
+func (pp Pdexv3Params) OrderStakingPoolRewardPercent() uint {
+	return pp.orderStakingPoolRewardPercent
 }
 func (pp Pdexv3Params) TradingProtocolFeePercent() uint {
 	return pp.tradingProtocolFeePercent
@@ -53,8 +53,8 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
 		PRVDiscountPercent              uint
-		LimitProtocolFeePercent         uint
-		LimitStakingPoolRewardPercent   uint
+		OrderProtocolFeePercent         uint
+		OrderStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
 		PDEXRewardPoolPairsShare        map[string]uint
@@ -63,8 +63,8 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
 		PRVDiscountPercent:              pp.prvDiscountPercent,
-		LimitProtocolFeePercent:         pp.limitProtocolFeePercent,
-		LimitStakingPoolRewardPercent:   pp.limitStakingPoolRewardPercent,
+		OrderProtocolFeePercent:         pp.orderProtocolFeePercent,
+		OrderStakingPoolRewardPercent:   pp.orderStakingPoolRewardPercent,
 		TradingProtocolFeePercent:       pp.tradingProtocolFeePercent,
 		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
 		PDEXRewardPoolPairsShare:        pp.pdexRewardPoolPairsShare,
@@ -81,8 +81,8 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
 		PRVDiscountPercent              uint
-		LimitProtocolFeePercent         uint
-		LimitStakingPoolRewardPercent   uint
+		OrderProtocolFeePercent         uint
+		OrderStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
 		PDEXRewardPoolPairsShare        map[string]uint
@@ -95,8 +95,8 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.defaultFeeRateBPS = temp.DefaultFeeRateBPS
 	pp.feeRateBPS = temp.FeeRateBPS
 	pp.prvDiscountPercent = temp.PRVDiscountPercent
-	pp.limitProtocolFeePercent = temp.LimitProtocolFeePercent
-	pp.limitStakingPoolRewardPercent = temp.LimitStakingPoolRewardPercent
+	pp.orderProtocolFeePercent = temp.OrderProtocolFeePercent
+	pp.orderStakingPoolRewardPercent = temp.OrderStakingPoolRewardPercent
 	pp.tradingProtocolFeePercent = temp.TradingProtocolFeePercent
 	pp.tradingStakingPoolRewardPercent = temp.TradingStakingPoolRewardPercent
 	pp.pdexRewardPoolPairsShare = temp.PDEXRewardPoolPairsShare
@@ -112,8 +112,8 @@ func NewPdexv3ParamsWithValue(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	limitProtocolFeePercent uint,
-	limitStakingPoolRewardPercent uint,
+	orderProtocolFeePercent uint,
+	orderStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
 	pdexRewardPoolPairsShare map[string]uint,
@@ -123,8 +123,8 @@ func NewPdexv3ParamsWithValue(
 		defaultFeeRateBPS:               defaultFeeRateBPS,
 		feeRateBPS:                      feeRateBPS,
 		prvDiscountPercent:              prvDiscountPercent,
-		limitProtocolFeePercent:         limitProtocolFeePercent,
-		limitStakingPoolRewardPercent:   limitStakingPoolRewardPercent,
+		orderProtocolFeePercent:         orderProtocolFeePercent,
+		orderStakingPoolRewardPercent:   orderStakingPoolRewardPercent,
 		tradingProtocolFeePercent:       tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
 		pdexRewardPoolPairsShare:        pdexRewardPoolPairsShare,

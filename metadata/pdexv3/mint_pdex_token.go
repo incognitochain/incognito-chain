@@ -19,8 +19,8 @@ type MintPDEXGenesisResponse struct {
 }
 
 type MintPDEXBlockRewardContent struct {
-	PairID string `json:"PairID"`
-	Amount uint   `json:"Amount"`
+	PoolPairID string `json:"PoolPairID"`
+	Amount     uint   `json:"Amount"`
 }
 
 type MintPDEXGenesisContent struct {

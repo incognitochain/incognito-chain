@@ -36,8 +36,8 @@ func BuildMintPDEXInst(
 	mintingAmount uint,
 ) [][]string {
 	reqContent := metadataPdexv3.MintPDEXBlockRewardContent{
-		PairID: pairID,
-		Amount: mintingAmount,
+		PoolPairID: pairID,
+		Amount:     mintingAmount,
 	}
 	reqContentBytes, _ := json.Marshal(reqContent)
 
@@ -63,12 +63,12 @@ func BuildWithdrawLPFeeInsts(
 
 	for tokenType, receiver := range receivers {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
-			PairID:    pairID,
-			NftID:     nftID,
-			TokenType: tokenType,
-			Receiver:  receiver,
-			TxReqID:   reqTxID,
-			ShardID:   shardID,
+			PoolPairID: pairID,
+			NftID:      nftID,
+			TokenType:  tokenType,
+			Receiver:   receiver,
+			TxReqID:    reqTxID,
+			ShardID:    shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{
@@ -91,11 +91,11 @@ func BuildWithdrawProtocolFeeInsts(
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
-			PairID:    pairID,
-			TokenType: "",
-			Receiver:  metadataPdexv3.ReceiverInfo{},
-			TxReqID:   reqTxID,
-			ShardID:   shardID,
+			PoolPairID: pairID,
+			TokenType:  "",
+			Receiver:   metadataPdexv3.ReceiverInfo{},
+			TxReqID:    reqTxID,
+			ShardID:    shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		inst := []string{
@@ -110,11 +110,11 @@ func BuildWithdrawProtocolFeeInsts(
 	insts := [][]string{}
 	for tokenType, receiver := range receivers {
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
-			PairID:    pairID,
-			TokenType: tokenType,
-			Receiver:  receiver,
-			TxReqID:   reqTxID,
-			ShardID:   shardID,
+			PoolPairID: pairID,
+			TokenType:  tokenType,
+			Receiver:   receiver,
+			TxReqID:    reqTxID,
+			ShardID:    shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{

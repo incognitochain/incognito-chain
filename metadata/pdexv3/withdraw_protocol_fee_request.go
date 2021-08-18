@@ -12,16 +12,16 @@ import (
 
 type WithdrawalProtocolFeeRequest struct {
 	metadataCommon.MetadataBaseWithSignature
-	PairID             string             `json:"PairID"`
+	PoolPairID         string             `json:"PoolPairID"`
 	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
 }
 
 type WithdrawalProtocolFeeContent struct {
-	PairID    string       `json:"PairID"`
-	TokenType string       `json:"TokenType"`
-	Receiver  ReceiverInfo `json:"Receiver"`
-	TxReqID   common.Hash  `json:"TxReqID"`
-	ShardID   byte         `json:"ShardID"`
+	PoolPairID string       `json:"PoolPairID"`
+	TokenType  string       `json:"TokenType"`
+	Receiver   ReceiverInfo `json:"Receiver"`
+	TxReqID    common.Hash  `json:"TxReqID"`
+	ShardID    byte         `json:"ShardID"`
 }
 
 func NewPdexv3WithdrawalProtocolFeeRequest(
@@ -33,7 +33,7 @@ func NewPdexv3WithdrawalProtocolFeeRequest(
 
 	return &WithdrawalProtocolFeeRequest{
 		MetadataBaseWithSignature: *metadataBase,
-		PairID:                    pairID,
+		PoolPairID:                pairID,
 		FeeReceiverAddress:        feeReceiverAddress,
 	}, nil
 }
@@ -107,7 +107,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateMetadataByItself() bool {
 
 func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {
 	record := withdrawal.MetadataBaseWithSignature.Hash().String()
-	record += withdrawal.PairID
+	record += withdrawal.PoolPairID
 	record += withdrawal.FeeReceiverAddress.ToString()
 	if withdrawal.Sig != nil && len(withdrawal.Sig) != 0 {
 		record += string(withdrawal.Sig)
@@ -120,7 +120,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {
 
 func (withdrawal WithdrawalProtocolFeeRequest) HashWithoutSig() *common.Hash {
 	record := withdrawal.MetadataBaseWithSignature.Hash().String()
-	record += withdrawal.PairID
+	record += withdrawal.PoolPairID
 	record += withdrawal.FeeReceiverAddress.ToString()
 
 	// final hash

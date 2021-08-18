@@ -134,14 +134,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PRVDiscountPercent is invalid"))
 	}
 
-	limitProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["LimitProtocolFeePercent"])
+	orderProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["OrderProtocolFeePercent"])
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("LimitProtocolFeePercent is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderProtocolFeePercent is invalid"))
 	}
 
-	limitStakingPoolRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["LimitStakingPoolRewardPercent"])
+	orderStakingPoolRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["OrderStakingPoolRewardPercent"])
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("LimitStakingPoolRewardPercent is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderStakingPoolRewardPercent is invalid"))
 	}
 
 	tradingProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["TradingProtocolFeePercent"])
@@ -186,8 +186,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			DefaultFeeRateBPS:               uint(defaultFeeRateBPS),
 			FeeRateBPS:                      feeRateBPS,
 			PRVDiscountPercent:              uint(prvDiscountPercent),
-			LimitProtocolFeePercent:         uint(limitProtocolFeePercent),
-			LimitStakingPoolRewardPercent:   uint(limitStakingPoolRewardPercent),
+			OrderProtocolFeePercent:         uint(orderProtocolFeePercent),
+			OrderStakingPoolRewardPercent:   uint(orderStakingPoolRewardPercent),
 			TradingProtocolFeePercent:       uint(tradingProtocolFeePercent),
 			TradingStakingPoolRewardPercent: uint(tradingStakingPoolRewardPercent),
 			PDEXRewardPoolPairsShare:        pdexRewardPoolPairsShare,
@@ -254,7 +254,7 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, 
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	pairID, ok := data["PairID"].(string)
+	pairID, ok := data["PoolPairID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
@@ -336,7 +336,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
 	}
 
-	pairID, ok := tokenParamsRaw["PairID"].(string)
+	pairID, ok := tokenParamsRaw["PoolPairID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
@@ -492,7 +492,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
 	}
 
-	pairID, ok := tokenParamsRaw["PairID"].(string)
+	pairID, ok := tokenParamsRaw["PoolPairID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
