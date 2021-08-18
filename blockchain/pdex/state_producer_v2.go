@@ -32,7 +32,6 @@ func (sp *stateProducerV2) addLiquidity(
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	nftIDs map[string]bool,
-	stateDB *statedb.StateDB,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -105,10 +104,9 @@ func (sp *stateProducerV2) addLiquidity(
 				)
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
 				nftID, nftIDs, err = newPoolPair.addShare(
-					poolPairID, nftID, nftIDs,
+					nftID, nftIDs,
 					shareAmount, beaconHeight,
 					waitingContribution.TxReqID().String(),
-					stateDB,
 				)
 				if err != nil {
 					continue
@@ -165,8 +163,8 @@ func (sp *stateProducerV2) addLiquidity(
 			continue
 		}
 		nftID, nftIDs, err = poolPair.addShare(
-			poolPairID, nftID, nftIDs, shareAmount, beaconHeight,
-			waitingContribution.TxReqID().String(), stateDB,
+			nftID, nftIDs, shareAmount, beaconHeight,
+			waitingContribution.TxReqID().String(),
 		)
 		if err != nil {
 			Logger.log.Debug("err:", err)
@@ -392,8 +390,6 @@ func (sp *stateProducerV2) addOrder(
 
 func (sp *stateProducerV2) withdrawLPFee(
 	txs []metadata.Transaction,
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	pairs map[string]*PoolPairState,
 ) ([][]string, map[string]*PoolPairState, error) {
 	instructions := [][]string{}
@@ -435,9 +431,9 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		// compute amount of received LP fee
-		reward, err := poolPair.RecomputeLPFee(metaData.PoolPairID, metaData.NftID, stateDB)
+		reward, err := poolPair.RecomputeLPFee(metaData.NftID)
 		if err != nil {
-			return instructions, pairs, errors.New("Can not track LP reward")
+			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 		}
 
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
@@ -447,22 +443,22 @@ func (sp *stateProducerV2) withdrawLPFee(
 				metadataPdexv3.Token0Type: {
 					TokenID:    poolPair.state.Token0ID(),
 					AddressStr: metaData.FeeReceiverAddress.Token0ReceiverAddress,
-					Amount:     reward[poolPair.state.Token0ID().String()],
+					Amount:     reward[poolPair.state.Token0ID()],
 				},
 				metadataPdexv3.Token1Type: {
 					TokenID:    poolPair.state.Token1ID(),
 					AddressStr: metaData.FeeReceiverAddress.Token1ReceiverAddress,
-					Amount:     reward[poolPair.state.Token1ID().String()],
+					Amount:     reward[poolPair.state.Token1ID()],
 				},
 				metadataPdexv3.PRVType: {
 					TokenID:    common.PRVCoinID,
 					AddressStr: metaData.FeeReceiverAddress.PRVReceiverAddress,
-					Amount:     reward[common.PRVIDStr],
+					Amount:     reward[common.PRVCoinID],
 				},
 				metadataPdexv3.PDEXType: {
 					TokenID:    common.PDEXCoinID,
 					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
-					Amount:     reward[common.PDEXIDStr],
+					Amount:     reward[common.PDEXCoinID],
 				},
 				metadataPdexv3.NftTokenType: {
 					TokenID:    metaData.NftID,
@@ -476,8 +472,8 @@ func (sp *stateProducerV2) withdrawLPFee(
 		)
 
 		// update state after fee withdrawal
-		share.tradingFees = map[string]uint64{}
-		share.lastUpdatedBeaconHeight = beaconHeight
+		share.tradingFees = map[common.Hash]uint64{}
+		share.lastLPFeesPerShare = poolPair.state.LPFeesPerShare()
 
 		instructions = append(instructions, acceptedInst...)
 	}
@@ -563,8 +559,6 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction,
 	poolPairs map[string]*PoolPairState,
-	beaconHeight uint64,
-	stateDB *statedb.StateDB,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -594,7 +588,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			continue
 		}
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.PoolPairID(), metaData.NftID(), metaData.ShareAmount(), beaconHeight, stateDB,
+			metaData.NftID(), metaData.ShareAmount(),
 		)
 		if err != nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)

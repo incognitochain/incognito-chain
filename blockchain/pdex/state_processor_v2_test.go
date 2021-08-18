@@ -448,9 +448,9 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -599,9 +599,9 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 					},
@@ -626,9 +626,9 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 10,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 				},
@@ -670,9 +670,9 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 					},
@@ -699,9 +699,9 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 10,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 				},
@@ -849,9 +849,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -869,9 +869,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -896,9 +896,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -916,9 +916,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -943,9 +943,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -963,9 +963,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -990,9 +990,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -1010,9 +1010,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -1037,9 +1037,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -1057,9 +1057,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -1084,9 +1084,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -1104,9 +1104,9 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},

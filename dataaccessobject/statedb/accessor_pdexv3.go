@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -104,9 +105,9 @@ func DeletePdexv3WaitingContributions(
 
 func StorePdexv3Share(
 	stateDB *StateDB, poolPairID string, nftID common.Hash,
-	amount, lastUpdatedBeaconHeight uint64,
+	amount uint64, tradingFees map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int,
 ) error {
-	state := NewPdexv3ShareStateWithValue(nftID, amount, lastUpdatedBeaconHeight)
+	state := NewPdexv3ShareStateWithValue(nftID, amount, tradingFees, lastLPFeesPerShare)
 	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID.String())
 	return stateDB.SetStateObject(Pdexv3ShareObjectType, key, state)
 }
@@ -119,24 +120,6 @@ func StorePdexv3PoolPair(
 	state := NewPdexv3PoolPairStateWithValue(poolPairID, poolPair)
 	key := GeneratePdexv3PoolPairObjectKey(poolPairID)
 	return stateDB.SetStateObject(Pdexv3PoolPairObjectType, key, state)
-}
-
-func StorePdexv3TradingFee(
-	stateDB *StateDB,
-	poolPairID, nftID, tokenID string,
-	tradingFee uint64,
-) error {
-	tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
-	if err != nil {
-		return NewStatedbError(StorePdexv3ShareError, err)
-	}
-	key := GeneratePdexv3TradingFeesObjectKey(poolPairID, nftID, tokenID)
-	tradingFeeState := NewPdexv3TradingFeeStateWithValue(*tokenHash, tradingFee)
-	err = stateDB.SetStateObject(Pdexv3TradingFeeObjectType, key, tradingFeeState)
-	if err != nil {
-		return NewStatedbError(StorePdexv3TradingFeesError, err)
-	}
-	return nil
 }
 
 func StorePdexv3StakingPools() error {
@@ -154,16 +137,8 @@ func GetPdexv3PoolPairs(stateDB *StateDB) (map[string]Pdexv3PoolPairState, error
 }
 
 func GetPdexv3Shares(stateDB *StateDB, poolPairID string, nftIDs map[string]bool) (
-	map[string]Pdexv3ShareState, map[string]bool, error,
+	map[string]Pdexv3ShareState, error,
 ) {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3Shares(prefixHash, nftIDs)
-}
-
-func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nftID string) (
-	map[string]Pdexv3TradingFeeState,
-	error,
-) {
-	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID)
-	return stateDB.iterateWithPdexv3TradingFees(prefixHash)
 }

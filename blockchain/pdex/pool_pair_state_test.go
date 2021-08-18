@@ -48,9 +48,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -66,9 +66,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -94,9 +94,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -112,9 +112,9 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -190,9 +190,9 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -253,9 +253,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -271,9 +271,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -299,9 +299,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -317,9 +317,9 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					"123": &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -394,9 +394,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -420,9 +420,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -443,9 +443,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -469,9 +469,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -551,9 +551,9 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -577,9 +577,9 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -599,9 +599,9 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -625,9 +625,9 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -697,9 +697,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -716,9 +716,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -745,9 +745,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -764,9 +764,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  300,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             300,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -793,9 +793,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -812,9 +812,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -841,9 +841,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},
@@ -860,9 +860,9 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:                  200,
-						tradingFees:             map[string]uint64{},
-						lastUpdatedBeaconHeight: 10,
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook: Orderbook{},

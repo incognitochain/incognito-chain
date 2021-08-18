@@ -290,11 +290,16 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, 
 	}
 	curPairState := poolPairs[pairID]
 
-	result, err := curPairState.RecomputeLPFee(
-		pairID,
-		*nftID,
-		beaconFeatureStateDB,
-	)
+	uncollectedTradingFees, err := curPairState.RecomputeLPFee(*nftID)
+
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	}
+
+	result := map[string]uint64{}
+	for tokenID := range uncollectedTradingFees {
+		result[tokenID.String()] = uncollectedTradingFees[tokenID]
+	}
 
 	return result, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 }

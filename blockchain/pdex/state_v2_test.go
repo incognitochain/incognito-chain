@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
@@ -78,6 +79,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
+				params:                      NewParams(),
 			},
 			fieldsAfterProcess: fields{
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -110,6 +112,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
+	config.AbortParam()
+	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &stateV2{
@@ -339,10 +345,10 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 						shares: map[string]*Share{
 							nftID: &Share{
 								amount: 200,
-								tradingFees: map[string]uint64{
-									common.PRVIDStr: 10,
+								tradingFees: map[common.Hash]uint64{
+									common.PRVCoinID: 10,
 								},
-								lastUpdatedBeaconHeight: 11,
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -357,13 +363,8 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 					poolPairIDs: map[string]bool{
 						poolPairID: true,
 					},
-					shares: map[string]*ShareChange{
-						nftID: &ShareChange{
-							isChanged: true,
-							tokenIDs: map[string]bool{
-								common.PRVIDStr: true,
-							},
-						},
+					shares: map[string]bool{
+						nftID: true,
 					},
 				},
 			},

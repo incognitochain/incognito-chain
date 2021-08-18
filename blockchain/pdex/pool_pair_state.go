@@ -10,7 +10,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
@@ -173,10 +172,9 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	pairID string,
 	nftID common.Hash, nftIDs map[string]bool,
 	amount, beaconHeight uint64,
-	txHash string, stateDB *statedb.StateDB,
+	txHash string,
 ) (common.Hash, map[string]bool, error) {
 	newNftID := genNFT(nftID, nftIDs, beaconHeight)
 	nftIDStr := chooseNftStr(nftID, newNftID)
@@ -189,16 +187,12 @@ func (p *PoolPairState) addShare(
 		shareAmount = p.shares[nftIDStr].amount + amount
 	}
 
-	newTradingFees, err := p.RecomputeLPFee(
-		pairID,
-		nftID,
-		stateDB,
-	)
+	newTradingFees, err := p.RecomputeLPFee(nftID)
 	if err != nil {
 		return newNftID, nftIDs, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 	}
 
-	share := NewShareWithValue(shareAmount, newTradingFees, beaconHeight)
+	share := NewShareWithValue(shareAmount, newTradingFees, p.state.LPFeesPerShare())
 	p.shares[nftIDStr] = share
 	newShareAmount := p.state.ShareAmount() + amount
 	if newShareAmount < p.state.ShareAmount() {
@@ -251,11 +245,8 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 }
 
 func (p *PoolPairState) deductShare(
-	pairID string,
 	nftID string,
 	shareAmount uint64,
-	beaconHeight uint64,
-	stateDB *statedb.StateDB,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -281,14 +272,14 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	p.shares[nftID], err = p.updateShare(pairID, nftID, tempShareAmount, share, subOperator, beaconHeight, stateDB)
+	p.shares[nftID], err = p.updateShare(nftID, tempShareAmount, share, subOperator)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
 func (p *PoolPairState) updateShare(
-	pairID string, nftID string,
+	nftID string,
 	shareAmount uint64, share *Share, operator byte,
-	beaconHeight uint64, stateDB *statedb.StateDB) (*Share, error) {
+) (*Share, error) {
 	newShare := share
 	var err error
 	newShare.amount, err = executeOperationUint64(newShare.amount, shareAmount, operator)
@@ -297,12 +288,8 @@ func (p *PoolPairState) updateShare(
 	}
 
 	nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
-	newShare.tradingFees, err = p.RecomputeLPFee(
-		pairID,
-		*nftIDBytes,
-		stateDB,
-	)
-	newShare.lastUpdatedBeaconHeight = beaconHeight
+	newShare.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
+	newShare.lastLPFeesPerShare = p.state.LPFeesPerShare()
 	if err != nil {
 		return newShare, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 	}
@@ -382,36 +369,17 @@ func (p *PoolPairState) updateSingleTokenAmount(
 }
 
 func (p *PoolPairState) RecomputeLPFee(
-	pairID string,
 	nftID common.Hash,
-	stateDB *statedb.StateDB,
-) (map[string]uint64, error) {
-	result := map[string]uint64{}
+) (map[common.Hash]uint64, error) {
+	result := map[common.Hash]uint64{}
 
 	curShare, ok := p.shares[nftID.String()]
 	if !ok {
 		return nil, fmt.Errorf("Share not found")
 	}
 
-	// get old state
-	lastUpdatedBeaconHeight := curShare.LastUpdatedBeaconHeight()
-	pDexv3State, err := InitStateFromDB(stateDB, uint64(lastUpdatedBeaconHeight))
-	if err != nil {
-		return nil, err
-	}
-	poolPairs := make(map[string]*PoolPairState)
-	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := poolPairs[pairID]; !ok {
-		return nil, errors.New("PairID is invalid")
-	}
-
-	oldPairState := poolPairs[pairID]
-
 	curLPFeesPerShare := p.state.LPFeesPerShare()
-	oldLPFeesPerShare := oldPairState.state.LPFeesPerShare()
+	oldLPFeesPerShare := curShare.lastLPFeesPerShare
 
 	listTokenIDs := []common.Hash{
 		p.state.Token0ID(),
@@ -420,7 +388,7 @@ func (p *PoolPairState) RecomputeLPFee(
 		common.PDEXCoinID,
 	}
 	for _, tokenID := range listTokenIDs {
-		tradingFee, isExisted := curShare.tradingFees[tokenID.String()]
+		tradingFee, isExisted := curShare.tradingFees[tokenID]
 		if !isExisted {
 			tradingFee = 0
 		}
@@ -439,7 +407,7 @@ func (p *PoolPairState) RecomputeLPFee(
 		if !reward.IsUint64() {
 			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
 		}
-		result[tokenID.String()] = reward.Uint64()
+		result[tokenID] = reward.Uint64()
 	}
 	return result, nil
 }

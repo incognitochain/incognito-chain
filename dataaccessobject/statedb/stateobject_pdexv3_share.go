@@ -3,15 +3,17 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type Pdexv3ShareState struct {
-	nftID                   common.Hash
-	amount                  uint64
-	lastUpdatedBeaconHeight uint64
+	nftID              common.Hash
+	amount             uint64
+	tradingFees        map[common.Hash]uint64
+	lastLPFeesPerShare map[common.Hash]*big.Int
 }
 
 func (ps *Pdexv3ShareState) NftID() common.Hash {
@@ -22,19 +24,25 @@ func (ps *Pdexv3ShareState) Amount() uint64 {
 	return ps.amount
 }
 
-func (ps *Pdexv3ShareState) LastUpdatedBeaconHeight() uint64 {
-	return ps.lastUpdatedBeaconHeight
+func (ps *Pdexv3ShareState) TradingFees() map[common.Hash]uint64 {
+	return ps.tradingFees
+}
+
+func (ps *Pdexv3ShareState) LastLPFeesPerShare() map[common.Hash]*big.Int {
+	return ps.lastLPFeesPerShare
 }
 
 func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID                   common.Hash `json:"NftID"`
-		Amount                  uint64      `json:"Amount"`
-		LastUpdatedBeaconHeight uint64      `json:"LastUpdatedBeaconHeight"`
+		NftID              common.Hash              `json:"NftID"`
+		Amount             uint64                   `json:"Amount"`
+		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
+		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{
-		NftID:                   ps.nftID,
-		Amount:                  ps.amount,
-		LastUpdatedBeaconHeight: ps.lastUpdatedBeaconHeight,
+		NftID:              ps.nftID,
+		Amount:             ps.amount,
+		TradingFees:        ps.tradingFees,
+		LastLPFeesPerShare: ps.lastLPFeesPerShare,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -44,9 +52,10 @@ func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 
 func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID                   common.Hash `json:"NftID"`
-		Amount                  uint64      `json:"Amount"`
-		LastUpdatedBeaconHeight uint64      `json:"LastUpdatedBeaconHeight"`
+		NftID              common.Hash              `json:"NftID"`
+		Amount             uint64                   `json:"Amount"`
+		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
+		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -54,7 +63,7 @@ func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	}
 	ps.nftID = temp.NftID
 	ps.amount = temp.Amount
-	ps.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
+	ps.tradingFees = temp.TradingFees
 	return nil
 }
 
@@ -63,20 +72,24 @@ func NewPdexv3ShareState() *Pdexv3ShareState {
 }
 
 func NewPdexv3ShareStateWithValue(
-	nftID common.Hash, amount, lastUpdatedBeaconHeight uint64,
+	nftID common.Hash, amount uint64,
+	tradingFees map[common.Hash]uint64,
+	lastLPFeesPerShare map[common.Hash]*big.Int,
 ) *Pdexv3ShareState {
 	return &Pdexv3ShareState{
-		nftID:                   nftID,
-		amount:                  amount,
-		lastUpdatedBeaconHeight: lastUpdatedBeaconHeight,
+		nftID:              nftID,
+		amount:             amount,
+		tradingFees:        tradingFees,
+		lastLPFeesPerShare: lastLPFeesPerShare,
 	}
 }
 
 func (ps *Pdexv3ShareState) Clone() *Pdexv3ShareState {
 	return &Pdexv3ShareState{
-		nftID:                   ps.nftID,
-		amount:                  ps.amount,
-		lastUpdatedBeaconHeight: ps.lastUpdatedBeaconHeight,
+		nftID:              ps.nftID,
+		amount:             ps.amount,
+		tradingFees:        ps.tradingFees,
+		lastLPFeesPerShare: ps.lastLPFeesPerShare,
 	}
 }
 

@@ -80,22 +80,14 @@ func initStateV2(
 	for poolPairID, poolPairState := range poolPairsStates {
 		shares := make(map[string]*Share)
 		shareStates := make(map[string]statedb.Pdexv3ShareState)
-		shareStates, nftIDs, err = statedb.GetPdexv3Shares(stateDB, poolPairID, nftIDs)
+		shareStates, err = statedb.GetPdexv3Shares(stateDB, poolPairID, nftIDs)
 		if err != nil {
 			return nil, err
 		}
 		for nftID, shareState := range shareStates {
-			tradingFeesState, err := statedb.GetPdexv3TradingFees(stateDB, poolPairID, nftID)
-			if err != nil {
-				return nil, err
-			}
-			tradingFees := make(map[string]uint64)
-			for tradingFeesKey, tradingFeesValue := range tradingFeesState {
-				tradingFees[tradingFeesKey] = tradingFeesValue.Amount()
-			}
 			shares[nftID] = NewShareWithValue(
 				shareState.Amount(),
-				tradingFees, shareState.LastUpdatedBeaconHeight(),
+				shareState.TradingFees(), shareState.LastLPFeesPerShare(),
 			)
 		}
 		// TODO: read order book from storage
@@ -169,7 +161,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.waitingContributions, s.deletedWaitingContributions, s.nftIDs,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
-			s.poolPairs, err = s.processor.withdrawLiquidity(env.StateDB(), env.BeaconHeight(), inst, s.poolPairs)
+			s.poolPairs, err = s.processor.withdrawLiquidity(env.StateDB(), inst, s.poolPairs)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
 				s.poolPairs,
@@ -243,8 +235,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
 		withdrawLiquidityTxs,
 		s.poolPairs,
-		env.BeaconHeight(),
-		env.StateDB(),
 	)
 	if err != nil {
 		return instructions, err
@@ -258,7 +248,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		s.poolPairs,
 		s.waitingContributions,
 		s.nftIDs,
-		env.StateDB(),
 	)
 	if err != nil {
 		return instructions, err
@@ -311,8 +300,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	var withdrawLPFeeInstructions [][]string
 	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
 		withdrawLPFeeTxs,
-		env.StateDB(),
-		env.BeaconHeight(),
 		s.poolPairs,
 	)
 	if err != nil {
@@ -387,32 +374,16 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 			}
 		}
 		for nftID, share := range poolPairState.shares {
-			if stateChange.shares[nftID] == nil {
-				continue
-			}
-			if stateChange.shares[nftID].isChanged {
+			if stateChange.shares[nftID] {
 
 				nftID, err := common.Hash{}.NewHashFromStr(nftID)
 				err = statedb.StorePdexv3Share(
 					env.StateDB(), poolPairID,
 					*nftID,
-					share.amount, share.lastUpdatedBeaconHeight,
+					share.amount, share.tradingFees, share.lastLPFeesPerShare,
 				)
 				if err != nil {
 					return err
-				}
-			}
-			for tokenID, tradingFee := range share.tradingFees {
-				if stateChange.shares[nftID].tokenIDs == nil {
-					continue
-				}
-				if stateChange.shares[nftID].tokenIDs[tokenID] {
-					err := statedb.StorePdexv3TradingFee(
-						env.StateDB(), poolPairID, nftID, tokenID, tradingFee,
-					)
-					if err != nil {
-						return err
-					}
 				}
 			}
 		}
