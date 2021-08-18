@@ -323,7 +323,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 }
 
 // removeValidatorsFromSyncPool remove validator in sync pool regardless input ordered or sync pool ordered
-func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []string, shardID byte) {
+func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []string, shardID byte) error {
 	finishedSyncValidators := make(map[string]bool)
 	for _, v := range validators {
 		finishedSyncValidators[v] = true
@@ -338,9 +338,16 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 			b.syncPool[shardID] = append(b.syncPool[shardID][:i], b.syncPool[shardID][i+1:]...)
 			i--
 			originSyncPoolLength++
+			delete(finishedSyncValidators, key)
 		}
 		i++
 	}
+
+	if len(finishedSyncValidators) > 0 {
+		return fmt.Errorf("These validators is not in sync pool %+v", finishedSyncValidators)
+	}
+
+	return nil
 }
 
 //processFinishSyncInstruction move validators from pending to sync pool
@@ -349,9 +356,9 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 ) *CommitteeChange {
+	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
-	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 
 	committeeChange = b.
 		assignRandomlyToSubstituteList(

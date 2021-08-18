@@ -230,6 +230,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -390,6 +391,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key8:  signaturecounter.NewPenalty(),
@@ -563,6 +565,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key10: signaturecounter.NewPenalty(),
 						key11: signaturecounter.NewPenalty(),
@@ -728,6 +731,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key10: signaturecounter.NewPenalty(),
 						key11: signaturecounter.NewPenalty(),
@@ -875,6 +879,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key21: signaturecounter.NewPenalty(), key22: signaturecounter.NewPenalty(), key23: signaturecounter.NewPenalty(), key24: signaturecounter.NewPenalty(), key25: signaturecounter.NewPenalty(), key26: signaturecounter.NewPenalty(), key27: signaturecounter.NewPenalty(), key28: signaturecounter.NewPenalty(), key29: signaturecounter.NewPenalty(),
 						key31: signaturecounter.NewPenalty(), key32: signaturecounter.NewPenalty(), key33: signaturecounter.NewPenalty(), key34: signaturecounter.NewPenalty(), key35: signaturecounter.NewPenalty(), key36: signaturecounter.NewPenalty(),
@@ -1043,6 +1048,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					MissingSignaturePenalty:          map[string]signaturecounter.Penalty{},
 				},
 				swapShardInstruction: instruction.NewSwapShardInstructionWithValue(
@@ -2723,6 +2729,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -3033,6 +3040,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -3221,6 +3229,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -3402,6 +3411,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -3582,6 +3592,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					RandomNumber:                     1000,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -3787,6 +3798,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					IsBeaconRandomTime:               true,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -3974,6 +3986,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					IsBeaconRandomTime:               false,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -4162,6 +4175,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 					IsBeaconRandomTime:               false,
 					MaxShardCommitteeSize:            64,
 					NumberOfFixedShardBlockValidator: 21,
+					MinShardCommitteeSize:            21,
 					ShardID:                          0,
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key0:  signaturecounter.NewPenalty(),
@@ -4497,9 +4511,10 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 		fields             fields
 		fieldsAfterProcess *BeaconCommitteeStateV3
 		args               args
+		wantErr            bool
 	}{
 		{
-			name: "remove 2 validators, 1 syncPool",
+			name: "remove 2 validators, 1 syncPool error",
 			fields: fields{
 				syncPool: map[byte][]string{
 					0: []string{key0},
@@ -4512,10 +4527,31 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
+					0: []string{key0},
+					1: []string{key10, key11, key12},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "remove 2 validators, 1 syncPool no error",
+			fields: fields{
+				syncPool: map[byte][]string{
+					0: []string{key0},
+					1: []string{key10, key11, key12},
+				},
+			},
+			args: args{
+				shardID:    0,
+				validators: []string{key0},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				syncPool: map[byte][]string{
 					0: []string{},
 					1: []string{key10, key11, key12},
 				},
 			},
+			wantErr: false,
 		},
 		{
 			name: "remove 1 validators, 2 syncPool",
@@ -4535,6 +4571,7 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 					1: []string{key10, key11, key12},
 				},
 			},
+			wantErr: false,
 		},
 		{
 			name: "remove validators not in syncPool",
@@ -4554,6 +4591,7 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 					1: []string{key10, key11, key12},
 				},
 			},
+			wantErr: true,
 		},
 		{
 			name: "remove all validators must be removed from syncPool",
@@ -4573,6 +4611,7 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 					1: []string{key10, key11, key12},
 				},
 			},
+			wantErr: false,
 		},
 		{
 			name: "remove 3 validators, 5 sync pool",
@@ -4592,6 +4631,7 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 					1: []string{key10, key11, key12},
 				},
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -4600,9 +4640,15 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			b.removeValidatorsFromSyncPool(tt.args.validators, tt.args.shardID)
-			if !reflect.DeepEqual(b, tt.fieldsAfterProcess) {
-				t.Errorf("removeValidatorsFromSyncPool() got %+v, want %+v", b, tt.fieldsAfterProcess)
+			err := b.removeValidatorsFromSyncPool(tt.args.validators, tt.args.shardID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BeaconCommitteeStateV3.removeValidatorsFromSyncPool() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil {
+				if !reflect.DeepEqual(b, tt.fieldsAfterProcess) {
+					t.Errorf("removeValidatorsFromSyncPool() got %+v, want %+v", b, tt.fieldsAfterProcess)
+				}
 			}
 		})
 	}
