@@ -17,11 +17,16 @@ type WithdrawalProtocolFeeRequest struct {
 }
 
 type WithdrawalProtocolFeeContent struct {
-	PoolPairID string       `json:"PoolPairID"`
-	TokenType  string       `json:"TokenType"`
-	Receiver   ReceiverInfo `json:"Receiver"`
-	TxReqID    common.Hash  `json:"TxReqID"`
-	ShardID    byte         `json:"ShardID"`
+	PoolPairID string                  `json:"PoolPairID"`
+	TokenType  string                  `json:"TokenType"`
+	Receivers  map[string]ReceiverInfo `json:"Receivers"`
+	TxReqID    common.Hash             `json:"TxReqID"`
+	ShardID    byte                    `json:"ShardID"`
+}
+
+type WithdrawalProtocolFeeStatus struct {
+	Status    int                     `json:"Status"`
+	Receivers map[string]ReceiverInfo `json:"Receivers"`
 }
 
 func NewPdexv3WithdrawalProtocolFeeRequest(

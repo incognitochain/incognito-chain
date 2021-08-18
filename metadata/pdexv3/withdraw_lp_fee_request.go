@@ -18,12 +18,17 @@ type WithdrawalLPFeeRequest struct {
 }
 
 type WithdrawalLPFeeContent struct {
-	PoolPairID string       `json:"PoolPairID"`
-	NftID      common.Hash  `json:"NftID"`
-	TokenType  string       `json:"TokenType"`
-	Receiver   ReceiverInfo `json:"Receiver"`
-	TxReqID    common.Hash  `json:"TxReqID"`
-	ShardID    byte         `json:"ShardID"`
+	PoolPairID string                  `json:"PoolPairID"`
+	NftID      common.Hash             `json:"NftID"`
+	TokenType  string                  `json:"TokenType"`
+	Receivers  map[string]ReceiverInfo `json:"Receivers"`
+	TxReqID    common.Hash             `json:"TxReqID"`
+	ShardID    byte                    `json:"ShardID"`
+}
+
+type WithdrawalLPFeeStatus struct {
+	Status    int                     `json:"Status"`
+	Receivers map[string]ReceiverInfo `json:"Receivers"`
 }
 
 func NewPdexv3WithdrawalLPFeeRequest(

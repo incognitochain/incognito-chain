@@ -113,7 +113,10 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 
 		shardIDFromInst := instContent.ShardID
 		txReqIDFromInst := instContent.TxReqID
-		receiver := instContent.Receiver
+		receiver, ok := instContent.Receivers[instContent.TokenType]
+		if !ok {
+			continue
+		}
 
 		receiverAddress, err := isValidReceiverAddressStr(receiver.AddressStr, shardIDFromInst)
 		if err != nil {

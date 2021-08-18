@@ -144,7 +144,12 @@ func WithdrawLPFee(
 		return nil, nil
 	}
 
-	if instContent.ShardID != shardID || instContent.Receiver.Amount == 0 {
+	receiver, ok := instContent.Receivers[instContent.TokenType]
+	if !ok {
+		return nil, nil
+	}
+
+	if instContent.ShardID != shardID || receiver.Amount == 0 {
 		return nil, nil
 	}
 
@@ -155,7 +160,7 @@ func WithdrawLPFee(
 	)
 
 	receiverAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromString(instContent.Receiver.AddressStr)
+	err = receiverAddress.FromString(receiver.AddressStr)
 	if err != nil {
 		return nil, nil
 	}
@@ -164,11 +169,11 @@ func WithdrawLPFee(
 	}
 
 	txParam := transaction.TxSalaryOutputParams{
-		Amount:          instContent.Receiver.Amount,
+		Amount:          receiver.Amount,
 		ReceiverAddress: nil,
 		PublicKey:       &receiverAddress.PublicKey,
 		TxRandom:        &receiverAddress.TxRandom,
-		TokenID:         &instContent.Receiver.TokenID, Info: []byte{}}
+		TokenID:         &receiver.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
 		return meta
@@ -189,7 +194,12 @@ func WithdrawProtocolFee(
 		return nil, nil
 	}
 
-	if instContent.ShardID != shardID || instContent.Receiver.Amount == 0 {
+	receiver, ok := instContent.Receivers[instContent.TokenType]
+	if !ok {
+		return nil, nil
+	}
+
+	if instContent.ShardID != shardID || receiver.Amount == 0 {
 		return nil, nil
 	}
 
@@ -200,7 +210,7 @@ func WithdrawProtocolFee(
 	)
 
 	receiverAddress := privacy.OTAReceiver{}
-	err = receiverAddress.FromString(instContent.Receiver.AddressStr)
+	err = receiverAddress.FromString(receiver.AddressStr)
 	if err != nil {
 		return nil, nil
 	}
@@ -209,11 +219,11 @@ func WithdrawProtocolFee(
 	}
 
 	txParam := transaction.TxSalaryOutputParams{
-		Amount:          instContent.Receiver.Amount,
+		Amount:          receiver.Amount,
 		ReceiverAddress: nil,
 		PublicKey:       &receiverAddress.PublicKey,
 		TxRandom:        &receiverAddress.TxRandom,
-		TokenID:         &instContent.Receiver.TokenID, Info: []byte{}}
+		TokenID:         &receiver.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
 		return meta

@@ -607,11 +607,17 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeFailedStatus
 	}
 
+	withdrawalReqStatus := metadataPdexv3.WithdrawalLPFeeStatus{
+		Status:    reqTrackStatus,
+		Receivers: actionData.Receivers,
+	}
+	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
+
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawalLPFeeStatusPrefix(),
 		[]byte(actionData.TxReqID.String()),
-		[]byte{byte(reqTrackStatus)},
+		withdrawalReqStatusBytes,
 	)
 	if err != nil {
 		Logger.log.Errorf("PDex v3 Withdrawal LP Fee: An error occurred while tracking request tx - Error: %v", err)
@@ -656,11 +662,17 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeFailedStatus
 	}
 
+	withdrawalReqStatus := metadataPdexv3.WithdrawalProtocolFeeStatus{
+		Status:    reqTrackStatus,
+		Receivers: actionData.Receivers,
+	}
+	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
+
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawalProtocolFeeStatusPrefix(),
 		[]byte(actionData.TxReqID.String()),
-		[]byte{byte(reqTrackStatus)},
+		withdrawalReqStatusBytes,
 	)
 	if err != nil {
 		Logger.log.Errorf("PDex v3 Withdrawal Protocol Fee: An error occurred while tracking request tx - Error: %v", err)

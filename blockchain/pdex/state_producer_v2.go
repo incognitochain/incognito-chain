@@ -434,7 +434,12 @@ func (sp *stateProducerV2) withdrawLPFee(
 			continue
 		}
 
-		// TODO: compute amount of received LP fee
+		// compute amount of received LP fee
+		reward, err := poolPair.RecomputeLPFee(metaData.PoolPairID, metaData.NftID, stateDB)
+		if err != nil {
+			return instructions, pairs, errors.New("Can not track LP reward")
+		}
+
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
 			metaData.NftID,
@@ -442,22 +447,22 @@ func (sp *stateProducerV2) withdrawLPFee(
 				metadataPdexv3.Token0Type: {
 					TokenID:    poolPair.state.Token0ID(),
 					AddressStr: metaData.FeeReceiverAddress.Token0ReceiverAddress,
-					Amount:     1,
+					Amount:     reward[poolPair.state.Token0ID().String()],
 				},
 				metadataPdexv3.Token1Type: {
 					TokenID:    poolPair.state.Token1ID(),
 					AddressStr: metaData.FeeReceiverAddress.Token1ReceiverAddress,
-					Amount:     1,
+					Amount:     reward[poolPair.state.Token1ID().String()],
 				},
 				metadataPdexv3.PRVType: {
 					TokenID:    common.PRVCoinID,
 					AddressStr: metaData.FeeReceiverAddress.PRVReceiverAddress,
-					Amount:     1,
+					Amount:     reward[common.PRVIDStr],
 				},
 				metadataPdexv3.PDEXType: {
 					TokenID:    common.PDEXCoinID,
 					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
-					Amount:     1,
+					Amount:     reward[common.PDEXIDStr],
 				},
 				metadataPdexv3.NftTokenType: {
 					TokenID:    metaData.NftID,
