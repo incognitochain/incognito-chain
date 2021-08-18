@@ -207,7 +207,18 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range prf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
+			var oCoinID string
+			switch oCoin.GetVersion() {
+			case 1:
+				oCoinID = string(oCoin.GetSNDerivator().ToBytesS())
+			case 2:
+				oCoinID = string(oCoin.GetSNDerivator().ToBytesS())
+			default:
+				isDoubleSpend = true
+				neededToReplace = false
+				return isDoubleSpend, neededToReplace, txHash, listkey
+			}
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), oCoinID)
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
