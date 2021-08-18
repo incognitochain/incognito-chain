@@ -171,6 +171,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.AddLiquidityRequest{}
 	case metadataCommon.Pdexv3AddLiquidityResponseMeta:
 		md = &metadataPdexv3.AddLiquidityResponse{}
+	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
+		md = &metadataPdexv3.WithdrawLiquidityRequest{}
+	case metadataCommon.Pdexv3WithdrawLiquidityResponseMeta:
+		md = &metadataPdexv3.WithdrawLiquidityResponse{}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		md = &metadataPdexv3.TradeRequest{}
 	case metadataCommon.Pdexv3TradeResponseMeta:

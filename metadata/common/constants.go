@@ -170,6 +170,7 @@ var minerCreatedMetaTypes = []int{
 	InitTokenResponseMeta,
 	Pdexv3AddLiquidityResponseMeta,
 	Pdexv3MintNft,
+	Pdexv3WithdrawLiquidityResponseMeta,
 	Pdexv3TradeResponseMeta,
 	Pdexv3AddOrderResponseMeta,
 	Pdexv3WithdrawOrderResponseMeta,

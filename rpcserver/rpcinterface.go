@@ -217,6 +217,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithPdexv3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPdexv3ModifyParams,
 	getPdexv3ParamsModifyingStatus:        (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
 	pdexv3AddLiquidityV3:                  (*HttpServer).handleAddLiquidityV3,
+	pdexv3WithdrawLiquidityV3:             (*HttpServer).handleWithdrawLiquidityV3,
 	getPdexv3ContributionStatus:           (*HttpServer).handleGetPdexv3ContributionStatus,
 	pdexv3TxTrade:                         (*HttpServer).handlePdexv3TxTradeRequest,
 	pdexv3TxAddOrder:                      (*HttpServer).handlePdexv3TxAddOrderRequest,

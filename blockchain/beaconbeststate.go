@@ -522,6 +522,40 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	return beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 }
 
+func (beaconBestState *BeaconBestState) PdeState() pdex.State {
+	return beaconBestState.pdeState
+}
+
+func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err := json.Unmarshal(beaconBestState.PdeState().Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return err
+	}
+	_, found := poolPairs[poolPairID]
+	if !found {
+		return err
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) IsValidNftID(poolPairID, nftID string) error {
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err := json.Unmarshal(beaconBestState.PdeState().Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return err
+	}
+	poolPair, found := poolPairs[poolPairID]
+	if !found {
+		return err
+	}
+	_, found = poolPair.Shares()[nftID]
+	if !found {
+		return err
+	}
+	return nil
+}
+
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)

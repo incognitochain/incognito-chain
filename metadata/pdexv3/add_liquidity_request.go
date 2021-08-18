@@ -15,14 +15,14 @@ import (
 )
 
 type AddLiquidityRequest struct {
-	poolPairID     string // only "" for the first contribution of pool
-	pairHash       string
-	receiveAddress string // receive nfct
-	refundAddress  string // refund pToken
-	tokenID        string
-	nftID          string
-	tokenAmount    uint64
-	amplifier      uint // only set for the first contribution
+	poolPairID  string // only "" for the first contribution of pool
+	pairHash    string
+	otaReceive  string // receive nfct
+	otaRefund   string // refund pToken
+	tokenID     string
+	nftID       string
+	tokenAmount uint64
+	amplifier   uint // only set for the first contribution
 	metadataCommon.MetadataBase
 }
 
@@ -32,22 +32,22 @@ func NewAddLiquidity() *AddLiquidityRequest {
 
 func NewAddLiquidityRequestWithValue(
 	poolPairID, pairHash,
-	receiveAddress, refundAddress,
+	otaReceive, otaRefund,
 	tokenID, nftID string, tokenAmount uint64, amplifier uint,
 ) *AddLiquidityRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
 	}
 	return &AddLiquidityRequest{
-		poolPairID:     poolPairID,
-		pairHash:       pairHash,
-		receiveAddress: receiveAddress,
-		refundAddress:  refundAddress,
-		tokenID:        tokenID,
-		nftID:          nftID,
-		tokenAmount:    tokenAmount,
-		amplifier:      amplifier,
-		MetadataBase:   metadataBase,
+		poolPairID:   poolPairID,
+		pairHash:     pairHash,
+		otaReceive:   otaReceive,
+		otaRefund:    otaRefund,
+		tokenID:      tokenID,
+		nftID:        nftID,
+		tokenAmount:  tokenAmount,
+		amplifier:    amplifier,
+		MetadataBase: metadataBase,
 	}
 }
 
@@ -59,7 +59,12 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	// NOTE: verify supported tokens pair as needed
+	if request.poolPairID != utils.EmptyString {
+		err := beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
+		if err != nil {
+			return false, err
+		}
+	}
 	return true, nil
 }
 
@@ -89,20 +94,20 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 		}
 	}
-	receiveAddress := privacy.OTAReceiver{}
-	err = receiveAddress.FromString(request.receiveAddress)
+	otaReceive := privacy.OTAReceiver{}
+	err = otaReceive.FromString(request.otaReceive)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if !receiveAddress.IsValid() {
+	if !otaReceive.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
-	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(request.refundAddress)
+	otaRefund := privacy.OTAReceiver{}
+	err = otaRefund.FromString(request.otaRefund)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if !refundAddress.IsValid() {
+	if !otaRefund.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("RefundAddress is not valid"))
 	}
 	if request.amplifier < BaseAmplifier {
@@ -120,11 +125,17 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 		err := fmt.Errorf("Contributed amount is not valid expect %v but get %v", request.tokenAmount, burnCoin.GetValue())
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if tx.GetType() == common.TxNormalType && tokenID.String() != common.PRVCoinID.String() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
-	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType && tokenID.String() == common.PRVCoinID.String() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
+	switch tx.GetType() {
+	case common.TxNormalType:
+		if tokenID.String() != common.PRVCoinID.String() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
+		}
+	case common.TxCustomTokenPrivacyType:
+		if tokenID.String() == common.PRVCoinID.String() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
+		}
+	default:
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Not recognize tx type"))
 	}
 	return true, true, nil
 }
@@ -137,8 +148,8 @@ func (request *AddLiquidityRequest) Hash() *common.Hash {
 	record := request.MetadataBase.Hash().String()
 	record += request.poolPairID
 	record += request.pairHash
-	record += request.receiveAddress
-	record += request.refundAddress
+	record += request.otaReceive
+	record += request.otaRefund
 	record += request.tokenID
 	record += request.nftID
 	record += strconv.FormatUint(uint64(request.amplifier), 10)
@@ -154,25 +165,25 @@ func (request *AddLiquidityRequest) CalculateSize() uint64 {
 
 func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash       string `json:"PairHash"`
-		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
-		RefundAddress  string `json:"RefundAddress"`  // refund pToken
-		TokenID        string `json:"TokenID"`
-		NftID          string `json:"NftID"`
-		TokenAmount    uint64 `json:"TokenAmount"`
-		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
+		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash    string `json:"PairHash"`
+		OtaReceive  string `json:"OtaReceive"` // receive nfct
+		OtaRefund   string `json:"OtaRefund"`  // refund pToken
+		TokenID     string `json:"TokenID"`
+		NftID       string `json:"NftID"`
+		TokenAmount uint64 `json:"TokenAmount"`
+		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
 	}{
-		PoolPairID:     request.poolPairID,
-		PairHash:       request.pairHash,
-		ReceiveAddress: request.receiveAddress,
-		RefundAddress:  request.refundAddress,
-		TokenID:        request.tokenID,
-		NftID:          request.nftID,
-		TokenAmount:    request.tokenAmount,
-		Amplifier:      request.amplifier,
-		MetadataBase:   request.MetadataBase,
+		PoolPairID:   request.poolPairID,
+		PairHash:     request.pairHash,
+		OtaReceive:   request.otaReceive,
+		OtaRefund:    request.otaRefund,
+		TokenID:      request.tokenID,
+		NftID:        request.nftID,
+		TokenAmount:  request.tokenAmount,
+		Amplifier:    request.amplifier,
+		MetadataBase: request.MetadataBase,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -182,14 +193,14 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 
 func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID     string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash       string `json:"PairHash"`
-		ReceiveAddress string `json:"ReceiveAddress"` // receive nfct
-		RefundAddress  string `json:"RefundAddress"`  // refund pToken
-		TokenID        string `json:"TokenID"`
-		NftID          string `json:"NftID"`
-		TokenAmount    uint64 `json:"TokenAmount"`
-		Amplifier      uint   `json:"Amplifier"` // only set for the first contribution
+		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash    string `json:"PairHash"`
+		OtaReceive  string `json:"OtaReceive"` // receive nfct
+		OtaRefund   string `json:"OtaRefund"`  // refund pToken
+		TokenID     string `json:"TokenID"`
+		NftID       string `json:"NftID"`
+		TokenAmount uint64 `json:"TokenAmount"`
+		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -198,8 +209,8 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	}
 	request.poolPairID = temp.PoolPairID
 	request.pairHash = temp.PairHash
-	request.receiveAddress = temp.ReceiveAddress
-	request.refundAddress = temp.RefundAddress
+	request.otaReceive = temp.OtaReceive
+	request.otaRefund = temp.OtaRefund
 	request.tokenID = temp.TokenID
 	request.nftID = temp.NftID
 	request.tokenAmount = temp.TokenAmount
@@ -216,12 +227,12 @@ func (request *AddLiquidityRequest) PairHash() string {
 	return request.pairHash
 }
 
-func (request *AddLiquidityRequest) ReceiveAddress() string {
-	return request.receiveAddress
+func (request *AddLiquidityRequest) OtaReceive() string {
+	return request.otaReceive
 }
 
-func (request *AddLiquidityRequest) RefundAddress() string {
-	return request.refundAddress
+func (request *AddLiquidityRequest) OtaRefund() string {
+	return request.otaRefund
 }
 
 func (request *AddLiquidityRequest) TokenID() string {

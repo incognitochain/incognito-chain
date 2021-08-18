@@ -100,6 +100,8 @@ type BeaconViewRetriever interface {
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	IsValidNftID(string, string) error
+	IsValidPoolPairID(string) error
 }
 
 type ShardViewRetriever interface {
@@ -399,6 +401,10 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3WithdrawOrderRequestMeta:
 		return true
 	case Pdexv3WithdrawOrderResponseMeta:
+		return true
+	case Pdexv3WithdrawLiquidityRequestMeta:
+		return true
+	case Pdexv3WithdrawLiquidityResponseMeta:
 		return true
 	default:
 		return false

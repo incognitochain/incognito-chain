@@ -67,6 +67,7 @@ var (
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
 	pdexv3NftIndexPrefix             		= []byte("pdexv3-nft-index-")
+	pdexv3WithdrawLiquidityPrefix           = []byte("pdexv3-withdrawliquidities-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -609,6 +610,11 @@ func GetPdexv3StakingPoolsPrefix() []byte {
 
 func GetPdexv3NftIndexPrefix() []byte {
 	return pdexv3ParamsPrefix
+}
+
+// pDex v3 prefix for status
+func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
+	return pdexv3WithdrawLiquidityPrefix
 }
 
 var _ = func() (_ struct{}) {

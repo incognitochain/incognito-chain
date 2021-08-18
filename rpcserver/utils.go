@@ -181,6 +181,15 @@ type Pdexv3AddLiquidityRequest struct {
 	NftID       string `json:"NftID"`
 }
 
+type Pdexv3WithdrawLiquidityRequest struct {
+	TokenID      string `json:"TokenID"`
+	TokenAmount  string `json:"TokenAmount"`
+	PoolPairID   string `json:"PoolPairID"`
+	Index        string `json:"Index"`
+	Token0Amount string `json:"Token0Amount"`
+	Token1Amount string `json:"Token1Amount"`
+}
+
 // Uint64Reader wraps the unmarshaling of uint64 numbers from both integer & string formats.
 type Uint64Reader uint64
 
@@ -200,3 +209,6 @@ func (u *Uint64Reader) UnmarshalJSON(raw []byte) error {
 	*u = Uint64Reader(theNum)
 	return err
 }
+
+
+
