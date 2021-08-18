@@ -141,6 +141,11 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 	default:
 		return false, false, fmt.Errorf("Invalid transaction type %v for trade request", tx.GetType())
 	}
+
+	// trade path length check
+	if len(req.TradePath) > MaxTradePathLength {
+		return false, false, fmt.Errorf("Trade path length of %d exceeds maximum", len(req.TradePath))
+	}
 	return true, true, nil
 }
 

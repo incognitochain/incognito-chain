@@ -20,4 +20,6 @@ const (
 	OrderRefundedStatus = 0
 	WithdrawOrderAcceptedStatus = 1
 	WithdrawOrderRejectedStatus = 0
+
+	MaxTradePathLength = 5
 )
