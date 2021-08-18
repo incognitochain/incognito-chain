@@ -41,7 +41,7 @@ func BuildMatchAddLiquidityInstructions(
 		inst1, err := instruction.NewMintNftWithValue(
 			nftID,
 			value.ReceiveAddress(),
-			value.ShardID(),
+			value.ShardID(), value.TxReqID(),
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
 		if err != nil {
 			return res, err
@@ -82,7 +82,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 		inst, err := instruction.NewMintNftWithValue(
 			nftID,
 			token0Contribution.ReceiveAddress(),
-			token0Contribution.ShardID(),
+			token0Contribution.ShardID(), token0Contribution.TxReqID(),
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
 		if err != nil {
 			return res, err

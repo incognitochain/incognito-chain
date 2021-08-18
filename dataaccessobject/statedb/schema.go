@@ -62,8 +62,8 @@ var (
 	pdexv3SharesPrefix               = []byte("pdexv3-shares-")
 	pdexv3StakingPoolsPrefix         = []byte("pdexv3-stakingpools-")
 	pdexv3TradingFeesPrefix          = []byte("pdexv3-tradingfees-")
-	pdexv3NftIndexPrefix             = []byte("pdexv3-nftindexes-")
 	pdexv3WithdrawLiquidityPrefix    = []byte("pdexv3-withdrawliquidities-")
+	pdexv3MintNftPrefix              = []byte("pdexv3-mintnfts-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -592,13 +592,24 @@ func GetPdexv3StakingPoolsPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
-func GetPdexv3NftIndexPrefix() []byte {
-	return pdexv3ParamsPrefix
+func GetPdexv3NftPrefix() []byte {
+	hash := common.HashH(pdexv3MintNftPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+//
+func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
+	return pdexv3WithdrawLiquidityPrefix
 }
 
 // pDex v3 prefix for status
-func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
-	return pdexv3WithdrawLiquidityPrefix
+func Pdexv3MintNftStatusPrefix() []byte {
+	return pdexv3MintNftPrefix
+}
+
+// pDex v3 prefix for status
+func Pdexv3ContributionStatusPrefix() []byte {
+	return pdexv3WaitingContributionsPrefix
 }
 
 var _ = func() (_ struct{}) {

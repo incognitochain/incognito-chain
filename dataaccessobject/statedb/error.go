@@ -58,6 +58,7 @@ const (
 	ErrInvalidPdexv3PoolPairStateType     = "invalid pdex v3 pool pair state type"
 	ErrInvalidPdexv3ShareStateType        = "invalid pdex v3 share state type"
 	ErrInvalidPdexv3TradingFeetateType    = "invalid pdex v3 trading fee state type"
+	ErrInvalidPdexv3NftStateType          = "invalid pdex v3 nft state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -233,6 +234,7 @@ const (
 	StorePdexv3PoolPairError
 	StorePdexv3ShareError
 	StorePdexv3TradingFeesError
+	StorePdexv3NftsError
 )
 
 var ErrCodeMessage = map[int]struct {

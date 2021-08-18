@@ -170,30 +170,27 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	nftID common.Hash, nftIDs map[string]bool,
+	nftID common.Hash,
 	amount, beaconHeight uint64,
 	txHash string,
-) (common.Hash, map[string]bool, error) {
-	newNftID := genNFT(nftID, nftIDs, beaconHeight)
-	nftIDStr := chooseNftStr(nftID, newNftID)
-	nftIDs[nftIDStr] = true
+) error {
 	var shareAmount uint64
 	var newBeaconHeight uint64
-	if p.shares[nftIDStr] == nil {
+	if p.shares[nftID.String()] == nil {
 		shareAmount = amount
 		newBeaconHeight = beaconHeight
 	} else {
-		shareAmount = p.shares[nftIDStr].amount + amount
-		newBeaconHeight = p.shares[nftIDStr].lastUpdatedBeaconHeight
+		shareAmount = p.shares[nftID.String()].amount + amount
+		newBeaconHeight = p.shares[nftID.String()].lastUpdatedBeaconHeight
 	}
 	share := NewShareWithValue(shareAmount, make(map[string]uint64), newBeaconHeight)
-	p.shares[nftIDStr] = share
+	p.shares[nftID.String()] = share
 	newShareAmount := p.state.ShareAmount() + amount
 	if newShareAmount < p.state.ShareAmount() {
-		return newNftID, nftIDs, fmt.Errorf("Share amount is out of range")
+		return fmt.Errorf("Share amount is out of range")
 	}
 	p.state.SetShareAmount(newShareAmount)
-	return newNftID, nftIDs, nil
+	return nil
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {

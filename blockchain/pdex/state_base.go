@@ -71,6 +71,10 @@ func (s *stateBase) TradingFees() map[string]uint64 {
 	panic("Implement this fucntion")
 }
 
+func (s *stateBase) NftIDs() map[string]bool {
+	panic("Implement this fucntion")
+}
+
 func (s *stateBase) Reader() StateReader {
 	panic("Implement this fucntion")
 }

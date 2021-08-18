@@ -22,6 +22,8 @@ import (
 )
 
 func Test_stateProducerV2_addLiquidity(t *testing.T) {
+	txReqID, err := common.Hash{}.NewHashFromStr("123456789")
+	assert.Nil(t, err)
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
@@ -205,9 +207,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchAndReturnContribution2Tx.On("GetValidationEnv").Return(valEnv)
 	matchAndReturnContribution2Tx.On("Hash").Return(fourthTxHash)
 
-	nftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	nftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1, *txReqID).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
 	assert.Nil(t, err)
-	nft1Inst, err := instruction.NewMintNftWithValue(*nft1Hash, validOTAReceiver0, 1).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	nft1Inst, err := instruction.NewMintNftWithValue(*nft1Hash, validOTAReceiver0, 1, *txReqID).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
 	assert.Nil(t, err)
 
 	matchAndReturnContribution0State2 := statedb.NewPdexv3ContributionStateWithValue(
@@ -697,6 +699,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 }
 
 func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
+	txReqID, err := common.Hash{}.NewHashFromStr("123456789")
+	assert.Nil(t, err)
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
@@ -724,13 +728,13 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	//
 
 	//mint nft
-	mintNftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1).
+	mintNftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1, *txReqID).
 		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 	assert.Nil(t, err)
 	//
 
 	//mint prv nft
-	mintPrvNftInst, err := instruction.NewMintNftWithValue(common.PRVCoinID, validOTAReceiver0, 1).
+	mintPrvNftInst, err := instruction.NewMintNftWithValue(common.PRVCoinID, validOTAReceiver0, 1, *txReqID).
 		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 	assert.Nil(t, err)
 	//

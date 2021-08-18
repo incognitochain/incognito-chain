@@ -213,12 +213,15 @@ var HttpHandler = map[string]httpHandler{
 	//
 
 	// pDex v3
+	pdexv3MintNft:                         (*HttpServer).handlePdexv3MintNft,
 	getPdexv3State:                        (*HttpServer).handleGetPdexv3State,
 	createAndSendTxWithPdexv3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPdexv3ModifyParams,
 	getPdexv3ParamsModifyingStatus:        (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
 	pdexv3AddLiquidityV3:                  (*HttpServer).handleAddLiquidityV3,
 	pdexv3WithdrawLiquidityV3:             (*HttpServer).handleWithdrawLiquidityV3,
 	getPdexv3ContributionStatus:           (*HttpServer).handleGetPdexv3ContributionStatus,
+	getPdexv3WithdrawLiquidityStatus:      (*HttpServer).handleGetPdexv3WithdrawLiquidityStatus,
+	getPdexv3MintNftStatus:                (*HttpServer).handleGetPdexv3MintNftStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
