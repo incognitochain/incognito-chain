@@ -409,7 +409,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 
 		publicKey := coinDB.GetPublicKey()
-		// we do not use burning coins since they will reduce the privacy level of the transaction.
+		// we do not use burned coins since they will reduce the privacy level of the transaction.
 		if wallet.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
 			i--
 			continue
