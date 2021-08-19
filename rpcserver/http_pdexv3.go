@@ -712,6 +712,9 @@ func createPdexv3TradeRequestTransaction(
 	paramSelect.SetTokenID(md.TokenToSell)
 	isPRV := md.TokenToSell == common.PRVCoinID
 	tokenList := []common.Hash{md.TokenToSell, mdReader.TokenToBuy}
+	if mdReader.FeeInPRV && !isPRV && mdReader.TokenToBuy != common.PRVCoinID {
+		tokenList = append(tokenList, common.PRVCoinID)
+	}
 	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
@@ -741,7 +744,7 @@ func createPdexv3TradeRequestTransaction(
 	} else {
 		if mdReader.FeeInPRV {
 			// sell amount in token
-			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{
 				&privacy.PaymentInfo{
 					PaymentAddress: burnAddr,
 					Amount:         md.TradingFee,
@@ -755,7 +758,7 @@ func createPdexv3TradeRequestTransaction(
 				},
 			})
 		} else {
-			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
 			paramSelect.SetTokenReceivers(burnPayments)
 		}
 	}
@@ -807,6 +810,9 @@ func createPdexv3AddOrderRequestTransaction(
 	paramSelect.SetTokenID(md.TokenToSell)
 	isPRV := md.TokenToSell == common.PRVCoinID
 	tokenList := []common.Hash{md.TokenToSell}
+	if mdReader.FeeInPRV && !isPRV {
+		tokenList = append(tokenList, common.PRVCoinID)
+	}
 	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
@@ -836,7 +842,7 @@ func createPdexv3AddOrderRequestTransaction(
 	} else {
 		if mdReader.FeeInPRV {
 			// sell amount in token
-			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{
 				&privacy.PaymentInfo{
 					PaymentAddress: burnAddr,
 					Amount:         md.TradingFee,
@@ -850,7 +856,7 @@ func createPdexv3AddOrderRequestTransaction(
 				},
 			})
 		} else {
-			paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
 			paramSelect.SetTokenReceivers(burnPayments)
 		}
 	}
@@ -926,7 +932,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 			Amount:         1,
 		},
 	}
-	paramSelect.PRV.PaymentInfos = []*privacy.PaymentInfo{}
+	paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
 	paramSelect.SetTokenReceivers(burnPayments)
 
 	// create transaction

@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	instructionPdexv3 "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
@@ -755,23 +756,25 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 	return resultMap
 }
 
-// getFeeInSellingToken() converts the fee paid in PRV to the equivalent token amount. 
+// getFeeInSellingToken() converts the fee paid in PRV to the equivalent token amount.
 // It supports trade & addOrder requests
 func getFeeInSellingToken(txs []metadata.Transaction, pairs map[string]*PoolPairState, params Params,
-) ([]metadata.Transaction, []uint64, []uint64, []metadata.Transaction, error) {
+) ([]metadata.Transaction, map[string]bool, []uint64, []uint64, []metadata.Transaction, error) {
 	temp := uint64(100) - uint64(params.PRVDiscountPercent)
 	if temp > 100 {
-		return nil, nil, nil, nil, fmt.Errorf("PRV Discount percent invalid")
+		return nil, nil, nil, nil, nil, fmt.Errorf("PRV Discount percent invalid")
 	}
 	discountPercent := big.NewInt(0).SetUint64(temp)
 	rateMap := getTokenPricesAgainstPRV(pairs)
 	var resultTransactions, invalidTransactions []metadata.Transaction
 	var fees, sellAmounts []uint64
+	feeInPRVMap := make(map[string]bool)
 	for _, tx := range txs {
 		md := tx.GetMetadata()
 		var sellingTokenID common.Hash
 		var fee, amount uint64
-		switch v := md.(type){
+		var feeInPRV bool = false
+		switch v := md.(type) {
 		case *metadataPdexv3.TradeRequest:
 			sellingTokenID = v.TokenToSell
 			fee = v.TradingFee
@@ -806,11 +809,102 @@ func getFeeInSellingToken(txs []metadata.Transaction, pairs map[string]*PoolPair
 				invalidTransactions = append(invalidTransactions, tx)
 				continue
 			}
+			// mark the fee as paid in PRV, and return the equivalent token amount
 			fee = temp.Uint64()
+			feeInPRV = true
 		}
 		resultTransactions = append(resultTransactions, tx)
 		fees = append(fees, fee)
+		feeInPRVMap[tx.Hash().String()] = feeInPRV
 		sellAmounts = append(sellAmounts, amount)
 	}
-	return resultTransactions, fees, sellAmounts, invalidTransactions, nil
+	return resultTransactions, feeInPRVMap, fees, sellAmounts, invalidTransactions, nil
+}
+
+// getRefundInstructions() creates up to 2 intructions for refunding rejected trade requests
+// in both token & PRV
+func getRefundedTradeInstructions(md *metadataPdexv3.TradeRequest, feeInPRV bool,
+	txID common.Hash, shardID byte) ([][]string, error) {
+	refundReceiver, exists := md.Receiver[md.TokenToSell]
+	if !exists {
+		return nil, fmt.Errorf("Refund receiver not found in Trade Request")
+	}
+
+	// prepare refund instructions
+	tokenRefundAmount := md.SellAmount + md.TradingFee
+	if feeInPRV {
+		tokenRefundAmount = md.SellAmount
+	}
+	sellingTokenRefundAction := instructionPdexv3.NewAction(
+		&metadataPdexv3.RefundedTrade{
+			Receiver: refundReceiver,
+			TokenID:  md.TokenToSell,
+			Amount:   tokenRefundAmount,
+		},
+		txID,
+		shardID,
+	)
+	var refundInstructions [][]string = [][]string{sellingTokenRefundAction.StringSlice()}
+	if feeInPRV {
+		// prepare PRV refund if trading fee was paid in PRV; not applicable to requests that sell PRV.
+		prvReceiver, exists := md.Receiver[md.TokenToSell]
+		if !exists {
+			return nil, fmt.Errorf("Fee (PRV) Refund receiver not found in Trade Request")
+		}
+		feeRefundAction := instructionPdexv3.NewAction(
+			&metadataPdexv3.RefundedTrade{
+				Receiver: prvReceiver,
+				TokenID:  common.PRVCoinID,
+				Amount:   md.TradingFee,
+			},
+			txID,
+			shardID,
+		)
+		refundInstructions = append(refundInstructions, feeRefundAction.StringSlice())
+	}
+	return refundInstructions, nil
+}
+
+// getRefundInstructions() creates up to 2 intructions for refunding rejected addOrder requests
+// in both token & PRV
+func getRefundedAddOrderInstructions(md *metadataPdexv3.AddOrderRequest, feeInPRV bool,
+	txID common.Hash, shardID byte) ([][]string, error) {
+	refundReceiver, exists := md.Receiver[md.TokenToSell]
+	if !exists {
+		return nil, fmt.Errorf("Refund receiver not found in Trade Request")
+	}
+
+	// prepare refund instructions
+	tokenRefundAmount := md.SellAmount + md.TradingFee
+	if feeInPRV {
+		tokenRefundAmount = md.SellAmount
+	}
+	sellingTokenRefundAction := instructionPdexv3.NewAction(
+		&metadataPdexv3.RefundedAddOrder{
+			Receiver: refundReceiver,
+			TokenID:  md.TokenToSell,
+			Amount:   tokenRefundAmount,
+		},
+		txID,
+		shardID,
+	)
+	var refundInstructions [][]string = [][]string{sellingTokenRefundAction.StringSlice()}
+	if feeInPRV {
+		// prepare PRV refund if trading fee was paid in PRV; not applicable to requests that sell PRV.
+		prvReceiver, exists := md.Receiver[md.TokenToSell]
+		if !exists {
+			return nil, fmt.Errorf("Fee (PRV) Refund receiver not found in Trade Request")
+		}
+		feeRefundAction := instructionPdexv3.NewAction(
+			&metadataPdexv3.RefundedAddOrder{
+				Receiver: prvReceiver,
+				TokenID:  common.PRVCoinID,
+				Amount:   md.TradingFee,
+			},
+			txID,
+			shardID,
+		)
+		refundInstructions = append(refundInstructions, feeRefundAction.StringSlice())
+	}
+	return refundInstructions, nil
 }

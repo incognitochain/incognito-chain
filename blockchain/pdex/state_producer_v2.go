@@ -273,8 +273,9 @@ func (sp *stateProducerV2) trade(
 	result := [][]string{}
 	var invalidTxs []metadataCommon.Transaction
 	var fees, sellAmounts []uint64
+	var feeInPRVMap map[string]bool
 	var err error
-	txs, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
+	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
 	if err != nil {
 		return result, pairs, fmt.Errorf("Error converting fee %v", err)
 	}
@@ -294,21 +295,12 @@ func (sp *stateProducerV2) trade(
 		if !ok {
 			return result, pairs, errors.New("Cannot parse trade metadata")
 		}
-		refundReceiver, exists := currentTrade.Receiver[currentTrade.TokenToSell]
-		if !exists {
-			return result, pairs, errors.New("Refund receiver not found in Trade Request")
+		// sender & receiver shard must be the same
+		refundInstructions, err := getRefundedTradeInstructions(currentTrade,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
-
-		currentAction := instruction.NewAction(
-			&metadataPdexv3.RefundedTrade{
-				Receiver:    refundReceiver,
-				TokenToSell: currentTrade.TokenToSell,
-				Amount:      currentTrade.SellAmount,
-			},
-			*tx.Hash(),
-			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
-		)
-		var refundInst []string = currentAction.StringSlice()
 
 		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
@@ -316,20 +308,26 @@ func (sp *stateProducerV2) trade(
 		// anytime the trade handler fails, add a refund instruction
 		if err != nil || !exists {
 			Logger.log.Warnf("Error preparing trade path: %v", err)
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue
 		}
 
-		acceptedInst, _, err :=
-			v2.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee,
-				currentTrade.TradePath, tradeOutputReceiver, reserves,
-				tradeDirections, tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList)
+		acceptedTradeMd, _, err := v2.MaybeAcceptTrade(
+			currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.TradePath,
+			tradeOutputReceiver, reserves, tradeDirections,
+			tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList,
+		)
 		if err != nil {
 			Logger.log.Warnf("Error handling trade: %v", err)
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue
 		}
-		result = append(result, acceptedInst)
+		action := instruction.NewAction(
+			acceptedTradeMd,
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+		result = append(result, action.StringSlice())
 	}
 
 	// refund invalid-by-fee tradeRequests
@@ -338,21 +336,12 @@ func (sp *stateProducerV2) trade(
 		if !ok {
 			return result, pairs, fmt.Errorf("Cannot parse trade metadata")
 		}
-		refundReceiver, exists := currentTrade.Receiver[currentTrade.TokenToSell]
-		if !exists {
-			return result, pairs, fmt.Errorf("Refund receiver not found in Trade Request")
+		refundInstructions, err := getRefundedTradeInstructions(currentTrade,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
-
-		currentAction := instruction.NewAction(
-			&metadataPdexv3.RefundedTrade{
-				Receiver:    refundReceiver,
-				TokenToSell: currentTrade.TokenToSell,
-				Amount:      currentTrade.SellAmount,
-			},
-			*tx.Hash(),
-			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
-		)
-		result = append(result, currentAction.StringSlice())
+		result = append(result, refundInstructions...)
 	}
 	Logger.log.Warnf("Trade instructions: %v", result)
 	return result, pairs, nil
@@ -367,8 +356,9 @@ func (sp *stateProducerV2) addOrder(
 	result := [][]string{}
 	var invalidTxs []metadataCommon.Transaction
 	var fees, sellAmounts []uint64
+	var feeInPRVMap map[string]bool
 	var err error
-	txs, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
+	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
 	if err != nil {
 		return result, pairs, fmt.Errorf("Error converting fee %v", err)
 	}
@@ -389,33 +379,23 @@ TransactionLoop:
 		if !ok {
 			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
-
-		refundReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenToSell]
-		if !exists {
-			return result, pairs, errors.New("Refund receiver not found in AddOrder Request")
+		// sender & receiver shard must be the same
+		refundInstructions, err := getRefundedAddOrderInstructions(currentOrderReq,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
-
-		currentAction := instruction.NewAction(
-			&metadataPdexv3.RefundedAddOrder{
-				Receiver: refundReceiver,
-				TokenID:  currentOrderReq.TokenToSell,
-				Amount:   currentOrderReq.SellAmount,
-			},
-			*tx.Hash(),
-			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
-		)
-		var refundInst []string = currentAction.StringSlice()
 
 		if exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
 			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
 		if !exists {
 			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
 
@@ -425,14 +405,14 @@ TransactionLoop:
 			if ord.Id() == orderID {
 				Logger.log.Warnf("Cannot add existing order ID %s", orderID)
 				// on any error, append a refund instruction & continue to next tx
-				result = append(result, refundInst)
+				result = append(result, refundInstructions...)
 				continue TransactionLoop
 			}
 		}
 
 		if currentOrderReq.TradingFee >= currentOrderReq.SellAmount {
 			Logger.log.Warnf("Order %s cannot afford trading fee of %d", orderID, currentOrderReq.TradingFee)
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
 		// prepare order data
@@ -482,22 +462,12 @@ TransactionLoop:
 		if !ok {
 			return result, pairs, fmt.Errorf("Cannot parse AddOrder metadata")
 		}
-
-		refundReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenToSell]
-		if !exists {
-			return result, pairs, fmt.Errorf("Refund receiver not found in AddOrder Request")
+		refundInstructions, err := getRefundedAddOrderInstructions(currentOrderReq,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
-
-		currentAction := instruction.NewAction(
-			&metadataPdexv3.RefundedAddOrder{
-				Receiver: refundReceiver,
-				TokenID:  currentOrderReq.TokenToSell,
-				Amount:   currentOrderReq.SellAmount,
-			},
-			*tx.Hash(),
-			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
-		)
-		result = append(result, currentAction.StringSlice())
+		result = append(result, refundInstructions...)
 	}
 
 	Logger.log.Warnf("AddOrder instructions: %v", result)

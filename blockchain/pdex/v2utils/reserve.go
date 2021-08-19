@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -161,11 +160,10 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(acn *instruction.Action, 
-	amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, 
+func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, 
 	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte, 
 	tokenToBuy common.Hash, minAmount uint64, orderbooks []OrderBookIterator,
-) ([]string, []*rawdbv2.Pdexv3PoolPair, error) {
+) (*metadataPdexv3.AcceptedTrade, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
 		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
@@ -233,6 +231,5 @@ func MaybeAcceptTrade(acn *instruction.Action,
 		return nil, nil, fmt.Errorf("Min acceptable amount %d not reached - trade output %d", minAmount, totalBuyAmount)
 	}
 	acceptedMeta.Amount = totalBuyAmount
-	acn.Content = acceptedMeta
-	return acn.StringSlice(), reserves, nil
+	return &acceptedMeta, reserves, nil
 }

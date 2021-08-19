@@ -47,9 +47,9 @@ func (md AcceptedTrade) GetStatus() int {
 
 // RefundedTrade is added as Content for produced beacon instruction after failure to handle a trade
 type RefundedTrade struct {
-	Receiver    privacy.OTAReceiver `json:"Receiver"`
-	TokenToSell common.Hash         `json:"TokenToSell"`
-	Amount      uint64              `json:"Amount"`
+	Receiver privacy.OTAReceiver `json:"Receiver"`
+	TokenID  common.Hash         `json:"TokenToSell"`
+	Amount   uint64              `json:"Amount"`
 }
 
 func (md RefundedTrade) GetType() int {
@@ -109,7 +109,7 @@ func (res TradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *meta
 				continue
 			}
 			md := mdHolder.Content
-			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenToSell, tx)
+			valid, msg := validMintForInstruction(md.Receiver, md.Amount, md.TokenID, tx)
 			if valid {
 				matchedInstructionIndex = i
 				break

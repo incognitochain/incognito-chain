@@ -26,7 +26,7 @@ func TradeRefundTx(
 	}
 	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{metadataCommon.Pdexv3TradeResponseMeta}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: refundedTrade.Amount, ReceiverAddress: nil, PublicKey: &refundedTrade.Receiver.PublicKey, TxRandom: &refundedTrade.Receiver.TxRandom, TokenID: &refundedTrade.TokenToSell, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: refundedTrade.Amount, ReceiverAddress: nil, PublicKey: &refundedTrade.Receiver.PublicKey, TxRandom: &refundedTrade.Receiver.TxRandom, TokenID: &refundedTrade.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
