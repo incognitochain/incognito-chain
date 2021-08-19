@@ -18,8 +18,8 @@ func (s *Pdexv3OrderState) PoolPairID() string {
 	return s.poolPairID
 }
 
-func (s *Pdexv3OrderState) Value() *rawdbv2.Pdexv3Order {
-	return &s.value
+func (s *Pdexv3OrderState) Value() rawdbv2.Pdexv3Order {
+	return s.value
 }
 
 func (s *Pdexv3OrderState) MarshalJSON() ([]byte, error) {

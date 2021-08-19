@@ -31,11 +31,11 @@ func NewWithdrawOrderRequest(
 ) (*WithdrawOrderRequest, error) {
 	r := &WithdrawOrderRequest{
 		PoolPairID: pairID,
-		OrderID:  orderID,
-		TokenID:  tokenID,
-		Amount:   amount,
-		Receiver: recv,
-		NftID:    nftID,
+		OrderID:    orderID,
+		TokenID:    tokenID,
+		Amount:     amount,
+		Receiver:   recv,
+		NftID:      nftID,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -52,6 +52,12 @@ func (req WithdrawOrderRequest) ValidateSanityData(chainRetriever metadataCommon
 	if !req.Receiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(
 			metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid OTAReceiver %v", req.Receiver))
+	}
+	if tx.GetSenderAddrLastByte() != req.Receiver.GetShardID() {
+		return false, false, metadataCommon.NewMetadataTxError(
+			metadataCommon.PDEInvalidMetadataValueError,
+			fmt.Errorf("Invalid shard %d for Receiver - must equal sender shard",
+				req.Receiver.GetShardID()))
 	}
 
 	// Burned coin check

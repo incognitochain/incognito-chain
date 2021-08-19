@@ -136,7 +136,8 @@ func initStateV2(
 			return nil, err
 		}
 		for _, item := range orderMap {
-			orderbook.InsertOrder(item.Value())
+			v := item.Value()
+			orderbook.InsertOrder(&v)
 		}
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), shares, *orderbook,

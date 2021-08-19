@@ -147,7 +147,8 @@ func StorePdexv3Order(
 	stateDB *StateDB,
 	orderState Pdexv3OrderState,
 ) error {
-	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), orderState.Value().Id())
+	v := orderState.Value()
+	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), v.Id())
 	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, &orderState)
 }
 

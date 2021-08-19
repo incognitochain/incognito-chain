@@ -58,6 +58,12 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			return false, false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid OTAReceiver %v", item))
 		}
+		if tx.GetSenderAddrLastByte() != item.GetShardID() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Invalid shard %d for Receiver - must equal sender shard",
+					item.GetShardID()))
+		}
 	}
 
 	// Burned coin check

@@ -1996,7 +1996,8 @@ func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (
 		if err != nil {
 			return orders, err
 		}
-		orders[orderState.Value().Id()] = *orderState
+		v := orderState.Value()
+		orders[v.Id()] = *orderState
 
 	}
 	return orders, nil
