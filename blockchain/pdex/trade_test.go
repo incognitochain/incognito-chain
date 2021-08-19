@@ -178,7 +178,6 @@ func TestBuildResponseTrade(t *testing.T) {
 				&blankPrivateKey,
 				blankShardID,
 				testDB,
-				testDB,
 			)
 			NoError(t, err)
 			txv2, ok := tx.(*transaction.TxTokenVersion2)
@@ -232,7 +231,7 @@ type Testcase struct {
 
 type PoolFormatter struct {
 	State     *rawdbv2.Pdexv3PoolPair `json:"state"`
-	Shares    map[string]Share        `json:"shares"`
+	Shares    map[string]*Share        `json:"shares"`
 	Orderbook Orderbook               `json:"orderbook"`
 }
 
@@ -242,10 +241,10 @@ type StateFormatter struct {
 }
 
 func (sf *StateFormatter) State() *stateV2 {
-	s := newStateV2WithValue(nil, nil, make(map[string]PoolPairState),
-		Params{}, nil)
+	s := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
+		Params{}, nil, make(map[string]bool))
 	for k, v := range sf.PoolPairs {
-		s.poolPairs[k] = PoolPairState{state: *v.State, shares: v.Shares, orderbook: v.Orderbook}
+		s.poolPairs[k] = &PoolPairState{state: *v.State, shares: v.Shares, orderbook: v.Orderbook}
 	}
 	s.params = sf.Params
 	return s
