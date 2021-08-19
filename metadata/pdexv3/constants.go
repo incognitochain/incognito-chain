@@ -1,7 +1,8 @@
 package pdexv3
 
 const (
-	BaseAmplifier = 10000
+	BaseAmplifier                 = 10000
+	MaxPoolPairWithdrawalReceiver = 5
 )
 
 const (

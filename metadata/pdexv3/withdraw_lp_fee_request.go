@@ -1,51 +1,50 @@
 package pdexv3
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
-	PoolPairID         string             `json:"PoolPairID"`
-	NftID              common.Hash        `json:"NftID"`
-	NftReceiverAddress string             `json:"NftReceiverAddress"`
-	FeeReceiverAddress FeeReceiverAddress `json:"FeeReceiverAddress"`
+	PoolPairID string                              `json:"PoolPairID"`
+	NftID      common.Hash                         `json:"NftID"`
+	Receivers  map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PoolPairID string                  `json:"PoolPairID"`
-	NftID      common.Hash             `json:"NftID"`
-	TokenType  string                  `json:"TokenType"`
-	Receivers  map[string]ReceiverInfo `json:"Receivers"`
-	TxReqID    common.Hash             `json:"TxReqID"`
-	ShardID    byte                    `json:"ShardID"`
+	PoolPairID string                       `json:"PoolPairID"`
+	NftID      common.Hash                  `json:"NftID"`
+	TokenID    common.Hash                  `json:"TokenID"`
+	Receivers  map[common.Hash]ReceiverInfo `json:"Receivers"`
+	TxReqID    common.Hash                  `json:"TxReqID"`
+	ShardID    byte                         `json:"ShardID"`
 }
 
 type WithdrawalLPFeeStatus struct {
-	Status    int                     `json:"Status"`
-	Receivers map[string]ReceiverInfo `json:"Receivers"`
+	Status    int                          `json:"Status"`
+	Receivers map[common.Hash]ReceiverInfo `json:"Receivers"`
 }
 
 func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
 	nftID common.Hash,
-	nftReceiverAddress string,
-	feeReceiverAddress FeeReceiverAddress,
+	receivers map[common.Hash]privacy.OTAReceiver,
 ) (*WithdrawalLPFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
 
 	return &WithdrawalLPFeeRequest{
-		MetadataBase:       *metadataBase,
-		PoolPairID:         pairID,
-		NftID:              nftID,
-		NftReceiverAddress: nftReceiverAddress,
-		FeeReceiverAddress: feeReceiverAddress,
+		MetadataBase: *metadataBase,
+		PoolPairID:   pairID,
+		NftID:        nftID,
+		Receivers:    receivers,
 	}, nil
 }
 
@@ -87,27 +86,17 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
+	if len(withdrawal.Receivers) > MaxPoolPairWithdrawalReceiver {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
+	}
+
 	// Check OTA address string and tx random is valid
 	shardID := byte(tx.GetValidationEnv().ShardID())
-	_, err = isValidReceiverAddressStr(withdrawal.NftReceiverAddress, shardID)
-	if err != nil {
-		return false, false, err
-	}
-	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.Token0ReceiverAddress, shardID)
-	if err != nil {
-		return false, false, err
-	}
-	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.Token1ReceiverAddress, shardID)
-	if err != nil {
-		return false, false, err
-	}
-	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.PRVReceiverAddress, shardID)
-	if err != nil {
-		return false, false, err
-	}
-	_, err = isValidReceiverAddressStr(withdrawal.FeeReceiverAddress.PDEXReceiverAddress, shardID)
-	if err != nil {
-		return false, false, err
+	for _, receiver := range withdrawal.Receivers {
+		_, err = isValidOTAReceiver(receiver, shardID)
+		if err != nil {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
 	}
 
 	return true, true, nil
@@ -118,17 +107,24 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateMetadataByItself() bool {
 }
 
 func (withdrawal WithdrawalLPFeeRequest) Hash() *common.Hash {
-	record := withdrawal.MetadataBase.Hash().String()
-	record += withdrawal.PoolPairID
-	record += withdrawal.NftID.String()
-	record += withdrawal.NftReceiverAddress
-	record += withdrawal.FeeReceiverAddress.ToString()
-
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(withdrawal)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
 func (withdrawal *WithdrawalLPFeeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(withdrawal)
+}
+
+func (withdrawal *WithdrawalLPFeeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	result := []metadataCommon.OTADeclaration{}
+	for currentTokenID, val := range withdrawal.Receivers {
+		if currentTokenID != common.PRVCoinID {
+			currentTokenID = common.ConfidentialAssetID
+		}
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
+	}
+	return result
 }

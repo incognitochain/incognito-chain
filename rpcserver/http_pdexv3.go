@@ -346,6 +346,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
+	token0IDStr, ok := tokenParamsRaw["Token0ID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token0ID is invalid"))
+	}
+
+	token1IDStr, ok := tokenParamsRaw["Token1ID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token1ID is invalid"))
+	}
+
 	nftIDStr, ok := tokenParamsRaw["NftID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
@@ -361,6 +371,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
 	}
 
+	tokenIDs := []string{
+		token0IDStr,
+		token1IDStr,
+		common.PRVIDStr,
+		common.PDEXIDStr,
+		nftIDStr,
+	}
+
 	keyWallet, err := wallet.Base58CheckDeserialize(feeReceiver)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize payment address: %v", err))
@@ -369,65 +387,25 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address is invalid"))
 	}
 
-	nftReceiverAddress := privacy.OTAReceiver{}
-	token0ReceiverAddress := privacy.OTAReceiver{}
-	token1ReceiverAddress := privacy.OTAReceiver{}
-	prvReceiverAddress := privacy.OTAReceiver{}
-	pdexReceiverAddress := privacy.OTAReceiver{}
-
-	err = nftReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = token0ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = token1ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = prvReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = pdexReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-
-	nft, err := nftReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	token0ReceiverAddressStr, err := token0ReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	token1ReceiverAddressStr, err := token1ReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	prvReceiverAddressStr, err := prvReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	pdexReceiverAddressStr, err := pdexReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	receivers := map[common.Hash]privacy.OTAReceiver{}
+	for _, tokenIDStr := range tokenIDs {
+		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
+		}
+		receiver := privacy.OTAReceiver{}
+		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		receivers[*tokenID] = receiver
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
 		*nftID,
-		nft,
-		metadataPdexv3.FeeReceiverAddress{
-			Token0ReceiverAddress: token0ReceiverAddressStr,
-			Token1ReceiverAddress: token1ReceiverAddressStr,
-			PRVReceiverAddress:    prvReceiverAddressStr,
-			PDEXReceiverAddress:   pdexReceiverAddressStr,
-		},
+		receivers,
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -502,6 +480,23 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
+	token0IDStr, ok := tokenParamsRaw["Token0ID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token0ID is invalid"))
+	}
+
+	token1IDStr, ok := tokenParamsRaw["Token1ID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token1ID is invalid"))
+	}
+
+	tokenIDs := []string{
+		token0IDStr,
+		token1IDStr,
+		common.PRVIDStr,
+		common.PDEXIDStr,
+	}
+
 	// payment address v2
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
@@ -511,54 +506,24 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("pDEX v3 admin payment address is invalid"))
 	}
 
-	token0ReceiverAddress := privacy.OTAReceiver{}
-	token1ReceiverAddress := privacy.OTAReceiver{}
-	prvReceiverAddress := privacy.OTAReceiver{}
-	pdexReceiverAddress := privacy.OTAReceiver{}
-
-	err = token0ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = token1ReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = prvReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	err = pdexReceiverAddress.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-
-	token0ReceiverAddressStr, err := token0ReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	token1ReceiverAddressStr, err := token1ReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	prvReceiverAddressStr, err := prvReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	pdexReceiverAddressStr, err := pdexReceiverAddress.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	receivers := map[common.Hash]privacy.OTAReceiver{}
+	for _, tokenIDStr := range tokenIDs {
+		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
+		}
+		receiver := privacy.OTAReceiver{}
+		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		receivers[*tokenID] = receiver
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		pairID,
-		metadataPdexv3.FeeReceiverAddress{
-			Token0ReceiverAddress: token0ReceiverAddressStr,
-			Token1ReceiverAddress: token1ReceiverAddressStr,
-			PRVReceiverAddress:    prvReceiverAddressStr,
-			PDEXReceiverAddress:   pdexReceiverAddressStr,
-		},
+		receivers,
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

@@ -54,18 +54,18 @@ func BuildMintPDEXInst(
 func BuildWithdrawLPFeeInsts(
 	pairID string,
 	nftID common.Hash,
-	receivers map[string]metadataPdexv3.ReceiverInfo,
+	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
 ) [][]string {
 	insts := [][]string{}
 
-	for tokenType := range receivers {
+	for tokenID := range receivers {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PoolPairID: pairID,
 			NftID:      nftID,
-			TokenType:  tokenType,
+			TokenID:    tokenID,
 			Receivers:  receivers,
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
@@ -84,7 +84,7 @@ func BuildWithdrawLPFeeInsts(
 
 func BuildWithdrawProtocolFeeInsts(
 	pairID string,
-	receivers map[string]metadataPdexv3.ReceiverInfo,
+	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
@@ -92,8 +92,8 @@ func BuildWithdrawProtocolFeeInsts(
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
 			PoolPairID: pairID,
-			TokenType:  "",
-			Receivers:  map[string]metadataPdexv3.ReceiverInfo{},
+			TokenID:    common.Hash{},
+			Receivers:  map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -108,10 +108,10 @@ func BuildWithdrawProtocolFeeInsts(
 	}
 
 	insts := [][]string{}
-	for tokenType := range receivers {
+	for tokenID := range receivers {
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
 			PoolPairID: pairID,
-			TokenType:  tokenType,
+			TokenID:    tokenID,
 			Receivers:  receivers,
 			TxReqID:    reqTxID,
 			ShardID:    shardID,

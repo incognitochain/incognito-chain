@@ -14,20 +14,17 @@ import (
 
 type WithdrawalLPFeeResponse struct {
 	metadataCommon.MetadataBase
-	TokenType string      `json:"TokenType"`
-	ReqTxID   common.Hash `json:"ReqTxID"`
+	ReqTxID common.Hash `json:"ReqTxID"`
 }
 
 func NewPdexv3WithdrawalLPFeeResponse(
 	metaType int,
-	tokenType string,
 	reqTxID common.Hash,
 ) *WithdrawalLPFeeResponse {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
 
 	return &WithdrawalLPFeeResponse{
 		MetadataBase: *metadataBase,
-		TokenType:    tokenType,
 		ReqTxID:      reqTxID,
 	}
 }
@@ -67,12 +64,8 @@ func (withdrawalResponse WithdrawalLPFeeResponse) ValidateMetadataByItself() boo
 }
 
 func (withdrawalResponse WithdrawalLPFeeResponse) Hash() *common.Hash {
-	record := withdrawalResponse.MetadataBase.Hash().String()
-	record += withdrawalResponse.TokenType
-	record += withdrawalResponse.ReqTxID.String()
-
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(withdrawalResponse)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
@@ -106,19 +99,14 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 			continue
 		}
 
-		tokenType := instContent.TokenType
-		if withdrawalResponse.TokenType != tokenType {
-			continue
-		}
-
 		shardIDFromInst := instContent.ShardID
 		txReqIDFromInst := instContent.TxReqID
-		receiver, ok := instContent.Receivers[instContent.TokenType]
+		receiver, ok := instContent.Receivers[instContent.TokenID]
 		if !ok {
 			continue
 		}
 
-		receiverAddress, err := isValidReceiverAddressStr(receiver.AddressStr, shardIDFromInst)
+		receiverAddress, err := isValidOTAReceiver(receiver.Address, shardIDFromInst)
 		if err != nil {
 			continue
 		}
@@ -145,7 +133,7 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 		if !bytes.Equal(publicKey.ToBytesS(), pk[:]) ||
 			receiver.Amount != paidAmount ||
 			!bytes.Equal(txR[:], txRandom[:]) ||
-			receiver.TokenID != *assetID {
+			instContent.TokenID != *assetID {
 			continue
 		}
 

@@ -405,11 +405,10 @@ func (sp *stateProducerV2) withdrawLPFee(
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
 			metaData.NftID,
-			map[string]metadataPdexv3.ReceiverInfo{
-				metadataPdexv3.NftTokenType: {
-					TokenID:    metaData.NftID,
-					AddressStr: metaData.NftReceiverAddress,
-					Amount:     1,
+			map[common.Hash]metadataPdexv3.ReceiverInfo{
+				metaData.NftID: {
+					Address: metaData.Receivers[metaData.NftID],
+					Amount:  1,
 				},
 			},
 			shardID,
@@ -435,37 +434,23 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if err != nil {
 			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 		}
+		reward[metaData.NftID] = 1
+
+		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		for tokenID := range reward {
+			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
+				return instructions, pairs, fmt.Errorf("Could not find receiver for token %v\n", tokenID)
+			}
+			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
+				Address: metaData.Receivers[tokenID],
+				Amount:  reward[tokenID],
+			}
+		}
 
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
 			metaData.NftID,
-			map[string]metadataPdexv3.ReceiverInfo{
-				metadataPdexv3.Token0Type: {
-					TokenID:    poolPair.state.Token0ID(),
-					AddressStr: metaData.FeeReceiverAddress.Token0ReceiverAddress,
-					Amount:     reward[poolPair.state.Token0ID()],
-				},
-				metadataPdexv3.Token1Type: {
-					TokenID:    poolPair.state.Token1ID(),
-					AddressStr: metaData.FeeReceiverAddress.Token1ReceiverAddress,
-					Amount:     reward[poolPair.state.Token1ID()],
-				},
-				metadataPdexv3.PRVType: {
-					TokenID:    common.PRVCoinID,
-					AddressStr: metaData.FeeReceiverAddress.PRVReceiverAddress,
-					Amount:     reward[common.PRVCoinID],
-				},
-				metadataPdexv3.PDEXType: {
-					TokenID:    common.PDEXCoinID,
-					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
-					Amount:     reward[common.PDEXCoinID],
-				},
-				metadataPdexv3.NftTokenType: {
-					TokenID:    metaData.NftID,
-					AddressStr: metaData.NftReceiverAddress,
-					Amount:     1,
-				},
-			},
+			receiversInfo,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
@@ -497,7 +482,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 		rejectInst := v2utils.BuildWithdrawProtocolFeeInsts(
 			metaData.PoolPairID,
-			map[string]metadataPdexv3.ReceiverInfo{},
+			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
@@ -510,38 +495,22 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 			continue
 		}
 
-		protocolFeeAmount := func(poolPair *PoolPairState, tokenID common.Hash) uint64 {
-			amount, isExisted := poolPair.state.ProtocolFees()[tokenID]
-			if !isExisted {
-				amount = 0
+		reward := pair.state.ProtocolFees()
+
+		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		for tokenID := range reward {
+			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
+				return instructions, pairs, fmt.Errorf("Could not find receiver for token %v\n", tokenID)
 			}
-			return amount
+			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
+				Address: metaData.Receivers[tokenID],
+				Amount:  reward[tokenID],
+			}
 		}
 
 		acceptedInst := v2utils.BuildWithdrawProtocolFeeInsts(
 			metaData.PoolPairID,
-			map[string]metadataPdexv3.ReceiverInfo{
-				metadataPdexv3.Token0Type: {
-					TokenID:    pair.state.Token0ID(),
-					AddressStr: metaData.FeeReceiverAddress.Token0ReceiverAddress,
-					Amount:     protocolFeeAmount(pair, pair.state.Token0ID()),
-				},
-				metadataPdexv3.Token1Type: {
-					TokenID:    pair.state.Token1ID(),
-					AddressStr: metaData.FeeReceiverAddress.Token1ReceiverAddress,
-					Amount:     protocolFeeAmount(pair, pair.state.Token1ID()),
-				},
-				metadataPdexv3.PRVType: {
-					TokenID:    common.PRVCoinID,
-					AddressStr: metaData.FeeReceiverAddress.PRVReceiverAddress,
-					Amount:     protocolFeeAmount(pair, common.PRVCoinID),
-				},
-				metadataPdexv3.PDEXType: {
-					TokenID:    common.PDEXCoinID,
-					AddressStr: metaData.FeeReceiverAddress.PDEXReceiverAddress,
-					Amount:     protocolFeeAmount(pair, common.PDEXCoinID),
-				},
-			},
+			receiversInfo,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
