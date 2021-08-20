@@ -181,18 +181,23 @@ func (p *PoolPairState) addShare(
 	nftIDs[nftIDStr] = true
 	var shareAmount uint64
 
+	tradingFee := map[common.Hash]uint64{}
+
 	if p.shares[nftIDStr] == nil {
 		shareAmount = amount
 	} else {
 		shareAmount = p.shares[nftIDStr].amount + amount
+		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftIDStr)
+		if err != nil {
+			return newNftID, nftIDs, fmt.Errorf("NftID %v is invalid\n", nftIDStr)
+		}
+		tradingFee, err = p.RecomputeLPFee(*nftIDBytes)
+		if err != nil {
+			return newNftID, nftIDs, fmt.Errorf("Error when tracking LP reward: %v\n", err)
+		}
 	}
 
-	newTradingFees, err := p.RecomputeLPFee(nftID)
-	if err != nil {
-		return newNftID, nftIDs, fmt.Errorf("Error when tracking LP reward: %v\n", err)
-	}
-
-	share := NewShareWithValue(shareAmount, newTradingFees, p.state.LPFeesPerShare())
+	share := NewShareWithValue(shareAmount, tradingFee, p.state.LPFeesPerShare())
 	p.shares[nftIDStr] = share
 	newShareAmount := p.state.ShareAmount() + amount
 	if newShareAmount < p.state.ShareAmount() {
@@ -407,7 +412,9 @@ func (p *PoolPairState) RecomputeLPFee(
 		if !reward.IsUint64() {
 			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
 		}
-		result[tokenID] = reward.Uint64()
+		if reward.Uint64() > 0 {
+			result[tokenID] = reward.Uint64()
+		}
 	}
 	return result, nil
 }

@@ -354,6 +354,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
+				params: NewParams(),
 			},
 			args: args{
 				env: &stateEnvironment{
