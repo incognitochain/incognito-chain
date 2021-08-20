@@ -554,7 +554,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 		return "", err
 	}
 
-	aggSig, brigSigs, validatorIdx, err := a.combineVotes(votes, committeeBLSString)
+	aggSig, brigSigs, validatorIdx, portalSigs, err := a.combineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
 	}
@@ -567,6 +567,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	valData.AggSig = aggSig
 	valData.BridgeSig = brigSigs
 	valData.ValidatiorsIdx = validatorIdx
+	valData.PortalSig = portalSigs
 	validationData, _ := consensustypes.EncodeValidationData(*valData)
 	return validationData, err
 }
@@ -1226,7 +1227,7 @@ func (a *actorV2) BlockVersion() int {
 	return a.blockVersion
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {
@@ -1238,18 +1239,19 @@ func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (
 	}
 
 	if len(validatorIdx) == 0 {
-		return nil, nil, nil, NewConsensusError(CombineSignatureError, errors.New("len(validatorIdx) == 0"))
+		return nil, nil, nil, nil, NewConsensusError(CombineSignatureError, errors.New("len(validatorIdx) == 0"))
 	}
 
 	sort.Ints(validatorIdx)
 	for _, idx := range validatorIdx {
 		blsSigList = append(blsSigList, votes[committees[idx]].BLS)
 		brigSigs = append(brigSigs, votes[committees[idx]].BRI)
+		portalSigs = append(portalSigs, votes[committees[idx]].PortalSigs...)
 	}
 
 	aggSig, err = blsmultisig.Combine(blsSigList)
 	if err != nil {
-		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
+		return nil, nil, nil, nil, NewConsensusError(CombineSignatureError, err)
 	}
 
 	return
