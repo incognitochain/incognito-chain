@@ -72,6 +72,7 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 		Params:               pDexv3State.Reader().Params(),
 		PoolPairs:            poolPairs,
 		WaitingContributions: waitingContributions,
+		NftIDs:               pDexv3State.Reader().NftIDs(),
 	}
 	return result, nil
 }

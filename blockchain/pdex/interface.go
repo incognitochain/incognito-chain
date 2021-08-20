@@ -19,5 +19,5 @@ type StateReader interface {
 	PoolPairs() []byte
 	Shares() map[string]uint64
 	TradingFees() map[string]uint64
-	NftIDs() map[string]bool
+	NftIDs() map[string]uint64
 }

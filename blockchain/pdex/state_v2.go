@@ -210,7 +210,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadataCommon.Pdexv3MintNftRequestMeta:
+		case metadataCommon.Pdexv3UserMintNftRequestMeta:
 			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
 				Logger.log.Debugf("process inst %s err %v:", inst, err)
@@ -573,7 +573,10 @@ func (s *stateV2) PoolPairs() []byte {
 
 func (s *stateV2) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {}
 
-func (s *stateV2) NftIDs() map[string]bool {
-	res := make(map[string]bool)
+func (s *stateV2) NftIDs() map[string]uint64 {
+	res := make(map[string]uint64)
+	for k, v := range s.nftIDs {
+		res[k] = v
+	}
 	return res
 }

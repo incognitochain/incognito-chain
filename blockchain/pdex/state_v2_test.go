@@ -26,6 +26,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	assert.Nil(t, err)
 	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
+	assert.Nil(t, err)
 
 	// first contribution tx
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
@@ -49,6 +53,22 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
 	waitingContributionInstBytes, err := json.Marshal(waitingContributionInst)
+	//
+
+	// user mint nft
+	acceptInst, err := instruction.NewAcceptUserMintNftWithValue(
+		validOTAReceiver0, 100, 1, *nftHash1, *txReqID,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	metaData := metadataPdexv3.NewUserMintNftRequestWithValue(validOTAReceiver0, 100)
+	userMintNftTx := &metadataMocks.Transaction{}
+	userMintNftTx.On("GetMetadata").Return(metaData)
+	userMintNftTx.On("GetMetadataType").Return(metadataCommon.Pdexv3UserMintNftRequestMeta)
+	valEnv = tx_generic.WithShardID(valEnv, 1)
+	userMintNftTx.On("GetValidationEnv").Return(valEnv)
+	userMintNftTx.On("Hash").Return(txReqID)
+
 	//
 
 	type fields struct {
@@ -75,7 +95,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "Valid Input",
+			name: "WaitingContributions",
 			fields: fields{
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -118,6 +138,38 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "User mint nft",
+			fields: fields{
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+				nftIDs:                      map[string]uint64{},
+				params: Params{
+					MintNftRequireAmount: 100,
+				},
+			},
+			fieldsAfterProcess: fields{
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+			},
+			args: args{
+				env: &stateEnvironment{
+					beaconHeight: 10,
+					listTxs: map[byte][]metadataCommon.Transaction{
+						1: []metadataCommon.Transaction{userMintNftTx},
+					},
+				},
+			},
+			want:    [][]string{acceptInst},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -142,7 +194,11 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(s.waitingContributions, tt.fieldsAfterProcess.waitingContributions) {
-				t.Errorf("fieldsAfterProcess = %v, want %v", s, tt.fieldsAfterProcess)
+				t.Errorf("waitingContributions = %v, want %v", s.waitingContributions, tt.fieldsAfterProcess.waitingContributions)
+				return
+			}
+			if !reflect.DeepEqual(s.nftIDs, tt.fieldsAfterProcess.nftIDs) {
+				t.Errorf("nftIDs = %v, want %v", s.nftIDs, tt.fieldsAfterProcess.nftIDs)
 				return
 			}
 		})
@@ -158,6 +214,10 @@ func Test_stateV2_Process(t *testing.T) {
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	firstTxHash, err := common.Hash{}.NewHashFromStr("abc")
+	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
 	assert.Nil(t, err)
 
 	// first contribution tx
@@ -182,6 +242,23 @@ func Test_stateV2_Process(t *testing.T) {
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
 	waitingContributionInstBytes, err := json.Marshal(waitingContributionInst)
+	//
+
+	// user mint nft
+	acceptInst, err := instruction.NewAcceptUserMintNftWithValue(
+		validOTAReceiver0, 100, 1, *nftHash1, *txReqID,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	metaData := metadataPdexv3.NewUserMintNftRequestWithValue(validOTAReceiver0, 100)
+	userMintNftTx := &metadataMocks.Transaction{}
+	userMintNftTx.On("GetMetadata").Return(metaData)
+	userMintNftTx.On("GetMetadataType").Return(metadataCommon.Pdexv3UserMintNftRequestMeta)
+	valEnv = tx_generic.WithShardID(valEnv, 1)
+	userMintNftTx.On("GetValidationEnv").Return(valEnv)
+	userMintNftTx.On("Hash").Return(txReqID)
+
+	//
 
 	type fields struct {
 		stateBase                   stateBase
@@ -191,6 +268,7 @@ func Test_stateV2_Process(t *testing.T) {
 		params                      Params
 		stakingPoolsState           map[string]*StakingPoolState
 		orders                      map[int64][]Order
+		nftIDs                      map[string]uint64
 		producer                    stateProducerV2
 		processor                   stateProcessorV2
 	}
@@ -242,6 +320,37 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "User mint Nft",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs:                      map[string]uint64{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+			},
+			args: args{
+				env: &stateEnvironment{
+					beaconHeight:       10,
+					stateDB:            sDB,
+					beaconInstructions: [][]string{acceptInst},
+				},
+			},
+			fieldsAfterProcess: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -252,6 +361,7 @@ func Test_stateV2_Process(t *testing.T) {
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolsState:           tt.fields.stakingPoolsState,
+				nftIDs:                      tt.fields.nftIDs,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
@@ -259,7 +369,11 @@ func Test_stateV2_Process(t *testing.T) {
 				t.Errorf("stateV2.Process() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(s.waitingContributions, tt.fieldsAfterProcess.waitingContributions) {
-				t.Errorf("fieldsAfterProcess = %v, want %v", *s, tt.fieldsAfterProcess)
+				t.Errorf("waitingContributions = %v, want %v", s.waitingContributions, tt.fieldsAfterProcess.waitingContributions)
+				return
+			}
+			if !reflect.DeepEqual(s.nftIDs, tt.fieldsAfterProcess.nftIDs) {
+				t.Errorf("nftIDs = %v, want %v", s.nftIDs, tt.fieldsAfterProcess.nftIDs)
 				return
 			}
 		})

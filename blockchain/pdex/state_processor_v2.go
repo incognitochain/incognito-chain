@@ -591,7 +591,7 @@ func (sp *stateProcessorV2) addOrder(
 		if !exists {
 			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
 		}
-		
+
 		// fee for this request is deducted right away, while the fee stored in the order itself
 		// starts from 0 and will accumulate over time
 		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, md.NftID, md.Token0Rate, md.Token1Rate,
@@ -735,6 +735,7 @@ func (sp *stateProcessorV2) userMintNft(
 		}
 		nftID = acceptInst.NftID().String()
 		burntAmount = acceptInst.BurntAmount()
+		fmt.Println("acceptInst.NftID().String():", acceptInst.NftID().String())
 		nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
 	default:
 		return nftIDs, nil, errors.New("Can not recognie status")

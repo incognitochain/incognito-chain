@@ -34,12 +34,12 @@ func (poolPairState *PoolPairState) Shares() map[string]*Share {
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State  *rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares map[string]*Share       `json:"Shares"`
-		Orderbook Orderbook            `json:"Orderbook"`
+		State     *rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares    map[string]*Share       `json:"Shares"`
+		Orderbook Orderbook               `json:"Orderbook"`
 	}{
-		State:  &poolPairState.state,
-		Shares: poolPairState.shares,
+		State:     &poolPairState.state,
+		Shares:    poolPairState.shares,
 		Orderbook: poolPairState.orderbook,
 	})
 	if err != nil {
@@ -50,9 +50,9 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State  *rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares map[string]*Share       `json:"Shares"`
-		Orderbook Orderbook            `json:"Orderbook"`
+		State     *rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares    map[string]*Share       `json:"Shares"`
+		Orderbook Orderbook               `json:"Orderbook"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -227,8 +227,8 @@ func (p *PoolPairState) getDiff(
 				newStateChange = share.getDiff(nftID, m, newStateChange)
 			}
 		}
+		newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	}
-	newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	return newStateChange
 }
 

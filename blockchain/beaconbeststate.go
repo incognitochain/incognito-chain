@@ -542,7 +542,7 @@ func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) err
 
 func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
 	nftIDs := beaconBestState.pdeState.Reader().NftIDs()
-	if !nftIDs[nftID] {
+	if _, found := nftIDs[nftID]; !found {
 		return errors.New("Can't not find nftID")
 	}
 	return nil
