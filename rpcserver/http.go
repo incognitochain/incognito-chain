@@ -45,6 +45,7 @@ type HttpServer struct {
 	walletService     *rpcservice.WalletService
 	portal            *rpcservice.PortalService
 	synkerService     *rpcservice.SynkerService
+	pdexTxService     *rpcservice.PdexTxService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -93,6 +94,7 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	httpServer.portal = &rpcservice.PortalService{
 		BlockChain: httpServer.config.BlockChain,
 	}
+	httpServer.pdexTxService = &rpcservice.PdexTxService{httpServer.txService}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.

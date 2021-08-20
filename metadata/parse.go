@@ -183,6 +183,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.AddOrderRequest{}
 	case metadataCommon.Pdexv3AddOrderResponseMeta:
 		md = &metadataPdexv3.AddOrderResponse{}
+	case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+		md = &metadataPdexv3.WithdrawOrderRequest{}
+	case metadataCommon.Pdexv3WithdrawOrderResponseMeta:
+		md = &metadataPdexv3.WithdrawOrderResponse{}
 	case metadataCommon.Pdexv3MintNft:
 		md = &metadataPdexv3.MintNft{}
 	default:
