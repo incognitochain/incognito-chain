@@ -10,7 +10,7 @@ import (
 func TestMintNft_ValidateSanityData(t *testing.T) {
 	type fields struct {
 		nftID        string
-		otaReceiver  string
+		otaReceive   string
 		MetadataBase metadataCommon.MetadataBase
 	}
 	type args struct {
@@ -31,7 +31,7 @@ func TestMintNft_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid ota receive",
 			fields: fields{
-				otaReceiver: "132",
+				otaReceive: "132",
 			},
 			args:    args{},
 			want:    false,
@@ -41,7 +41,7 @@ func TestMintNft_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid nftID",
 			fields: fields{
-				otaReceiver: validOTAReceiver0,
+				otaReceive: validOTAReceiver0,
 			},
 			args:    args{},
 			want:    false,
@@ -51,8 +51,8 @@ func TestMintNft_ValidateSanityData(t *testing.T) {
 		{
 			name: "Empty nftID",
 			fields: fields{
-				otaReceiver: validOTAReceiver0,
-				nftID:       common.Hash{}.String(),
+				otaReceive: validOTAReceiver0,
+				nftID:      common.Hash{}.String(),
 			},
 			args:    args{},
 			want:    false,
@@ -62,8 +62,8 @@ func TestMintNft_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				otaReceiver: validOTAReceiver0,
-				nftID:       common.PRVIDStr,
+				otaReceive: validOTAReceiver0,
+				nftID:      common.PRVIDStr,
 			},
 			args:    args{},
 			want:    true,
@@ -73,9 +73,9 @@ func TestMintNft_ValidateSanityData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mintNft := &MintNft{
+			mintNft := &MintNftResponse{
 				nftID:        tt.fields.nftID,
-				otaReceiver:  tt.fields.otaReceiver,
+				otaReceive:   tt.fields.otaReceive,
 				MetadataBase: tt.fields.MetadataBase,
 			}
 			got, got1, err := mintNft.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)

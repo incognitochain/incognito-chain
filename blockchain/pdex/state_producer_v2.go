@@ -409,7 +409,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 	return res, poolPairs, nil
 }
 
-func (sp *stateProducerV2) mintNft(
+func (sp *stateProducerV2) userMintNft(
 	txs []metadata.Transaction,
 	nftIDs map[string]uint64,
 	beaconHeight, mintNftRequireAmount uint64,

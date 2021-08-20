@@ -45,7 +45,7 @@ func TestMintNft_FromStringSlice(t *testing.T) {
 			},
 			args: args{
 				source: []string{
-					strconv.Itoa(metadataCommon.Pdexv3MintNft),
+					strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta),
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 					string(data),
 				},
@@ -104,7 +104,7 @@ func TestMintNft_StringSlice(t *testing.T) {
 				action: strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 			},
 			want: []string{
-				strconv.Itoa(metadataCommon.Pdexv3MintNft),
+				strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta),
 				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 				string(data),
 			},

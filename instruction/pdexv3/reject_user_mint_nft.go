@@ -33,7 +33,7 @@ func (r *RejectUserMintNft) FromStringSlice(source []string) error {
 	if len(source) != 3 {
 		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
 	}
-	if source[0] != strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta) {
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, source[0])
 	}
 	if source[1] != common.Pdexv3RejectUserMintNftStatus {

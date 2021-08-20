@@ -248,7 +248,6 @@ func (sp *stateProcessorV2) matchContribution(
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
 		return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
 	}
-
 	return waitingContributions, deletedWaitingContributions, poolPairs, &contribStatus, nil
 }
 
@@ -307,7 +306,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	} else {
 		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
 			contribStatus = v2utils.ContributionStatus{
-				Status:                  common.PDEContributionMatchedChainStatus,
+				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
 				Token0ID:                matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Token0ContributedAmount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				Token0ReturnedAmount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
@@ -317,7 +316,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			}
 		} else {
 			contribStatus = v2utils.ContributionStatus{
-				Status:                  common.PDEContributionMatchedChainStatus,
+				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
 				Token1ID:                matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Token1ContributedAmount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				Token1ReturnedAmount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
@@ -483,9 +482,9 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	var err error
 	switch inst[1] {
 	case common.PDEWithdrawalRejectedChainStatus:
-		err = sp.rejectWithdrawLiquidity(stateDB, inst)
+		_, err = sp.rejectWithdrawLiquidity(stateDB, inst)
 	case common.PDEWithdrawalAcceptedChainStatus:
-		poolPairs, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs)
+		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs)
 	}
 	if err != nil {
 		return poolPairs, err
@@ -496,11 +495,11 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 
 func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 	stateDB *statedb.StateDB, inst []string,
-) error {
+) (*v2utils.WithdrawStatus, error) {
 	rejectWithdrawLiquidity := instruction.NewRejectWithdrawLiquidity()
 	err := rejectWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	withdrawStatus := v2utils.WithdrawStatus{
 		Status: common.PDEWithdrawalRejectedChainStatus,
@@ -512,27 +511,27 @@ func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 		[]byte(rejectWithdrawLiquidity.TxReqID().String()),
 		contentBytes,
 	)
-	return err
+	return &withdrawStatus, err
 }
 
 func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	stateDB *statedb.StateDB, inst []string,
 	poolPairs map[string]*PoolPairState,
-) (map[string]*PoolPairState, error) {
+) (map[string]*PoolPairState, *v2utils.WithdrawStatus, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
 	err := acceptWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
-		return poolPairs, err
+		return poolPairs, nil, err
 	}
 	poolPair, ok := poolPairs[acceptWithdrawLiquidity.PoolPairID()]
 	if !ok || poolPair == nil {
 		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
-		return poolPairs, err
+		return poolPairs, nil, err
 	}
 	share, ok := poolPair.shares[acceptWithdrawLiquidity.NftID().String()]
 	if !ok || share == nil {
 		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
-		return poolPairs, err
+		return poolPairs, nil, err
 	}
 	poolPair.updateSingleTokenAmount(
 		acceptWithdrawLiquidity.TokenID(),
@@ -542,13 +541,14 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	if !found {
 		sp.withdrawTxCache[acceptWithdrawLiquidity.TxReqID().String()] = acceptWithdrawLiquidity.TokenAmount()
 	}
+	var withdrawStatus *v2utils.WithdrawStatus
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
 		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.updateShareAmount(
 			acceptWithdrawLiquidity.ShareAmount(), share, subOperator)
 		if err != nil {
-			return poolPairs, err
+			return poolPairs, nil, err
 		}
-		withdrawStatus := v2utils.WithdrawStatus{
+		withdrawStatus = &v2utils.WithdrawStatus{
 			Status:       common.PDEWithdrawalAcceptedChainStatus,
 			Token0ID:     poolPair.state.Token0ID().String(),
 			Token0Amount: token0Amount,
@@ -563,7 +563,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			contentBytes,
 		)
 	}
-	return poolPairs, err
+	return poolPairs, withdrawStatus, err
 }
 
 func (sp *stateProcessorV2) addOrder(
@@ -592,7 +592,7 @@ func (sp *stateProcessorV2) addOrder(
 	return pairs, orderbooks, nil
 }
 
-func (sp *stateProcessorV2) mintNft(
+func (sp *stateProcessorV2) userMintNft(
 	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64,
 ) (map[string]uint64, error) {
 	if len(inst) != 3 {

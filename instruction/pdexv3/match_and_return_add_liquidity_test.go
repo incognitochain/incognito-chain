@@ -28,7 +28,6 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		contributionState,
 		100, 100, 200, 100,
 		*tokenHash,
-		common.PRVCoinID,
 	)
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
@@ -40,7 +39,6 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		existedTokenActualAmount uint64
 		existedTokenReturnAmount uint64
 		existedTokenID           common.Hash
-		nftID                    common.Hash
 	}
 	type args struct {
 		source []string
@@ -92,7 +90,6 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				existedTokenActualAmount: 200,
 				existedTokenReturnAmount: 100,
 				existedTokenID:           *tokenHash,
-				nftID:                    common.PRVCoinID,
 			},
 			args: args{
 				source: []string{
@@ -113,7 +110,6 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
-				nftID:                    tt.fields.nftID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAndReturnAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
@@ -134,7 +130,6 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		contributionState,
 		100, 100, 200, 100,
 		*tokenHash,
-		common.PRVCoinID,
 	)
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
@@ -182,7 +177,6 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
-				nftID:                    tt.fields.nftID,
 			}
 			got, err := m.StringSlice()
 			if (err != nil) != tt.wantErr {

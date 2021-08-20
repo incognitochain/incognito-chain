@@ -21,14 +21,13 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
-	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id", common.PRVCoinID)
+	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id")
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
 
 	type fields struct {
 		contribution  statedb.Pdexv3ContributionState
 		newPoolPairID string
-		nftID         common.Hash
 	}
 	type args struct {
 		source []string
@@ -76,7 +75,6 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 			fieldsAfterProcess: fields{
 				contribution:  contributionState,
 				newPoolPairID: "pool_pair_id",
-				nftID:         common.PRVCoinID,
 			},
 			args: args{
 				source: []string{
@@ -93,7 +91,6 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 			m := &MatchAddLiquidity{
 				contribution:  tt.fields.contribution,
 				newPoolPairID: tt.fields.newPoolPairID,
-				nftID:         tt.fields.nftID,
 			}
 			if err := m.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("MatchAddLiquidity.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
@@ -107,10 +104,6 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 				t.Errorf("newPoolPairID expect = %v, but get %v", tt.fieldsAfterProcess.newPoolPairID, m.newPoolPairID)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(m.nftID, tt.fieldsAfterProcess.nftID) {
-				t.Errorf("nftID expect = %v, but get %v", tt.fieldsAfterProcess.nftID, m.nftID)
-				return
-			}
 		})
 	}
 }
@@ -122,7 +115,7 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
 		), "pair_hash",
 	)
-	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id", common.PRVCoinID)
+	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id")
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
 
@@ -157,7 +150,6 @@ func TestMatchAddLiquidity_StringSlice(t *testing.T) {
 			m := &MatchAddLiquidity{
 				contribution:  tt.fields.contribution,
 				newPoolPairID: tt.fields.newPoolPairID,
-				nftID:         tt.fields.nftID,
 			}
 			got, err := m.StringSlice()
 			if (err != nil) != tt.wantErr {

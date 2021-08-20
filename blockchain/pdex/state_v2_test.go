@@ -309,7 +309,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 		poolPairs                   map[string]*PoolPairState
 		params                      Params
 		stakingPoolsState           map[string]*StakingPoolState
-		nftIDs                      map[string]bool
+		nftIDs                      map[string]uint64
 		producer                    stateProducerV2
 		processor                   stateProcessorV2
 	}

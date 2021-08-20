@@ -201,7 +201,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		}
 		switch metadataType {
 		case metadataCommon.Pdexv3MintNftRequestMeta:
-			s.nftIDs, err = s.processor.mintNft(env.StateDB(), inst, s.nftIDs)
+			s.nftIDs, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
 				Logger.log.Debugf("process inst %s err %v:", inst, err)
 				continue
@@ -273,7 +273,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	mintNftInstructions := [][]string{}
-	mintNftInstructions, s.nftIDs, err = s.producer.mintNft(mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
+	mintNftInstructions, s.nftIDs, err = s.producer.userMintNft(mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}

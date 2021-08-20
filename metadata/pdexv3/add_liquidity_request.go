@@ -90,7 +90,7 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
 	if nftID.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
 	}
 	otaReceive := privacy.OTAReceiver{}
 	err = otaReceive.FromString(request.otaReceive)
