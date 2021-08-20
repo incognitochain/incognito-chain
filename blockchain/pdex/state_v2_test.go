@@ -339,7 +339,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{

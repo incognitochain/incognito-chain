@@ -346,7 +346,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -381,7 +381,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -417,7 +417,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -434,7 +434,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -469,7 +469,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -506,7 +506,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -537,7 +537,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -577,7 +577,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -611,7 +611,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -652,7 +652,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -824,7 +824,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -845,7 +845,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -871,7 +871,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -892,7 +892,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -918,7 +918,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -939,7 +939,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
@@ -965,7 +965,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
-							map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+							map[common.Hash]*big.Int{},
 							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
@@ -986,7 +986,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
-						map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+						map[common.Hash]*big.Int{},
 						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{

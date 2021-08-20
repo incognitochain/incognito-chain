@@ -43,7 +43,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -61,7 +61,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -89,7 +89,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -107,7 +107,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -185,7 +185,7 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -248,7 +248,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(100),
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -266,7 +266,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(150),
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -294,7 +294,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -312,7 +312,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -389,7 +389,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 					big.NewInt(0).SetUint64(150),
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -415,7 +415,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 					big.NewInt(0).SetUint64(100),
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -438,7 +438,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -464,7 +464,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -546,7 +546,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(150),
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -572,7 +572,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(100),
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -594,7 +594,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -620,7 +620,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -692,7 +692,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -711,7 +711,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -740,7 +740,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -759,7 +759,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -788,7 +788,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -807,7 +807,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -836,7 +836,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
@@ -855,7 +855,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(1200),
 					20000,
-					map[common.Hash]uint64{}, map[common.Hash]*big.Int{},
+					map[common.Hash]*big.Int{},
 					map[common.Hash]uint64{}, map[common.Hash]uint64{},
 				),
 				shares: map[string]*Share{
