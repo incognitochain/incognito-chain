@@ -172,7 +172,7 @@ func buildPdev3UserMintNft(
 
 	var instShardID byte
 	var tokenID common.Hash
-	var otaReceiveStr, status string
+	var otaReceiveStr, status, txReqID string
 	var amount uint64
 	switch inst[1] {
 	case common.Pdexv3RejectUserMintNftStatus:
@@ -185,6 +185,7 @@ func buildPdev3UserMintNft(
 		tokenID = common.PRVCoinID
 		otaReceiveStr = refundInst.OtaReceive()
 		amount = refundInst.Amount()
+		txReqID = refundInst.TxReqID().String()
 	case common.Pdexv3AcceptUserMintNftStatus:
 		acceptInst := instruction.NewAcceptUserMintNft()
 		err := acceptInst.FromStringSlice(inst)
@@ -195,6 +196,7 @@ func buildPdev3UserMintNft(
 		tokenID = acceptInst.NftID()
 		otaReceiveStr = acceptInst.OtaReceive()
 		amount = 1
+		txReqID = acceptInst.TxReqID().String()
 	default:
 		return tx, errors.New("Can not recognie status")
 	}
@@ -202,12 +204,13 @@ func buildPdev3UserMintNft(
 		return tx, nil
 	}
 
+	status = inst[1]
 	otaReceive := privacy.OTAReceiver{}
 	err := otaReceive.FromString(otaReceiveStr)
 	if err != nil {
 		return tx, err
 	}
-	metaData := metadataPdexv3.NewUserMintNftResponseWithValue(status, otaReceiveStr)
+	metaData := metadataPdexv3.NewUserMintNftResponseWithValue(status, txReqID)
 	tx, err = buildMintTokenTx(tokenID, amount, otaReceive, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)

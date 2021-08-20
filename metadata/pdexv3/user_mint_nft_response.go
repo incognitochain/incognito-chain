@@ -196,6 +196,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			err := json.Unmarshal(contentBytes, &instContent)
 			if err != nil {
 				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 				continue
 			}
 			instShardID = instContent.ShardID
@@ -241,7 +242,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		metadataCommon.Logger.Log.Debugf("no Pdexv3 withdraw liquidity instruction tx %s", tx.Hash().String())
+		metadataCommon.Logger.Log.Debugf("no Pdexv3 user mint nft instruction tx %s", tx.Hash().String())
 		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 user mint nft instruction tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
