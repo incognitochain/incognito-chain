@@ -275,7 +275,7 @@ func (sp *stateProducerV2) trade(
 	var fees, sellAmounts []uint64
 	var feeInPRVMap map[string]bool
 	var err error
-	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
+	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
 	if err != nil {
 		return result, pairs, fmt.Errorf("Error converting fee %v", err)
 	}
@@ -358,7 +358,7 @@ func (sp *stateProducerV2) addOrder(
 	var fees, sellAmounts []uint64
 	var feeInPRVMap map[string]bool
 	var err error
-	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getFeeInSellingToken(txs, pairs, params)
+	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
 	if err != nil {
 		return result, pairs, fmt.Errorf("Error converting fee %v", err)
 	}

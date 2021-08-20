@@ -756,9 +756,10 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 	return resultMap
 }
 
-// getFeeInSellingToken() converts the fee paid in PRV to the equivalent token amount.
+// getWeightedFee() converts the fee paid in PRV to the equivalent token amount,
+// then applies the system's discount rate. Fee paid in non-PRV tokens remain the same.
 // It supports trade & addOrder requests
-func getFeeInSellingToken(txs []metadata.Transaction, pairs map[string]*PoolPairState, params Params,
+func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState, params Params,
 ) ([]metadata.Transaction, map[string]bool, []uint64, []uint64, []metadata.Transaction, error) {
 	temp := uint64(100) - uint64(params.PRVDiscountPercent)
 	if temp > 100 {
@@ -768,6 +769,7 @@ func getFeeInSellingToken(txs []metadata.Transaction, pairs map[string]*PoolPair
 	rateMap := getTokenPricesAgainstPRV(pairs)
 	var resultTransactions, invalidTransactions []metadata.Transaction
 	var fees, sellAmounts []uint64
+	// true indicates fee paid in PRV while selling other token
 	feeInPRVMap := make(map[string]bool)
 	for _, tx := range txs {
 		md := tx.GetMetadata()
@@ -788,30 +790,41 @@ func getFeeInSellingToken(txs []metadata.Transaction, pairs map[string]*PoolPair
 			invalidTransactions = append(invalidTransactions, tx)
 			continue
 		}
-		// error was handled by tx validation
-		_, burnedPRVCoin, _, _, _ := tx.GetTxFullBurnData()
-		if sellingTokenID != common.PRVCoinID && burnedPRVCoin != nil {
-			rates, exists := rateMap[sellingTokenID]
-			if !exists {
-				Logger.log.Warnf("Cannot get price of token %s against PRV", sellingTokenID.String())
-				invalidTransactions = append(invalidTransactions, tx)
-				continue
-			}
+
+		if sellingTokenID == common.PRVCoinID {
+			// sell & fee in PRV
 			temp := big.NewInt(0).SetUint64(fee)
-			temp.Mul(temp, rates[0])
 			// convert the fee from PRV to equivalent token by applying discount percent
 			temp.Mul(temp, big.NewInt(100))
 			temp.Div(temp, discountPercent)
-			// divisions moved to last to improve precision
-			temp.Div(temp, rates[1])
-			if !temp.IsUint64() {
-				Logger.log.Warnf("Equivalent fee out of uint64 range")
-				invalidTransactions = append(invalidTransactions, tx)
-				continue
-			}
-			// mark the fee as paid in PRV, and return the equivalent token amount
 			fee = temp.Uint64()
-			feeInPRV = true
+		} else {
+			// error was handled by tx validation
+			_, burnedPRVCoin, _, _, _ := tx.GetTxFullBurnData()
+			if burnedPRVCoin != nil {
+				// sell other token & fee in PRV
+				rates, exists := rateMap[sellingTokenID]
+				if !exists {
+					Logger.log.Warnf("Cannot get price of token %s against PRV", sellingTokenID.String())
+					invalidTransactions = append(invalidTransactions, tx)
+					continue
+				}
+				temp := big.NewInt(0).SetUint64(fee)
+				temp.Mul(temp, rates[0])
+				// convert the fee from PRV to equivalent token by applying discount percent
+				temp.Mul(temp, big.NewInt(100))
+				temp.Div(temp, discountPercent)
+				// divisions moved to last to improve precision
+				temp.Div(temp, rates[1])
+				if !temp.IsUint64() {
+					Logger.log.Warnf("Equivalent fee out of uint64 range")
+					invalidTransactions = append(invalidTransactions, tx)
+					continue
+				}
+				// mark the fee as paid in PRV, and return the equivalent token amount
+				fee = temp.Uint64()
+				feeInPRV = true
+			}
 		}
 		resultTransactions = append(resultTransactions, tx)
 		fees = append(fees, fee)
