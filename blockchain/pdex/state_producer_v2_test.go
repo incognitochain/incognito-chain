@@ -986,3 +986,90 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 		})
 	}
 }
+
+func Test_stateProducerV2_userMintNft(t *testing.T) {
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
+	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+
+	rejectInst, err := instruction.NewRejectUserMintNftWithValue(validOTAReceiver0, 100, 1, *txReqID).StringSlice()
+	assert.Nil(t, err)
+	acceptInst, err := instruction.NewAcceptUserMintNftWithValue(
+		validOTAReceiver0, 100, 1, *nftHash1, *txReqID,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	metaData := metadataPdexv3.NewUserMintNftRequestWithValue(validOTAReceiver0, 100)
+	tx := &metadataMocks.Transaction{}
+	tx.On("GetMetadata").Return(metaData)
+	valEnv := tx_generic.DefaultValEnv()
+	valEnv = tx_generic.WithShardID(valEnv, 1)
+	tx.On("GetValidationEnv").Return(valEnv)
+	tx.On("Hash").Return(txReqID)
+
+	type fields struct {
+		stateProducerBase stateProducerBase
+	}
+	type args struct {
+		txs                  []metadata.Transaction
+		nftIDs               map[string]uint64
+		beaconHeight         uint64
+		mintNftRequireAmount uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    [][]string
+		want1   map[string]uint64
+		wantErr bool
+	}{
+		{
+			name:   "Reject mint nft",
+			fields: fields{},
+			args: args{
+				txs:                  []metadata.Transaction{tx},
+				beaconHeight:         10,
+				mintNftRequireAmount: 1000,
+				nftIDs:               map[string]uint64{},
+			},
+			want:    [][]string{rejectInst},
+			want1:   map[string]uint64{},
+			wantErr: false,
+		},
+		{
+			name:   "Valid mint nft",
+			fields: fields{},
+			args: args{
+				txs:                  []metadata.Transaction{tx},
+				beaconHeight:         10,
+				mintNftRequireAmount: 100,
+				nftIDs:               map[string]uint64{},
+			},
+			want: [][]string{acceptInst},
+			want1: map[string]uint64{
+				nftID1: 100,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProducerV2{
+				stateProducerBase: tt.fields.stateProducerBase,
+			}
+			got, got1, err := sp.userMintNft(tt.args.txs, tt.args.nftIDs, tt.args.beaconHeight, tt.args.mintNftRequireAmount)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProducerV2.userMintNft() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProducerV2.userMintNft() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProducerV2.userMintNft() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

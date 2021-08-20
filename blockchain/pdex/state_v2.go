@@ -201,7 +201,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		}
 		switch metadataType {
 		case metadataCommon.Pdexv3MintNftRequestMeta:
-			s.nftIDs, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
+			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
 				Logger.log.Debugf("process inst %s err %v:", inst, err)
 				continue

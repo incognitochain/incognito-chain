@@ -422,7 +422,7 @@ func (sp *stateProducerV2) userMintNft(
 		inst := []string{}
 		var err error
 		if metaData.Amount() != mintNftRequireAmount {
-			inst, err = instruction.NewRefundUserMintNftWithValue(
+			inst, err = instruction.NewRejectUserMintNftWithValue(
 				metaData.OtaReceive(), metaData.Amount(), shardID, txReqID,
 			).StringSlice()
 			if err != nil {

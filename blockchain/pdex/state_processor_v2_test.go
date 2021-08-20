@@ -1115,13 +1115,15 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 }
 
 func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
-	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	initDB()
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
-	token1ID, err := common.Hash{}.NewHashFromStr("456")
-	assert.Nil(t, err)
-	txHash, err := common.Hash{}.NewHashFromStr("abc")
-	assert.Nil(t, err)
+
 	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
+	assert.Nil(t, err)
+
+	// valid insturction
+	inst, err := instruction.NewRejectWithdrawLiquidityWithValue(*nftHash, 1).StringSlice()
 	assert.Nil(t, err)
 
 	type fields struct {
@@ -1140,7 +1142,18 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 		want    *v2utils.WithdrawStatus
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "Valid input",
+			fields: fields{},
+			args: args{
+				stateDB: sDB,
+				inst:    inst,
+			},
+			want: &v2utils.WithdrawStatus{
+				Status: common.PDEWithdrawalRejectedChainStatus,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1156,6 +1169,96 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("stateProcessorV2.rejectWithdrawLiquidity() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_stateProcessorV2_userMintNft(t *testing.T) {
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
+	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+
+	initDB()
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+
+	rejectInst, err := instruction.NewRejectUserMintNftWithValue(validOTAReceiver0, 100, 1, *txReqID).StringSlice()
+	assert.Nil(t, err)
+	acceptInst, err := instruction.NewAcceptUserMintNftWithValue(
+		validOTAReceiver0, 100, 1, *nftHash1, *txReqID,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	type fields struct {
+		pairHashCache      map[string]string
+		withdrawTxCache    map[string]uint64
+		stateProcessorBase stateProcessorBase
+	}
+	type args struct {
+		stateDB *statedb.StateDB
+		inst    []string
+		nftIDs  map[string]uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    map[string]uint64
+		want1   *v2utils.MintNftStatus
+		wantErr bool
+	}{
+		{
+			name:   "Reject mint nft",
+			fields: fields{},
+			args: args{
+				stateDB: sDB,
+				inst:    rejectInst,
+				nftIDs:  map[string]uint64{},
+			},
+			want: map[string]uint64{},
+			want1: &v2utils.MintNftStatus{
+				Status:      common.Pdexv3RejectUserMintNftStatus,
+				BurntAmount: 100,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Accept mint nft",
+			args: args{
+				stateDB: sDB,
+				inst:    acceptInst,
+				nftIDs:  map[string]uint64{},
+			},
+			want: map[string]uint64{
+				nftID1: 100,
+			},
+			want1: &v2utils.MintNftStatus{
+				Status:      common.Pdexv3AcceptUserMintNftStatus,
+				BurntAmount: 100,
+				NftID:       nftID1,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProcessorV2{
+				pairHashCache:      tt.fields.pairHashCache,
+				withdrawTxCache:    tt.fields.withdrawTxCache,
+				stateProcessorBase: tt.fields.stateProcessorBase,
+			}
+			got, got1, err := sp.userMintNft(tt.args.stateDB, tt.args.inst, tt.args.nftIDs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProcessorV2.userMintNft() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProcessorV2.userMintNft() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProcessorV2.userMintNft() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

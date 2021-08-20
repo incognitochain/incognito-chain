@@ -20,7 +20,7 @@ func NewRejectUserMintNft() *RejectUserMintNft {
 	return &RejectUserMintNft{}
 }
 
-func NewRefundUserMintNftWithValue(otaReceive string, amount uint64, shardID byte, txReqID common.Hash) *RejectUserMintNft {
+func NewRejectUserMintNftWithValue(otaReceive string, amount uint64, shardID byte, txReqID common.Hash) *RejectUserMintNft {
 	return &RejectUserMintNft{
 		otaReceive: otaReceive,
 		amount:     amount,

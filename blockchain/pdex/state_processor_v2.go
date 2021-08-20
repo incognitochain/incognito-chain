@@ -594,36 +594,38 @@ func (sp *stateProcessorV2) addOrder(
 
 func (sp *stateProcessorV2) userMintNft(
 	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64,
-) (map[string]uint64, error) {
+) (map[string]uint64, *v2utils.MintNftStatus, error) {
 	if len(inst) != 3 {
-		return nftIDs, fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
+		return nftIDs, nil, fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
 	}
 	status := utils.EmptyString
 	nftID := utils.EmptyString
 	txReqID := utils.EmptyString
 	var burntAmount uint64
 	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta) {
-		switch inst[1] {
-		case common.Pdexv3RejectUserMintNftStatus:
-			status = common.Pdexv3RejectUserMintNftStatus
-			refundInst := instruction.NewRejectUserMintNft()
-			err := refundInst.FromStringSlice(inst)
-			if err != nil {
-				return nftIDs, err
-			}
-			burntAmount = refundInst.Amount()
-		case common.Pdexv3AcceptUserMintNftStatus:
-			status = common.Pdexv3AcceptUserMintNftStatus
-			acceptInst := instruction.NewAcceptUserMintNft()
-			err := acceptInst.FromStringSlice(inst)
-			if err != nil {
-				return nftIDs, err
-			}
-			burntAmount = acceptInst.BurntAmount()
-			nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
-		default:
-			return nftIDs, errors.New("Can not recognie status")
+		return nftIDs, nil, fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
+	}
+	switch inst[1] {
+	case common.Pdexv3RejectUserMintNftStatus:
+		status = common.Pdexv3RejectUserMintNftStatus
+		refundInst := instruction.NewRejectUserMintNft()
+		err := refundInst.FromStringSlice(inst)
+		if err != nil {
+			return nftIDs, nil, err
 		}
+		burntAmount = refundInst.Amount()
+	case common.Pdexv3AcceptUserMintNftStatus:
+		status = common.Pdexv3AcceptUserMintNftStatus
+		acceptInst := instruction.NewAcceptUserMintNft()
+		err := acceptInst.FromStringSlice(inst)
+		if err != nil {
+			return nftIDs, nil, err
+		}
+		nftID = acceptInst.NftID().String()
+		burntAmount = acceptInst.BurntAmount()
+		nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
+	default:
+		return nftIDs, nil, errors.New("Can not recognie status")
 	}
 
 	mintNftStatus := v2utils.MintNftStatus{
@@ -633,7 +635,7 @@ func (sp *stateProcessorV2) userMintNft(
 	}
 	data, err := json.Marshal(mintNftStatus)
 	if err != nil {
-		return nftIDs, err
+		return nftIDs, nil, err
 	}
 
 	err = statedb.TrackPdexv3Status(
@@ -642,5 +644,5 @@ func (sp *stateProcessorV2) userMintNft(
 		[]byte(txReqID),
 		data,
 	)
-	return nftIDs, nil
+	return nftIDs, &mintNftStatus, nil
 }
