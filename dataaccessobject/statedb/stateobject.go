@@ -117,7 +117,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3TradingFeeObjectWithValue(db, hash, value)
 	case Pdexv3NftObjectType:
 		return newPdexv3NftObjectWithValue(db, hash, value)
-
+	case Pdexv3OrderObjectType:
+		return newPdexv3OrderObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -215,6 +216,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3TradingFeeObject(db, hash)
 	case Pdexv3NftObjectType:
 		return newPdexv3NftObject(db, hash)
+	case Pdexv3OrderObjectType:
+		return newPdexv3OrderObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

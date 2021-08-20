@@ -59,6 +59,7 @@ const (
 	ErrInvalidPdexv3ShareStateType        = "invalid pdex v3 share state type"
 	ErrInvalidPdexv3TradingFeetateType    = "invalid pdex v3 trading fee state type"
 	ErrInvalidPdexv3NftStateType          = "invalid pdex v3 nft state type"
+	ErrInvalidPdexv3OrderStateType        = "invalid pdex v3 order state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

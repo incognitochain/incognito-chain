@@ -2,9 +2,10 @@ package pdex
 
 import (
 	"encoding/json"
-	"sort"
-	"math/big"
 	"fmt"
+	"math/big"
+	"reflect"
+	"sort"
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -86,4 +87,51 @@ func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, 
 	default:
 		return nil, "", fmt.Errorf("Invalid trade direction %d", tradeDirection)
 	}
+}
+
+// RemoveOrder() removes one order by its index
+func (ob *Orderbook) RemoveOrder(index int) error {
+	if index < 0 || index >= len(ob.orders) {
+		return fmt.Errorf("Invalid order index %d for orderbook length %d", index, len(ob.orders))
+	}
+	ob.orders = append(ob.orders[:index], ob.orders[index+1:]...)
+	return nil
+}
+
+func (ob *Orderbook) getDiff(otherBook *Orderbook,
+	stateChange *StateChange) *StateChange {
+	newStateChange := stateChange
+	theirOrdersByID := make(map[string]*Order)
+	for _, ord := range otherBook.orders {
+		theirOrdersByID[ord.Id()] = ord
+	}
+	myOrdersByID := make(map[string]*Order)
+	for _, ord := range ob.orders {
+		myOrdersByID[ord.Id()] = ord
+	}
+
+	// mark new & updated orders as changed
+	for _, ord := range ob.orders {
+		if existingOrder, exists := theirOrdersByID[ord.Id()]; !exists ||
+			!reflect.DeepEqual(*ord, *existingOrder) {
+			newStateChange.orderIDs[ord.Id()] = true
+		}
+	}
+
+	// mark deleted orders as changed
+	for _, ord := range otherBook.orders {
+		if _, exists := myOrdersByID[ord.Id()]; !exists {
+			newStateChange.orderIDs[ord.Id()] = true
+		}
+	}
+	return newStateChange
+}
+
+func (ob *Orderbook) Clone() Orderbook {
+	result := &Orderbook{make([]*Order, len(ob.orders))}
+	for index, item := range ob.orders {
+		var temp Order = *item
+		result.orders[index] = &temp
+	}
+	return *result
 }

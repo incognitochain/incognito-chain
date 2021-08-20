@@ -245,6 +245,12 @@ const (
 	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
 	getPdexv3WithdrawLiquidityStatus      = "pdexv3_getWithdrawLiquidityStatus"
 	getPdexv3MintNftStatus                = "pdexv3_getMintNftStatus"
+	pdexv3TxTrade                         = "pdexv3_txTrade"
+	pdexv3TxAddOrder                      = "pdexv3_txAddOrder"
+	pdexv3TxWithdrawOrder                 = "pdexv3_txWithdrawOrder"
+	pdexv3GetTradeStatus                  = "pdexv3_getTradeStatus"
+	pdexv3GetAddOrderStatus               = "pdexv3_getAddOrderStatus"
+	pdexv3GetWithdrawOrderStatus          = "pdexv3_getWithdrawOrderStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

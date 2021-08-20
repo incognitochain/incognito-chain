@@ -70,6 +70,7 @@ const (
 	Pdexv3ShareObjectType
 	Pdexv3TradingFeeObjectType
 	Pdexv3NftObjectType
+	Pdexv3OrderObjectType
 )
 
 // Prefix length

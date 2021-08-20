@@ -131,9 +131,19 @@ func initStateV2(
 				tradingFees, shareState.LastUpdatedBeaconHeight(),
 			)
 		}
-		// TODO: read order book from storage
-		orderbook := Orderbook{}
-		poolPair := NewPoolPairStateWithValue(poolPairState.Value(), shares, orderbook)
+
+		orderbook := &Orderbook{[]*Order{}}
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairState.PoolPairID())
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range orderMap {
+			v := item.Value()
+			orderbook.InsertOrder(&v)
+		}
+		poolPair := NewPoolPairStateWithValue(
+			poolPairState.Value(), shares, *orderbook,
+		)
 		poolPairs[poolPairID] = poolPair
 	}
 
@@ -229,6 +239,14 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
 				s.poolPairs,
 			)
+		case metadataCommon.Pdexv3AddOrderRequestMeta:
+			s.poolPairs, err = s.processor.addOrder(env.StateDB(), inst,
+				s.poolPairs,
+			)
+		case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+			s.poolPairs, err = s.processor.withdrawOrder(env.StateDB(), inst,
+				s.poolPairs,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -246,6 +264,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	modifyParamsTxs := []metadata.Transaction{}
 	tradeTxs := []metadata.Transaction{}
 	mintNftTxs := []metadata.Transaction{}
+	addOrderTxs := []metadata.Transaction{}
+	withdrawOrderTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -268,6 +288,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				modifyParamsTxs = append(modifyParamsTxs, tx)
 			case metadataCommon.Pdexv3TradeRequestMeta:
 				tradeTxs = append(tradeTxs, tx)
+			case metadataCommon.Pdexv3AddOrderRequestMeta:
+				addOrderTxs = append(addOrderTxs, tx)
+			case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+				withdrawOrderTxs = append(withdrawOrderTxs, tx)
 			}
 		}
 	}
@@ -299,16 +323,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, addLiquidityInstructions...)
 
-	var tradeInstructions [][]string
-	tradeInstructions, s.poolPairs, err = s.producer.trade(
-		tradeTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, tradeInstructions...)
-
 	// handle modify params
 	var modifyParamsInstructions [][]string
 	modifyParamsInstructions, s.params, err = s.producer.modifyParams(
@@ -320,6 +334,39 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, modifyParamsInstructions...)
+
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
+
+	var addOrderInstructions [][]string
+	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
+		addOrderTxs,
+		s.poolPairs,
+		s.nftIDs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addOrderInstructions...)
+
+	var withdrawOrderInstructions [][]string
+	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
+		withdrawOrderTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawOrderInstructions...)
 
 	return instructions, nil
 }
@@ -388,6 +435,29 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 					err := statedb.StorePdexv3TradingFee(
 						env.StateDB(), poolPairID, nftID, tokenID, tradingFee,
 					)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		ordersByID := make(map[string]*Order)
+		for _, ord := range poolPairState.orderbook.orders {
+			ordersByID[ord.Id()] = ord
+		}
+		for orderID, changed := range stateChange.orderIDs {
+			if changed {
+				if order, exists := ordersByID[orderID]; exists {
+					// update order in db
+					orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
+					err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
+					if err != nil {
+						return err
+					}
+				} else {
+					// delete order from db
+					err = statedb.DeletePdexv3Order(env.StateDB(), poolPairID, orderID)
 					if err != nil {
 						return err
 					}

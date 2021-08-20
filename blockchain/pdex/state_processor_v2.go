@@ -409,7 +409,7 @@ func (sp *stateProcessorV2) trade(
 	var trackedStatus metadataPdexv3.TradeStatus
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.TradeAcceptedStatus):
-		currentTrade = &instruction.Action{Content: metadataPdexv3.AcceptedTrade{}}
+		currentTrade = &instruction.Action{Content: &metadataPdexv3.AcceptedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
 			return pairs, err
@@ -443,6 +443,8 @@ func (sp *stateProcessorV2) trade(
 					return pairs, err
 				}
 			}
+			// write changes to state
+			pairs[pairID] = pair
 		}
 
 		trackedStatus = metadataPdexv3.TradeStatus{
@@ -450,7 +452,7 @@ func (sp *stateProcessorV2) trade(
 			TokenToBuy: md.TokenToBuy,
 		}
 	case strconv.Itoa(metadataPdexv3.TradeRefundedStatus):
-		currentTrade = &instruction.Action{Content: metadataPdexv3.RefundedTrade{}}
+		currentTrade = &instruction.Action{Content: &metadataPdexv3.RefundedTrade{}}
 		err := currentTrade.FromStringSlice(inst)
 		if err != nil {
 			return pairs, err
@@ -569,27 +571,137 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 func (sp *stateProcessorV2) addOrder(
 	stateDB *statedb.StateDB,
 	inst []string,
-	pairs map[string]PoolPairState,
-	orderbooks map[string]Orderbook,
-) (map[string]PoolPairState, map[string]Orderbook, error) {
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	var currentOrder *instruction.Action
+	var trackedStatus metadataPdexv3.AddOrderStatus
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
-		currentTrade := &instruction.Action{Content: metadataPdexv3.AcceptedAddOrder{}}
-		err := currentTrade.FromStringSlice(inst)
+		currentOrder = &instruction.Action{Content: &metadataPdexv3.AcceptedAddOrder{}}
+		err := currentOrder.FromStringSlice(inst)
 		if err != nil {
-			return pairs, orderbooks, err
+			return pairs, err
 		}
+
+		// skip error checking since concrete type is specified above
+		md, _ := currentOrder.Content.(*metadataPdexv3.AcceptedAddOrder)
+		trackedStatus.OrderID = md.OrderID
+
+		pair, exists := pairs[md.PoolPairID]
+		if !exists {
+			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
+		}
+		
+		// fee for this request is deducted right away, while the fee stored in the order itself
+		// starts from 0 and will accumulate over time
+		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, md.NftID, md.Token0Rate, md.Token1Rate,
+			md.Token0Balance, md.Token1Balance, md.TradeDirection, 0)
+		pair.orderbook.InsertOrder(newOrder)
+		// write changes to state
+		pairs[md.PoolPairID] = pair
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
-		currentTrade := &instruction.Action{Content: metadataPdexv3.RefundedAddOrder{}}
-		err := currentTrade.FromStringSlice(inst)
+		currentOrder = &instruction.Action{Content: &metadataPdexv3.RefundedAddOrder{}}
+		err := currentOrder.FromStringSlice(inst)
 		if err != nil {
-			return pairs, orderbooks, err
+			return pairs, err
 		}
 	default:
-		return pairs, orderbooks, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
-	// TODO : apply state changes
-	return pairs, orderbooks, nil
+
+	// store tracked order status
+	trackedStatus.Status = currentOrder.GetStatus()
+	marshaledTrackedStatus, err := json.Marshal(trackedStatus)
+	if err != nil {
+		return pairs, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3AddOrderStatusPrefix(),
+		currentOrder.RequestTxID[:],
+		marshaledTrackedStatus,
+	)
+	return pairs, nil
+}
+
+func (sp *stateProcessorV2) withdrawOrder(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	var currentOrder *instruction.Action
+	var trackedStatus metadataPdexv3.WithdrawOrderStatus
+	switch inst[1] {
+	case strconv.Itoa(metadataPdexv3.WithdrawOrderAcceptedStatus):
+		currentOrder = &instruction.Action{Content: &metadataPdexv3.AcceptedWithdrawOrder{}}
+		err := currentOrder.FromStringSlice(inst)
+		if err != nil {
+			return pairs, err
+		}
+
+		// skip error checking since concrete type is specified above
+		md, _ := currentOrder.Content.(*metadataPdexv3.AcceptedWithdrawOrder)
+		trackedStatus.TokenID = md.TokenID
+		trackedStatus.WithdrawAmount = md.Amount
+
+		pair, exists := pairs[md.PoolPairID]
+		if !exists {
+			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
+		}
+
+		for index, ord := range pair.orderbook.orders {
+			if ord.Id() == md.OrderID {
+				if md.TokenID == pair.state.Token0ID() {
+					newBalance := ord.Token0Balance() - md.Amount
+					if newBalance > ord.Token0Balance() {
+						return pairs, fmt.Errorf("Cannot withdraw more than current token0 balance from order %s",
+							md.OrderID)
+					}
+					ord.SetToken0Balance(newBalance)
+					// remove order when both balances are cleared
+					if newBalance == 0 && ord.Token1Balance() == 0 {
+						pair.orderbook.RemoveOrder(index)
+					}
+				} else if md.TokenID == pair.state.Token1ID() {
+					newBalance := ord.Token1Balance() - md.Amount
+					if newBalance > ord.Token1Balance() {
+						return pairs, fmt.Errorf("Cannot withdraw more than current token1 balance from order %s",
+							md.OrderID)
+					}
+					ord.SetToken1Balance(newBalance)
+					// remove order when both balances are cleared
+					if newBalance == 0 && ord.Token0Balance() == 0 {
+						pair.orderbook.RemoveOrder(index)
+					}
+				}
+			}
+		}
+
+		// write changes to state
+		pairs[md.PoolPairID] = pair
+	case strconv.Itoa(metadataPdexv3.WithdrawOrderRejectedStatus):
+		currentOrder = &instruction.Action{Content: &metadataPdexv3.RejectedWithdrawOrder{}}
+		err := currentOrder.FromStringSlice(inst)
+		if err != nil {
+			return pairs, err
+		}
+	default:
+		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
+	}
+
+	// store tracked order status
+	trackedStatus.Status = currentOrder.GetStatus()
+	marshaledTrackedStatus, err := json.Marshal(trackedStatus)
+	if err != nil {
+		return pairs, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawOrderStatusPrefix(),
+		currentOrder.RequestTxID[:],
+		marshaledTrackedStatus,
+	)
+	return pairs, nil
 }
 
 func (sp *stateProcessorV2) userMintNft(

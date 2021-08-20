@@ -136,14 +136,14 @@ type ShareChange struct {
 type StateChange struct {
 	poolPairIDs map[string]bool
 	shares      map[string]*ShareChange
-	orders      map[string]map[int]bool
+	orderIDs    map[string]bool
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
 		poolPairIDs: make(map[string]bool),
 		shares:      make(map[string]*ShareChange),
-		orders:      make(map[string]map[int]bool),
+		orderIDs:    make(map[string]bool),
 	}
 }
 
