@@ -59,7 +59,8 @@ func (share *Share) Clone() *Share {
 	}
 	res.lastLPFeesPerShare = make(map[common.Hash]*big.Int)
 	for k, v := range share.lastLPFeesPerShare {
-		res.lastLPFeesPerShare[k] = v
+		res.lastLPFeesPerShare[k] = new(big.Int)
+		*res.lastLPFeesPerShare[k] = *v
 	}
 	return res
 }

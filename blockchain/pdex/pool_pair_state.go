@@ -285,7 +285,7 @@ func (p *PoolPairState) updateShare(
 	nftID string,
 	shareAmount uint64, share *Share, operator byte,
 ) (*Share, error) {
-	newShare := share
+	newShare := share.Clone()
 	var err error
 	newShare.amount, err = executeOperationUint64(newShare.amount, shareAmount, operator)
 	if err != nil {

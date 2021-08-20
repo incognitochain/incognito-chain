@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -103,4 +104,28 @@ func buildFeeWithdrawalRequestActionForTest(
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta), actionContentBase64Str}
 	return action
+}
+
+func convertToLPFeesPerShare(totalFee uint64, totalShare uint64) *big.Int {
+	result := new(big.Int).Mul(new(big.Int).SetUint64(totalFee), BaseLPFeesPerShare)
+	result = new(big.Int).Div(result, new(big.Int).SetUint64(totalShare))
+	return result
+}
+
+func getStrPoolPairState(p *PoolPairState) string {
+	result := "\n"
+	result += fmt.Sprintf("Pool Pair: %+v\n", p)
+	result += fmt.Sprintf("Virtual amount: token0 %v, token1 %v\n", p.state.Token0VirtualAmount().String(), p.state.Token1VirtualAmount().String())
+	result += fmt.Sprintf("LP Fees Per Share\n")
+	for tokenID := range p.state.LPFeesPerShare() {
+		result += fmt.Sprintf(" %v: %v\n", tokenID, p.state.LPFeesPerShare()[tokenID].String())
+	}
+	result += fmt.Sprintf("Shares\n")
+	for tokenID, value := range p.shares {
+		result += fmt.Sprintf(" %v: %v\n", tokenID, value)
+		for _tokenID := range value.lastLPFeesPerShare {
+			result += fmt.Sprintf("  %v: %v\n", _tokenID, value.lastLPFeesPerShare[_tokenID])
+		}
+	}
+	return result
 }
