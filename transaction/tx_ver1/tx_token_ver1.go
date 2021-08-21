@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
@@ -147,23 +146,12 @@ func (tx *TxToken) Init(paramsInterface interface{}) error {
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.TokenParams.PropertyID)
 			existed := statedb.PrivacyTokenIDExisted(params.TransactionStateDB, *propertyID)
 			if !existed {
-				isBridgeToken := false
-				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(params.BridgeStateDB)
+				isBridgeToken, err := statedb.IsBridgeToken(params.BridgeStateDB, *propertyID)
 				if err != nil {
 					return utils.NewTransactionErr(utils.TokenIDExistedError, err)
 				}
-				if len(allBridgeTokensBytes) > 0 {
-					var allBridgeTokens []*rawdbv2.BridgeTokenInfo
-					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-					if err != nil {
-						return utils.NewTransactionErr(utils.TokenIDExistedError, err)
-					}
-					for _, bridgeTokens := range allBridgeTokens {
-						if propertyID.IsEqual(bridgeTokens.TokenID) {
-							isBridgeToken = true
-							break
-						}
-					}
+				if !isBridgeToken {
+					return utils.NewTransactionErr(utils.TokenIDExistedError, errors.New("invalid Token ID"))
 				}
 				if !isBridgeToken {
 					return utils.NewTransactionErr(utils.TokenIDExistedError, errors.New("invalid Token ID"))
