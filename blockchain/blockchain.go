@@ -602,6 +602,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		if v.NumberOfShardBlock == nil {
+			v.NumberOfShardBlock = make(map[byte]uint)
+		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
