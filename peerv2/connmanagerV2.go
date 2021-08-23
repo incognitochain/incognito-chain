@@ -167,14 +167,15 @@ func (cm *ConnManager) CloseConnToCurHW(isDisconnected bool) {
 	}
 	Logger.Infof("Closing connection to HW %v", addrInfo.ID.Pretty())
 	if !isDisconnected {
+		if err := cm.LocalHost.Host.Network().ClosePeer(addrInfo.ID); err != nil {
+			Logger.Errorf("Failed closing connection to old highway: hwID = %s err = %v", addrInfo.ID.Pretty(), err)
+		}
+	} else {
 		Logger.Infof("[debugdisconnect] Send signal stop to Requester -->")
 		if cm.Requester.isRunning {
 			cm.Requester.stop <- 0
 		}
 		Logger.Infof("Send signal stop to Requester DONE")
-		if err := cm.LocalHost.Host.Network().ClosePeer(addrInfo.ID); err != nil {
-			Logger.Errorf("Failed closing connection to old highway: hwID = %s err = %v", addrInfo.ID.Pretty(), err)
-		}
 	}
 	cm.hwLocker.Lock()
 	cm.currentHW = nil
