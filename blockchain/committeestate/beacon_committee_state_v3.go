@@ -45,7 +45,7 @@ func NewBeaconCommitteeStateV3WithValue(
 }
 
 func (b *BeaconCommitteeStateV3) Version() int {
-	return DCS_VERSION
+	return STAKING_FLOW_V3
 }
 
 //shallowCopy maintain dst mutex value

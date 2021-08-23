@@ -34,9 +34,9 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 	switch version {
 	case SELF_SWAP_SHARD_VERSION:
 		return initGenesisBeaconCommitteeStateV1(env)
-	case SLASHING_VERSION:
+	case STAKING_FLOW_V2:
 		return initGenesisBeaconCommitteeStateV2(env)
-	case DCS_VERSION:
+	case STAKING_FLOW_V3:
 		return initGenesisBeaconCommitteeStateV3(env)
 	default:
 		panic("not valid committee state version")
@@ -91,7 +91,7 @@ func NewBeaconCommitteeState(
 			rewardReceivers,
 			stakingTx,
 		)
-	case SLASHING_VERSION:
+	case STAKING_FLOW_V2:
 		committeeState = NewBeaconCommitteeStateV2WithValue(
 			tempBeaconCommittee,
 			tempShardCommittee,
@@ -104,7 +104,7 @@ func NewBeaconCommitteeState(
 			swapRule,
 			assignRule,
 		)
-	case DCS_VERSION:
+	case STAKING_FLOW_V3:
 		committeeState = NewBeaconCommitteeStateV3WithValue(
 			tempBeaconCommittee,
 			tempShardCommittee,
@@ -126,10 +126,10 @@ func NewBeaconCommitteeState(
 //VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64) int {
 	if beaconHeight >= stakingV3Height {
-		return DCS_VERSION
+		return STAKING_FLOW_V3
 	}
 	if beaconHeight >= stakingV2Height {
-		return SLASHING_VERSION
+		return STAKING_FLOW_V2
 	}
 	return SELF_SWAP_SHARD_VERSION
 }

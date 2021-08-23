@@ -93,7 +93,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
-	if shardBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
+	if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
 		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV3Height {
 			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV3Height
 		}

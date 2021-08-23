@@ -62,7 +62,7 @@ func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
 
 //Version :
 func (b *BeaconCommitteeStateV2) Version() int {
-	return SLASHING_VERSION
+	return STAKING_FLOW_V2
 }
 
 func initGenesisBeaconCommitteeStateV2(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV2 {

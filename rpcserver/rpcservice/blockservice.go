@@ -195,7 +195,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			}
 			result.Txs = append(result.Txs, transactionResult)
 		}
-		if shardBlock.Header.Version == types.DCS_VERSION {
+		if shardBlock.Header.Version == types.BLOCK_PRODUCINGV3_VERSION {
 			temp, err := blockService.BlockChain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 			if err != nil {
 				return nil, NewRPCError(RestoreShardCommittee, err)
@@ -336,7 +336,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				}
 				res.Txs = append(res.Txs, transactionT)
 			}
-			if shardBlock.Header.Version == types.DCS_VERSION {
+			if shardBlock.Header.Version == types.BLOCK_PRODUCINGV3_VERSION {
 				temp, err := blockService.BlockChain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 				if err != nil {
 					return nil, NewRPCError(RestoreShardCommittee, err)
@@ -1347,4 +1347,3 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err
 }
-

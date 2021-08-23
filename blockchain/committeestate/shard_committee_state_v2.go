@@ -53,7 +53,7 @@ func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 
 //Version ...
 func (s *ShardCommitteeStateV2) Version() int {
-	return SLASHING_VERSION
+	return STAKING_FLOW_V2
 }
 
 //GetShardCommittee get shard committees

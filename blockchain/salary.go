@@ -403,7 +403,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 
-	if curView.CommitteeStateVersion() == committeestate.DCS_VERSION {
+	if curView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,

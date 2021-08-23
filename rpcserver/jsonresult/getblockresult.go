@@ -123,8 +123,7 @@ func NewGetBlockResult(block *types.ShardBlock, size uint64, nextBlockHash strin
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.CommitteeFromBlock = block.Header.CommitteeFromBlock
 	getBlockResult.ProposeTime = block.Header.ProposeTime
-	if block.Header.Version != types.DCS_VERSION {
-	}
+
 	return getBlockResult
 }
 

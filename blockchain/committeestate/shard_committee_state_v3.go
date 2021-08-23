@@ -46,7 +46,7 @@ func initGenesisShardCommitteeStateV3(env *ShardCommitteeStateEnvironment) *Shar
 }
 
 func (s ShardCommitteeStateV3) Version() int {
-	return DCS_VERSION
+	return STAKING_FLOW_V3
 }
 
 func (s ShardCommitteeStateV3) Clone() ShardCommitteeState {

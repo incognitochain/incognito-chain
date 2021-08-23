@@ -403,11 +403,11 @@ func InitShardCommitteeState(
 		}
 	}
 	switch version {
-	case committeestate.SLASHING_VERSION:
+	case committeestate.STAKING_FLOW_V2:
 		return committeestate.NewShardCommitteeStateV2WithValue(
 			committees,
 		)
-	case committeestate.DCS_VERSION:
+	case committeestate.STAKING_FLOW_V3:
 		return committeestate.NewShardCommitteeStateV3WithValue(
 			committees,
 		)
@@ -467,10 +467,10 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		if err := shardBestState.checkStakingFlowV3Config(); err != nil {
 			return err
 		}
-		if shardBestState.CommitteeStateVersion() != committeestate.SLASHING_VERSION {
+		if shardBestState.CommitteeStateVersion() != committeestate.STAKING_FLOW_V2 {
 			return nil
 		}
-		if shardBestState.CommitteeStateVersion() == committeestate.DCS_VERSION {
+		if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
 			return nil
 		}
 	}
@@ -478,7 +478,7 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		if shardBestState.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 			return nil
 		}
-		if shardBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
+		if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
 			return nil
 		}
 	}
@@ -597,16 +597,16 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	}
-	switch shardBestState.CommitteeStateVersion() {
-	case committeestate.SELF_SWAP_SHARD_VERSION:
+	switch shardBlock.Header.Version {
+	case types.BFT_VERSION, types.MULTI_VIEW_VERSION:
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
-	case committeestate.SLASHING_VERSION:
+	case types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION:
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
 		return committees, committees, nil
-	case committeestate.DCS_VERSION:
+	case types.BLOCK_PRODUCINGV3_VERSION:
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err

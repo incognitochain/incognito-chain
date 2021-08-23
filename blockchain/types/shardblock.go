@@ -43,11 +43,11 @@ type ShardHeader struct {
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
 
-	//for version 2
+	//for version >= 2
 	Proposer    string
 	ProposeTime int64
 
-	//for version 3
+	//for version >= 3
 	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
 }
 

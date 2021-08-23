@@ -708,7 +708,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-	if shardState.Version == types.DCS_VERSION {
+	if shardState.Version == types.BLOCK_PRODUCINGV3_VERSION {
 		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,
@@ -1163,9 +1163,9 @@ func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
 	addedValidators map[byte][]incognitokey.CommitteePublicKey,
 ) error {
 
-	if beaconCurView.CommitteeStateVersion() < committeestate.DCS_VERSION {
+	if beaconCurView.CommitteeStateVersion() < committeestate.STAKING_FLOW_V3 {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
-	} else if beaconCurView.CommitteeStateVersion() == committeestate.DCS_VERSION {
+	} else if beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
 		return beaconCurView.storeAllShardSubstitutesValidatorV3(addedValidators)
 	}
 

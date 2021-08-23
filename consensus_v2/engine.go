@@ -314,8 +314,12 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
+	if chainHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
+		return types.BLOCK_PRODUCINGV3_VERSION
+	}
+
 	if chainHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
-		return types.DCS_VERSION
+		return types.SHARD_SFV3_VERSION
 	}
 
 	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {

@@ -653,7 +653,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
-		beaconBestState.CommitteeStateVersion() >= committeestate.SLASHING_VERSION &&
+		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 &&
 		beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	} else {
@@ -690,7 +690,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
-		beaconBestState.CommitteeStateVersion() >= committeestate.SLASHING_VERSION &&
+		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 &&
 		beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	} else {
@@ -750,7 +750,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		config.Param().ConsensusParam.AssignRuleV3Height,
 	)
 
-	if version >= committeestate.SLASHING_VERSION {
+	if version >= committeestate.STAKING_FLOW_V2 {
 		shardCommonPool = nextEpochShardCandidate
 		swapRule = committeestate.GetSwapRuleVersion(beaconBestState.BeaconHeight, config.Param().ConsensusParam.StakingFlowV3Height)
 
@@ -874,10 +874,10 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		if err := beaconBestState.checkStakingFlowV3Config(); err != nil {
 			return err
 		}
-		if beaconBestState.beaconCommitteeState.Version() != committeestate.SLASHING_VERSION {
+		if beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2 {
 			return nil
 		}
-		if beaconBestState.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V3 {
 			return nil
 		}
 	}
@@ -885,7 +885,7 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 			return nil
 		}
-		if beaconBestState.beaconCommitteeState.Version() == committeestate.SLASHING_VERSION {
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V2 {
 			return nil
 		}
 	}
@@ -981,7 +981,7 @@ func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeCh
 
 func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
 
-	if beaconBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
+	if beaconBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.beaconCommitteeState.AssignRuleVersion() == committeestate.ASSIGN_RULE_V2 {
 			beaconBestState.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2).UpgradeAssignRuleV3()
 			Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Assign Rule from V2 to V3", beaconBestState.BeaconHeight)

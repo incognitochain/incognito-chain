@@ -11,8 +11,8 @@ var (
 const (
 	STATE_TEST_VERSION      = 0
 	SELF_SWAP_SHARD_VERSION = 1
-	SLASHING_VERSION        = 2
-	DCS_VERSION             = 3
+	STAKING_FLOW_V2         = 2
+	STAKING_FLOW_V3         = 3
 )
 
 const (
