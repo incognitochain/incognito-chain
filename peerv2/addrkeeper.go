@@ -512,23 +512,27 @@ func (keeper *AddrKeeper) exportStatus() AllConnectionStatus {
 		}
 		if _, ok := keeper.ignoreHW.Get(rpcUrl); !ok {
 			rttInfo, ok := keeper.lastRTT[*addr]
-			if (!ok) || (rttInfo.avgRTT > 500*time.Millisecond) {
-				listB = append(listB, ConnectionStatus{
-					URL:         rpcUrl,
-					RTT:         rttInfo.avgRTT.String(),
-					IsCurrentHW: isCurHW,
-				})
-			} else {
+			if (ok) && (rttInfo.avgRTT < 500*time.Millisecond) {
 				listA = append(listA, ConnectionStatus{
 					URL:         rpcUrl,
 					RTT:         rttInfo.avgRTT.String(),
 					IsCurrentHW: isCurHW,
 				})
+			} else {
+				stt := ConnectionStatus{
+					URL:         rpcUrl,
+					RTT:         (555 * time.Millisecond).String(),
+					IsCurrentHW: isCurHW,
+				}
+				if ok {
+					stt.RTT = rttInfo.avgRTT.String()
+				}
+				listB = append(listB, stt)
 			}
 		} else {
 			listC = append(listC, ConnectionStatus{
 				URL:         rpcUrl,
-				RTT:         "1000000",
+				RTT:         "inf",
 				IsCurrentHW: isCurHW,
 			})
 		}

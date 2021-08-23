@@ -44,6 +44,8 @@ func NewRequester(prtc GRPCDialer) *BlockRequester {
 	return req
 }
 
+// WARNING: If you call this function outside of keepConnection or WatchConnection,
+// pls send signal stop to BlockRequester first.
 func (c *BlockRequester) closeConnection(id int) {
 	c.Lock()
 	defer c.Unlock()
@@ -58,6 +60,7 @@ func (c *BlockRequester) closeConnection(id int) {
 	c.conn = nil
 }
 
+// keepConnection for connmanager V1
 func (c *BlockRequester) keepConnection() {
 	currentHWID := peer.ID("")
 	watchTimestep := time.NewTicker(RequesterDialTimestep)
