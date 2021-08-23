@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -1064,62 +1062,62 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess()
 	return testcases, expectedRes
 }
 
-func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
-	fmt.Println("Running TestBatchUnshieldProcess - beacon height 45 ...")
-	//bc := s.blockChain
-	// mock test
-	bc := new(mocks.ChainRetriever)
-	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
-	bc.On("GetFinalBeaconHeight").Return(uint64(42))
-	tokenID := portal.TestnetPortalV4BTCID
-	bcH := uint64(0)
-	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
-
-	pm := portal.NewPortalManager()
-	beaconHeight := uint64(45)
-	shardHeights := map[byte]uint64{
-		0: uint64(1003),
-	}
-	shardID := byte(0)
-
-	s.SetupTestBatchUnshieldProcess()
-
-	// build test cases and expected results
-	testcases, expectedResults := s.buildTestCaseAndExpectedResultBatchUnshieldProcess()
-	if len(testcases) != len(expectedResults) {
-		fmt.Printf("Testcases and expected results is invalid")
-		return
-	}
-
-	for i := 0; i < len(testcases); i++ {
-		tc := testcases[i]
-		expectedRes := expectedResults[i]
-
-		s.currentPortalStateForProducer.UTXOs = tc.utxos
-		s.currentPortalStateForProducer.WaitingUnshieldRequests = tc.waitingUnshieldReqs
-		s.currentPortalStateForProcess.UTXOs = tc.utxos
-		s.currentPortalStateForProcess.WaitingUnshieldRequests = tc.waitingUnshieldReqs
-		s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-		s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-
-		// beacon producer instructions
-		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
-		s.Equal(nil, err)
-
-		// process new instructions
-		err = processPortalInstructionsV4(
-			bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
-
-		// check results
-		s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)), "FAILED AT TESTCASE %v", i)
-		s.Equal(nil, err, "FAILED AT TESTCASE %v", i)
-
-		s.Equal(expectedRes.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests, "FAILED AT TESTCASE %v", i)
-		s.Equal(expectedRes.batchUnshieldProcesses, s.currentPortalStateForProducer.ProcessedUnshieldRequests, "FAILED AT TESTCASE %v", i)
-		s.Equal(expectedRes.utxos, s.currentPortalStateForProducer.UTXOs, "FAILED AT TESTCASE %v", i)
-		s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer, "FAILED AT TESTCASE %v", i)
-	}
-}
+//func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
+//	fmt.Println("Running TestBatchUnshieldProcess - beacon height 45 ...")
+//	//bc := s.blockChain
+//	// mock test
+//	bc := new(mocks.ChainRetriever)
+//	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+//	bc.On("GetFinalBeaconHeight").Return(uint64(42))
+//	tokenID := portal.TestnetPortalV4BTCID
+//	bcH := uint64(0)
+//	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
+//
+//	pm := portal.NewPortalManager()
+//	beaconHeight := uint64(45)
+//	shardHeights := map[byte]uint64{
+//		0: uint64(1003),
+//	}
+//	shardID := byte(0)
+//
+//	s.SetupTestBatchUnshieldProcess()
+//
+//	// build test cases and expected results
+//	testcases, expectedResults := s.buildTestCaseAndExpectedResultBatchUnshieldProcess()
+//	if len(testcases) != len(expectedResults) {
+//		fmt.Printf("Testcases and expected results is invalid")
+//		return
+//	}
+//
+//	for i := 0; i < len(testcases); i++ {
+//		tc := testcases[i]
+//		expectedRes := expectedResults[i]
+//
+//		s.currentPortalStateForProducer.UTXOs = tc.utxos
+//		s.currentPortalStateForProducer.WaitingUnshieldRequests = tc.waitingUnshieldReqs
+//		s.currentPortalStateForProcess.UTXOs = tc.utxos
+//		s.currentPortalStateForProcess.WaitingUnshieldRequests = tc.waitingUnshieldReqs
+//		s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+//		s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+//
+//		// beacon producer instructions
+//		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
+//		s.Equal(nil, err)
+//
+//		// process new instructions
+//		err = processPortalInstructionsV4(
+//			bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
+//
+//		// check results
+//		s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)), "FAILED AT TESTCASE %v", i)
+//		s.Equal(nil, err, "FAILED AT TESTCASE %v", i)
+//
+//		s.Equal(expectedRes.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests, "FAILED AT TESTCASE %v", i)
+//		s.Equal(expectedRes.batchUnshieldProcesses, s.currentPortalStateForProducer.ProcessedUnshieldRequests, "FAILED AT TESTCASE %v", i)
+//		s.Equal(expectedRes.utxos, s.currentPortalStateForProducer.UTXOs, "FAILED AT TESTCASE %v", i)
+//		s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer, "FAILED AT TESTCASE %v", i)
+//	}
+//}
 
 /*
 	Feature 7: fee replacement
@@ -1429,91 +1427,91 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 	return testcases, expectedRes
 }
 
-func (s *PortalTestSuiteV4) TestFeeReplacement() {
-	fmt.Println("Running TestCaseFeeReplacement - beacon height 1501 ...")
-	networkName := "test3"
-	genesisBlockHeight := 1938974
-	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
-	dbName := "btc-blocks-test"
-	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
-	defer os.RemoveAll(dbName)
-
-	if err != nil {
-		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
-		return
-	}
-
-	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+1; i++ {
-		blk, err := buildBTCBlockFromCypher(networkName, i)
-		if err != nil {
-			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
-			return
-		}
-		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
-		if err != nil {
-			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
-			return
-		}
-		if isOrphan {
-			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
-			return
-		}
-		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
-		time.Sleep(500 * time.Millisecond)
-	}
-
-	bc := new(mocks.ChainRetriever)
-	bc.On("GetBTCHeaderChain").Return(btcChain)
-	bc.On("CheckBlockTimeIsReachedByBeaconHeight", mock.AnythingOfTypeArgument("uint64"), mock.AnythingOfTypeArgument("uint64"), mock.AnythingOfTypeArgument("time.Duration")).Return(
-		func(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool {
-			{
-				return (recentBeaconHeight+1)-beaconHeight >= s.blockChain.convertDurationTimeToBeaconBlocks(duration)
-			}
-		})
-	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
-	tokenID := portal.TestnetPortalV4BTCID
-	bcH := uint64(0)
-	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
-
-	beaconHeight := uint64(1501)
-	shardHeights := map[byte]uint64{
-		0: uint64(1501),
-	}
-	shardID := byte(0)
-	pm := portal.NewPortalManager()
-
-	s.SetupTestFeeReplacement()
-
-	unshieldBatchPool := s.currentPortalStateForProducer.ProcessedUnshieldRequests
-	for key, unshieldBatch := range unshieldBatchPool {
-		fmt.Printf("token %v - unshield batch: %v\n", key, unshieldBatch)
-	}
-
-	testcases, expectedResult := buildExpectedResultFeeReplacement(s)
-
-	// build actions from testcases
-	instsForProducer := buildFeeReplacementActionsFromTcs(testcases, shardID)
-
-	newInsts, err := producerPortalInstructionsV4(
-		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm.PortalInstProcessorsV4)
-	s.Equal(nil, err)
-
-	// process new instructions
-	err = processPortalInstructionsV4(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
-
-	// check results
-	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
-	s.Equal(nil, err)
-
-	for i, inst := range newInsts {
-		s.Equal(expectedResult.statusInsts[i], inst[2], "Instruction index %v", i)
-	}
-
-	s.Equal(expectedResult.processedUnshieldRequests, s.currentPortalStateForProducer.ProcessedUnshieldRequests)
-
-	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
-}
+//func (s *PortalTestSuiteV4) TestFeeReplacement() {
+//	fmt.Println("Running TestCaseFeeReplacement - beacon height 1501 ...")
+//	networkName := "test3"
+//	genesisBlockHeight := 1938974
+//	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+//	dbName := "btc-blocks-test"
+//	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
+//	defer os.RemoveAll(dbName)
+//
+//	if err != nil {
+//		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+//		return
+//	}
+//
+//	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+1; i++ {
+//		blk, err := buildBTCBlockFromCypher(networkName, i)
+//		if err != nil {
+//			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+//			return
+//		}
+//		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+//		if err != nil {
+//			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+//			return
+//		}
+//		if isOrphan {
+//			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+//			return
+//		}
+//		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+//		time.Sleep(500 * time.Millisecond)
+//	}
+//
+//	bc := new(mocks.ChainRetriever)
+//	bc.On("GetBTCHeaderChain").Return(btcChain)
+//	bc.On("CheckBlockTimeIsReachedByBeaconHeight", mock.AnythingOfTypeArgument("uint64"), mock.AnythingOfTypeArgument("uint64"), mock.AnythingOfTypeArgument("time.Duration")).Return(
+//		func(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool {
+//			{
+//				return (recentBeaconHeight+1)-beaconHeight >= s.blockChain.convertDurationTimeToBeaconBlocks(duration)
+//			}
+//		})
+//	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+//	tokenID := portal.TestnetPortalV4BTCID
+//	bcH := uint64(0)
+//	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
+//
+//	beaconHeight := uint64(1501)
+//	shardHeights := map[byte]uint64{
+//		0: uint64(1501),
+//	}
+//	shardID := byte(0)
+//	pm := portal.NewPortalManager()
+//
+//	s.SetupTestFeeReplacement()
+//
+//	unshieldBatchPool := s.currentPortalStateForProducer.ProcessedUnshieldRequests
+//	for key, unshieldBatch := range unshieldBatchPool {
+//		fmt.Printf("token %v - unshield batch: %v\n", key, unshieldBatch)
+//	}
+//
+//	testcases, expectedResult := buildExpectedResultFeeReplacement(s)
+//
+//	// build actions from testcases
+//	instsForProducer := buildFeeReplacementActionsFromTcs(testcases, shardID)
+//
+//	newInsts, err := producerPortalInstructionsV4(
+//		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm.PortalInstProcessorsV4)
+//	s.Equal(nil, err)
+//
+//	// process new instructions
+//	err = processPortalInstructionsV4(
+//		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
+//
+//	// check results
+//	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
+//	s.Equal(nil, err)
+//
+//	for i, inst := range newInsts {
+//		s.Equal(expectedResult.statusInsts[i], inst[2], "Instruction index %v", i)
+//	}
+//
+//	s.Equal(expectedResult.processedUnshieldRequests, s.currentPortalStateForProducer.ProcessedUnshieldRequests)
+//
+//	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
+//}
 
 /*
 	Feature 8: submit confirmed external transaction
