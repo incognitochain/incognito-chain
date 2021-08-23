@@ -602,6 +602,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		if v.NumberOfShardBlock == nil {
+			v.NumberOfShardBlock = make(map[byte]uint)
+		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
@@ -793,6 +796,10 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
 		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
 	}
+
+	// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
+	// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
+	beaconView.NumberOfShardBlock = make(map[byte]uint, beaconView.ActiveShards)
 
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
@@ -998,6 +1005,27 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 }
 
 func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
+	height := bc.GetLastBeaconHeightInEpoch(epoch)
+	var beaconConsensusRootHash common.Hash
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
+		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
+			return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, result), nil
+		}
+	}
+	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
+	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
+	return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, allCommitteeState), nil
+}
+
+func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][]*statedb.StakerInfoV2, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
