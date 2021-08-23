@@ -43,7 +43,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				substitutes: []string{
 					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				},
-				minCommitteeSize:        20,
+				minCommitteeSize:        8,
 				maxCommitteeSize:        20,
 				typeIns:                 instruction.SWAP_BY_END_EPOCH,
 				numberOfFixedValidators: 8,
