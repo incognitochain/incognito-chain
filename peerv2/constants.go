@@ -18,8 +18,8 @@ var (
 	RegisterTimestep          = 2 * time.Second // Re-register to highway
 	CheckSubsTimestep         = 5 * time.Second // Re-register to highway
 	ReconnectHighwayTimestep  = 1 * time.Second // Check libp2p connection
-	ReEstimatedRTTTimestep    = 5 * time.Minute
-	UpdateHighwayListTimestep = 10 * time.Minute // RPC to update list of highways
+	ReEstimatedRTTTimestep    = 3 * time.Minute
+	UpdateHighwayListTimestep = 5 * time.Minute  // RPC to update list of highways
 	RequesterDialTimestep     = 10 * time.Second // Check gRPC connection
 	MaxTimePerRequest         = 30 * time.Second // Time per request
 	DialTimeout               = 5 * time.Second  // Timeout for dialing's context
