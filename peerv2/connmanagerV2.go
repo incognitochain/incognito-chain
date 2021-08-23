@@ -166,12 +166,12 @@ func (cm *ConnManager) CloseConnToCurHW(isDisconnected bool) {
 		return
 	}
 	Logger.Infof("Closing connection to HW %v", addrInfo.ID.Pretty())
-	Logger.Infof("[debugdisconnect] Send signal stop to Requester -->")
-	if cm.Requester.isRunning {
-		cm.Requester.stop <- 0
-	}
-	Logger.Infof("Send signal stop to Requester DONE")
 	if !isDisconnected {
+		Logger.Infof("[debugdisconnect] Send signal stop to Requester -->")
+		if cm.Requester.isRunning {
+			cm.Requester.stop <- 0
+		}
+		Logger.Infof("Send signal stop to Requester DONE")
 		if err := cm.LocalHost.Host.Network().ClosePeer(addrInfo.ID); err != nil {
 			Logger.Errorf("Failed closing connection to old highway: hwID = %s err = %v", addrInfo.ID.Pretty(), err)
 		}
@@ -208,8 +208,9 @@ func (cm *ConnManager) manageHighwayConnection() {
 			sameHW := true
 			if cm.currentHW != nil {
 				if cm.currentHW.Libp2pAddr != newHW.Libp2pAddr {
-					Logger.Infof("[debugGRPC] New HW and current HW is the same")
 					sameHW = false
+				} else {
+					Logger.Infof("[debugGRPC] New HW and current HW is the same")
 				}
 			}
 			cm.hwLocker.RUnlock()
