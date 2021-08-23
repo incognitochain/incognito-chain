@@ -224,6 +224,12 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3WithdrawalLPFeeStatus:                (*HttpServer).handleGetPdexv3WithdrawalLPFeeStatus,
 	createAndSendTxWithPdexv3WithdrawlProtocolFee: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawProtocolFee,
 	getPdexv3WithdrawalProtocolFeeStatus:          (*HttpServer).handleGetPdexv3WithdrawalProtocolFeeStatus,
+	pdexv3TxTrade:                                 (*HttpServer).handlePdexv3TxTradeRequest,
+	pdexv3TxAddOrder:                              (*HttpServer).handlePdexv3TxAddOrderRequest,
+	pdexv3TxWithdrawOrder:                         (*HttpServer).handlePdexv3TxWithdrawOrderRequest,
+	pdexv3GetTradeStatus:                          (*HttpServer).handlePdexv3GetTradeStatus,
+	pdexv3GetAddOrderStatus:                       (*HttpServer).handlePdexv3GetAddOrderStatus,
+	pdexv3GetWithdrawOrderStatus:                  (*HttpServer).handlePdexv3GetWithdrawOrderStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

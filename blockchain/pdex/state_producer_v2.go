@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
@@ -306,85 +307,284 @@ func (sp *stateProducerV2) mintPDEX(
 func (sp *stateProducerV2) trade(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
+	params *Params,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
+	var invalidTxs []metadataCommon.Transaction
+	var fees, sellAmounts []uint64
+	var feeInPRVMap map[string]bool
+	var err error
+	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
+	if err != nil {
+		return result, pairs, fmt.Errorf("Error converting fee %v", err)
+	}
+	sort.SliceStable(txs, func(i, j int) bool {
+		// compare the fee / sellAmount ratio by comparing products
+		fi := big.NewInt(0).SetUint64(fees[i])
+		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
+		fj := big.NewInt(0).SetUint64(fees[j])
+		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
 
-	// TODO: sort
-	// tradeRequests := sortByFee(
-	// 	tradeRequests,
-	// 	beaconHeight,
-	// 	pairs,
-	// )
+		// sort descending
+		return fi.Cmp(fj) == 1
+	})
 
 	for _, tx := range txs {
 		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
 		if !ok {
-			return result, pairs, errors.New("Can not parse add liquidity metadata")
+			return result, pairs, errors.New("Cannot parse trade metadata")
 		}
-
-		currentAction := instruction.NewAction(
-			metadataPdexv3.RefundedTrade{
-				Receiver:    currentTrade.RefundReceiver,
-				TokenToSell: currentTrade.TokenToSell,
-				Amount:      currentTrade.SellAmount,
-			},
-			*tx.Hash(),
-			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
-		)
-		var refundInst []string = currentAction.StringSlice()
+		// sender & receiver shard must be the same
+		refundInstructions, err := getRefundedTradeInstructions(currentTrade,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
+		}
 
 		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+		tradeOutputReceiver, exists := currentTrade.Receiver[tokenToBuy]
 		// anytime the trade handler fails, add a refund instruction
-		if err != nil {
+		if err != nil || !exists {
 			Logger.log.Warnf("Error preparing trade path: %v", err)
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue
 		}
 
-		acceptedInst, _, err :=
-			v2.MaybeAcceptTrade(currentAction, currentTrade.SellAmount, currentTrade.TradingFee,
-				currentTrade.TradePath, currentTrade.Receiver, reserves,
-				tradeDirections, tokenToBuy, orderbookList)
+		acceptedTradeMd, _, err := v2.MaybeAcceptTrade(
+			currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.TradePath,
+			tradeOutputReceiver, reserves, tradeDirections,
+			tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList,
+		)
 		if err != nil {
 			Logger.log.Warnf("Error handling trade: %v", err)
-			result = append(result, refundInst)
+			result = append(result, refundInstructions...)
 			continue
 		}
-
-		result = append(result, acceptedInst)
+		action := instruction.NewAction(
+			acceptedTradeMd,
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+		result = append(result, action.StringSlice())
 	}
 
+	// refund invalid-by-fee tradeRequests
+	for _, tx := range invalidTxs {
+		currentTrade, ok := tx.GetMetadata().(*metadataPdexv3.TradeRequest)
+		if !ok {
+			return result, pairs, fmt.Errorf("Cannot parse trade metadata")
+		}
+		refundInstructions, err := getRefundedTradeInstructions(currentTrade,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
+		}
+		result = append(result, refundInstructions...)
+	}
+	Logger.log.Warnf("Trade instructions: %v", result)
 	return result, pairs, nil
 }
 
 func (sp *stateProducerV2) addOrder(
 	txs []metadata.Transaction,
-	pairs map[string]PoolPairState,
-) ([][]string, map[string]PoolPairState, error) {
+	pairs map[string]*PoolPairState,
+	nftIDs map[string]bool,
+	params *Params,
+) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
-	var orderRequests []metadataPdexv3.AddOrderRequest
+	var invalidTxs []metadataCommon.Transaction
+	var fees, sellAmounts []uint64
+	var feeInPRVMap map[string]bool
+	var err error
+	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
+	if err != nil {
+		return result, pairs, fmt.Errorf("Error converting fee %v", err)
+	}
+	sort.SliceStable(txs, func(i, j int) bool {
+		// compare the fee / sellAmount ratio by comparing products
+		fi := big.NewInt(0).SetUint64(fees[i])
+		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
+		fj := big.NewInt(0).SetUint64(fees[j])
+		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
 
+		// sort descending
+		return fi.Cmp(fj) == 1
+	})
+
+TransactionLoop:
 	for _, tx := range txs {
-		item, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
+		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
 		if !ok {
-			return result, pairs, errors.New("Can not parse add liquidity metadata")
+			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
-		orderRequests = append(orderRequests, *item)
+		// sender & receiver shard must be the same
+		refundInstructions, err := getRefundedAddOrderInstructions(currentOrderReq,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
+		}
+
+		if exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
+			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
+
+		pair, exists := pairs[currentOrderReq.PoolPairID]
+		if !exists {
+			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
+
+		orderID := tx.Hash().String()
+		orderbook := pair.orderbook
+		for _, ord := range orderbook.orders {
+			if ord.Id() == orderID {
+				Logger.log.Warnf("Cannot add existing order ID %s", orderID)
+				// on any error, append a refund instruction & continue to next tx
+				result = append(result, refundInstructions...)
+				continue TransactionLoop
+			}
+		}
+
+		if currentOrderReq.TradingFee >= currentOrderReq.SellAmount {
+			Logger.log.Warnf("Order %s cannot afford trading fee of %d", orderID, currentOrderReq.TradingFee)
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
+		// prepare order data
+		sellAmountAfterFee := currentOrderReq.SellAmount
+
+		var tradeDirection byte
+		var token0Rate, token1Rate uint64
+		var token0Balance, token1Balance uint64
+		if currentOrderReq.TokenToSell == pair.state.Token0ID() {
+			tradeDirection = v2.TradeDirectionSell0
+			// set order's rates according to request, then set selling token's balance to sellAmount
+			// and buying token to 0
+			token0Rate = sellAmountAfterFee
+			token1Rate = currentOrderReq.MinAcceptableAmount
+			token0Balance = sellAmountAfterFee
+			token1Balance = 0
+		} else {
+			tradeDirection = v2.TradeDirectionSell1
+			token1Rate = sellAmountAfterFee
+			token0Rate = currentOrderReq.MinAcceptableAmount
+			token1Balance = sellAmountAfterFee
+			token0Balance = 0
+		}
+
+		acceptedMd := metadataPdexv3.AcceptedAddOrder{
+			PoolPairID:     currentOrderReq.PoolPairID,
+			OrderID:        orderID,
+			NftID:          currentOrderReq.NftID,
+			Token0Rate:     token0Rate,
+			Token1Rate:     token1Rate,
+			Token0Balance:  token0Balance,
+			Token1Balance:  token1Balance,
+			TradeDirection: tradeDirection,
+		}
+
+		acceptedAction := instruction.NewAction(
+			&acceptedMd,
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+		result = append(result, acceptedAction.StringSlice())
 	}
 
-	// TODO: sort
-	// orderRequests := sortByFee(
-	// 	orderRequests,
-	// 	beaconHeight,
-	// 	pairs,
-	// )
-
-	for _, currentOrderReq := range orderRequests {
-		_ = currentOrderReq
-		// result = append(result, currentInst)
+	// refund invalid-by-fee addOrder requests
+	for _, tx := range invalidTxs {
+		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
+		if !ok {
+			return result, pairs, fmt.Errorf("Cannot parse AddOrder metadata")
+		}
+		refundInstructions, err := getRefundedAddOrderInstructions(currentOrderReq,
+			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
+		}
+		result = append(result, refundInstructions...)
 	}
 
+	Logger.log.Warnf("AddOrder instructions: %v", result)
+	return result, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawOrder(
+	txs []metadata.Transaction,
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	result := [][]string{}
+TransactionLoop:
+	for _, tx := range txs {
+		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawOrderRequest)
+		if !ok {
+			return result, pairs, errors.New("Cannot parse AddOrder metadata")
+		}
+
+		// default to reject
+		currentAction := instruction.NewAction(
+			&metadataPdexv3.RejectedWithdrawOrder{
+				PoolPairID: currentOrderReq.PoolPairID,
+				OrderID:    currentOrderReq.OrderID,
+			},
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
+
+		pair, exists := pairs[currentOrderReq.PoolPairID]
+		if !exists {
+			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
+			result = append(result, currentAction.StringSlice())
+			continue TransactionLoop
+		}
+
+		orderID := currentOrderReq.OrderID
+		for _, ord := range pair.orderbook.orders {
+			if ord.Id() == orderID {
+				if ord.NftID() == currentOrderReq.NftID {
+					var currentBalance uint64
+					switch currentOrderReq.TokenID {
+					case pair.state.Token0ID():
+						currentBalance = ord.Token0Balance()
+					case pair.state.Token1ID():
+						currentBalance = ord.Token1Balance()
+					default:
+						Logger.log.Warnf("Invalid withdraw tokenID %v for order %s",
+							currentOrderReq.TokenID, orderID)
+						result = append(result, currentAction.StringSlice())
+						continue TransactionLoop
+					}
+
+					withdrawAmount := currentOrderReq.Amount
+					if currentBalance < currentOrderReq.Amount {
+						withdrawAmount = currentBalance
+					}
+					// accepted
+					currentAction.Content = &metadataPdexv3.AcceptedWithdrawOrder{
+						PoolPairID: currentOrderReq.PoolPairID,
+						OrderID:    currentOrderReq.OrderID,
+						Receiver:   currentOrderReq.Receiver,
+						TokenID:    currentOrderReq.TokenID,
+						Amount:     withdrawAmount,
+					}
+				} else {
+					Logger.log.Warnf("Incorrect NftID %v for withdrawing order %s",
+						currentOrderReq.NftID, orderID)
+				}
+				result = append(result, currentAction.StringSlice())
+				continue TransactionLoop
+			}
+		}
+
+		Logger.log.Warnf("No order with ID %s found for withdrawal", orderID)
+		result = append(result, currentAction.StringSlice())
+	}
+
+	Logger.log.Warnf("WithdrawOrder instructions: %v", result)
 	return result, pairs, nil
 }
 

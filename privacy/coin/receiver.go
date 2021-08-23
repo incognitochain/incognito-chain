@@ -154,3 +154,10 @@ func (recv *OTAReceiver) UnmarshalJSON(raw []byte) error {
 	*recv = temp
 	return nil
 }
+
+func (recv OTAReceiver) GetShardID() byte {
+	pkb := recv.PublicKey.ToBytes()
+	lastByte := pkb[operation.Ed25519KeySize-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
+	return shardID
+}

@@ -1957,3 +1957,26 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte, nftIDs map[string
 	}
 	return shares, nil
 }
+
+func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (
+	map[string]Pdexv3OrderState,
+	error,
+) {
+	orders := map[string]Pdexv3OrderState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		orderState := NewPdexv3OrderState()
+		err := json.Unmarshal(newValue, orderState)
+		if err != nil {
+			return orders, err
+		}
+		v := orderState.Value()
+		orders[v.Id()] = *orderState
+
+	}
+	return orders, nil
+}

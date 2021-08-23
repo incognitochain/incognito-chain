@@ -897,3 +897,411 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	}
 	return res, nil
 }
+
+// --- Trade - Order ---
+
+func (httpServer *HttpServer) handlePdexv3TxTradeRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// create tx
+	data, isPRV, err := createPdexv3TradeRequestTransaction(httpServer, params)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	createTxResult := []interface{}{data.Base58CheckData}
+	// send tx
+	return sendCreatedTransaction(httpServer, createTxResult, isPRV, closeChan)
+}
+
+func (httpServer *HttpServer) handlePdexv3TxAddOrderRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// create tx
+	data, isPRV, err := createPdexv3AddOrderRequestTransaction(httpServer, params)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	createTxResult := []interface{}{data.Base58CheckData}
+	// send tx
+	return sendCreatedTransaction(httpServer, createTxResult, isPRV, closeChan)
+}
+
+func (httpServer *HttpServer) handlePdexv3TxWithdrawOrderRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// create tx
+	data, err := createPdexv3WithdrawOrderRequestTransaction(httpServer, params)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	createTxResult := []interface{}{data.Base58CheckData}
+	// send tx
+	return sendCreatedTransaction(httpServer, createTxResult, false, closeChan)
+}
+
+func (httpServer *HttpServer) handlePdexv3GetTradeStatus(params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3TradeStatusPrefix(),
+		txID[:],
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Cannot get TradeStatus data"))
+	}
+
+	return string(data), nil
+}
+
+func (httpServer *HttpServer) handlePdexv3GetAddOrderStatus(params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3AddOrderStatusPrefix(),
+		txID[:],
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Cannot get AddOrderStatus data"))
+	}
+
+	return string(data), nil
+}
+
+func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawOrderStatusPrefix(),
+		txID[:],
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Cannot get WithdrawOrderStatus data"))
+	}
+
+	return string(data), nil
+}
+
+// --- Helpers ---
+
+func createPdexv3TradeRequestTransaction(
+	httpServer *HttpServer, params interface{},
+) (*jsonresult.CreateTransactionResult, bool, *rpcservice.RPCError) {
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		TradePath           []string
+		TokenToSell         common.Hash
+		TokenToBuy          common.Hash
+		SellAmount          Uint64Reader
+		MinAcceptableAmount Uint64Reader
+		TradingFee          Uint64Reader
+		FeeInPRV            bool
+	}{}
+
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
+	}
+	md, _ := metadataPdexv3.NewTradeRequest(
+		mdReader.TradePath, mdReader.TokenToSell, uint64(mdReader.SellAmount),
+		uint64(mdReader.MinAcceptableAmount), uint64(mdReader.TradingFee), nil,
+		metadataCommon.Pdexv3TradeRequestMeta,
+	)
+
+	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
+	paramSelect.SetTokenID(md.TokenToSell)
+	isPRV := md.TokenToSell == common.PRVCoinID
+	tokenList := []common.Hash{md.TokenToSell, mdReader.TokenToBuy}
+	if mdReader.FeeInPRV && !isPRV && mdReader.TokenToBuy != common.PRVCoinID {
+		tokenList = append(tokenList, common.PRVCoinID)
+	}
+	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	paramSelect.SetMetadata(md)
+
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+
+	// burn selling amount for trade, plus fee
+	burnPayments := []*privacy.PaymentInfo{
+		&privacy.PaymentInfo{
+			PaymentAddress: burnAddr,
+			Amount:         md.SellAmount + md.TradingFee,
+		},
+	}
+	if isPRV {
+		paramSelect.PRV.PaymentInfos = burnPayments
+	} else {
+		if mdReader.FeeInPRV {
+			// sell amount in token
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.TradingFee,
+				},
+			}
+			// trading fee in PRV
+			paramSelect.SetTokenReceivers([]*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.SellAmount,
+				},
+			})
+		} else {
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+			paramSelect.SetTokenReceivers(burnPayments)
+		}
+	}
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	res := &jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, isPRV, nil
+}
+
+func createPdexv3AddOrderRequestTransaction(
+	httpServer *HttpServer, params interface{},
+) (*jsonresult.CreateTransactionResult, bool, *rpcservice.RPCError) {
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		TokenToSell         common.Hash
+		PoolPairID          string
+		SellAmount          Uint64Reader
+		MinAcceptableAmount Uint64Reader
+		TradingFee          Uint64Reader
+		NftID               common.Hash
+		FeeInPRV            bool
+	}{}
+
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
+	}
+	md, _ := metadataPdexv3.NewAddOrderRequest(
+		mdReader.TokenToSell, mdReader.PoolPairID, uint64(mdReader.SellAmount),
+		uint64(mdReader.MinAcceptableAmount), uint64(mdReader.TradingFee), nil,
+		mdReader.NftID, metadataCommon.Pdexv3AddOrderRequestMeta,
+	)
+
+	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
+	paramSelect.SetTokenID(md.TokenToSell)
+	isPRV := md.TokenToSell == common.PRVCoinID
+	tokenList := []common.Hash{md.TokenToSell}
+	if mdReader.FeeInPRV && !isPRV {
+		tokenList = append(tokenList, common.PRVCoinID)
+	}
+	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	paramSelect.SetMetadata(md)
+
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+
+	// burn selling amount for order, plus fee
+	burnPayments := []*privacy.PaymentInfo{
+		&privacy.PaymentInfo{
+			PaymentAddress: burnAddr,
+			Amount:         md.SellAmount + md.TradingFee,
+		},
+	}
+	if isPRV {
+		paramSelect.PRV.PaymentInfos = burnPayments
+	} else {
+		if mdReader.FeeInPRV {
+			// sell amount in token
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.TradingFee,
+				},
+			}
+			// trading fee in PRV
+			paramSelect.SetTokenReceivers([]*privacy.PaymentInfo{
+				&privacy.PaymentInfo{
+					PaymentAddress: burnAddr,
+					Amount:         md.SellAmount,
+				},
+			})
+		} else {
+			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+			paramSelect.SetTokenReceivers(burnPayments)
+		}
+	}
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	res := &jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, isPRV, nil
+}
+
+func createPdexv3WithdrawOrderRequestTransaction(
+	httpServer *HttpServer, params interface{},
+) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError) {
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		PoolPairID string
+		OrderID    string
+		TokenID    common.Hash
+		Amount     Uint64Reader
+		NftID      common.Hash
+	}{}
+
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
+	}
+	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
+		mdReader.PoolPairID, mdReader.OrderID, mdReader.TokenID, uint64(mdReader.Amount),
+		privacy.OTAReceiver{}, mdReader.NftID, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
+
+	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
+	if md.NftID == common.PRVCoinID {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
+	}
+	paramSelect.SetTokenID(md.NftID)
+	tokenList := []common.Hash{md.TokenID}
+	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	md.Receiver = recv[md.TokenID]
+	paramSelect.SetMetadata(md)
+
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+
+	// burn 1 governance-NFT to withdraw order
+	burnPayments := []*privacy.PaymentInfo{
+		&privacy.PaymentInfo{
+			PaymentAddress: burnAddr,
+			Amount:         1,
+		},
+	}
+	paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+	paramSelect.SetTokenReceivers(burnPayments)
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	res := &jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, nil
+}
+
+func sendCreatedTransaction(httpServer *HttpServer, params interface{}, isPRV bool, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var sendTxResult interface{}
+	var err *rpcservice.RPCError
+	if isPRV {
+		sendTxResult, err = httpServer.handleSendRawTransaction(params, closeChan)
+	} else {
+		sendTxResult, err = httpServer.handleSendRawPrivacyCustomTokenTransaction(params, closeChan)
+	}
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return sendTxResult, nil
+}

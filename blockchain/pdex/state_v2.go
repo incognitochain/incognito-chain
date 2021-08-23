@@ -90,9 +90,19 @@ func initStateV2(
 				shareState.TradingFees(), shareState.LastLPFeesPerShare(),
 			)
 		}
-		// TODO: read order book from storage
-		orderbook := Orderbook{}
-		poolPair := NewPoolPairStateWithValue(poolPairState.Value(), shares, orderbook)
+
+		orderbook := &Orderbook{[]*Order{}}
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairState.PoolPairID())
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range orderMap {
+			v := item.Value()
+			orderbook.InsertOrder(&v)
+		}
+		poolPair := NewPoolPairStateWithValue(
+			poolPairState.Value(), shares, *orderbook,
+		)
 		poolPairs[poolPairID] = poolPair
 	}
 
@@ -185,6 +195,14 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.params,
 			)
+		case metadataCommon.Pdexv3AddOrderRequestMeta:
+			s.poolPairs, err = s.processor.addOrder(env.StateDB(), inst,
+				s.poolPairs,
+			)
+		case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+			s.poolPairs, err = s.processor.withdrawOrder(env.StateDB(), inst,
+				s.poolPairs,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -203,6 +221,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	withdrawLiquidityTxs := []metadata.Transaction{}
 	modifyParamsTxs := []metadata.Transaction{}
 	tradeTxs := []metadata.Transaction{}
+	addOrderTxs := []metadata.Transaction{}
+	withdrawOrderTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -227,6 +247,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				withdrawLPFeeTxs = append(withdrawLPFeeTxs, tx)
 			case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:
 				withdrawlProtocolFeeTxs = append(withdrawlProtocolFeeTxs, tx)
+			case metadataCommon.Pdexv3AddOrderRequestMeta:
+				addOrderTxs = append(addOrderTxs, tx)
+			case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+				withdrawOrderTxs = append(withdrawOrderTxs, tx)
 			}
 		}
 	}
@@ -291,6 +315,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	tradeInstructions, s.poolPairs, err = s.producer.trade(
 		tradeTxs,
 		s.poolPairs,
+		s.params,
 	)
 	if err != nil {
 		return instructions, err
@@ -316,6 +341,28 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, withdrawProtocolFeeInstructions...)
+
+	var addOrderInstructions [][]string
+	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
+		addOrderTxs,
+		s.poolPairs,
+		s.nftIDs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addOrderInstructions...)
+
+	var withdrawOrderInstructions [][]string
+	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
+		withdrawOrderTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawOrderInstructions...)
 
 	// handle modify params: at the end of beacon block
 	var modifyParamsInstructions [][]string

@@ -126,6 +126,23 @@ func StorePdexv3StakingPools() error {
 	return nil
 }
 
+func StorePdexv3Order(
+	stateDB *StateDB,
+	orderState Pdexv3OrderState,
+) error {
+	v := orderState.Value()
+	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), v.Id())
+	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, &orderState)
+}
+
+func DeletePdexv3Order(stateDB *StateDB, pairID, orderID string) error {
+	key := GeneratePdexv3OrderObjectKey(pairID, orderID)
+	if !stateDB.MarkDeleteStateObject(Pdexv3OrderObjectType, key) {
+		return fmt.Errorf("Cannot delete order with ID %v - %v", pairID, orderID)
+	}
+	return nil
+}
+
 func GetPdexv3WaitingContributions(stateDB *StateDB) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	prefixHash := GetPdexv3WaitingContributionsPrefix()
 	return stateDB.iterateWithPdexv3Contributions(prefixHash)
@@ -141,4 +158,12 @@ func GetPdexv3Shares(stateDB *StateDB, poolPairID string, nftIDs map[string]bool
 ) {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3Shares(prefixHash, nftIDs)
+}
+
+func GetPdexv3Orders(stateDB *StateDB, poolPairID string) (
+	map[string]Pdexv3OrderState,
+	error,
+) {
+	prefixHash := generatePdexv3OrderObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3Orders(prefixHash)
 }

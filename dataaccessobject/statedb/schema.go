@@ -56,17 +56,20 @@ var (
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
 	pdexv3ParamsModifyingPrefix             = []byte("pdexv3-paramsmodifyingstatus-")
 	pdexv3TradeStatusPrefix                 = []byte("pdexv3-trade-status-")
+	pdexv3AddOrderStatusPrefix              = []byte("pdexv3-addorder-status-")
+	pdexv3WithdrawOrderStatusPrefix         = []byte("pdexv3-withdraworder-status-")
 	pdexv3ParamsPrefix                      = []byte("pdexv3-params-")
 	pdexv3WaitingContributionsPrefix        = []byte("pdexv3-waitingContributions-")
 	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
 	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
 	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
+	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
+	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
+	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
 	pdexv3NftIndexPrefix                    = []byte("pdexv3-nft-index-")
 	pdexv3WithdrawLiquidityPrefix           = []byte("pdexv3-withdrawliquidities-")
-	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
-	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -568,6 +571,14 @@ func Pdexv3WithdrawalProtocolFeeStatusPrefix() []byte {
 	return pdexv3WithdrawalProtocolFeePrefix
 }
 
+func Pdexv3AddOrderStatusPrefix() []byte {
+	return pdexv3AddOrderStatusPrefix
+}
+
+func Pdexv3WithdrawOrderStatusPrefix() []byte {
+	return pdexv3WithdrawOrderStatusPrefix
+}
+
 // pDex v3 prefix hash of the key
 func GetPdexv3StatusPrefix(statusType []byte) []byte {
 	h := common.HashH(append(pdexv3StatusPrefix, statusType...))
@@ -591,6 +602,10 @@ func GetPdexv3PoolPairsPrefix() []byte {
 func GetPdexv3SharesPrefix() []byte {
 	hash := common.HashH(pdexv3SharesPrefix)
 	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3OrdersPrefix() []byte {
+	return pdexv3OrdersPrefix
 }
 
 func GetPdexv3TradingFeesPrefix() []byte {

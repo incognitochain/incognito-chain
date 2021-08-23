@@ -133,6 +133,7 @@ type StateChange struct {
 	poolPairIDs map[string]bool
 	shares      map[string]bool
 	orders      map[string]map[int]bool
+	orderIDs    map[string]bool
 }
 
 func NewStateChange() *StateChange {
@@ -140,6 +141,7 @@ func NewStateChange() *StateChange {
 		poolPairIDs: make(map[string]bool),
 		shares:      make(map[string]bool),
 		orders:      make(map[string]map[int]bool),
+		orderIDs:    make(map[string]bool),
 	}
 }
 

@@ -247,6 +247,12 @@ const (
 	getPdexv3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"
 	createAndSendTxWithPdexv3WithdrawlProtocolFee = "pdexv3_txWithdrawProtocolFee"
 	getPdexv3WithdrawalProtocolFeeStatus          = "pdexv3_getWithdrawalProtocolFeeStatus"
+	pdexv3TxTrade                                 = "pdexv3_txTrade"
+	pdexv3TxAddOrder                              = "pdexv3_txAddOrder"
+	pdexv3TxWithdrawOrder                         = "pdexv3_txWithdrawOrder"
+	pdexv3GetTradeStatus                          = "pdexv3_getTradeStatus"
+	pdexv3GetAddOrderStatus                       = "pdexv3_getAddOrderStatus"
+	pdexv3GetWithdrawOrderStatus                  = "pdexv3_getWithdrawOrderStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

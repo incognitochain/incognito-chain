@@ -34,11 +34,13 @@ func (poolPairState *PoolPairState) Shares() map[string]*Share {
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State  *rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares map[string]*Share       `json:"Shares"`
+		State     *rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares    map[string]*Share       `json:"Shares"`
+		Orderbook Orderbook               `json:"Orderbook"`
 	}{
-		State:  &poolPairState.state,
-		Shares: poolPairState.shares,
+		State:     &poolPairState.state,
+		Shares:    poolPairState.shares,
+		Orderbook: poolPairState.orderbook,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -48,8 +50,9 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State  *rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares map[string]*Share       `json:"Shares"`
+		State     *rawdbv2.Pdexv3PoolPair `json:"State"`
+		Shares    map[string]*Share       `json:"Shares"`
+		Orderbook Orderbook               `json:"Orderbook"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -59,6 +62,7 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	if temp.State != nil {
 		poolPairState.state = *temp.State
 	}
+	poolPairState.orderbook = temp.Orderbook
 	return nil
 }
 
@@ -213,7 +217,7 @@ func (p *PoolPairState) Clone() *PoolPairState {
 	for k, v := range p.shares {
 		res.shares[k] = v.Clone()
 	}
-	//TODO: clone order book here
+	res.orderbook = p.orderbook.Clone()
 	return res
 }
 
@@ -238,6 +242,7 @@ func (p *PoolPairState) getDiff(
 			}
 		}
 	}
+	newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	return newStateChange
 }
 

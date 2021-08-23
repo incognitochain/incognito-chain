@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -29,18 +28,18 @@ func (tp *TradingPair) UnmarshalJSON(data []byte) error {
 // BuyAmount() computes the output amount given input, based on reserve amounts. Deduct fees before calling this
 func (tp TradingPair) BuyAmount(sellAmount uint64, tradeDirection byte) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
-		return calculateBuyAmount(sellAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
+		return calculateBuyAmount(sellAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount())
 	} else {
-		return calculateBuyAmount(sellAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount(), 0)
+		return calculateBuyAmount(sellAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount())
 	}
 }
 
 // BuyAmount() computes the input amount given output, based on reserve amounts
 func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection byte) (uint64, error) {
 	if tradeDirection == TradeDirectionSell0 {
-		return calculateAmountToSell(buyAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount(), 0)
+		return calculateAmountToSell(buyAmount, tp.Token0RealAmount(), tp.Token1RealAmount(), tp.Token0VirtualAmount(), tp.Token1VirtualAmount())
 	} else {
-		return calculateAmountToSell(buyAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount(), 0)
+		return calculateAmountToSell(buyAmount, tp.Token1RealAmount(), tp.Token0RealAmount(), tp.Token1VirtualAmount(), tp.Token0VirtualAmount())
 	}
 }
 
@@ -140,7 +139,7 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 	resv.Set(tp.Token0VirtualAmount())
 	temp.Add(resv, change0)
-	tp.SetToken0VirtualAmount(temp)
+	tp.SetToken0VirtualAmount(big.NewInt(0).Set(temp))
 
 	resv.SetUint64(tp.Token1RealAmount())
 	temp.Add(resv, change1)
@@ -154,14 +153,17 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 	resv.Set(tp.Token1VirtualAmount())
 	temp.Add(resv, change1)
-	tp.SetToken1VirtualAmount(temp)
+	tp.SetToken1VirtualAmount(big.NewInt(0).Set(temp))
 
 	return nil
 }
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte, tokenToBuy common.Hash, orderbooks []OrderBookIterator) ([]string, []*rawdbv2.Pdexv3PoolPair, error) {
+func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, 
+	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte, 
+	tokenToBuy common.Hash, minAmount uint64, orderbooks []OrderBookIterator,
+) (*metadataPdexv3.AcceptedTrade, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
 		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
@@ -225,7 +227,9 @@ func MaybeAcceptTrade(acn *instruction.Action, amountIn, fee uint64, tradePath [
 		sellAmountRemain = totalBuyAmount
 	}
 
+	if totalBuyAmount < minAmount {
+		return nil, nil, fmt.Errorf("Min acceptable amount %d not reached - trade output %d", minAmount, totalBuyAmount)
+	}
 	acceptedMeta.Amount = totalBuyAmount
-	acn.Content = acceptedMeta
-	return acn.StringSlice(), reserves, nil
+	return &acceptedMeta, reserves, nil
 }

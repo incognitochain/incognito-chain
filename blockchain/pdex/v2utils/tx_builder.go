@@ -28,9 +28,9 @@ func TradeRefundTx(
 	if !ok {
 		return nil, fmt.Errorf("Incorrect metadata type. Expected Refunded Trade")
 	}
-	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{acn.GetType()}}
+	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{metadataCommon.Pdexv3TradeResponseMeta}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: refundedTrade.Amount, ReceiverAddress: nil, PublicKey: &refundedTrade.Receiver.PublicKey, TxRandom: &refundedTrade.Receiver.TxRandom, TokenID: &refundedTrade.TokenToSell, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: refundedTrade.Amount, ReceiverAddress: nil, PublicKey: &refundedTrade.Receiver.PublicKey, TxRandom: &refundedTrade.Receiver.TxRandom, TokenID: &refundedTrade.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
@@ -50,7 +50,7 @@ func TradeAcceptTx(
 	if !ok {
 		return nil, fmt.Errorf("Incorrect metadata type. Expected Accepted Trade")
 	}
-	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{acn.GetType()}}
+	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{metadataCommon.Pdexv3TradeResponseMeta}}
 
 	txParam := transaction.TxSalaryOutputParams{Amount: acceptedTrade.Amount, ReceiverAddress: nil, PublicKey: &acceptedTrade.Receiver.PublicKey, TxRandom: &acceptedTrade.Receiver.TxRandom, TokenID: &acceptedTrade.TokenToBuy, Info: []byte{}}
 
@@ -72,9 +72,35 @@ func OrderRefundTx(
 	if !ok {
 		return nil, fmt.Errorf("Incorrect metadata type. Expected Refunded Order")
 	}
-	md := metadataPdexv3.AddOrderResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{acn.GetType()}}
+	md := metadataPdexv3.AddOrderResponse{acn.GetStatus(), acn.RequestTxID, metadataCommon.MetadataBase{metadataCommon.Pdexv3AddOrderResponseMeta}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: refundedOrder.Amount, ReceiverAddress: nil, PublicKey: &refundedOrder.Receiver.PublicKey, TxRandom: &refundedOrder.Receiver.TxRandom, TokenID: &refundedOrder.TokenToSell, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: refundedOrder.Amount, ReceiverAddress: nil, PublicKey: &refundedOrder.Receiver.PublicKey, TxRandom: &refundedOrder.Receiver.TxRandom, TokenID: &refundedOrder.TokenID, Info: []byte{}}
+
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
+		func(c privacy.Coin) metadataCommon.Metadata { return &md },
+	)
+}
+
+func WithdrawOrderAcceptTx(
+	acn instructionPdexv3.Action,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadataCommon.Transaction, error) {
+	if shardID != acn.ShardID() {
+		return nil, nil
+	}
+	acceptedWithdrawOrder, ok := acn.Content.(*metadataPdexv3.AcceptedWithdrawOrder)
+	if !ok {
+		return nil, fmt.Errorf("Incorrect metadata type. Expected Accepted Trade")
+	}
+	md := metadataPdexv3.WithdrawOrderResponse{acn.GetStatus(), acn.RequestTxID,
+		metadataCommon.MetadataBase{metadataCommon.Pdexv3WithdrawOrderResponseMeta}}
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount: acceptedWithdrawOrder.Amount, ReceiverAddress: nil,
+		PublicKey: &acceptedWithdrawOrder.Receiver.PublicKey, TxRandom: &acceptedWithdrawOrder.Receiver.TxRandom,
+		TokenID: &acceptedWithdrawOrder.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
