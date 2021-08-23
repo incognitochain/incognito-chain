@@ -376,6 +376,9 @@ func (c *BlockRequester) ConnectNewHW(hwAddrInfo *peer.AddrInfo, id int) (err er
 	conn, err = c.tryToDial(hwAddrInfo)
 	if err == nil {
 		Logger.Infof("[debugGRPC] Connected to new HW %v, id %v", hwAddrInfo.ID.Pretty(), id)
+		if c.isRunning {
+			c.stop <- 0
+		}
 		c.closeConnection(id)
 		Logger.Infof("[debugGRPC] Closed old connection")
 		c.Lock()

@@ -460,15 +460,18 @@ func (keeper *AddrKeeper) updateListHighwayAddrs(discoverer HighwayDiscoverer) e
 func (keeper *AddrKeeper) updateAddrsV2(newAddrs addresses) {
 	Logger.Infof("[keeper] Update address")
 	for _, newAddr := range newAddrs {
-		Logger.Infof("[keeper] Address RPCUrl %v, Libp2p %v", newAddr.RPCUrl, newAddr.Libp2pAddr)
+		Logger.Infof("[keeper] Add new address RPCUrl %v, Libp2p %v", newAddr.RPCUrl, newAddr.Libp2pAddr)
 		if addr, existed := keeper.addrsByRPCUrl[newAddr.RPCUrl]; existed {
-			if (len(addr.Libp2pAddr) == 0) && (len(newAddr.Libp2pAddr) != 0) {
+			if (len(newAddr.Libp2pAddr) != 0) && (addr.Libp2pAddr != newAddr.Libp2pAddr) {
 				Logger.Infof("[keeper] Address existed, update! current %v, new %v", addr.Libp2pAddr, newAddr.Libp2pAddr)
 				addr.Libp2pAddr = newAddr.Libp2pAddr
 			}
 		} else {
 			Logger.Infof("[keeper] Address not existed!")
-			keeper.addrsByRPCUrl[newAddr.RPCUrl] = &newAddr
+			keeper.addrsByRPCUrl[newAddr.RPCUrl] = &rpcclient.HighwayAddr{
+				Libp2pAddr: newAddr.Libp2pAddr,
+				RPCUrl:     newAddr.RPCUrl,
+			}
 		}
 	}
 }
@@ -481,6 +484,7 @@ func (keeper *AddrKeeper) setCurrHW(addr *rpcclient.HighwayAddr) {
 }
 
 func (keeper *AddrKeeper) exportStatus() AllConnectionStatus {
+	Logger.Infof("Getting connections status")
 	listA := []ConnectionStatus{}
 	listB := []ConnectionStatus{}
 	listC := []ConnectionStatus{}
@@ -497,13 +501,16 @@ func (keeper *AddrKeeper) exportStatus() AllConnectionStatus {
 
 	for rpcUrl, addr := range keeper.addrsByRPCUrl {
 		isCurHW := false
+		if addr == nil {
+			continue
+		}
 		pID, err := getAddressInfo(addr.Libp2pAddr)
 		if err == nil {
 			if pID.ID.Pretty() == curHWID.Pretty() {
 				isCurHW = true
 			}
 		}
-		if _, ok := keeper.ignoreHW.Get(rpcUrl); (!ok) && (addr != nil) {
+		if _, ok := keeper.ignoreHW.Get(rpcUrl); !ok {
 			rttInfo, ok := keeper.lastRTT[*addr]
 			if (!ok) || (rttInfo.avgRTT > 500*time.Millisecond) {
 				listB = append(listB, ConnectionStatus{
@@ -529,5 +536,6 @@ func (keeper *AddrKeeper) exportStatus() AllConnectionStatus {
 	res.Status["Perfect"] = listA
 	res.Status["HighRTT"] = listB
 	res.Status["Ignored"] = listC
+	Logger.Infof("Return connection status %+v", res.Status)
 	return res
 }
