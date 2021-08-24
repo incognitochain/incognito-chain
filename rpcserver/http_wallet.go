@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -38,11 +39,11 @@ Result—success or error
 */
 func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams==nil || len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 1 element"))
 	}
 	key, ok := arrayParams[0].(string)
-	if !ok{
+	if !ok {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA key is invalid"))
 	}
 
@@ -60,11 +61,11 @@ func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-ch
 // This RPC is for limited users only and requires some sort of authentication.
 func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams==nil || len(arrayParams) < 2 {
+	if arrayParams == nil || len(arrayParams) < 2 {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 2 elements"))
 	}
 	key, ok := arrayParams[0].(string)
-	if !ok{
+	if !ok {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA key is invalid"))
 	}
 
@@ -92,7 +93,6 @@ func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, clos
 			isReset = false
 		}
 	}
-
 
 	result, err := httpServer.walletService.SubmitKey(key, accessToken, isReset, &syncFrom)
 	if err != nil {
