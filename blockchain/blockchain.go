@@ -602,8 +602,12 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
-		if v.NumberOfShardBlock == nil {
+		if v.NumberOfShardBlock == nil || len(v.NumberOfShardBlock) == 0 {
 			v.NumberOfShardBlock = make(map[byte]uint)
+			for i := 0; i < v.ActiveShards; i++ {
+				shardID := byte(i)
+				v.NumberOfShardBlock[shardID] = 0
+			}
 		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
@@ -799,8 +803,11 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 
 	// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
 	// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
-	beaconView.NumberOfShardBlock = make(map[byte]uint, beaconView.ActiveShards)
-
+	beaconView.NumberOfShardBlock = make(map[byte]uint)
+	for i := 0; i < beaconView.ActiveShards; i++ {
+		shardID := byte(i)
+		beaconView.NumberOfShardBlock[shardID] = 0
+	}
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)
