@@ -1,11 +1,14 @@
 package blsbft
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	mocksTypes "github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	mocksView "github.com/incognitochain/incognito-chain/multiview/mocks"
 	"reflect"
 	"testing"
 	"time"
@@ -13,14 +16,14 @@ import (
 
 var (
 	keys = []string{
-		"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",
+		"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",
@@ -64,6 +67,8 @@ var (
 	subset0Shard0CommitteeStringNew []string
 	subset1Shard0CommitteeNew       []incognitokey.CommitteePublicKey
 	subset1Shard0CommitteeStringNew []string
+	miningKey0                      signatureschemes2.MiningKey
+	miningKey1                      signatureschemes2.MiningKey
 	logger                          common.Logger
 )
 
@@ -92,6 +97,13 @@ var _ = func() (_ struct{}) {
 	subset1Shard0CommitteeNew = append(subset1Shard0CommitteeNew, incognitoKeys[15])
 	subset0Shard0CommitteeStringNew, _ = incognitokey.CommitteeKeyListToString(subset0Shard0CommitteeNew)
 	subset1Shard0CommitteeStringNew, _ = incognitokey.CommitteeKeyListToString(subset1Shard0CommitteeNew)
+
+	miningKey0String := "{\"PriKey\":{\"bls\":\"AwQOHxkPATo6bFFBStpT4U5IgqF/hV5sj3pbTSYbwL4=\",\"dsa\":\"in6dagXYGOMH5zfhBoBdALHSZCzVZQjkmacKTafthU8=\"},\"PubKey\":{\"bls\":\"B6aWM0bu47n7J2acppv55/BvOx+96736VEpiLYia5fEh+ZTjjfxVb4ENJ8NYLi9Iqxi0em9uLQJ3IB4/41s6Ag0rK/t0tPn1uW826hPGAKxQ+vIWj0ObQs7b2l/DAeLKF7izVRn3xZ4+xJn7Pnzv9/xIWld6NgatDiCgglA3xRY=\",\"dsa\":\"A6AjeNXtbUuXgtOs9fC2PMl7v+VryOoZxV18bDaLJdtx\"}}"
+	miningKey1String := "{\"PriKey\":{\"bls\":\"DLbqNY4oaqVA+8v4HjQHK2UMxLnt3C2Fm8KeV/5ivgA=\",\"dsa\":\"byqapP9S9HAsnuL5xlpby7xWcBKHTUcLSmSuOrN9htI=\"},\"PubKey\":{\"bls\":\"MAkG6Ub2NXk9tCwiZ4Zv/CyRIMSVukGndHrky6yc+csFPdNwiEdVz4Ci9BLEHShkMCy4nBQ1uWtPlZNmhdaIFBLcnQJ2p56CRUBoFrvCC1KtDTFAYr0MUpWhEZYgnCq+L/pFGXUz3znLEVTAt6MeJsVEx/rSqZS5HBGb0YshEOA=\",\"dsa\":\"A1XEKsZ/6eDoHJK/+8jErVpk1J9Kh30KTtgrp3TqLS6v\"}}"
+	miningKey0 = signatureschemes2.MiningKey{}
+	json.Unmarshal([]byte(miningKey0String), &miningKey0)
+	miningKey1 = signatureschemes2.MiningKey{}
+	json.Unmarshal([]byte(miningKey1String), &miningKey1)
 
 	logger = common.NewBackend(nil).Logger("test", true)
 	return
@@ -1962,7 +1974,7 @@ var _ = func() (_ struct{}) {
 //	}
 //}
 
-func Test_actorV2_proposeShardBlock(t *testing.T) {
+func Test_actorV2_MultiSubset_proposeShardBlock(t *testing.T) {
 	common.TIMESLOT = 10
 	tc1Hash := common.HashH([]byte{1})
 	tc1CurrentTime := time.Now().Unix()
@@ -1972,7 +1984,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	tc1OutputBlock.On("GetHeight").Return(uint64(2))
 	tc1OutputBlock.On("Hash").Return(&tc1Hash)
 	tc1Chain := &mocks.Chain{}
-	tc1Chain.On("CreateNewBlock", types.DCS_VERSION,
+	tc1Chain.On("CreateNewBlock", types.BLOCK_PRODUCINGV3_VERSION,
 		subset0Shard0CommitteeString[0], 1, tc1CurrentTime, shard0Committee, tc1CommitteeViewHash).
 		Return(tc1OutputBlock, nil)
 
@@ -1983,7 +1995,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	tc2CommitteeViewHashNew := common.HashH([]byte("view-hash-2-new"))
 	tc2InputBlock := &mocksTypes.BlockInterface{}
 	tc2InputBlock.On("CommitteeFromBlock").Return(tc2CommitteeViewHashOld).Times(2)
-	tc2InputBlock.On("GetVersion").Return(types.DCS_VERSION).Times(2)
+	tc2InputBlock.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
 	tc2InputBlock.On("GetProposeTime").Return(tc2ProposeTime).Times(2)
 	tc2CommitteeChainHandler := &mocks.CommitteeChainHandler{}
 	tc2CommitteeChainHandler.On("CommitteesFromViewHashForShard", tc2CommitteeViewHashOld, byte(0)).
@@ -1993,12 +2005,12 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	tc2OutputBlock.On("Hash").Return(&tc2Hash)
 	tc2Chain := &mocks.Chain{}
 	tc2Chain.On("IsBeaconChain").Return(false)
-	tc2Chain.On("CreateNewBlock", types.DCS_VERSION,
+	tc2Chain.On("CreateNewBlock", types.BLOCK_PRODUCINGV3_VERSION,
 		subset1Shard0CommitteeStringNew[0], 1, tc2CurrentTime, shard0CommitteeNew, tc2CommitteeViewHashNew).
 		Return(tc2OutputBlock, nil)
 	tc2Chain.On("GetProposerByTimeSlotFromCommitteeList", common.CalculateTimeSlot(tc2ProposeTime), shard0Committee).
 		Return(shard0Committee[2], 2, nil)
-	tc2Chain.On("GetSigningCommittees", int(2), shard0Committee, types.DCS_VERSION).
+	tc2Chain.On("GetSigningCommittees", int(2), shard0Committee, types.BLOCK_PRODUCINGV3_VERSION).
 		Return(subset0Shard0Committee)
 
 	tc3Hash := common.HashH([]byte{3})
@@ -2007,7 +2019,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	tc3CommitteeViewHash := common.HashH([]byte("view-hash-3"))
 	tc3InputBlock := &mocksTypes.BlockInterface{}
 	tc3InputBlock.On("CommitteeFromBlock").Return(tc3CommitteeViewHash).Times(2)
-	tc3InputBlock.On("GetVersion").Return(types.DCS_VERSION).Times(2)
+	tc3InputBlock.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
 	tc3InputBlock.On("GetProposeTime").Return(tc3ProposeTime).Times(2)
 	tc3InputBlock.On("GetProducer").Return(subset0Shard0CommitteeString[1]).Times(2)
 	tc3InputBlock.On("GetHeight").Return(uint64(2)).Times(2)
@@ -2025,7 +2037,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		Return(tc3OutputBlock, nil)
 	tc3Chain.On("GetProposerByTimeSlotFromCommitteeList", common.CalculateTimeSlot(tc3ProposeTime), shard0Committee).
 		Return(shard0Committee[2], 2, nil)
-	tc3Chain.On("GetSigningCommittees", int(2), shard0Committee, types.DCS_VERSION).
+	tc3Chain.On("GetSigningCommittees", int(2), shard0Committee, types.BLOCK_PRODUCINGV3_VERSION).
 		Return(subset0Shard0Committee)
 
 	tc4Hash := common.HashH([]byte{4})
@@ -2034,7 +2046,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	tc4CommitteeViewHash := common.HashH([]byte("view-hash-4"))
 	tc4InputBlock := &mocksTypes.BlockInterface{}
 	tc4InputBlock.On("CommitteeFromBlock").Return(tc4CommitteeViewHash).Times(2)
-	tc4InputBlock.On("GetVersion").Return(types.DCS_VERSION).Times(2)
+	tc4InputBlock.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
 	tc4InputBlock.On("GetProposeTime").Return(tc4ProposeTime).Times(2)
 	tc4InputBlock.On("GetProducer").Return(subset0Shard0CommitteeString[1]).Times(2)
 	tc4InputBlock.On("GetHeight").Return(uint64(2)).Times(2)
@@ -2052,7 +2064,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		Return(tc4OutputBlock, nil)
 	tc4Chain.On("GetProposerByTimeSlotFromCommitteeList", common.CalculateTimeSlot(tc4ProposeTime), shard0Committee).
 		Return(shard0Committee[2], 2, nil)
-	tc4Chain.On("GetSigningCommittees", int(2), shard0Committee, types.DCS_VERSION).
+	tc4Chain.On("GetSigningCommittees", int(2), shard0Committee, types.BLOCK_PRODUCINGV3_VERSION).
 		Return(subset0Shard0Committee)
 
 	type fields struct {
@@ -2076,9 +2088,6 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		want    types.BlockInterface
 		wantErr bool
 	}{
-		//TODO: Add test cases.
-		// 2. Re-propose block from the same subset
-		// 3. Re-propose block from different subset
 		{
 			name: "Propose a new block when found no block to re-propose",
 			fields: fields{
@@ -2086,7 +2095,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 				chainID:        0,
 				committeeChain: tc1CommitteeChainHandler,
 				currentTime:    tc1CurrentTime,
-				blockVersion:   types.DCS_VERSION,
+				blockVersion:   types.BLOCK_PRODUCINGV3_VERSION,
 			},
 			args: args{
 				b58Str:            subset0Shard0CommitteeString[0],
@@ -2104,7 +2113,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 				chainID:        0,
 				committeeChain: tc2CommitteeChainHandler,
 				currentTime:    tc2CurrentTime,
-				blockVersion:   types.DCS_VERSION,
+				blockVersion:   types.BLOCK_PRODUCINGV3_VERSION,
 			},
 			args: args{
 				b58Str:            subset1Shard0CommitteeStringNew[0],
@@ -2122,7 +2131,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 				chainID:        0,
 				committeeChain: tc3CommitteeChainHandler,
 				currentTime:    tc3CurrentTime,
-				blockVersion:   types.DCS_VERSION,
+				blockVersion:   types.BLOCK_PRODUCINGV3_VERSION,
 			},
 			args: args{
 				b58Str:            subset0Shard0CommitteeString[2],
@@ -2140,7 +2149,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 				chainID:        0,
 				committeeChain: tc4CommitteeChainHandler,
 				currentTime:    tc4CurrentTime,
-				blockVersion:   types.DCS_VERSION,
+				blockVersion:   types.BLOCK_PRODUCINGV3_VERSION,
 			},
 			args: args{
 				b58Str:            subset1Shard0CommitteeString[0],
@@ -2169,6 +2178,120 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("proposeShardBlock() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_actorV2_MultiSubset_handleProposeMsg(t *testing.T) {
+	common.TIMESLOT = 10
+
+	type fields struct {
+		chain                Chain
+		node                 NodeInterface
+		chainKey             string
+		chainID              int
+		peerID               string
+		userKeySet           []signatureschemes2.MiningKey
+		logger               common.Logger
+		committeeChain       CommitteeChainHandler
+		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
+		receiveBlockByHash   map[string]*ProposeBlockInfo
+		blockVersion         int
+	}
+	type args struct {
+		proposeMsg BFTPropose
+	}
+
+	tc1ProposeMsgBlock := []byte("12345")
+	tc1BlockHash := common.HashH([]byte("1"))
+	tc1PrevBlockHash := common.HashH([]byte("0"))
+	tc1ProducerString := subset0Shard0CommitteeString[0]
+	tc1Producer := subset0Shard0Committee[0]
+	tc1CommitteeViewHash := common.HashH([]byte("view-hash-1"))
+	tc1ProposeTime := int64(1626755704)
+	tc1BlockHeight := uint64(10)
+	tc1Block := &mocksTypes.BlockInterface{}
+	tc1Block.On("CommitteeFromBlock").Return(tc1CommitteeViewHash).Times(2)
+	tc1Block.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
+	tc1Block.On("GetProposeTime").Return(tc1ProposeTime).Times(2)
+	tc1Block.On("GetProducer").Return(tc1ProducerString).Times(2)
+	tc1Block.On("GetHeight").Return(tc1BlockHeight).Times(4)
+	tc1Block.On("Hash").Return(&tc1BlockHash).Times(4)
+	tc1Block.On("GetPrevHash").Return(tc1PrevBlockHash).Times(2)
+
+	tc1MockView := &mocksView.View{}
+
+	tc1Chain := &mocks.Chain{}
+	tc1Chain.On("UnmarshalBlock", tc1ProposeMsgBlock).Return(tc1Block, nil)
+	tc1Chain.On("IsBeaconChain").Return(false)
+	tc1Chain.On("GetBestViewHeight").Return(tc1BlockHeight - 1)
+	tc1Chain.On("GetViewByHash", tc1PrevBlockHash).Return(tc1MockView)
+	tc1Chain.On("GetProposerByTimeSlotFromCommitteeList", common.CalculateTimeSlot(tc1ProposeTime), shard0Committee).
+		Return(tc1Producer, 0, nil)
+	tc1Chain.On("GetSigningCommittees", int(0), shard0Committee, types.BLOCK_PRODUCINGV3_VERSION).
+		Return(subset0Shard0Committee)
+
+	tc1CommitteeChainHandler := &mocks.CommitteeChainHandler{}
+	tc1CommitteeChainHandler.On("CommitteesFromViewHashForShard", tc1CommitteeViewHash, byte(0)).
+		Return(shard0Committee, nil)
+
+	tc1Node := &mocks.NodeInterface{}
+
+	tc1UserKeyset := []signatureschemes2.MiningKey{miningKey0}
+	tc1ReceiveBlockByHash := make(map[string]*ProposeBlockInfo)
+	tc1ReceiveBlockByHeight := make(map[uint64][]*ProposeBlockInfo)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+		args    args
+	}{
+		//TODO: Add test cases.
+		// 2. received already
+		// 3. not received yet
+		// 4. old block than current best state
+		{
+			name: "new received block",
+			fields: fields{
+				node:                 tc1Node,
+				chain:                tc1Chain,
+				chainKey:             "shard0-0",
+				chainID:              0,
+				peerID:               "",
+				userKeySet:           tc1UserKeyset,
+				logger:               logger,
+				committeeChain:       tc1CommitteeChainHandler,
+				blockVersion:         types.BLOCK_PRODUCINGV3_VERSION,
+				receiveBlockByHash:   tc1ReceiveBlockByHash,
+				receiveBlockByHeight: tc1ReceiveBlockByHeight,
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					Block: json.RawMessage(tc1ProposeMsgBlock),
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &actorV2{
+				chain:                tt.fields.chain,
+				node:                 tt.fields.node,
+				chainKey:             tt.fields.chainKey,
+				chainID:              tt.fields.chainID,
+				peerID:               tt.fields.peerID,
+				userKeySet:           tt.fields.userKeySet,
+				logger:               tt.fields.logger,
+				committeeChain:       tt.fields.committeeChain,
+				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
+				receiveBlockByHash:   tt.fields.receiveBlockByHash,
+				blockVersion:         tt.fields.blockVersion,
+			}
+			if err := a.handleProposeMsg(tt.args.proposeMsg); (err != nil) != tt.wantErr {
+				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

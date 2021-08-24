@@ -926,12 +926,12 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 }
 
 func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
-	blockIntf, err := a.chain.UnmarshalBlock(proposeMsg.Block)
-	if err != nil || blockIntf == nil {
+	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
+	if err != nil || blockInfo == nil {
 		a.logger.Debug(err)
 		return err
 	}
-	block := blockIntf.(types.BlockInterface)
+	block := blockInfo.(types.BlockInterface)
 	blkHash := block.Hash().String()
 
 	blkCPk := incognitokey.CommitteePublicKey{}

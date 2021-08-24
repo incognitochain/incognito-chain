@@ -647,7 +647,7 @@ func GetSubsetIDFromProposerTime(proposerTime int64, validators int) int {
 }
 
 func GetSubsetID(proposerIndex int) int {
-	return proposerIndex % +MaxSubsetCommittees
+	return proposerIndex % MaxSubsetCommittees
 }
 
 // GetSubsetIDByKey compare based on consensus mining key

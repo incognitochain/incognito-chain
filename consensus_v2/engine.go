@@ -1,6 +1,7 @@
 package consensus_v2
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strings"
@@ -163,6 +164,8 @@ func (engine *Engine) WatchCommitteeChange() {
 
 		validatorMiningKey := []signatureschemes2.MiningKey{}
 		for _, validator := range validators {
+			res, _ := json.Marshal(validator.MiningKey)
+			fmt.Println(string(res))
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
