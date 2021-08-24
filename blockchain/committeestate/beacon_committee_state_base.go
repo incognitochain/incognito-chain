@@ -554,15 +554,6 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
-//SplitReward ...
-func (b *beaconCommitteeStateBase) SplitReward(
-	env *SplitRewardEnvironment) (
-	map[common.Hash]uint64, map[common.Hash]uint64,
-	map[common.Hash]uint64, map[common.Hash]uint64, error,
-) {
-	panic("do not use function of beaconCommitteeStateBase struct")
-}
-
 func SnapshotShardCommonPoolV2(
 	shardCommonPool []string,
 	shardCommittee map[byte][]string,

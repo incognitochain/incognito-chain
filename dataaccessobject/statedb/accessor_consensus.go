@@ -493,7 +493,7 @@ func GetAllCommitteeStakeInfo(stateDB *StateDB, allShardCommittee map[int][]*Com
 	return stateDB.getShardsCommitteeInfo(allShardCommittee)
 }
 
-func GetAllCommitteeStakeInfoV2(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfoV2 {
+func GetAllCommitteeStakeInfoSlashingVersion(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfoSlashingVersion {
 	return stateDB.getShardsCommitteeInfoV2(allShardCommittee)
 }
 

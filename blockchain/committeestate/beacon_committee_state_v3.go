@@ -402,52 +402,6 @@ func (b *BeaconCommitteeStateV3) AllSyncingValidators() []string {
 	return res
 }
 
-//SplitReward ...
-func (b *BeaconCommitteeStateV3) SplitReward(
-	env *SplitRewardEnvironment) (
-	map[common.Hash]uint64, map[common.Hash]uint64,
-	map[common.Hash]uint64, map[common.Hash]uint64, error,
-) {
-	devPercent := uint64(env.DAOPercent)
-	allCoinTotalReward := env.TotalReward // total reward for shard subset
-	rewardForBeacon := map[common.Hash]uint64{}
-	rewardForShardSubset := map[common.Hash]uint64{}
-	rewardForIncDAO := map[common.Hash]uint64{}
-	rewardForCustodian := map[common.Hash]uint64{}
-	lenBeaconCommittees := uint64(len(b.getBeaconCommittee()))
-	lenShardSubsetCommittees := uint64(len(b.getShardCommittee()[env.ShardID]) / int(env.MaxSubsetCommittees))
-	if len(b.getShardCommittee()[env.ShardID])%int(env.MaxSubsetCommittees) != 0 {
-		if (env.SubsetID % env.MaxSubsetCommittees) == 0 {
-			lenShardSubsetCommittees += uint64(len(b.getShardCommittee()[env.ShardID]) % int(env.MaxSubsetCommittees))
-		}
-	}
-
-	if len(allCoinTotalReward) == 0 {
-		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
-		return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
-	}
-
-	for coinID, totalReward := range allCoinTotalReward {
-		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
-		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
-		shardSubsetWeight := float64(lenShardSubsetCommittees)
-		beaconWeight := float64(lenBeaconCommittees) / float64(len(b.shardCommittee))
-		totalValidatorWeight := shardSubsetWeight + beaconWeight
-
-		rewardForShardSubset[coinID] = uint64(shardSubsetWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
-		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", coinID.String(), totalRewardForDAOAndCustodians)
-
-		if env.IsSplitRewardForCustodian {
-			rewardForCustodian[coinID] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
-			rewardForIncDAO[coinID] += totalRewardForDAOAndCustodians - rewardForCustodian[coinID]
-		} else {
-			rewardForIncDAO[coinID] += totalRewardForDAOAndCustodians
-		}
-		rewardForBeacon[coinID] += totalReward - (rewardForShardSubset[coinID] + totalRewardForDAOAndCustodians)
-	}
-	return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
-}
-
 func (b *BeaconCommitteeStateV3) GetAllCandidateSubstituteCommittee() []string {
 	return b.getAllCandidateSubstituteCommittee()
 }

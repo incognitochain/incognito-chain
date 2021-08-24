@@ -860,10 +860,10 @@ func (stateDB *StateDB) getShardsCommitteeInfo(curValidator map[int][]*Committee
 	return curValidatorInfo
 }
 
-func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfoV2) {
-	curValidatorInfo = make(map[int][]*StakerInfoV2)
+func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfoSlashingVersion) {
+	curValidatorInfo = make(map[int][]*StakerInfoSlashingVersion)
 	for shardID, listCommittee := range curValidator {
-		tempStakerInfos := []*StakerInfoV2{}
+		tempStakerInfos := []*StakerInfoSlashingVersion{}
 		for _, c := range listCommittee {
 			cPKBytes, _ := c.committeePublicKey.RawBytes()
 			committeePublicKeyString, _ := c.committeePublicKey.ToBase58()
@@ -874,7 +874,7 @@ func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*Committ
 			if !has || s == nil {
 				panic(errors.Errorf("Can not found staker info for this committee %+v", committeePublicKeyString))
 			}
-			tempStakerInfos = append(tempStakerInfos, NewStakerInfoV2(committeePublicKeyString, s))
+			tempStakerInfos = append(tempStakerInfos, NewStakerInfoSlashingVersion(committeePublicKeyString, s))
 		}
 		curValidatorInfo[shardID] = tempStakerInfos
 	}

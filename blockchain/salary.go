@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"strconv"
 
@@ -32,7 +31,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 
 			for key, value := range acceptBlockRewardIns.TxsFee() {
 				if value != 0 {
-					err = statedb.AddShardRewardRequestV3(
+					err = statedb.AddShardRewardRequestMultiset(
 						rewardStateDB,
 						beaconBlock.Header.Epoch,
 						acceptBlockRewardIns.ShardID(),
@@ -95,24 +94,33 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					continue
 				}
 				if shardReceiveRewardV3.Epoch() != 0 {
-					height := blockchain.GetLastBeaconHeightInEpoch(shardReceiveRewardV3.Epoch())
-					var beaconConsensusRootHash common.Hash
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
-					if err != nil {
-						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+					if confirmBeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
+						cInfos, err := blockchain.GetAllCommitteeStakeInfo(shardReceiveRewardV3.Epoch())
+						if err != nil {
+							return NewBlockChainError(ProcessSalaryInstructionsError, err)
+						}
+						shardSubsetStakerInfo := getCommitteeToPayRewardMultiset(cInfos[int(shardReceiveRewardV3.ShardID())], shardReceiveRewardV3)
+						err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), shardSubsetStakerInfo)
+						if err != nil {
+							return err
+						}
+					} else {
+						cInfosV2, err := blockchain.GetAllCommitteeStakeInfoSlashingVersion(shardReceiveRewardV3.Epoch())
+						if err != nil {
+							return NewBlockChainError(ProcessSalaryInstructionsError, err)
+						}
+						shardSubsetStakerInfo := getCommitteeToPayRewardMultisetSlashingVersion(cInfosV2[int(shardReceiveRewardV3.ShardID())], shardReceiveRewardV3)
+						beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+						nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(shardSubsetStakerInfo, shardReceiveRewardV3.Epoch(), shardReceiveRewardV3.ShardID())
+						if err != nil {
+							return NewBlockChainError(ProcessSalaryInstructionsError, err)
+						}
+						err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), nonSlashingCInfosV2)
+						if err != nil {
+							return err
+						}
 					}
-					beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-					if err != nil {
-						return NewBlockChainError(ProcessSalaryInstructionsError, err)
-					}
-					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				shardSubsetStakerInfo := getCommitteeToPayRewardV3(cInfos[int(shardReceiveRewardV3.ShardID())], shardReceiveRewardV3)
-				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), shardSubsetStakerInfo)
-				if err != nil {
-					return err
-				}
-
 				continue
 			}
 
@@ -170,40 +178,26 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
-				// if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-				// 	isInit = true
-				// 	height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
-				// 	var beaconConsensusRootHash common.Hash
-				// 	beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
-				// 	if err != nil {
-				// 		return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
-				// 	}
-				// 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-				// 	if err != nil {
-				// 		return NewBlockChainError(ProcessSalaryInstructionsError, err)
-				// 	}
-				// 	cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
-				// }
 				if confirmBeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
-					cInfos, err := blockchain.GetAllCommitteeStakeInfoByEpoch(shardRewardInfo.Epoch)
+					cInfos, err := blockchain.GetAllCommitteeStakeInfo(shardRewardInfo.Epoch())
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo, cInfos[int(shardToProcess)])
+					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.Reward(), cInfos[int(shardToProcess)])
 					if err != nil {
 						return err
 					}
 				} else {
-					cInfosV2, err := blockchain.GetAllCommitteeStakeInfoByEpochV2(shardRewardInfo.Epoch)
+					cInfosV2, err := blockchain.GetAllCommitteeStakeInfoSlashingVersion(shardRewardInfo.Epoch())
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
 					beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-					nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch, byte(shardToProcess))
+					nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch(), byte(shardToProcess))
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, nonSlashingCInfosV2)
+					err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardRewardInfo.Reward(), nonSlashingCInfosV2)
 					if err != nil {
 						return err
 					}
@@ -216,11 +210,24 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	return nil
 }
 
-func getCommitteeToPayRewardV3(
+func getCommitteeToPayRewardMultiset(
 	committees []*statedb.StakerInfo,
 	shardReceiveRewardV3 *instruction.ShardReceiveRewardV3,
 ) []*statedb.StakerInfo {
 	res := []*statedb.StakerInfo{}
+	for i, v := range committees {
+		if i%MaxSubsetCommittees == int(shardReceiveRewardV3.SubsetID()) {
+			res = append(res, v)
+		}
+	}
+	return res
+}
+
+func getCommitteeToPayRewardMultisetSlashingVersion(
+	committees []*statedb.StakerInfoSlashingVersion,
+	shardReceiveRewardV3 *instruction.ShardReceiveRewardV3,
+) []*statedb.StakerInfoSlashingVersion {
+	res := []*statedb.StakerInfoSlashingVersion{}
 	for i, v := range committees {
 		if i%MaxSubsetCommittees == int(shardReceiveRewardV3.SubsetID()) {
 			res = append(res, v)
@@ -253,18 +260,18 @@ func (blockchain *BlockChain) addShardCommitteeReward(
 	return nil
 }
 
-func (blockchain *BlockChain) addShardCommitteeRewardV2(
+func (blockchain *BlockChain) addShardCommitteeRewardSlashingVersion(
 	rewardStateDB *statedb.StateDB,
 	shardID byte,
-	rewardInfoShardToProcess *metadata.ShardBlockRewardInfo,
-	cStakeInfos []*statedb.StakerInfoV2,
+	reward map[common.Hash]uint64,
+	cStakeInfos []*statedb.StakerInfoSlashingVersion,
 ) (
 	err error,
 ) {
 	committeeSize := len(cStakeInfos)
 	for _, candidate := range cStakeInfos {
 		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
-			for key, value := range rewardInfoShardToProcess.ShardReward {
+			for key, value := range reward {
 				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)
 				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
 				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
@@ -277,13 +284,13 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(
 	return nil
 }
 
-func calculateRewardV3(
-	maxBeaconBlockCreation uint64,
+func calculateRewardMultiset(
 	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
-	numberOfActiveShards, maxSubsetsCommittee int,
+	curView *BeaconBestState,
+	maxBeaconBlockCreation uint64,
+	maxSubsetsCommittee int,
 	beaconHeight uint64,
 	epoch uint64,
-	rewardStateDB *statedb.StateDB,
 	isSplitRewardForCustodian bool,
 	percentCustodianRewards uint64,
 ) (map[common.Hash]uint64,
@@ -291,17 +298,17 @@ func calculateRewardV3(
 	map[common.Hash]uint64,
 	map[common.Hash]uint64, error,
 ) {
-	allCoinID := statedb.GetAllTokenIDForRewardV3(rewardStateDB, epoch)
+	allCoinID := statedb.GetAllTokenIDForRewardV3(curView.rewardStateDB, epoch)
 	blocksPerYear := getNoBlkPerYear(maxBeaconBlockCreation)
 	percentForIncognitoDAO := getPercentForIncognitoDAO(beaconHeight, blocksPerYear)
-	totalRewardForShardSubset := make([][]map[common.Hash]uint64, numberOfActiveShards)
-	totalRewards := make([][]map[common.Hash]uint64, numberOfActiveShards)
+	totalRewardForShardSubset := make([][]map[common.Hash]uint64, curView.ActiveShards)
+	totalRewards := make([][]map[common.Hash]uint64, curView.ActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
 	totalRewardForCustodian := map[common.Hash]uint64{}
 	var err error
 
-	for shardID := 0; shardID < numberOfActiveShards; shardID++ {
+	for shardID := 0; shardID < curView.ActiveShards; shardID++ {
 		totalRewardForShardSubset[shardID] = make([]map[common.Hash]uint64, maxSubsetsCommittee)
 		totalRewards[shardID] = make([]map[common.Hash]uint64, maxSubsetsCommittee)
 		for subsetID := 0; subsetID < maxSubsetsCommittee; subsetID++ {
@@ -313,8 +320,8 @@ func calculateRewardV3(
 			}
 
 			for _, coinID := range allCoinID {
-				totalRewards[shardID][subsetID][coinID], err = statedb.GetRewardOfShardByEpochV3(
-					rewardStateDB, epoch,
+				totalRewards[shardID][subsetID][coinID], err = statedb.GetRewardOfShardByEpochMultiset(
+					curView.rewardStateDB, epoch,
 					byte(shardID), byte(subsetID), coinID)
 				if err != nil {
 					return nil, nil, nil, nil, err
@@ -324,7 +331,7 @@ func calculateRewardV3(
 				}
 			}
 
-			env := committeestate.NewSplitRewardEnvironmentV3(
+			env := committeestate.NewSplitRewardEnvironmentMultiset(
 				byte(shardID),
 				byte(subsetID),
 				byte(maxSubsetsCommittee),
@@ -333,10 +340,11 @@ func calculateRewardV3(
 				isSplitRewardForCustodian,
 				percentCustodianRewards,
 				percentForIncognitoDAO,
+				curView.GetBeaconCommittee(),
+				curView.GetShardCommittee(),
 			)
 
 			Logger.log.Info("[dcs] env.MaxSubsetCommittees:", env.MaxSubsetCommittees)
-
 			rewardForBeacon, rewardForShardSubset, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 			if err != nil {
 				return nil, nil, nil, nil, err
@@ -421,6 +429,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	blkHeight, epoch uint64,
 	isSplitRewardForCustodian bool,
 	percentCustodianRewards uint64,
+	blockVersion int,
 ) ([][]string, map[common.Hash]uint64, error) {
 
 	//Declare variables
@@ -438,19 +447,21 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 
-	if curView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+	if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
+		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
-			err = calculateRewardV3(
+			err = calculateRewardMultiset(
+			splitRewardRuleProcessor,
+			curView,
 			uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()),
-			curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
-			curView.ActiveShards,
 			MaxSubsetCommittees,
-			blkHeight, epoch,
-			curView.GetBeaconRewardStateDB(),
-			isSplitRewardForCustodian, percentCustodianRewards,
+			blkHeight,
+			epoch,
+			isSplitRewardForCustodian,
+			percentCustodianRewards,
 		)
 
 		instRewardForShards, err = blockchain.buildInstructionRewardForShardsV3(epoch, totalRewardForShardSubset)
@@ -459,12 +470,13 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		}
 
 	} else {
+		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
 			err = calculateReward(
-			curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
+			splitRewardRuleProcessor,
 			curView.ActiveShards, blkHeight, epoch,
 			curView.GetBeaconRewardStateDB(),
 			isSplitRewardForCustodian, percentCustodianRewards,

@@ -64,14 +64,18 @@ type SplitRewardEnvironment struct {
 	DAOPercent                int
 	ActiveShards              int
 	MaxSubsetCommittees       byte
+	BeaconCommittee           []incognitokey.CommitteePublicKey
+	ShardCommittee            map[byte][]incognitokey.CommitteePublicKey
 }
 
-func NewSplitRewardEnvironmentV3(
+func NewSplitRewardEnvironmentMultiset(
 	shardID, subsetID, maxSubsetsCommittee byte, beaconHeight uint64,
 	totalReward map[common.Hash]uint64,
 	isSplitRewardForCustodian bool,
 	percentCustodianReward uint64,
 	DAOPercent int,
+	beaconCommittee []incognitokey.CommitteePublicKey,
+	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,

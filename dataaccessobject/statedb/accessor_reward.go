@@ -7,8 +7,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-//AddShardRewardRequestV3
-func AddShardRewardRequestV3(
+//AddShardRewardRequestMultiset
+func AddShardRewardRequestMultiset(
 	stateDB *StateDB,
 	epoch uint64,
 	shardID, subsetID byte,
@@ -31,7 +31,7 @@ func AddShardRewardRequestV3(
 	return nil
 }
 
-func GetRewardOfShardByEpochV3(
+func GetRewardOfShardByEpochMultiset(
 	stateDB *StateDB,
 	epoch uint64,
 	shardID, subsetID byte,

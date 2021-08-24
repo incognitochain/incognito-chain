@@ -180,6 +180,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 				curView.Epoch,
 				isSplitRewardForCustodian,
 				percentCustodianRewards,
+				newBeaconBlock.Header.Version,
 			)
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
@@ -191,6 +192,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 				newBeaconBlock.Header.Epoch-1,
 				isSplitRewardForCustodian,
 				percentCustodianRewards,
+				newBeaconBlock.Header.Version,
 			)
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)

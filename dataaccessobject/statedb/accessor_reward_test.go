@@ -75,7 +75,7 @@ func TestAddShardRewardRequestV3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AddShardRewardRequestV3(tt.args.stateDB, tt.args.epoch, tt.args.shardID, tt.args.subsetID, tt.args.tokenID, tt.args.rewardAmount); (err != nil) != tt.wantErr {
+			if err := AddShardRewardRequestMultiset(tt.args.stateDB, tt.args.epoch, tt.args.shardID, tt.args.subsetID, tt.args.tokenID, tt.args.rewardAmount); (err != nil) != tt.wantErr {
 				t.Errorf("AddShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -165,7 +165,7 @@ func TestGetRewardOfShardByEpochV3(t *testing.T) {
 		},
 	}
 	for _, add := range addArgss {
-		if err := AddShardRewardRequestV3(sDB, add.epoch, add.shardID, add.subsetID, add.tokenID, add.rewardAmount); err != nil {
+		if err := AddShardRewardRequestMultiset(sDB, add.epoch, add.shardID, add.subsetID, add.tokenID, add.rewardAmount); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -306,7 +306,7 @@ func TestGetRewardOfShardByEpochV3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetRewardOfShardByEpochV3(tt.args.stateDB, tt.args.epoch, tt.args.shardID, tt.args.subsetID, tt.args.tokenID)
+			got, err := GetRewardOfShardByEpochMultiset(tt.args.stateDB, tt.args.epoch, tt.args.shardID, tt.args.subsetID, tt.args.tokenID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetRewardOfShardByEpoch() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -402,7 +402,7 @@ func TestGetAllTokenIDForRewardV3(t *testing.T) {
 		},
 	}
 	for _, add := range addArgss {
-		if err := AddShardRewardRequestV3(sDB, add.epoch, add.shardID, add.subsetID, add.tokenID, add.rewardAmount); err != nil {
+		if err := AddShardRewardRequestMultiset(sDB, add.epoch, add.shardID, add.subsetID, add.tokenID, add.rewardAmount); err != nil {
 			log.Fatal(err)
 		}
 	}

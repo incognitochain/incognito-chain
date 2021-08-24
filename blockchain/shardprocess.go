@@ -254,15 +254,15 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err2 = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, newBestState.BeaconHeight, shardID)
-	if err2 != nil {
-		return err2
+	err = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, newBestState.BeaconHeight, shardID)
+	if err != nil {
+		return err
 	}
 
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err2 = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
-	if err2 != nil {
-		return err2
+	err = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
+	if err != nil {
+		return err
 	}
 
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
@@ -285,7 +285,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 //	- Version: shard block version is one of pre-defined versions
 //	- Parent (previous) block must be found in database ( current block point to an exist block in database )
 //	- Height: parent block height + 1
-//	- Epoch: blockHeight % Epoch ? Parent Epoch + 1 : Current Epoch
+//	- epoch: blockHeight % epoch ? Parent epoch + 1 : Current epoch
 //	- Timestamp: block timestamp must be greater than previous block timestamp
 //	- TransactionRoot: rebuild transaction root from txs in block and compare with transaction root in header
 //	- ShardTxRoot: rebuild shard transaction root from txs in block and compare with shard transaction root in header
