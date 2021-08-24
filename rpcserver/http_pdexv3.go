@@ -341,20 +341,27 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
 	}
 
+	beaconBestView, err := httpServer.blockService.GetBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(beaconBestView.PdeState().Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
+
 	pairID, ok := tokenParamsRaw["PoolPairID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
-	token0IDStr, ok := tokenParamsRaw["Token0ID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token0ID is invalid"))
+	poolPair, found := poolPairs[pairID]
+	if !found {
+		err = fmt.Errorf("Can't find poolPairID %s", pairID)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
-
-	token1IDStr, ok := tokenParamsRaw["Token1ID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token1ID is invalid"))
-	}
+	poolPairState := poolPair.State()
 
 	nftIDStr, ok := tokenParamsRaw["NftID"].(string)
 	if !ok {
@@ -372,8 +379,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 	}
 
 	tokenIDs := []string{
-		token0IDStr,
-		token1IDStr,
+		poolPairState.Token0ID().String(),
+		poolPairState.Token1ID().String(),
 		common.PRVIDStr,
 		common.PDEXIDStr,
 		nftIDStr,
@@ -475,24 +482,31 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
 	}
 
+	beaconBestView, err := httpServer.blockService.GetBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(beaconBestView.PdeState().Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
+
 	pairID, ok := tokenParamsRaw["PoolPairID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
-	token0IDStr, ok := tokenParamsRaw["Token0ID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token0ID is invalid"))
+	poolPair, found := poolPairs[pairID]
+	if !found {
+		err = fmt.Errorf("Can't find poolPairID %s", pairID)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
-
-	token1IDStr, ok := tokenParamsRaw["Token1ID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Token1ID is invalid"))
-	}
+	poolPairState := poolPair.State()
 
 	tokenIDs := []string{
-		token0IDStr,
-		token1IDStr,
+		poolPairState.Token0ID().String(),
+		poolPairState.Token1ID().String(),
 		common.PRVIDStr,
 		common.PDEXIDStr,
 	}
@@ -862,11 +876,34 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		poolPairState.Token0RealAmount(), poolPairState.Token1RealAmount(),
 		token0Amount, token1Amount, poolPairState.ShareAmount(),
 	)
+
+	tokenIDs := []string{
+		poolPairState.Token0ID().String(),
+		poolPairState.Token1ID().String(),
+		common.PRVIDStr,
+		withdrawLiquidityRequest.TokenID,
+	}
+
+	feeReceivers := map[common.Hash]privacy.OTAReceiver{}
+	for _, tokenIDStr := range tokenIDs {
+		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
+		}
+		receiver := privacy.OTAReceiver{}
+		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		feeReceivers[*tokenID] = receiver
+	}
+
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		withdrawLiquidityRequest.PoolPairID,
 		withdrawLiquidityRequest.TokenID,
 		otaReceiveNftStr, otaReceiveToken0Str, otaReceiveToken1Str,
 		shareAmount,
+		feeReceivers,
 	)
 	receiverAddresses, ok := arrayParams[1].(map[string]interface{})
 	if !ok {

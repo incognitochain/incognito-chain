@@ -637,14 +637,20 @@ func (sp *stateProducerV2) withdrawLPFee(
 		reward[metaData.NftID] = 1
 
 		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		notEnoughOTA := false
 		for tokenID := range reward {
 			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
-				return instructions, pairs, fmt.Errorf("Could not find receiver for token %v\n", tokenID)
+				notEnoughOTA = true
+				break
 			}
 			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
 				Address: metaData.Receivers[tokenID],
 				Amount:  reward[tokenID],
 			}
+		}
+		if notEnoughOTA {
+			instructions = append(instructions, rejectInst...)
+			continue
 		}
 
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
@@ -738,34 +744,70 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
+
+		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+		if err != nil {
+			return res, poolPairs, err
+		}
+
 		poolPair, ok := poolPairs[metaData.PoolPairID()]
 		if !ok || poolPair == nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		shares, ok := poolPair.shares[metaData.NftID()]
 		if !ok || shares == nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
 			metaData.NftID(), metaData.ShareAmount(),
 		)
 		if err != nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+			res = append(res, rejectInsts...)
+			continue
+		}
+
+		if shares.amount == shareAmount {
+			// withdrawal LP fee
+			nftIDByte, err := new(common.Hash).NewHashFromStr(metaData.NftID())
+			reward, err := poolPair.RecomputeLPFee(*nftIDByte)
 			if err != nil {
 				return res, poolPairs, err
 			}
-			res = append(res, insts...)
-			continue
+
+			receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+			notEnoughOTA := false
+			for tokenID := range reward {
+				if _, isExisted := metaData.FeeReceivers()[tokenID]; !isExisted {
+					notEnoughOTA = true
+					break
+				}
+				receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
+					Address: metaData.FeeReceivers()[tokenID],
+					Amount:  reward[tokenID],
+				}
+			}
+
+			if notEnoughOTA {
+				res = append(res, rejectInsts...)
+				continue
+			}
+
+			acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
+				metaData.PoolPairID(),
+				*nftIDByte,
+				receiversInfo,
+				shardID,
+				txReqID,
+				metadataPdexv3.RequestAcceptedChainStatus,
+			)
+
+			// update state after fee withdrawal
+			shares.tradingFees = map[common.Hash]uint64{}
+			shares.lastLPFeesPerShare = poolPair.state.LPFeesPerShare()
+
+			res = append(res, acceptedInst...)
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
