@@ -1,4 +1,5 @@
 package blockchain
+
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
@@ -805,7 +806,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	}
 }
 
-func Test_getCommitteeToPayRewardV3(t *testing.T) {
+func Test_getCommitteeToPayRewardMultiset(t *testing.T) {
 
 	initPublicKey()
 	initLog()
@@ -876,7 +877,7 @@ func Test_getCommitteeToPayRewardV3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getCommitteeToPayRewardV3(tt.args.committees, tt.args.shardReceiveRewardV3); !reflect.DeepEqual(got, tt.want) {
+			if got := getCommitteeToPayRewardMultiset(tt.args.committees, tt.args.shardReceiveRewardV3); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getCommitteeToPayRewardV3() = %v, want %v", got, tt.want)
 			}
 		})

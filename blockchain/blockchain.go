@@ -1068,7 +1068,7 @@ func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [
 	return validFinishedSyncValidators
 }
 
-func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
+func (bc *BlockChain) GetAllCommitteeStakeInfo(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
@@ -1089,7 +1089,7 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*
 	return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, allCommitteeState), nil
 }
 
-func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][]*statedb.StakerInfoV2, error) {
+func (bc *BlockChain) GetAllCommitteeStakeInfoSlashingVersion(epoch uint64) (map[int][]*statedb.StakerInfoSlashingVersion, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
@@ -1102,12 +1102,12 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][
 	}
 	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
 		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
-			return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, result), nil
+			return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, result), nil
 		}
 	}
 	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
 	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
-	return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, allCommitteeState), nil
+	return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, allCommitteeState), nil
 }
 
 func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {

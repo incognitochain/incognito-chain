@@ -4,6 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"testing"
 )

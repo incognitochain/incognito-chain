@@ -668,7 +668,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
-		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 &&
+		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
@@ -711,7 +711,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
-		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 &&
+		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
@@ -1056,7 +1056,7 @@ func (b *BeaconBestState) CalculateExpectedTotalBlock() map[byte]uint {
 	return expectedTotalBlock
 }
 
-func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*statedb.StakerInfoV2, epoch uint64, shardID byte) ([]*statedb.StakerInfoV2, error) {
+func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion, epoch uint64, shardID byte) ([]*statedb.StakerInfoSlashingVersion, error) {
 
 	if epoch >= beaconBestState.Epoch {
 		return nil, fmt.Errorf("Can't get committee to pay salary because, BeaconBestState Epoch %+v is"+
@@ -1068,9 +1068,9 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
 }
 
-func filterNonSlashingCommittee(committees []*statedb.StakerInfoV2, slashingCommittees []string) []*statedb.StakerInfoV2 {
+func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion, slashingCommittees []string) []*statedb.StakerInfoSlashingVersion {
 
-	nonSlashingCommittees := []*statedb.StakerInfoV2{}
+	nonSlashingCommittees := []*statedb.StakerInfoSlashingVersion{}
 	tempSlashingCommittees := make(map[string]struct{})
 
 	for _, committee := range slashingCommittees {
