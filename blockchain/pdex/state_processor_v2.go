@@ -759,3 +759,9 @@ func (sp *stateProcessorV2) userMintNft(
 	)
 	return nftIDs, &mintNftStatus, nil
 }
+
+func (sp *stateProcessorV2) staking(
+	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64,
+) error {
+	return nil
+}
