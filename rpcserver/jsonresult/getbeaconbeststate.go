@@ -41,9 +41,10 @@ type GetBeaconBestState struct {
 	LastCrossShardState                    map[byte]map[byte]uint64                     `json:"LastCrossShardState"`
 	ShardHandle                            map[byte]bool                                `json:"ShardHandle"` // lock sync.RWMutex
 	CommitteeEngineVersion                 int                                          `json:"CommitteeStateVersion"`
+	NumberOfShardBlock                     map[byte]uint                                `json:"NumberOfShardBlock"` // lock sync.RWMutex
 	FinishSyncManager                      map[byte][]string                            `json:"FinishSyncManager"`
-	NumberOfMissingSignature               map[string]signaturecounter.MissingSignature `json:"MissingSignature"`
-	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"`
+	NumberOfMissingSignature               map[string]signaturecounter.MissingSignature `json:"MissingSignature"`        // lock sync.RWMutex
+	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"` // lock sync.RWMutex
 	Config                                 map[string]interface{}                       `json:"Config"`
 }
 
@@ -62,6 +63,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		MaxBeaconCommitteeSize: data.MaxBeaconCommitteeSize,
 		MinBeaconCommitteeSize: data.MinBeaconCommitteeSize,
 		ActiveShards:           data.ActiveShards,
+		NumberOfShardBlock:     data.NumberOfShardBlock,
 	}
 	result.BestShardHash = make(map[byte]common.Hash)
 	for k, v := range data.BestShardHash {
@@ -169,7 +171,6 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		result.MissingSignaturePenalty[k] = v
 	}
 	result.CommitteeEngineVersion = data.CommitteeStateVersion()
-
 	result.SyncingValidators = make(map[byte][]string)
 	for k, v := range data.GetSyncingValidators() {
 		result.SyncingValidators[k] = make([]string, len(v))
@@ -186,6 +187,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	result.Config["InitShardCommitteeSize"] = config.Param().CommitteeSize.InitShardCommitteeSize
 	result.Config["NumberOfBlockInEpoch"] = config.Param().EpochParam.NumberOfBlockInEpoch
 	result.Config["RandomTime"] = config.Param().EpochParam.RandomTime
+	result.Config["EnableSlashingHeightV2"] = config.Param().ConsensusParam.EnableSlashingHeightV2
 	return result
 }
 

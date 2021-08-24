@@ -238,8 +238,8 @@ var Tesnet2Param = &param{
 	IsBackup: false,
 }
 
-var LocalDCSParam = &param{
-	Name: "local-dcs",
+var LocalParam = &param{
+	Name: "local",
 	Net:  0x32,
 	GenesisParam: &genesisParam{
 		SelectBeaconNodeSerializedPubkeyV2:         map[uint64][]string{},
@@ -252,15 +252,15 @@ var LocalDCSParam = &param{
 		TxStake:            "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d",
 	},
 	CommitteeSize: committeeSize{
-		MaxShardCommitteeSize:            12,
-		MinShardCommitteeSize:            8,
-		MaxBeaconCommitteeSize:           7,
+		MaxShardCommitteeSize:            32,
+		MinShardCommitteeSize:            4,
+		MaxBeaconCommitteeSize:           4,
 		MinBeaconCommitteeSize:           4,
-		InitShardCommitteeSize:           8,
+		InitShardCommitteeSize:           4,
 		InitBeaconCommitteeSize:          4,
 		ShardCommitteeSizeKeyListV2:      4,
 		BeaconCommitteeSizeKeyListV2:     4,
-		NumberOfFixedShardBlockValidator: 8,
+		NumberOfFixedShardBlockValidator: 4,
 	},
 	BlockTime: blockTime{
 		MinShardBlockInterval:  10 * time.Second,
@@ -291,6 +291,7 @@ var LocalDCSParam = &param{
 		ConsensusV2Epoch:          15290,
 		StakingFlowV2Height:       2051863,
 		EnableSlashingHeight:      2087789,
+		EnableSlashingHeightV2:    1e9,
 		Timeslot:                  10,
 		EpochBreakPointSwapNewKey: []uint64{1280},
 	},
@@ -316,7 +317,87 @@ var LocalDCSParam = &param{
 	IsBackup: false,
 }
 
-func (p *param) LoadKeyByNetwork(network string) {
+var LocalDCSParam = &param{
+	Name: "local-dcs",
+	Net:  0x32,
+	GenesisParam: &genesisParam{
+		SelectBeaconNodeSerializedPubkeyV2:         map[uint64][]string{},
+		SelectBeaconNodeSerializedPaymentAddressV2: map[uint64][]string{},
+		SelectShardNodeSerializedPubkeyV2:          map[uint64][]string{},
+		SelectShardNodeSerializedPaymentAddressV2:  map[uint64][]string{},
+		FeePerTxKb:         0,
+		ConsensusAlgorithm: "bls",
+		BlockTimestamp:     "2020-08-11T00:00:00.000Z",
+		TxStake:            "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d",
+	},
+	CommitteeSize: committeeSize{
+		MaxShardCommitteeSize:            12,
+		MinShardCommitteeSize:            4,
+		MaxBeaconCommitteeSize:           7,
+		MinBeaconCommitteeSize:           4,
+		InitShardCommitteeSize:           4,
+		InitBeaconCommitteeSize:          4,
+		ShardCommitteeSizeKeyListV2:      4,
+		BeaconCommitteeSizeKeyListV2:     4,
+		NumberOfFixedShardBlockValidator: 4,
+	},
+	BlockTime: blockTime{
+		MinShardBlockInterval:  10 * time.Second,
+		MaxShardBlockCreation:  8 * time.Second,
+		MinBeaconBlockInterval: 10 * time.Second,
+		MaxBeaconBlockCreation: 6 * time.Second,
+	},
+	StakingAmountShard: 1750000000000,
+	ActiveShards:       8,
+	BasicReward:        400000000,
+	EpochParam: epochParam{
+		NumberOfBlockInEpoch:   50,
+		NumberOfBlockInEpochV2: 1e9,
+		EpochV2BreakPoint:      1e9,
+		RandomTime:             25,
+		RandomTimeV2:           1e9,
+	},
+	EthContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
+	BscContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
+	IncognitoDAOAddress:              "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
+	CentralizedWebsitePaymentAddress: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
+	SwapCommitteeParam: swapCommitteeParam{
+		Offset:       1,
+		SwapOffset:   1,
+		AssignOffset: 2,
+	},
+	ConsensusParam: consensusParam{
+		ConsensusV2Epoch:          1,
+		StakingFlowV2Height:       1,
+		EnableSlashingHeight:      1,
+		EnableSlashingHeightV2:    210,
+		Timeslot:                  10,
+		EpochBreakPointSwapNewKey: []uint64{1280},
+	},
+	BeaconHeightBreakPointBurnAddr: 1,
+	ReplaceStakingTxHeight:         1,
+	ETHRemoveBridgeSigEpoch:        2085,
+	BCHeightBreakPointNewZKP:       1148608,
+	EnableFeatureFlags: map[string]uint64{
+		"PortalRelaying": 1,
+		"PortalV3":       0,
+		"PortalV4":       0,
+	},
+	BCHeightBreakPointPortalV3: 1328816,
+	TxPoolVersion:              0,
+	GethParam: gethParam{
+		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
+		Protocol: "https",
+		Port:     "",
+	},
+	BSCParam: bscParam{
+		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+	},
+	IsBackup: false,
+}
+
+func NewDefaultParam(network string) *param {
+	var p *param
 	initTx := new(initTx)
 	switch network {
 	case "mainnet":

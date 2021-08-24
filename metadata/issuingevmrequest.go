@@ -61,6 +61,12 @@ type GetEVMBlockNumRes struct {
 	Result string `json:"result"`
 }
 
+const (
+	LegacyTxType = iota
+	AccessListTxType
+	DynamicFeeTxType
+)
+
 func ParseEVMIssuingInstContent(instContentStr string) (*IssuingEVMReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
@@ -258,6 +264,18 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		Logger.log.Warn(errMsg)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
+
+	if iReq.Type == IssuingETHRequestMeta {
+		if len(val) == 0 {
+			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
+		}
+
+		// hardfork london with new transaction type => 0x02 || RLP([...SenderPayload, ...SenderSignature, ...GasPayerPayload, ...GasPayerSignature])
+		if val[0] == AccessListTxType || val[0] == DynamicFeeTxType {
+			val = val[1:]
+		}
+	}
+
 	// Decode value from VerifyProof into Receipt
 	constructedReceipt := new(types.Receipt)
 	err = rlp.DecodeBytes(val, constructedReceipt)

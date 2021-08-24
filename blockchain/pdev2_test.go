@@ -1,5 +1,6 @@
 package blockchain
 
+//
 //import (
 //	"encoding/base64"
 //	"encoding/json"
@@ -159,7 +160,7 @@ package blockchain
 //		WithdrawalToken1IDStr: withdrawalToken1IDStr,
 //		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 //		WithdrawalFeeAmt:      withdrawalFeeAmt,
-//		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+//		MetadataBase: metadata.MetadataBase{
 //			Type: metadata.PDEFeeWithdrawalRequestMeta,
 //		},
 //	}

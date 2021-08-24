@@ -254,7 +254,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err2 := blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
+	err2 = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, newBestState.BeaconHeight, shardID)
 	if err2 != nil {
 		return err2
 	}

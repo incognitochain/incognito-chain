@@ -80,12 +80,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 	return nil
 }
 
-func (blockchain *BlockChain) processSalaryInstructions(
-	rewardStateDB *statedb.StateDB,
-	beaconBlocks []*types.BeaconBlock,
-	shardID byte,
-) error {
-	cInfos := make(map[int][]*statedb.StakerInfo)
+func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock, confirmBeaconHeight uint64, shardID byte) error {
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 
@@ -189,13 +184,29 @@ func (blockchain *BlockChain) processSalaryInstructions(
 				// 	}
 				// 	cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				// }
-				cInfos, err = blockchain.GetAllCommitteeStakeInfoByEpoch(shardRewardInfo.Epoch)
-				if err != nil {
-					return NewBlockChainError(ProcessSalaryInstructionsError, err)
-				}
-				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
-				if err != nil {
-					return err
+				if confirmBeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
+					cInfos, err := blockchain.GetAllCommitteeStakeInfoByEpoch(shardRewardInfo.Epoch)
+					if err != nil {
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
+					}
+					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo, cInfos[int(shardToProcess)])
+					if err != nil {
+						return err
+					}
+				} else {
+					cInfosV2, err := blockchain.GetAllCommitteeStakeInfoByEpochV2(shardRewardInfo.Epoch)
+					if err != nil {
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
+					}
+					beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+					nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch, byte(shardToProcess))
+					if err != nil {
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
+					}
+					err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, nonSlashingCInfosV2)
+					if err != nil {
+						return err
+					}
 				}
 				continue
 			}
@@ -230,6 +241,30 @@ func (blockchain *BlockChain) addShardCommitteeReward(
 	for _, candidate := range cStakeInfos {
 		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
 			for key, value := range reward {
+				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)
+				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
+				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
+				if err != nil {
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) addShardCommitteeRewardV2(
+	rewardStateDB *statedb.StateDB,
+	shardID byte,
+	rewardInfoShardToProcess *metadata.ShardBlockRewardInfo,
+	cStakeInfos []*statedb.StakerInfoV2,
+) (
+	err error,
+) {
+	committeeSize := len(cStakeInfos)
+	for _, candidate := range cStakeInfos {
+		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
+			for key, value := range rewardInfoShardToProcess.ShardReward {
 				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)
 				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
 				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)

@@ -1,128 +1,124 @@
 package statedb
 
 import (
-	"bytes"
-	"testing"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 )
 
-func TestStoreAndHasSerialNumbers(t *testing.T) {
-	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	type args struct {
-		stateDB       *StateDB
-		tokenID       common.Hash
-		serialNumbers [][]byte
-		shardID       byte
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		wantHas bool
-	}{
-		{
-			name: "shard 0",
-			args: args{
-				stateDB:       stateDB,
-				tokenID:       testGenerateTokenIDs(1)[0],
-				serialNumbers: testGenerateSerialNumberList(10),
-				shardID:       0,
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "shard 1",
-			args: args{
-				stateDB:       stateDB,
-				tokenID:       testGenerateTokenIDs(1)[0],
-				serialNumbers: testGenerateSerialNumberList(10),
-				shardID:       1,
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "shard 2",
-			args: args{
-				stateDB:       stateDB,
-				tokenID:       testGenerateTokenIDs(1)[0],
-				serialNumbers: testGenerateSerialNumberList(10),
-				shardID:       2,
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "shard 3",
-			args: args{
-				stateDB:       stateDB,
-				tokenID:       testGenerateTokenIDs(1)[0],
-				serialNumbers: testGenerateSerialNumberList(10),
-				shardID:       3,
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := StoreSerialNumbers(tt.args.stateDB, tt.args.tokenID, tt.args.serialNumbers, tt.args.shardID); (err != nil) != tt.wantErr {
-				t.Errorf("StoreSerialNumbers() error = %v, wantErr %v", err, tt.wantErr)
-			} else {
-				if len(stateDB.GetStateObjectMapForTestOnly()) != 10 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 10 {
-					t.Errorf("StoreSerialNumbers() must have 10 object")
-				}
-			}
-			tt.args.stateDB.Reset(emptyRoot)
-		})
-	}
-
-	// Actually store
-	for _, tt := range tests {
-		StoreSerialNumbers(tt.args.stateDB, tt.args.tokenID, tt.args.serialNumbers, tt.args.shardID)
-	}
-	rootHash, err := stateDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for _, serialNumber := range tt.args.serialNumbers {
-				has, err := HasSerialNumber(tt.args.stateDB, tt.args.tokenID, serialNumber, tt.args.shardID)
-				if err != nil {
-					t.Errorf("HasSerialNumber() error = %v, wantErr %v", err, tt.wantErr)
-				}
-				if !has {
-					t.Errorf("HasSerialNumber() has = %v, wantHas %v", err, tt.wantHas)
-				}
-			}
-			wantSerialNumberM := make(map[string]struct{})
-			keys := []common.Hash{}
-			for _, tempSerialNumber := range tt.args.serialNumbers {
-				serialNumber := base58.Base58Check{}.Encode(tempSerialNumber, common.Base58Version)
-				wantSerialNumberM[serialNumber] = struct{}{}
-				keys = append(keys, GenerateSerialNumberObjectKey(tt.args.tokenID, tt.args.shardID, tempSerialNumber))
-			}
-			_, _, err := tt.args.stateDB.getSerialNumberState(keys[0])
-			if err != nil {
-				t.Fatal(err)
-			}
-
-		})
-	}
-}
-
+//
+//func TestStoreAndHasSerialNumbers(t *testing.T) {
+//	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	type args struct {
+//		stateDB       *StateDB
+//		tokenID       common.Hash
+//		serialNumbers [][]byte
+//		shardID       byte
+//	}
+//	tests := []struct {
+//		name    string
+//		args    args
+//		wantErr bool
+//		wantHas bool
+//	}{
+//		{
+//			name: "shard 0",
+//			args: args{
+//				stateDB:       stateDB,
+//				tokenID:       testGenerateTokenIDs(1)[0],
+//				serialNumbers: testGenerateSerialNumberList(10),
+//				shardID:       0,
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "shard 1",
+//			args: args{
+//				stateDB:       stateDB,
+//				tokenID:       testGenerateTokenIDs(1)[0],
+//				serialNumbers: testGenerateSerialNumberList(10),
+//				shardID:       1,
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "shard 2",
+//			args: args{
+//				stateDB:       stateDB,
+//				tokenID:       testGenerateTokenIDs(1)[0],
+//				serialNumbers: testGenerateSerialNumberList(10),
+//				shardID:       2,
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "shard 3",
+//			args: args{
+//				stateDB:       stateDB,
+//				tokenID:       testGenerateTokenIDs(1)[0],
+//				serialNumbers: testGenerateSerialNumberList(10),
+//				shardID:       3,
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			if err := StoreSerialNumbers(tt.args.stateDB, tt.args.tokenID, tt.args.serialNumbers, tt.args.shardID); (err != nil) != tt.wantErr {
+//				t.Errorf("StoreSerialNumbers() error = %v, wantErr %v", err, tt.wantErr)
+//			} else {
+//				if len(stateDB.GetStateObjectMapForTestOnly()) != 10 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 10 {
+//					t.Errorf("StoreSerialNumbers() must have 10 object")
+//				}
+//			}
+//			tt.args.stateDB.Reset(emptyRoot)
+//		})
+//	}
+//
+//	// Actually store
+//	for _, tt := range tests {
+//		StoreSerialNumbers(tt.args.stateDB, tt.args.tokenID, tt.args.serialNumbers, tt.args.shardID)
+//	}
+//	rootHash, err := stateDB.Commit(true)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			for _, serialNumber := range tt.args.serialNumbers {
+//				has, err := HasSerialNumber(tt.args.stateDB, tt.args.tokenID, serialNumber, tt.args.shardID)
+//				if err != nil {
+//					t.Errorf("HasSerialNumber() error = %v, wantErr %v", err, tt.wantErr)
+//				}
+//				if !has {
+//					t.Errorf("HasSerialNumber() has = %v, wantHas %v", err, tt.wantHas)
+//				}
+//			}
+//			wantSerialNumberM := make(map[string]struct{})
+//			keys := []common.Hash{}
+//			for _, tempSerialNumber := range tt.args.serialNumbers {
+//				serialNumber := base58.Base58Check{}.Encode(tempSerialNumber, common.Base58Version)
+//				wantSerialNumberM[serialNumber] = struct{}{}
+//				keys = append(keys, GenerateSerialNumberObjectKey(tt.args.tokenID, tt.args.shardID, tempSerialNumber))
+//			}
+//			_, _, err := tt.args.stateDB.getSerialNumberState(keys[0])
+//			if err != nil {
+//				t.Fatal(err)
+//			}
+//
+//		})
+//	}
+//}
+//
 //func TestStateDB_ListSerialNumber(t *testing.T) {
 //	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 //	if err != nil {
@@ -171,7 +167,7 @@ func TestStoreAndHasSerialNumbers(t *testing.T) {
 //		}
 //	}
 //}
-
+//
 //func TestStoreAndHasCommitment(t *testing.T) {
 //	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 //	if err != nil {
@@ -312,7 +308,7 @@ func TestStoreAndHasSerialNumbers(t *testing.T) {
 //		})
 //	}
 //}
-
+//
 //func TestStateDB_ListCommitment(t *testing.T) {
 //	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 //	if err != nil {
@@ -388,263 +384,263 @@ func TestStoreAndHasSerialNumbers(t *testing.T) {
 //
 //	}
 //}
-
-func TestStoreAndGetOutputCoin(t *testing.T) {
-	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	type args struct {
-		stateDB     *StateDB
-		tokenID     common.Hash
-		outputCoins [][]byte
-		publicKey   []byte
-		shardID     byte
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		wantHas bool
-	}{
-		{
-			name: "shard 0",
-			args: args{
-				stateDB:     stateDB,
-				tokenID:     testGenerateTokenIDs(1)[0],
-				outputCoins: testGenerateOutputCoinList(10),
-				shardID:     0,
-				publicKey:   testGeneratePublicKeyList(1)[0],
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "shard 1",
-			args: args{
-				stateDB:     stateDB,
-				tokenID:     testGenerateTokenIDs(1)[0],
-				outputCoins: testGenerateOutputCoinList(10),
-				shardID:     1,
-				publicKey:   testGeneratePublicKeyList(1)[0],
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "shard 2",
-			args: args{
-				stateDB:     stateDB,
-				tokenID:     testGenerateTokenIDs(1)[0],
-				outputCoins: testGenerateOutputCoinList(10),
-				shardID:     2,
-				publicKey:   testGeneratePublicKeyList(1)[0],
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "shard 3",
-			args: args{
-				stateDB:     stateDB,
-				tokenID:     testGenerateTokenIDs(1)[0],
-				outputCoins: testGenerateOutputCoinList(10),
-				shardID:     3,
-				publicKey:   testGeneratePublicKeyList(1)[0],
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := StoreOutputCoins(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.outputCoins, tt.args.shardID); (err != nil) != tt.wantErr {
-				t.Errorf("StoreOutputCoins() error = %v, wantErr %v", err, tt.wantErr)
-			} else {
-				if len(stateDB.GetStateObjectMapForTestOnly()) != 10 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 10 {
-					t.Errorf("StoreOutputCoins() must have 10 object")
-				}
-			}
-			tt.args.stateDB.Reset(emptyRoot)
-		})
-	}
-
-	// Actually store
-	for _, tt := range tests {
-		err := StoreOutputCoins(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.outputCoins, tt.args.shardID)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	rootHash, err := stateDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotOutputCoins, err := GetOutcoinsByPubkey(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.shardID)
-			if err != nil {
-				t.Errorf("GetOutcoinsByPubkey() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			for _, wantOutputCoin := range tt.args.outputCoins {
-				flag := false
-				for _, gotOutputCoin := range gotOutputCoins {
-					if bytes.Compare(wantOutputCoin, gotOutputCoin) == 0 {
-						flag = true
-						break
-					}
-				}
-				if !flag {
-					t.Errorf("GetOutcoinsByPubkey() want = %v, got nothing", wantOutputCoin)
-				}
-			}
-		})
-	}
-}
-
-func TestStoreSNDerivators(t *testing.T) {
-	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	type args struct {
-		stateDB *StateDB
-		tokenID common.Hash
-		snds    [][]byte
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		wantHas bool
-	}{
-		{
-			name: "token 1",
-			args: args{
-				stateDB: stateDB,
-				tokenID: testGenerateTokenIDs(1)[0],
-				snds:    testGenerateSNDList(1000),
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "token 2",
-			args: args{
-				stateDB: stateDB,
-				tokenID: testGenerateTokenIDs(1)[0],
-				snds:    testGenerateSNDList(1000),
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "token 3",
-			args: args{
-				stateDB: stateDB,
-				tokenID: testGenerateTokenIDs(1)[0],
-				snds:    testGenerateSNDList(1000),
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-		{
-			name: "token 4",
-			args: args{
-				stateDB: stateDB,
-				tokenID: testGenerateTokenIDs(1)[0],
-				snds:    testGenerateSNDList(1000),
-			},
-			wantErr: false,
-			wantHas: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := StoreSNDerivators(tt.args.stateDB, tt.args.tokenID, tt.args.snds); (err != nil) != tt.wantErr {
-				t.Errorf("StoreSNDerivators() error = %v, wantErr %v", err, tt.wantErr)
-			} else {
-				if len(stateDB.GetStateObjectMapForTestOnly()) != 1000 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 1000 {
-					t.Errorf("StoreCommitments() must have 1000 object")
-				}
-			}
-			tt.args.stateDB.Reset(emptyRoot)
-		})
-	}
-	// Actually store
-	for _, tt := range tests {
-		err := StoreSNDerivators(stateDB, tt.args.tokenID, tt.args.snds)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	rootHash, err := stateDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for _, snd := range tt.args.snds {
-				has, err := HasSNDerivator(tt.args.stateDB, tt.args.tokenID, snd)
-				if err != nil {
-					t.Errorf("HasSNDerivator() error = %v, wantErr %v", err, tt.wantErr)
-				}
-				if !has {
-					t.Errorf("HasSNDerivator() has = %v, wantErr %v", has, tt.wantHas)
-				}
-			}
-		})
-	}
-}
-
-func TestStateDB_ListSerialNumberDerivator(t *testing.T) {
-	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantTokenID := testGenerateTokenIDs(10)
-	wantSndM := make(map[common.Hash][][]byte)
-	for _, tokenID := range wantTokenID {
-		snds := testGenerateSNDList(1000)
-		err = StoreSNDerivators(stateDB, tokenID, snds)
-		if err != nil {
-			t.Fatal(err)
-		}
-		wantSndM[tokenID] = snds
-	}
-	rootHash, err := stateDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
-	for tokenID, wantSNDs := range wantSndM {
-		gotSNDs, err := ListSNDerivator(tempStateDB, tokenID)
-		if err != nil {
-			t.Errorf("ListSNDerivator() error = %v, wantErr %v", err, nil)
-		}
-		for _, wantSND := range wantSNDs {
-			flag := false
-			for _, gotSND := range gotSNDs {
-				if bytes.Compare(wantSND, gotSND) == 0 {
-					flag = true
-					break
-				}
-			}
-			if !flag {
-				t.Errorf("ListSNDerivator() want = %v, got nothing", wantSND)
-			}
-		}
-	}
-}
+//
+//func TestStoreAndGetOutputCoin(t *testing.T) {
+//	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	type args struct {
+//		stateDB     *StateDB
+//		tokenID     common.Hash
+//		outputCoins [][]byte
+//		publicKey   []byte
+//		shardID     byte
+//	}
+//	tests := []struct {
+//		name    string
+//		args    args
+//		wantErr bool
+//		wantHas bool
+//	}{
+//		{
+//			name: "shard 0",
+//			args: args{
+//				stateDB:     stateDB,
+//				tokenID:     testGenerateTokenIDs(1)[0],
+//				outputCoins: testGenerateOutputCoinList(10),
+//				shardID:     0,
+//				publicKey:   testGeneratePublicKeyList(1)[0],
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "shard 1",
+//			args: args{
+//				stateDB:     stateDB,
+//				tokenID:     testGenerateTokenIDs(1)[0],
+//				outputCoins: testGenerateOutputCoinList(10),
+//				shardID:     1,
+//				publicKey:   testGeneratePublicKeyList(1)[0],
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "shard 2",
+//			args: args{
+//				stateDB:     stateDB,
+//				tokenID:     testGenerateTokenIDs(1)[0],
+//				outputCoins: testGenerateOutputCoinList(10),
+//				shardID:     2,
+//				publicKey:   testGeneratePublicKeyList(1)[0],
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "shard 3",
+//			args: args{
+//				stateDB:     stateDB,
+//				tokenID:     testGenerateTokenIDs(1)[0],
+//				outputCoins: testGenerateOutputCoinList(10),
+//				shardID:     3,
+//				publicKey:   testGeneratePublicKeyList(1)[0],
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			if err := StoreOutputCoins(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.outputCoins, tt.args.shardID); (err != nil) != tt.wantErr {
+//				t.Errorf("StoreOutputCoins() error = %v, wantErr %v", err, tt.wantErr)
+//			} else {
+//				if len(stateDB.GetStateObjectMapForTestOnly()) != 10 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 10 {
+//					t.Errorf("StoreOutputCoins() must have 10 object")
+//				}
+//			}
+//			tt.args.stateDB.Reset(emptyRoot)
+//		})
+//	}
+//
+//	// Actually store
+//	for _, tt := range tests {
+//		err := StoreOutputCoins(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.outputCoins, tt.args.shardID)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//	}
+//	rootHash, err := stateDB.Commit(true)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			gotOutputCoins, err := GetOutcoinsByPubkey(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.shardID)
+//			if err != nil {
+//				t.Errorf("GetOutcoinsByPubkey() error = %v, wantErr %v", err, tt.wantErr)
+//			}
+//			for _, wantOutputCoin := range tt.args.outputCoins {
+//				flag := false
+//				for _, gotOutputCoin := range gotOutputCoins {
+//					if bytes.Compare(wantOutputCoin, gotOutputCoin) == 0 {
+//						flag = true
+//						break
+//					}
+//				}
+//				if !flag {
+//					t.Errorf("GetOutcoinsByPubkey() want = %v, got nothing", wantOutputCoin)
+//				}
+//			}
+//		})
+//	}
+//}
+//
+//func TestStoreSNDerivators(t *testing.T) {
+//	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	type args struct {
+//		stateDB *StateDB
+//		tokenID common.Hash
+//		snds    [][]byte
+//	}
+//	tests := []struct {
+//		name    string
+//		args    args
+//		wantErr bool
+//		wantHas bool
+//	}{
+//		{
+//			name: "token 1",
+//			args: args{
+//				stateDB: stateDB,
+//				tokenID: testGenerateTokenIDs(1)[0],
+//				snds:    testGenerateSNDList(1000),
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "token 2",
+//			args: args{
+//				stateDB: stateDB,
+//				tokenID: testGenerateTokenIDs(1)[0],
+//				snds:    testGenerateSNDList(1000),
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "token 3",
+//			args: args{
+//				stateDB: stateDB,
+//				tokenID: testGenerateTokenIDs(1)[0],
+//				snds:    testGenerateSNDList(1000),
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//		{
+//			name: "token 4",
+//			args: args{
+//				stateDB: stateDB,
+//				tokenID: testGenerateTokenIDs(1)[0],
+//				snds:    testGenerateSNDList(1000),
+//			},
+//			wantErr: false,
+//			wantHas: true,
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			if err := StoreSNDerivators(tt.args.stateDB, tt.args.tokenID, tt.args.snds); (err != nil) != tt.wantErr {
+//				t.Errorf("StoreSNDerivators() error = %v, wantErr %v", err, tt.wantErr)
+//			} else {
+//				if len(stateDB.GetStateObjectMapForTestOnly()) != 1000 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 1000 {
+//					t.Errorf("StoreCommitments() must have 1000 object")
+//				}
+//			}
+//			tt.args.stateDB.Reset(emptyRoot)
+//		})
+//	}
+//	// Actually store
+//	for _, tt := range tests {
+//		err := StoreSNDerivators(stateDB, tt.args.tokenID, tt.args.snds)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//	}
+//	rootHash, err := stateDB.Commit(true)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			for _, snd := range tt.args.snds {
+//				has, err := HasSNDerivator(tt.args.stateDB, tt.args.tokenID, snd)
+//				if err != nil {
+//					t.Errorf("HasSNDerivator() error = %v, wantErr %v", err, tt.wantErr)
+//				}
+//				if !has {
+//					t.Errorf("HasSNDerivator() has = %v, wantErr %v", has, tt.wantHas)
+//				}
+//			}
+//		})
+//	}
+//}
+//
+//func TestStateDB_ListSerialNumberDerivator(t *testing.T) {
+//	stateDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	wantTokenID := testGenerateTokenIDs(10)
+//	wantSndM := make(map[common.Hash][][]byte)
+//	for _, tokenID := range wantTokenID {
+//		snds := testGenerateSNDList(1000)
+//		err = StoreSNDerivators(stateDB, tokenID, snds)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//		wantSndM[tokenID] = snds
+//	}
+//	rootHash, err := stateDB.Commit(true)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
+//	for tokenID, wantSNDs := range wantSndM {
+//		gotSNDs, err := ListSNDerivator(tempStateDB, tokenID)
+//		if err != nil {
+//			t.Errorf("ListSNDerivator() error = %v, wantErr %v", err, nil)
+//		}
+//		for _, wantSND := range wantSNDs {
+//			flag := false
+//			for _, gotSND := range gotSNDs {
+//				if bytes.Compare(wantSND, gotSND) == 0 {
+//					flag = true
+//					break
+//				}
+//			}
+//			if !flag {
+//				t.Errorf("ListSNDerivator() want = %v, got nothing", wantSND)
+//			}
+//		}
+//	}
+//}
