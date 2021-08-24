@@ -364,30 +364,30 @@ var mainnetPortalParam = PortalParams{
 	},
 	PortalParamsV4: map[uint64]portalv4.PortalParams{
 		0: {
-			MasterPubKeys:   map[string][][]byte{},
+			MasterPubKeys:   map[string][][]byte{}, // todo:
 			NumRequiredSigs: 5,
 			GeneralMultiSigAddresses: map[string]string{
-				MainnetPortalV4BTCID: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
+				MainnetPortalV4BTCID: "", // todo:
 			},
 			PortalTokens: initPortalTokensV4ForMainNet(),
 			DefaultFeeUnshields: map[string]uint64{
-				MainnetPortalV4BTCID: 50000, // nano pbtc
+				MainnetPortalV4BTCID: 30000, // nano pbtc
 			},
 			MinShieldAmts: map[string]uint64{
 				MainnetPortalV4BTCID: 100000, // nano pbtc
 			},
 			MinUnshieldAmts: map[string]uint64{
-				MainnetPortalV4BTCID: 100000, // nano pbtc
+				MainnetPortalV4BTCID: 1000000, // nano pbtc
 			},
 			DustValueThreshold: map[string]uint64{
 				MainnetPortalV4BTCID: 100000, // nano pbtc
 			},
 			BatchNumBlks:                45, // ~ 30 mins
-			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
-			MaxFeePercentageForEachStep: 10, // ~ 10% from previous fee
+			PortalReplacementAddress:    "12sgiLdxrrmWx1qyoqxemoKdjAvUko8txG8isq3woUK73ocB4dtjaFzZVmCYQYcchzNEkptAzCK3tZF55xQvx4gcT82KzXCkMXFMbdP1A3kkhQ3NhxKpqufayLbBJ2v7MCdfkS8wvfrLXdhAXAMG",
+			MaxFeePercentageForEachStep: 25, // ~ 25% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
 			MaxUnshieldFees: map[string]uint64{
-				MainnetPortalV4BTCID: 100000, // pbtc
+				MainnetPortalV4BTCID: 500000, // pbtc
 			},
 			PortalV4TokenIDs: []string{
 				MainnetPortalV4BTCID,
@@ -565,7 +565,7 @@ const (
 	// relaying header chain
 	MainnetBNBChainID        = "Binance-Chain-Tigris"
 	MainnetBTCChainID        = "Bitcoin-Mainnet"
-	MainnetBTCDataFolderName = "btcrelayingv7"
+	MainnetBTCDataFolderName = "btcrelayingv8"
 
 	// BNB fullnode
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
