@@ -46,6 +46,7 @@ var (
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
 )
 
+
 func GetLastShardBlockKey(shardID byte) []byte {
 	temp := make([]byte, 0, len(lastShardBlockKey))
 	temp = append(temp, lastShardBlockKey...)

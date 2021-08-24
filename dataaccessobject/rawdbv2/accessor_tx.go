@@ -125,7 +125,6 @@ func GetTxByPublicKeyV2(
 	return result, skip, limit, nil
 }
 
-
 func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	for _, outputCoin := range outputCoins {
 		key := generateIndexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
