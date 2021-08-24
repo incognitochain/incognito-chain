@@ -140,3 +140,14 @@ func (request *UserMintNftRequest) OtaReceive() string {
 func (request *UserMintNftRequest) Amount() uint64 {
 	return request.amount
 }
+
+func (request *UserMintNftRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+	currentTokenID := common.ConfidentialAssetID
+	otaReceive := privacy.OTAReceiver{}
+	otaReceive.FromString(request.otaReceive)
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: otaReceive.PublicKey.ToBytes(), TokenID: currentTokenID,
+	})
+	return result
+}

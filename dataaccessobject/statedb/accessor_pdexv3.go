@@ -24,7 +24,7 @@ func GetPdexv3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte) (
 		return []byte{}, NewStatedbError(GetPdexv3StatusError, err)
 	}
 	if !has {
-		return []byte{}, NewStatedbError(GetPdexv3StatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+		return []byte{}, NewStatedbError(GetPdexv3StatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), statusSuffix))
 	}
 	return s.statusContent, nil
 }

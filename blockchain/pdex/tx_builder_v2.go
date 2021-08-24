@@ -34,12 +34,12 @@ func (txBuilder *TxBuilderV2) Build(
 		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
-		tx, err = buildPdev3UserMintNft(inst, producerPrivateKey, shardID, transactionStateDB)
+		tx, err = buildPdexv3UserMintNft(inst, producerPrivateKey, shardID, transactionStateDB)
 	case metadataCommon.Pdexv3MintNftRequestMeta:
 		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
-		tx, err = buildPdev3MintNft(inst, producerPrivateKey, shardID, transactionStateDB)
+		tx, err = buildPdexv3MintNft(inst, producerPrivateKey, shardID, transactionStateDB)
 	case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
@@ -156,7 +156,7 @@ func buildRefundContributionTxv2(
 	return tx, err
 }
 
-func buildPdev3UserMintNft(
+func buildPdexv3UserMintNft(
 	inst []string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -198,7 +198,7 @@ func buildPdev3UserMintNft(
 		amount = 1
 		txReqID = acceptInst.TxReqID().String()
 	default:
-		return tx, errors.New("Can not recognie status")
+		return tx, errors.New("Can not recognize status")
 	}
 	if instShardID != shardID || tokenID.IsZeroValue() {
 		return tx, nil
@@ -219,7 +219,7 @@ func buildPdev3UserMintNft(
 
 }
 
-func buildPdev3MintNft(
+func buildPdexv3MintNft(
 	inst []string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
