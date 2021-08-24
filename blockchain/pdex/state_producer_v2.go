@@ -645,3 +645,68 @@ func (sp *stateProducerV2) userMintNft(
 	}
 	return res, nftIDs, nil
 }
+
+func (sp *stateProducerV2) staking(
+	txs []metadata.Transaction,
+	nftIDs map[string]uint64,
+	stakingPoolStates map[string]*StakingPoolState,
+	beaconHeight uint64,
+) ([][]string, map[string]*StakingPoolState, error) {
+	res := [][]string{}
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		metaData, _ := tx.GetMetadata().(*metadataPdexv3.StakingRequest)
+		txReqID := *tx.Hash()
+		stakingTokenHash, err := common.Hash{}.NewHashFromStr(metaData.TokenID())
+		if err != nil {
+			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
+			continue
+		}
+		_, found := nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			rejectInst, err := instruction.NewRejectStakingWithValue(
+				metaData.TokenID(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+			).StringSlice()
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, rejectInst)
+			continue
+		}
+		stakingPoolState, found := stakingPoolStates[metaData.TokenID()]
+		if !found {
+			rejectInst, err := instruction.NewRejectStakingWithValue(
+				metaData.TokenID(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+			).StringSlice()
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, rejectInst)
+			continue
+		}
+		err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
+		if err != nil {
+			rejectInst, err := instruction.NewRejectStakingWithValue(
+				metaData.TokenID(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+			).StringSlice()
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, rejectInst)
+			continue
+		}
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
+		if err != nil {
+			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
+			continue
+		}
+		inst, err := instruction.NewAcceptStakingWtihValue(
+			*nftHash, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+		).StringSlice()
+		if err != nil {
+			return res, stakingPoolStates, err
+		}
+		res = append(res, inst)
+	}
+	return res, stakingPoolStates, nil
+}

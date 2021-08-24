@@ -228,6 +228,8 @@ var HttpHandler = map[string]httpHandler{
 	pdexv3GetWithdrawOrderStatus:          (*HttpServer).handlePdexv3GetWithdrawOrderStatus,
 	getPdexv3WithdrawLiquidityStatus:      (*HttpServer).handleGetPdexv3WithdrawLiquidityStatus,
 	getPdexv3MintNftStatus:                (*HttpServer).handleGetPdexv3MintNftStatus,
+	pdexv3Staking:                         (*HttpServer).handlePdexv3Staking,
+	//pdexv3Unstaking:                       (*HttpServer).handlePdexv3Unstaking,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

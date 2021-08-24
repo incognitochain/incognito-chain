@@ -68,6 +68,10 @@ const (
 	Pdexv3UserMintNftResponseMeta       = 282
 	Pdexv3MintNftRequestMeta            = 283
 	Pdexv3MintNftResponseMeta           = 284
+	Pdexv3StakingRequestMeta            = 285
+	Pdexv3StakingResponseMeta           = 286
+	Pdexv3UnstakingRequestMeta          = 287
+	Pdexv3UnstakingResponseMeta         = 288
 
 	// portal
 	PortalCustodianDepositMeta                  = 100

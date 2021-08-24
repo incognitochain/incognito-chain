@@ -103,6 +103,7 @@ type BeaconViewRetriever interface {
 	IsValidNftID(string) error
 	IsValidPoolPairID(string) error
 	IsValidMintNftRequireAmount(uint64) error
+	IsValidPdexv3StakingPool(string) error
 }
 
 type ShardViewRetriever interface {
@@ -412,6 +413,14 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3WithdrawLiquidityRequestMeta:
 		return true
 	case Pdexv3WithdrawLiquidityResponseMeta:
+		return true
+	case Pdexv3StakingRequestMeta:
+		return true
+	case Pdexv3StakingResponseMeta:
+		return true
+	case Pdexv3UnstakingRequestMeta:
+		return true
+	case Pdexv3UnstakingResponseMeta:
 		return true
 	default:
 		return false

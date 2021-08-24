@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 )
 
@@ -122,12 +123,6 @@ func (share *Share) getDiff(
 	return newStateChange
 }
 
-type StakingInfo struct {
-	amount                  uint64
-	uncollectedReward       uint64
-	lastUpdatedBeaconHeight uint64
-}
-
 type ShareChange struct {
 	isChanged bool
 	tokenIDs  map[string]bool
@@ -148,30 +143,85 @@ func NewStateChange() *StateChange {
 }
 
 type StakingPoolState struct {
-	liquidity        uint64
-	stakers          map[string]*StakingInfo // nfst -> amount staking
-	currentStakingID uint64
+	liquidity uint64
+	stakers   map[string]*Staker // nft -> amount staking
 }
 
 func NewStakingPoolState() *StakingPoolState {
 	return &StakingPoolState{
-		stakers: make(map[string]*StakingInfo),
+		stakers: make(map[string]*Staker),
 	}
 }
 
 func NewStakingPoolStateWithValue(
 	liquidity uint64,
-	stakers map[string]*StakingInfo,
-	currentStakingID uint64,
+	stakers map[string]*Staker,
 ) *StakingPoolState {
 	return &StakingPoolState{
-		liquidity:        liquidity,
-		stakers:          stakers,
-		currentStakingID: currentStakingID,
+		liquidity: liquidity,
+		stakers:   stakers,
 	}
 }
 
 func (s *StakingPoolState) Clone() *StakingPoolState {
 	res := NewStakingPoolState()
+	res.liquidity = s.liquidity
+	for k, v := range s.stakers {
+		res.stakers[k] = v
+	}
+	return res
+}
+
+func (s *StakingPoolState) addLiquidity(nftID string, liquidity, beaconHeight uint64) error {
+	staker, found := s.stakers[nftID]
+	if !found {
+		s.stakers[nftID] = NewStakerWithValue(liquidity, 0, beaconHeight, make(map[string]uint64))
+	} else {
+		tempLiquidity := staker.liquidity + liquidity
+		if tempLiquidity < s.liquidity {
+			return errors.New("Staking pool liquidity is out of range")
+		}
+		staker.liquidity = tempLiquidity
+	}
+	tempLiquidity := s.liquidity + liquidity
+	if tempLiquidity < s.liquidity {
+		return errors.New("Staking pool liquidity is out of range")
+	}
+	return nil
+}
+
+type Staker struct {
+	liquidity               uint64
+	uncollectedReward       uint64
+	lastUpdatedBeaconHeight uint64
+	tokenIDs                map[string]uint64
+}
+
+func NewStaker() *Staker {
+	return &Staker{
+		tokenIDs: make(map[string]uint64),
+	}
+}
+
+func NewStakerWithValue(
+	liquidity, uncollectedReward, lastUpdatedBeaconHeight uint64,
+	tokenIDs map[string]uint64,
+) *Staker {
+	return &Staker{
+		liquidity:               liquidity,
+		uncollectedReward:       uncollectedReward,
+		lastUpdatedBeaconHeight: lastUpdatedBeaconHeight,
+		tokenIDs:                tokenIDs,
+	}
+}
+
+func (staker *Staker) Clone() *Staker {
+	res := NewStaker()
+	res.liquidity = staker.liquidity
+	res.lastUpdatedBeaconHeight = staker.lastUpdatedBeaconHeight
+	res.uncollectedReward = staker.uncollectedReward
+	for k, v := range staker.tokenIDs {
+		res.tokenIDs[k] = v
+	}
 	return res
 }

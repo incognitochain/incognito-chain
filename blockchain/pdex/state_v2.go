@@ -22,7 +22,7 @@ type stateV2 struct {
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 	poolPairs                   map[string]*PoolPairState
 	params                      Params
-	stakingPoolsState           map[string]*StakingPoolState // tokenID -> StakingPoolState
+	stakingPoolStates           map[string]*StakingPoolState // tokenID -> StakingPoolState
 	nftIDs                      map[string]uint64
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
@@ -58,7 +58,7 @@ func newStateV2() *stateV2 {
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
-		stakingPoolsState:           make(map[string]*StakingPoolState),
+		stakingPoolStates:           make(map[string]*StakingPoolState),
 		nftIDs:                      make(map[string]uint64),
 	}
 }
@@ -68,14 +68,14 @@ func newStateV2WithValue(
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]*PoolPairState,
 	params Params,
-	stakingPoolsState map[string]*StakingPoolState,
+	stakingPoolStates map[string]*StakingPoolState,
 	nftIDs map[string]uint64,
 ) *stateV2 {
 	return &stateV2{
 		waitingContributions:        waitingContributions,
 		deletedWaitingContributions: deletedWaitingContributions,
 		poolPairs:                   poolPairs,
-		stakingPoolsState:           stakingPoolsState,
+		stakingPoolStates:           stakingPoolStates,
 		params:                      params,
 		nftIDs:                      nftIDs,
 	}
@@ -151,9 +151,10 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
+	stakingPoolStates := make(map[string]*StakingPoolState)
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs, params, nil, nftIDs,
+		poolPairs, params, stakingPoolStates, nftIDs,
 	), nil
 }
 
@@ -175,8 +176,8 @@ func (s *stateV2) Clone() State {
 	res.params.FeeRateBPS = clonedFeeRateBPS
 	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
-	for k, v := range s.stakingPoolsState {
-		res.stakingPoolsState[k] = v.Clone()
+	for k, v := range s.stakingPoolStates {
+		res.stakingPoolStates[k] = v.Clone()
 	}
 	for k, v := range s.waitingContributions {
 		res.waitingContributions[k] = *v.Clone()
@@ -266,6 +267,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	mintNftTxs := []metadata.Transaction{}
 	addOrderTxs := []metadata.Transaction{}
 	withdrawOrderTxs := []metadata.Transaction{}
+	stakingTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -292,6 +294,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				addOrderTxs = append(addOrderTxs, tx)
 			case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
 				withdrawOrderTxs = append(withdrawOrderTxs, tx)
+			case metadataCommon.Pdexv3StakingRequestMeta:
+				stakingTxs = append(stakingTxs, tx)
 			}
 		}
 	}
@@ -367,6 +371,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, withdrawOrderInstructions...)
+
+	var stakingInstructions [][]string
+	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(
+		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, stakingInstructions...)
 
 	return instructions, nil
 }
@@ -513,9 +526,9 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 			res.poolPairs[k] = v.Clone()
 		}
 	}
-	for k, v := range s.stakingPoolsState {
-		if m, ok := compareStateV2.stakingPoolsState[k]; !ok || !reflect.DeepEqual(m, v) {
-			res.stakingPoolsState[k] = v.Clone()
+	for k, v := range s.stakingPoolStates {
+		if m, ok := compareStateV2.stakingPoolStates[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.stakingPoolStates[k] = v.Clone()
 		}
 	}
 	for k, v := range s.nftIDs {

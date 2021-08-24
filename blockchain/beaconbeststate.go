@@ -555,6 +555,13 @@ func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint6
 	return nil
 }
 
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
+	if _, found := beaconBestState.pdeState.Reader().Params().StakingPoolsShare[tokenID]; !found {
+		return errors.New("Burn amount is not equal to mint nft require amount")
+	}
+	return nil
+}
+
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)
