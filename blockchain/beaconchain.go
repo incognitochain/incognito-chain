@@ -52,11 +52,11 @@ func (chain *BeaconChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
-func (chain *BeaconChain) GetBestView() multiview.View {
+func (chain *BeaconChain) GetBestView() types.View {
 	return chain.multiView.GetBestView()
 }
 
-func (chain *BeaconChain) GetFinalView() multiview.View {
+func (chain *BeaconChain) GetFinalView() types.View {
 	return chain.multiView.GetFinalView()
 }
 
@@ -72,7 +72,7 @@ func (chain *BeaconChain) SetMultiView(multiView *multiview.MultiView) {
 	chain.multiView = multiView
 }
 
-func (chain *BeaconChain) GetViewByHash(hash common.Hash) multiview.View {
+func (chain *BeaconChain) GetViewByHash(hash common.Hash) types.View {
 	if chain.multiView.GetViewByHash(hash) == nil {
 		return nil
 	}
@@ -359,7 +359,7 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (types.BlockInterfa
 	return &beaconBlk, nil
 }
 
-func (chain *BeaconChain) GetAllView() []multiview.View {
+func (chain *BeaconChain) GetAllView() []types.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
@@ -409,7 +409,7 @@ func (chain *BeaconChain) CommitteeStateVersion() int {
 	return chain.GetBestView().(*BeaconBestState).beaconCommitteeState.Version()
 }
 
-func (chain *BeaconChain) FinalView() multiview.View {
+func (chain *BeaconChain) FinalView() types.View {
 	return chain.GetFinalView()
 }
 

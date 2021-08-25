@@ -5,6 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -275,7 +276,7 @@ func (sim *NodeEngine) PrintChainInfo(chainIDs []int) {
 	}
 }
 
-func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (multiview.View, multiview.View) {
+func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (types.View, types.View) {
 	multiView0 := &multiview.MultiView{}
 	if chainID == -1 {
 		multiView0 = node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).CloneMultiView()

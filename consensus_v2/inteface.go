@@ -3,7 +3,6 @@ package consensus_v2
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -20,7 +19,7 @@ type EngineConfig struct {
 //NodeInterface
 type NodeInterface interface {
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
-	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
+	PushMessageToChain(msg wire.Message, chain types.ChainInterface) error
 	IsEnableMining() bool
 	GetMiningKeys() string
 	GetPrivateKey() string

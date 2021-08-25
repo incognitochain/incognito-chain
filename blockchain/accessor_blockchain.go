@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -17,7 +16,7 @@ import (
 )
 
 //get beacon block hash by height, with current view
-func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
+func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView types.View, height uint64) (*common.Hash, error) {
 
 	blkheight := bestView.GetHeight()
 	blkhash := *bestView.GetHash()
@@ -50,7 +49,7 @@ func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView mul
 	return &blkhash, nil
 }
 
-func (blockchain *BlockChain) GetBeaconBlockHashByView(view multiview.View, height uint64) (*common.Hash, error) {
+func (blockchain *BlockChain) GetBeaconBlockHashByView(view types.View, height uint64) (*common.Hash, error) {
 
 	blkheight := view.GetHeight()
 	blkhash := *view.GetHash()
@@ -99,7 +98,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*types.Be
 	return beaconBlocks, nil
 }
 
-func (blockchain *BlockChain) GetBeaconBlockByView(view multiview.View, height uint64) (*types.BeaconBlock, error) {
+func (blockchain *BlockChain) GetBeaconBlockByView(view types.View, height uint64) (*types.BeaconBlock, error) {
 	blkhash, err := blockchain.GetBeaconBlockHashByView(blockchain.BeaconChain.GetFinalView(), height)
 	if err != nil {
 		return nil, err
@@ -130,7 +129,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 }
 
 //SHARD
-func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
+func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView types.View, height uint64) (*common.Hash, error) {
 
 	blkheight := bestView.GetHeight()
 	blkhash := *bestView.GetHash()
@@ -163,7 +162,7 @@ func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView mult
 	return &blkhash, nil
 }
 
-func (blockchain *BlockChain) GetShardBlockHashByView(view multiview.View, height uint64) (*common.Hash, error) {
+func (blockchain *BlockChain) GetShardBlockHashByView(view types.View, height uint64) (*common.Hash, error) {
 
 	blkheight := view.GetHeight()
 	blkhash := *view.GetHash()
@@ -200,7 +199,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	return shardBlockMap, err
 }
 
-func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height uint64, shardID byte) (*types.ShardBlock, error) {
+func (blockchain *BlockChain) GetShardBlockByView(view types.View, height uint64, shardID byte) (*types.ShardBlock, error) {
 	blkhash, err := blockchain.GetShardBlockHashByView(blockchain.ShardChain[shardID].GetFinalView(), height)
 	if err != nil {
 		return nil, err

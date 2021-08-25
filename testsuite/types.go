@@ -7,12 +7,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/syncker"
 )
 
 type PreView struct {
-	View multiview.View
+	View types.View
 }
 
 type Execute struct {

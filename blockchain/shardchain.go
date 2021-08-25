@@ -59,15 +59,15 @@ func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
-func (chain *ShardChain) GetFinalView() multiview.View {
+func (chain *ShardChain) GetFinalView() types.View {
 	return chain.multiView.GetFinalView()
 }
 
-func (chain *ShardChain) GetBestView() multiview.View {
+func (chain *ShardChain) GetBestView() types.View {
 	return chain.multiView.GetBestView()
 }
 
-func (chain *ShardChain) GetViewByHash(hash common.Hash) multiview.View {
+func (chain *ShardChain) GetViewByHash(hash common.Hash) types.View {
 	return chain.multiView.GetViewByHash(hash)
 }
 
@@ -75,11 +75,11 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 	return chain.multiView.GetBestView().(*ShardBestState)
 }
 
-func (chain *ShardChain) AddView(view multiview.View) bool {
+func (chain *ShardChain) AddView(view types.View) bool {
 	curBestView := chain.multiView.GetBestView()
 	added := chain.multiView.AddView(view)
 	if (curBestView != nil) && (added) {
-		go func(chain *ShardChain, curBestView multiview.View) {
+		go func(chain *ShardChain, curBestView types.View) {
 			sBestView := chain.GetBestState()
 			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
 				return
@@ -369,7 +369,7 @@ func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, signin
 	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), signingCommittees, committees, byte(block.(*types.ShardBlock).GetShardID()))
 }
 
-func (chain *ShardChain) GetAllView() []multiview.View {
+func (chain *ShardChain) GetAllView() []types.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 

@@ -2,8 +2,6 @@ package syncker
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/multiview"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/wire"
 
@@ -36,7 +34,7 @@ type ShardChainInterface interface {
 }
 
 type Chain interface {
-	GetBestView() multiview.View
+	GetBestView() types.View
 	GetDatabase() incdb.Database
 	GetAllViewHash() []common.Hash
 	GetBestViewHeight() uint64

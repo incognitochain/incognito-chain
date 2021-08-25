@@ -48,18 +48,25 @@ func Test_Stakingv2() {
 		shardIDs := []int{-1}
 		shardIDs = append(shardIDs, node.GetBlockchain().GetShardIDs()...)
 		consensusStateDB := node.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).GetBeaconConsensusStateDB()
-		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, _, _,_ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
 		str, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
 		fmt.Println("currentEpochShardCandidate", str)
 		str, _ = incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 		fmt.Println("nextEpochShardCandidate", str)
-
 		substituteValidatorStr := make(map[int][]string)
+		syncingValidatorStr := make(map[int][]string)
+
+		fmt.Println("syncingValidators", syncingValidators)
+		for shardID, v := range syncingValidators {
+			tempV, _ := incognitokey.CommitteeKeyListToString(v)
+			syncingValidatorStr[int(shardID)] = tempV
+		}
 		for shardID, v := range substituteValidator {
 			tempV, _ := incognitokey.CommitteeKeyListToString(v)
 			substituteValidatorStr[shardID] = tempV
 		}
 		fmt.Println("substituteValidator", substituteValidatorStr)
+		fmt.Println("syncingValidatorStr", syncingValidatorStr)
 		if node.GetBlockchain().BeaconChain.CurrentHeight() == 71 {
 			node.Pause()
 		}

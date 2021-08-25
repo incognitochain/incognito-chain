@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -135,7 +134,7 @@ func (httpServer *HttpServer) hanldeGetAllViewDetail(params interface{}, closeCh
 	// }
 
 	res := []jsonresult.GetViewResult{}
-	var views []multiview.View
+	var views []types.View
 	if shardID == -1 {
 		views = httpServer.config.BlockChain.BeaconChain.GetAllView()
 	} else {

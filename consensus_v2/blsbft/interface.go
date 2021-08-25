@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
@@ -16,7 +15,7 @@ import (
 
 //NodeInterface
 type NodeInterface interface {
-	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
+	PushMessageToChain(msg wire.Message, chain types.ChainInterface) error
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
 	IsEnableMining() bool
 	GetMiningKeys() string
@@ -28,8 +27,8 @@ type NodeInterface interface {
 
 type Chain interface {
 	BestViewCommitteeFromBlock() common.Hash
-	GetFinalView() multiview.View
-	GetBestView() multiview.View
+	GetFinalView() types.View
+	GetBestView() types.View
 	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
@@ -72,7 +71,7 @@ type Chain interface {
 	GetFinalViewHeight() uint64
 	GetBestViewHash() string
 	GetFinalViewHash() string
-	GetViewByHash(hash common.Hash) multiview.View
+	GetViewByHash(hash common.Hash) types.View
 	CommitteeEngineVersion() int
 	GetProposerByTimeSlotFromCommitteeList(
 		ts int64,
@@ -90,5 +89,5 @@ type Chain interface {
 
 type CommitteeChainHandler interface {
 	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
-	FinalView() multiview.View
+	FinalView() types.View
 }

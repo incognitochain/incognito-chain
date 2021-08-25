@@ -2,41 +2,26 @@ package multiview
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/incdb"
-
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-type View interface {
-	GetHash() *common.Hash
-	GetPreviousHash() *common.Hash
-	GetHeight() uint64
-	GetCommittee() []incognitokey.CommitteePublicKey
-	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
-	CommitteeStateVersion() int
-	GetBlock() types.BlockInterface
-	GetBeaconHeight() uint64
-	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
-}
-
 type MultiView struct {
-	viewByHash     map[common.Hash]View //viewByPrevHash map[common.Hash][]View
-	viewByPrevHash map[common.Hash][]View
+	viewByHash     map[common.Hash]types.View //viewByPrevHash map[common.Hash][]View
+	viewByPrevHash map[common.Hash][]types.View
 	actionCh       chan func()
 
 	//state
-	finalView View
-	bestView  View
+	finalView types.View
+	bestView  types.View
 }
 
 func NewMultiView() *MultiView {
 	s := &MultiView{
-		viewByHash:     make(map[common.Hash]View),
-		viewByPrevHash: make(map[common.Hash][]View),
+		viewByHash:     make(map[common.Hash]types.View),
+		viewByPrevHash: make(map[common.Hash][]types.View),
 		actionCh:       make(chan func()),
 	}
 
@@ -59,8 +44,8 @@ func NewMultiView() *MultiView {
 }
 
 func (multiView *MultiView) Reset() {
-	multiView.viewByHash = make(map[common.Hash]View)
-	multiView.viewByPrevHash = make(map[common.Hash][]View)
+	multiView.viewByHash = make(map[common.Hash]types.View)
+	multiView.viewByPrevHash = make(map[common.Hash][]types.View)
 }
 
 func (multiView *MultiView) Clone() *MultiView {
@@ -86,8 +71,8 @@ func (multiView *MultiView) removeOutdatedView() {
 	}
 }
 
-func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
-	res := make(chan View)
+func (multiView *MultiView) GetViewByHash(hash common.Hash) types.View {
+	res := make(chan types.View)
 	multiView.actionCh <- func() {
 		view, _ := multiView.viewByHash[hash]
 		if view == nil || view.GetHeight() < multiView.finalView.GetHeight() {
@@ -100,7 +85,7 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 }
 
 //Only add view if view is validated (at least enough signature)
-func (multiView *MultiView) AddView(view View) bool {
+func (multiView *MultiView) AddView(view types.View) bool {
 	res := make(chan bool)
 	multiView.actionCh <- func() {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
@@ -122,16 +107,16 @@ func (multiView *MultiView) AddView(view View) bool {
 	return <-res
 }
 
-func (multiView *MultiView) GetBestView() View {
+func (multiView *MultiView) GetBestView() types.View {
 	return multiView.bestView
 }
 
-func (multiView *MultiView) GetFinalView() View {
+func (multiView *MultiView) GetFinalView() types.View {
 	return multiView.finalView
 }
 
 //update view whenever there is new view insert into system
-func (multiView *MultiView) updateViewState(newView View) {
+func (multiView *MultiView) updateViewState(newView types.View) {
 	defer func() {
 		if multiView.viewByHash[*multiView.finalView.GetPreviousHash()] != nil {
 			delete(multiView.viewByHash, *multiView.finalView.GetPreviousHash())
@@ -192,12 +177,12 @@ func (multiView *MultiView) updateViewState(newView View) {
 	return
 }
 
-func (multiView *MultiView) GetAllViewsWithBFS() []View {
-	queue := []View{multiView.finalView}
-	resCh := make(chan []View)
+func (multiView *MultiView) GetAllViewsWithBFS() []types.View {
+	queue := []types.View{multiView.finalView}
+	resCh := make(chan []types.View)
 
 	multiView.actionCh <- func() {
-		res := []View{}
+		res := []types.View{}
 		for {
 			if len(queue) == 0 {
 				break

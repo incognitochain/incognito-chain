@@ -23,7 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -554,7 +553,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 		return "", err
 	}
 
-	aggSig, brigSigs, validatorIdx, portalSigs, err := a.combineVotes(votes, committeeBLSString)
+	aggSig, brigSigs, validatorIdx, portalSigs, err := CombineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
 	}
@@ -601,7 +600,7 @@ func (a *actorV2) voteValidBlock(
 	return nil
 }
 
-func createVote(
+func CreateVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -840,7 +839,7 @@ func (a *actorV2) sendVote(
 	portalParamV4 portalv4.PortalParams,
 ) error {
 
-	Vote, err := createVote(userKey, block, signingCommittees, portalParamV4)
+	Vote, err := CreateVote(userKey, block, signingCommittees, portalParamV4)
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -1070,7 +1069,7 @@ func (a *actorV2) handleCleanMem() {
 // 2. just validate recently
 // 3. not in current time slot
 // 4. not connect to best view
-func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
+func (a *actorV2) getValidProposeBlocks(bestView types.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	validProposeBlock := []*ProposeBlockInfo{}
 	//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
@@ -1133,7 +1132,7 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 	return validProposeBlock
 }
 
-func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
+func (a *actorV2) validateBlock(bestView types.View, proposeBlockInfo *ProposeBlockInfo) error {
 
 	proposeBlockInfo.lastValidateTime = time.Now()
 
@@ -1227,7 +1226,7 @@ func (a *actorV2) BlockVersion() int {
 	return a.blockVersion
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
+func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {

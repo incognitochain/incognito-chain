@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"os"
 	"path/filepath"
 	"sort"
@@ -81,13 +82,13 @@ var (
 	privacyV2Logger        = backendLog.Logger("Privacy V2 log ", false)
 	instructionLogger      = backendLog.Logger("Instruction log ", false)
 	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
-
-	portalLogger          = backendLog.Logger("Portal log ", false)
-	portalRelayingLogger  = backendLog.Logger("Portal relaying log ", false)
-	portalV3CommonLogger  = backendLog.Logger("Portal v3 common log ", false)
-	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
-	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
-	txPoolLogger          = backendLog.Logger("Txpool log ", false)
+	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
+	portalLogger           = backendLog.Logger("Portal log ", false)
+	portalRelayingLogger   = backendLog.Logger("Portal relaying log ", false)
+	portalV3CommonLogger   = backendLog.Logger("Portal v3 common log ", false)
+	portalV3ProcessLogger  = backendLog.Logger("Portal v3 process log ", false)
+	portalV3TokenLogger    = backendLog.Logger("Portal v3 token log ", false)
+	txPoolLogger           = backendLog.Logger("Txpool log ", false)
 
 	portalV4ProcessLogger = backendLog.Logger("Portal v4 process log ", false)
 	portalV4TokenLogger   = backendLog.Logger("Portal v4 token log ", false)
@@ -105,7 +106,7 @@ func (logWriter) Write(p []byte) (n int, err error) {
 func init() {
 	// for main thread
 	Logger.Init(mainLogger)
-
+	finishsync.Logger.Init(finishSyncLogger)
 	// for other components
 	connmanager.Logger.Init(connManagerLogger)
 	addrmanager.Logger.Init(addrManagerLoger)
