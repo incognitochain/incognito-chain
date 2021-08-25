@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -75,7 +74,7 @@ func (sp *stateProcessorV2) waitingContribution(
 	inst []string,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
-) (map[string]rawdbv2.Pdexv3Contribution, *v2utils.ContributionStatus, error) {
+) (map[string]rawdbv2.Pdexv3Contribution, *v2.ContributionStatus, error) {
 	waitingAddLiquidityInst := instruction.WaitingAddLiquidity{}
 	err := waitingAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {
@@ -89,7 +88,7 @@ func (sp *stateProcessorV2) waitingContribution(
 	contributionValue := contribution.Value()
 	waitingContributions[contribution.PairHash()] = contributionValue
 
-	contribStatus := v2utils.ContributionStatus{
+	contribStatus := v2.ContributionStatus{
 		Token0ID:                contributionValue.TokenID().String(),
 		Token0ContributedAmount: contributionValue.Amount(),
 		Status:                  common.PDEContributionWaitingChainStatus,
@@ -135,7 +134,7 @@ func (sp *stateProcessorV2) refundContribution(
 ) (
 	map[string]rawdbv2.Pdexv3Contribution,
 	map[string]rawdbv2.Pdexv3Contribution,
-	*v2utils.ContributionStatus,
+	*v2.ContributionStatus,
 	error,
 ) {
 	refundAddLiquidityInst := instruction.RefundAddLiquidity{}
@@ -151,7 +150,7 @@ func (sp *stateProcessorV2) refundContribution(
 	}
 	refundContributionValue := refundContribution.Value()
 
-	contribStatus := v2utils.ContributionStatus{
+	contribStatus := v2.ContributionStatus{
 		Status: common.PDEContributionRefundChainStatus,
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
@@ -179,7 +178,7 @@ func (sp *stateProcessorV2) matchContribution(
 ) (
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
 	map[string]*PoolPairState,
-	*v2utils.ContributionStatus, error,
+	*v2.ContributionStatus, error,
 ) {
 	matchAddLiquidityInst := instruction.MatchAddLiquidity{}
 	err := matchAddLiquidityInst.FromStringSlice(inst)
@@ -224,7 +223,7 @@ func (sp *stateProcessorV2) matchContribution(
 	deletedWaitingContributions[matchContribution.PairHash()] = existedWaitingContribution
 	delete(waitingContributions, matchContribution.PairHash())
 
-	contribStatus := v2utils.ContributionStatus{
+	contribStatus := v2.ContributionStatus{
 		Status: common.PDEContributionMatchedChainStatus,
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
@@ -261,7 +260,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 ) (
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
 	map[string]*PoolPairState,
-	*v2utils.ContributionStatus,
+	*v2.ContributionStatus,
 	error,
 ) {
 	matchAndReturnAddLiquidity := instruction.MatchAndReturnAddLiquidity{}
@@ -272,7 +271,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	matchAndReturnContribution := matchAndReturnAddLiquidity.Contribution()
 	matchAndReturnContributionValue := matchAndReturnContribution.Value()
 	waitingContribution, found := waitingContributions[matchAndReturnContribution.PairHash()]
-	var contribStatus v2utils.ContributionStatus
+	var contribStatus v2.ContributionStatus
 	if found {
 		if matchAndReturnContributionValue.PoolPairID() != waitingContribution.PoolPairID() {
 			err := fmt.Errorf("Expect poolPairID %v but get %v", waitingContribution.PoolPairID(), matchAndReturnContributionValue.PoolPairID())
@@ -305,7 +304,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {
 		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
-			contribStatus = v2utils.ContributionStatus{
+			contribStatus = v2.ContributionStatus{
 				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
 				Token0ID:                matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Token0ContributedAmount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
@@ -315,7 +314,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 				Token1ReturnedAmount:    matchAndReturnAddLiquidity.ReturnAmount(),
 			}
 		} else {
-			contribStatus = v2utils.ContributionStatus{
+			contribStatus = v2.ContributionStatus{
 				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
 				Token1ID:                matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Token1ContributedAmount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
@@ -491,26 +490,25 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	if err != nil {
 		return poolPairs, err
 	}
-
 	return poolPairs, err
 }
 
 func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 	stateDB *statedb.StateDB, inst []string,
-) (*v2utils.WithdrawStatus, error) {
+) (*v2.WithdrawStatus, error) {
 	rejectWithdrawLiquidity := instruction.NewRejectWithdrawLiquidity()
 	err := rejectWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
 		return nil, err
 	}
-	withdrawStatus := v2utils.WithdrawStatus{
+	withdrawStatus := v2.WithdrawStatus{
 		Status: common.PDEWithdrawalRejectedChainStatus,
 	}
 	contentBytes, _ := json.Marshal(withdrawStatus)
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawLiquidityStatusPrefix(),
-		[]byte(rejectWithdrawLiquidity.TxReqID().String()),
+		rejectWithdrawLiquidity.TxReqID().Bytes(),
 		contentBytes,
 	)
 	return &withdrawStatus, err
@@ -519,7 +517,7 @@ func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	stateDB *statedb.StateDB, inst []string,
 	poolPairs map[string]*PoolPairState,
-) (map[string]*PoolPairState, *v2utils.WithdrawStatus, error) {
+) (map[string]*PoolPairState, *v2.WithdrawStatus, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
 	err := acceptWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
@@ -543,14 +541,14 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	if !found {
 		sp.withdrawTxCache[acceptWithdrawLiquidity.TxReqID().String()] = acceptWithdrawLiquidity.TokenAmount()
 	}
-	var withdrawStatus *v2utils.WithdrawStatus
+	var withdrawStatus *v2.WithdrawStatus
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
 		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.updateShareAmount(
 			acceptWithdrawLiquidity.ShareAmount(), share, subOperator)
 		if err != nil {
 			return poolPairs, nil, err
 		}
-		withdrawStatus = &v2utils.WithdrawStatus{
+		withdrawStatus = &v2.WithdrawStatus{
 			Status:       common.PDEWithdrawalAcceptedChainStatus,
 			Token0ID:     poolPair.state.Token0ID().String(),
 			Token0Amount: token0Amount,
@@ -561,7 +559,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		err = statedb.TrackPdexv3Status(
 			stateDB,
 			statedb.Pdexv3WithdrawLiquidityStatusPrefix(),
-			[]byte(acceptWithdrawLiquidity.TxReqID().String()),
+			acceptWithdrawLiquidity.TxReqID().Bytes(),
 			contentBytes,
 		)
 	}
@@ -706,13 +704,13 @@ func (sp *stateProcessorV2) withdrawOrder(
 
 func (sp *stateProcessorV2) userMintNft(
 	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64,
-) (map[string]uint64, *v2utils.MintNftStatus, error) {
+) (map[string]uint64, *v2.MintNftStatus, error) {
 	if len(inst) != 3 {
 		return nftIDs, nil, fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
 	}
 	status := utils.EmptyString
 	nftID := utils.EmptyString
-	txReqID := utils.EmptyString
+	txReqID := common.Hash{}
 	var burntAmount uint64
 	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta) {
 		return nftIDs, nil, fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
@@ -726,6 +724,7 @@ func (sp *stateProcessorV2) userMintNft(
 			return nftIDs, nil, err
 		}
 		burntAmount = refundInst.Amount()
+		txReqID = refundInst.TxReqID()
 	case common.Pdexv3AcceptUserMintNftStatus:
 		status = common.Pdexv3AcceptUserMintNftStatus
 		acceptInst := instruction.NewAcceptUserMintNft()
@@ -735,13 +734,13 @@ func (sp *stateProcessorV2) userMintNft(
 		}
 		nftID = acceptInst.NftID().String()
 		burntAmount = acceptInst.BurntAmount()
-		fmt.Println("acceptInst.NftID().String():", acceptInst.NftID().String())
 		nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
+		txReqID = acceptInst.TxReqID()
 	default:
-		return nftIDs, nil, errors.New("Can not recognie status")
+		return nftIDs, nil, errors.New("Can not recognize status")
 	}
 
-	mintNftStatus := v2utils.MintNftStatus{
+	mintNftStatus := v2.MintNftStatus{
 		NftID:       nftID,
 		Status:      status,
 		BurntAmount: burntAmount,
@@ -754,7 +753,7 @@ func (sp *stateProcessorV2) userMintNft(
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3UserMintNftStatusPrefix(),
-		[]byte(txReqID),
+		txReqID.Bytes(),
 		data,
 	)
 	return nftIDs, &mintNftStatus, nil

@@ -203,7 +203,7 @@ func buildUserMintNftTx(
 		amount = 1
 		txReqID = acceptInst.TxReqID().String()
 	default:
-		return tx, errors.New("Can not recognie status")
+		return tx, errors.New("Can not recognize status")
 	}
 	if instShardID != shardID || tokenID.IsZeroValue() {
 		return tx, nil

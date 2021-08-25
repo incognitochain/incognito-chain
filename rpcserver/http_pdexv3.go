@@ -417,11 +417,10 @@ func (httpServer *HttpServer) handleGetPdexv3ContributionStatus(params interface
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
 		statedb.Pdexv3ContributionStatusPrefix(),
-		txID[:],
+		txID.Bytes(),
 	)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Cannot get contribution data"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	return string(data), nil
@@ -690,11 +689,11 @@ func (httpServer *HttpServer) handleGetPdexv3WithdrawLiquidityStatus(params inte
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawLiquidityStatusPrefix(),
-		txID[:],
+		txID.Bytes(),
 	)
+	Logger.log.Info("[pdex] 2")
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Cannot get WithdrawLiquidityStatus data"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return string(data), nil
 }
@@ -716,11 +715,10 @@ func (httpServer *HttpServer) handleGetPdexv3MintNftStatus(params interface{}, c
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
 		statedb.Pdexv3UserMintNftStatusPrefix(),
-		txID[:],
+		txID.Bytes(),
 	)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Cannot get MintNftStatus data"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return string(data), nil
 }
@@ -832,6 +830,7 @@ func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Invalid TxID from parameters"))
 	}
+
 	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
@@ -842,6 +841,7 @@ func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get WithdrawOrderStatus data"))
 	}
+
 	return string(data), nil
 }
 
