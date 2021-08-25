@@ -1956,10 +1956,7 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (map[string]Pdexv
 	return shares, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (
-	map[string]Pdexv3TradingFeeState,
-	error,
-) {
+func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (map[string]Pdexv3TradingFeeState, error) {
 	tradingFees := map[string]Pdexv3TradingFeeState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
@@ -1977,10 +1974,7 @@ func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (
 	return tradingFees, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (
-	map[string]Pdexv3OrderState,
-	error,
-) {
+func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (map[string]Pdexv3OrderState, error) {
 	orders := map[string]Pdexv3OrderState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
@@ -2016,4 +2010,47 @@ func (stateDB *StateDB) iterateWithPdexv3Nfts(prefix []byte) (map[string]uint64,
 		res[state.id.String()] = state.burntAmount
 	}
 	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte, currentLiquidity uint64) (
+	map[string]Pdexv3StakerState, uint64, error,
+) {
+	stakers := map[string]Pdexv3StakerState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		stakerState := NewPdexv3StakerState()
+		err := json.Unmarshal(newValue, stakerState)
+		if err != nil {
+			return stakers, currentLiquidity, err
+		}
+		stakers[stakerState.nftID.String()] = *stakerState
+		tempLiquidity := currentLiquidity + stakerState.liquidity
+		if tempLiquidity < currentLiquidity {
+			return stakers, currentLiquidity, errors.New("currentLiquidity is out of range")
+		}
+		currentLiquidity = tempLiquidity
+	}
+	return stakers, currentLiquidity, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3StakerRewards(prefix []byte) (map[string]uint64, error) {
+	stakerRewards := map[string]uint64{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		stakerRewardState := NewPdexv3StakerRewardState()
+		err := json.Unmarshal(newValue, stakerRewardState)
+		if err != nil {
+			return stakerRewards, err
+		}
+		stakerRewards[stakerRewardState.tokenID.String()] = stakerRewardState.value
+	}
+	return stakerRewards, nil
 }

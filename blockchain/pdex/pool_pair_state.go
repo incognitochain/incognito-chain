@@ -208,9 +208,7 @@ func (p *PoolPairState) Clone() *PoolPairState {
 }
 
 func (p *PoolPairState) getDiff(
-	poolPairID string,
-	comparePoolPair *PoolPairState,
-	stateChange *StateChange,
+	poolPairID string, comparePoolPair *PoolPairState, stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
 	if comparePoolPair == nil {

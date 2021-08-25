@@ -715,7 +715,7 @@ func (httpServer *HttpServer) handleGetPdexv3MintNftStatus(params interface{}, c
 	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3UserMintNftStatusPrefix(),
 		txID[:],
 	)
 	if err != nil {

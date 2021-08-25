@@ -152,6 +152,22 @@ func initStateV2(
 		return nil, err
 	}
 	stakingPoolStates := make(map[string]*StakingPoolState)
+	for stakingPoolID := range params.StakingPoolsShare {
+		stakerStates, liquidity, err := statedb.GetPdexv3Stakers(stateDB, stakingPoolID)
+		if err != nil {
+			return nil, err
+		}
+		stakers := make(map[string]*Staker)
+		for nftID, stakerState := range stakerStates {
+			rewards, err := statedb.GetPdexv3StakerRewards(stateDB, stakingPoolID, nftID)
+			if err != nil {
+				return nil, err
+			}
+			stakers[nftID] = NewStakerWithValue(stakerState.Liquidity(), stakerState.LastUpdatedBeaconHeight(), rewards)
+		}
+		stakingPoolStates[stakingPoolID] = NewStakingPoolStateWithValue(liquidity, stakers)
+	}
+
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs, params, stakingPoolStates, nftIDs,
@@ -248,6 +264,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.withdrawOrder(env.StateDB(), inst,
 				s.poolPairs,
 			)
+		case metadataCommon.Pdexv3StakingRequestMeta:
+			s.stakingPoolStates, _, err = s.processor.staking(env.StateDB(), inst, s.nftIDs, s.stakingPoolStates)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -429,7 +447,6 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 				continue
 			}
 			if stateChange.shares[nftID].isChanged {
-
 				nftID, err := common.Hash{}.NewHashFromStr(nftID)
 				err = statedb.StorePdexv3Share(
 					env.StateDB(), poolPairID,
@@ -482,7 +499,40 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 	if err != nil {
 		return err
 	}
-	return statedb.StorePdexv3StakingPools()
+	for k, v := range s.stakingPoolStates {
+		for nftID, staker := range v.stakers {
+			if stateChange.stakingPool[k][nftID] == nil {
+				continue
+			}
+			if stateChange.stakingPool[k][nftID].isChanged {
+				nftHash, _ := common.Hash{}.NewHashFromStr(nftID)
+				state := statedb.NewPdexv3StakerStateWithValue(
+					*nftHash,
+					staker.liquidity,
+					staker.lastUpdatedBeaconHeight,
+				)
+				err = statedb.StorePdexv3Staker(env.StateDB(), k, nftID, state)
+				if err != nil {
+					return err
+				}
+			}
+			if stateChange.stakingPool[k][nftID].tokenIDs == nil {
+				continue
+			}
+			for tokenID := range stateChange.stakingPool[k][nftID].tokenIDs {
+				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+				if err != nil {
+					return err
+				}
+				state := statedb.NewPdexv3StakerRewardStateWithValue(*tokenHash, staker.rewards[tokenID])
+				err = statedb.StorePdexv3StakerReward(env.StateDB(), k, nftID, tokenID, state)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (s *stateV2) ClearCache() {
@@ -528,6 +578,7 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	}
 	for k, v := range s.stakingPoolStates {
 		if m, ok := compareStateV2.stakingPoolStates[k]; !ok || !reflect.DeepEqual(m, v) {
+			newStateChange = v.getDiff(k, m, newStateChange)
 			res.stakingPoolStates[k] = v.Clone()
 		}
 	}

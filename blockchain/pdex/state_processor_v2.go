@@ -97,7 +97,7 @@ func (sp *stateProcessorV2) waitingContribution(
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3ContributionStatusPrefix(),
 		contributionValue.TxReqID().Bytes(),
 		contribStatusBytes,
 	)
@@ -157,7 +157,7 @@ func (sp *stateProcessorV2) refundContribution(
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3ContributionStatusPrefix(),
 		refundContributionValue.TxReqID().Bytes(),
 		contribStatusBytes,
 	)
@@ -230,7 +230,7 @@ func (sp *stateProcessorV2) matchContribution(
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3ContributionStatusPrefix(),
 		matchContributionValue.TxReqID().Bytes(),
 		contribStatusBytes,
 	)
@@ -240,7 +240,7 @@ func (sp *stateProcessorV2) matchContribution(
 	}
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3ContributionStatusPrefix(),
 		existedWaitingContribution.TxReqID().Bytes(),
 		contribStatusBytes,
 	)
@@ -329,7 +329,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		contribStatusBytes, _ := json.Marshal(contribStatus)
 		err = statedb.TrackPdexv3Status(
 			stateDB,
-			statedb.Pdexv3MintNftStatusPrefix(),
+			statedb.Pdexv3ContributionStatusPrefix(),
 			matchAndReturnContributionValue.TxReqID().Bytes(),
 			contribStatusBytes,
 		)
@@ -339,7 +339,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		}
 		err = statedb.TrackPdexv3Status(
 			stateDB,
-			statedb.Pdexv3MintNftStatusPrefix(),
+			statedb.Pdexv3ContributionStatusPrefix(),
 			[]byte(sp.pairHashCache[matchAndReturnContribution.PairHash()]),
 			contribStatusBytes,
 		)
@@ -753,7 +753,7 @@ func (sp *stateProcessorV2) userMintNft(
 
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3UserMintNftStatusPrefix(),
 		[]byte(txReqID),
 		data,
 	)
@@ -761,7 +761,53 @@ func (sp *stateProcessorV2) userMintNft(
 }
 
 func (sp *stateProcessorV2) staking(
-	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64,
-) error {
-	return nil
+	stateDB *statedb.StateDB,
+	inst []string, nftIDs map[string]uint64, stakingPoolStates map[string]*StakingPoolState,
+) (map[string]*StakingPoolState, *v2.StakingStatus, error) {
+	if len(inst) < 2 {
+		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
+	}
+	var status, nftID, stakingPoolID string
+	var txReqID common.Hash
+	var liquidity uint64
+	switch inst[1] {
+	case common.Pdexv3AcceptStakingStatus:
+		acceptInst := instruction.NewAcceptStaking()
+		err := acceptInst.FromStringSlice(inst)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+		txReqID = acceptInst.TxReqID()
+		status = common.Pdexv3AcceptStakingStatus
+		stakingPoolID = acceptInst.StakingPoolID().String()
+		liquidity = acceptInst.Liquidity()
+		nftID = acceptInst.NftID().String()
+	case common.Pdexv3RejectStakingStatus:
+		rejectInst := instruction.NewRejectStaking()
+		err := rejectInst.FromStringSlice(inst)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+		txReqID = rejectInst.TxReqID()
+		status = common.Pdexv3RejectStakingStatus
+		stakingPoolID = rejectInst.TokenID().String()
+		liquidity = rejectInst.Amount()
+	}
+	stakingStatus := v2.StakingStatus{
+		Status:        status,
+		NftID:         nftID,
+		StakingPoolID: stakingPoolID,
+		Liquidity:     liquidity,
+	}
+	data, err := json.Marshal(stakingStatus)
+	if err != nil {
+		return stakingPoolStates, nil, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3StakingStatusPrefix(),
+		txReqID.Bytes(),
+		data,
+	)
+	return stakingPoolStates, &stakingStatus, nil
 }

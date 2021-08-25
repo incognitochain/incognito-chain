@@ -157,14 +157,17 @@ func StorePdexv3NftIDs(stateDB *StateDB, nftIDs map[string]uint64) error {
 	return nil
 }
 
-func StorePdexv3StakingPools() error {
-	return nil
+func StorePdexv3Staker(stateDB *StateDB, stakingPoolID, nftID string, state *Pdexv3StakerState) error {
+	key := GeneratePdexv3StakerObjectKey(stakingPoolID, nftID)
+	return stateDB.SetStateObject(Pdexv3StakerObjectType, key, state)
 }
 
-func StorePdexv3Order(
-	stateDB *StateDB,
-	orderState Pdexv3OrderState,
-) error {
+func StorePdexv3StakerReward(stateDB *StateDB, stakingPoolID, nftID, tokenID string, state *Pdexv3StakerRewardState) error {
+	key := GeneratePdexv3StakerRewardObjectKey(stakingPoolID, nftID, tokenID)
+	return stateDB.SetStateObject(Pdexv3StakerObjectType, key, state)
+}
+
+func StorePdexv3Order(stateDB *StateDB, orderState Pdexv3OrderState) error {
 	v := orderState.Value()
 	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), v.Id())
 	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, &orderState)
@@ -214,4 +217,15 @@ func GetPdexv3Orders(stateDB *StateDB, poolPairID string) (
 ) {
 	prefixHash := generatePdexv3OrderObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3Orders(prefixHash)
+}
+
+func GetPdexv3Stakers(stateDB *StateDB, stakingPoolID string) (map[string]Pdexv3StakerState, uint64, error) {
+	prefixHash := generatePdexv3StakerObjectPrefix(stakingPoolID)
+	var liquidity uint64
+	return stateDB.iterateWithPdexv3Stakers(prefixHash, liquidity)
+}
+
+func GetPdexv3StakerRewards(stateDB *StateDB, stakingPoolID, nftID string) (map[string]uint64, error) {
+	prefixHash := generatePdexv3StakerRewardObjectPrefix(stakingPoolID, nftID)
+	return stateDB.iterateWithPdexv3StakerRewards(prefixHash)
 }
