@@ -369,7 +369,7 @@ func (httpServer *HttpServer) handleGetPortalSignedExtTxWithBatchID(
 	return getRawSignedTxByHeight(httpServer, unshieldBatch.BeaconHeight, unshieldBatch.RawExternalTx, unshieldBatch.UTXOs)
 }
 
-type getSignedTxResult struct {
+type GetSignedTxResult struct {
 	SignedTx     string
 	BeaconHeight uint64
 	TxID         string
@@ -460,7 +460,7 @@ func getRawSignedTxByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	hexSignedTx := hex.EncodeToString(signedTx.Bytes())
-	return getSignedTxResult{
+	return GetSignedTxResult{
 		SignedTx:     hexSignedTx,
 		BeaconHeight: height,
 		TxID:         externalTx.TxHash().String(),

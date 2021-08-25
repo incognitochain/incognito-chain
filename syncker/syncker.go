@@ -227,10 +227,10 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 }
 
 //Get Crossshard Block for creating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte, limit map[byte][]uint64) map[byte][]interface{} {
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(view *blockchain.ShardBestState, limit map[byte][]uint64) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
-
+	toShard := view.ShardID
 	lastRequestCrossShard := synckerManager.config.Blockchain.ShardChain[int(toShard)].GetCrossShardState()
 	bc := synckerManager.config.Blockchain
 	beaconDB := bc.GetBeaconChainDatabase()
@@ -323,9 +323,9 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 }
 
 //Get Crossshard Block for validating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
-	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
-
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(view *blockchain.ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error) {
+	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(view, list)
+	toShard := view.ShardID
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
@@ -333,7 +333,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
 
-		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
+		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(view, list)
 		//Logger.Info("get crosshshard block for shard producer", crossShardPoolLists)
 		missingBlocks = compareListsByHeight(crossShardPoolLists, list)
 

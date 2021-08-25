@@ -19,6 +19,18 @@ import (
 /*
 ====== Portal state
 */
+
+type CurrentPortalState struct {
+	WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest `json:"WaitingPortingRequests"`
+	WaitingRedeemRequests      map[string]*statedb.RedeemRequest         `json:"WaitingRedeemRequests"`
+	MatchedRedeemRequests      map[string]*statedb.RedeemRequest         `json:"MatchedRedeemRequests"`
+	CustodianPool              map[string]*statedb.CustodianState        `json:"CustodianPool"`
+	FinalExchangeRatesState    *statedb.FinalExchangeRatesState          `json:"FinalExchangeRatesState"`
+	LiquidationPool            map[string]*statedb.LiquidationPool       `json:"LiquidationPool"`
+	LockedCollateralForRewards *statedb.LockedCollateralState            `json:"LockedCollateralForRewards"`
+	BeaconTimeStamp            int64                                     `json:"BeaconTimeStamp"`
+}
+
 func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
@@ -50,17 +62,6 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
-
-	type CurrentPortalState struct {
-		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest `json:"WaitingPortingRequests"`
-		WaitingRedeemRequests      map[string]*statedb.RedeemRequest         `json:"WaitingRedeemRequests"`
-		MatchedRedeemRequests      map[string]*statedb.RedeemRequest         `json:"MatchedRedeemRequests"`
-		CustodianPool              map[string]*statedb.CustodianState        `json:"CustodianPool"`
-		FinalExchangeRatesState    *statedb.FinalExchangeRatesState          `json:"FinalExchangeRatesState"`
-		LiquidationPool            map[string]*statedb.LiquidationPool       `json:"LiquidationPool"`
-		LockedCollateralForRewards *statedb.LockedCollateralState            `json:"LockedCollateralForRewards"`
-		BeaconTimeStamp            int64                                     `json:"BeaconTimeStamp"`
-	}
 
 	result := CurrentPortalState{
 		BeaconTimeStamp:            beaconBlock.Header.Timestamp,

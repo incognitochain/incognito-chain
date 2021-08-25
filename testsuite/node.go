@@ -141,54 +141,34 @@ func (sim *NodeEngine) Init() {
 	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.param
-	if !sim.config.AppNode {
-		config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = []string{}
-		config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = []string{}
-		config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = []string{}
-		config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress = []string{}
 
-		config.Param().GenesisParam.SelectBeaconNodeSerializedPubkeyV2 = map[uint64][]string{}
-		config.Param().GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2 = map[uint64][]string{}
-		config.Param().GenesisParam.SelectShardNodeSerializedPubkeyV2 = map[uint64][]string{}
-		config.Param().GenesisParam.SelectShardNodeSerializedPaymentAddressV2 = map[uint64][]string{}
+	config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = []string{}
+	config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = []string{}
+	config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = []string{}
+	config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress = []string{}
 
-		sim.GenesisAccount = sim.NewAccount()
-		for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
-			acc := sim.NewAccountFromShard(-1)
-			sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
-			config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = append(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
-			config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = append(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
-		}
-		for i := 0; i < config.Param().ActiveShards; i++ {
-			for a := 0; a < config.Param().CommitteeSize.MinShardCommitteeSize; a++ {
-				acc := sim.NewAccountFromShard(i)
-				sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
-				config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = append(config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
-				config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress = append(config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
-			}
-		}
-		initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
-		config.Param().GenesisParam.InitialIncognito = initTxs
-	} else {
-		sim.GenesisAccount = sim.NewAccountFromPrivateKey("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
-		oldTestnet := []string{
-			"112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL",
-			"112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5",
-			"112t8rnXi8eKJ5RYJjyQYcFMThfbXHgaL6pq5AF5bWsDXwfsw8pqQUreDv6qgWyiABoDdphvqE7NFr9K92aomX7Gi5Nm1e4tEoV3qRLVdfSR",
-			"112t8rnY42xRqJghQX3zvhgEa2ZJBwSzJ46SXyVQEam1yNpN4bfAqJwh1SsobjHAz8wwRvwnqJBfxrbwUuTxqgEbuEE8yMu6F14QmwtwyM43",
-			"112t8rnXBPJQWJTyPdzWsfsUCFTDhcas3y2MYsauKo66euh1udG8dSh2ZszSbfqHwCpYHPRSpFTxYkUcVa619XUM6DjdV7FfUWvYoziWE2Bm",
-			"112t8rnXN2SLxQncPYvFdzEivznKjBxK5byYmPbAhnEEv8TderLG7NUD7nwAEDu7DJ7pnCKw9N5PuTuELCHz8qKc7z9S9jF8QG41u7Vomc6L",
-			"112t8rnXs5os49h71E7utfHatnWGQnirbVF2b5Ua8h1ttidk1S5AFcUqHCDmpMziiFC15BG8W1LQKK5tYcvr2CM7DyYgsfVmAWYh4kQ6f33T",
-			"112t8rnXvcE6sxwt7nQ6mH6KdPMWyQRv6xAd3WWorzS7k26YPjm4mvFtC51bRaU18yubQm1N3gBeDJJyXqWmxi5QdCkqYExCEkSqNpD1Wzpz",
-			"112t8rnXCerQX2RRd8KhPfsFCj2rrBYUx42FZJKgRFcdBfg36Mid3ygKyMn5LSc5LBHsxqapRaN6xMav7bGhA6VtGUzNNYuA9Y78CB5oGkti",
-			"112t8rnXYgxipKvTJJfHg7tQhcdmA2R1jPpCPmXg37Xi1VfgrFzWFuNy4U6828q1yfbD7VEdutD63HfVYAqL6U32joXVjqdkfUP52LnNGXda",
-			"112t8rnXe3Jxg5d1Rejg2fB1NwnqNsr94RCT3PX14h5NNDjrdgLeEWFkqcMNamKCHask1Gx46g5WYZDKHKx7kzLVD7h1cgvU6NxNijkyGmA9",
-			"112t8rnY2gqonwhnhGD6rKeEXkbJDB7DHUtZQKC8SfLci6ABb5eCEj4o7ezWBZWaGbu7CJ1R1mrADGqmRjugg42GeA6jhaXbNDeP2HUr8udw"}
+	config.Param().GenesisParam.SelectBeaconNodeSerializedPubkeyV2 = map[uint64][]string{}
+	config.Param().GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2 = map[uint64][]string{}
+	config.Param().GenesisParam.SelectShardNodeSerializedPubkeyV2 = map[uint64][]string{}
+	config.Param().GenesisParam.SelectShardNodeSerializedPaymentAddressV2 = map[uint64][]string{}
 
-		for _, v := range oldTestnet {
-			sim.NewAccountFromPrivateKey(v)
+	sim.GenesisAccount = sim.NewAccount()
+	for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
+		acc := sim.NewAccountFromShard(-1)
+		sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
+		config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = append(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
+		config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = append(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
+	}
+	for i := 0; i < config.Param().ActiveShards; i++ {
+		for a := 0; a < config.Param().CommitteeSize.MinShardCommitteeSize; a++ {
+			acc := sim.NewAccountFromShard(i)
+			sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
+			config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = append(config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
+			config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress = append(config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
 		}
 	}
+	initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
+	config.Param().GenesisParam.InitialIncognito = initTxs
 
 	zkp.InitCheckpoint(config.Param().BCHeightBreakPointNewZKP)
 
@@ -297,26 +277,24 @@ func (sim *NodeEngine) Init() {
 		ps,
 		time.Duration(15*60)*time.Second,
 	)
-	//otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
+	otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
 	err = bc.Init(&blockchain.Config{
-		BTCChain:      btcChain,
-		BNBChainState: bnbChainState,
-		DataBase:      db,
-		//OutcoinByOTAKeyDb: &otadb,
-		MemCache:        memcache.New(),
-		BlockGen:        blockgen,
-		TxPool:          &txpoolV1,
-		TempTxPool:      &temppool,
-		Server:          &server,
-		Syncker:         sync,
-		PubSubManager:   ps,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		ConsensusEngine: &cs,
-		PoolManager:     poolManager,
+		BTCChain:          btcChain,
+		BNBChainState:     bnbChainState,
+		DataBase:          db,
+		OutCoinByOTAKeyDb: &otadb,
+		MemCache:          memcache.New(),
+		BlockGen:          blockgen,
+		TxPool:            &txpoolV1,
+		TempTxPool:        &temppool,
+		Server:            &server,
+		Syncker:           sync,
+		PubSubManager:     ps,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		ConsensusEngine:   &cs,
+		PoolManager:       poolManager,
 	})
 
-	fmt.Println(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey)
-	sim.Pause()
 	if err != nil {
 		panic(err)
 	}
@@ -480,14 +458,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		proposerPkStr, _ := proposerPK.ToBase58()
 
 		if chainID == -1 {
-			block, err = chain.BeaconChain.CreateNewBlock(curView, version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
+			block, err = chain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
 			}
 
 		} else {
-			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(curView, version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
+			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -511,13 +489,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Validation
 		if chainID == -1 {
-			err = chain.BeaconChain.ValidatePreSignBlock(block.(*types.BeaconBlock), nil)
+			err = chain.BeaconChain.ValidatePreSignBlock(block.(*types.BeaconBlock), committees)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
 			}
 		} else {
-			err = chain.ShardChain[byte(chainID)].ValidatePreSignBlock(block.(*types.ShardBlock), nil)
+			err = chain.ShardChain[byte(chainID)].ValidatePreSignBlock(block.(*types.ShardBlock), committees)
 			if err != nil {
 				panic(err)
 			}
@@ -535,13 +513,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Insert
 		if chainID == -1 {
-			err = chain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), common.FULL_VALIDATION)
+			err = chain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), true)
 			if err != nil {
 				panic(err)
 			}
 			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
-			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), common.FULL_VALIDATION)
+			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
 			if err != nil {
 				panic(err)
 			} else {
@@ -655,4 +633,20 @@ func (s *NodeEngine) GetListAccountByCommitteePubkey(cpks []incognitokey.Committ
 func (sim *NodeEngine) GetMultiview(chainID int) ([]account.Account, error) {
 	committees := sim.bc.GetChain(chainID).GetBestView().GetCommittee()
 	return sim.GetListAccountByCommitteePubkey(committees)
+}
+
+func InitChainParam(customParam func()) *NodeEngine {
+	node := NewStandaloneSimulation("newsim", Config{
+		Network: ID_TESTNET2,
+		AppNode: false,
+		ResetDB: true,
+	})
+	customParam()
+	node.Init()
+	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
+	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
+	for i := 0; i < 10; i++ {
+		node.GenerateBlock().NextRound()
+	}
+	return node
 }

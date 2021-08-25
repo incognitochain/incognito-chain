@@ -1,4 +1,4 @@
-  package blockchain
+package blockchain
 
 import (
 	"encoding/json"
@@ -55,6 +55,14 @@ func (chain *BeaconChain) GetFinalView() multiview.View {
 
 func (chain *BeaconChain) GetFinalViewState() *BeaconBestState {
 	return chain.multiView.GetFinalView().(*BeaconBestState)
+}
+
+func (chain *BeaconChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *BeaconChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
 }
 
 func (chain *BeaconChain) GetViewByHash(hash common.Hash) multiview.View {

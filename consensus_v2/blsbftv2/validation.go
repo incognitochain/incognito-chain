@@ -16,7 +16,6 @@ import (
 
 type blockValidation interface {
 	types.BlockInterface
-	AddValidationField(validationData string)
 }
 
 type ValidationData struct {
@@ -25,7 +24,7 @@ type ValidationData struct {
 	ValidatiorsIdx []int
 	AggSig         []byte
 	BridgeSig      [][]byte
-	PortalSig []*portalprocessv4.PortalSig
+	PortalSig      []*portalprocessv4.PortalSig
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {

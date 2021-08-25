@@ -27,4 +27,5 @@ type BlockInterface interface {
 	GetPrevHash() common.Hash
 	GetProposer() string
 	CommitteeFromBlock() common.Hash
+	AddValidationField(validationData string)
 }

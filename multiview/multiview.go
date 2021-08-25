@@ -63,6 +63,19 @@ func (multiView *MultiView) Reset() {
 	multiView.viewByPrevHash = make(map[common.Hash][]View)
 }
 
+func (multiView *MultiView) Clone() *MultiView {
+	s := NewMultiView()
+	for h, v := range multiView.viewByHash {
+		s.viewByHash[h] = v
+	}
+	for h, v := range multiView.viewByPrevHash {
+		s.viewByPrevHash[h] = v
+	}
+	s.finalView = multiView.finalView
+	s.bestView = multiView.bestView
+	return s
+}
+
 func (multiView *MultiView) removeOutdatedView() {
 	for h, v := range multiView.viewByHash {
 		if v.GetHeight() < multiView.finalView.GetHeight() {

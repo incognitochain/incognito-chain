@@ -31,7 +31,7 @@ func Test_PortalV4() {
 	config.Param().ConsensusParam.StakingFlowV2Height = 1
 	config.Param().EpochParam.NumberOfBlockInEpoch = 20
 	config.Param().EpochParam.RandomTime = 10
-	config.Param().EnableFeatureFlags[2] = 1
+	config.Param().EnableFeatureFlags["PortalV4"] = 1
 	portal.GetPortalParams().PortalParamsV4[0].PortalTokens[portalcommonv4.PortalBTCIDStr] = portaltokensv4.PortalBTCTokenProcessor{
 		PortalToken: &portaltokensv4.PortalToken{
 			ChainID:             portal.TestnetBTCChainID,
@@ -50,7 +50,6 @@ func Test_PortalV4() {
 	}
 
 	acc0, _ := account.NewAccountFromPrivatekey("112t8rnX6USJnBzswUeuuanesuEEUGsxE8Pj3kkxkqvGRedUUPyocmtsqETX2WMBSvfBCwwsmMpxonhfQm2N5wy3SrNk11eYx6pMsmsic4Vz")
-	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
 	node.RPC.API_SubmitKey(acc0.PrivateKey)
 	err := node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
 	if err != nil {
@@ -106,13 +105,13 @@ func Test_PortalV4() {
 	b, _ := json.Marshal(portalState)
 	fmt.Println(string(b))
 	batchID := ""
-	for _, v := range portalState.ProcessedUnshieldRequests {
-		for _, v1 := range v {
-			//fmt.Printf("%+v\n", v1)
-			//fmt.Println("batchid", v1.GetBatchID())
-			batchID = v1.GetBatchID()
-		}
-	}
+	//for _, v := range portalState.ProcessedUnshieldRequests {
+	//	for _, v1 := range v {
+	//		//fmt.Printf("%+v\n", v1)
+	//		//fmt.Println("batchid", v1.GetBatchID())
+	//		batchID = v1.GetBatchID()
+	//	}
+	//}
 
 	if batchID == "" {
 		panic("no batch id")

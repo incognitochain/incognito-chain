@@ -2,6 +2,8 @@ package devframework
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -186,20 +188,18 @@ var subsystemLoggers = map[string]common.Logger{
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
 func InitLogRotator(logFile string) {
-	/*logDir, _ := filepath.Split(logFile)*/
-	//err := os.MkdirAll(logDir, 0700)
-	//if err != nil {
-	//fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-	//os.Exit(utils.ExitByLogging)
-	//}
-	//r, err := rotator.New(logFile, 10*1024, false, 3)
-	//if err != nil {
-	//fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-	//os.Exit(utils.ExitByLogging)
-	/*}*/
-
-	//logRotator = r
-	logRotator = &rotator.Rotator{}
+	logDir, _ := filepath.Split(logFile)
+	err := os.MkdirAll(logDir, 0700)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
+		os.Exit(-1)
+	}
+	r, err := rotator.New(logFile, 100*1024*1024, false, 3)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
+		os.Exit(-1)
+	}
+	logRotator = r
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid

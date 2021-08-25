@@ -174,6 +174,7 @@ func (sim *NodeEngine) SendPRV(args ...interface{}) (string, error) {
 
 func (sim *NodeEngine) ShowBalance(acc account.Account) map[string]uint64 {
 	res, err := sim.RPC.API_GetBalance(acc)
+	fmt.Println(res, err)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -208,8 +209,8 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 	shardPendingList := make(map[int][]string)
 	shardCommitteeList := make(map[int][]string)
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
-		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[sid])
-		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsCommitteeList()[sid])
+		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
+		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
 	}
 
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
@@ -243,8 +244,8 @@ func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
 	shardPendingList := make(map[int][]string)
 	shardCommitteeList := make(map[int][]string)
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
-		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[sid])
-		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsCommitteeList()[sid])
+		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
+		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
 	}
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		if common.IndexOfStr(acc.SelfCommitteePubkey, shardPendingList[sid]) > -1 {
@@ -303,11 +304,11 @@ func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (multiview.
 	view4 := node.GetBlockchain().GetChain(chainID).GetBestView()
 
 	if chainID == -1 {
-		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view1.GetBlock(), common.FULL_VALIDATION)
-		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view2.GetBlock(), common.FULL_VALIDATION)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view1.GetBlock(), true)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view2.GetBlock(), true)
 	} else {
-		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view1.GetBlock(), common.FULL_VALIDATION)
-		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view2.GetBlock(), common.FULL_VALIDATION)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view1.GetBlock(), true)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view2.GetBlock(), true)
 	}
 	return view2, view4
 }

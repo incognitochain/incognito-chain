@@ -513,7 +513,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// Verify Transaction
 	//get beacon height from shard block
 	// beaconHeight := shardBlock.Header.BeaconHeight
-	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
+	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, shardBlock.GetHeight(), len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 	st := time.Now()
 	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
@@ -612,7 +612,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 			crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHeight)
 		}
 	}
-	crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
+	crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(curView, crossShardRequired)
 	if err != nil {
 		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Unable to get required crossShard blocks from pool in time"))
 	}
