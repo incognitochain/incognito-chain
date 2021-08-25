@@ -49,7 +49,6 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittes []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
-	proposerMiningKeyBase58 string,
 	validVotes, errVotes int,
 ) {
 	proposeBlockInfo.block = block
