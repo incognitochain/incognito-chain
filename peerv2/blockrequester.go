@@ -345,7 +345,7 @@ func NewRequesterV2(prtc GRPCDialer) *BlockRequester {
 		prtc:    prtc,
 		peerIDs: make(chan peer.ID, 100),
 		conn:    nil,
-		stop:    make(chan int, 1),
+		stop:    make(chan int),
 		RWMutex: sync.RWMutex{},
 
 		disconnectNoti: make(chan bool, 10),
