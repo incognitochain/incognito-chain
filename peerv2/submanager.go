@@ -347,7 +347,7 @@ func (sub *SubManager) registerToProxy(
 	role string,
 	shardID []byte,
 ) (msgToTopics, userRole, error) {
-	messagesWanted := getMessagesForLayer(layer, shardID)
+	messagesWanted := getMessagesForLayer2(layer, pubkey, shardID)
 	Logger.Infof("Registering: message: %v", messagesWanted)
 	// Logger.Infof("Registering: nodeMode: %v", sub.nodeMode)
 	Logger.Infof("Registering: layer: %v", layer)
@@ -387,6 +387,54 @@ func (sub *SubManager) registerToProxy(
 }
 
 func getMessagesForLayer(layer string, shardID []byte) []string {
+	if layer == common.ShardRole {
+		return []string{
+			wire.CmdBlockShard,
+			wire.CmdBlockBeacon,
+			wire.CmdBFT,
+			wire.CmdPeerState,
+			wire.CmdCrossShard,
+			wire.CmdTx,
+			wire.CmdPrivacyCustomToken,
+		}
+	} else if layer == common.BeaconRole {
+		return []string{
+			wire.CmdBlockBeacon,
+			wire.CmdBFT,
+			wire.CmdPeerState,
+			wire.CmdBlockShard,
+		}
+	} else {
+		containShard := false
+		for _, s := range shardID {
+			if s != HighwayBeaconID {
+				containShard = true
+			}
+		}
+		msgs := []string{
+			wire.CmdBlockBeacon,
+			wire.CmdPeerState,
+			wire.CmdTx,
+			wire.CmdPrivacyCustomToken,
+		}
+		if containShard {
+			msgs = append(msgs, wire.CmdBlockShard)
+		}
+		return msgs
+	}
+
+	return []string{}
+}
+
+func getMessagesForLayer2(layer string, pubKey string, shardID []byte) []string {
+	if pubKey == "1Eh5UZjDSUsdofnToKSELNz24rUfKgdsf3JubsetDQYscHHWERnQcVUxee9C68UFK1C1iTaHE2HxtyrkEvzsjN68LfEnqtnV1TEy3MQpkF2hmGFiExwGw4MbgApx7Vg6aYehqys3Xsgt2nxD4sG9iiNAQgLPkiDwGTj39yDciHqsETHrqUGAU4bFAm4mSnwEeTXo2FvQq7WrKsfAcg8nBWrNMG7UhZbsZ9hYrnc1WGxXy3y3DQ43B2RXat3BHvsz8fU6U1aNsPF5NH9AMDwU3ZDQrwGA5tsrANLfs33Y72rX5z1LRtApczEdVa8Xxvsxt3HE8rMtL7gcRzmRwHCXtbi9dEKfoDdMEXpjubbjFevNRR9LVH1jg6" {
+		return []string{
+			wire.CmdBlockBeacon,
+			wire.CmdBFT,
+			wire.CmdPeerState,
+			// wire.CmdBlockShard,
+		}
+	}
 	if layer == common.ShardRole {
 		return []string{
 			wire.CmdBlockShard,
