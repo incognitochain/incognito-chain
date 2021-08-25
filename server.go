@@ -3,10 +3,9 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"log"
 	"net"
 	"os"
@@ -17,6 +16,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -1597,6 +1599,8 @@ func (serverObj *Server) PublishNodeState() error {
 		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 		if validator.State.ChainID == -1 {
 			serverObj.PushMessageToBeacon(msg, nil)
+			b, _ := json.Marshal(msg.(*wire.MessagePeerState).Shards)
+			fmt.Println("[debugshard] shard peer state", string(b))
 		} else {
 			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID))
 		}
