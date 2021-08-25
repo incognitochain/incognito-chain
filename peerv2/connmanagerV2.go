@@ -172,9 +172,7 @@ func (cm *ConnManager) CloseConnToCurHW(isDisconnected bool) {
 		}
 	} else {
 		Logger.Infof("[debugdisconnect] Send signal stop to Requester -->")
-		if cm.Requester.isRunning {
-			cm.Requester.stop <- 0
-		}
+		cm.Requester.CloseConnection(0)
 		Logger.Infof("Send signal stop to Requester DONE")
 	}
 	cm.hwLocker.Lock()

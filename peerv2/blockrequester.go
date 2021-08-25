@@ -44,6 +44,15 @@ func NewRequester(prtc GRPCDialer) *BlockRequester {
 	return req
 }
 
+func (c *BlockRequester) CloseConnection(id int) {
+	if c.isRunning {
+		//Send signal stop and wait until it done
+		c.stop <- id
+		c.stop <- id
+		Logger.Infof("Closed old connection")
+	}
+}
+
 // WARNING: If you wanna call this function outside of keepConnection or WatchConnection,
 // just send signal stop to BlockRequester.
 func (c *BlockRequester) closeConnection(id int) {
@@ -379,10 +388,8 @@ func (c *BlockRequester) ConnectNewHW(hwAddrInfo *peer.AddrInfo, id int) (err er
 	conn, err = c.tryToDial(hwAddrInfo)
 	if err == nil {
 		Logger.Infof("[debugGRPC] Connected to new HW %v, id %v", hwAddrInfo.ID.Pretty(), id)
-		if c.isRunning {
-			c.stop <- id
-		}
-		Logger.Infof("[debugGRPC] Closed old connection")
+		c.CloseConnection(id)
+
 		c.Lock()
 		c.conn = conn
 		c.Unlock()
@@ -467,6 +474,7 @@ func (c *BlockRequester) WatchConnection(currentHW peer.ID, id int) {
 			c.closeConnection(x)
 			c.isRunning = false
 			Logger.Infof("[debugGRPC] Thread %v received stop WatchConnection signal from thread id %v DONE", x, id)
+			<-c.stop
 			return
 		case <-reqRetry:
 			Logger.Infof("[debugGRPC] Received requestRetry WatchConnection signal, id %v", x)
