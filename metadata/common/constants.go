@@ -64,7 +64,10 @@ const (
 	Pdexv3AddOrderResponseMeta          = 278
 	Pdexv3WithdrawOrderRequestMeta      = 279
 	Pdexv3WithdrawOrderResponseMeta     = 280
-	Pdexv3MintNft                       = 282
+	Pdexv3UserMintNftRequestMeta        = 281
+	Pdexv3UserMintNftResponseMeta       = 282
+	Pdexv3MintNftRequestMeta            = 283
+	Pdexv3MintNftResponseMeta           = 284
 
 	// portal
 	PortalCustodianDepositMeta                  = 100
@@ -169,7 +172,8 @@ var minerCreatedMetaTypes = []int{
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
 	InitTokenResponseMeta,
 	Pdexv3AddLiquidityResponseMeta,
-	Pdexv3MintNft,
+	Pdexv3MintNftResponseMeta,
+	Pdexv3UserMintNftResponseMeta,
 	Pdexv3WithdrawLiquidityResponseMeta,
 	Pdexv3TradeResponseMeta,
 	Pdexv3AddOrderResponseMeta,

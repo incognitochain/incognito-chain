@@ -14,6 +14,7 @@ const (
 	InitProtocolFeePercent       = 0
 	InitStakingPoolRewardPercent = 10
 	InitStakingPoolsShare        = 0
+	InitMintNftRequireAmount     = 1000000000
 )
 
 // nft hash prefix

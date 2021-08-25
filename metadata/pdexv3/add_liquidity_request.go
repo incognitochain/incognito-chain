@@ -59,6 +59,10 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
+	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	if err != nil {
+		return false, err
+	}
 	if request.poolPairID != utils.EmptyString {
 		err := beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
 		if err != nil {
@@ -85,14 +89,12 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 	if tokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
-	if request.nftID != utils.EmptyString {
-		nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
-		if err != nil {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
-		if nftID.IsZeroValue() {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
-		}
+	nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
+	if err != nil {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if nftID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
 	}
 	otaReceive := privacy.OTAReceiver{}
 	err = otaReceive.FromString(request.otaReceive)

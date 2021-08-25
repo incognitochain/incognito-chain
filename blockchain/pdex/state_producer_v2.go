@@ -70,26 +70,23 @@ func (sp *stateProducerV2) addLiquidity(
 	beaconHeight uint64,
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	nftIDs map[string]bool,
+	nftIDs map[string]uint64,
 ) (
-	[][]string,
-	map[string]*PoolPairState,
-	map[string]rawdbv2.Pdexv3Contribution,
-	map[string]bool, error,
+	[][]string, map[string]*PoolPairState, map[string]rawdbv2.Pdexv3Contribution, error,
 ) {
 	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.AddLiquidityRequest)
 		incomingContribution := *NewContributionWithMetaData(*metaData, *tx.Hash(), shardID)
-
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
 		)
-		if metaData.NftID() != utils.EmptyString && !nftIDs[metaData.NftID()] {
+		_, found := nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
 			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, nftIDs, err
+				return res, poolPairs, waitingContributions, err
 			}
 			res = append(res, refundInst)
 			continue
@@ -99,7 +96,7 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContributions[metaData.PairHash()] = incomingContribution
 			inst, err := instruction.NewWaitingAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
-				return res, poolPairs, waitingContributions, nftIDs, err
+				return res, poolPairs, waitingContributions, err
 			}
 			res = append(res, inst)
 			continue
@@ -116,16 +113,15 @@ func (sp *stateProducerV2) addLiquidity(
 				waitingContributionState, incomingContributionState,
 			)
 			if err != nil {
-				return res, poolPairs, waitingContributions, nftIDs, err
+				return res, poolPairs, waitingContributions, err
 			}
 			res = append(res, insts...)
 			continue
 		}
 		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
-			return res, poolPairs, waitingContributions, nftIDs, err
+			return res, poolPairs, waitingContributions, err
 		}
-		nftID := *nftHash
 
 		poolPairID := utils.EmptyString
 		if waitingContribution.PoolPairID() == utils.EmptyString {
@@ -142,8 +138,8 @@ func (sp *stateProducerV2) addLiquidity(
 					big.NewInt(0).SetUint64(incomingContribution.Amount()),
 				)
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-				nftID, nftIDs, err = newPoolPair.addShare(
-					nftID, nftIDs,
+				err = newPoolPair.addShare(
+					*nftHash,
 					shareAmount, beaconHeight,
 					waitingContribution.TxReqID().String(),
 				)
@@ -151,9 +147,9 @@ func (sp *stateProducerV2) addLiquidity(
 					continue
 				}
 				poolPairs[poolPairID] = newPoolPair
-				insts, err := v2utils.BuildMatchAddLiquidityInstructions(incomingContributionState, poolPairID, nftID)
+				insts, err := v2utils.BuildMatchAddLiquidityInstructions(incomingContributionState, poolPairID, *nftHash)
 				if err != nil {
-					return res, poolPairs, waitingContributions, nftIDs, err
+					return res, poolPairs, waitingContributions, err
 				}
 				res = append(res, insts...)
 				continue
@@ -162,7 +158,7 @@ func (sp *stateProducerV2) addLiquidity(
 					waitingContributionState, incomingContributionState,
 				)
 				if err != nil {
-					return res, poolPairs, waitingContributions, nftIDs, err
+					return res, poolPairs, waitingContributions, err
 				}
 				res = append(res, insts...)
 				continue
@@ -188,7 +184,7 @@ func (sp *stateProducerV2) addLiquidity(
 				token0ContributionState, token1ContributionState,
 			)
 			if err != nil {
-				return res, poolPairs, waitingContributions, nftIDs, err
+				return res, poolPairs, waitingContributions, err
 			}
 			res = append(res, insts...)
 			continue
@@ -201,8 +197,9 @@ func (sp *stateProducerV2) addLiquidity(
 			Logger.log.Debug("err:", err)
 			continue
 		}
-		nftID, nftIDs, err = poolPair.addShare(
-			nftID, nftIDs, shareAmount, beaconHeight,
+		err = poolPair.addShare(
+			*nftHash,
+			shareAmount, beaconHeight,
 			waitingContribution.TxReqID().String(),
 		)
 		if err != nil {
@@ -215,14 +212,14 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount,
 			returnedToken1ContributionAmount,
 			actualToken1ContributionAmount,
-			nftID,
+			*nftHash,
 		)
 		if err != nil {
-			return res, poolPairs, waitingContributions, nftIDs, err
+			return res, poolPairs, waitingContributions, err
 		}
 		res = append(res, insts...)
 	}
-	return res, poolPairs, waitingContributions, nftIDs, nil
+	return res, poolPairs, waitingContributions, nil
 }
 
 func (sp *stateProducerV2) modifyParams(
@@ -350,7 +347,7 @@ func (sp *stateProducerV2) trade(
 func (sp *stateProducerV2) addOrder(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
-	nftIDs map[string]bool,
+	nftIDs map[string]uint64,
 	params Params,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
@@ -386,7 +383,7 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		if exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
+		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
 			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
@@ -550,8 +547,7 @@ TransactionLoop:
 }
 
 func (sp *stateProducerV2) withdrawLiquidity(
-	txs []metadata.Transaction,
-	poolPairs map[string]*PoolPairState,
+	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -562,6 +558,15 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
+		_, found := nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, poolPairs, err
+			}
+			res = append(res, insts...)
+			continue
+		}
 		poolPair, ok := poolPairs[metaData.PoolPairID()]
 		if !ok || poolPair == nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
@@ -603,4 +608,40 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		res = append(res, insts...)
 	}
 	return res, poolPairs, nil
+}
+
+func (sp *stateProducerV2) userMintNft(
+	txs []metadata.Transaction,
+	nftIDs map[string]uint64,
+	beaconHeight, mintNftRequireAmount uint64,
+) ([][]string, map[string]uint64, error) {
+	res := [][]string{}
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UserMintNftRequest)
+		txReqID := *tx.Hash()
+		inst := []string{}
+		var err error
+		if metaData.Amount() != mintNftRequireAmount {
+			inst, err = instruction.NewRejectUserMintNftWithValue(
+				metaData.OtaReceive(), metaData.Amount(), shardID, txReqID,
+			).StringSlice()
+			if err != nil {
+				Logger.log.Debugf("Can not reject mint nftID with txHash %s", txReqID.String())
+				continue
+			}
+		} else {
+			nftID := genNFT(uint64(len(nftIDs)), beaconHeight)
+			nftIDs[nftID.String()] = metaData.Amount()
+			inst, err = instruction.NewAcceptUserMintNftWithValue(
+				metaData.OtaReceive(), metaData.Amount(), shardID, nftID, txReqID,
+			).StringSlice()
+			if err != nil {
+				Logger.log.Debugf("Can not mint nftID with txHash %s", txReqID.String())
+				continue
+			}
+		}
+		res = append(res, inst)
+	}
+	return res, nftIDs, nil
 }

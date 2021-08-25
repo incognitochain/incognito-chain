@@ -236,12 +236,15 @@ const (
 	//
 
 	// pDex v3
+	pdexv3MintNft                         = "pdexv3_txMintNft"
 	getPdexv3State                        = "pdexv3_getState"
 	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
 	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
 	pdexv3AddLiquidityV3                  = "pdexv3_txAddLiquidity"
 	pdexv3WithdrawLiquidityV3             = "pdexv3_txWithdrawLiquidity"
 	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
+	getPdexv3WithdrawLiquidityStatus      = "pdexv3_getWithdrawLiquidityStatus"
+	getPdexv3MintNftStatus                = "pdexv3_getMintNftStatus"
 	pdexv3TxTrade                         = "pdexv3_txTrade"
 	pdexv3TxAddOrder                      = "pdexv3_txAddOrder"
 	pdexv3TxWithdrawOrder                 = "pdexv3_txWithdrawOrder"

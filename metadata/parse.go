@@ -183,12 +183,16 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.AddOrderRequest{}
 	case metadataCommon.Pdexv3AddOrderResponseMeta:
 		md = &metadataPdexv3.AddOrderResponse{}
+	case metadataCommon.Pdexv3UserMintNftRequestMeta:
+		md = &metadataPdexv3.UserMintNftRequest{}
+	case metadataCommon.Pdexv3UserMintNftResponseMeta:
+		md = &metadataPdexv3.UserMintNftResponse{}
+	case metadataCommon.Pdexv3MintNftResponseMeta:
+		md = &metadataPdexv3.MintNftResponse{}
 	case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
 		md = &metadataPdexv3.WithdrawOrderRequest{}
 	case metadataCommon.Pdexv3WithdrawOrderResponseMeta:
 		md = &metadataPdexv3.WithdrawOrderResponse{}
-	case metadataCommon.Pdexv3MintNft:
-		md = &metadataPdexv3.MintNft{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

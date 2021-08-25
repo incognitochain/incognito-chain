@@ -21,6 +21,7 @@ type Pdexv3Params struct {
 	TradingStakingPoolRewardPercent uint            `json:"TradingStakingPoolRewardPercent"`
 	DefaultStakingPoolsShare        uint            `json:"DefaultStakingPoolsShare"`
 	StakingPoolsShare               map[string]uint `json:"StakingPoolsShare"`
+	MintNftRequireAmount            uint64          `json:"MintNftRequireAmount"`
 }
 
 type ParamsModifyingRequest struct {
@@ -48,6 +49,7 @@ func NewPdexv3ParamsModifyingRequestStatus(
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
 	stakingPoolsShare map[string]uint,
+	mintNftRequireAmount uint64,
 ) *ParamsModifyingRequestStatus {
 	return &ParamsModifyingRequestStatus{
 		Pdexv3Params: Pdexv3Params{
@@ -58,6 +60,7 @@ func NewPdexv3ParamsModifyingRequestStatus(
 			TradingProtocolFeePercent:       tradingProtocolFeePercent,
 			TradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
 			StakingPoolsShare:               stakingPoolsShare,
+			MintNftRequireAmount:            mintNftRequireAmount,
 		},
 		Status: status,
 	}

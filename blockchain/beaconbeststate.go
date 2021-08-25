@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -534,24 +535,22 @@ func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) err
 	}
 	_, found := poolPairs[poolPairID]
 	if !found {
-		return err
+		return errors.New("Can't not find pool pair ID")
 	}
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) IsValidNftID(poolPairID, nftID string) error {
-	poolPairs := make(map[string]*pdex.PoolPairState)
-	err := json.Unmarshal(beaconBestState.PdeState().Reader().PoolPairs(), &poolPairs)
-	if err != nil {
-		return err
+func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
+	nftIDs := beaconBestState.pdeState.Reader().NftIDs()
+	if _, found := nftIDs[nftID]; !found {
+		return errors.New("Can't not find nftID")
 	}
-	poolPair, found := poolPairs[poolPairID]
-	if !found {
-		return err
-	}
-	_, found = poolPair.Shares()[nftID]
-	if !found {
-		return err
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
+	if beaconBestState.pdeState.Reader().Params().MintNftRequireAmount != amount {
+		return errors.New("Burn amount is not equal to mint nft require amount")
 	}
 	return nil
 }

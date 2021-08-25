@@ -178,6 +178,11 @@ const (
 	PDECrossPoolTradeAcceptedChainStatus           = "xPoolTradeAccepted"
 )
 
+const (
+	Pdexv3RejectUserMintNftStatus = "rejected"
+	Pdexv3AcceptUserMintNftStatus = "accept"
+)
+
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 
 const ETHChainName = "eth"
