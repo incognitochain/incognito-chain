@@ -137,6 +137,15 @@ func (s *ShardChain) GetBestViewHash() string {
 func (s *ShardChain) GetFinalViewHash() string {
 	return s.GetBestState().Hash().String()
 }
+
+func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *ShardChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
+}
+
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.GetBestState().BestBlock.Header.Timestamp
 }

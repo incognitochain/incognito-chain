@@ -64,6 +64,10 @@ type CrossShardTokenPrivacyMetaData struct {
 	Amount         uint64 // init amount
 }
 
+func (block CrossShardBlock) AddValidationField(validationData string) {
+	block.ValidationData = validationData
+}
+
 func (block CrossShardBlock) GetProducer() string {
 	return block.Header.Producer
 }
