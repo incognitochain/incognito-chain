@@ -17,7 +17,7 @@ type View interface {
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
-	CommitteeEngineVersion() uint
+	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
@@ -162,6 +162,12 @@ func (multiView *MultiView) updateViewState(newView View) {
 		}
 		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
 		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
+			multiView.finalView = prev1View
+			return
+		}
+		bestViewTimeSlot = common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProduceTime())
+		prev1TimeSlot = common.CalculateTimeSlot(prev1View.GetBlock().GetProduceTime())
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			multiView.finalView = prev1View
 		}

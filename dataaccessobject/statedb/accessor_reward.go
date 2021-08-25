@@ -2,9 +2,64 @@ package statedb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
+
+//AddShardRewardRequestMultiset
+func AddShardRewardRequestMultiset(
+	stateDB *StateDB,
+	epoch uint64,
+	shardID, subsetID byte,
+	tokenID common.Hash,
+	rewardAmount uint64,
+) error {
+	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	r, has, err := stateDB.getRewardRequestStateV3(key)
+	if err != nil {
+		return NewStatedbError(StoreRewardRequestError, err)
+	}
+	if has {
+		rewardAmount += r.Amount()
+	}
+	value := NewRewardRequestStateV3WithValue(epoch, shardID, subsetID, tokenID, rewardAmount)
+	err = stateDB.SetStateObject(RewardRequestV3ObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreRewardRequestError, err)
+	}
+	return nil
+}
+
+func GetRewardOfShardByEpochMultiset(
+	stateDB *StateDB,
+	epoch uint64,
+	shardID, subsetID byte,
+	tokenID common.Hash,
+) (uint64, error) {
+	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	amount, has, err := stateDB.getRewardRequestAmountV3(key)
+	if err != nil {
+		return 0, NewStatedbError(GetRewardRequestError, err)
+	}
+	if !has {
+		return 0, nil
+	}
+	return amount, nil
+}
+
+func GetAllTokenIDForRewardV3(stateDB *StateDB, epoch uint64) []common.Hash {
+	_, rewardRequestStates := stateDB.getAllRewardRequestStateV3(epoch)
+	m := make(map[common.Hash]struct{})
+	tokenIDs := []common.Hash{}
+	for _, rewardRequestState := range rewardRequestStates {
+		m[rewardRequestState.TokenID()] = struct{}{}
+	}
+	for k, _ := range m {
+		tokenIDs = append(tokenIDs, k)
+	}
+	return tokenIDs
+}
 
 // Reward in Beacon
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {

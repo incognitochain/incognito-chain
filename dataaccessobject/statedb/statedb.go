@@ -528,8 +528,10 @@ func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*Com
 // return params #2: substitute validator
 // return params #3: next epoch candidate
 // return params #4: current epoch candidate
-// return params #5: reward receiver map
-// return params #6: auto staking map
+// return params #5: syncing validators
+// return params #6: reward receiver map
+// return params #7: auto staking map
+// return params #8: staking tx
 func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentValidator map[int][]*CommitteeState,
 	substituteValidator map[int][]*CommitteeState,
@@ -537,6 +539,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentEpochShardCandidate []*CommitteeState,
 	nextEpochBeaconCandidate []*CommitteeState,
 	currentEpochBeaconCandidate []*CommitteeState,
+	syncingValidators map[byte][]*CommitteeState,
 	rewardReceiver map[string]key.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
@@ -550,6 +553,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	rewardReceiver = make(map[string]key.PaymentAddress)
 	autoStake = make(map[string]bool)
 	stakingTx = map[string]common.Hash{}
+	syncingValidators = make(map[byte][]*CommitteeState)
 	for _, shardID := range ids {
 		// Current Validator
 		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
@@ -576,6 +580,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
 		currentValidator[shardID] = tempCurrentValidator
+
 		// Substitute Validator
 		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
 		resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
@@ -599,8 +604,32 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
-
 		substituteValidator[shardID] = tempSubstituteValidator
+
+		// Syncing Validators
+		prefixSyncingValidators := GetCommitteePrefixWithRole(SyncingValidators, shardID)
+		resSyncingValidators := stateDB.iterateWithCommitteeState(prefixSyncingValidators)
+		tempSyncingValidators := []*CommitteeState{}
+		for _, v := range resSyncingValidators {
+			tempSyncingValidators = append(tempSyncingValidators, v)
+			cPKBytes, _ := v.committeePublicKey.RawBytes()
+			s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
+			if err != nil {
+				panic(err)
+			}
+			if !has || s == nil {
+				panic(errors.Errorf("Can not found staker info for this committee %v", v.committeePublicKey))
+			}
+			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
+			if err != nil {
+				panic(err)
+			}
+			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
+			autoStake[committeePublicKeyStr] = s.autoStaking
+			stakingTx[committeePublicKeyStr] = s.txStakingID
+			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
+		}
+		syncingValidators[byte(shardID)] = tempSyncingValidators
 	}
 	// next epoch candidate
 	prefixNextEpochCandidate := GetCommitteePrefixWithRole(NextEpochShardCandidate, -2)
@@ -691,7 +720,8 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		stakingTx[pKey] = stakerInfo.txStakingID
 		rewardReceiver[incKey] = stakerInfo.rewardReceiver
 	}
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceiver, autoStake, stakingTx
+
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx
 }
 
 func (stateDB *StateDB) IterateWithStaker(prefix []byte) []*StakerInfo {
@@ -830,10 +860,10 @@ func (stateDB *StateDB) getShardsCommitteeInfo(curValidator map[int][]*Committee
 	return curValidatorInfo
 }
 
-func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfoV2) {
-	curValidatorInfo = make(map[int][]*StakerInfoV2)
+func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfoSlashingVersion) {
+	curValidatorInfo = make(map[int][]*StakerInfoSlashingVersion)
 	for shardID, listCommittee := range curValidator {
-		tempStakerInfos := []*StakerInfoV2{}
+		tempStakerInfos := []*StakerInfoSlashingVersion{}
 		for _, c := range listCommittee {
 			cPKBytes, _ := c.committeePublicKey.RawBytes()
 			committeePublicKeyString, _ := c.committeePublicKey.ToBase58()
@@ -844,7 +874,7 @@ func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*Committ
 			if !has || s == nil {
 				panic(errors.Errorf("Can not found staker info for this committee %+v", committeePublicKeyString))
 			}
-			tempStakerInfos = append(tempStakerInfos, NewStakerInfoV2(committeePublicKeyString, s))
+			tempStakerInfos = append(tempStakerInfos, NewStakerInfoSlashingVersion(committeePublicKeyString, s))
 		}
 		curValidatorInfo[shardID] = tempStakerInfos
 	}
@@ -981,6 +1011,31 @@ func (stateDB *StateDB) getRewardRequestState(key common.Hash) (*RewardRequestSt
 	return NewRewardRequestState(), false, nil
 }
 
+func (stateDB *StateDB) getRewardRequestStateV3(key common.Hash) (*RewardRequestStateV3, bool, error) {
+	rewardRequestState, err := stateDB.getStateObject(RewardRequestV3ObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if rewardRequestState != nil {
+		return rewardRequestState.GetValue().(*RewardRequestStateV3), true, nil
+	}
+	return NewRewardRequestStateV3(), false, nil
+}
+
+func (stateDB *StateDB) getRewardRequestAmountV3(key common.Hash) (uint64, bool, error) {
+	amount := uint64(0)
+	rewardRequestObject, err := stateDB.getStateObject(RewardRequestV3ObjectType, key)
+	if err != nil {
+		return amount, false, err
+	}
+	if rewardRequestObject != nil {
+		temp := rewardRequestObject.GetValue().(*RewardRequestStateV3)
+		amount = temp.amount
+		return amount, true, nil
+	}
+	return amount, false, nil
+}
+
 func (stateDB *StateDB) getRewardRequestAmount(key common.Hash) (uint64, bool, error) {
 	amount := uint64(0)
 	rewardRequestObject, err := stateDB.getStateObject(RewardRequestObjectType, key)
@@ -1010,6 +1065,30 @@ func (stateDB *StateDB) getAllRewardRequestState(epoch uint64) ([]common.Hash, [
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		rewardRequestState := NewRewardRequestState()
+		err := json.Unmarshal(newValue, rewardRequestState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m = append(m, rewardRequestState)
+	}
+	return keys, m
+}
+
+func (stateDB *StateDB) getAllRewardRequestStateV3(epoch uint64) ([]common.Hash, []*RewardRequestStateV3) {
+	m := []*RewardRequestStateV3{}
+	keys := []common.Hash{}
+	prefix := GetRewardRequestPrefix(epoch)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		keys = append(keys, common.BytesToHash(newKey))
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardRequestState := NewRewardRequestStateV3()
 		err := json.Unmarshal(newValue, rewardRequestState)
 		if err != nil {
 			panic("wrong value type")
