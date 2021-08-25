@@ -147,7 +147,7 @@ func buildRefundContributionTxv2(
 		refundContributionValue.TxReqID().String(),
 	)
 	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromString(refundContributionValue.RefundAddress())
+	err = otaReceiver.FromString(refundContributionValue.OtaReceiver())
 	if err != nil {
 		return tx, err
 	}
@@ -320,7 +320,7 @@ func buildMatchAndReturnContributionTxv2(
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
 	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(matchAndReturnContributionValue.RefundAddress())
+	err = refundAddress.FromString(matchAndReturnContributionValue.OtaReceiver())
 	if err != nil {
 		return res, err
 	}

@@ -81,5 +81,5 @@ pdex_param:
     trading_staking_pool_reward_percent: 10
     default_staking_pool_share: 0
     staking_pool_share: 
-      - "abc": 12
+      - "0000000000000000000000000000000000000000000000000000000000000004": 10
     mint_nft_require_amount: 1000000000

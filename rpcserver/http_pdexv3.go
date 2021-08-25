@@ -317,31 +317,18 @@ func (httpServer *HttpServer) createRawTxAddLiquidityV3(
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID can not be empty"))
 	}
 
-	otaReceive := privacy.OTAReceiver{}
-	otaRefund := privacy.OTAReceiver{}
-	err = otaReceive.FromAddress(keyWallet.KeySet.PaymentAddress)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	err = otaRefund.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiveStr, err := otaReceive.String()
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaRefundStr, err := otaRefund.String()
+	otaReceiverStr, err := otaReceiver.String()
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 	metaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
-		addLiquidityRequest.PoolPairID,
-		addLiquidityRequest.PairHash,
-		otaReceiveStr, otaRefundStr,
-		tokenHash.String(), nftHash.String(),
-		tokenAmount,
-		uint(amplifier),
+		addLiquidityRequest.PoolPairID, addLiquidityRequest.PairHash, otaReceiverStr,
+		tokenHash.String(), nftHash.String(), tokenAmount, uint(amplifier),
 	)
 
 	if addLiquidityRequest.TokenID == common.PRVIDStr {

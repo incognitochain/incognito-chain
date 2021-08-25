@@ -9,15 +9,14 @@ import (
 
 //Pdexv3Contribution Real data store to statedb
 type Pdexv3Contribution struct {
-	poolPairID     string
-	receiveAddress string
-	refundAddress  string
-	tokenID        common.Hash
-	amount         uint64
-	amplifier      uint
-	txReqID        common.Hash
-	nftID          common.Hash
-	shardID        byte
+	poolPairID  string
+	otaReceiver string
+	tokenID     common.Hash
+	amount      uint64
+	amplifier   uint
+	txReqID     common.Hash
+	nftID       common.Hash
+	shardID     byte
 }
 
 func (contribution *Pdexv3Contribution) NftID() common.Hash {
@@ -40,12 +39,8 @@ func (contribution *Pdexv3Contribution) PoolPairID() string {
 	return contribution.poolPairID
 }
 
-func (contribution *Pdexv3Contribution) ReceiveAddress() string {
-	return contribution.receiveAddress
-}
-
-func (contribution *Pdexv3Contribution) RefundAddress() string {
-	return contribution.refundAddress
+func (contribution *Pdexv3Contribution) OtaReceiver() string {
+	return contribution.otaReceiver
 }
 
 func (contribution *Pdexv3Contribution) TokenID() common.Hash {
@@ -62,25 +57,24 @@ func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID     string      `json:"PoolPairID"`
-		ReceiveAddress string      `json:"ReceiveAddress"`
-		RefundAddress  string      `json:"RefundAddress"`
-		TokenID        common.Hash `json:"TokenID"`
-		Amount         uint64      `json:"Amount"`
-		Amplifier      uint        `json:"Amplifier"`
-		TxReqID        common.Hash `json:"TxReqID"`
-		NftID          common.Hash `json:"NftID"`
-		ShardID        byte        `json:"ShardID"`
+		PoolPairID    string      `json:"PoolPairID"`
+		OtaReceiver   string      `json:"OtaReceiver"`
+		RefundAddress string      `json:"RefundAddress"`
+		TokenID       common.Hash `json:"TokenID"`
+		Amount        uint64      `json:"Amount"`
+		Amplifier     uint        `json:"Amplifier"`
+		TxReqID       common.Hash `json:"TxReqID"`
+		NftID         common.Hash `json:"NftID"`
+		ShardID       byte        `json:"ShardID"`
 	}{
-		PoolPairID:     contribution.poolPairID,
-		ReceiveAddress: contribution.receiveAddress,
-		RefundAddress:  contribution.refundAddress,
-		TokenID:        contribution.tokenID,
-		Amount:         contribution.amount,
-		TxReqID:        contribution.txReqID,
-		Amplifier:      contribution.amplifier,
-		NftID:          contribution.nftID,
-		ShardID:        contribution.shardID,
+		PoolPairID:  contribution.poolPairID,
+		OtaReceiver: contribution.otaReceiver,
+		TokenID:     contribution.tokenID,
+		Amount:      contribution.amount,
+		TxReqID:     contribution.txReqID,
+		Amplifier:   contribution.amplifier,
+		NftID:       contribution.nftID,
+		ShardID:     contribution.shardID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -90,23 +84,21 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 
 func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID     string      `json:"PoolPairID"`
-		ReceiveAddress string      `json:"ReceiveAddress"`
-		RefundAddress  string      `json:"RefundAddress"`
-		TokenID        common.Hash `json:"TokenID"`
-		Amount         uint64      `json:"Amount"`
-		Amplifier      uint        `json:"Amplifier"`
-		TxReqID        common.Hash `json:"TxReqID"`
-		NftID          common.Hash `json:"NftID"`
-		ShardID        byte        `json:"ShardID"`
+		PoolPairID  string      `json:"PoolPairID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TokenID     common.Hash `json:"TokenID"`
+		Amount      uint64      `json:"Amount"`
+		Amplifier   uint        `json:"Amplifier"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		NftID       common.Hash `json:"NftID"`
+		ShardID     byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	contribution.poolPairID = temp.PoolPairID
-	contribution.receiveAddress = temp.ReceiveAddress
-	contribution.refundAddress = temp.RefundAddress
+	contribution.otaReceiver = temp.OtaReceiver
 	contribution.tokenID = temp.TokenID
 	contribution.amount = temp.Amount
 	contribution.txReqID = temp.TxReqID
@@ -118,7 +110,7 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 
 func (contribution *Pdexv3Contribution) Clone() *Pdexv3Contribution {
 	return NewPdexv3ContributionWithValue(
-		contribution.poolPairID, contribution.receiveAddress, contribution.refundAddress,
+		contribution.poolPairID, contribution.otaReceiver,
 		contribution.tokenID, contribution.txReqID, contribution.nftID,
 		contribution.amount, contribution.amplifier, contribution.shardID,
 	)
@@ -129,20 +121,19 @@ func NewPdexv3Contribution() *Pdexv3Contribution {
 }
 
 func NewPdexv3ContributionWithValue(
-	poolPairID, receiveAddress, refundAddress string,
+	poolPairID, otaReceiver string,
 	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
-		poolPairID:     poolPairID,
-		refundAddress:  refundAddress,
-		receiveAddress: receiveAddress,
-		tokenID:        tokenID,
-		amount:         amount,
-		txReqID:        txReqID,
-		nftID:          nftID,
-		amplifier:      amplifier,
-		shardID:        shardID,
+		poolPairID:  poolPairID,
+		otaReceiver: otaReceiver,
+		tokenID:     tokenID,
+		amount:      amount,
+		txReqID:     txReqID,
+		nftID:       nftID,
+		amplifier:   amplifier,
+		shardID:     shardID,
 	}
 }
 
@@ -368,9 +359,9 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 		Token0Rate     uint64      `json:"Token0Rate"`
 		Token1Rate     uint64      `json:"Token1Rate"`
 		Token0Balance  uint64      `json:"Token0Balance"`
-		Token1Balance  uint64 `json:"Token1Balance"`
-		TradeDirection byte   `json:"TradeDirection"`
-		Fee            uint64 `json:"Fee"`
+		Token1Balance  uint64      `json:"Token1Balance"`
+		TradeDirection byte        `json:"TradeDirection"`
+		Fee            uint64      `json:"Fee"`
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

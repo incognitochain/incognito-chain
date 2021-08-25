@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -41,20 +42,33 @@ type Params struct {
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
+func (params *Params) readConfig() {
+	res := &Params{
+		DefaultFeeRateBPS:               config.Param().PDexParams.Params.DefaultFeeRateBPS,
+		FeeRateBPS:                      config.Param().PDexParams.Params.FeeRateBPS,
+		PRVDiscountPercent:              config.Param().PDexParams.Params.PRVDiscountPercent,
+		LimitProtocolFeePercent:         config.Param().PDexParams.Params.LimitProtocolFeePercent,
+		LimitStakingPoolRewardPercent:   config.Param().PDexParams.Params.LimitStakingPoolRewardPercent,
+		TradingProtocolFeePercent:       config.Param().PDexParams.Params.TradingProtocolFeePercent,
+		TradingStakingPoolRewardPercent: config.Param().PDexParams.Params.TradingStakingPoolRewardPercent,
+		DefaultStakingPoolsShare:        config.Param().PDexParams.Params.DefaultStakingPoolsShare,
+		StakingPoolsShare:               config.Param().PDexParams.Params.StakingPoolsShare,
+		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
+	}
+	if res.FeeRateBPS == nil {
+		res.FeeRateBPS = make(map[string]uint)
+	}
+	if res.StakingPoolsShare == nil {
+		res.StakingPoolsShare = make(map[string]uint)
+	}
+	params = res
+}
+
 func newStateV2() *stateV2 {
+	params := Params{}
+	params.readConfig()
 	return &stateV2{
-		params: Params{
-			DefaultFeeRateBPS:               InitFeeRateBPS,
-			FeeRateBPS:                      map[string]uint{},
-			PRVDiscountPercent:              InitPRVDiscountPercent,
-			LimitProtocolFeePercent:         InitProtocolFeePercent,
-			LimitStakingPoolRewardPercent:   InitStakingPoolRewardPercent,
-			TradingProtocolFeePercent:       InitProtocolFeePercent,
-			TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
-			DefaultStakingPoolsShare:        InitStakingPoolsShare,
-			StakingPoolsShare:               map[string]uint{},
-			MintNftRequireAmount:            InitMintNftRequireAmount,
-		},
+		params:                      params,
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
@@ -610,7 +624,7 @@ func NewContributionWithMetaData(
 		nftID = *nftHash
 	}
 	return rawdbv2.NewPdexv3ContributionWithValue(
-		metaData.PoolPairID(), metaData.OtaReceive(), metaData.OtaRefund(),
+		metaData.PoolPairID(), metaData.OtaReceiver(),
 		*tokenHash, txReqID, nftID,
 		metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
