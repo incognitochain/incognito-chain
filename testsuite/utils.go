@@ -192,15 +192,20 @@ func GenerateCommitteeIndex(nCommittee int) []int {
 
 func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 	chain := sim.GetBlockchain()
-	pkMap := make(map[string]string)
+	type AccountInfo struct {
+		Name  string
+		Queue string
+	}
+	pkMap := make(map[string]*AccountInfo)
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey] = acc.Name
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, ""}
 	}
 	shardWaitingList, _ := incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsWaitingList())
 	tmp := ""
 	for _, pk := range shardWaitingList {
-		if pkMap[pk] != "" {
-			tmp += pkMap[pk] + " "
+		if pkMap[pk] != nil && pkMap[pk].Name != "" {
+			tmp += pkMap[pk].Name + " "
+			pkMap[pk].Queue = "waiting"
 		} else {
 			tmp += "@@ "
 		}
@@ -209,16 +214,30 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 
 	shardPendingList := make(map[int][]string)
 	shardCommitteeList := make(map[int][]string)
+	shardSyncingList := make(map[int][]string)
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
 		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
+		shardSyncingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetSyncingValidators()[byte(sid)])
 	}
 
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		tmp = ""
+		for _, pk := range shardSyncingList[sid] {
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = "syncing"
+			} else {
+				tmp += "@@ "
+			}
+		}
+		fmt.Printf("Synching Shard %v: %v\n", sid, tmp)
+
+		tmp = ""
 		for _, pk := range shardPendingList[sid] {
-			if pkMap[pk] != "" {
-				tmp += pkMap[pk] + " "
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = "pending"
 			} else {
 				tmp += "@@ "
 			}
@@ -229,14 +248,23 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		tmp = ""
 		for _, pk := range shardCommitteeList[sid] {
-			if pkMap[pk] != "" {
-				tmp += pkMap[pk] + " "
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = "committee"
 			} else {
 				tmp += "@@ "
 			}
 		}
 		fmt.Printf("Committee Shard %v: %v\n", sid, tmp)
 	}
+
+	tmp = ""
+	for _, acc := range accounts {
+		if pkMap[acc.SelfCommitteePubkey].Queue == "" {
+			tmp += acc.Name + " "
+		}
+	}
+	fmt.Printf("Unstake: %v\n", tmp)
 }
 
 func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
@@ -312,4 +340,21 @@ func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (types.View
 		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view2.GetBlock(), true)
 	}
 	return view2, view4
+}
+
+func (node *NodeEngine) PrintAccountNameFromCPK(committee []incognitokey.CommitteePublicKey) {
+	pkMap := make(map[string]string)
+	for _, acc := range node.GetAllAccounts() {
+		pkMap[acc.SelfCommitteePubkey] = acc.Name
+	}
+	committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+	tmp := ""
+	for _, pk := range committeeStr {
+		if pkMap[pk] != "" {
+			tmp += pkMap[pk] + " "
+		} else {
+			tmp += "@@ "
+		}
+	}
+	fmt.Println(tmp)
 }

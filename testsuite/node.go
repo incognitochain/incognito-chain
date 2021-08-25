@@ -104,9 +104,13 @@ func (sim *NodeEngine) NewAccountFromShard(sid int) account.Account {
 	lastID++
 	sim.accountGenHistory[sid] = lastID
 	acc, _ := account.GenerateAccountByShard(sid, lastID, sim.accountSeed)
-	acc.SetName(fmt.Sprintf("ACC_%v", len(sim.accounts)-len(sim.committeeAccount)+1))
+	acc.SetName(fmt.Sprintf("ACC_%v", len(sim.accounts)+1))
 	sim.accounts = append(sim.accounts, &acc)
 	return acc
+}
+
+func (sim *NodeEngine) GetAllAccounts() []*account.Account {
+	return sim.accounts
 }
 
 func (sim *NodeEngine) NewAccountFromPrivateKey(prv string) account.Account {
@@ -411,6 +415,7 @@ func (sim *NodeEngine) PrintBlockChainInfo() {
 func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	time.Sleep(time.Nanosecond)
 	var chainArray = []int{-1}
+	var validatorIndex ValidatorIndex = nil
 	for i := 0; i < config.Param().ActiveShards; i++ {
 		chainArray = append(chainArray, i)
 	}
@@ -424,6 +429,8 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		case *Execute:
 			exec := arg.(*Execute)
 			chainArray = exec.appliedChain
+		case ValidatorIndex:
+			validatorIndex = arg.(ValidatorIndex)
 		}
 	}
 
@@ -448,11 +455,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		switch version {
 		case 2:
 			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			//fmt.Println("version 2")
 		case 3:
 			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
 			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
 			if chainID > -1 {
 				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
+				//fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
 			}
 		}
 
@@ -507,9 +516,17 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		if err != nil {
 			panic(err)
 		}
-		err = sim.SignBlockWithCommittee(block, accs, GenerateCommitteeIndex(len(committees)))
-		if err != nil {
-			panic(err)
+		if validatorIndex == nil {
+			err = sim.SignBlockWithCommittee(block, accs, GenerateCommitteeIndex(len(committees)))
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			err = sim.SignBlockWithCommittee(block, accs, validatorIndex)
+			if err != nil {
+				panic(err)
+			}
+
 		}
 
 		//Insert
@@ -572,12 +589,18 @@ func (s *NodeEngine) GetUserDatabase() *leveldb.DB {
 func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committees []account.Account, committeeIndex []int) error {
 	committeePubKey := []incognitokey.CommitteePublicKey{}
 	miningKeys := []*signatureschemes.MiningKey{}
+	//if len(committees) != len(committeeIndex) {
+	//	fmt.Println(len(committees), len(committeeIndex), committeeIndex)
+	//}
 	if block.GetVersion() >= 2 {
 		votes := make(map[string]*blsbft.BFTVote)
 		for _, committee := range committees {
 			miningKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(committee.MiningKey)
 			committeePubKey = append(committeePubKey, *miningKey.GetPublicKey())
 			miningKeys = append(miningKeys, miningKey)
+			//if len(committees) != len(committeeIndex) {
+			//	fmt.Println(committee.Name)
+			//}
 		}
 		for _, committeeID := range committeeIndex {
 			vote, _ := blsbft.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))

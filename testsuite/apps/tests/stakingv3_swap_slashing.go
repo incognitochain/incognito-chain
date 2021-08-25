@@ -12,7 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 )
 
-func Test_Stakingv2() {
+func Test_Stakingv3() {
 	node := testsuite.InitChainParam(func() {
 		config.Param().ActiveShards = 2
 		config.Param().BCHeightBreakPointNewZKP = 1
@@ -21,6 +21,7 @@ func Test_Stakingv2() {
 		config.Param().ConsensusParam.EnableSlashingHeightV2 = 2
 		config.Param().ConsensusParam.StakingFlowV2Height = 5
 		config.Param().ConsensusParam.AssignRuleV3Height = 5
+		config.Param().ConsensusParam.StakingFlowV3Height = 10
 		config.Param().ConsensusParam.ConsensusV2Epoch = 1
 		config.Param().EpochParam.NumberOfBlockInEpoch = 20
 		config.Param().EpochParam.RandomTime = 10

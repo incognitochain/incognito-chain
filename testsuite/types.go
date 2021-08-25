@@ -14,6 +14,8 @@ type PreView struct {
 	View types.View
 }
 
+type ValidatorIndex []int
+
 type Execute struct {
 	sim          *NodeEngine
 	appliedChain []int

@@ -324,6 +324,10 @@ func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicK
 	return result
 }
 
+func (chain *BeaconChain) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+	return chain.GetBestView().(*BeaconBestState).GetSyncingValidators()
+}
+
 func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
