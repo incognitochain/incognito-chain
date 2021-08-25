@@ -173,31 +173,19 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
 
-		if newBeaconBlock.Header.Height < config.Param().ConsensusParam.EnableSlashingHeightV2 {
-			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
-				curView,
-				newBeaconBlock.Header.Height,
-				curView.Epoch,
-				isSplitRewardForCustodian,
-				percentCustodianRewards,
-				newBeaconBlock.Header.Version,
-			)
-			if err != nil {
-				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
-			}
-		} else {
-			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
-				curView,
-				newBeaconBlock.Header.Height-1,
-				newBeaconBlock.Header.Epoch-1,
-				isSplitRewardForCustodian,
-				percentCustodianRewards,
-				newBeaconBlock.Header.Version,
-			)
-			if err != nil {
-				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
-			}
+		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+			curView,
+			newBeaconBlock.Header.Height,
+			curView.Epoch,
+			isSplitRewardForCustodian,
+			percentCustodianRewards,
+			newBeaconBlock.Header.Version,
+		)
+
+		if err != nil {
+			return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
+
 	}
 
 	keys := []int{}
