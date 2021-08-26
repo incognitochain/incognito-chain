@@ -1340,9 +1340,7 @@ func createPdexv3AddOrderRequestTransaction(
 		PoolPairID          string
 		SellAmount          Uint64Reader
 		MinAcceptableAmount Uint64Reader
-		TradingFee          Uint64Reader
 		NftID               common.Hash
-		FeeInPRV            bool
 	}{}
 
 	// parse params & metadata
@@ -1352,7 +1350,7 @@ func createPdexv3AddOrderRequestTransaction(
 	}
 	md, _ := metadataPdexv3.NewAddOrderRequest(
 		mdReader.TokenToSell, mdReader.PoolPairID, uint64(mdReader.SellAmount),
-		uint64(mdReader.MinAcceptableAmount), uint64(mdReader.TradingFee), nil,
+		uint64(mdReader.MinAcceptableAmount), nil,
 		mdReader.NftID, metadataCommon.Pdexv3AddOrderRequestMeta,
 	)
 
@@ -1360,9 +1358,6 @@ func createPdexv3AddOrderRequestTransaction(
 	paramSelect.SetTokenID(md.TokenToSell)
 	isPRV := md.TokenToSell == common.PRVCoinID
 	tokenList := []common.Hash{md.TokenToSell}
-	if mdReader.FeeInPRV && !isPRV {
-		tokenList = append(tokenList, common.PRVCoinID)
-	}
 	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
@@ -1384,31 +1379,14 @@ func createPdexv3AddOrderRequestTransaction(
 	burnPayments := []*privacy.PaymentInfo{
 		&privacy.PaymentInfo{
 			PaymentAddress: burnAddr,
-			Amount:         md.SellAmount + md.TradingFee,
+			Amount:         md.SellAmount,
 		},
 	}
 	if isPRV {
 		paramSelect.PRV.PaymentInfos = burnPayments
 	} else {
-		if mdReader.FeeInPRV {
-			// sell amount in token
-			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{
-				&privacy.PaymentInfo{
-					PaymentAddress: burnAddr,
-					Amount:         md.TradingFee,
-				},
-			}
-			// trading fee in PRV
-			paramSelect.SetTokenReceivers([]*privacy.PaymentInfo{
-				&privacy.PaymentInfo{
-					PaymentAddress: burnAddr,
-					Amount:         md.SellAmount,
-				},
-			})
-		} else {
-			paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
-			paramSelect.SetTokenReceivers(burnPayments)
-		}
+		paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+		paramSelect.SetTokenReceivers(burnPayments)
 	}
 
 	// create transaction
@@ -1448,7 +1426,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 	}
 	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
 		mdReader.PoolPairID, mdReader.OrderID, mdReader.TokenID, uint64(mdReader.Amount),
-		privacy.OTAReceiver{}, mdReader.NftID, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
+		nil, mdReader.NftID, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
 
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 	if md.NftID == common.PRVCoinID {
@@ -1456,13 +1434,13 @@ func createPdexv3WithdrawOrderRequestTransaction(
 			fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
 	}
 	paramSelect.SetTokenID(md.NftID)
-	tokenList := []common.Hash{md.TokenID}
+	tokenList := []common.Hash{md.NftID, md.TokenID}
 	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	md.Receiver = recv[md.TokenID]
+	md.Receiver = recv
 	paramSelect.SetMetadata(md)
 
 	// get burning address
