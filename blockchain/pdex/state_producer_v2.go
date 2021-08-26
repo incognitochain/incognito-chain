@@ -226,7 +226,8 @@ func (sp *stateProducerV2) modifyParams(
 	txs []metadata.Transaction,
 	beaconHeight uint64,
 	params Params,
-) ([][]string, Params, error) {
+	stakingPoolStates map[string]*StakingPoolState,
+) ([][]string, Params, map[string]*StakingPoolState, error) {
 	instructions := [][]string{}
 
 	for _, tx := range txs {
@@ -234,7 +235,7 @@ func (sp *stateProducerV2) modifyParams(
 		txReqID := *tx.Hash()
 		metaData, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
 		if !ok {
-			return instructions, params, errors.New("Can not parse params modifying metadata")
+			return instructions, params, stakingPoolStates, errors.New("Can not parse params modifying metadata")
 		}
 
 		// check conditions
@@ -246,6 +247,7 @@ func (sp *stateProducerV2) modifyParams(
 		if isValidParams {
 			status = metadataPdexv3.RequestAcceptedChainStatus
 			params = newParams
+			stakingPoolStates = addStakingPoolState(stakingPoolStates, params.StakingPoolsShare)
 		} else {
 			status = metadataPdexv3.RequestRejectedChainStatus
 		}
@@ -259,7 +261,7 @@ func (sp *stateProducerV2) modifyParams(
 		instructions = append(instructions, inst)
 	}
 
-	return instructions, params, nil
+	return instructions, params, stakingPoolStates, nil
 }
 
 func (sp *stateProducerV2) trade(
@@ -548,6 +550,7 @@ TransactionLoop:
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
+	beaconHeight uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -586,7 +589,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			continue
 		}
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.NftID(), metaData.ShareAmount(),
+			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
 		)
 		if err != nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
@@ -624,7 +627,7 @@ func (sp *stateProducerV2) userMintNft(
 		var err error
 		if metaData.Amount() != mintNftRequireAmount {
 			inst, err = instruction.NewRejectUserMintNftWithValue(
-				metaData.OtaReceive(), metaData.Amount(), shardID, txReqID,
+				metaData.OtaReceiver(), metaData.Amount(), shardID, txReqID,
 			).StringSlice()
 			if err != nil {
 				Logger.log.Debugf("Can not reject mint nftID with txHash %s", txReqID.String())
@@ -634,7 +637,7 @@ func (sp *stateProducerV2) userMintNft(
 			nftID := genNFT(uint64(len(nftIDs)), beaconHeight)
 			nftIDs[nftID.String()] = metaData.Amount()
 			inst, err = instruction.NewAcceptUserMintNftWithValue(
-				metaData.OtaReceive(), metaData.Amount(), shardID, nftID, txReqID,
+				metaData.OtaReceiver(), metaData.Amount(), shardID, nftID, txReqID,
 			).StringSlice()
 			if err != nil {
 				Logger.log.Debugf("Can not mint nftID with txHash %s", txReqID.String())
@@ -662,10 +665,15 @@ func (sp *stateProducerV2) staking(
 			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
 			continue
 		}
-		_, found := nftIDs[metaData.NftID()]
-		if metaData.NftID() == utils.EmptyString || !found {
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
+		if err != nil {
+			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
+			continue
+		}
+		stakingPoolState, found := stakingPoolStates[metaData.TokenID()]
+		if !found {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
-				metaData.TokenID(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
 			if err != nil {
 				return res, stakingPoolStates, err
@@ -673,10 +681,10 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		stakingPoolState, found := stakingPoolStates[metaData.TokenID()]
-		if !found {
+		_, found = nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
-				metaData.TokenID(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
 			if err != nil {
 				return res, stakingPoolStates, err
@@ -687,17 +695,12 @@ func (sp *stateProducerV2) staking(
 		err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
 		if err != nil {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
-				metaData.TokenID(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
 			if err != nil {
 				return res, stakingPoolStates, err
 			}
 			res = append(res, rejectInst)
-			continue
-		}
-		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
-		if err != nil {
-			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
 			continue
 		}
 		inst, err := instruction.NewAcceptStakingWtihValue(

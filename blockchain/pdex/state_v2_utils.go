@@ -153,6 +153,22 @@ type Staker struct {
 	rewards                 map[string]uint64
 }
 
+func (staker *Staker) Liquidity() uint64 {
+	return staker.liquidity
+}
+
+func (staker *Staker) LastUpdatedBeaconHeight() uint64 {
+	return staker.lastUpdatedBeaconHeight
+}
+
+func (staker *Staker) Rewards() map[string]uint64 {
+	res := make(map[string]uint64)
+	for k, v := range staker.rewards {
+		res[k] = v
+	}
+	return res
+}
+
 func NewStaker() *Staker {
 	return &Staker{
 		rewards: make(map[string]uint64),
@@ -207,4 +223,15 @@ func (staker *Staker) getDiff(stakingPoolID, nftID string, compareStaker *Staker
 		newStateChange.stakingPool[stakingPoolID][nftID] = stakingChange
 	}
 	return newStateChange
+}
+
+func addStakingPoolState(
+	stakingPoolStates map[string]*StakingPoolState, stakingPoolIDs map[string]uint,
+) map[string]*StakingPoolState {
+	for k := range stakingPoolIDs {
+		if stakingPoolStates[k] == nil {
+			stakingPoolStates[k] = NewStakingPoolState()
+		}
+	}
+	return stakingPoolStates
 }

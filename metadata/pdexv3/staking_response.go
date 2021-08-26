@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type StakingResponse struct {
@@ -64,7 +63,7 @@ func (response *StakingResponse) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	if response.status == utils.EmptyString {
+	if response.status != common.Pdexv3RejectStakingStatus {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
 	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)

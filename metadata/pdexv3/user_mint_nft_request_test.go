@@ -39,7 +39,7 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 
 	type fields struct {
 		MetadataBase metadataCommon.MetadataBase
-		otaReceive   string
+		otaReceiver  string
 		amount       uint64
 	}
 	type args struct {
@@ -60,7 +60,7 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid ota receive",
 			fields: fields{
-				otaReceive: "123",
+				otaReceiver: "123",
 			},
 			args:    args{},
 			want:    false,
@@ -70,7 +70,7 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "amount = 0",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
+				otaReceiver: validOTAReceiver0,
 			},
 			args:    args{},
 			want:    false,
@@ -80,8 +80,8 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Not tx burnt",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     1,
+				otaReceiver: validOTAReceiver0,
+				amount:      1,
 			},
 			args: args{
 				tx: notBurnTx,
@@ -93,8 +93,8 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Burnt coin is not prv",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     1,
+				otaReceiver: validOTAReceiver0,
+				amount:      1,
 			},
 			args: args{
 				tx: notMactchTokenIDTx,
@@ -106,8 +106,8 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Burn coin is not similar to metadata amount",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     1,
+				otaReceiver: validOTAReceiver0,
+				amount:      1,
 			},
 			args: args{
 				tx: notMactchAmountTx,
@@ -119,8 +119,8 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Tx type is not normal type",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     1,
+				otaReceiver: validOTAReceiver0,
+				amount:      1,
 			},
 			args: args{
 				tx: customTx,
@@ -132,8 +132,8 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid input",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     1,
+				otaReceiver: validOTAReceiver0,
+				amount:      1,
 			},
 			args: args{
 				tx: validTx,
@@ -147,7 +147,7 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := &UserMintNftRequest{
 				MetadataBase: tt.fields.MetadataBase,
-				otaReceive:   tt.fields.otaReceive,
+				otaReceiver:  tt.fields.otaReceiver,
 				amount:       tt.fields.amount,
 			}
 			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
@@ -168,7 +168,7 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 func TestUserMintNftRequest_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
 		MetadataBase metadataCommon.MetadataBase
-		otaReceive   string
+		otaReceiver  string
 		amount       uint64
 	}
 	tests := []struct {
@@ -199,7 +199,7 @@ func TestUserMintNftRequest_ValidateMetadataByItself(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := &UserMintNftRequest{
 				MetadataBase: tt.fields.MetadataBase,
-				otaReceive:   tt.fields.otaReceive,
+				otaReceiver:  tt.fields.otaReceiver,
 				amount:       tt.fields.amount,
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {

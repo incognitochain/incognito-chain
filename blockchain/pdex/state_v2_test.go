@@ -34,7 +34,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	// first contribution tx
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token0ID.String(), nftID, 100, 20000,
 	)
 	assert.Nil(t, err)
@@ -47,7 +47,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	contributionTx.On("Hash").Return(firstTxHash)
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 		),
 		"pair_hash")
@@ -68,7 +68,23 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv = tx_generic.WithShardID(valEnv, 1)
 	userMintNftTx.On("GetValidationEnv").Return(valEnv)
 	userMintNftTx.On("Hash").Return(txReqID)
+	//
 
+	// staking
+	stakingMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, nftID1, validOTAReceiver0, 100,
+	)
+	stakingTx := &metadataMocks.Transaction{}
+	stakingTx.On("GetMetadata").Return(stakingMetadata)
+	stakingTx.On("GetMetadataType").Return(metadataCommon.Pdexv3StakingRequestMeta)
+	valEnv2 := tx_generic.DefaultValEnv()
+	valEnv2 = tx_generic.WithShardID(valEnv2, 1)
+	stakingTx.On("GetValidationEnv").Return(valEnv2)
+	stakingTx.On("Hash").Return(txReqID)
+	stakingInst, err := instruction.NewAcceptStakingWtihValue(
+		*nftHash1, common.PRVCoinID, *txReqID, 1, 100,
+	).StringSlice()
+	assert.Nil(t, err)
 	//
 
 	type fields struct {
@@ -77,7 +93,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
 		params                      Params
-		stakingPoolsState           map[string]*StakingPoolState
+		stakingPoolStates           map[string]*StakingPoolState
 		nftIDs                      map[string]uint64
 		orders                      map[int64][]Order
 		producer                    stateProducerV2
@@ -108,7 +124,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			fieldsAfterProcess: fields{
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						"", validOTAReceiver0, validOTAReceiver1,
+						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 					),
 				},
@@ -170,6 +186,55 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			want:    [][]string{acceptInst},
 			wantErr: false,
 		},
+		{
+			name: "Accept staking tx",
+			fields: fields{
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				params: Params{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 10,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &stateEnvironment{
+					beaconHeight: 10,
+					listTxs: map[byte][]metadataCommon.Transaction{
+						1: []metadataCommon.Transaction{stakingTx},
+					},
+				},
+			},
+			want:    [][]string{stakingInst},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -179,7 +244,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
-				stakingPoolsState:           tt.fields.stakingPoolsState,
+				stakingPoolStates:           tt.fields.stakingPoolStates,
 				nftIDs:                      tt.fields.nftIDs,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
@@ -199,6 +264,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			}
 			if !reflect.DeepEqual(s.nftIDs, tt.fieldsAfterProcess.nftIDs) {
 				t.Errorf("nftIDs = %v, want %v", s.nftIDs, tt.fieldsAfterProcess.nftIDs)
+				return
+			}
+			if !reflect.DeepEqual(s.stakingPoolStates, tt.fieldsAfterProcess.stakingPoolStates) {
+				t.Errorf("stakingPoolStates = %v, want %v", s.stakingPoolStates, tt.fieldsAfterProcess.stakingPoolStates)
 				return
 			}
 		})
@@ -223,7 +292,7 @@ func Test_stateV2_Process(t *testing.T) {
 	// first contribution tx
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token0ID.String(), utils.EmptyString, 100, 20000,
 	)
 	assert.Nil(t, err)
@@ -236,7 +305,7 @@ func Test_stateV2_Process(t *testing.T) {
 	contributionTx.On("Hash").Return(firstTxHash)
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 		),
 		"pair_hash")
@@ -257,7 +326,23 @@ func Test_stateV2_Process(t *testing.T) {
 	valEnv = tx_generic.WithShardID(valEnv, 1)
 	userMintNftTx.On("GetValidationEnv").Return(valEnv)
 	userMintNftTx.On("Hash").Return(txReqID)
+	//
 
+	// staking
+	stakingMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, nftID1, validOTAReceiver0, 100,
+	)
+	stakingTx := &metadataMocks.Transaction{}
+	stakingTx.On("GetMetadata").Return(stakingMetadata)
+	stakingTx.On("GetMetadataType").Return(metadataCommon.Pdexv3StakingRequestMeta)
+	valEnv2 := tx_generic.DefaultValEnv()
+	valEnv2 = tx_generic.WithShardID(valEnv2, 1)
+	stakingTx.On("GetValidationEnv").Return(valEnv2)
+	stakingTx.On("Hash").Return(txReqID)
+	stakingInst, err := instruction.NewAcceptStakingWtihValue(
+		*nftHash1, common.PRVCoinID, *txReqID, 1, 100,
+	).StringSlice()
+	assert.Nil(t, err)
 	//
 
 	type fields struct {
@@ -266,7 +351,7 @@ func Test_stateV2_Process(t *testing.T) {
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
 		params                      Params
-		stakingPoolsState           map[string]*StakingPoolState
+		stakingPoolStates           map[string]*StakingPoolState
 		orders                      map[int64][]Order
 		nftIDs                      map[string]uint64
 		producer                    stateProducerV2
@@ -309,7 +394,7 @@ func Test_stateV2_Process(t *testing.T) {
 				stateBase: stateBase{},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						"", validOTAReceiver0, validOTAReceiver1,
+						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, common.Hash{}, 100, 20000, 1,
 					),
 				},
@@ -351,6 +436,87 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "User mint Nft",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs:                      map[string]uint64{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+			},
+			args: args{
+				env: &stateEnvironment{
+					beaconHeight:       10,
+					stateDB:            sDB,
+					beaconInstructions: [][]string{acceptInst},
+				},
+			},
+			fieldsAfterProcess: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Accept staking tx",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+			},
+			args: args{
+				env: &stateEnvironment{
+					beaconHeight:       10,
+					stateDB:            sDB,
+					beaconInstructions: [][]string{stakingInst},
+				},
+			},
+			fieldsAfterProcess: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 10,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -360,7 +526,7 @@ func Test_stateV2_Process(t *testing.T) {
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
-				stakingPoolsState:           tt.fields.stakingPoolsState,
+				stakingPoolStates:           tt.fields.stakingPoolStates,
 				nftIDs:                      tt.fields.nftIDs,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
@@ -388,7 +554,7 @@ func Test_stateV2_Clone(t *testing.T) {
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
 		params                      Params
-		stakingPoolsState           map[string]*StakingPoolState
+		stakingPoolStates           map[string]*StakingPoolState
 		orders                      map[int64][]Order
 		producer                    stateProducerV2
 		processor                   stateProcessorV2
@@ -406,7 +572,7 @@ func Test_stateV2_Clone(t *testing.T) {
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
-				stakingPoolsState:           tt.fields.stakingPoolsState,
+				stakingPoolStates:           tt.fields.stakingPoolStates,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,
 			}
@@ -432,7 +598,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
 		params                      Params
-		stakingPoolsState           map[string]*StakingPoolState
+		stakingPoolStates           map[string]*StakingPoolState
 		nftIDs                      map[string]uint64
 		producer                    stateProducerV2
 		processor                   stateProcessorV2
@@ -500,7 +666,7 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
-				stakingPoolsState:           tt.fields.stakingPoolsState,
+				stakingPoolStates:           tt.fields.stakingPoolStates,
 				nftIDs:                      tt.fields.nftIDs,
 				producer:                    tt.fields.producer,
 				processor:                   tt.fields.processor,

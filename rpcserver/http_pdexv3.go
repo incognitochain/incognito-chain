@@ -72,6 +72,7 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 		PoolPairs:            poolPairs,
 		WaitingContributions: waitingContributions,
 		NftIDs:               pDexv3State.Reader().NftIDs(),
+		StakingPools:         pDexv3State.Reader().StakingPools(),
 	}
 	return result, nil
 }
@@ -469,7 +470,6 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
 	tokenAmount, err := common.AssertAndConvertNumber(withdrawLiquidityRequest.TokenAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -482,31 +482,32 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
-	otaReceiveNft := privacy.OTAReceiver{}
-	err = otaReceiveNft.FromAddress(keyWallet.KeySet.PaymentAddress)
+	otaReceivers := make(map[string]string)
+	otaReceiverNft := privacy.OTAReceiver{}
+	err = otaReceiverNft.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveNftStr, err := otaReceiveNft.String()
+	otaReceiverNftStr, err := otaReceiverNft.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveToken0 := privacy.OTAReceiver{}
-	err = otaReceiveToken0.FromAddress(keyWallet.KeySet.PaymentAddress)
+	otaReceivers[withdrawLiquidityRequest.TokenID] = otaReceiverNftStr
+	otaReceiverToken0 := privacy.OTAReceiver{}
+	err = otaReceiverToken0.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveToken0Str, err := otaReceiveToken0.String()
+	otaReceiverToken0Str, err := otaReceiverToken0.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveToken1 := privacy.OTAReceiver{}
-	err = otaReceiveToken1.FromAddress(keyWallet.KeySet.PaymentAddress)
+	otaReceiverToken1 := privacy.OTAReceiver{}
+	err = otaReceiverToken1.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveToken1Str, err := otaReceiveToken1.String()
+	otaReceiverToken1Str, err := otaReceiverToken1.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
@@ -525,16 +526,16 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
 	poolPairState := poolPair.State()
+	otaReceivers[poolPairState.Token0ID().String()] = otaReceiverToken0Str
+	otaReceivers[poolPairState.Token1ID().String()] = otaReceiverToken1Str
 
 	shareAmount := pdex.CalculateShareAmount(
 		poolPairState.Token0RealAmount(), poolPairState.Token1RealAmount(),
 		token0Amount, token1Amount, poolPairState.ShareAmount(),
 	)
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		withdrawLiquidityRequest.PoolPairID,
-		withdrawLiquidityRequest.TokenID,
-		otaReceiveNftStr, otaReceiveToken0Str, otaReceiveToken1Str,
-		shareAmount,
+		withdrawLiquidityRequest.PoolPairID, withdrawLiquidityRequest.TokenID,
+		otaReceivers, shareAmount,
 	)
 	receiverAddresses, ok := arrayParams[1].(map[string]interface{})
 	if !ok {
@@ -1150,7 +1151,6 @@ func (httpServer *HttpServer) createPdexv3StakingRawTx(
 	if int(privacyDetect) <= 0 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
 	}
-
 	if len(arrayParams) != 5 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
@@ -1168,7 +1168,6 @@ func (httpServer *HttpServer) createPdexv3StakingRawTx(
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
@@ -1176,7 +1175,6 @@ func (httpServer *HttpServer) createPdexv3StakingRawTx(
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
 	}
-
 	tokenAmount, err := common.AssertAndConvertNumber(stakingRequest.TokenAmount)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1195,29 +1193,21 @@ func (httpServer *HttpServer) createPdexv3StakingRawTx(
 	if !nftHash.IsZeroValue() {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID can not be empty"))
 	}
-	otaReceivers := make(map[string]string)
-	otaReceiverStakingToken := privacy.OTAReceiver{}
-	err = otaReceiverStakingToken.FromAddress(keyWallet.KeySet.PaymentAddress)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiverStakingTokenStr, err := otaReceiverStakingToken.String()
+	otaReceiverStr, err := otaReceiver.String()
 	if err != nil {
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceivers[stakingRequest.TokenID] = otaReceiverStakingTokenStr
-
 	metaData := metadataPdexv3.NewStakingRequestWithValue(
-		tokenHash.String(),
-		nftHash.String(),
-		tokenAmount,
-		otaReceivers,
+		tokenHash.String(), nftHash.String(), otaReceiverStr, tokenAmount,
 	)
-
 	if stakingRequest.TokenID == common.PRVIDStr {
 		isPRV = true
 	}
-
 	var byteArrays []byte
 	var txHashStr string
 	if isPRV {

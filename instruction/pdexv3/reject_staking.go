@@ -22,7 +22,13 @@ func NewRejectStaking() *RejectStaking { return &RejectStaking{} }
 func NewRejectStakingWithValue(
 	otaReceiver string, tokenID, txReqID common.Hash, shardID byte, amount uint64,
 ) *RejectStaking {
-	return &RejectStaking{}
+	return &RejectStaking{
+		otaReceiver: otaReceiver,
+		tokenID:     tokenID,
+		txReqID:     txReqID,
+		shardID:     shardID,
+		amount:      amount,
+	}
 }
 
 func (r *RejectStaking) FromStringSlice(source []string) error {

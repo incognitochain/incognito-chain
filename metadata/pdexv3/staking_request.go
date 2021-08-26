@@ -15,10 +15,10 @@ import (
 
 type StakingRequest struct {
 	metadataCommon.MetadataBase
-	tokenID      string
-	otaReceivers map[string]string
-	nftID        string
-	tokenAmount  uint64
+	tokenID     string
+	otaReceiver string
+	nftID       string
+	tokenAmount uint64
 }
 
 func NewStakingRequest() *StakingRequest {
@@ -30,16 +30,16 @@ func NewStakingRequest() *StakingRequest {
 }
 
 func NewStakingRequestWithValue(
-	tokenID, nftID string, tokenAmount uint64, otaReceivers map[string]string,
+	tokenID, nftID, otaReceiver string, tokenAmount uint64,
 ) *StakingRequest {
 	return &StakingRequest{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3StakingRequestMeta,
 		},
-		tokenID:      tokenID,
-		nftID:        nftID,
-		tokenAmount:  tokenAmount,
-		otaReceivers: otaReceivers,
+		tokenID:     tokenID,
+		nftID:       nftID,
+		tokenAmount: tokenAmount,
+		otaReceiver: otaReceiver,
 	}
 }
 
@@ -55,11 +55,9 @@ func (request *StakingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	for k := range request.otaReceivers {
-		err := beaconViewRetriever.IsValidPdexv3StakingPool(k)
-		if err != nil {
-			return false, err
-		}
+	err = beaconViewRetriever.IsValidPdexv3StakingPool(request.otaReceiver)
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
@@ -85,17 +83,14 @@ func (request *StakingRequest) ValidateSanityData(
 	if nftID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
 	}
-	for _, v := range request.otaReceivers {
-		otaReceive := privacy.OTAReceiver{}
-		err = otaReceive.FromString(v)
-		if err != nil {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
-		if !otaReceive.IsValid() {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
-		}
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromString(request.otaReceiver)
+	if err != nil {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-
+	if !otaReceiver.IsValid() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
+	}
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
@@ -128,8 +123,7 @@ func (request *StakingRequest) ValidateMetadataByItself() bool {
 
 func (request *StakingRequest) Hash() *common.Hash {
 	record := request.MetadataBase.Hash().String()
-	data, _ := json.Marshal(request.otaReceivers)
-	record += string(data)
+	record += request.otaReceiver
 	record += request.tokenID
 	record += request.nftID
 	record += strconv.FormatUint(request.tokenAmount, 10)
@@ -144,13 +138,13 @@ func (request *StakingRequest) CalculateSize() uint64 {
 
 func (request *StakingRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		OtaReceivers map[string]string `json:"OtaReceivers"`
-		TokenID      string            `json:"TokenID"`
-		NftID        string            `json:"NftID"`
-		TokenAmount  uint64            `json:"TokenAmount"`
+		OtaReceiver string `json:"OtaReceiver"`
+		TokenID     string `json:"TokenID"`
+		NftID       string `json:"NftID"`
+		TokenAmount uint64 `json:"TokenAmount"`
 		metadataCommon.MetadataBase
 	}{
-		OtaReceivers: request.otaReceivers,
+		OtaReceiver:  request.otaReceiver,
 		TokenID:      request.tokenID,
 		NftID:        request.nftID,
 		TokenAmount:  request.tokenAmount,
@@ -164,17 +158,17 @@ func (request *StakingRequest) MarshalJSON() ([]byte, error) {
 
 func (request *StakingRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		OtaReceivers map[string]string `json:"OtaReceivers"`
-		TokenID      string            `json:"TokenID"`
-		NftID        string            `json:"NftID"`
-		TokenAmount  uint64            `json:"TokenAmount"`
+		OtaReceiver string `json:"OtaReceiver"`
+		TokenID     string `json:"TokenID"`
+		NftID       string `json:"NftID"`
+		TokenAmount uint64 `json:"TokenAmount"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	request.otaReceivers = temp.OtaReceivers
+	request.otaReceiver = temp.OtaReceiver
 	request.tokenID = temp.TokenID
 	request.nftID = temp.NftID
 	request.tokenAmount = temp.TokenAmount
@@ -182,8 +176,8 @@ func (request *StakingRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (request *StakingRequest) OtaReceivers() map[string]string {
-	return request.otaReceivers
+func (request *StakingRequest) OtaReceiver() string {
+	return request.otaReceiver
 }
 
 func (request *StakingRequest) TokenID() string {
@@ -196,4 +190,18 @@ func (request *StakingRequest) TokenAmount() uint64 {
 
 func (request *StakingRequest) NftID() string {
 	return request.nftID
+}
+
+func (request *StakingRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+	currentTokenID := common.ConfidentialAssetID
+	if request.TokenID() == common.PRVIDStr {
+		currentTokenID = common.PRVCoinID
+	}
+	otaReceiver := privacy.OTAReceiver{}
+	otaReceiver.FromString(request.otaReceiver)
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
+	})
+	return result
 }

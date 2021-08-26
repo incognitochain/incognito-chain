@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 )
@@ -26,11 +27,51 @@ func NewStakingPoolStateWithValue(
 	}
 }
 
+func (stakingPoolState *StakingPoolState) Liquidity() uint64 {
+	return stakingPoolState.liquidity
+}
+
+func (stakingPoolState *StakingPoolState) Stakers() map[string]*Staker {
+	res := make(map[string]*Staker)
+	for k, v := range stakingPoolState.stakers {
+		res[k] = v.Clone()
+	}
+	return res
+}
+
+func (stakingPoolState *StakingPoolState) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Liquidity uint64             `json:"Liquidity"`
+		Stakers   map[string]*Staker `json:"Stakers"`
+	}{
+		Liquidity: stakingPoolState.liquidity,
+		Stakers:   stakingPoolState.stakers,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (stakingPoolState *StakingPoolState) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Liquidity uint64             `json:"Liquidity"`
+		Stakers   map[string]*Staker `json:"Stakers"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	stakingPoolState.liquidity = temp.Liquidity
+	stakingPoolState.stakers = temp.Stakers
+	return nil
+}
+
 func (s *StakingPoolState) Clone() *StakingPoolState {
 	res := NewStakingPoolState()
 	res.liquidity = s.liquidity
 	for k, v := range s.stakers {
-		res.stakers[k] = v
+		res.stakers[k] = v.Clone()
 	}
 	return res
 }
@@ -68,5 +109,6 @@ func (s *StakingPoolState) addLiquidity(nftID string, liquidity, beaconHeight ui
 	if tempLiquidity < s.liquidity {
 		return errors.New("Staking pool liquidity is out of range")
 	}
+	s.liquidity = tempLiquidity
 	return nil
 }

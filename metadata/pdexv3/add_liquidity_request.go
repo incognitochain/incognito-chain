@@ -232,3 +232,17 @@ func (request *AddLiquidityRequest) Amplifier() uint {
 func (request *AddLiquidityRequest) NftID() string {
 	return request.nftID
 }
+
+func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+	currentTokenID := common.ConfidentialAssetID
+	if request.TokenID() == common.PRVIDStr {
+		currentTokenID = common.PRVCoinID
+	}
+	otaReceiver := privacy.OTAReceiver{}
+	otaReceiver.FromString(request.otaReceiver)
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
+	})
+	return result
+}

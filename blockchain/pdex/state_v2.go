@@ -248,11 +248,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				continue
 			}
 		case metadataCommon.Pdexv3ModifyParamsMeta:
-			s.params, err = s.processor.modifyParams(
+			s.params, s.stakingPoolStates, err = s.processor.modifyParams(
 				env.StateDB(),
 				env.BeaconHeight(),
 				inst,
 				s.params,
+				s.stakingPoolStates,
 			)
 		case metadataCommon.Pdexv3AddLiquidityRequestMeta:
 			s.poolPairs,
@@ -265,7 +266,9 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.waitingContributions, s.deletedWaitingContributions,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
-			s.poolPairs, err = s.processor.withdrawLiquidity(env.StateDB(), inst, s.poolPairs)
+			s.poolPairs, err = s.processor.withdrawLiquidity(
+				env.StateDB(), inst, s.poolPairs, env.BeaconHeight(),
+			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
 				s.poolPairs,
@@ -279,7 +282,9 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.poolPairs,
 			)
 		case metadataCommon.Pdexv3StakingRequestMeta:
-			s.stakingPoolStates, _, err = s.processor.staking(env.StateDB(), inst, s.nftIDs, s.stakingPoolStates)
+			s.stakingPoolStates, _, err = s.processor.staking(
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -333,14 +338,17 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	mintNftInstructions := [][]string{}
-	mintNftInstructions, s.nftIDs, err = s.producer.userMintNft(mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
+	mintNftInstructions, s.nftIDs, err = s.producer.userMintNft(
+		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
 	instructions = append(instructions, mintNftInstructions...)
 
 	withdrawLiquidityInstructions := [][]string{}
-	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(withdrawLiquidityTxs, s.poolPairs, s.nftIDs)
+	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
+		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, env.BeaconHeight(),
+	)
 	if err != nil {
 		return instructions, err
 	}
@@ -358,18 +366,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, addLiquidityInstructions...)
-
-	// handle modify params
-	var modifyParamsInstructions [][]string
-	modifyParamsInstructions, s.params, err = s.producer.modifyParams(
-		modifyParamsTxs,
-		env.BeaconHeight(),
-		s.params,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, modifyParamsInstructions...)
 
 	var tradeInstructions [][]string
 	tradeInstructions, s.poolPairs, err = s.producer.trade(
@@ -412,6 +408,19 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, stakingInstructions...)
+
+	// handle modify params
+	var modifyParamsInstructions [][]string
+	modifyParamsInstructions, s.params, s.stakingPoolStates, err = s.producer.modifyParams(
+		modifyParamsTxs,
+		env.BeaconHeight(),
+		s.params,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, modifyParamsInstructions...)
 
 	return instructions, nil
 }
@@ -655,6 +664,14 @@ func (s *stateV2) NftIDs() map[string]uint64 {
 	res := make(map[string]uint64)
 	for k, v := range s.nftIDs {
 		res[k] = v
+	}
+	return res
+}
+
+func (s *stateV2) StakingPools() map[string]*StakingPoolState {
+	res := make(map[string]*StakingPoolState)
+	for k, v := range s.stakingPoolStates {
+		res[k] = v.Clone()
 	}
 	return res
 }
