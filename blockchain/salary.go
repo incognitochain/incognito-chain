@@ -183,7 +183,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.Reward, cInfos[int(shardToProcess)])
+					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
 					if err != nil {
 						return err
 					}
@@ -197,7 +197,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardRewardInfo.Reward, nonSlashingCInfosV2)
+					err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardRewardInfo.ShardReward, nonSlashingCInfosV2)
 					if err != nil {
 						return err
 					}

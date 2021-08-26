@@ -11,8 +11,8 @@ import (
 )
 
 type ShardBlockRewardInfo struct {
-	Reward map[common.Hash]uint64
-	Epoch  uint64
+	ShardReward map[common.Hash]uint64
+	Epoch       uint64
 }
 
 type AcceptBlockRewardV1 struct {
@@ -24,8 +24,8 @@ type AcceptBlockRewardV1 struct {
 func NewShardReceiveRewardV1WithValue(reward map[common.Hash]uint64, epoch uint64, shardID byte) ([][]string, error) {
 	resIns := [][]string{}
 	shardBlockRewardInfo := ShardBlockRewardInfo{
-		Epoch:  epoch,
-		Reward: reward,
+		Epoch:       epoch,
+		ShardReward: reward,
 	}
 
 	contentStr, err := json.Marshal(shardBlockRewardInfo)
