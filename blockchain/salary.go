@@ -179,25 +179,25 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				if confirmBeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
-					cInfos, err := blockchain.GetAllCommitteeStakeInfo(shardRewardInfo.Epoch())
+					cInfos, err := blockchain.GetAllCommitteeStakeInfo(shardRewardInfo.Epoch)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.Reward(), cInfos[int(shardToProcess)])
+					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.Reward, cInfos[int(shardToProcess)])
 					if err != nil {
 						return err
 					}
 				} else {
-					cInfosV2, err := blockchain.GetAllCommitteeStakeInfoSlashingVersion(shardRewardInfo.Epoch())
+					cInfosV2, err := blockchain.GetAllCommitteeStakeInfoSlashingVersion(shardRewardInfo.Epoch)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
 					beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-					nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch(), byte(shardToProcess))
+					nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(cInfosV2[int(shardToProcess)], shardRewardInfo.Epoch, byte(shardToProcess))
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardRewardInfo.Reward(), nonSlashingCInfosV2)
+					err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardRewardInfo.Reward, nonSlashingCInfosV2)
 					if err != nil {
 						return err
 					}
