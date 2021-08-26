@@ -298,7 +298,7 @@ func calculateRewardMultiset(
 	map[common.Hash]uint64,
 	map[common.Hash]uint64, error,
 ) {
-	allCoinID := statedb.GetAllTokenIDForRewardV3(curView.rewardStateDB, epoch)
+	allCoinID := statedb.GetAllTokenIDForRewardMultiset(curView.rewardStateDB, epoch)
 	blocksPerYear := getNoBlkPerYear(maxBeaconBlockCreation)
 	percentForIncognitoDAO := getPercentForIncognitoDAO(beaconHeight, blocksPerYear)
 	totalRewardForShardSubset := make([][]map[common.Hash]uint64, curView.ActiveShards)
