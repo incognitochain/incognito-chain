@@ -269,7 +269,7 @@ func (sp *stateProducerV2) trade(
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	var invalidTxs []metadataCommon.Transaction
-	var fees, sellAmounts []uint64
+	var fees, sellAmounts map[string]uint64
 	var feeInPRVMap map[string]bool
 	var err error
 	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
@@ -278,10 +278,10 @@ func (sp *stateProducerV2) trade(
 	}
 	sort.SliceStable(txs, func(i, j int) bool {
 		// compare the fee / sellAmount ratio by comparing products
-		fi := big.NewInt(0).SetUint64(fees[i])
-		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
-		fj := big.NewInt(0).SetUint64(fees[j])
-		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
+		fi := big.NewInt(0).SetUint64(fees[txs[i].Hash().String()])
+		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[txs[j].Hash().String()]))
+		fj := big.NewInt(0).SetUint64(fees[txs[j].Hash().String()])
+		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[txs[i].Hash().String()]))
 
 		// sort descending
 		return fi.Cmp(fj) == 1
