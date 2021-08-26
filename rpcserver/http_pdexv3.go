@@ -181,6 +181,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		stakingPoolsShare[key] = uint(value)
 	}
 
+	mintNftRequireAmount, err := common.AssertAndConvertStrToNumber(newParams["MintNftRequireAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MintNftRequireAmount is invalid"))
+	}
+
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
@@ -193,6 +198,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			TradingStakingPoolRewardPercent: uint(tradingStakingPoolRewardPercent),
 			PDEXRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 			StakingPoolsShare:               stakingPoolsShare,
+			MintNftRequireAmount:            mintNftRequireAmount,
 		},
 	)
 	if err != nil {
