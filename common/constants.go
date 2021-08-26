@@ -180,6 +180,11 @@ const (
 	PDECrossPoolTradeAcceptedChainStatus           = "xPoolTradeAccepted"
 )
 
+const (
+	Pdexv3RejectUserMintNftStatus = "rejected"
+	Pdexv3AcceptUserMintNftStatus = "accept"
+)
+
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
 const PDEXDenominatingDecimal = 9

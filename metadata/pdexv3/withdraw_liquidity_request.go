@@ -60,7 +60,11 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(request.poolPairID, request.nftID)
+	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	if err != nil {
+		return false, err
+	}
+	err = beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
 	if err != nil {
 		return false, err
 	}
@@ -125,10 +129,9 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	}
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
-	} else {
-		if nftID.String() == common.PRVCoinID.String() {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Invalid NftID"))
-		}
+	}
+	if nftID.String() == common.PRVCoinID.String() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Invalid NftID"))
 	}
 
 	if len(request.feeReceivers) > MaxPoolPairWithdrawalReceiver {

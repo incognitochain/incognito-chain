@@ -257,6 +257,7 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				otaRefund:   validOTAReceiver1,
 				amplifier:   10000,
 				tokenAmount: 200,
+				nftID:       tokenHash.String(),
 			},
 			args: args{
 				tx: validTx,

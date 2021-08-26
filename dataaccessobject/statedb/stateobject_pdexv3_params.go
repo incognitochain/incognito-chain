@@ -18,6 +18,7 @@ type Pdexv3Params struct {
 	tradingStakingPoolRewardPercent uint
 	pdexRewardPoolPairsShare        map[string]uint
 	stakingPoolsShare               map[string]uint
+	mintNftRequireAmount            uint64
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -47,6 +48,9 @@ func (pp Pdexv3Params) PDEXRewardPoolPairsShare() map[string]uint {
 func (pp Pdexv3Params) StakingPoolsShare() map[string]uint {
 	return pp.stakingPoolsShare
 }
+func (pp Pdexv3Params) MintNftRequireAmount() uint64 {
+	return pp.mintNftRequireAmount
+}
 
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
@@ -59,6 +63,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		TradingStakingPoolRewardPercent uint
 		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
+		MintNftRequireAmount            uint64
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
@@ -69,6 +74,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
 		PDEXRewardPoolPairsShare:        pp.pdexRewardPoolPairsShare,
 		StakingPoolsShare:               pp.stakingPoolsShare,
+		MintNftRequireAmount:            pp.mintNftRequireAmount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -87,6 +93,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		TradingStakingPoolRewardPercent uint
 		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
+		MintNftRequireAmount            uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -101,6 +108,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.tradingStakingPoolRewardPercent = temp.TradingStakingPoolRewardPercent
 	pp.pdexRewardPoolPairsShare = temp.PDEXRewardPoolPairsShare
 	pp.stakingPoolsShare = temp.StakingPoolsShare
+	pp.mintNftRequireAmount = temp.MintNftRequireAmount
 	return nil
 }
 
@@ -118,6 +126,7 @@ func NewPdexv3ParamsWithValue(
 	tradingStakingPoolRewardPercent uint,
 	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
+	mintNftRequireAmount uint64,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
@@ -129,6 +138,7 @@ func NewPdexv3ParamsWithValue(
 		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
 		pdexRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 		stakingPoolsShare:               stakingPoolsShare,
+		mintNftRequireAmount:            mintNftRequireAmount,
 	}
 }
 

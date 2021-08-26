@@ -176,39 +176,33 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	nftID common.Hash, nftIDs map[string]bool,
+	nftID common.Hash,
 	amount, beaconHeight uint64,
 	txHash string,
-) (common.Hash, map[string]bool, error) {
-	newNftID := genNFT(nftID, nftIDs, beaconHeight)
-	nftIDStr := chooseNftStr(nftID, newNftID)
-	nftIDs[nftIDStr] = true
+) error {
 	var shareAmount uint64
+	var tradingFee map[common.Hash]uint64
+	var err error
 
-	tradingFee := map[common.Hash]uint64{}
-
-	if p.shares[nftIDStr] == nil {
+	if p.shares[nftID.String()] == nil {
 		shareAmount = amount
+		tradingFee = map[common.Hash]uint64{}
 	} else {
-		shareAmount = p.shares[nftIDStr].amount + amount
-		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftIDStr)
+		shareAmount = p.shares[nftID.String()].amount + amount
+		tradingFee, err = p.RecomputeLPFee(nftID)
 		if err != nil {
-			return newNftID, nftIDs, fmt.Errorf("NftID %v is invalid\n", nftIDStr)
-		}
-		tradingFee, err = p.RecomputeLPFee(*nftIDBytes)
-		if err != nil {
-			return newNftID, nftIDs, fmt.Errorf("Error when tracking LP reward: %v\n", err)
+			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
 	}
 
 	share := NewShareWithValue(shareAmount, tradingFee, p.state.LPFeesPerShare())
-	p.shares[nftIDStr] = share
+	p.shares[nftID.String()] = share
 	newShareAmount := p.state.ShareAmount() + amount
 	if newShareAmount < p.state.ShareAmount() {
-		return newNftID, nftIDs, fmt.Errorf("Share amount is out of range")
+		return fmt.Errorf("Share amount is out of range")
 	}
 	p.state.SetShareAmount(newShareAmount)
-	return newNftID, nftIDs, nil
+	return nil
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -241,8 +235,8 @@ func (p *PoolPairState) getDiff(
 				newStateChange = share.getDiff(nftID, m, newStateChange)
 			}
 		}
+		newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	}
-	newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	return newStateChange
 }
 

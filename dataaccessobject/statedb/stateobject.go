@@ -113,6 +113,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairObjectWithValue(db, hash, value)
 	case Pdexv3ShareObjectType:
 		return newPdexv3ShareObjectWithValue(db, hash, value)
+	case Pdexv3NftObjectType:
+		return newPdexv3NftObjectWithValue(db, hash, value)
 	case Pdexv3OrderObjectType:
 		return newPdexv3OrderObjectWithValue(db, hash, value)
 	default:
@@ -208,6 +210,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairObject(db, hash)
 	case Pdexv3ShareObjectType:
 		return newPdexv3StatusObject(db, hash)
+	case Pdexv3NftObjectType:
+		return newPdexv3NftObject(db, hash)
 	case Pdexv3OrderObjectType:
 		return newPdexv3OrderObject(db, hash)
 	default:

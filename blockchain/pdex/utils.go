@@ -654,19 +654,9 @@ func tradePathFromState(
 	return results, orderbookList, tradeDirections, nextTokenToSell, nil
 }
 
-func genNFT(nftID common.Hash, nftIDs map[string]bool, beaconHeight uint64) common.Hash {
-	if !nftID.IsZeroValue() {
-		return common.Hash{}
-	}
-	hash := append(common.Uint64ToBytes(uint64(len(nftIDs))), common.Uint64ToBytes(beaconHeight)...)
+func genNFT(index, beaconHeight uint64) common.Hash {
+	hash := append(common.Uint64ToBytes(index), common.Uint64ToBytes(beaconHeight)...)
 	return common.HashH(append(hashPrefix, hash...))
-}
-
-func chooseNftStr(oldNftID, newNftID common.Hash) string {
-	if newNftID.IsZeroValue() {
-		return oldNftID.String()
-	}
-	return newNftID.String()
 }
 
 func executeOperationUint64(amount0, amount1 uint64, operator byte) (uint64, error) {

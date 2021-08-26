@@ -13,17 +13,19 @@ type MintNft struct {
 	nftID       common.Hash
 	otaReceiver string
 	shardID     byte
+	txReqID     common.Hash
 }
 
 func NewMintNft() *MintNft {
 	return &MintNft{}
 }
 
-func NewMintNftWithValue(nftID common.Hash, otaReceiver string, shardID byte) *MintNft {
+func NewMintNftWithValue(nftID common.Hash, otaReceiver string, shardID byte, txReqID common.Hash) *MintNft {
 	return &MintNft{
 		nftID:       nftID,
 		otaReceiver: otaReceiver,
 		shardID:     shardID,
+		txReqID:     txReqID,
 	}
 }
 
@@ -31,8 +33,8 @@ func (m *MintNft) FromStringSlice(source []string) error {
 	if len(source) != 3 {
 		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
 	}
-	if source[0] != strconv.Itoa(metadataCommon.Pdexv3MintNft) {
-		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3MintNft, source[0])
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta) {
+		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3MintNftRequestMeta, source[0])
 	}
 	err := json.Unmarshal([]byte(source[2]), m)
 	if err != nil {
@@ -43,7 +45,7 @@ func (m *MintNft) FromStringSlice(source []string) error {
 
 func (m *MintNft) StringSlice(action string) ([]string, error) {
 	res := []string{}
-	res = append(res, strconv.Itoa(metadataCommon.Pdexv3MintNft))
+	res = append(res, strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta))
 	res = append(res, action)
 	data, err := json.Marshal(m)
 	if err != nil {
@@ -58,10 +60,12 @@ func (m *MintNft) MarshalJSON() ([]byte, error) {
 		NftID       common.Hash `json:"NftID"`
 		OtaReceiver string      `json:"OtaReceiver"`
 		ShardID     byte        `json:"ShardID"`
+		TxReqID     common.Hash `json:"TxReqID"`
 	}{
 		NftID:       m.nftID,
 		OtaReceiver: m.otaReceiver,
 		ShardID:     m.shardID,
+		TxReqID:     m.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -74,6 +78,7 @@ func (m *MintNft) UnmarshalJSON(data []byte) error {
 		NftID       common.Hash `json:"NftID"`
 		OtaReceiver string      `json:"OtaReceiver"`
 		ShardID     byte        `json:"ShardID"`
+		TxReqID     common.Hash `json:"TxReqID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -82,6 +87,7 @@ func (m *MintNft) UnmarshalJSON(data []byte) error {
 	m.nftID = temp.NftID
 	m.otaReceiver = temp.OtaReceiver
 	m.shardID = temp.ShardID
+	m.txReqID = temp.TxReqID
 	return nil
 }
 
@@ -95,4 +101,8 @@ func (m *MintNft) OtaReceiver() string {
 
 func (m *MintNft) ShardID() byte {
 	return m.shardID
+}
+
+func (m *MintNft) TxReqID() common.Hash {
+	return m.txReqID
 }

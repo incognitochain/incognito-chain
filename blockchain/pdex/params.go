@@ -16,6 +16,7 @@ type Params struct {
 	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
 	PDEXRewardPoolPairsShare        map[string]uint // map: pool pair ID -> PDEX reward share weight
 	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
+	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
 func NewParams() *Params {
@@ -29,6 +30,7 @@ func NewParams() *Params {
 		TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
 		PDEXRewardPoolPairsShare:        map[string]uint{},
 		StakingPoolsShare:               map[string]uint{},
+		MintNftRequireAmount:            InitMintNftRequireAmount,
 	}
 }
 
@@ -43,6 +45,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		TradingStakingPoolRewardPercent: paramsState.TradingStakingPoolRewardPercent(),
 		PDEXRewardPoolPairsShare:        paramsState.PDEXRewardPoolPairsShare(),
 		StakingPoolsShare:               paramsState.StakingPoolsShare(),
+		MintNftRequireAmount:            paramsState.MintNftRequireAmount(),
 	}
 }
 

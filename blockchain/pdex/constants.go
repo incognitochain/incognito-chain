@@ -26,6 +26,7 @@ const (
 	InitProtocolFeePercent       = 0
 	InitStakingPoolRewardPercent = 10
 	InitStakingPoolsShare        = 0
+	InitMintNftRequireAmount     = 100
 )
 
 // PDEX token

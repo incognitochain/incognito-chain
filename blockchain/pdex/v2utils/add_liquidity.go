@@ -1,12 +1,9 @@
 package v2utils
 
 import (
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 func BuildRefundAddLiquidityInstructions(
@@ -31,23 +28,11 @@ func BuildMatchAddLiquidityInstructions(
 	poolPairID string, nftID common.Hash,
 ) ([][]string, error) {
 	res := [][]string{}
-	inst0, err := instruction.NewMatchAddLiquidityWithValue(incomingContributionState, poolPairID, nftID).StringSlice()
+	inst0, err := instruction.NewMatchAddLiquidityWithValue(incomingContributionState, poolPairID).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, inst0)
-	if !nftID.IsZeroValue() {
-		value := incomingContributionState.Value()
-		inst1, err := instruction.NewMintNftWithValue(
-			nftID,
-			value.ReceiveAddress(),
-			value.ShardID(),
-		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
-		if err != nil {
-			return res, err
-		}
-		res = append(res, inst1)
-	}
 	return res, nil
 }
 
@@ -63,7 +48,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst0, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token0ContributionState, shareAmount, returnedToken0ContributionAmount,
 		actualToken1ContributionAmount, returnedToken1ContributionAmount,
-		token1Contribution.TokenID(), nftID,
+		token1Contribution.TokenID(),
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -72,22 +57,11 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst1, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token1ContributionState, shareAmount, returnedToken1ContributionAmount,
 		actualToken0ContributionAmount, returnedToken0ContributionAmount,
-		token0Contribution.TokenID(), nftID,
+		token0Contribution.TokenID(),
 	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, matchAndReturnInst1)
-	if !nftID.IsZeroValue() {
-		inst, err := instruction.NewMintNftWithValue(
-			nftID,
-			token0Contribution.ReceiveAddress(),
-			token0Contribution.ShardID(),
-		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
-		if err != nil {
-			return res, err
-		}
-		res = append(res, inst)
-	}
 	return res, nil
 }

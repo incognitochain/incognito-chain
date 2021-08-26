@@ -14,36 +14,36 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
-type MintNft struct {
-	nftID       string
-	otaReceiver string
+type MintNftResponse struct {
+	nftID      string
+	otaReceive string
 	metadataCommon.MetadataBase
 }
 
-func NewMintNft() *MintNft {
-	return &MintNft{
+func NewMintNftResponse() *MintNftResponse {
+	return &MintNftResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3MintNft,
+			Type: metadataCommon.Pdexv3MintNftResponseMeta,
 		},
 	}
 }
 
-func NewMintNftWithValue(nftID string, otaReceiver string) *MintNft {
-	return &MintNft{
+func NewMintNftResponseWithValue(nftID, otaReceive string) *MintNftResponse {
+	return &MintNftResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3MintNft,
+			Type: metadataCommon.Pdexv3MintNftResponseMeta,
 		},
-		nftID:       nftID,
-		otaReceiver: otaReceiver,
+		nftID:      nftID,
+		otaReceive: otaReceive,
 	}
 }
 
-func (mintNft *MintNft) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (response *MintNftResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (mintNft *MintNft) ValidateTxWithBlockChain(
+func (response *MintNftResponse) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -55,22 +55,22 @@ func (mintNft *MintNft) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (mintNft *MintNft) ValidateSanityData(
+func (response *MintNftResponse) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	otaReceiver := privacy.OTAReceiver{}
-	err := otaReceiver.FromString(mintNft.otaReceiver)
+	otaReceive := privacy.OTAReceiver{}
+	err := otaReceive.FromString(response.otaReceive)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if !otaReceiver.IsValid() {
+	if !otaReceive.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
-	nftID, err := common.Hash{}.NewHashFromStr(mintNft.nftID)
+	nftID, err := common.Hash{}.NewHashFromStr(response.nftID)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
@@ -80,32 +80,32 @@ func (mintNft *MintNft) ValidateSanityData(
 	return true, true, nil
 }
 
-func (mintNft *MintNft) ValidateMetadataByItself() bool {
-	return mintNft.Type == metadataCommon.Pdexv3MintNft
+func (response *MintNftResponse) ValidateMetadataByItself() bool {
+	return response.Type == metadataCommon.Pdexv3MintNftRequestMeta
 }
 
-func (mintNft *MintNft) Hash() *common.Hash {
-	record := mintNft.MetadataBase.Hash().String()
-	record += mintNft.nftID
-	record += mintNft.otaReceiver
+func (response *MintNftResponse) Hash() *common.Hash {
+	record := response.MetadataBase.Hash().String()
+	record += response.nftID
+	record += response.otaReceive
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (mintNft *MintNft) CalculateSize() uint64 {
-	return metadataCommon.CalculateSize(mintNft)
+func (response *MintNftResponse) CalculateSize() uint64 {
+	return metadataCommon.CalculateSize(response)
 }
 
-func (mintNft *MintNft) MarshalJSON() ([]byte, error) {
+func (response *MintNftResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID       string `json:"NftID"`
-		OtaReceiver string `json:"OtaReceiver"`
+		NftID      string `json:"NftID"`
+		OtaReceive string `json:"OtaReceive"`
 		metadataCommon.MetadataBase
 	}{
-		NftID:        mintNft.nftID,
-		OtaReceiver:  mintNft.otaReceiver,
-		MetadataBase: mintNft.MetadataBase,
+		NftID:        response.nftID,
+		OtaReceive:   response.otaReceive,
+		MetadataBase: response.MetadataBase,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -113,28 +113,28 @@ func (mintNft *MintNft) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (mintNft *MintNft) UnmarshalJSON(data []byte) error {
+func (response *MintNftResponse) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID       string `json:"NftID"`
-		OtaReceiver string `json:"OtaReceiver"`
+		NftID      string `json:"NftID"`
+		OtaReceive string `json:"OtaReceive"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	mintNft.otaReceiver = temp.OtaReceiver
-	mintNft.nftID = temp.NftID
-	mintNft.MetadataBase = temp.MetadataBase
+	response.otaReceive = temp.OtaReceive
+	response.nftID = temp.NftID
+	response.MetadataBase = temp.MetadataBase
 	return nil
 }
 
-func (mintNft *MintNft) OtaReceiver() string {
-	return mintNft.otaReceiver
+func (response *MintNftResponse) OtaReceive() string {
+	return response.otaReceive
 }
 
-func (mintNft *MintNft) NftID() string {
-	return mintNft.nftID
+func (response *MintNftResponse) NftID() string {
+	return response.nftID
 }
 
 type MintNftData struct {
@@ -143,7 +143,7 @@ type MintNftData struct {
 	ShardID     byte        `json:"ShardID"`
 }
 
-func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (response *MintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,
 	tx metadataCommon.Transaction,
@@ -153,7 +153,7 @@ func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
-	metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", mintNft)
+	metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", response)
 	metadataCommon.Logger.Log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) != 3 { // this is not PDEContribution instruction
@@ -163,7 +163,7 @@ func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
 		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
 
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintNft) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta) {
 			continue
 		}
 
@@ -217,8 +217,8 @@ func (mintNft *MintNft) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		metadataCommon.Logger.Log.Debugf("mint nft %s error", mintNft.nftID)
-		return false, fmt.Errorf("Can't mint nft with hash %s", mintNft.nftID)
+		metadataCommon.Logger.Log.Debugf("mint nft %s error", response.nftID)
+		return false, fmt.Errorf("Can't mint nft with hash %s", response.nftID)
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil
