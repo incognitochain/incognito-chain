@@ -748,7 +748,6 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 
 // getWeightedFee() converts the fee paid in PRV to the equivalent token amount,
 // then applies the system's discount rate. Fee paid in non-PRV tokens remain the same.
-// It supports trade & addOrder requests
 func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState, params Params,
 ) ([]metadata.Transaction, map[string]bool, []uint64, []uint64, []metadata.Transaction, error) {
 	temp := uint64(100) - uint64(params.PRVDiscountPercent)
@@ -768,10 +767,6 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 		var feeInPRV bool = false
 		switch v := md.(type) {
 		case *metadataPdexv3.TradeRequest:
-			sellingTokenID = v.TokenToSell
-			fee = v.TradingFee
-			amount = v.SellAmount
-		case *metadataPdexv3.AddOrderRequest:
 			sellingTokenID = v.TokenToSell
 			fee = v.TradingFee
 			amount = v.SellAmount
@@ -870,7 +865,7 @@ func getRefundedTradeInstructions(md *metadataPdexv3.TradeRequest, feeInPRV bool
 
 // getRefundInstructions() creates up to 2 intructions for refunding rejected addOrder requests
 // in both token & PRV
-func getRefundedAddOrderInstructions(md *metadataPdexv3.AddOrderRequest, feeInPRV bool,
+func getRefundedAddOrderInstructions(md *metadataPdexv3.AddOrderRequest,
 	txID common.Hash, shardID byte) ([][]string, error) {
 	refundReceiver, exists := md.Receiver[md.TokenToSell]
 	if !exists {
@@ -878,10 +873,7 @@ func getRefundedAddOrderInstructions(md *metadataPdexv3.AddOrderRequest, feeInPR
 	}
 
 	// prepare refund instructions
-	tokenRefundAmount := md.SellAmount + md.TradingFee
-	if feeInPRV {
-		tokenRefundAmount = md.SellAmount
-	}
+	tokenRefundAmount := md.SellAmount
 	sellingTokenRefundAction := instructionPdexv3.NewAction(
 		&metadataPdexv3.RefundedAddOrder{
 			Receiver: refundReceiver,
@@ -892,22 +884,5 @@ func getRefundedAddOrderInstructions(md *metadataPdexv3.AddOrderRequest, feeInPR
 		shardID,
 	)
 	var refundInstructions [][]string = [][]string{sellingTokenRefundAction.StringSlice()}
-	if feeInPRV {
-		// prepare PRV refund if trading fee was paid in PRV; not applicable to requests that sell PRV.
-		prvReceiver, exists := md.Receiver[md.TokenToSell]
-		if !exists {
-			return nil, fmt.Errorf("Fee (PRV) Refund receiver not found in Trade Request")
-		}
-		feeRefundAction := instructionPdexv3.NewAction(
-			&metadataPdexv3.RefundedAddOrder{
-				Receiver: prvReceiver,
-				TokenID:  common.PRVCoinID,
-				Amount:   md.TradingFee,
-			},
-			txID,
-			shardID,
-		)
-		refundInstructions = append(refundInstructions, feeRefundAction.StringSlice())
-	}
 	return refundInstructions, nil
 }
