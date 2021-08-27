@@ -160,8 +160,8 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, 
-	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte, 
+func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver,
+	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte,
 	tokenToBuy common.Hash, minAmount uint64, orderbooks []OrderBookIterator,
 ) (*metadataPdexv3.AcceptedTrade, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
@@ -232,4 +232,108 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 	}
 	acceptedMeta.Amount = totalBuyAmount
 	return &acceptedMeta, reserves, nil
+}
+
+func TrackFee(
+	fee uint64, feeInPRV bool, baseLPPerShare *big.Int,
+	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
+	tradeDirections []byte, orderbooks []OrderBookIterator,
+	acceptedMeta *metadataPdexv3.AcceptedTrade,
+) (*metadataPdexv3.AcceptedTrade, error) {
+	mutualLen := len(reserves)
+	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
+		return nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
+	}
+
+	if feeInPRV {
+		// uniformly split fee into reserves
+		feePerReserve := fee / uint64(mutualLen)
+		for _, reserve := range reserves {
+			(&TradingPair{reserve}).AddFee(common.PRVCoinID, feePerReserve, baseLPPerShare)
+			acceptedMeta.RewardEarned[common.PRVCoinID] = feePerReserve
+		}
+		return acceptedMeta, nil
+	}
+
+	sellAmountRemain := fee
+
+	var totalBuyAmount uint64
+	for i := 0; i < mutualLen; i++ {
+		rewardAmount := sellAmountRemain / uint64(mutualLen-i)
+		rewardToken := reserves[i].Token0ID()
+		if tradeDirections[i] == TradeDirectionSell1 {
+			rewardToken = reserves[i].Token1ID()
+		}
+		(&TradingPair{reserves[i]}).AddFee(rewardToken, rewardAmount, baseLPPerShare)
+		acceptedMeta.RewardEarned[rewardToken] = rewardAmount
+
+		sellAmountRemain -= rewardAmount
+		if i == mutualLen-1 {
+			break
+		}
+
+		accumulatedToken0Change := big.NewInt(0)
+		accumulatedToken1Change := big.NewInt(0)
+		totalBuyAmount = uint64(0)
+
+		for order, ordID, err := orderbooks[i].NextOrder(tradeDirections[i]); err == nil; order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]) {
+			buyAmount, temp, token0Change, token1Change, err := (&TradingPair{reserves[i]}).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
+			if err != nil {
+				return nil, err
+			}
+			sellAmountRemain = temp
+			if totalBuyAmount+buyAmount < totalBuyAmount {
+				return nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
+			}
+			totalBuyAmount += buyAmount
+			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)
+			accumulatedToken1Change.Add(accumulatedToken1Change, token1Change)
+			if sellAmountRemain == 0 {
+				break
+			}
+			if order != nil {
+				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i])
+				if err != nil {
+					return nil, err
+				}
+				sellAmountRemain = temp
+				if totalBuyAmount+buyAmount < totalBuyAmount {
+					return nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
+				}
+				totalBuyAmount += buyAmount
+				// add order balance changes to "accepted" instruction
+				acceptedMeta.OrderChanges[i][ordID] = [2]*big.Int{token0Change, token1Change}
+				if sellAmountRemain == 0 {
+					break
+				}
+			}
+		}
+
+		// add pair changes to "accepted" instruction
+		acceptedMeta.PairChanges[i][0] = new(big.Int).Add(acceptedMeta.PairChanges[i][0], accumulatedToken0Change)
+		acceptedMeta.PairChanges[i][1] = new(big.Int).Add(acceptedMeta.PairChanges[i][1], accumulatedToken1Change)
+
+		// set sell amount before moving on to next pair
+		sellAmountRemain = totalBuyAmount
+	}
+
+	return acceptedMeta, nil
+}
+
+func (tp *TradingPair) AddFee(tokenID common.Hash, amount uint64, baseLPPerShare *big.Int) {
+	oldLPFeesPerShare, isExisted := tp.LPFeesPerShare()[tokenID]
+	if !isExisted {
+		oldLPFeesPerShare = big.NewInt(0)
+	}
+
+	// delta (fee / LP share) = amount * BASE / totalLPShare
+	deltaLPFeesPerShare := new(big.Int).Mul(new(big.Int).SetUint64(amount), baseLPPerShare)
+	deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(tp.ShareAmount()))
+
+	// update accumulated sum of (fee / LP share)
+	newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
+	tempLPFeesPerShare := tp.LPFeesPerShare()
+	tempLPFeesPerShare[tokenID] = newLPFeesPerShare
+
+	tp.SetLPFeesPerShare(tempLPFeesPerShare)
 }

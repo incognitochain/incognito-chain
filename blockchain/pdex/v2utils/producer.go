@@ -33,7 +33,7 @@ func BuildModifyParamsInst(
 
 func BuildMintPDEXInst(
 	pairID string,
-	mintingAmount uint,
+	mintingAmount uint64,
 ) [][]string {
 	reqContent := metadataPdexv3.MintPDEXBlockRewardContent{
 		PoolPairID: pairID,

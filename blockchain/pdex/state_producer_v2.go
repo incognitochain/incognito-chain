@@ -278,24 +278,13 @@ func (sp *stateProducerV2) mintPDEX(
 		pairReward := new(big.Int).Mul(new(big.Int).SetUint64(mintingAmount), new(big.Int).SetUint64(uint64(shareRewardAmount)))
 		pairReward = new(big.Int).Div(pairReward, new(big.Int).SetUint64(totalRewardShare))
 
-		// update state of PDEX token in pool pair state
-		oldLPFeesPerShare, isExisted := pair.state.LPFeesPerShare()[common.PDEXCoinID]
-		if !isExisted {
-			oldLPFeesPerShare = big.NewInt(0)
+		if !pairReward.IsUint64() {
+			return instructions, pairs, fmt.Errorf("Could not calculate PDEX reward for pair %v", pairID)
 		}
 
-		// delta (fee / LP share) = pairReward * BASE / totalLPShare
-		deltaLPFeesPerShare := new(big.Int).Mul(pairReward, BaseLPFeesPerShare)
-		deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(pair.state.ShareAmount()))
+		(&v2utils.TradingPair{&pair.state}).AddFee(common.PDEXCoinID, pairReward.Uint64(), BaseLPFeesPerShare)
 
-		// update accumulated sum of (fee / LP share)
-		newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
-		tempLPFeesPerShare := pair.state.LPFeesPerShare()
-		tempLPFeesPerShare[common.PDEXCoinID] = newLPFeesPerShare
-
-		pair.state.SetLPFeesPerShare(tempLPFeesPerShare)
-
-		instructions = append(instructions, v2utils.BuildMintPDEXInst(pairID, uint(pairReward.Int64()))...)
+		instructions = append(instructions, v2utils.BuildMintPDEXInst(pairID, pairReward.Uint64())...)
 	}
 
 	return instructions, pairs, nil
@@ -358,6 +347,18 @@ func (sp *stateProducerV2) trade(
 			result = append(result, refundInstructions...)
 			continue
 		}
+
+		acceptedTradeMd, err = v2.TrackFee(
+			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], BaseLPFeesPerShare,
+			currentTrade.TradePath, reserves, tradeDirections, orderbookList,
+			acceptedTradeMd,
+		)
+		if err != nil {
+			Logger.log.Warnf("Error handling fee distribution: %v", err)
+			result = append(result, refundInstructions...)
+			continue
+		}
+
 		action := instruction.NewAction(
 			acceptedTradeMd,
 			*tx.Hash(),

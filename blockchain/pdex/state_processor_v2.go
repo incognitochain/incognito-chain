@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -425,6 +426,10 @@ func (sp *stateProcessorV2) trade(
 			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
 			if err != nil {
 				return pairs, err
+			}
+
+			for tokenID, amount := range md.RewardEarned {
+				reserveState.AddFee(tokenID, amount, BaseLPFeesPerShare)
 			}
 
 			orderbook := pair.orderbook
@@ -852,24 +857,9 @@ func (sp *stateProcessorV2) mintPDEX(
 		return pairs, fmt.Errorf(msg)
 	}
 
-	// update state of PDEX token in pool pair state
-	oldLPFeesPerShare, isExisted := pair.state.LPFeesPerShare()[common.PDEXCoinID]
-	if !isExisted {
-		oldLPFeesPerShare = big.NewInt(0)
-	}
+	pairReward := actionData.Amount
 
-	pairReward := new(big.Int).SetUint64(uint64(actionData.Amount))
-
-	// delta (fee / LP share) = pairReward * BASE / totalLPShare
-	deltaLPFeesPerShare := new(big.Int).Mul(pairReward, BaseLPFeesPerShare)
-	deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(pair.state.ShareAmount()))
-
-	// update accumulated sum of (fee / LP share)
-	newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
-	tempLPFeesPerShare := pair.state.LPFeesPerShare()
-	tempLPFeesPerShare[common.PDEXCoinID] = newLPFeesPerShare
-
-	pair.state.SetLPFeesPerShare(tempLPFeesPerShare)
+	(&v2utils.TradingPair{&pair.state}).AddFee(common.PDEXCoinID, pairReward, BaseLPFeesPerShare)
 
 	return pairs, err
 }
