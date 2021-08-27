@@ -175,9 +175,6 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 			switch instType {
 			case instruction.SHARD_RECEIVE_REWARD_V1_ACTION:
 				shardRewardInfo, err := instruction.NewShardReceiveRewardV1FromString(l[3])
-				if shardRewardInfo.Epoch() == 0 {
-					continue
-				}
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
