@@ -20,8 +20,8 @@ func Test_Stakingv3() {
 		config.Param().BeaconHeightBreakPointBurnAddr = 1
 		config.Param().ConsensusParam.EnableSlashingHeightV2 = 2
 		config.Param().ConsensusParam.StakingFlowV2Height = 5
-		config.Param().ConsensusParam.AssignRuleV3Height = 5
-		config.Param().ConsensusParam.StakingFlowV3Height = 10
+		config.Param().ConsensusParam.AssignRuleV3Height = 10
+		config.Param().ConsensusParam.StakingFlowV3Height = 15
 		config.Param().ConsensusParam.ConsensusV2Epoch = 1
 		config.Param().EpochParam.NumberOfBlockInEpoch = 20
 		config.Param().EpochParam.RandomTime = 10
@@ -100,7 +100,7 @@ func Test_Stakingv3() {
 		//epoch := currentBeaconBlock.GetCurrentEpoch()
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
-			//fmt.Println(currentBeaconBlock.GetInstructions())
+			fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
 		}
 
