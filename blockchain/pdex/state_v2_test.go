@@ -22,6 +22,8 @@ import (
 func Test_stateV2_BuildInstructions(t *testing.T) {
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
 	firstTxHash, err := common.Hash{}.NewHashFromStr("abc")
 	assert.Nil(t, err)
 	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
@@ -83,6 +85,40 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	stakingTx.On("Hash").Return(txReqID)
 	stakingInst, err := instruction.NewAcceptStakingWtihValue(
 		*nftHash1, common.PRVCoinID, *txReqID, 1, 100,
+	).StringSlice()
+	assert.Nil(t, err)
+	//
+
+	withdrawLiquidityOtaReceivers := map[string]string{
+		token0ID.String(): validOTAReceiver1,
+		token1ID.String(): validOTAReceiver1,
+		nftID1:            validOTAReceiver0,
+	}
+
+	// withdraw tx
+	withdrawMetadata := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
+		poolPairID, nftID1, withdrawLiquidityOtaReceivers, 100,
+	)
+	withdrawTx := &metadataMocks.Transaction{}
+	withdrawTx.On("GetMetadata").Return(withdrawMetadata)
+	withdrawTx.On("GetMetadataType").Return(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta)
+	valEnv3 := tx_generic.DefaultValEnv()
+	valEnv3 = tx_generic.WithShardID(valEnv3, 1)
+	withdrawTx.On("GetValidationEnv").Return(valEnv3)
+	withdrawTx.On("Hash").Return(txReqID)
+	withdrawLiquidityMintNftInst, err := instruction.NewMintNftWithValue(*nftHash1, validOTAReceiver0, 1, *txReqID).
+		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
+	assert.Nil(t, err)
+
+	//
+
+	//accept instructions
+	acceptWithdrawLiquidityInst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
+		poolPairID, *nftHash1, *token0ID, 50, 100, validOTAReceiver1, *txReqID, 1,
+	).StringSlice()
+	assert.Nil(t, err)
+	acceptWithdrawLiquidityInst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
+		poolPairID, *nftHash1, *token1ID, 200, 100, validOTAReceiver1, *txReqID, 1,
 	).StringSlice()
 	assert.Nil(t, err)
 	//
@@ -235,6 +271,82 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			want:    [][]string{stakingInst},
 			wantErr: false,
 		},
+		{
+			name: "Accept withdraw liquidity tx",
+			fields: fields{
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:                  300,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				params: Params{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				producer:                    stateProducerV2{},
+				processor:                   stateProcessorV2{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:                  200,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 20,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+			},
+			args: args{
+				env: &stateEnvironment{
+					beaconHeight: 20,
+					listTxs: map[byte][]metadataCommon.Transaction{
+						1: []metadataCommon.Transaction{withdrawTx},
+					},
+				},
+			},
+			want:    [][]string{acceptWithdrawLiquidityInst0, acceptWithdrawLiquidityInst1, withdrawLiquidityMintNftInst},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -259,6 +371,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(s.waitingContributions, tt.fieldsAfterProcess.waitingContributions) {
+				t.Errorf("waitingContributions = %v, want %v", s.waitingContributions, tt.fieldsAfterProcess.waitingContributions)
+				return
+			}
+			if !reflect.DeepEqual(s.poolPairs, tt.fieldsAfterProcess.poolPairs) {
 				t.Errorf("waitingContributions = %v, want %v", s.waitingContributions, tt.fieldsAfterProcess.waitingContributions)
 				return
 			}
