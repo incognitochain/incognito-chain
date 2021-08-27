@@ -319,6 +319,13 @@ func (sp *stateProducerV2) trade(
 			result = append(result, refundInstructions...)
 			continue
 		}
+		// apply state changes for trade consistency in the same block
+		for index, pairID := range currentTrade.TradePath {
+			temp := pairs[pairID]
+			temp.state = *reserves[index]
+			pairs[pairID] = temp
+		}
+		// "accept" instruction
 		action := instruction.NewAction(
 			acceptedTradeMd,
 			*tx.Hash(),
@@ -486,22 +493,29 @@ TransactionLoop:
 			if ord.Id() == orderID {
 				if ord.NftID() == currentOrderReq.NftID {
 					var currentBalance uint64
+					withdrawAmount := currentOrderReq.Amount
 					switch currentOrderReq.TokenID {
 					case pair.state.Token0ID():
 						currentBalance = ord.Token0Balance()
+						if currentBalance < withdrawAmount {
+							withdrawAmount = currentBalance
+						}
+						ord.SetToken0Balance(currentBalance - withdrawAmount)
 					case pair.state.Token1ID():
 						currentBalance = ord.Token1Balance()
+						if currentBalance < withdrawAmount {
+							withdrawAmount = currentBalance
+						}
+						ord.SetToken1Balance(currentBalance - withdrawAmount)
 					default:
 						Logger.log.Warnf("Invalid withdraw tokenID %v for order %s",
 							currentOrderReq.TokenID, orderID)
 						result = append(result, currentAction.StringSlice())
 						continue TransactionLoop
 					}
+					// apply orderbook changes for withdraw consistency in the same block
+					pairs[currentOrderReq.PoolPairID] = pair
 
-					withdrawAmount := currentOrderReq.Amount
-					if currentBalance < currentOrderReq.Amount {
-						withdrawAmount = currentBalance
-					}
 					// accepted
 					currentAction.Content = &metadataPdexv3.AcceptedWithdrawOrder{
 						PoolPairID: currentOrderReq.PoolPairID,
