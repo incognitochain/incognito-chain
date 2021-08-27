@@ -339,7 +339,7 @@ func (sim *NodeEngine) Init() {
 	sim.startPubSub()
 
 	//init syncker
-	sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc})
+	sim.syncker.Init(&syncker.SynckerManagerConfig{Blockchain: sim.bc, Consensus: sim.consensus})
 
 	//init user database
 	handles := 256

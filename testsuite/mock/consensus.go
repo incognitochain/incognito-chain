@@ -19,6 +19,11 @@ type ConsensusInterface interface {
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	IsCommitteeInChain(int) bool
+	GetSyncingValidators() []*consensus.Validator
+}
+
+func (c *Consensus) GetSyncingValidators() []*consensus.Validator {
+	return []*consensus.Validator{}
 }
 
 type Consensus struct {
