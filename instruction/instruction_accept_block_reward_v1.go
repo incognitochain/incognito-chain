@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+// ShardBlockRewardInfo IS LEGACY CODE, DO NOT MAKE ANY MODIFICATION
 type ShardBlockRewardInfo struct {
 	ShardReward map[common.Hash]uint64
 	Epoch       uint64
