@@ -473,7 +473,6 @@ func (a *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 		v.committees,
 		v.signingCommittees,
 		v.userKeySet,
-		v.proposerMiningKeyBase58,
 		validVote,
 		errVote,
 	)
@@ -571,7 +570,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	return validationData, err
 }
 
-//voteValidBlock this function should be use to vote for valid block only
+//VoteValidBlock this function should be use to vote for valid block only
 func (a *actorV2) voteValidBlock(
 	proposeBlockInfo *ProposeBlockInfo,
 ) error {
@@ -970,7 +969,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		a.receiveBlockByHeight[block.GetHeight()] = append(a.receiveBlockByHeight[block.GetHeight()], a.receiveBlockByHash[blkHash])
 	} else {
 		a.receiveBlockByHash[blkHash].addBlockInfo(
-			block, committees, signingCommittees, userKeySet, proposerMiningKeyBase58, v.validVotes, v.errVotes)
+			block, committees, signingCommittees, userKeySet, v.validVotes, v.errVotes)
 	}
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {
@@ -1118,6 +1117,7 @@ func (a *actorV2) getValidProposeBlocks(bestView types.View) []*ProposeBlockInfo
 			continue
 		}
 
+		//TODO @hung continue?
 		if proposeBlockInfo.block.GetHeight() < a.chain.GetFinalView().GetHeight() {
 			//delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
 			delete(a.receiveBlockByHash, h)

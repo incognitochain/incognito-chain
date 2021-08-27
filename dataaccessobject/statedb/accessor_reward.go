@@ -15,7 +15,7 @@ func AddShardRewardRequestMultiset(
 	tokenID common.Hash,
 	rewardAmount uint64,
 ) error {
-	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	key := generateRewardRequestMultisetObjectKey(epoch, shardID, subsetID, tokenID)
 	r, has, err := stateDB.getRewardRequestStateV3(key)
 	if err != nil {
 		return NewStatedbError(StoreRewardRequestError, err)
@@ -37,7 +37,7 @@ func GetRewardOfShardByEpochMultiset(
 	shardID, subsetID byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	key := generateRewardRequestMultisetObjectKey(epoch, shardID, subsetID, tokenID)
 	amount, has, err := stateDB.getRewardRequestAmountV3(key)
 	if err != nil {
 		return 0, NewStatedbError(GetRewardRequestError, err)
@@ -48,7 +48,7 @@ func GetRewardOfShardByEpochMultiset(
 	return amount, nil
 }
 
-func GetAllTokenIDForRewardV3(stateDB *StateDB, epoch uint64) []common.Hash {
+func GetAllTokenIDForRewardMultiset(stateDB *StateDB, epoch uint64) []common.Hash {
 	_, rewardRequestStates := stateDB.getAllRewardRequestStateV3(epoch)
 	m := make(map[common.Hash]struct{})
 	tokenIDs := []common.Hash{}

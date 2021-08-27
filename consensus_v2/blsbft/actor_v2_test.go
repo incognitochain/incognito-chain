@@ -2,12 +2,14 @@ package blsbft
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	mocksTypes "github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	mocksView "github.com/incognitochain/incognito-chain/multiview/mocks"
 	"reflect"
 	"testing"
@@ -60,6 +62,7 @@ var (
 	shard0Committee                 []incognitokey.CommitteePublicKey
 	subset0Shard0Committee          []incognitokey.CommitteePublicKey
 	subset0Shard0CommitteeString    []string
+	subset0Shard0MiningKeyString    []string
 	subset1Shard0Committee          []incognitokey.CommitteePublicKey
 	subset1Shard0CommitteeString    []string
 	shard0CommitteeNew              []incognitokey.CommitteePublicKey
@@ -105,1874 +108,13 @@ var _ = func() (_ struct{}) {
 	miningKey1 = signatureschemes2.MiningKey{}
 	json.Unmarshal([]byte(miningKey1String), &miningKey1)
 
+	for _, v := range subset0Shard0Committee {
+		proposerMiningKeyBase58 := v.GetMiningKeyBase58(common.BlsConsensus)
+		subset0Shard0MiningKeyString = append(subset0Shard0MiningKeyString, proposerMiningKeyBase58)
+	}
 	logger = common.NewBackend(nil).Logger("test", true)
 	return
 }()
-
-//func Test_actorV2_handleProposeMsg(t *testing.T) {
-//
-//	initTestParams()
-//	common.TIMESLOT = 1
-//	hash1, _ := common.Hash{}.NewHashFromStr("123")
-//	logger := initLog()
-//
-//	shardBlock := &types.ShardBlock{
-//		Header: types.ShardHeader{
-//			Height:             10,
-//			GenesisBeaconHash: *hash1,
-//			Producer:           key0,
-//			ProposeTime:        10,
-//			Version:            4,
-//			PreviousBlockHash:  *hash1,
-//		},
-//	}
-//	shardBlockData, _ := json.Marshal(shardBlock)
-//
-//	errorUnmarshalChain := &mockchain.Chain{}
-//	errorUnmarshalChain.On("UnmarshalBlock", shardBlockData).Return(nil, errors.New("Errror"))
-//
-//	errorCommitteeChain := &mockchain.Chain{}
-//	errorCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, byte(1)).
-//		Return([]incognitokey.CommitteePublicKey{}, errors.New("Errror"))
-//
-//	errorGetBestViewHeight := &mockchain.Chain{}
-//	errorGetBestViewHeight.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
-//	errorGetBestViewHeight.On("GetBestViewHeight").Return(uint64(11))
-//	errorGetBestViewHeight.On("IsBeaconChain").Return(false)
-//	errorGetBestViewHeight.On("GetShardID").Return(1)
-//	errorGetBestViewHeight.
-//		On(
-//			"GetProposerByTimeSlotFromCommitteeList",
-//			*hash1, byte(1),
-//			int64(10),
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//		).
-//		Return(
-//			incognitokey.CommitteePublicKey{},
-//			2,
-//			nil,
-//		)
-//	errorGetBestViewHeight.
-//		On(
-//			"GetSigningCommittees",
-//			*hash1,
-//			2,
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//			byte(1),
-//		).
-//		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
-//
-//	validCommitteeChain := &mockchain.Chain{}
-//	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, byte(1)).
-//		Return(
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//			nil,
-//		)
-//
-//	node := &mockblsbft.NodeInterface{}
-//	node.On("RequestMissingViewViaStream",
-//		"1", mock.AnythingOfType("[][]uint8"), mock.AnythingOfType("int"), mock.AnythingOfType("string")).
-//		Return(nil)
-//
-//	syncProposeViewChain := &mockchain.Chain{}
-//	syncProposeViewChain.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
-//	syncProposeViewChain.On("GetBestViewHeight").Return(uint64(9))
-//	syncProposeViewChain.On("IsBeaconChain").Return(false)
-//	syncProposeViewChain.On("GetShardID").Return(1)
-//	syncProposeViewChain.On("GetChainName").Return("shard")
-//	syncProposeViewChain.On("GetViewByHash", *hash1).Return(nil)
-//	syncProposeViewChain.
-//		On(
-//			"GetProposerByTimeSlotFromCommitteeList",
-//			*hash1, byte(1),
-//			int64(10),
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//		).
-//		Return(
-//			incognitokey.CommitteePublicKey{},
-//			2,
-//			nil,
-//		)
-//	syncProposeViewChain.
-//		On(
-//			"GetSigningCommittees",
-//			*hash1,
-//			2,
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//			byte(1),
-//		).
-//		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
-//
-//	shardBestState := &blockchain.ShardBestState{}
-//
-//	normalChain := &mockchain.Chain{}
-//	normalChain.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
-//	normalChain.On("GetBestViewHeight").Return(uint64(9))
-//	normalChain.On("IsBeaconChain").Return(false)
-//	normalChain.On("GetShardID").Return(1)
-//	normalChain.On("GetViewByHash", *hash1).Return(shardBestState)
-//	normalChain.
-//		On(
-//			"GetProposerByTimeSlotFromCommitteeList",
-//			*hash1, byte(1),
-//			int64(10),
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//		).
-//		Return(
-//			incognitokey.CommitteePublicKey{},
-//			2,
-//			nil,
-//		)
-//	normalChain.
-//		On(
-//			"GetSigningCommittees",
-//			*hash1,
-//			2,
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//			byte(1),
-//		).
-//		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		proposeMsg BFTPropose
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		wantErr bool
-//	}{
-//		{
-//			name: "Block is nil",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  errorUnmarshalChain,
-//				},
-//			},
-//			args: args{
-//				proposeMsg: BFTPropose{
-//					PeerID:   "1",
-//					Block:    shardBlockData,
-//					TimeSlot: 10,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "Can not get committees from block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   errorGetBestViewHeight,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain: errorCommitteeChain,
-//			},
-//			args: args{
-//				proposeMsg: BFTPropose{
-//					PeerID:   "1",
-//					Block:    shardBlockData,
-//					TimeSlot: 10,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "Receive block from old view",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   errorGetBestViewHeight,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain:       validCommitteeChain,
-//				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//			},
-//			args: args{
-//				proposeMsg: BFTPropose{
-//					PeerID:   "1",
-//					Block:    shardBlockData,
-//					TimeSlot: 10,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "Sync blocks to current proposed block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   syncProposeViewChain,
-//					logger:  logger,
-//					node:    node,
-//					chainID: 1,
-//				},
-//				committeeChain:       validCommitteeChain,
-//				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//			},
-//			args: args{
-//				proposeMsg: BFTPropose{
-//					PeerID:   "1",
-//					Block:    shardBlockData,
-//					TimeSlot: 10,
-//				},
-//			},
-//			wantErr: false,
-//		},
-//		{
-//			name: "Normal Work",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   normalChain,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain:       validCommitteeChain,
-//				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//			},
-//			args: args{
-//				proposeMsg: BFTPropose{
-//					PeerID:   "1",
-//					Block:    shardBlockData,
-//					TimeSlot: 10,
-//				},
-//			},
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			if err := actorV2.handleProposeMsg(tt.args.proposeMsg); (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.handleProposeMsg() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_handleVoteMsg(t *testing.T) {
-//
-//	logger := initLog()
-//	initTestParams()
-//
-//	blockHash, _ := common.Hash{}.NewHashFromStr("123456")
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		voteMsg BFTVote
-//	}
-//	tests := []struct {
-//		name           string
-//		fields         fields
-//		args           args
-//		wantTotalVotes int
-//		wantErr        bool
-//	}{
-//		{
-//			name: "Receive vote before receive block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{},
-//			},
-//			args: args{
-//				voteMsg: BFTVote{
-//					Validator: key0,
-//					BlockHash: blockHash.String(),
-//				},
-//			},
-//			wantErr:        false,
-//			wantTotalVotes: 1,
-//		},
-//		{
-//			name: "Receive wrong vote after receive block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					blockHash.String(): &ProposeBlockInfo{
-//						votes: map[string]*BFTVote{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{
-//							incKey0, *incKey, *incKey2, *incKey3,
-//						},
-//					},
-//				},
-//			},
-//			args: args{
-//				voteMsg: BFTVote{
-//					Validator: key4,
-//					BlockHash: blockHash.String(),
-//				},
-//			},
-//			wantErr:        false,
-//			wantTotalVotes: 1,
-//		},
-//		{
-//			name: "Receive right vote after block and this node is proposer and not send vote",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					blockHash.String(): &ProposeBlockInfo{
-//						votes: map[string]*BFTVote{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{
-//							incKey0, *incKey, *incKey2, *incKey3,
-//						},
-//					},
-//				},
-//			},
-//			args: args{
-//				voteMsg: BFTVote{
-//					Validator: key0,
-//					BlockHash: blockHash.String(),
-//				},
-//			},
-//			wantErr:        false,
-//			wantTotalVotes: 1,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			err := actorV2.handleVoteMsg(tt.args.voteMsg)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.handleVoteMsg() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//			if !tt.wantErr {
-//				if len(actorV2.receiveBlockByHash[tt.args.voteMsg.BlockHash].votes) != tt.wantTotalVotes {
-//					t.Errorf("actorV2.handleVoteMsg() totalVotes = %v, wantTotalVotes %v",
-//						len(actorV2.receiveBlockByHash[tt.args.voteMsg.BlockHash].votes), tt.wantTotalVotes)
-//				}
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_proposeBeaconBlock(t *testing.T) {
-//	initTestParams()
-//	logger := initLog()
-//	hash, _ := common.Hash{}.NewHashFromStr("123456")
-//	block := &types.BeaconBlock{}
-//
-//	invalidChain := &mockchain.Chain{}
-//	invalidChain.On(
-//		"CreateNewBlock",
-//		4, key0, 1, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(nil, errors.New("Error"))
-//
-//	invalidChain.On(
-//		"CreateNewBlockFromOldBlock",
-//		block, key0, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(nil, errors.New("Error"))
-//
-//	validChain := &mockchain.Chain{}
-//	validChain.On(
-//		"CreateNewBlock",
-//		4, key0, 1, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(block, nil)
-//
-//	validChain.On(
-//		"CreateNewBlockFromOldBlock",
-//		block, key0, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(block, nil)
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		b58Str            string
-//		block             types.BlockInterface
-//		committees        []incognitokey.CommitteePublicKey
-//		committeeViewHash common.Hash
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		want    types.BlockInterface
-//		wantErr bool
-//	}{
-//		{
-//			name: "Invalid Create New block",
-//			fields: fields{
-//				blockVersion: 4,
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  invalidChain,
-//				},
-//				currentTime: 10,
-//			},
-//			args: args{
-//				b58Str: key0,
-//				committees: []incognitokey.CommitteePublicKey{
-//					incKey0, *incKey, *incKey2, *incKey3,
-//				},
-//				committeeViewHash: *hash,
-//			},
-//			want:    nil,
-//			wantErr: true,
-//		},
-//		{
-//			name: "Invalid Create New Block From Old Block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  invalidChain,
-//				},
-//				currentTime: 10,
-//			},
-//			args: args{
-//				block:  block,
-//				b58Str: key0,
-//				committees: []incognitokey.CommitteePublicKey{
-//					incKey0, *incKey, *incKey2, *incKey3,
-//				},
-//				committeeViewHash: *hash,
-//			},
-//			want:    nil,
-//			wantErr: true,
-//		},
-//		{
-//			name: "Create new valid block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  validChain,
-//				},
-//				currentTime:  10,
-//				blockVersion: 4,
-//			},
-//			args: args{
-//				b58Str: key0,
-//				committees: []incognitokey.CommitteePublicKey{
-//					incKey0, *incKey, *incKey2, *incKey3,
-//				},
-//				committeeViewHash: *hash,
-//			},
-//			want:    block,
-//			wantErr: false,
-//		},
-//		{
-//			name: "Create new valid block from old block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  validChain,
-//				},
-//				currentTime:  10,
-//				blockVersion: 4,
-//			},
-//			args: args{
-//				block:  block,
-//				b58Str: key0,
-//				committees: []incognitokey.CommitteePublicKey{
-//					incKey0, *incKey, *incKey2, *incKey3,
-//				},
-//				committeeViewHash: *hash,
-//			},
-//			want:    block,
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			got, err := actorV2.proposeBeaconBlock(tt.args.b58Str, tt.args.block, tt.args.committees, tt.args.committeeViewHash)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.proposeBeaconBlock() error = %v, wantErr %v", err, tt.wantErr)
-//				return
-//			}
-//			if !reflect.DeepEqual(got, tt.want) {
-//				t.Errorf("actorV2.proposeBeaconBlock() = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_proposeShardBlock(t *testing.T) {
-//	common.TIMESLOT = 1
-//	initTestParams()
-//	logger := initLog()
-//	hash, _ := common.Hash{}.NewHashFromStr("123456")
-//	block := &types.ShardBlock{
-//		Header: types.ShardHeader{
-//			GenesisBeaconHash: *hash,
-//			ProposeTime:        10,
-//		},
-//	}
-//
-//	invalidChain := &mockchain.Chain{}
-//	invalidChain.On(
-//		"CreateNewBlock",
-//		4, key0, 1, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(nil, errors.New("Error"))
-//
-//	invalidChain.On(
-//		"CreateNewBlockFromOldBlock",
-//		block, key0, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(nil, errors.New("Error"))
-//	invalidChain.On("GetShardID").Return(1)
-//
-//	validChain := &mockchain.Chain{}
-//	validChain.On(
-//		"CreateNewBlock",
-//		4, key0, 1, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(block, nil)
-//
-//	validChain.On(
-//		"CreateNewBlockFromOldBlock",
-//		block, key0, int64(10),
-//		[]incognitokey.CommitteePublicKey{
-//			incKey0, *incKey, *incKey2, *incKey3,
-//		},
-//		*hash,
-//	).Return(block, nil)
-//
-//	invalidCommitteeChain := &mockchain.Chain{}
-//	invalidCommitteeChain.On("CommitteesFromViewHashForShard", *hash, byte(1)).Return(
-//		[]incognitokey.CommitteePublicKey{},
-//		errors.New("Error"),
-//	)
-//
-//	validCommitteeChain := &mockchain.Chain{}
-//	validChain.On("GetShardID").Return(1)
-//
-//	invalidChain.On("IsBeaconChain").Return(false)
-//	validChain.On("IsBeaconChain").Return(false)
-//
-//	invalidChain.
-//		On(
-//			"GetProposerByTimeSlotFromCommitteeList",
-//			*hash, byte(1),
-//			int64(10),
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//		).
-//		Return(
-//			incognitokey.CommitteePublicKey{},
-//			2,
-//			nil,
-//		)
-//	invalidChain.
-//		On(
-//			"GetSigningCommittees",
-//			*hash,
-//			2,
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//			byte(1),
-//		).
-//		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
-//
-//	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash, byte(1)).Return(
-//		[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//		nil,
-//	)
-//	validChain.
-//		On(
-//			"GetProposerByTimeSlotFromCommitteeList",
-//			*hash, byte(1),
-//			int64(10),
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//		).
-//		Return(
-//			incognitokey.CommitteePublicKey{},
-//			2,
-//			nil,
-//		)
-//	validChain.
-//		On(
-//			"GetSigningCommittees",
-//			*hash,
-//			2,
-//			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//			byte(1),
-//		).
-//		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		b58Str            string
-//		block             types.BlockInterface
-//		committees        []incognitokey.CommitteePublicKey
-//		committeeViewHash common.Hash
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		want    types.BlockInterface
-//		wantErr bool
-//	}{
-//		{
-//			name: "Can't get committees for current block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   invalidChain,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain: invalidCommitteeChain,
-//			},
-//			args: args{
-//				b58Str:            key0,
-//				block:             block,
-//				committees:        []incognitokey.CommitteePublicKey{},
-//				committeeViewHash: *hash,
-//			},
-//			want:    nil,
-//			wantErr: true,
-//		},
-//		{
-//			name: "CreateNewBlock invalid",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   invalidChain,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				currentTime:    10,
-//				committeeChain: validCommitteeChain,
-//				blockVersion:   4,
-//			},
-//			args: args{
-//				b58Str:            key0,
-//				block:             nil,
-//				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//				committeeViewHash: *hash,
-//			},
-//			want:    nil,
-//			wantErr: true,
-//		},
-//		{
-//			name: "CreateNewBlockFromOldBlock invalid",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   invalidChain,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain: validCommitteeChain,
-//				currentTime:    10,
-//				blockVersion:   4,
-//			},
-//			args: args{
-//				b58Str:            key0,
-//				block:             block,
-//				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//				committeeViewHash: *hash,
-//			},
-//			want:    nil,
-//			wantErr: true,
-//		},
-//		{
-//			name: "CreateNewBlock valid",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   validChain,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain: validCommitteeChain,
-//				currentTime:    10,
-//				blockVersion:   4,
-//			},
-//			args: args{
-//				b58Str:            key0,
-//				block:             nil,
-//				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//				committeeViewHash: *hash,
-//			},
-//			want:    block,
-//			wantErr: false,
-//		},
-//		{
-//			name: "CreateNewBlockFromOldBlock valid",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain:   validChain,
-//					logger:  logger,
-//					chainID: 1,
-//				},
-//				committeeChain: validCommitteeChain,
-//				currentTime:    10,
-//				blockVersion:   4,
-//			},
-//			args: args{
-//				b58Str:            key0,
-//				block:             block,
-//				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//				committeeViewHash: *hash,
-//			},
-//			want:    block,
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			got, err := actorV2.proposeShardBlock(tt.args.b58Str, tt.args.block, tt.args.committees, tt.args.committeeViewHash)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.proposeShardBlock() error = %v, wantErr %v", err, tt.wantErr)
-//				return
-//			}
-//			if !reflect.DeepEqual(got, tt.want) {
-//				t.Errorf("actorV2.proposeShardBlock() = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_getValidProposeBlocks(t *testing.T) {
-//	common.TIMESLOT = 1
-//	tempHash, _ := common.Hash{}.NewHashFromStr("123456")
-//	tempView := mockmultiview.View{}
-//	tempView.On("GetHash").Return(tempHash)
-//	tempView.On("GetHeight").Return(uint64(5))
-//
-//	hash, _ := common.Hash{}.NewHashFromStr("123")
-//	blockHeightGreaterThanValidView := mocktypes.BlockInterface{}
-//	blockHeightGreaterThanValidView.On("Hash").Return(hash)
-//	blockHashDifFromCurHash := blockHeightGreaterThanValidView
-//
-//	blockHeightGreaterThanValidView.On("GetHeight").Return(uint64(7))
-//
-//	blockHashDifFromCurHash.On("GetHeight").Return(uint64(5))
-//
-//	validBlock := mocktypes.BlockInterface{}
-//	validBlock.On("Hash").Return(hash)
-//	validBlock.On("GetHeight").Return(uint64(6))
-//
-//	blockOutOfValidateTime := validBlock
-//	validBlock.On("GetProposeTime").Return(int64(3))
-//	blockProposerTimeDifCurrTimeSlot := validBlock
-//	validBlock.On("GetProduceTime").Return(int64(2))
-//
-//	blockProposeTimeSmallerProduceTime := mocktypes.BlockInterface{}
-//	blockProposeTimeSmallerProduceTime.On("Hash").Return(hash)
-//	blockProposeTimeSmallerProduceTime.On("GetProposeTime").Return(int64(3))
-//	blockProposeTimeSmallerProduceTime.On("GetHeight").Return(uint64(6))
-//	blockProposeTimeSmallerProduceTime.On("GetProduceTime").Return(int64(4))
-//
-//	blockTimeSlotHasBeenVoted := mocktypes.BlockInterface{}
-//	blockTimeSlotHasBeenVoted.On("Hash").Return(hash)
-//	blockTimeSlotHasBeenVoted.On("GetProposeTime").Return(int64(3))
-//	blockTimeSlotHasBeenVoted.On("GetHeight").Return(uint64(6))
-//	blockTimeSlotHasBeenVoted.On("GetProduceTime").Return(int64(2))
-//
-//	tempView1 := mockmultiview.View{}
-//	tempView1.On("GetHeight").Return(uint64(4))
-//	tempChain := mockchain.Chain{}
-//	tempChain.On("GetFinalView").Return(&tempView1)
-//
-//	receiveTime := time.Now().Add(-time.Second * 3)
-//	lastValidateTime := time.Now().Add(-time.Second * 2)
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//
-//	type args struct {
-//		bestView multiview.View
-//	}
-//
-//	tests := []struct {
-//		name   string
-//		fields fields
-//		args   args
-//		want   []*ProposeBlockInfo
-//	}{
-//		{
-//			name: "Block is nil",
-//			fields: fields{
-//				actorV1:            actorV1{},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      1,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            nil,
-//						receiveTime:      time.Now(),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now().Add(time.Second * 3),
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "blockHeight is larger than validViewHeight",
-//			fields: fields{
-//				actorV1:            actorV1{},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      1,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &blockHeightGreaterThanValidView,
-//						receiveTime:      time.Now(),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now().Add(time.Second * 3),
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "blockHeight == currentBestViewHeight && blockHash != currentBestViewHash",
-//			fields: fields{
-//				actorV1:            actorV1{},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      1,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &blockHashDifFromCurHash,
-//						receiveTime:      time.Now(),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now().Add(time.Second * 3),
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "block is out of validate time",
-//			fields: fields{
-//				actorV1:            actorV1{},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      1,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &blockOutOfValidateTime,
-//						receiveTime:      time.Now(),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now(),
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "block proposer time is different from current time slot",
-//			fields: fields{
-//				actorV1:            actorV1{},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      4,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &blockProposerTimeDifCurrTimeSlot,
-//						receiveTime:      time.Now().Add(-time.Second * 3),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now().Add(-time.Second * 2),
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "Block propose time is smaller than produce time",
-//			fields: fields{
-//				actorV1:            actorV1{},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      3,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &blockProposeTimeSmallerProduceTime,
-//						receiveTime:      time.Now().Add(-time.Second * 3),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now().Add(-time.Second * 2),
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "Block Time Slot Has Been Voted",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain: &tempChain,
-//				},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      3,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &blockTimeSlotHasBeenVoted,
-//						receiveTime:      time.Now().Add(-time.Second * 3),
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: time.Now().Add(-time.Second * 2),
-//					},
-//				},
-//				votedTimeslot: map[int64]bool{
-//					3: true,
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{},
-//		},
-//		{
-//			name: "Valid Block",
-//			fields: fields{
-//				actorV1: actorV1{
-//					chain: &tempChain,
-//				},
-//				committeeChain:       nil,
-//				currentTime:          1,
-//				currentTimeSlot:      3,
-//				proposeHistory:       &lru.Cache{},
-//				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-//				receiveBlockByHash: map[string]*ProposeBlockInfo{
-//					"hash": &ProposeBlockInfo{
-//						block:            &validBlock,
-//						receiveTime:      receiveTime,
-//						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittees: []incognitokey.CommitteePublicKey{},
-//						userKeySet:       []signatureschemes.MiningKey{},
-//						votes:            map[string]*BFTVote{},
-//						isValid:          false,
-//						hasNewVote:       false,
-//						sendVote:         false,
-//						isVoted:          false,
-//						isCommitted:      false,
-//						errVotes:         2,
-//						validVotes:       5,
-//						proposerSendVote: false,
-//						lastValidateTime: lastValidateTime,
-//					},
-//				},
-//				blockVersion: 1,
-//			},
-//			args: args{
-//				bestView: &tempView,
-//			},
-//			want: []*ProposeBlockInfo{
-//				&ProposeBlockInfo{
-//					block:            &validBlock,
-//					receiveTime:      receiveTime,
-//					committees:       []incognitokey.CommitteePublicKey{},
-//					signingCommittees: []incognitokey.CommitteePublicKey{},
-//					userKeySet:       []signatureschemes.MiningKey{},
-//					votes:            map[string]*BFTVote{},
-//					isValid:          false,
-//					hasNewVote:       false,
-//					sendVote:         false,
-//					isVoted:          false,
-//					isCommitted:      false,
-//					errVotes:         2,
-//					validVotes:       5,
-//					proposerSendVote: false,
-//					lastValidateTime: lastValidateTime,
-//				},
-//			},
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			got := actorV2.getValidProposeBlocks(tt.args.bestView)
-//			for i, v := range got {
-//				if !reflect.DeepEqual(*v, *tt.want[i]) {
-//					t.Errorf("actorV2.getValidProposeBlocks() = %v, want %v", *v, *tt.want[i])
-//					return
-//				}
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_validateBlock(t *testing.T) {
-//
-//	logger := initLog()
-//
-//	common.TIMESLOT = 1
-//
-//	hash1, _ := common.Hash{}.NewHashFromStr("123")
-//	hash2, _ := common.Hash{}.NewHashFromStr("456")
-//	blockHash1, _ := common.Hash{}.NewHashFromStr("100")
-//	//blockHash2, _ := common.Hash{}.NewHashFromStr("200")
-//
-//	lastVotedBlk := &mocktypes.BlockInterface{}
-//	lastVotedBlk.On("GetProduceTime").Return(int64(3))
-//	lastVotedBlk.On("GetProposeTime").Return(int64(3))
-//	lastVotedBlk.On("GenesisBeaconHash").Return(*hash1)
-//
-//	view := &mockmultiview.View{}
-//	view.On("GetHeight").Return(uint64(5))
-//
-//	//valid blocks
-//	blkProducerTimeSmallerThanVotedLastBlk := &mocktypes.BlockInterface{}
-//	blkProducerTimeSmallerThanVotedLastBlk.On("GetProduceTime").Return(int64(2))
-//	blkProducerTimeSmallerThanVotedLastBlk.On("GetPrevHash").Return(*hash2)
-//	blkProducerTimeSmallerThanVotedLastBlk.On("GetHeight").Return(uint64(6))
-//	blkProducerTimeSmallerThanVotedLastBlk.On("BodyHash").Return(*hash2)
-//	blkProducerTimeSmallerThanVotedLastBlk.On("Hash").Return(blockHash1)
-//	blkProducerTimeSmallerThanVotedLastBlk.On("GetPrevHash").Return(*hash2)
-//
-//	blkReproposeWithLargerTimeslot := &mocktypes.BlockInterface{}
-//	blkReproposeWithLargerTimeslot.On("GetProduceTime").Return(int64(3))
-//	blkReproposeWithLargerTimeslot.On("GetProposeTime").Return(int64(4))
-//	blkReproposeWithLargerTimeslot.On("GetHeight").Return(uint64(6))
-//	blkReproposeWithLargerTimeslot.On("Hash").Return(blockHash1)
-//	blkReproposeWithLargerTimeslot.On("GetPrevHash").Return(*blockHash1)
-//
-//	blkWithDifCommittees := &mocktypes.BlockInterface{}
-//	blkWithDifCommittees.On("GetProduceTime").Return(int64(4))
-//	blkWithDifCommittees.On("GetProposeTime").Return(int64(4))
-//	blkWithDifCommittees.On("GenesisBeaconHash").Return(*hash2)
-//	blkWithDifCommittees.On("GetPrevHash").Return(*hash2)
-//	blkWithDifCommittees.On("GetHeight").Return(uint64(6))
-//	blkWithDifCommittees.On("BodyHash").Return(*blockHash1)
-//
-//	blkNormal := &mocktypes.BlockInterface{}
-//	blkNormal.On("GetProduceTime").Return(int64(4))
-//	blkNormal.On("GetProposeTime").Return(int64(4))
-//	blkNormal.On("GetHeight").Return(uint64(6))
-//	blkNormal.On("BodyHash").Return(*hash2)
-//	blkNormal.On("GetPrevHash").Return(*hash2)
-//	blkNormal.On("Hash").Return(hash2)
-//
-//	//
-//	inValidBlock := &mocktypes.BlockInterface{}
-//	inValidBlock.On("GetProduceTime").Return(int64(4))
-//	inValidBlock.On("GetProposeTime").Return(int64(4))
-//	inValidBlock.On("GenesisBeaconHash").Return(*hash1)
-//	inValidBlock.On("GetHeight").Return(uint64(6))
-//	inValidBlock.On("Hash").Return(blockHash1)
-//
-//	tempView := &mockmultiview.View{}
-//	tempChain := &mockchain.Chain{}
-//	tempChain.On("GetViewByHash", *blockHash1).Return(nil)
-//	tempChain.On("GetViewByHash", *hash2).Return(tempView)
-//	tempChain.On("ValidatePreSignBlock",
-//		blkProducerTimeSmallerThanVotedLastBlk,
-//		[]incognitokey.CommitteePublicKey{},
-//		[]incognitokey.CommitteePublicKey{}).Return(errors.New("Error"))
-//
-//	tempChain.On("ValidatePreSignBlock",
-//		blkNormal,
-//		[]incognitokey.CommitteePublicKey{},
-//		[]incognitokey.CommitteePublicKey{}).Return(nil)
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		bestView         multiview.View
-//		proposeBlockInfo *ProposeBlockInfo
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		wantErr bool
-//	}{
-//		{
-//			name: "Proposetime and Producetime is not valid for voting",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block: inValidBlock,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "sendVote == true",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:    blkReproposeWithLargerTimeslot,
-//					sendVote: true,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "isVoted == true",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:    blkReproposeWithLargerTimeslot,
-//					sendVote: false,
-//					isVoted:  true,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "proposeBlockInfo is valid",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:    blkReproposeWithLargerTimeslot,
-//					sendVote: false,
-//					isVoted:  false,
-//					isValid:  true,
-//				},
-//			},
-//			wantErr: false,
-//		},
-//		{
-//			name: "prev hash of block is not valid",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  tempChain,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:    blkReproposeWithLargerTimeslot,
-//					sendVote: false,
-//					isVoted:  false,
-//					isValid:  false,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "Body block has been verified",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  tempChain,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//				bodyHashes: map[uint64]map[string]bool{
-//					6: map[string]bool{
-//						blockHash1.String(): true,
-//					},
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:    blkWithDifCommittees,
-//					sendVote: false,
-//					isVoted:  false,
-//					isValid:  false,
-//				},
-//			},
-//			wantErr: false,
-//		},
-//		{
-//			name: "Verify valid block FAIL",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  tempChain,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{
-//					6: lastVotedBlk,
-//				},
-//				bodyHashes: map[uint64]map[string]bool{
-//					6: map[string]bool{
-//						blockHash1.String(): true,
-//					},
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:            blkProducerTimeSmallerThanVotedLastBlk,
-//					sendVote:         false,
-//					isVoted:          false,
-//					isValid:          false,
-//					committees:       []incognitokey.CommitteePublicKey{},
-//					signingCommittees: []incognitokey.CommitteePublicKey{},
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "Verify valid block SUCCESS",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  tempChain,
-//				},
-//				voteHistory: map[uint64]types.BlockInterface{},
-//				bodyHashes: map[uint64]map[string]bool{
-//					6: map[string]bool{
-//						blockHash1.String(): true,
-//					},
-//				},
-//			},
-//			args: args{
-//				bestView: view,
-//				proposeBlockInfo: &ProposeBlockInfo{
-//					block:            blkNormal,
-//					sendVote:         false,
-//					isVoted:          false,
-//					isValid:          false,
-//					committees:       []incognitokey.CommitteePublicKey{},
-//					signingCommittees: []incognitokey.CommitteePublicKey{},
-//				},
-//			},
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			if err := actorV2.validateBlock(tt.args.bestView, tt.args.proposeBlockInfo); (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.validateBlock() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_processIfBlockGetEnoughVote(t *testing.T) {
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		blockHash string
-//		v         *ProposeBlockInfo
-//	}
-//	tests := []struct {
-//		name   string
-//		fields fields
-//		args   args
-//	}{
-//		// TODO: Add test cases.
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			actorV2.processIfBlockGetEnoughVote(tt.args.blockHash, tt.args.v)
-//		})
-//	}
-//}
-//
-//func Test_actorV2_processWithEnoughVotes(t *testing.T) {
-//
-//	logger := initLog()
-//	common.TIMESLOT = 1
-//	initTestParams()
-//	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
-//	validationData := consensustypes.ValidationData{
-//		ValidatiorsIdx: []int{1, 2, 3, 4},
-//	}
-//	validationDataStr, _ := consensustypes.EncodeValidationData(validationData)
-//
-//	errShardBlock := &types.ShardBlock{
-//		Header: types.ShardHeader{
-//			PreviousBlockHash: *prevHash,
-//		},
-//		ValidationData: validationDataStr,
-//	}
-//	errReplaceValidationDataShardChain := &mockchain.Chain{}
-//	errReplaceValidationDataShardChain.On("ReplacePreviousValidationData", *prevHash)
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		v *ProposeBlockInfo
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		wantErr bool
-//	}{
-//		{
-//			name: "Err in create bls",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//			},
-//			args: args{
-//				v: &ProposeBlockInfo{
-//					block: errShardBlock,
-//				},
-//			},
-//			wantErr: true,
-//		},
-//		{
-//			name: "Fail to replace previous validation data",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//					chain:  errReplaceValidationDataShardChain,
-//				},
-//			},
-//			args: args{
-//				v: &ProposeBlockInfo{
-//					block:            errShardBlock,
-//					signingCommittees: []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//					votes: map[string]*BFTVote{
-//						incKey0.GetMiningKeyBase58(common.BlsConsensus): &BFTVote{
-//							Validator: incKey0.GetMiningKeyBase58(common.BlsConsensus),
-//							IsValid:   1,
-//						},
-//					},
-//				},
-//			},
-//			wantErr: true,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			if err := actorV2.processWithEnoughVotesShardChain(tt.args.v); (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.processWithEnoughVotesShardChain() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//		})
-//	}
-//}
-//
-//func Test_createVote(t *testing.T) {
-//
-//	initTestParams()
-//
-//	hash, _ := common.Hash{}.NewHashFromStr("123456")
-//	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
-//
-//	block := &mocktypes.BlockInterface{}
-//	block.On("Hash").Return(hash)
-//	block.On("GetPrevHash").Return(*prevHash)
-//	block.On("GetInstructions").Return([][]string{})
-//
-//	committees := []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3}
-//	type args struct {
-//		userKey    *signatureschemes2.MiningKey
-//		block      types.BlockInterface
-//		committees []incognitokey.CommitteePublicKey
-//	}
-//	tests := []struct {
-//		name    string
-//		args    args
-//		want    *BFTVote
-//		wantErr bool
-//	}{
-//		{
-//			name: "Valid Input",
-//			args: args{
-//				userKey:    testUserKey,
-//				block:      block,
-//				committees: committees,
-//			},
-//			want: &BFTVote{
-//				RoundKey:      "",
-//				PrevBlockHash: prevHash.String(),
-//				BlockHash:     hash.String(),
-//				Validator:     incKey0.GetMiningKeyBase58(common.BlsConsensus),
-//				IsValid:       0,
-//				TimeSlot:      0,
-//				BLS: []byte{
-//					134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236,
-//				},
-//				BRI: []byte{},
-//				Confirmation: []byte{
-//					81, 158, 170, 152, 127, 70, 139, 153, 9, 176, 2, 160, 33, 213, 231, 172, 246, 175, 86, 131, 10, 112, 252, 42, 188, 15, 53, 38, 253, 157, 51, 173, 57, 174, 39, 68, 118, 23, 7, 51, 174, 111, 181, 209, 115, 20, 53, 105, 99, 29, 138, 202, 29, 70, 174, 86, 130, 178, 22, 247, 216, 9, 143, 94, 1,
-//				},
-//			},
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			got, err := createVote(tt.args.userKey, tt.args.block, tt.args.committees)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("createVote() error = %v, wantErr %v", err, tt.wantErr)
-//				return
-//			}
-//			if !reflect.DeepEqual(got, tt.want) {
-//				t.Errorf("createVote() = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
-//
-//func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
-//	logger := initLog()
-//	common.TIMESLOT = 1
-//	initTestParams()
-//	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
-//	validationData := consensustypes.ValidationData{
-//		ValidatiorsIdx: []int{1, 2, 3, 4},
-//	}
-//	validationDataStr, _ := consensustypes.EncodeValidationData(validationData)
-//	shardBlock := &types.ShardBlock{
-//		Header: types.ShardHeader{
-//			PreviousBlockHash: *prevHash,
-//		},
-//		ValidationData: validationDataStr,
-//	}
-//
-//	wantValidationData := consensustypes.ValidationData{
-//		ProducerBLSSig: nil,
-//		ProducerBriSig: nil,
-//		ValidatiorsIdx: []int{0},
-//		AggSig:         []byte{134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236},
-//		BridgeSig:      [][]byte{[]byte{}},
-//	}
-//	wantValidationDataBytes, err := json.Marshal(wantValidationData)
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	type fields struct {
-//		actorV1            actorV1
-//		committeeChain       Chain
-//		currentTime          int64
-//		currentTimeSlot      int64
-//		proposeHistory       *lru.Cache
-//		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
-//		voteHistory          map[uint64]types.BlockInterface
-//		bodyHashes           map[uint64]map[string]bool
-//		votedTimeslot        map[int64]bool
-//		blockVersion         int
-//	}
-//	type args struct {
-//		committees         []incognitokey.CommitteePublicKey
-//		tempValidationData string
-//		votes              map[string]*BFTVote
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		want    string
-//		wantErr bool
-//	}{
-//		{
-//			name: "Valid Input",
-//			fields: fields{
-//				actorV1: actorV1{
-//					logger: logger,
-//				},
-//			},
-//			args: args{
-//				votes: map[string]*BFTVote{
-//					incKey0.GetMiningKeyBase58(common.BlsConsensus): &BFTVote{
-//						RoundKey:      "",
-//						PrevBlockHash: prevHash.String(),
-//						BlockHash:     shardBlock.Hash().String(),
-//						Validator:     incKey0.GetMiningKeyBase58(common.BlsConsensus),
-//						IsValid:       1,
-//						TimeSlot:      10,
-//						BLS: []byte{
-//							134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236,
-//						},
-//						BRI: []byte{},
-//						Confirmation: []byte{
-//							81, 158, 170, 152, 127, 70, 139, 153, 9, 176, 2, 160, 33, 213, 231, 172, 246, 175, 86, 131, 10, 112, 252, 42, 188, 15, 53, 38, 253, 157, 51, 173, 57, 174, 39, 68, 118, 23, 7, 51, 174, 111, 181, 209, 115, 20, 53, 105, 99, 29, 138, 202, 29, 70, 174, 86, 130, 178, 22, 247, 216, 9, 143, 94, 1,
-//						},
-//					},
-//				},
-//				committees:         []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
-//				tempValidationData: validationDataStr,
-//			},
-//			want:    string(wantValidationDataBytes),
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			actorV2 := &actorV2{
-//				actorV1:            tt.fields.actorV1,
-//				committeeChain:       tt.fields.committeeChain,
-//				currentTime:          tt.fields.currentTime,
-//				currentTimeSlot:      tt.fields.currentTimeSlot,
-//				proposeHistory:       tt.fields.proposeHistory,
-//				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//				voteHistory:          tt.fields.voteHistory,
-//				bodyHashes:           tt.fields.bodyHashes,
-//				votedTimeslot:        tt.fields.votedTimeslot,
-//				blockVersion:         tt.fields.blockVersion,
-//			}
-//			got, err := actorV2.createBLSAggregatedSignatures(tt.args.committees, tt.args.tempValidationData, tt.args.votes)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.createBLSAggregatedSignatures() error = %v, wantErr %v", err, tt.wantErr)
-//				return
-//			}
-//			if got != tt.want {
-//				t.Errorf("actorV2.createBLSAggregatedSignatures() = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
 
 func Test_actorV2_MultiSubset_proposeShardBlock(t *testing.T) {
 	common.TIMESLOT = 10
@@ -2208,6 +350,7 @@ func Test_actorV2_MultiSubset_handleProposeMsg(t *testing.T) {
 	tc1PrevBlockHash := common.HashH([]byte("0"))
 	tc1ProducerString := subset0Shard0CommitteeString[0]
 	tc1Producer := subset0Shard0Committee[0]
+	tc1MiningKey := subset0Shard0MiningKeyString[0]
 	tc1CommitteeViewHash := common.HashH([]byte("view-hash-1"))
 	tc1ProposeTime := int64(1626755704)
 	tc1BlockHeight := uint64(10)
@@ -2242,16 +385,98 @@ func Test_actorV2_MultiSubset_handleProposeMsg(t *testing.T) {
 	tc1ReceiveBlockByHash := make(map[string]*ProposeBlockInfo)
 	tc1ReceiveBlockByHeight := make(map[uint64][]*ProposeBlockInfo)
 
+	tc2ProposeMsgBlock := []byte("123456")
+	tc2BlockHash := common.HashH([]byte("2"))
+	tc2PrevBlockHash := common.HashH([]byte("00"))
+	tc2ProducerString := subset0Shard0CommitteeString[0]
+	tc2Producer := subset0Shard0Committee[0]
+	tc2MiningKey := subset0Shard0MiningKeyString[0]
+	tc2CommitteeViewHash := common.HashH([]byte("view-hash-2"))
+	tc2ProposeTime := int64(1626755704)
+	tc2BlockHeight := uint64(10)
+	tc2Block := &mocksTypes.BlockInterface{}
+	tc2Block.On("CommitteeFromBlock").Return(tc2CommitteeViewHash).Times(2)
+	tc2Block.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
+	tc2Block.On("GetProposeTime").Return(tc2ProposeTime).Times(2)
+	tc2Block.On("GetProducer").Return(tc2ProducerString).Times(2)
+	tc2Block.On("GetHeight").Return(tc2BlockHeight).Times(4)
+	tc2Block.On("Hash").Return(&tc2BlockHash).Times(4)
+	tc2Block.On("GetPrevHash").Return(tc2PrevBlockHash).Times(2)
+
+	tc2MockView := &mocksView.View{}
+
+	tc2Chain := &mocks.Chain{}
+	tc2Chain.On("UnmarshalBlock", tc2ProposeMsgBlock).Return(tc2Block, nil)
+	tc2Chain.On("IsBeaconChain").Return(false)
+	tc2Chain.On("GetBestViewHeight").Return(tc2BlockHeight - 1)
+	tc2Chain.On("GetViewByHash", tc2PrevBlockHash).Return(tc2MockView)
+	tc2Chain.On("GetProposerByTimeSlotFromCommitteeList", common.CalculateTimeSlot(tc2ProposeTime), shard0Committee).
+		Return(tc2Producer, 0, nil)
+	tc2Chain.On("GetSigningCommittees", int(0), shard0Committee, types.BLOCK_PRODUCINGV3_VERSION).Return(subset0Shard0Committee)
+
+	tc2CommitteeChainHandler := &mocks.CommitteeChainHandler{}
+	tc2CommitteeChainHandler.On("CommitteesFromViewHashForShard", tc2CommitteeViewHash, byte(0)).
+		Return(shard0Committee, nil)
+
+	tc2Node := &mocks.NodeInterface{}
+
+	tc2UserKeyset := []signatureschemes2.MiningKey{miningKey0}
+	tc2ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc2BlockHash.String(): &ProposeBlockInfo{
+			proposerMiningKeyBase58: tc2MiningKey,
+			validVotes:              2,
+			errVotes:                1,
+		},
+	}
+	tc2ReceiveBlockByHeight := make(map[uint64][]*ProposeBlockInfo)
+
+	tc3ProposeMsgBlock := []byte("1234567")
+	tc3BlockHash := common.HashH([]byte("3"))
+	tc3PrevBlockHash := common.HashH([]byte("000"))
+	tc3ProducerString := subset0Shard0CommitteeString[0]
+	tc3Producer := subset0Shard0Committee[0]
+	tc3MiningKey := subset0Shard0MiningKeyString[0]
+	tc3CommitteeViewHash := common.HashH([]byte("view-hash-3"))
+	tc3ProposeTime := int64(1626755704)
+	tc3BlockHeight := uint64(10)
+	tc3Block := &mocksTypes.BlockInterface{}
+	tc3Block.On("CommitteeFromBlock").Return(tc3CommitteeViewHash).Times(2)
+	tc3Block.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
+	tc3Block.On("GetProposeTime").Return(tc3ProposeTime).Times(2)
+	tc3Block.On("GetProducer").Return(tc3ProducerString).Times(2)
+	tc3Block.On("GetHeight").Return(tc3BlockHeight).Times(4)
+	tc3Block.On("Hash").Return(&tc3BlockHash).Times(4)
+	tc3Block.On("GetPrevHash").Return(tc3PrevBlockHash).Times(2)
+
+	tc3MockView := &mocksView.View{}
+
+	tc3Chain := &mocks.Chain{}
+	tc3Chain.On("UnmarshalBlock", tc3ProposeMsgBlock).Return(tc3Block, nil)
+	tc3Chain.On("IsBeaconChain").Return(false)
+	tc3Chain.On("GetBestViewHeight").Return(tc3BlockHeight + 1)
+	tc3Chain.On("GetViewByHash", tc3PrevBlockHash).Return(tc3MockView)
+	tc3Chain.On("GetProposerByTimeSlotFromCommitteeList", common.CalculateTimeSlot(tc3ProposeTime), shard0Committee).
+		Return(tc3Producer, 0, nil)
+	tc3Chain.On("GetSigningCommittees", int(0), shard0Committee, types.BLOCK_PRODUCINGV3_VERSION).Return(subset0Shard0Committee)
+
+	tc3CommitteeChainHandler := &mocks.CommitteeChainHandler{}
+	tc3CommitteeChainHandler.On("CommitteesFromViewHashForShard", tc3CommitteeViewHash, byte(0)).
+		Return(shard0Committee, nil)
+
+	tc3Node := &mocks.NodeInterface{}
+
+	tc3UserKeyset := []signatureschemes2.MiningKey{miningKey0}
+	tc3ReceiveBlockByHash := make(map[string]*ProposeBlockInfo)
+	tc3ReceiveBlockByHeight := make(map[uint64][]*ProposeBlockInfo)
+
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
-		args    args
+		name              string
+		fields            fields
+		wantErr           bool
+		wantBlockByHeight map[uint64][]*ProposeBlockInfo
+		wantBlockByHash   map[string]*ProposeBlockInfo
+		args              args
 	}{
-		//TODO: Add test cases.
-		// 2. received already
-		// 3. not received yet
-		// 4. old block than current best state
 		{
 			name: "new received block",
 			fields: fields{
@@ -2273,6 +498,106 @@ func Test_actorV2_MultiSubset_handleProposeMsg(t *testing.T) {
 				},
 			},
 			wantErr: false,
+			wantBlockByHash: map[string]*ProposeBlockInfo{
+				tc1BlockHash.String(): &ProposeBlockInfo{
+					block:                   tc1Block,
+					votes:                   make(map[string]*BFTVote),
+					committees:              shard0Committee,
+					signingCommittees:       subset0Shard0Committee,
+					userKeySet:              tc1UserKeyset,
+					proposerMiningKeyBase58: tc1MiningKey,
+				},
+			},
+			wantBlockByHeight: map[uint64][]*ProposeBlockInfo{
+				tc1BlockHeight: []*ProposeBlockInfo{
+					{
+						block:                   tc1Block,
+						votes:                   make(map[string]*BFTVote),
+						committees:              shard0Committee,
+						signingCommittees:       subset0Shard0Committee,
+						userKeySet:              tc1UserKeyset,
+						proposerMiningKeyBase58: tc1MiningKey,
+					},
+				},
+			},
+		},
+		{
+			name: "already seen block hash",
+			fields: fields{
+				node:                 tc2Node,
+				chain:                tc2Chain,
+				chainKey:             "shard0-0",
+				chainID:              0,
+				peerID:               "",
+				userKeySet:           tc2UserKeyset,
+				logger:               logger,
+				committeeChain:       tc2CommitteeChainHandler,
+				blockVersion:         types.BLOCK_PRODUCINGV3_VERSION,
+				receiveBlockByHash:   tc2ReceiveBlockByHash,
+				receiveBlockByHeight: tc2ReceiveBlockByHeight,
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					Block: json.RawMessage(tc2ProposeMsgBlock),
+				},
+			},
+			wantErr: false,
+			wantBlockByHash: map[string]*ProposeBlockInfo{
+				tc2BlockHash.String(): &ProposeBlockInfo{
+					block:                   tc2Block,
+					committees:              shard0Committee,
+					signingCommittees:       subset0Shard0Committee,
+					userKeySet:              tc2UserKeyset,
+					proposerMiningKeyBase58: tc2MiningKey,
+					validVotes:              2,
+					errVotes:                1,
+				},
+			},
+			wantBlockByHeight: tc2ReceiveBlockByHeight,
+		},
+		{
+			name: "old block than current best state",
+			fields: fields{
+				node:                 tc3Node,
+				chain:                tc3Chain,
+				chainKey:             "shard0-0",
+				chainID:              0,
+				peerID:               "",
+				userKeySet:           tc3UserKeyset,
+				logger:               logger,
+				committeeChain:       tc3CommitteeChainHandler,
+				blockVersion:         types.BLOCK_PRODUCINGV3_VERSION,
+				receiveBlockByHash:   tc3ReceiveBlockByHash,
+				receiveBlockByHeight: tc3ReceiveBlockByHeight,
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					Block: json.RawMessage(tc3ProposeMsgBlock),
+				},
+			},
+			wantErr: true,
+			wantBlockByHash: map[string]*ProposeBlockInfo{
+				tc3BlockHash.String(): &ProposeBlockInfo{
+					block:                   tc3Block,
+					votes:                   make(map[string]*BFTVote),
+					committees:              shard0Committee,
+					signingCommittees:       subset0Shard0Committee,
+					userKeySet:              tc3UserKeyset,
+					proposerMiningKeyBase58: tc3MiningKey,
+				},
+			},
+			wantBlockByHeight: map[uint64][]*ProposeBlockInfo{
+				tc3BlockHeight: []*ProposeBlockInfo{
+					{
+						block:                   tc3Block,
+						votes:                   make(map[string]*BFTVote),
+						committees:              shard0Committee,
+						signingCommittees:       subset0Shard0Committee,
+						userKeySet:              tc3UserKeyset,
+						proposerMiningKeyBase58: tc3MiningKey,
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -2291,7 +616,445 @@ func Test_actorV2_MultiSubset_handleProposeMsg(t *testing.T) {
 				blockVersion:         tt.fields.blockVersion,
 			}
 			if err := a.handleProposeMsg(tt.args.proposeMsg); (err != nil) != tt.wantErr {
-				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("handleProposeMsg() error = %v, wantErr %v", err, tt.wantErr)
+			} else {
+				for k, v := range a.receiveBlockByHash {
+					wantV, ok := tt.wantBlockByHash[k]
+					if !ok {
+						t.Errorf("handleProposeMsg() receiveBlockByHash , key = %v not found", k)
+					}
+					if !reflect.DeepEqual(v, wantV) {
+						t.Errorf("handleProposeMsg() receiveBlockByHash = %v, "+
+							"wantBlockByHash %v", v, wantV)
+					}
+				}
+				for k, v := range a.receiveBlockByHeight {
+					wantV, ok := tt.wantBlockByHeight[k]
+					if !ok {
+						t.Errorf("handleProposeMsg() receiveBlockByHeight , key = %v not found", k)
+					}
+					for i, v2 := range v {
+						wantV2 := wantV[i]
+						if !reflect.DeepEqual(v2, wantV2) {
+							t.Errorf("handleProposeMsg() receiveBlockByHeight = %v, "+
+								"wantBlockByHeight %v", v2, wantV2)
+						}
+					}
+
+				}
+			}
+		})
+	}
+}
+
+func Test_actorV2_getValidProposeBlocks(t *testing.T) {
+	common.TIMESLOT = 10
+
+	tc1MockView := &mocksView.View{}
+	tc1ProposeTime := int64(1626755704)
+	tc1BlockHeight := uint64(10)
+	tc1BlockHash := common.HashH([]byte("1"))
+	tc1MockView.On("GetHeight", tc1BlockHeight)
+	tc1Block := &mocksTypes.BlockInterface{}
+	tc1Block.On("GetProposeTime").Return(tc1ProposeTime).Times(2)
+	tc1Block.On("GetProduceTime").Return(tc1ProposeTime).Times(2)
+	tc1Block.On("GetHeight").Return(tc1BlockHeight).Times(4)
+	tc1Block.On("Hash").Return(&tc1BlockHash).Times(4)
+	tc1CurrentTimeSlot := common.CalculateTimeSlot(tc1ProposeTime)
+	tc1MockView.On("GetHeight").Return(tc1BlockHeight)
+	tc1BlockProposeInfo := &ProposeBlockInfo{
+		block:            tc1Block,
+		isVoted:          true,
+		lastValidateTime: time.Now(),
+	}
+	tc1ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc1BlockHash.String(): tc1BlockProposeInfo,
+	}
+
+	oldTimeList, _ := time.Parse(time.RFC822, "Wed, 25 Aug 2021 11:47:34+0000")
+
+	tc2MockView := &mocksView.View{}
+	tc2ProposeTime := int64(1626755704)
+	tc2BlockHeight := uint64(10)
+	tc2BlockHash := common.HashH([]byte("1"))
+	tc2MockView.On("GetHeight", tc2BlockHeight)
+	tc2Block := &mocksTypes.BlockInterface{}
+	tc2Block.On("GetProposeTime").Return(tc2ProposeTime).Times(2)
+	tc2Block.On("GetProduceTime").Return(tc2ProposeTime).Times(2)
+	tc2Block.On("GetHeight").Return(tc2BlockHeight).Times(4)
+	tc2Block.On("Hash").Return(&tc2BlockHash).Times(4)
+	tc2CurrentTimeSlot := common.CalculateTimeSlot(tc2ProposeTime + int64(common.TIMESLOT))
+	tc2MockView.On("GetHeight").Return(tc2BlockHeight)
+	tc2BlockProposeInfo := &ProposeBlockInfo{
+		block:            tc2Block,
+		isVoted:          true,
+		lastValidateTime: oldTimeList,
+	}
+	tc2ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc2BlockHash.String(): tc2BlockProposeInfo,
+	}
+
+	tc3MockView := &mocksView.View{}
+	tc3ProposeTime := int64(1626755704)
+	tc3BlockHeight := uint64(10)
+	tc3BlockHash := common.HashH([]byte("1"))
+	tc3MockView.On("GetHeight", tc3BlockHeight)
+	tc3Block := &mocksTypes.BlockInterface{}
+	tc3Block.On("GetProposeTime").Return(tc3ProposeTime).Times(2)
+	tc3Block.On("GetProduceTime").Return(tc3ProposeTime).Times(2)
+	tc3Block.On("GetHeight").Return(tc3BlockHeight).Times(4)
+	tc3Block.On("Hash").Return(&tc3BlockHash).Times(4)
+	tc3CurrentTimeSlot := common.CalculateTimeSlot(tc3ProposeTime)
+	tc3MockView.On("GetHeight").Return(tc3BlockHeight)
+	tc3BlockProposeInfo := &ProposeBlockInfo{
+		block:            tc3Block,
+		isVoted:          true,
+		lastValidateTime: oldTimeList,
+	}
+	tc3ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc3BlockHash.String(): tc3BlockProposeInfo,
+	}
+
+	tc4MockView := &mocksView.View{}
+	tc4ProposeTime := int64(1626755704)
+	tc4BlockHeight := uint64(10)
+	tc4BlockHash := common.HashH([]byte("1"))
+	tc4MockView.On("GetHeight", tc4BlockHeight)
+	tc4Block := &mocksTypes.BlockInterface{}
+	tc4Block.On("GetProposeTime").Return(tc4ProposeTime).Times(2)
+	tc4Block.On("GetProduceTime").Return(tc4ProposeTime + int64(common.TIMESLOT)).Times(2)
+	tc4Block.On("GetHeight").Return(tc4BlockHeight + 1).Times(4)
+	tc4Block.On("Hash").Return(&tc4BlockHash).Times(4)
+	tc4CurrentTimeSlot := common.CalculateTimeSlot(tc4ProposeTime)
+	tc4MockView.On("GetHeight").Return(tc4BlockHeight)
+	tc4BlockProposeInfo := &ProposeBlockInfo{
+		block:            tc4Block,
+		isVoted:          true,
+		lastValidateTime: oldTimeList,
+	}
+	tc4ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc4BlockHash.String(): tc4BlockProposeInfo,
+	}
+
+	tc5MockView := &mocksView.View{}
+	tc5ProposeTime := int64(1626755704)
+	tc5BlockHeight := uint64(10)
+	tc5BlockHash := common.HashH([]byte("1"))
+	tc5MockView.On("GetHeight", tc5BlockHeight)
+	tc5Block := &mocksTypes.BlockInterface{}
+	tc5Block.On("GetProposeTime").Return(tc5ProposeTime).Times(2)
+	tc5Block.On("GetProduceTime").Return(tc5ProposeTime).Times(2)
+	tc5Block.On("GetHeight").Return(tc5BlockHeight + 1).Times(4)
+	tc5Block.On("Hash").Return(&tc5BlockHash).Times(4)
+	tc5CurrentTimeSlot := common.CalculateTimeSlot(tc5ProposeTime)
+	tc5MockView.On("GetHeight").Return(tc5BlockHeight)
+	tc5BlockProposeInfo := &ProposeBlockInfo{
+		block:            tc5Block,
+		isVoted:          true,
+		lastValidateTime: oldTimeList,
+	}
+	tc5ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc5BlockHash.String(): tc5BlockProposeInfo,
+	}
+
+	tc5MockView2 := &mocksView.View{}
+	tc5MockView2.On("GetHeight").Return(tc5BlockHeight + 2)
+	tc5Chain := &mocks.Chain{}
+	tc5Chain.On("GetFinalView").Return(tc5MockView2)
+
+	tc6MockView := &mocksView.View{}
+	tc6ProposeTime := int64(1626755704)
+	tc6BlockHeight := uint64(10)
+	tc6BlockHash := common.HashH([]byte("1"))
+	tc6BlockHash2 := common.HashH([]byte("2"))
+	tc6MockView.On("GetHeight", tc6BlockHeight)
+	tc6Block := &mocksTypes.BlockInterface{}
+	tc6Block.On("GetProposeTime").Return(tc6ProposeTime).Times(2)
+	tc6Block.On("GetProduceTime").Return(tc6ProposeTime).Times(6)
+	tc6Block.On("GetHeight").Return(tc6BlockHeight + 1).Times(6)
+	tc6Block.On("Hash").Return(&tc6BlockHash).Times(4)
+
+	tc6Block2 := &mocksTypes.BlockInterface{}
+	tc6Block2.On("GetProposeTime").Return(tc6ProposeTime).Times(2)
+	tc6Block2.On("GetProduceTime").Return(tc6ProposeTime - int64(common.TIMESLOT)).Times(6)
+	tc6Block2.On("GetHeight").Return(tc6BlockHeight + 1).Times(6)
+	tc6Block2.On("Hash").Return(&tc6BlockHash2).Times(4)
+
+	tc6CurrentTimeSlot := common.CalculateTimeSlot(tc6ProposeTime)
+	tc6MockView.On("GetHeight").Return(tc6BlockHeight)
+	tc6BlockProposeInfo := &ProposeBlockInfo{
+		block:            tc6Block,
+		isVoted:          true,
+		lastValidateTime: oldTimeList,
+	}
+	tc6BlockProposeInfo2 := &ProposeBlockInfo{
+		block:            tc6Block,
+		isVoted:          true,
+		lastValidateTime: oldTimeList,
+	}
+	tc6ReceiveBlockByHash := map[string]*ProposeBlockInfo{
+		tc6BlockHash.String():  tc6BlockProposeInfo,
+		tc6BlockHash2.String(): tc6BlockProposeInfo2,
+	}
+
+	tc6MockView2 := &mocksView.View{}
+	tc6MockView2.On("GetHeight").Return(tc6BlockHeight - 2)
+	tc6Chain := &mocks.Chain{}
+	tc6Chain.On("GetFinalView").Return(tc6MockView2)
+
+	type fields struct {
+		currentTimeSlot      int64
+		chain                Chain
+		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
+		receiveBlockByHash   map[string]*ProposeBlockInfo
+		voteHistory          map[uint64]types.BlockInterface
+		node                 NodeInterface
+	}
+	type args struct {
+		bestView multiview.View
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   []*ProposeBlockInfo
+	}{
+		//TODO: Add test cases.
+		{
+			name: "just validate recently",
+			fields: fields{
+				currentTimeSlot:    tc1CurrentTimeSlot,
+				receiveBlockByHash: tc1ReceiveBlockByHash,
+			},
+			args: args{
+				tc1MockView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "not propose in time slot",
+			fields: fields{
+				currentTimeSlot:    tc2CurrentTimeSlot,
+				receiveBlockByHash: tc2ReceiveBlockByHash,
+			},
+			args: args{
+				tc2MockView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "not connect to best height",
+			fields: fields{
+				currentTimeSlot:    tc3CurrentTimeSlot,
+				receiveBlockByHash: tc3ReceiveBlockByHash,
+			},
+			args: args{
+				tc3MockView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "producer time < current timeslot",
+			fields: fields{
+				currentTimeSlot:    tc4CurrentTimeSlot,
+				receiveBlockByHash: tc4ReceiveBlockByHash,
+			},
+			args: args{
+				tc4MockView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "propose block info height < final view",
+			fields: fields{
+				currentTimeSlot:    tc5CurrentTimeSlot,
+				receiveBlockByHash: tc5ReceiveBlockByHash,
+				chain:              tc5Chain,
+			},
+			args: args{
+				tc5MockView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "add valid propose block info",
+			fields: fields{
+				currentTimeSlot:    tc6CurrentTimeSlot,
+				receiveBlockByHash: tc6ReceiveBlockByHash,
+				chain:              tc6Chain,
+			},
+			args: args{
+				tc6MockView,
+			},
+			want: []*ProposeBlockInfo{tc6BlockProposeInfo2, tc6BlockProposeInfo},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &actorV2{
+				currentTimeSlot:    tt.fields.currentTimeSlot,
+				receiveBlockByHash: tt.fields.receiveBlockByHash,
+				chain:              tt.fields.chain,
+				voteHistory:        tt.fields.voteHistory,
+				node:               tt.fields.node,
+			}
+			if got := a.getValidProposeBlocks(tt.args.bestView); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getValidProposeBlocks() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_actorV2_validatePreSignBlock(t *testing.T) {
+
+	common.TIMESLOT = 10
+	tc1BlockHash := common.HashH([]byte("1"))
+	tc1PrevBlockHash := common.HashH([]byte("0"))
+	tc1ProducerString := subset0Shard0CommitteeString[0]
+	tc1CommitteeViewHash := common.HashH([]byte("view-hash-1"))
+	tc1ProposeTime := int64(1626755704)
+	tc1BlockHeight := uint64(10)
+	tc1Block := &mocksTypes.BlockInterface{}
+	tc1Block.On("CommitteeFromBlock").Return(tc1CommitteeViewHash).Times(2)
+	tc1Block.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
+	tc1Block.On("GetProposeTime").Return(tc1ProposeTime).Times(2)
+	tc1Block.On("GetProduceTime").Return(tc1ProposeTime).Times(2)
+	tc1Block.On("GetProducer").Return(tc1ProducerString).Times(2)
+	tc1Block.On("GetHeight").Return(tc1BlockHeight).Times(4)
+	tc1Block.On("Hash").Return(&tc1BlockHash).Times(4)
+	tc1Block.On("GetPrevHash").Return(tc1PrevBlockHash).Times(2)
+	tc1ProposeBlockInfo := &ProposeBlockInfo{
+		block:             tc1Block,
+		signingCommittees: subset0Shard0Committee,
+		committees:        shard0Committee,
+	}
+	tc1MockView := &mocksView.View{}
+
+	tc1Chain := &mocks.Chain{}
+	tc1Chain.On("GetViewByHash", tc1PrevBlockHash).Return(tc1MockView)
+	tc1Chain.On("ValidatePreSignBlock",
+		tc1ProposeBlockInfo.block,
+		tc1ProposeBlockInfo.signingCommittees,
+		tc1ProposeBlockInfo.committees).Return(nil)
+
+	tc2BlockHash := common.HashH([]byte("2"))
+	tc2PrevBlockHash := common.HashH([]byte("00"))
+	tc2ProducerString := subset0Shard0CommitteeString[0]
+	tc2CommitteeViewHash := common.HashH([]byte("view-hash-2"))
+	tc2ProposeTime := int64(1626755704)
+	tc2BlockHeight := uint64(10)
+	tc2Block := &mocksTypes.BlockInterface{}
+	tc2Block.On("CommitteeFromBlock").Return(tc2CommitteeViewHash).Times(2)
+	tc2Block.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
+	tc2Block.On("GetProposeTime").Return(tc2ProposeTime).Times(2)
+	tc2Block.On("GetProduceTime").Return(tc2ProposeTime).Times(2)
+	tc2Block.On("GetProducer").Return(tc2ProducerString).Times(2)
+	tc2Block.On("GetHeight").Return(tc2BlockHeight).Times(4)
+	tc2Block.On("Hash").Return(&tc2BlockHash).Times(4)
+	tc2Block.On("GetPrevHash").Return(tc2PrevBlockHash).Times(2)
+	tc2ProposeBlockInfo := &ProposeBlockInfo{
+		block:             tc2Block,
+		signingCommittees: subset0Shard0Committee,
+		committees:        shard0Committee,
+	}
+	//tc2MockView := &mocksView.View{}
+
+	tc2Chain := &mocks.Chain{}
+	tc2Chain.On("GetViewByHash", tc2PrevBlockHash).Return(nil)
+	tc2Chain.On("ValidatePreSignBlock",
+		tc2ProposeBlockInfo.block,
+		tc2ProposeBlockInfo.signingCommittees,
+		tc2ProposeBlockInfo.committees).Return(nil)
+
+	tc3BlockHash := common.HashH([]byte("3"))
+	tc3PrevBlockHash := common.HashH([]byte("000"))
+	tc3ProducerString := subset0Shard0CommitteeString[0]
+	tc3CommitteeViewHash := common.HashH([]byte("view-hash-3"))
+	tc3ProposeTime := int64(1626755704)
+	tc3BlockHeight := uint64(10)
+	tc3Block := &mocksTypes.BlockInterface{}
+	tc3Block.On("CommitteeFromBlock").Return(tc3CommitteeViewHash).Times(2)
+	tc3Block.On("GetVersion").Return(types.BLOCK_PRODUCINGV3_VERSION).Times(2)
+	tc3Block.On("GetProposeTime").Return(tc3ProposeTime).Times(2)
+	tc3Block.On("GetProduceTime").Return(tc3ProposeTime).Times(2)
+	tc3Block.On("GetProducer").Return(tc3ProducerString).Times(2)
+	tc3Block.On("GetHeight").Return(tc3BlockHeight).Times(4)
+	tc3Block.On("Hash").Return(&tc3BlockHash).Times(4)
+	tc3Block.On("GetPrevHash").Return(tc3PrevBlockHash).Times(2)
+	tc3ProposeBlockInfo := &ProposeBlockInfo{
+		block:             tc3Block,
+		signingCommittees: subset0Shard0Committee,
+		committees:        shard0Committee,
+	}
+	tc3MockView := &mocksView.View{}
+
+	tc3Chain := &mocks.Chain{}
+	tc3Chain.On("GetViewByHash", tc3PrevBlockHash).Return(tc3MockView)
+	tc3Chain.On("ValidatePreSignBlock",
+		tc3ProposeBlockInfo.block,
+		tc3ProposeBlockInfo.signingCommittees,
+		tc3ProposeBlockInfo.committees).Return(errors.New("some error"))
+
+	type fields struct {
+		chain        Chain
+		logger       common.Logger
+		blockVersion int
+	}
+	type args struct {
+		proposeBlockInfo *ProposeBlockInfo
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "validate pre sign block success",
+			fields: fields{
+				chain:        tc1Chain,
+				logger:       logger,
+				blockVersion: types.BLOCK_PRODUCINGV3_VERSION,
+			},
+			args: args{
+				proposeBlockInfo: tc1ProposeBlockInfo,
+			},
+			wantErr: false,
+		},
+		{
+			name: "block propose info previous hash view not found",
+			fields: fields{
+				chain:        tc2Chain,
+				logger:       logger,
+				blockVersion: types.BLOCK_PRODUCINGV3_VERSION,
+			},
+			args: args{
+				proposeBlockInfo: tc2ProposeBlockInfo,
+			},
+			wantErr: true,
+		},
+		{
+			name: "validate pre sign block fail",
+			fields: fields{
+				chain:        tc3Chain,
+				logger:       logger,
+				blockVersion: types.BLOCK_PRODUCINGV3_VERSION,
+			},
+			args: args{
+				proposeBlockInfo: tc3ProposeBlockInfo,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &actorV2{
+				chain:        tt.fields.chain,
+				logger:       tt.fields.logger,
+				blockVersion: tt.fields.blockVersion,
+			}
+			if err := a.validatePreSignBlock(tt.args.proposeBlockInfo); (err != nil) != tt.wantErr {
+				t.Errorf("ValidatePreSignBlock() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

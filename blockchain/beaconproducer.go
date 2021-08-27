@@ -181,7 +181,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			percentCustodianRewards,
 			newBeaconBlock.Header.Version,
 		)
-
 		if err != nil {
 			return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}

@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type RewardRequestStateV3 struct {
+type RewardRequestMultisetState struct {
 	// tokenid => amount
 	epoch    uint64
 	shardID  byte
@@ -17,48 +17,48 @@ type RewardRequestStateV3 struct {
 	amount   uint64
 }
 
-func (rr RewardRequestStateV3) Amount() uint64 {
+func (rr RewardRequestMultisetState) Amount() uint64 {
 	return rr.amount
 }
 
-func (rr *RewardRequestStateV3) SetAmount(amount uint64) {
+func (rr *RewardRequestMultisetState) SetAmount(amount uint64) {
 	rr.amount = amount
 }
 
-func (rr RewardRequestStateV3) TokenID() common.Hash {
+func (rr RewardRequestMultisetState) TokenID() common.Hash {
 	return rr.tokenID
 }
 
-func (rr *RewardRequestStateV3) SetTokenID(tokenID common.Hash) {
+func (rr *RewardRequestMultisetState) SetTokenID(tokenID common.Hash) {
 	rr.tokenID = tokenID
 }
 
-func (rr RewardRequestStateV3) ShardID() byte {
+func (rr RewardRequestMultisetState) ShardID() byte {
 	return rr.shardID
 }
 
-func (rr *RewardRequestStateV3) SetShardID(shardID byte) {
+func (rr *RewardRequestMultisetState) SetShardID(shardID byte) {
 	rr.shardID = shardID
 }
 
-func (rr RewardRequestStateV3) SubsetID() byte {
+func (rr RewardRequestMultisetState) SubsetID() byte {
 	return rr.subsetID
 }
 
-func (rr *RewardRequestStateV3) SetSubsetID(subsetID byte) {
+func (rr *RewardRequestMultisetState) SetSubsetID(subsetID byte) {
 	rr.subsetID = subsetID
 }
 
-func (rr RewardRequestStateV3) Epoch() uint64 {
+func (rr RewardRequestMultisetState) Epoch() uint64 {
 	return rr.epoch
 }
 
-func (rr *RewardRequestStateV3) SetEpoch(epoch uint64) {
+func (rr *RewardRequestMultisetState) SetEpoch(epoch uint64) {
 	rr.epoch = epoch
 }
 
-func NewRewardRequestStateV3() *RewardRequestStateV3 {
-	return &RewardRequestStateV3{}
+func NewRewardRequestStateV3() *RewardRequestMultisetState {
+	return &RewardRequestMultisetState{}
 }
 
 func NewRewardRequestStateV3WithValue(
@@ -66,8 +66,8 @@ func NewRewardRequestStateV3WithValue(
 	shardID, subsetID byte,
 	tokenID common.Hash,
 	amount uint64,
-) *RewardRequestStateV3 {
-	return &RewardRequestStateV3{
+) *RewardRequestMultisetState {
+	return &RewardRequestMultisetState{
 		epoch:    epoch,
 		shardID:  shardID,
 		subsetID: subsetID,
@@ -76,7 +76,7 @@ func NewRewardRequestStateV3WithValue(
 	}
 }
 
-func (c RewardRequestStateV3) MarshalJSON() ([]byte, error) {
+func (c RewardRequestMultisetState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Epoch    uint64
 		ShardID  byte
@@ -96,7 +96,7 @@ func (c RewardRequestStateV3) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (c *RewardRequestStateV3) UnmarshalJSON(data []byte) error {
+func (c *RewardRequestMultisetState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Epoch    uint64
 		ShardID  byte
@@ -116,14 +116,14 @@ func (c *RewardRequestStateV3) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type RewardRequestObjectV3 struct {
+type RewardRequestMultisetObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version             int
 	rewardRequestHash   common.Hash
-	rewardReceiverState *RewardRequestStateV3
+	rewardReceiverState *RewardRequestMultisetState
 	objectType          int
 	deleted             bool
 
@@ -135,8 +135,8 @@ type RewardRequestObjectV3 struct {
 	dbErr error
 }
 
-func newRewardRequestV3Object(db *StateDB, hash common.Hash) *RewardRequestObjectV3 {
-	return &RewardRequestObjectV3{
+func newRewardRequestMultisetObject(db *StateDB, hash common.Hash) *RewardRequestMultisetObject {
+	return &RewardRequestMultisetObject{
 		version:             defaultVersion,
 		db:                  db,
 		rewardRequestHash:   hash,
@@ -146,7 +146,7 @@ func newRewardRequestV3Object(db *StateDB, hash common.Hash) *RewardRequestObjec
 	}
 }
 
-func newRewardRequestV3ObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*RewardRequestObjectV3, error) {
+func newRewardRequestMultisetObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*RewardRequestMultisetObject, error) {
 	var newRewardRequestState = NewRewardRequestStateV3()
 	var ok bool
 	var dataBytes []byte
@@ -156,12 +156,12 @@ func newRewardRequestV3ObjectWithValue(db *StateDB, key common.Hash, data interf
 			return nil, err
 		}
 	} else {
-		newRewardRequestState, ok = data.(*RewardRequestStateV3)
+		newRewardRequestState, ok = data.(*RewardRequestMultisetState)
 		if !ok {
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidRewardRequestStateType, reflect.TypeOf(data))
 		}
 	}
-	return &RewardRequestObjectV3{
+	return &RewardRequestMultisetObject{
 		version:             defaultVersion,
 		rewardRequestHash:   key,
 		rewardReceiverState: newRewardRequestState,
@@ -171,22 +171,22 @@ func newRewardRequestV3ObjectWithValue(db *StateDB, key common.Hash, data interf
 	}, nil
 }
 
-func (rr RewardRequestObjectV3) GetVersion() int {
+func (rr RewardRequestMultisetObject) GetVersion() int {
 	return rr.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (rr *RewardRequestObjectV3) SetError(err error) {
+func (rr *RewardRequestMultisetObject) SetError(err error) {
 	if rr.dbErr == nil {
 		rr.dbErr = err
 	}
 }
 
-func (rr RewardRequestObjectV3) GetTrie(db DatabaseAccessWarper) Trie {
+func (rr RewardRequestMultisetObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return rr.trie
 }
 
-func (rr *RewardRequestObjectV3) SetValue(data interface{}) error {
+func (rr *RewardRequestMultisetObject) SetValue(data interface{}) error {
 	var newRewardRequestState = NewRewardRequestStateV3()
 	var ok bool
 	var dataBytes []byte
@@ -196,7 +196,7 @@ func (rr *RewardRequestObjectV3) SetValue(data interface{}) error {
 			return err
 		}
 	} else {
-		newRewardRequestState, ok = data.(*RewardRequestStateV3)
+		newRewardRequestState, ok = data.(*RewardRequestMultisetState)
 		if !ok {
 			return fmt.Errorf("%+v, got type %+v", ErrInvalidRewardRequestStateType, reflect.TypeOf(data))
 		}
@@ -205,11 +205,11 @@ func (rr *RewardRequestObjectV3) SetValue(data interface{}) error {
 	return nil
 }
 
-func (rr RewardRequestObjectV3) GetValue() interface{} {
+func (rr RewardRequestMultisetObject) GetValue() interface{} {
 	return rr.rewardReceiverState
 }
 
-func (rr RewardRequestObjectV3) GetValueBytes() []byte {
+func (rr RewardRequestMultisetObject) GetValueBytes() []byte {
 	data := rr.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
@@ -218,35 +218,35 @@ func (rr RewardRequestObjectV3) GetValueBytes() []byte {
 	return []byte(value)
 }
 
-func (rr RewardRequestObjectV3) GetHash() common.Hash {
+func (rr RewardRequestMultisetObject) GetHash() common.Hash {
 	return rr.rewardRequestHash
 }
 
-func (rr RewardRequestObjectV3) GetType() int {
+func (rr RewardRequestMultisetObject) GetType() int {
 	return rr.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (rr *RewardRequestObjectV3) MarkDelete() {
+func (rr *RewardRequestMultisetObject) MarkDelete() {
 	rr.deleted = true
 }
 
-func (rr *RewardRequestObjectV3) Reset() bool {
+func (rr *RewardRequestMultisetObject) Reset() bool {
 	rr.rewardReceiverState = NewRewardRequestStateV3()
 	return true
 }
 
-func (rr RewardRequestObjectV3) IsDeleted() bool {
+func (rr RewardRequestMultisetObject) IsDeleted() bool {
 	return rr.deleted
 }
 
 // value is either default or nil
-func (rr RewardRequestObjectV3) IsEmpty() bool {
+func (rr RewardRequestMultisetObject) IsEmpty() bool {
 	temp := NewRewardRequestStateV3()
 	return reflect.DeepEqual(temp, rr.rewardReceiverState) || rr.rewardReceiverState == nil
 }
 
-func generateRewardRequestObjectKeyV3(epoch uint64, shardID, subsetID byte, tokenID common.Hash) common.Hash {
+func generateRewardRequestMultisetObjectKey(epoch uint64, shardID, subsetID byte, tokenID common.Hash) common.Hash {
 	prefixHash := GetRewardRequestPrefix(epoch)
 	tempPrefix := append([]byte{shardID}, []byte{subsetID}...)
 	valueHash := common.HashH(append(tempPrefix, tokenID[:]...))

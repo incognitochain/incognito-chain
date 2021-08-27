@@ -1011,13 +1011,13 @@ func (stateDB *StateDB) getRewardRequestState(key common.Hash) (*RewardRequestSt
 	return NewRewardRequestState(), false, nil
 }
 
-func (stateDB *StateDB) getRewardRequestStateV3(key common.Hash) (*RewardRequestStateV3, bool, error) {
+func (stateDB *StateDB) getRewardRequestStateV3(key common.Hash) (*RewardRequestMultisetState, bool, error) {
 	rewardRequestState, err := stateDB.getStateObject(RewardRequestV3ObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if rewardRequestState != nil {
-		return rewardRequestState.GetValue().(*RewardRequestStateV3), true, nil
+		return rewardRequestState.GetValue().(*RewardRequestMultisetState), true, nil
 	}
 	return NewRewardRequestStateV3(), false, nil
 }
@@ -1029,7 +1029,7 @@ func (stateDB *StateDB) getRewardRequestAmountV3(key common.Hash) (uint64, bool,
 		return amount, false, err
 	}
 	if rewardRequestObject != nil {
-		temp := rewardRequestObject.GetValue().(*RewardRequestStateV3)
+		temp := rewardRequestObject.GetValue().(*RewardRequestMultisetState)
 		amount = temp.amount
 		return amount, true, nil
 	}
@@ -1074,8 +1074,8 @@ func (stateDB *StateDB) getAllRewardRequestState(epoch uint64) ([]common.Hash, [
 	return keys, m
 }
 
-func (stateDB *StateDB) getAllRewardRequestStateV3(epoch uint64) ([]common.Hash, []*RewardRequestStateV3) {
-	m := []*RewardRequestStateV3{}
+func (stateDB *StateDB) getAllRewardRequestStateV3(epoch uint64) ([]common.Hash, []*RewardRequestMultisetState) {
+	m := []*RewardRequestMultisetState{}
 	keys := []common.Hash{}
 	prefix := GetRewardRequestPrefix(epoch)
 	temp := stateDB.trie.NodeIterator(prefix)

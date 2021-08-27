@@ -773,3 +773,28 @@ func (actorV1 *actorV1) initRoundData() {
 func (actorV1) Destroy() {
 
 }
+
+func (actorV1 *actorV1) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
+	switch msgBFT.Type {
+	case MSG_PROPOSE:
+		var msgPropose BFTPropose
+		err := json.Unmarshal(msgBFT.Content, &msgPropose)
+		if err != nil {
+			actorV1.logger.Error(err)
+			return
+		}
+		msgPropose.PeerID = msgBFT.PeerID
+		actorV1.proposeMessageCh <- msgPropose
+	case MSG_VOTE:
+		var msgVote BFTVote
+		err := json.Unmarshal(msgBFT.Content, &msgVote)
+		if err != nil {
+			actorV1.logger.Error(err)
+			return
+		}
+		actorV1.voteMessageCh <- msgVote
+	default:
+		actorV1.logger.Critical("Unknown BFT message type")
+		return
+	}
+}

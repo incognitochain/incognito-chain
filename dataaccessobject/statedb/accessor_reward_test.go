@@ -437,12 +437,12 @@ func TestGetAllTokenIDForRewardV3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GetAllTokenIDForRewardV3(tt.args.stateDB, tt.args.epoch)
+			got := GetAllTokenIDForRewardMultiset(tt.args.stateDB, tt.args.epoch)
 			sort.Slice(got, func(i, j int) bool {
 				return got[i].String() < got[j].String()
 			})
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetAllTokenIDForRewardV3() = %v, want %v", got, tt.want)
+				t.Errorf("GetAllTokenIDForRewardMultiset() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -453,7 +453,7 @@ func TestGetAllTokenIDForRewardV3_1(t *testing.T) {
 	//hash, _ := common.Hash{}.NewHashFromStr("79dcb9012102b7f2efd2c486bfb951b5b09a0f4a1648ef611477b0798717dc80")
 	//t.Log(emptyRoot.String())
 	//sDB, _ := NewWithPrefixTrie(*hash, wrarperDB)
-	//got := GetAllTokenIDForRewardV3(sDB, 798)
+	//got := GetAllTokenIDForRewardMultiset(sDB, 798)
 	//t.Log(got)
 }
 

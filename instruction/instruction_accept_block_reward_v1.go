@@ -10,9 +10,9 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type ShardReceiveRewardV1 struct {
-	reward map[common.Hash]uint64
-	epoch  uint64
+type ShardBlockRewardInfo struct {
+	ShardReward map[common.Hash]uint64
+	Epoch       uint64
 }
 
 type AcceptBlockRewardV1 struct {
@@ -21,19 +21,11 @@ type AcceptBlockRewardV1 struct {
 	ShardBlockHeight uint64
 }
 
-func (s ShardReceiveRewardV1) Reward() map[common.Hash]uint64 {
-	return s.reward
-}
-
-func (s ShardReceiveRewardV1) Epoch() uint64 {
-	return s.epoch
-}
-
 func NewShardReceiveRewardV1WithValue(reward map[common.Hash]uint64, epoch uint64, shardID byte) ([][]string, error) {
 	resIns := [][]string{}
-	shardBlockRewardInfo := ShardReceiveRewardV1{
-		epoch:  epoch,
-		reward: reward,
+	shardBlockRewardInfo := ShardBlockRewardInfo{
+		Epoch:       epoch,
+		ShardReward: reward,
 	}
 
 	contentStr, err := json.Marshal(shardBlockRewardInfo)
@@ -51,8 +43,8 @@ func NewShardReceiveRewardV1WithValue(reward map[common.Hash]uint64, epoch uint6
 	return resIns, nil
 }
 
-func NewShardReceiveRewardV1FromString(inst string) (*ShardReceiveRewardV1, error) {
-	Ins := &ShardReceiveRewardV1{}
+func NewShardReceiveRewardV1FromString(inst string) (*ShardBlockRewardInfo, error) {
+	Ins := &ShardBlockRewardInfo{}
 	err := json.Unmarshal([]byte(inst), Ins)
 	if err != nil {
 		return nil, err
