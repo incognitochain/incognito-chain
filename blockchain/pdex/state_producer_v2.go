@@ -751,48 +751,6 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			continue
 		}
 
-		if shares.amount == shareAmount {
-			// withdrawal LP fee
-			nftIDByte, err := new(common.Hash).NewHashFromStr(metaData.NftID())
-			reward, err := poolPair.RecomputeLPFee(*nftIDByte)
-			if err != nil {
-				return res, poolPairs, err
-			}
-
-			receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
-			notEnoughOTA := false
-			for tokenID := range reward {
-				if _, isExisted := metaData.FeeReceivers()[tokenID]; !isExisted {
-					notEnoughOTA = true
-					break
-				}
-				receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
-					Address: metaData.FeeReceivers()[tokenID],
-					Amount:  reward[tokenID],
-				}
-			}
-
-			if notEnoughOTA {
-				res = append(res, rejectInsts...)
-				continue
-			}
-
-			acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
-				metaData.PoolPairID(),
-				*nftIDByte,
-				receiversInfo,
-				shardID,
-				txReqID,
-				metadataPdexv3.RequestAcceptedChainStatus,
-			)
-
-			// update state after fee withdrawal
-			shares.tradingFees = map[common.Hash]uint64{}
-			shares.lastLPFeesPerShare = poolPair.state.LPFeesPerShare()
-
-			res = append(res, acceptedInst...)
-		}
-
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
 			*metaData,
 			poolPair.state.Token0ID(), poolPair.state.Token1ID(),

@@ -907,33 +907,11 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		token0Amount, token1Amount, poolPairState.ShareAmount(),
 	)
 
-	tokenIDs := []string{
-		poolPairState.Token0ID().String(),
-		poolPairState.Token1ID().String(),
-		common.PRVIDStr,
-		withdrawLiquidityRequest.TokenID,
-	}
-
-	feeReceivers := map[common.Hash]privacy.OTAReceiver{}
-	for _, tokenIDStr := range tokenIDs {
-		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
-		}
-		receiver := privacy.OTAReceiver{}
-		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-		}
-		feeReceivers[*tokenID] = receiver
-	}
-
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		withdrawLiquidityRequest.PoolPairID,
 		withdrawLiquidityRequest.TokenID,
 		otaReceiveNftStr, otaReceiveToken0Str, otaReceiveToken1Str,
 		shareAmount,
-		feeReceivers,
 	)
 	receiverAddresses, ok := arrayParams[1].(map[string]interface{})
 	if !ok {
