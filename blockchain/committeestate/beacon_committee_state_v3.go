@@ -390,6 +390,7 @@ func (b *BeaconCommitteeStateV3) addData(env *BeaconCommitteeStateEnvironment) {
 	for i := 0; i < env.ActiveShards; i++ {
 		env.numberOfValidator[i] += len(b.shardCommittee[byte(i)])
 		env.numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
+		env.numberOfValidator[i] += len(b.syncPool[byte(i)])
 	}
 
 }
