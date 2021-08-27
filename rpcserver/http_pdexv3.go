@@ -135,16 +135,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PRVDiscountPercent is invalid"))
 	}
 
-	orderProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["OrderProtocolFeePercent"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderProtocolFeePercent is invalid"))
-	}
-
-	orderStakingPoolRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["OrderStakingPoolRewardPercent"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderStakingPoolRewardPercent is invalid"))
-	}
-
 	tradingProtocolFeePercent, err := common.AssertAndConvertStrToNumber(newParams["TradingProtocolFeePercent"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TradingProtocolFeePercent is invalid"))
@@ -181,6 +171,19 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		stakingPoolsShare[key] = uint(value)
 	}
 
+	stakingRewardTokensStr := newParams["StakingRewardTokens"].([]string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingRewardTokens is invalid"))
+	}
+	stakingRewardTokens := []common.Hash{}
+	for _, tokenIDStr := range stakingRewardTokensStr {
+		tokenID, err := new(common.Hash).NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Token %v of StakingRewardTokens is invalid", tokenIDStr))
+		}
+		stakingRewardTokens = append(stakingRewardTokens, *tokenID)
+	}
+
 	mintNftRequireAmount, err := common.AssertAndConvertStrToNumber(newParams["MintNftRequireAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MintNftRequireAmount is invalid"))
@@ -192,12 +195,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			DefaultFeeRateBPS:               uint(defaultFeeRateBPS),
 			FeeRateBPS:                      feeRateBPS,
 			PRVDiscountPercent:              uint(prvDiscountPercent),
-			OrderProtocolFeePercent:         uint(orderProtocolFeePercent),
-			OrderStakingPoolRewardPercent:   uint(orderStakingPoolRewardPercent),
 			TradingProtocolFeePercent:       uint(tradingProtocolFeePercent),
 			TradingStakingPoolRewardPercent: uint(tradingStakingPoolRewardPercent),
 			PDEXRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 			StakingPoolsShare:               stakingPoolsShare,
+			StakingRewardTokens:             stakingRewardTokens,
 			MintNftRequireAmount:            mintNftRequireAmount,
 		},
 	)

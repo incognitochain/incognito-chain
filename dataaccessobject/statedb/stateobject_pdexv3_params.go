@@ -12,12 +12,11 @@ type Pdexv3Params struct {
 	defaultFeeRateBPS               uint
 	feeRateBPS                      map[string]uint
 	prvDiscountPercent              uint
-	orderProtocolFeePercent         uint
-	orderStakingPoolRewardPercent   uint
 	tradingProtocolFeePercent       uint
 	tradingStakingPoolRewardPercent uint
 	pdexRewardPoolPairsShare        map[string]uint
 	stakingPoolsShare               map[string]uint
+	stakingRewardTokens             []common.Hash
 	mintNftRequireAmount            uint64
 }
 
@@ -29,12 +28,6 @@ func (pp Pdexv3Params) FeeRateBPS() map[string]uint {
 }
 func (pp Pdexv3Params) PRVDiscountPercent() uint {
 	return pp.prvDiscountPercent
-}
-func (pp Pdexv3Params) OrderProtocolFeePercent() uint {
-	return pp.orderProtocolFeePercent
-}
-func (pp Pdexv3Params) OrderStakingPoolRewardPercent() uint {
-	return pp.orderStakingPoolRewardPercent
 }
 func (pp Pdexv3Params) TradingProtocolFeePercent() uint {
 	return pp.tradingProtocolFeePercent
@@ -48,6 +41,9 @@ func (pp Pdexv3Params) PDEXRewardPoolPairsShare() map[string]uint {
 func (pp Pdexv3Params) StakingPoolsShare() map[string]uint {
 	return pp.stakingPoolsShare
 }
+func (pp Pdexv3Params) StakingRewardTokens() []common.Hash {
+	return pp.stakingRewardTokens
+}
 func (pp Pdexv3Params) MintNftRequireAmount() uint64 {
 	return pp.mintNftRequireAmount
 }
@@ -57,23 +53,21 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
 		PRVDiscountPercent              uint
-		OrderProtocolFeePercent         uint
-		OrderStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
 		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
+		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
 		PRVDiscountPercent:              pp.prvDiscountPercent,
-		OrderProtocolFeePercent:         pp.orderProtocolFeePercent,
-		OrderStakingPoolRewardPercent:   pp.orderStakingPoolRewardPercent,
 		TradingProtocolFeePercent:       pp.tradingProtocolFeePercent,
 		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
 		PDEXRewardPoolPairsShare:        pp.pdexRewardPoolPairsShare,
 		StakingPoolsShare:               pp.stakingPoolsShare,
+		StakingRewardTokens:             pp.stakingRewardTokens,
 		MintNftRequireAmount:            pp.mintNftRequireAmount,
 	})
 	if err != nil {
@@ -87,12 +81,11 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
 		PRVDiscountPercent              uint
-		OrderProtocolFeePercent         uint
-		OrderStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
 		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
+		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -102,12 +95,11 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.defaultFeeRateBPS = temp.DefaultFeeRateBPS
 	pp.feeRateBPS = temp.FeeRateBPS
 	pp.prvDiscountPercent = temp.PRVDiscountPercent
-	pp.orderProtocolFeePercent = temp.OrderProtocolFeePercent
-	pp.orderStakingPoolRewardPercent = temp.OrderStakingPoolRewardPercent
 	pp.tradingProtocolFeePercent = temp.TradingProtocolFeePercent
 	pp.tradingStakingPoolRewardPercent = temp.TradingStakingPoolRewardPercent
 	pp.pdexRewardPoolPairsShare = temp.PDEXRewardPoolPairsShare
 	pp.stakingPoolsShare = temp.StakingPoolsShare
+	pp.stakingRewardTokens = temp.StakingRewardTokens
 	pp.mintNftRequireAmount = temp.MintNftRequireAmount
 	return nil
 }
@@ -120,24 +112,22 @@ func NewPdexv3ParamsWithValue(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	orderProtocolFeePercent uint,
-	orderStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
 	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
+	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
 		feeRateBPS:                      feeRateBPS,
 		prvDiscountPercent:              prvDiscountPercent,
-		orderProtocolFeePercent:         orderProtocolFeePercent,
-		orderStakingPoolRewardPercent:   orderStakingPoolRewardPercent,
 		tradingProtocolFeePercent:       tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
 		pdexRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 		stakingPoolsShare:               stakingPoolsShare,
+		stakingRewardTokens:             stakingRewardTokens,
 		mintNftRequireAmount:            mintNftRequireAmount,
 	}
 }

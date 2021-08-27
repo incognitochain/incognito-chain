@@ -3,6 +3,7 @@ package pdex
 import (
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -10,12 +11,11 @@ type Params struct {
 	DefaultFeeRateBPS               uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
 	FeeRateBPS                      map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
 	PRVDiscountPercent              uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
-	OrderProtocolFeePercent         uint            // percent of fees from limit orders
-	OrderStakingPoolRewardPercent   uint            // percent of fees from limit orders
 	TradingProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
 	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
 	PDEXRewardPoolPairsShare        map[string]uint // map: pool pair ID -> PDEX reward share weight
 	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
+	StakingRewardTokens             []common.Hash   // list of staking reward tokens
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
@@ -24,12 +24,11 @@ func NewParams() *Params {
 		DefaultFeeRateBPS:               InitFeeRateBPS,
 		FeeRateBPS:                      map[string]uint{},
 		PRVDiscountPercent:              InitPRVDiscountPercent,
-		OrderProtocolFeePercent:         InitProtocolFeePercent,
-		OrderStakingPoolRewardPercent:   InitStakingPoolRewardPercent,
 		TradingProtocolFeePercent:       InitProtocolFeePercent,
 		TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
 		PDEXRewardPoolPairsShare:        map[string]uint{},
 		StakingPoolsShare:               map[string]uint{},
+		StakingRewardTokens:             []common.Hash{},
 		MintNftRequireAmount:            InitMintNftRequireAmount,
 	}
 }
@@ -39,12 +38,11 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		DefaultFeeRateBPS:               paramsState.DefaultFeeRateBPS(),
 		FeeRateBPS:                      paramsState.FeeRateBPS(),
 		PRVDiscountPercent:              paramsState.PRVDiscountPercent(),
-		OrderProtocolFeePercent:         paramsState.OrderProtocolFeePercent(),
-		OrderStakingPoolRewardPercent:   paramsState.OrderStakingPoolRewardPercent(),
 		TradingProtocolFeePercent:       paramsState.TradingProtocolFeePercent(),
 		TradingStakingPoolRewardPercent: paramsState.TradingStakingPoolRewardPercent(),
 		PDEXRewardPoolPairsShare:        paramsState.PDEXRewardPoolPairsShare(),
 		StakingPoolsShare:               paramsState.StakingPoolsShare(),
+		StakingRewardTokens:             paramsState.StakingRewardTokens(),
 		MintNftRequireAmount:            paramsState.MintNftRequireAmount(),
 	}
 }
@@ -94,9 +92,6 @@ func isValidPdexv3Params(
 	}
 	if params.TradingStakingPoolRewardPercent+params.TradingProtocolFeePercent > 100 {
 		return false, "Sum of trading's staking pool + protocol fee is invalid"
-	}
-	if params.OrderProtocolFeePercent+params.OrderStakingPoolRewardPercent > 100 {
-		return false, "Sum of limit order's staking pool + protocol fee is invalid"
 	}
 	for pairID := range params.PDEXRewardPoolPairsShare {
 		_, isExisted := pairs[pairID]

@@ -35,12 +35,11 @@ func StorePdexv3Params(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	orderProtocolFeePercent uint,
-	orderStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
 	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
+	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
@@ -48,12 +47,11 @@ func StorePdexv3Params(
 		defaultFeeRateBPS,
 		feeRateBPS,
 		prvDiscountPercent,
-		orderProtocolFeePercent,
-		orderStakingPoolRewardPercent,
 		tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent,
 		pdexRewardPoolPairsShare,
 		stakingPoolsShare,
+		stakingRewardTokens,
 		mintNftRequireAmount,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)

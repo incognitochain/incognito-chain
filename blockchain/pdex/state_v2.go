@@ -408,12 +408,11 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		s.params.DefaultFeeRateBPS,
 		s.params.FeeRateBPS,
 		s.params.PRVDiscountPercent,
-		s.params.OrderProtocolFeePercent,
-		s.params.OrderStakingPoolRewardPercent,
 		s.params.TradingProtocolFeePercent,
 		s.params.TradingStakingPoolRewardPercent,
 		s.params.PDEXRewardPoolPairsShare,
 		s.params.StakingPoolsShare,
+		s.params.StakingRewardTokens,
 		s.params.MintNftRequireAmount,
 	)
 	if err != nil {
@@ -478,11 +477,16 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	for k, v := range s.params.FeeRateBPS {
 		clonedFeeRateBPS[k] = v
 	}
+	clonedPDEXRewardPoolPairsShare := map[string]uint{}
+	for k, v := range s.params.PDEXRewardPoolPairsShare {
+		clonedPDEXRewardPoolPairsShare[k] = v
+	}
 	clonedStakingPoolsShare := map[string]uint{}
 	for k, v := range s.params.StakingPoolsShare {
 		clonedStakingPoolsShare[k] = v
 	}
 	res.params.FeeRateBPS = clonedFeeRateBPS
+	res.params.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
 	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	for k, v := range s.waitingContributions {
