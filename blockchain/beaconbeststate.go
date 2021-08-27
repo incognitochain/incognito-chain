@@ -876,7 +876,8 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 
 func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 
-	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
+		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
 		if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
 			return err
 		}
