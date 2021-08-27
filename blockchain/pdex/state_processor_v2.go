@@ -404,6 +404,7 @@ func (sp *stateProcessorV2) trade(
 	stateDB *statedb.StateDB,
 	inst []string,
 	pairs map[string]*PoolPairState,
+	params *Params,
 ) (map[string]*PoolPairState, error) {
 	var currentTrade *instruction.Action
 	var trackedStatus metadataPdexv3.TradeStatus
@@ -429,7 +430,10 @@ func (sp *stateProcessorV2) trade(
 			}
 
 			for tokenID, amount := range md.RewardEarned {
-				reserveState.AddFee(tokenID, amount, BaseLPFeesPerShare)
+				reserveState.AddFee(
+					tokenID, amount, BaseLPFeesPerShare,
+					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+				)
 			}
 
 			orderbook := pair.orderbook
@@ -859,7 +863,10 @@ func (sp *stateProcessorV2) mintPDEX(
 
 	pairReward := actionData.Amount
 
-	(&v2utils.TradingPair{&pair.state}).AddFee(common.PDEXCoinID, pairReward, BaseLPFeesPerShare)
+	(&v2utils.TradingPair{&pair.state}).AddFee(
+		common.PDEXCoinID, pairReward, BaseLPFeesPerShare,
+		0, 0, []common.Hash{},
+	)
 
 	return pairs, err
 }

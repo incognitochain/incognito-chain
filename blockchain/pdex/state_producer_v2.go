@@ -282,7 +282,9 @@ func (sp *stateProducerV2) mintPDEX(
 			return instructions, pairs, fmt.Errorf("Could not calculate PDEX reward for pair %v", pairID)
 		}
 
-		(&v2utils.TradingPair{&pair.state}).AddFee(common.PDEXCoinID, pairReward.Uint64(), BaseLPFeesPerShare)
+		(&v2utils.TradingPair{&pair.state}).AddFee(
+			common.PDEXCoinID, pairReward.Uint64(), BaseLPFeesPerShare,
+			0, 0, []common.Hash{})
 
 		instructions = append(instructions, v2utils.BuildMintPDEXInst(pairID, pairReward.Uint64())...)
 	}
@@ -352,6 +354,7 @@ func (sp *stateProducerV2) trade(
 			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], BaseLPFeesPerShare,
 			currentTrade.TradePath, reserves, tradeDirections, orderbookList,
 			acceptedTradeMd,
+			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
 		)
 		if err != nil {
 			Logger.log.Warnf("Error handling fee distribution: %v", err)

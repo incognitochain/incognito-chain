@@ -146,6 +146,12 @@ func (s *stateV2) Clone() State {
 
 func (s *stateV2) Process(env StateEnvironment) error {
 	s.processor.clearCache()
+
+	// Reset staking pool rewards
+	for _, poolPair := range s.poolPairs {
+		poolPair.state.SetStakingPoolFees(map[common.Hash]uint64{})
+	}
+
 	for _, inst := range env.BeaconInstructions() {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instructions
@@ -184,7 +190,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.withdrawLiquidity(env.StateDB(), inst, s.poolPairs)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
-				s.poolPairs,
+				s.poolPairs, s.params,
 			)
 		case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
 			s.poolPairs, err = s.processor.withdrawLPFee(
@@ -266,6 +272,11 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				withdrawOrderTxs = append(withdrawOrderTxs, tx)
 			}
 		}
+	}
+
+	// Reset staking pool rewards
+	for _, poolPair := range s.poolPairs {
+		poolPair.state.SetStakingPoolFees(map[common.Hash]uint64{})
 	}
 
 	mintNftInstructions := [][]string{}
