@@ -42,7 +42,7 @@ type Params struct {
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
-func (params *Params) readConfig() {
+func (params *Params) readConfig() *Params {
 	res := &Params{
 		DefaultFeeRateBPS:               config.Param().PDexParams.Params.DefaultFeeRateBPS,
 		FeeRateBPS:                      config.Param().PDexParams.Params.FeeRateBPS,
@@ -61,18 +61,22 @@ func (params *Params) readConfig() {
 	if res.StakingPoolsShare == nil {
 		res.StakingPoolsShare = make(map[string]uint)
 	}
-	params = res
+	return res
 }
 
 func newStateV2() *stateV2 {
 	params := Params{}
-	params.readConfig()
+	params = *params.readConfig()
+	stakingPoolStates := make(map[string]*StakingPoolState)
+	for k := range params.StakingPoolsShare {
+		stakingPoolStates[k] = NewStakingPoolState()
+	}
 	return &stateV2{
 		params:                      params,
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
-		stakingPoolStates:           make(map[string]*StakingPoolState),
+		stakingPoolStates:           stakingPoolStates,
 		nftIDs:                      make(map[string]uint64),
 	}
 }

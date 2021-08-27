@@ -237,7 +237,7 @@ type pdexParam struct {
 		DefaultStakingPoolsShare        uint            `mapstructure:"default_staking_pool_share"`
 		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
 		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
-	}
+	} `mapstructure:"params"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {

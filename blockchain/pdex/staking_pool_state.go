@@ -81,12 +81,18 @@ func (s *StakingPoolState) getDiff(
 ) *StateChange {
 	newStateChange := stateChange
 	if compareStakingPoolState == nil {
+		if newStateChange.stakingPool[stakingPoolID] == nil {
+			newStateChange.stakingPool[stakingPoolID] = make(map[string]*StakingChange)
+		}
 		for nftID, staker := range s.stakers {
 			newStateChange = staker.getDiff(stakingPoolID, nftID, nil, newStateChange)
 		}
 	} else {
 		for nftID, staker := range s.stakers {
 			if m, ok := compareStakingPoolState.stakers[nftID]; !ok || !reflect.DeepEqual(m, staker) {
+				if newStateChange.stakingPool[stakingPoolID] == nil {
+					newStateChange.stakingPool[stakingPoolID] = make(map[string]*StakingChange)
+				}
 				newStateChange = staker.getDiff(stakingPoolID, nftID, m, newStateChange)
 			}
 		}

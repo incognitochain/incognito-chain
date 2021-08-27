@@ -144,6 +144,7 @@ func NewStateChange() *StateChange {
 		poolPairIDs: make(map[string]bool),
 		shares:      make(map[string]*ShareChange),
 		orderIDs:    make(map[string]bool),
+		stakingPool: make(map[string]map[string]*StakingChange),
 	}
 }
 
@@ -167,6 +168,38 @@ func (staker *Staker) Rewards() map[string]uint64 {
 		res[k] = v
 	}
 	return res
+}
+
+func (staker *Staker) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Liquidity               uint64            `json:"Liquidity"`
+		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
+		Rewards                 map[string]uint64 `json:"Rewards"`
+	}{
+		Liquidity:               staker.liquidity,
+		LastUpdatedBeaconHeight: staker.lastUpdatedBeaconHeight,
+		Rewards:                 staker.rewards,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (staker *Staker) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Liquidity               uint64            `json:"Liquidity"`
+		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
+		Rewards                 map[string]uint64 `json:"Rewards"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	staker.liquidity = temp.Liquidity
+	staker.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
+	staker.rewards = temp.Rewards
+	return nil
 }
 
 func NewStaker() *Staker {

@@ -253,6 +253,7 @@ const (
 	pdexv3GetWithdrawOrderStatus          = "pdexv3_getWithdrawOrderStatus"
 	pdexv3Staking                         = "pdexv3_txStake"
 	pdexv3Unstaking                       = "pdexv3_txUnstake"
+	pdexv3GetStakingStatus                = "pdexv3_getStakingStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

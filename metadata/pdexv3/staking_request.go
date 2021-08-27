@@ -55,7 +55,7 @@ func (request *StakingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPdexv3StakingPool(request.otaReceiver)
+	err = beaconViewRetriever.IsValidPdexv3StakingPool(request.tokenID)
 	if err != nil {
 		return false, err
 	}
