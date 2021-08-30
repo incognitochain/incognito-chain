@@ -164,7 +164,7 @@ func StorePdexv3Staker(stateDB *StateDB, stakingPoolID, nftID string, state *Pde
 
 func StorePdexv3StakerReward(stateDB *StateDB, stakingPoolID, nftID, tokenID string, state *Pdexv3StakerRewardState) error {
 	key := GeneratePdexv3StakerRewardObjectKey(stakingPoolID, nftID, tokenID)
-	return stateDB.SetStateObject(Pdexv3StakerObjectType, key, state)
+	return stateDB.SetStateObject(Pdexv3StakerRewardObjectType, key, state)
 }
 
 func StorePdexv3Order(stateDB *StateDB, orderState Pdexv3OrderState) error {

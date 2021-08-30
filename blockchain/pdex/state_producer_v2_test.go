@@ -2,7 +2,6 @@ package pdex
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -531,6 +530,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 								lastUpdatedBeaconHeight: 10,
 							},
 						},
+						orderbook: Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -569,6 +569,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastUpdatedBeaconHeight: 11,
 						},
 					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -601,6 +602,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 								lastUpdatedBeaconHeight: 10,
 							},
 						},
+						orderbook: Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -639,6 +641,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastUpdatedBeaconHeight: 12,
 						},
 					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -666,15 +669,6 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				t.Errorf("stateProducerV2.addLiquidity() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				for k, v := range got1 {
-					if !reflect.DeepEqual(v.shares, tt.want1[k].shares) {
-						for key, value := range v.shares {
-							fmt.Println("key & value:", key, value)
-							fmt.Println("want value:", tt.want1[k].shares[key])
-						}
-						t.Errorf("shares got1 = %v, want %v", v.shares, tt.want1[k].shares)
-					}
-				}
 				t.Errorf("stateProducerV2.addLiquidity() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {

@@ -129,8 +129,8 @@ func (sp *stateProducerV2) addLiquidity(
 		} else {
 			poolPairID = waitingContribution.PoolPairID()
 		}
-		poolPair, found := poolPairs[poolPairID]
-		if !found {
+		rootPoolPair, found := poolPairs[poolPairID]
+		if !found || rootPoolPair == nil {
 			if waitingContribution.PoolPairID() == utils.EmptyString {
 				newPoolPair := initPoolPairState(waitingContribution, incomingContribution)
 				tempAmt := big.NewInt(0).Mul(
@@ -164,6 +164,7 @@ func (sp *stateProducerV2) addLiquidity(
 				continue
 			}
 		}
+		poolPair := rootPoolPair.Clone()
 		token0Contribution, token1Contribution := poolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
@@ -217,6 +218,7 @@ func (sp *stateProducerV2) addLiquidity(
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
 		}
+		poolPairs[poolPairID] = poolPair
 		res = append(res, insts...)
 	}
 	return res, poolPairs, waitingContributions, nil
@@ -570,8 +572,8 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		poolPair, ok := poolPairs[metaData.PoolPairID()]
-		if !ok || poolPair == nil {
+		rootPoolPair, ok := poolPairs[metaData.PoolPairID()]
+		if !ok || rootPoolPair == nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 			if err != nil {
 				return res, poolPairs, err
@@ -579,6 +581,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
+		poolPair := rootPoolPair.Clone()
 		shares, ok := poolPair.shares[metaData.NftID()]
 		if !ok || shares == nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
@@ -609,6 +612,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			return res, poolPairs, err
 		}
 		res = append(res, insts...)
+		poolPairs[metaData.PoolPairID()] = poolPair
 	}
 	return res, poolPairs, nil
 }
@@ -670,8 +674,8 @@ func (sp *stateProducerV2) staking(
 			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
 			continue
 		}
-		stakingPoolState, found := stakingPoolStates[metaData.TokenID()]
-		if !found {
+		rootStakingPoolState, found := stakingPoolStates[metaData.TokenID()]
+		if !found || rootStakingPoolState == nil {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
 				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
@@ -681,6 +685,7 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
+		stakingPoolState := rootStakingPoolState.Clone()
 		_, found = nftIDs[metaData.NftID()]
 		if metaData.NftID() == utils.EmptyString || !found {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
@@ -710,6 +715,7 @@ func (sp *stateProducerV2) staking(
 			return res, stakingPoolStates, err
 		}
 		res = append(res, inst)
+		stakingPoolStates[metaData.TokenID()] = stakingPoolState
 	}
 	return res, stakingPoolStates, nil
 }

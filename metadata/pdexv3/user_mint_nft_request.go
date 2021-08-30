@@ -148,5 +148,8 @@ func (request *UserMintNftRequest) GetOTADeclarations() []metadataCommon.OTADecl
 	result = append(result, metadataCommon.OTADeclaration{
 		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID,
 	})
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+	})
 	return result
 }

@@ -195,8 +195,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.WithdrawOrderResponse{}
 	case metadataCommon.Pdexv3StakingRequestMeta:
 		md = &metadataPdexv3.StakingRequest{}
-	/*case metadataCommon.Pdexv3StakingResponseMeta:*/
-	/*md = &metadataPdexv3.StakingResponse{}*/
+	case metadataCommon.Pdexv3StakingResponseMeta:
+		md = &metadataPdexv3.StakingResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
