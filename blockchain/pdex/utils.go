@@ -619,6 +619,8 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, 
 	return vAmount0, vAmount1
 }
 
+// tradePathFromState() prepares a trade path with reserves, orderbooks & directions.
+// It returns cloned data only. State changes (if any) must be applied separately.
 func tradePathFromState(
 	sellToken common.Hash,
 	tradePath []string,
@@ -631,6 +633,7 @@ func tradePathFromState(
 	nextTokenToSell := sellToken
 	for _, pairID := range tradePath {
 		if pair, exists := pairs[pairID]; exists {
+			pair = pair.Clone() // work on cloned state in case trade is rejected
 			results = append(results, &pair.state)
 			ob := pair.orderbook
 			orderbookList = append(orderbookList, &ob)

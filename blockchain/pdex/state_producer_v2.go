@@ -281,8 +281,8 @@ func (sp *stateProducerV2) trade(
 		fi := big.NewInt(0).SetUint64(fees[txs[i].Hash().String()])
 		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[txs[j].Hash().String()]))
 		fj := big.NewInt(0).SetUint64(fees[txs[j].Hash().String()])
-		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[txs[i].Hash().String()]))
-
+		fj.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[txs[i].Hash().String()]))
+		
 		// sort descending
 		return fi.Cmp(fj) == 1
 	})
@@ -299,6 +299,8 @@ func (sp *stateProducerV2) trade(
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
+
+		// get relevant, cloned data from state for the trade path
 		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		tradeOutputReceiver, exists := currentTrade.Receiver[tokenToBuy]
@@ -310,7 +312,7 @@ func (sp *stateProducerV2) trade(
 		}
 
 		acceptedTradeMd, _, err := v2.MaybeAcceptTrade(
-			currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.TradePath,
+			currentTrade.SellAmount, 0, currentTrade.TradePath,
 			tradeOutputReceiver, reserves, tradeDirections,
 			tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList,
 		)
@@ -321,9 +323,11 @@ func (sp *stateProducerV2) trade(
 		}
 		// apply state changes for trade consistency in the same block
 		for index, pairID := range currentTrade.TradePath {
-			temp := pairs[pairID]
-			temp.state = *reserves[index]
-			pairs[pairID] = temp
+			changedPair := pairs[pairID]
+			changedPair.state = *reserves[index]
+			orderbook, _ := orderbookList[index].(*Orderbook) // type is determined; see tradePathFromState()
+			changedPair.orderbook = *orderbook
+			pairs[pairID] = changedPair
 		}
 		// "accept" instruction
 		action := instruction.NewAction(
@@ -495,6 +499,7 @@ TransactionLoop:
 					var currentBalance uint64
 					withdrawAmount := currentOrderReq.Amount
 					switch currentOrderReq.TokenID {
+					// cap withdrawAmount & set new balance in state
 					case pair.state.Token0ID():
 						currentBalance = ord.Token0Balance()
 						if currentBalance < withdrawAmount {
@@ -516,7 +521,7 @@ TransactionLoop:
 					// apply orderbook changes for withdraw consistency in the same block
 					pairs[currentOrderReq.PoolPairID] = pair
 
-					// accepted
+					// "accepted" metadata
 					currentAction.Content = &metadataPdexv3.AcceptedWithdrawOrder{
 						PoolPairID: currentOrderReq.PoolPairID,
 						OrderID:    currentOrderReq.OrderID,
