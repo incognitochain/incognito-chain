@@ -71,7 +71,7 @@ type PlainCoin interface {
 	ParseKeyImageWithPrivateKey(key.PrivateKey) (*operation.Point, error)
 	ParsePrivateKeyOfCoin(key.PrivateKey) (*operation.Scalar, error)
 
-	ConcealOutputCoin(additionalData interface{}) error
+	ConcealOutputCoin(additionalData *operation.Point) error
 
 	Bytes() []byte
 	SetBytes([]byte) error

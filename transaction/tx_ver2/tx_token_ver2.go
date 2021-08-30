@@ -101,6 +101,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 	result.Sig = clonedSig
 	result.SigPubKey = clonedPk
 	result.Info = clonedInfo
+	result.SetValidationEnv(txPRV.GetValidationEnv())
 
 	return result
 }
@@ -604,10 +605,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 	// Reform Ring
 	sumOutputCoinsWithFee := tx_generic.CalculateSumOutputsWithFee(txFee.GetProof().GetOutputCoins(), txFee.GetTxFee())
-	ring, err := getRingFromSigPubKeyAndLastColumnCommitment(
-		txFee.GetSigPubKey(), sumOutputCoinsWithFee,
-		transactionStateDB, shardID, tokenID,
-	)
+	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txToken.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err

@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/env"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -303,7 +305,7 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 	return proof, nil
 }
 
-func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{}) (bool, error) {
+func (proof *ConversionProofVer1ToVer2) ValidateSanity(vEnv env.ValidationEnviroment) (bool, error) {
 	if proof.Version != ConversionProofVersion {
 		return false, errors.New("Proof version of ConversionProof is not right")
 	}

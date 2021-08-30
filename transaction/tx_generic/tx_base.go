@@ -539,7 +539,7 @@ func (tx TxBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) erro
 	return nil
 }
 
-func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
+func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {

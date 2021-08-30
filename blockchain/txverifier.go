@@ -84,27 +84,6 @@ func (v *TxsVerifier) LoadCommitmentForTxs(
 	return true, nil
 }
 
-func (v *TxsVerifier) ValidateTxsSig(
-	txs []metadata.Transaction,
-	errCh chan error,
-	doneCh chan interface{},
-) {
-	for _, tx := range txs {
-		go func(target metadata.Transaction) {
-			ok, err := target.VerifySigTx()
-			if !ok || err != nil {
-				if errCh != nil {
-					errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", target.Hash().String(), ok, err)
-				}
-			} else {
-				if doneCh != nil {
-					doneCh <- nil
-				}
-			}
-		}(tx)
-	}
-}
-
 func (v *TxsVerifier) checkFees(
 	beaconHeight uint64,
 	tx metadata.Transaction,
@@ -180,15 +159,11 @@ func (v *TxsVerifier) checkFees(
 }
 
 func (v *TxsVerifier) ValidateWithoutChainstate(tx metadata.Transaction) (bool, error) {
-	if ok, err := tx.VerifySigTx(); (!ok) || (err != nil) {
-		Logger.log.Errorf("Validate tx %v return %v error %v", tx.Hash().String(), ok, err)
-		return ok, err
-	}
 	ok, err := tx.ValidateSanityDataByItSelf()
 	if !ok || err != nil {
 		return ok, err
 	}
-	return tx.ValidateTxCorrectness()
+	return tx.ValidateTxCorrectness(v.txDB)
 }
 
 func (v *TxsVerifier) ValidateWithChainState(
@@ -231,8 +206,9 @@ func (v *TxsVerifier) ValidateWithChainState(
 			return false, err
 		}
 	}
-
-	return tx.ValidateDoubleSpendWithBlockChain(txDB)
+	tokenID := tx.GetValidationEnv().TokenID()
+	err = tx.ValidateDoubleSpendWithBlockchain(byte(tx.GetValidationEnv().ShardID()), txDB, &tokenID)
+	return err == nil, err
 }
 
 func (v *TxsVerifier) FilterWhitelistTxs(txs []metadata.Transaction) []metadata.Transaction {

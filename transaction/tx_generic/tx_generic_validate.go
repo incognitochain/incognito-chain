@@ -182,7 +182,7 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 
 		additionalData["shardID"] = shardID
 
-		ok, err := tx.GetProof().ValidateSanity(additionalData)
+		ok, err := tx.GetProof().ValidateSanity(tx.GetValidationEnv())
 		if !ok || err != nil {
 			s := ""
 			if !ok {

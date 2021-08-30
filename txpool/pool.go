@@ -349,15 +349,15 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			Logger.Debugf("Caching tx %v at %v", tx.Hash().String(), time.Now())
 			tp.Cacher.Add(tx.Hash().String(), nil, tp.ttl)
 		}
-		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
-			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
-			errChan <- validateResult{
-				err:    err,
-				result: false,
-				cost:   time.Since(start),
-			}
-			return
-		}
+		// if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
+		// 	Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
+		// 	errChan <- validateResult{
+		// 		err:    err,
+		// 		result: false,
+		// 		cost:   time.Since(start),
+		// 	}
+		// 	return
+		// }
 		ok, err := tp.Verifier.ValidateWithoutChainstate(tx)
 		errChan <- validateResult{
 			err:    err,
