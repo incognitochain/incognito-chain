@@ -466,10 +466,11 @@ func (sp *stateProcessorV2) trade(
 	if err != nil {
 		return pairs, err
 	}
+	txID := currentTrade.RequestTxID()
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3TradeStatusPrefix(),
-		currentTrade.RequestTxID[:],
+		txID[:],
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
@@ -613,10 +614,11 @@ func (sp *stateProcessorV2) addOrder(
 	if err != nil {
 		return pairs, err
 	}
+	txID := currentOrder.RequestTxID()
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3AddOrderStatusPrefix(),
-		currentOrder.RequestTxID[:],
+		txID[:],
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
@@ -693,10 +695,11 @@ func (sp *stateProcessorV2) withdrawOrder(
 	if err != nil {
 		return pairs, err
 	}
+	txID := currentOrder.RequestTxID()
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawOrderStatusPrefix(),
-		currentOrder.RequestTxID[:],
+		txID[:],
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
