@@ -2,6 +2,7 @@ package v2utils
 
 import (
 	"encoding/json"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -59,9 +60,38 @@ func BuildWithdrawLPFeeInsts(
 	reqTxID common.Hash,
 	status string,
 ) [][]string {
-	insts := [][]string{}
+	if status == metadataPdexv3.RequestRejectedChainStatus {
+		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
+			PoolPairID: pairID,
+			NftID:      nftID,
+			TokenID:    common.Hash{},
+			Receivers:  map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			TxReqID:    reqTxID,
+			ShardID:    shardID,
+		}
+		reqContentBytes, _ := json.Marshal(reqContent)
+		inst := []string{
+			strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta),
+			strconv.Itoa(int(shardID)),
+			status,
+			string(reqContentBytes),
+		}
+		return [][]string{inst}
+	}
 
-	for tokenID := range receivers {
+	// To store the keys in slice in sorted order
+	keys := make([]common.Hash, len(receivers))
+	i := 0
+	for k := range receivers {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+
+	insts := [][]string{}
+	for _, tokenID := range keys {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PoolPairID: pairID,
 			NftID:      nftID,
@@ -107,8 +137,19 @@ func BuildWithdrawProtocolFeeInsts(
 		return [][]string{inst}
 	}
 
+	// To store the keys in slice in sorted order
+	keys := make([]common.Hash, len(receivers))
+	i := 0
+	for k := range receivers {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+
 	insts := [][]string{}
-	for tokenID := range receivers {
+	for _, tokenID := range keys {
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
 			PoolPairID: pairID,
 			TokenID:    tokenID,

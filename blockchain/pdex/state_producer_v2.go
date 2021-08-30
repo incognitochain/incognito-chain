@@ -584,15 +584,26 @@ func (sp *stateProducerV2) withdrawLPFee(
 			return instructions, pairs, errors.New("Can not parse withdrawal LP fee metadata")
 		}
 
+		_, isExisted := metaData.Receivers[metaData.NftID]
+		if !isExisted {
+			return instructions, pairs, fmt.Errorf("NFT receiver not found in WithdrawalLPFeeRequest")
+		}
+		addressStr, err := metaData.Receivers[metaData.NftID].String()
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("NFT receiver invalid in WithdrawalLPFeeRequest")
+		}
+		mintNftInst := instruction.NewMintNftWithValue(metaData.NftID, addressStr, shardID, txReqID)
+		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
+		}
+
+		instructions = append(instructions, mintNftInstStr)
+
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
 			metaData.NftID,
-			map[common.Hash]metadataPdexv3.ReceiverInfo{
-				metaData.NftID: {
-					Address: metaData.Receivers[metaData.NftID],
-					Amount:  1,
-				},
-			},
+			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
@@ -616,7 +627,6 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if err != nil {
 			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 		}
-		reward[metaData.NftID] = 1
 
 		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 		notEnoughOTA := false
