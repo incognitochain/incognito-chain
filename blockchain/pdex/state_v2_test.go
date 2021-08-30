@@ -930,7 +930,22 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
-				params:            Params{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
 				stakingPoolStates: map[string]*StakingPoolState{},
 				nftIDs:            map[string]uint64{},
 				producer:          stateProducerV2{},
@@ -1076,7 +1091,22 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
-				params:            Params{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
 				stakingPoolStates: map[string]*StakingPoolState{},
 				nftIDs:            map[string]uint64{},
 				producer:          stateProducerV2{},
@@ -1199,7 +1229,22 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
-				params:            Params{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
 				stakingPoolStates: map[string]*StakingPoolState{},
 				nftIDs:            map[string]uint64{},
 				producer:          stateProducerV2{},
@@ -1301,7 +1346,22 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
-				params:                      Params{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
 						liquidity: 100,
@@ -1428,7 +1488,22 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
-				params:                      Params{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
 						liquidity: 100,
@@ -1554,7 +1629,22 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
-				params:                      Params{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
 						liquidity: 100,

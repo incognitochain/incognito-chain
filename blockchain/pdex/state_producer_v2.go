@@ -678,12 +678,12 @@ func (sp *stateProducerV2) staking(
 		txReqID := *tx.Hash()
 		stakingTokenHash, err := common.Hash{}.NewHashFromStr(metaData.TokenID())
 		if err != nil {
-			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
+			Logger.log.Infof("tx hash %s error %v", txReqID, err)
 			continue
 		}
 		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
-			Logger.log.Debugf("tx hash %s error %v", txReqID, err)
+			Logger.log.Infof("tx hash %s error %v", txReqID, err)
 			continue
 		}
 		rootStakingPoolState, found := stakingPoolStates[metaData.TokenID()]
@@ -692,6 +692,7 @@ func (sp *stateProducerV2) staking(
 				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
 			if err != nil {
+				Logger.log.Infof("tx hash %s error %v", txReqID, err)
 				return res, stakingPoolStates, err
 			}
 			res = append(res, rejectInst)
@@ -703,6 +704,7 @@ func (sp *stateProducerV2) staking(
 				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
 			if err != nil {
+				Logger.log.Infof("tx hash %s error %v", txReqID, err)
 				return res, stakingPoolStates, err
 			}
 			res = append(res, rejectInst)
@@ -715,6 +717,7 @@ func (sp *stateProducerV2) staking(
 				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 			).StringSlice()
 			if err != nil {
+				Logger.log.Infof("tx hash %s error %v", txReqID, err)
 				return res, stakingPoolStates, err
 			}
 			res = append(res, rejectInst)

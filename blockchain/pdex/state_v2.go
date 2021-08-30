@@ -70,9 +70,9 @@ func (params *Params) readConfig() *Params {
 
 func (s *stateV2) readConfig() {
 	s.params = *s.params.readConfig()
-	stakingPoolStates := make(map[string]*StakingPoolState)
+	s.stakingPoolStates = make(map[string]*StakingPoolState)
 	for k := range s.params.StakingPoolsShare {
-		stakingPoolStates[k] = NewStakingPoolState()
+		s.stakingPoolStates[k] = NewStakingPoolState()
 	}
 }
 
@@ -110,6 +110,9 @@ func initStateV2(
 	beaconHeight uint64,
 ) (*stateV2, error) {
 	stateObject, err := statedb.GetPdexv3Params(stateDB)
+	if err != nil {
+		return nil, err
+	}
 	params := Params{
 		DefaultFeeRateBPS:               stateObject.DefaultFeeRateBPS(),
 		FeeRateBPS:                      stateObject.FeeRateBPS(),
@@ -440,29 +443,27 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
-	if !s.params.IsZeroValue() {
-		err := statedb.StorePdexv3Params(
-			env.StateDB(),
-			s.params.DefaultFeeRateBPS,
-			s.params.FeeRateBPS,
-			s.params.PRVDiscountPercent,
-			s.params.LimitProtocolFeePercent,
-			s.params.LimitStakingPoolRewardPercent,
-			s.params.TradingProtocolFeePercent,
-			s.params.TradingStakingPoolRewardPercent,
-			s.params.DefaultStakingPoolsShare,
-			s.params.StakingPoolsShare,
-			s.params.MintNftRequireAmount,
-		)
-		if err != nil {
-			return err
-		}
+	err := statedb.StorePdexv3Params(
+		env.StateDB(),
+		s.params.DefaultFeeRateBPS,
+		s.params.FeeRateBPS,
+		s.params.PRVDiscountPercent,
+		s.params.LimitProtocolFeePercent,
+		s.params.LimitStakingPoolRewardPercent,
+		s.params.TradingProtocolFeePercent,
+		s.params.TradingStakingPoolRewardPercent,
+		s.params.DefaultStakingPoolsShare,
+		s.params.StakingPoolsShare,
+		s.params.MintNftRequireAmount,
+	)
+	if err != nil {
+		return err
 	}
 	deletedWaitingContributionsKeys := []string{}
 	for k := range s.deletedWaitingContributions {
 		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
 	}
-	err := statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
+	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
 	if err != nil {
 		return err
 	}
@@ -582,23 +583,20 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	if compareState == nil {
 		return nil, newStateChange, errors.New("compareState is nil")
 	}
-
 	res := newStateV2()
 	compareStateV2 := compareState.(*stateV2)
 
-	if !reflect.DeepEqual(s.params, compareStateV2.params) {
-		res.params = s.params
-		clonedFeeRateBPS := map[string]uint{}
-		for k, v := range s.params.FeeRateBPS {
-			clonedFeeRateBPS[k] = v
-		}
-		clonedStakingPoolsShare := map[string]uint{}
-		for k, v := range s.params.StakingPoolsShare {
-			clonedStakingPoolsShare[k] = v
-		}
-		res.params.FeeRateBPS = clonedFeeRateBPS
-		res.params.StakingPoolsShare = clonedStakingPoolsShare
+	res.params = s.params
+	clonedFeeRateBPS := map[string]uint{}
+	for k, v := range s.params.FeeRateBPS {
+		clonedFeeRateBPS[k] = v
 	}
+	clonedStakingPoolsShare := map[string]uint{}
+	for k, v := range s.params.StakingPoolsShare {
+		clonedStakingPoolsShare[k] = v
+	}
+	res.params.FeeRateBPS = clonedFeeRateBPS
+	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	for k, v := range s.waitingContributions {
 		if m, ok := compareStateV2.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
