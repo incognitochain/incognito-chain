@@ -31,6 +31,8 @@ In Incognito’s Git version control, there are three main branches, first for c
 
 ## Build the code
 
+### By golang programming language
+
 The below instructions will get you up and running on your local machine for development and testing purposes. Building Incognito requires [Go](http://golang.org/doc/install). Once Go is installed, clone this project to your local GOPATH and build it.
 
 ```shell
@@ -42,6 +44,14 @@ Then, run an Incognito Node
 ```shell
 ./incognito -n incognito --testnet false --discoverpeers --discoverpeersaddress 51.91.72.45:9330 --miningkeys "your validator key" --nodemode "auto" --datadir "/path/to/data" --listen "0.0.0.0:9334" --externaladdress "0.0.0.0:9334" --norpcauth --enablewallet --wallet "incognito" --walletpassphrase "your wallet passphrase" --walletautoinit --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:9336" --loglevel "info"
 ```
+
+### By make package
+
+You can simply build and run the code with a few simple command with make package:
+
+1. Clear everything with `make clean` (optional for clearing database) 
+1. Build with command: `make build`
+1. Run with command: `make mainnet`
 
 ## Read the code
 

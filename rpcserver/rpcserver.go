@@ -62,7 +62,6 @@ type RpcServerConfig struct {
 	HttpListenters  []net.Listener
 	WsListenters    []net.Listener
 	ProtocolVersion string
-	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
 	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache
@@ -89,6 +88,7 @@ type RpcServerConfig struct {
 		OnTx(p *peer.PeerConn, msg *wire.MessageTx)
 		OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
 	}
+
 	ConsensusEngine blockchain.ConsensusEngine
 
 	TxMemPool                   rpcservice.MempoolInterface

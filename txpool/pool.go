@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -194,7 +193,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 	prf := target.GetProof()
 	if prf != nil {
 		for _, iCoin := range prf.GetInputCoins() {
-			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.GetKeyImage().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -208,7 +207,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range prf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -223,11 +222,11 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		}
 	}
 	if target.GetType() == common.TxCustomTokenPrivacyType {
-		txNormal := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
-		tokenID := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.PropertyID
+		txNormal := target.(transaction.TransactionToken).GetTxNormal()
+		tokenID := target.(transaction.TransactionToken).GetTxTokenData().PropertyID
 		normalPrf := txNormal.GetProof()
 		for _, iCoin := range normalPrf.GetInputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.GetKeyImage().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -241,7 +240,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range normalPrf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -577,7 +576,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	}
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+		txNormal := tx.(transaction.TransactionToken).GetTxTokenData().TxNormal
 		normalPrf := txNormal.GetProof()
 		if normalPrf != nil {
 			isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
@@ -599,7 +598,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 }
 
 func (tp *TxsPool) checkPrfDoubleSpend(
-	prf *zkp.PaymentProof,
+	prf privacy.Proof,
 	dataHelper map[[privacy.Ed25519KeySize]byte]struct {
 		Index  uint
 		Detail TxInfoDetail
@@ -613,7 +612,7 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 	iCoins := prf.GetInputCoins()
 	oCoins := prf.GetOutputCoins()
 	for _, iCoin := range iCoins {
-		if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+		if info, ok := dataHelper[iCoin.GetKeyImage().ToBytes()]; ok {
 			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
 				needToReplace = true
@@ -631,7 +630,7 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 		}
 	}
 	for _, oCoin := range oCoins {
-		if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+		if info, ok := dataHelper[oCoin.GetSNDerivator().ToBytes()]; ok {
 			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
 				continue
@@ -665,7 +664,7 @@ func insertTxIntoList(
 		insertPrfForCheck(prf, dataHelper, txDetail, len(txs))
 	}
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+		txNormal := tx.(transaction.TransactionToken).GetTxTokenData().TxNormal
 		normalPrf := txNormal.GetProof()
 		if normalPrf != nil {
 			insertPrfForCheck(normalPrf, dataHelper, txDetail, len(txs))
@@ -675,7 +674,7 @@ func insertTxIntoList(
 }
 
 func insertPrfForCheck(
-	prf *zkp.PaymentProof,
+	prf privacy.Proof,
 	dataHelper map[[privacy.Ed25519KeySize]byte]struct {
 		Index  uint
 		Detail TxInfoDetail
@@ -686,7 +685,7 @@ func insertPrfForCheck(
 	iCoins := prf.GetInputCoins()
 	oCoins := prf.GetOutputCoins()
 	for _, iCoin := range iCoins {
-		dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = struct {
+		dataHelper[iCoin.GetKeyImage().ToBytes()] = struct {
 			Index  uint
 			Detail TxInfoDetail
 		}{
@@ -695,7 +694,7 @@ func insertPrfForCheck(
 		}
 	}
 	for _, oCoin := range oCoins {
-		dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
+		dataHelper[oCoin.GetSNDerivator().ToBytes()] = struct {
 			Index  uint
 			Detail TxInfoDetail
 		}{
@@ -867,11 +866,11 @@ func isTxForUser(tx metadata.Transaction) bool {
 		return false
 	}
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		tempTx, ok := tx.(transaction.TransactionToken)
 		if !ok {
 			return false
 		}
-		if tempTx.TxPrivacyTokenData.Mintable {
+		if tempTx.GetTxTokenData().Mintable {
 			return false
 		}
 	}

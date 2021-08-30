@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
@@ -21,6 +22,11 @@ type TxPool interface {
 	EmptyPool() bool
 	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64, *ShardBestState) (*metadata.TxDesc, error)
 	MaybeAcceptBatchTransactionForBlockProducing(byte, []metadata.Transaction, int64, *ShardBestState) ([]*metadata.TxDesc, error)
+	MaybeAcceptSalaryTransactionForBlockProducing(byte, metadata.Transaction, int64, *ShardBestState) (*metadata.TxDesc, error)
+	//CheckTransactionFee
+	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
+	// Check tx validate by it self
+	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }
 
 type FeeEstimator interface {
@@ -39,6 +45,7 @@ type ConsensusEngine interface {
 	// GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetAllMiningPublicKeys() []string
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
+	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
 	// CommitteeChange(chainName string)

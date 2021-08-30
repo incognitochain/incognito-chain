@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -125,7 +126,7 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeEngine committeestate.ShardCommitteeEngine) *ShardBestState {
+func NewBestStateShardWithConfig(shardID byte, shardCommitteeEngine committeestate.ShardCommitteeEngine) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -136,14 +137,14 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeE
 		panic(err)
 	}
 	bestStateShard.BestBlock = nil
-	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
-	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateShard.ActiveShards = netparam.ActiveShards
+	bestStateShard.MaxShardCommitteeSize = config.Param().CommitteeSize.MaxShardCommitteeSize
+	bestStateShard.MinShardCommitteeSize = config.Param().CommitteeSize.MinShardCommitteeSize
+	bestStateShard.ActiveShards = config.Param().ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
-	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
-	bestStateShard.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	bestStateShard.BlockInterval = config.Param().BlockTime.MinShardBlockInterval
+	bestStateShard.BlockMaxCreateTime = config.Param().BlockTime.MaxShardBlockCreation
 	bestStateShard.shardCommitteeEngine = shardCommitteeEngine
 	return bestStateShard
 }

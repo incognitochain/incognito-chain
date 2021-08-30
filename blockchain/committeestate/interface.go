@@ -11,6 +11,7 @@ import (
 //BeaconCommitteeEngine :
 type BeaconCommitteeEngine interface {
 	Version() uint
+	AssignRuleVersion() uint
 	Clone() BeaconCommitteeEngine
 	GetBeaconHeight() uint64
 	GetBeaconHash() common.Hash
@@ -42,6 +43,7 @@ type BeaconCommitteeEngine interface {
 	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
 	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
+	UpgradeAssignRuleV3()
 	ActiveShards() int
 }
 

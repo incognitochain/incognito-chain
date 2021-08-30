@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -16,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -123,7 +126,7 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
-	if blk.GetVersion() == 1 {
+	if blk.GetVersion() == types.BFT_VERSION {
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
 			return fmt.Errorf("Cannot base58 a committee")
@@ -157,18 +160,18 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 }
 
 func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
-	if block.GetVersion() == 1 {
+	if block.GetVersion() == types.BFT_VERSION {
 		return blsbft.ValidateProducerSig(block)
-	} else if block.GetVersion() >= 2 {
+	} else if block.GetVersion() >= types.MULTI_VIEW_VERSION {
 		return blsbftv2.ValidateProducerSig(block)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	if block.GetVersion() == 1 {
+	if block.GetVersion() == types.BFT_VERSION {
 		return blsbft.ValidateCommitteeSig(block, committee)
-	} else if block.GetVersion() >= 2 {
+	} else if block.GetVersion() >= types.MULTI_VIEW_VERSION {
 		return blsbftv2.ValidateCommitteeSig(block, committee)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
@@ -183,12 +186,21 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 }
 
 func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
-	if block.GetVersion() == 1 {
+	if block.GetVersion() == types.BFT_VERSION {
 		return blsbft.ExtractBridgeValidationData(block)
-	} else if block.GetVersion() >= 2 {
+	} else if block.GetVersion() >= types.MULTI_VIEW_VERSION {
 		return blsbftv2.ExtractBridgeValidationData(block)
 	}
 	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
+}
+
+func (engine *Engine) ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+	if block.GetVersion() == 2 {
+		return blsbftv2.ExtractPortalV4ValidationData(block)
+	} else if block.GetVersion() == 3 {
+		return blsbftv3.ExtractPortalV4ValidationData(block)
+	}
+	return nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
 
 func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {

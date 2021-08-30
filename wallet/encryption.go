@@ -4,9 +4,11 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/common"
-	"golang.org/x/crypto/pbkdf2"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/utils"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 // deriveKey receives passPhrase and salt
@@ -25,7 +27,7 @@ func deriveKey(passPhrase string, salt []byte) ([]byte, []byte) {
 // it returns encrypted plaintext (ciphertext) in string
 func encryptByPassPhrase(passphrase string, plaintext []byte) (string, error) {
 	if len(plaintext) == 0 {
-		return common.EmptyString, NewWalletError(InvalidPlaintextErr, nil)
+		return utils.EmptyString, NewWalletError(InvalidPlaintextErr, nil)
 	}
 
 	// generate key from pass phrase
@@ -39,7 +41,7 @@ func encryptByPassPhrase(passphrase string, plaintext []byte) (string, error) {
 	// encrypt plaintext
 	cipherText, err := aes.Encrypt(plaintext)
 	if err != nil {
-		return common.EmptyString, err
+		return utils.EmptyString, err
 	}
 
 	// return data ciphertext and salt to generate decryption key

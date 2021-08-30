@@ -1,9 +1,10 @@
 package metadata
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,15 +13,29 @@ import (
 
 //UnStakingMetadata : unstaking metadata
 type UnStakingMetadata struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	CommitteePublicKey string
 }
 
+func (meta *UnStakingMetadata) Hash() *common.Hash {
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	hash := common.HashH(data)
+	return &hash
+}
+
+func (meta *UnStakingMetadata) HashWithoutSig() *common.Hash {
+	return meta.MetadataBaseWithSignature.Hash()
+}
+
+func (*UnStakingMetadata) ShouldSignMetaData() bool { return true }
+
+
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
-	metadataBase := NewMetadataBase(UnStakingMeta)
+	metadataBase := NewMetadataBaseWithSignature(UnStakingMeta)
 	return &UnStakingMetadata{
-		MetadataBase:       *metadataBase,
+		MetadataBaseWithSignature:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
 	}, nil
 }
@@ -46,7 +61,10 @@ func (unStakingMetadata *UnStakingMetadata) ValidateMetadataByItself() bool {
 //- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transaction,
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
-	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (bool, error) {
 
 	requestedPublicKey := unStakingMetadata.CommitteePublicKey
 	committees, err := beaconViewRetriever.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
@@ -73,8 +91,16 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	if err != nil {
 		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
 	}
-	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
-		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
+
+	stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
+	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+	if err != nil || funderWallet == nil {
+		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	}
+
+	if ok, err := unStakingMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 
 	waitingValidatorsList, err := incognitokey.CommitteeKeyListToString(beaconViewRetriever.CandidateWaitingForNextRandom())
@@ -86,7 +112,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		if !stakerInfo.AutoStaking() {
 			return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
 		}
-
 	}
 
 	return true, nil

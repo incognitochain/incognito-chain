@@ -325,14 +325,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 		switch txType {
 		case "cstokenprivacy":
 			{
-				var tx transaction.TxCustomTokenPrivacy
-				err = json.Unmarshal(rawTxBytes, &tx)
+				tx, err := transaction.NewTransactionTokenFromJsonBytes(rawTxBytes)
 				if err != nil {
 					fail++
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -341,7 +340,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -352,7 +351,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						fail++
 						continue
 					}
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
+					txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
@@ -365,14 +364,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 				}
 			}
 		default:
-			var tx transaction.Tx
-			err = json.Unmarshal(rawTxBytes, &tx)
+			tx, err := transaction.NewTransactionFromJsonBytes(rawTxBytes)
 			if err != nil {
 				fail++
 				continue
 			}
 			if !isSent {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				if err != nil {
 					fail++
 					continue
@@ -381,7 +379,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					continue
 				}
 			} else {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
@@ -392,7 +390,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					fail++
 					continue
 				}
-				txMsg.(*wire.MessageTx).Transaction = &tx
+				txMsg.(*wire.MessageTx).Transaction = tx
 				err = httpServer.config.Server.PushMessageToAll(txMsg)
 				if err != nil {
 					fail++
@@ -459,14 +457,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 		switch txType {
 		case "cstokenprivacy":
 			{
-				var tx transaction.TxCustomTokenPrivacy
-				err = json.Unmarshal(rawTxBytes, &tx)
+				tx, err := transaction.NewTransactionTokenFromJsonBytes(rawTxBytes)
 				if err != nil {
 					fail++
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -475,7 +472,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -486,7 +483,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 						fail++
 						continue
 					}
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
+					txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
@@ -499,14 +496,13 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 				}
 			}
 		default:
-			var tx transaction.Tx
-			err = json.Unmarshal(rawTxBytes, &tx)
+			tx, err := transaction.NewTransactionFromJsonBytes(rawTxBytes)
 			if err != nil {
 				fail++
 				continue
 			}
 			if !isSent {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				if err != nil {
 					fail++
 					continue
@@ -515,7 +511,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					continue
 				}
 			} else {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(tx, -1)
 				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
@@ -526,7 +522,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					fail++
 					continue
 				}
-				txMsg.(*wire.MessageTx).Transaction = &tx
+				txMsg.(*wire.MessageTx).Transaction = tx
 				err = httpServer.config.Server.PushMessageToAll(txMsg)
 				if err != nil {
 					fail++
@@ -541,3 +537,180 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 	}
 	return CountResult{Success: success, Fail: fail}, nil
 }
+
+func (httpServer *HttpServer) handleConvertPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("a payment address is needed to proceed"))
+	}
+	address, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("the payment address should be a string"))
+	}
+
+	convertedAddress, err := wallet.GetPaymentAddressV1(address, false)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return convertedAddress, nil
+}
+
+// func (httpServer *HttpServer) handleTestBuildDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
+
+// 	txs, err := httpServer.txService.TestBuildDoubleSpendingTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	// tx := data.(jsonresult.CreateTransactionResult)
+// 	// base58CheckData := tx.Base58CheckData
+// 	// newParam := make([]interface{}, 0)
+// 	// newParam = append(newParam, base58CheckData)
+// 	// sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+// 	// if err != nil {
+// 	// 	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+// 	// }
+// 	// result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+// 	return result, nil
+// }
+
+// func (httpServer *HttpServer) handleTestBuildDuplicateInputTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
+
+// 	txs, err := httpServer.txService.TestBuildDuplicateInputTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
+
+// func (httpServer *HttpServer) handleTestBuildOutGtInTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
+
+// 	txs, err := httpServer.txService.TestBuildOutGtInTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
+
+// func (httpServer *HttpServer) handleTestBuildReceiverExistsTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+// 	if errNewParam != nil {
+// 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	}
+
+// 	txs, err := httpServer.txService.TestBuildReceiverExistsTransaction(createRawTxParam, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
+
+// func (httpServer *HttpServer) handleTestBuildDoubleSpendTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+// 	// createRawTxParam, errNewParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+// 	// if errNewParam != nil {
+// 	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+// 	// }
+
+// 	txs, err := httpServer.txService.TestBuildDoubleSpendingTokenTransaction(params, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
+
+// func (httpServer *HttpServer) handleTestBuildDuplicateInputTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+// 	txs, err := httpServer.txService.TestBuildDuplicateInputTokenTransaction(params, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }
+
+// func (httpServer *HttpServer) handleTestBuildReceiverExistsTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+// 	txs, err := httpServer.txService.TestBuildReceiverExistsTokenTransaction(params, nil)
+// 	if err != nil {
+// 		// return hex for a new tx
+// 		return nil, err
+// 	}
+
+// 	var result []jsonresult.CreateTransactionResult
+// 	for i,_ := range txs{
+// 		jsonBytes, err := json.Marshal(txs[i])
+// 		if err != nil {
+// 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+// 		}
+// 		result = append(result,jsonresult.NewCreateTransactionResult(txs[i].Hash(), common.EmptyString, jsonBytes, common.GetShardIDFromLastByte(txs[i].GetSenderAddrLastByte())))
+// 	}
+// 	return result, nil
+// }

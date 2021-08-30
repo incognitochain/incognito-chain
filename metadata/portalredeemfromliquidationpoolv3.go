@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 type PortalRedeemFromLiquidationPoolV3 struct {
@@ -28,25 +28,25 @@ type PortalRedeemFromLiquidationPoolActionV3 struct {
 }
 
 type PortalRedeemFromLiquidationPoolContentV3 struct {
-	TokenID               string // portalTokenID in incognito chain
-	RedeemAmount          uint64
-	RedeemerIncAddressStr string
-	RedeemerExtAddressStr string
-	TxReqID               common.Hash
-	ShardID               byte
-	MintedPRVCollateral   uint64
+	TokenID                  string // portalTokenID in incognito chain
+	RedeemAmount             uint64
+	RedeemerIncAddressStr    string
+	RedeemerExtAddressStr    string
+	TxReqID                  common.Hash
+	ShardID                  byte
+	MintedPRVCollateral      uint64
 	UnlockedTokenCollaterals map[string]uint64
 }
 
 type PortalRedeemFromLiquidationPoolStatusV3 struct {
-	TokenID               string // portalTokenID in incognito chain
-	RedeemAmount          uint64
-	RedeemerIncAddressStr string
-	RedeemerExtAddressStr string
-	TxReqID               common.Hash
-	MintedPRVCollateral   uint64
+	TokenID                  string // portalTokenID in incognito chain
+	RedeemAmount             uint64
+	RedeemerIncAddressStr    string
+	RedeemerExtAddressStr    string
+	TxReqID                  common.Hash
+	MintedPRVCollateral      uint64
 	UnlockedTokenCollaterals map[string]uint64
-	Status byte
+	Status                   byte
 }
 
 func NewPortalRedeemFromLiquidationPoolV3(
@@ -77,9 +77,9 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateTxWithBlockChain(
 }
 
 func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 	// validate RedeemerIncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)
 	if err != nil {
@@ -104,7 +104,7 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetri
 	}
 
 	// validate redeem amount
-	minAmount , err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight, common.PortalVersion3)
 	if err != nil {
 		return false, false, err
 	}
@@ -122,10 +122,10 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetri
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID) {
-		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not in portal tokens list")
 	}
-
 	// checkout ext address
 	if common.Has0xPrefix(redeemReq.RedeemerExtAddressStr) {
 		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr shouldn't have 0x prefix")

@@ -1,0 +1,1 @@
+tmux kill-server

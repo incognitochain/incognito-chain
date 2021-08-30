@@ -63,7 +63,7 @@ type CommitteeState struct {
 	shardID            int
 	role               int
 	committeePublicKey incognitokey.CommitteePublicKey
-	// rewardReceiver     privacy.PaymentAddress
+	// rewardReceiver     key.PaymentAddress
 	// autoStaking        bool
 	enterTime int64 // unix time
 }

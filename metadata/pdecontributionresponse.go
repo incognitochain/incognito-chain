@@ -16,6 +16,7 @@ type PDEContributionResponse struct {
 	ContributionStatus string
 	RequestedTxID      common.Hash
 	TokenIDStr         string
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPDEContributionResponse(
@@ -59,7 +60,9 @@ func (iRes PDEContributionResponse) Hash() *common.Hash {
 	record += iRes.TokenIDStr
 	record += iRes.ContributionStatus
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -69,14 +72,19 @@ func (iRes *PDEContributionResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PDEContribution or PDEPRVRequiredContributionRequestMeta instruction
+	Logger.log.Infof("Currently verifying ins: %v\n", iRes)
+	Logger.log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
+	for i, inst := range mintData.Insts {
+		if len(inst) < 4 { // this is not PDEContribution instruction
 			continue
 		}
+
+		Logger.log.Infof("BUGLOG currently processing inst: %v\n", inst)
+
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(PDEContributionMeta) && instMetaType != strconv.Itoa(PDEPRVRequiredContributionRequestMeta)) {
 			continue
 		}
@@ -84,6 +92,7 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txs
 		if instContributionStatus != iRes.ContributionStatus || (instContributionStatus != common.PDEContributionRefundChainStatus && instContributionStatus != common.PDEContributionMatchedNReturnedChainStatus) {
 			continue
 		}
+
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
@@ -122,25 +131,36 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txs
 
 		if !bytes.Equal(iRes.RequestedTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
+			Logger.log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
 			continue
 		}
+
 		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
 		if err != nil {
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			receivingAmtFromInst != paidAmount ||
-			receivingTokenIDStr != assetID.String() {
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != receivingTokenIDStr {
 			continue
 		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, receivingAmtFromInst); !ok {
+			continue
+		}
+
 		idx = i
+		fmt.Println("BUGLOG Verify Metadata --- OK")
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
+		Logger.log.Infof("BUGLOG Instruction not found for res: %v\n", iRes)
 		return false, fmt.Errorf(fmt.Sprintf("no PDEContribution or PDEPRVRequiredContributionRequestMeta instruction found for PDEContributionResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PDEContributionResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

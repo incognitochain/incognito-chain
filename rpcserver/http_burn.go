@@ -29,7 +29,20 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
-// handleGetBurnProof returns a proof of a tx burning pETH
+// handleGetBSCBurnProof returns a proof of a tx burning pBSC
+func (httpServer *HttpServer) handleGetBSCBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningBSCConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetBurnProofForDepositToSC returns a proof of a tx burning pETH to deposit to SC
 func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
 	closeChan <-chan struct{},
@@ -250,7 +263,7 @@ func splitAndDecodeInstV2(beaconInst []string) (string, string) {
 	return decodedInst, beaconHeight
 }
 
-// handleGetBurnProof returns a proof of a tx burning pETH
+// handleGetBurningAddress returns a burningAddress
 func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	listParams, ok := params.([]interface{})
 	if !ok {

@@ -1,17 +1,15 @@
 package types
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/pkg/errors"
 )
 
 type ShardBlock struct {
@@ -57,17 +55,6 @@ type ShardBody struct {
 	Instructions      [][]string
 	CrossTransactions map[byte][]CrossTransaction //CrossOutputCoin from all other shard
 	Transactions      []metadata.Transaction
-}
-
-type CrossShardBlock struct {
-	ValidationData  string `json:"ValidationData"`
-	Header          ShardHeader
-	ToShardID       byte
-	MerklePathShard []common.Hash
-	// Cross Shard data for PRV
-	CrossOutputCoin []privacy.OutputCoin
-	// Cross Shard For Custom token privacy
-	CrossTxTokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 
 func NewCrossShardBlock() *CrossShardBlock {
@@ -137,39 +124,11 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
 
-func (crossShardBlock CrossShardBlock) CommitteeFromBlock() common.Hash {
-	return common.Hash{}
-}
-
-func (crossShardBlock CrossShardBlock) GetProposer() string {
-	return crossShardBlock.Header.Proposer
-}
-
-func (crossShardBlock CrossShardBlock) GetProposeTime() int64 {
-	return crossShardBlock.Header.ProposeTime
-}
-
-func (crossShardBlock CrossShardBlock) GetProduceTime() int64 {
-	return crossShardBlock.Header.Timestamp
-}
-
-func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
-	return crossShardBlock.Header.Epoch
-}
-
-func (crossShardBlock CrossShardBlock) GetPrevHash() common.Hash {
-	return crossShardBlock.Header.PreviousBlockHash
-}
-
-func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
-	hash := crossShardBlock.Header.Hash()
-	return &hash
-}
-
 func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
 }
+
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
 	if shardBlock.Header.Height == 1 && len(shardBlock.ValidationData) != 0 {
@@ -299,12 +258,12 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		valEnv := updateTxEnvWithBlock(shardBlock, tx)
 		tx.SetValidationEnv(valEnv)
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
-			txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+			txCustom, ok := tx.(transaction.TransactionToken)
 			if !ok {
 				return errors.Errorf("Can not parse this tx %v to tx custom token privacy", tx.Hash().String())
 			}
-			valEnvCustom := updateTxEnvWithBlock(shardBlock, &txCustom.TxPrivacyTokenData.TxNormal)
-			txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+			valEnvCustom := updateTxEnvWithBlock(shardBlock, txCustom.GetTxNormal())
+			txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
 		}
 	}
 	if shardBlock.Body.Instructions == nil {
@@ -332,7 +291,7 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 }
 
 func (shardHeader *ShardHeader) String() string {
-	res := common.EmptyString
+	res := utils.EmptyString
 	// res += shardHeader.ProducerAddress.String()
 	res += string(shardHeader.ShardID)
 	res += fmt.Sprintf("%v", shardHeader.Version)
@@ -397,7 +356,7 @@ because we have many types of block, so we can need to customize data from marsh
 func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	type Alias ShardBody
 	temp := &struct {
-		Transactions []map[string]*json.RawMessage
+		Transactions []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(shardBody),
@@ -405,38 +364,24 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", err)
 	}
 
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
-		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
+		// txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
 		var tx metadata.Transaction
 		var parseErr error
-		txType := ""
-		err = json.Unmarshal(*txTemp["Type"], &txType)
-		if err != nil {
-			return err
-		}
-		switch txType {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-			{
-				tx = &transaction.Tx{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				tx = &transaction.TxCustomTokenPrivacy{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		default:
-			{
-				return errors.New("can not parse a wrong tx")
-			}
-		}
+		var txChoice *transaction.TxChoice
+		txChoice, parseErr = transaction.DeserializeTransactionJSON(txTemp)
 		if parseErr != nil {
-			return parseErr
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)
 		}
+		tx = txChoice.ToTx()
+		if tx == nil {
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Corrupted TX")
+		}
+
 		shardBody.Transactions = append(shardBody.Transactions, tx)
 	}
 	return nil
@@ -526,146 +471,4 @@ func (block ShardBlock) GetRoundKey() string {
 
 func (block ShardBlock) GetInstructions() [][]string {
 	return block.Body.Instructions
-}
-
-func (block CrossShardBlock) GetProducer() string {
-	return block.Header.Producer
-}
-
-func (block CrossShardBlock) GetVersion() int {
-	return block.Header.Version
-}
-
-func (block CrossShardBlock) GetHeight() uint64 {
-	return block.Header.Height
-}
-
-func (block CrossShardBlock) GetShardID() int {
-	return int(block.Header.ShardID)
-}
-
-func (block CrossShardBlock) GetValidationField() string {
-	return block.ValidationData
-}
-
-func (block CrossShardBlock) GetRound() int {
-	return block.Header.Round
-}
-
-func (block CrossShardBlock) GetRoundKey() string {
-	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
-}
-
-func (block CrossShardBlock) GetInstructions() [][]string {
-	return [][]string{}
-}
-
-func (block ShardBlock) GetConsensusType() string {
-	return block.Header.ConsensusType
-}
-
-func (block CrossShardBlock) GetConsensusType() string {
-	return block.Header.ConsensusType
-}
-
-type CrossOutputCoin struct {
-	BlockHeight uint64
-	BlockHash   common.Hash
-	OutputCoin  []privacy.OutputCoin
-}
-
-type CrossTokenPrivacyData struct {
-	BlockHeight      uint64
-	BlockHash        common.Hash
-	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-}
-type CrossTransaction struct {
-	BlockHeight      uint64
-	BlockHash        common.Hash
-	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-	OutputCoin       []privacy.OutputCoin
-}
-type ContentCrossShardTokenPrivacyData struct {
-	OutputCoin     []privacy.OutputCoin
-	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
-	PropertyName   string
-	PropertySymbol string
-	Type           int    // action type
-	Mintable       bool   // default false
-	Amount         uint64 // init amount
-}
-type CrossShardTokenPrivacyMetaData struct {
-	TokenID        common.Hash
-	PropertyName   string
-	PropertySymbol string
-	Type           int    // action type
-	Mintable       bool   // default false
-	Amount         uint64 // init amount
-}
-
-func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Bytes() []byte {
-	res := []byte{}
-	for _, item := range contentCrossShardTokenPrivacyData.OutputCoin {
-		res = append(res, item.Bytes()...)
-	}
-	res = append(res, contentCrossShardTokenPrivacyData.PropertyID.GetBytes()...)
-	res = append(res, []byte(contentCrossShardTokenPrivacyData.PropertyName)...)
-	res = append(res, []byte(contentCrossShardTokenPrivacyData.PropertySymbol)...)
-	typeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(typeBytes, uint32(contentCrossShardTokenPrivacyData.Type))
-	res = append(res, typeBytes...)
-	amountBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint32(amountBytes, uint32(contentCrossShardTokenPrivacyData.Amount))
-	res = append(res, amountBytes...)
-	if contentCrossShardTokenPrivacyData.Mintable {
-		res = append(res, []byte("true")...)
-	} else {
-		res = append(res, []byte("false")...)
-	}
-	return res
-}
-func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash() common.Hash {
-	return common.HashH(contentCrossShardTokenPrivacyData.Bytes())
-}
-func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
-	res := []byte{}
-	res = append(res, crossOutputCoin.BlockHash.GetBytes()...)
-	for _, coins := range crossOutputCoin.OutputCoin {
-		res = append(res, coins.Bytes()...)
-	}
-	return common.HashH(res)
-}
-func (crossTransaction CrossTransaction) Bytes() []byte {
-	res := []byte{}
-	res = append(res, crossTransaction.BlockHash.GetBytes()...)
-	for _, coins := range crossTransaction.OutputCoin {
-		res = append(res, coins.Bytes()...)
-	}
-	for _, coins := range crossTransaction.TokenPrivacyData {
-		res = append(res, coins.Bytes()...)
-	}
-	return res
-}
-func (crossTransaction CrossTransaction) Hash() common.Hash {
-	return common.HashH(crossTransaction.Bytes())
-}
-
-func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPrivacyTokenData) ContentCrossShardTokenPrivacyData {
-	newContentCrossTokenPrivacyData := ContentCrossShardTokenPrivacyData{
-		PropertyID:     txTokenPrivacyData.PropertyID,
-		PropertyName:   txTokenPrivacyData.PropertyName,
-		PropertySymbol: txTokenPrivacyData.PropertySymbol,
-		Mintable:       txTokenPrivacyData.Mintable,
-		Amount:         txTokenPrivacyData.Amount,
-		Type:           transaction.CustomTokenCrossShard,
-	}
-	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
-	return newContentCrossTokenPrivacyData
-}
-
-func updateTxEnvWithBlock(sBlk *ShardBlock, tx metadata.Transaction) metadata.ValidationEnviroment {
-	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sBlk.GetHeight())
-	valEnv = transaction.WithBeaconHeight(valEnv, sBlk.Header.BeaconHeight)
-	valEnv = transaction.WithConfirmedTime(valEnv, sBlk.GetProduceTime())
-	return valEnv
 }

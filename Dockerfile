@@ -1,36 +1,65 @@
-FROM golang:1.11rc1-alpine
+# FROM golang:1.14-alpine as builder
 
-ENV REFLEXGLIDE=https://github.com/Masterminds/glide/releases/download/v0.12.3/glide-v0.12.3-linux-amd64.tar.gz
-ENV WORK=/go/src/github.com/ninjadotorg/constant
-ENV GOROOT="/usr/local/go"
-ENV GOPATH="/go"
+# RUN apk add --no-cache make gcc musl-dev linux-headers git
 
-# Create app directory
-WORKDIR $WORK
+# ADD . /incognitochain
+# RUN cd /incognitochain && make build
 
-RUN apk add --no-cache curl
+# # Bring Incognito bin file into a second stage deploy alpine container
+# FROM ubuntu:16.04
 
-RUN apk update
-RUN apk add git
+# WORKDIR /incognitochain
+# RUN apt-get update
+# RUN apt-get install -y ca-certificates cronolog cron
+# RUN apt-get install -y dnsutils
 
-RUN mkdir glide
-RUN curl -Lk $REFLEXGLIDE -o glide.tar.gz
-RUN tar -xzf glide.tar.gz -C glide/
-RUN mv glide/linux-amd64/glide /bin/glide
+# COPY ./removeoldlog /etc/cron.d/removeoldlog
+# RUN chmod 0644 /etc/cron.d/removeoldlog
+# RUN crontab /etc/cron.d/removeoldlog
 
-COPY glide.* ./
+# ARG commit=commit
+# ENV commit=$commit
+
+# #COPY --from=builder /incognitochain/incognito /usr/local/bin/
+# COPY --from=builder /incognitochain/incognito /incognitochain
+# COPY --from=builder /incognitochain/priv2.json /incognitochain/
+# COPY --from=builder /incognitochain/whitelist.json /incognitochain/
+# COPY --from=builder /incognitochain/config/ /incognitochain/config/
+# COPY --from=builder /incognitochain/run_incognito.sh /incognitochain/
+
+# RUN chmod +x /incognitochain/run_incognito.sh
+# CMD ["/bin/bash","run_incognito.sh"]
+
+FROM ubuntu:16.04
 
 
-RUN pwd && ls -lah && glide install && glide update
+RUN apt-get update
+RUN apt-get install -y ca-certificates cronolog cron
+RUN apt-get install -y dnsutils
 
-COPY . .
 
-RUN go get -d
+COPY ./removeoldlog /etc/cron.d/removeoldlog
+RUN chmod 0644 /etc/cron.d/removeoldlog
+RUN crontab /etc/cron.d/removeoldlog
 
-WORKDIR $WORK
+ARG commit=commit
+ENV commit=$commit
 
-RUN go build
 
-EXPOSE 9333:9333
+COPY ./incognito /
+RUN chmod +x /incognito
 
-CMD [ "./constant" ]
+COPY ./priv2.json /
+COPY ./whitelist.json /
+COPY ./config/ /config
+COPY ./run_incognito.sh /
+
+RUN mkdir /utility
+
+CMD ["/bin/bash","run_incognito.sh"]
+
+ARG commit=commit
+ENV commit=$commit
+
+COPY ./incognito /
+RUN chmod +x /incognito

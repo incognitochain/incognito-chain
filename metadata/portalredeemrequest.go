@@ -1,15 +1,14 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -125,28 +124,31 @@ func (redeemReq PortalRedeemRequestV3) ValidateTxWithBlockChain(
 
 func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-			return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
-		}
-		// validate value transfer of tx for redeem fee in prv
-		if redeemReq.RedeemFee != txr.CalculateTxValue() {
-			return false, false, errors.New("redeem fee amount should be equal to the tx value")
-		}
-		return true, true, nil
+	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+		return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
 	}
+	// validate value transfer of tx for redeem fee in prv
+	if redeemReq.RedeemFee != txr.CalculateTxValue() {
+		return false, false, errors.New("redeem fee amount should be equal to the tx value")
+	}
+	// 	return true, true, nil
+	// }
 
 	// validate RedeemerIncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Requester incognito address is invalid"))
 	}
-	incAddr := keyWallet.KeySet.PaymentAddress
-	if len(incAddr.Pk) == 0 {
+
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Requester incognito address is invalid"))
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incAddr.Pk[:]) {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Requester incognito address is not signer"))
+
+	// check burning tx
+	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
 
 	// check tx type
@@ -154,12 +156,8 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("tx redeem request must be TxCustomTokenPrivacyType")
 	}
 
-	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("txprivacytoken in tx redeem request must be coin burning tx")
-	}
-
 	// validate redeem amount
-	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight, common.PortalVersion3)
 	if err != nil {
 		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
 	}
@@ -173,29 +171,27 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 	}
 
 	// validate value transfer of tx for redeem amount in ptoken
-	if redeemReq.RedeemAmount != txr.CalculateTxValue() {
+	if redeemReq.RedeemAmount != burnCoin.GetValue() {
 		return false, false, errors.New("redeem amount should be equal to the tx value")
 	}
 
 	// validate tokenID
-	if redeemReq.TokenID != txr.GetTokenID().String() {
+	if redeemReq.TokenID != burnedTokenID.String() {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID) {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID is not in portal tokens list"))
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not in portal tokens list")
 	}
 
 	//validate RemoteAddress
-	if len(redeemReq.RemoteAddress) == 0 {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
-	}
-	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(redeemReq.TokenID, redeemReq.RemoteAddress, beaconHeight)
+	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(redeemReq.TokenID, redeemReq.RemoteAddress, beaconHeight, common.PortalVersion3)
 	if err != nil || !isValidRemoteAddress {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", redeemReq.RemoteAddress, redeemReq.TokenID, err)
 	}
 
-	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
+	if beaconHeight >= config.Param().BCHeightBreakPointPortalV3 {
 		// validate metadata type
 		if redeemReq.Type != PortalRedeemRequestMetaV3 {
 			return false, false, fmt.Errorf("Metadata type should be %v", PortalRedeemRequestMetaV3)

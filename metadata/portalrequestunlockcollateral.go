@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -91,12 +90,8 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Custodian incognito address is invalid"))
 	}
-	incogAddr := keyWallet.KeySet.PaymentAddress
-	if len(incogAddr.Pk) == 0 {
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Custodian incognito address is invalid"))
-	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Custodian incognito address is not signer"))
 	}
 
 	// check tx type
@@ -110,7 +105,8 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 	}
 
 	// validate tokenID
-	if !chainRetriever.IsPortalToken(beaconHeight, meta.TokenID) {
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, meta.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
 		return false, false, errors.New("TokenID is not a portal token")
 	}
 

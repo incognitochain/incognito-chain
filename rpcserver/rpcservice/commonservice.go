@@ -1,15 +1,18 @@
 package rpcservice
 
 import (
-	"errors"
+	"bytes"
+	"fmt"
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
@@ -23,7 +26,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
+	_, voutsAmount, err := CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	if err != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
@@ -42,34 +45,114 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	return meta, nil
 }
 
-func NewContractingRequestMetadataV2(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, errors.Errorf("data receiver is in valid")
 	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+	paymentInfos := []*privacy.PaymentInfo{}
+	voutsAmount := int64(0)
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
 	}
-	paymentAddr := senderKey.KeySet.PaymentAddress
+	for key, value := range receivers {
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			return nil, 0, errors.Errorf("payment info %+v is invalid. Error %v\n", key, err)
+		}
+		if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+			return nil, 0, errors.Errorf("public key in payment info %+v is invalid\n", key)
+		}
+		amount, err := common.AssertAndConvertNumber(value)
+		if err != nil {
+			return nil, 0, errors.Errorf("amount payment address is invalid. Error %v\n", err)
+		}
+		temp := &privacy.PaymentInfo{
+			PaymentAddress: keyWallet.KeySet.PaymentAddress,
+			Amount:         amount,
+		}
+		paymentInfos = append(paymentInfos, temp)
+		voutsAmount += int64(temp.Amount)
+	}
+	return paymentInfos, voutsAmount, nil
+}
 
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArrayV2(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, err)
+// CreateCustomTokenPrivacyReceiverArrayV2 parses data frm rpc request to create a list vout for preparing to create a custom token tx
+// data interface is a map[paymentt-address]{transferring-amount}
+func CreateCustomTokenPrivacyReceiverArrayV2(dataReceiver interface{}) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
 	}
-	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+	result := []*privacy.PaymentInfo{}
+	voutsAmount := int64(0)
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	for key, value := range receivers {
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			return nil, 0, err
+		}
+		keySet := keyWallet.KeySet
+
+		amount, err := common.AssertAndConvertStrToNumber(value)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		temp := &privacy.PaymentInfo{
+			PaymentAddress: keySet.PaymentAddress,
+			Amount:         amount,
+		}
+		result = append(result, temp)
+		voutsAmount += int64(temp.Amount)
+	}
+	return result, voutsAmount, nil
+}
+
+func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr metadata.ChainRetriever, beaconHeight uint64) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	var result []*privacy.PaymentInfo
+	voutsAmount := int64(0)
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
 	}
 
-	meta, _ := metadata.NewContractingRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenIDHash,
-		metadata.ContractingRequestMeta,
-	)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 
-	return meta, nil
+	for key, value := range receivers {
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			return nil, 0, err
+		}
+		if !bytes.Equal(keyWallet.KeySet.PaymentAddress.Pk[:], paymentAddressBurningAccount.Pk[:]) {
+			continue
+		}
+
+		amount, err := common.AssertAndConvertNumber(value)
+		if err != nil {
+			return nil, 0, errors.Errorf("amount payment address is invalid. Error %v\n", err)
+		}
+		temp := &privacy.PaymentInfo{
+			PaymentAddress: keyWallet.KeySet.PaymentAddress,
+			Amount:         amount,
+		}
+		result = append(result, temp)
+		voutsAmount += int64(temp.Amount)
+	}
+	return result, voutsAmount, nil
 }
 
 func NewBurningRequestMetadata(
@@ -81,6 +164,7 @@ func NewBurningRequestMetadata(
 	burningMetaType int,
 	bcr metadata.ChainRetriever,
 	beaconHeight uint64,
+	version int8,
 ) (*metadata.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
@@ -92,8 +176,7 @@ func NewBurningRequestMetadata(
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	//_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyBurningReceiverArray(tokenReceivers, bcr, beaconHeight)
+	_, voutsAmount, err := CreateCustomTokenPrivacyBurningReceiverArray(tokenReceivers, bcr, beaconHeight)
 	if err != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
@@ -113,57 +196,17 @@ func NewBurningRequestMetadata(
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
 	}
-
-	return meta, nil
-}
-
-func NewBurningRequestMetadataV2(
-	senderPrivateKeyStr string,
-	tokenReceivers interface{},
-	tokenID string,
-	tokenName string,
-	remoteAddress string,
-	burningMetaType int,
-	bcr metadata.ChainRetriever,
-	beaconHeight uint64,
-) (*metadata.BurningRequest, *RPCError) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-	paymentAddr := senderKey.KeySet.PaymentAddress
-
-	//_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyBurningReceiverArrayV2(tokenReceivers, bcr, beaconHeight)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, err)
-	}
-	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-
-	meta, err := metadata.NewBurningRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenIDHash,
-		tokenName,
-		remoteAddress,
-		burningMetaType,
-	)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+	if version == 1 {
+		meta.BurnerAddress.OTAPublic = nil
 	}
 
 	return meta, nil
 }
 
 func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
-	return metadata.GetETHHeader(rCommon.HexToHash(ethBlockHash))
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
+	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string
@@ -175,8 +218,17 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	if err != nil {
 		return nil, byte(0), err
 	}
-
-	return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+	if keyWallet.KeySet.PrivateKey != nil{
+		return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+	} else{
+		pk := keyWallet.KeySet.OTAKey.GetPublicSpend()
+		if pk ==nil {
+			return nil, byte(0), errors.New("OTA Public Key not found")
+		}
+		pkb := pk.ToBytesS()
+		shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
+		return &keyWallet.KeySet, shardID, nil
+	}
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string
@@ -232,29 +284,6 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 	return paymentInfos, nil
 }
 
-func NewPaymentInfosFromReceiversParamV2(receiversParam map[string]interface{}) ([]*privacy.PaymentInfo, error) {
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for paymentAddressStr, amount := range receiversParam {
-		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, err
-		}
-
-		amountInt, err := common.AssertAndConvertStrToNumber(amount)
-		if err != nil {
-			return nil, err
-		}
-
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         amountInt,
-			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-		}
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-
-	return paymentInfos, nil
-}
-
 func GetStakingAmount(stakingType int, stakingShardAmountParam uint64) uint64 {
 	amount := uint64(0)
 	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", stakingShardAmountParam, "", true)
@@ -290,4 +319,16 @@ func GenerateTokenID(network string, name string) (common.Hash, error) {
 		return common.Hash{}, err
 	}
 	return *hash, nil
+}
+
+func GetInputSerialnumber(inputCoins []privacy.PlainCoin) ([]string, error) {
+
+	if inputCoins == nil || len(inputCoins) == 0 {
+		return nil, errors.New("list of input coins is empty")
+	}
+	tmp := make([]string, len(inputCoins))
+	for i, input := range inputCoins {
+		tmp[i] = jsonresult.OperationPointPtrToBase58(input.GetKeyImage())
+	}
+	return tmp, nil
 }

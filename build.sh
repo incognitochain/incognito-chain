@@ -1,27 +1,45 @@
 #!/usr/bin/env bash
-echo "Start Install Dependencies Package"
-GO111MODULE=on go get -v
 
-cd ./blockchain/committeestate/ && mockery --name=BeaconCommitteeEngine && cd -
-cd ./metadata/ && mockery --name=ChainRetriever && mockery --name=BeaconViewRetriever && mockery --name=ShardViewRetriever && mockery --name=Transaction && cd -
-echo "Start Unit-Test"
-echo "package committeestate"
-GO111MODULE=on go test -cover ./blockchain/committeestate/*.go
-echo "package statedb"
-GO111MODULE=on go test -cover ./dataaccessobject/statedb/*.go
-echo "package instruction"
-GO111MODULE=on go test -cover ./instruction/*.go
-echo "package blockchain"
-GO111MODULE=on go test -cover ./blockchain/*.go
-echo "package metadata"
-GO111MODULE=on go test -cover ./metadata/*.go
-echo "package signaturecounter"
-GO111MODULE=on go test -cover ./blockchain/signaturecounter/*.go
+# if [ -z "$env" ]; then
+#     env="testnet";
+# fi
+
+# commit=`git show --summary --oneline | cut -d ' ' -f 1`
+
+# if [[ $env == "testnet" ]]; then
+#     docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
+# elif [ $env == "mainnet" ]; then
+#     docker build --build-arg commit=$commit . -t incognitochain/incognito-mainnet:${tag} && docker push incognitochain/incognito-mainnet:${tag} && echo "Commit: $commit"
+# fi
+
+# docker rmi -f $(docker images --filter "dangling=true" -q)
 
 
-echo "Start build Incognito"
-APP_NAME="incognito"
-echo "go build -o $APP_NAME"
-GO111MODULE=on go build -o $APP_NAME
 
-echo "Build Incognito success!"
+#!/usr/bin/env bash
+
+if [ -f ./incognito ]; then
+    rm -rf ./incognito
+fi
+if [ -f ./bootnode ]; then
+    rm -rf ./bootnode
+fi
+
+env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito
+
+echo "build execuable file successfully"
+
+if [ -z "$env" ]; then
+    env="testnet";
+fi
+
+commit=`git show --summary --oneline | cut -d ' ' -f 1`
+
+if [[ $env == "testnet" ]]; then
+    docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
+elif [ $env == "mainnet" ]; then
+    docker build --build-arg commit=$commit . -t incognitochain/incognito-mainnet:${tag} && docker push incognitochain/incognito-mainnet:${tag} && echo "Commit: $commit"
+fi
+
+docker rmi -f $(docker images --filter "dangling=true" -q)
+

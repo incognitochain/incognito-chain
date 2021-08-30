@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -30,7 +31,7 @@ func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnMana
 		Commit:          os.Getenv("commit"),
 		ProtocolVersion: protocolVerion,
 		//Version:         rpcserver.RpcServerVersion,
-		SubVersion:     common.EmptyString,
+		SubVersion:     utils.EmptyString,
 		NetworkActive:  connMgr.GetListeningPeer() != nil,
 		LocalAddresses: []string{},
 	}
@@ -69,7 +70,7 @@ func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnMana
 	if wallet != nil && wallet.GetConfig() != nil {
 		result.IncrementalFee = wallet.GetConfig().IncrementalFee
 	}
-	result.Warnings = common.EmptyString
+	result.Warnings = utils.EmptyString
 	timeNow := time.Now()
 	result.NodeTimeUnix = timeNow.Unix()
 	result.NodeTimeString = timeNow.Format(common.DateOutputFormat)

@@ -115,6 +115,25 @@ const (
 	BurningForDepositToSCRequestMetaV2 = 242
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
+
+	// PORTAL V4
+	PortalV4ShieldingRequestMeta      = 260
+	PortalV4ShieldingResponseMeta     = 261
+	PortalV4UnshieldingRequestMeta    = 262
+	PortalV4UnshieldingResponseMeta   = 263
+	PortalV4UnshieldBatchingMeta      = 264
+	PortalV4FeeReplacementRequestMeta = 265
+	PortalV4SubmitConfirmedTxMeta     = 266
+	PortalV4ConvertVaultRequestMeta   = 267
+
+	InitTokenRequestMeta  = 244
+	InitTokenResponseMeta = 245
+
+	// incognito mode for bsc
+	IssuingBSCRequestMeta  = 250
+	IssuingBSCResponseMeta = 251
+	BurningPBSCRequestMeta = 252
+	BurningBSCConfirmMeta  = 253
 )
 
 var minerCreatedMetaTypes = []int{
@@ -122,6 +141,7 @@ var minerCreatedMetaTypes = []int{
 	BeaconSalaryResponseMeta,
 	IssuingResponseMeta,
 	IssuingETHResponseMeta,
+	IssuingBSCResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
@@ -141,6 +161,9 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingResponseMeta,
+	InitTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -149,32 +172,18 @@ const (
 	BeaconOnly = -2
 )
 
-var (
-	// if the blockchain is running in Docker container
-	// then using GETH_NAME env's value (aka geth container name)
-	// otherwise using localhost
-	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
-	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
-	EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
-)
+/*var (*/
+//// if the blockchain is running in Docker container
+//// then using GETH_NAME env's value (aka geth container name)
+//// otherwise using localhost
+//EthereumLightNodeHost     = utils.GetEnv("GETH_NAME", "127.0.0.1")
+//EthereumLightNodeProtocol = utils.GetEnv("GETH_PROTOCOL", "http")
+//EthereumLightNodePort     = utils.GetEnv("GETH_PORT", "8545")
+/*)*/
 
-// Kovan testnet
-//var (
-//	// if the blockchain is running in Docker container
-//	// then using GETH_NAME env's value (aka geth container name)
-//	// otherwise using localhost
-//	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "kovan.infura.io/v3/93fe721349134964aa71071a713c5cef")
-//	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "https")
-//	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
-//)
-
-//const (
-//	EthereumLightNodeProtocol = "http"
-//	EthereumLightNodePort     = "8545"
-//)
 const (
 	StopAutoStakingAmount = 0
-	ETHConfirmationBlocks = 15
+	EVMConfirmationBlocks = 15
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
@@ -234,4 +243,21 @@ var portalMetaTypesV3 = []int{
 var portalRelayingMetaTypes = []int{
 	RelayingBNBHeaderMeta,
 	RelayingBTCHeaderMeta,
+}
+
+var portalV4MetaTypes = []int{
+	PortalV4ShieldingRequestMeta,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingRequestMeta,
+	PortalV4UnshieldBatchingMeta,
+	PortalV4FeeReplacementRequestMeta,
+	PortalV4SubmitConfirmedTxMeta,
+	PortalV4ConvertVaultRequestMeta,
+}
+
+// NOTE: add new records when add new feature flags
+var FeatureFlagWithMetaTypes = map[string][]int{
+	common.PortalRelayingFlag: portalRelayingMetaTypes,
+	common.PortalV3Flag:       portalMetaTypesV3,
+	common.PortalV4Flag:       portalV4MetaTypes,
 }

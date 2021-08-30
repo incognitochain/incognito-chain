@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -19,6 +20,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -56,7 +58,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
 
 	//check preload beacon
-	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	preloadAddr := configpkg.Config().PreloadAddress
 	if preloadAddr != "" {
 		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
 			fmt.Println(err)
@@ -118,7 +120,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
 	}
 
-	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
 	wg := sync.WaitGroup{}
@@ -257,20 +259,30 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
 			if err != nil {
+				Logger.Errorf("Get beacon block by hash %v failed\n", beaconHash.String())
 				break
 			}
 
 			beaconBlock := new(types.BeaconBlock)
-			json.Unmarshal(beaconBlockBytes, beaconBlock)
+			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
+			if err != nil {
+				Logger.Errorf("Cannot unmarshal beaconBlock %v at syncker\n", beaconBlock.GetHeight()-1)
+				return nil
+			}
 
 			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 
+			Logger.Infof("beaconFinalView: %v\n", beaconFinalView.Hash().String())
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
 						//validate crossShardBlock before add to result
 						blkXShard := synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash)
-
+						isValid := types.VerifyCrossShardBlockUTXO(blkXShard.(*types.CrossShardBlock))
+						if !isValid {
+							Logger.Error("Validate Crossshard block body fail", blkXShard.GetHeight(), blkXShard.Hash())
+							return nil
+						}
 						// TODO: @committees
 						//For releasing beacon nodes and re verify cross shard blocks from beacon
 						//Use committeeFromBlock field for getting committees

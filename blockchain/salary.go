@@ -1,9 +1,11 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/transaction"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -94,7 +96,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.IncognitoDAOAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(config.Param().IncognitoDAOAddress)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
@@ -181,7 +183,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 ) {
 	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
-	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
+	blkPerYear := getNoBlkPerYear(uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()))
 	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
@@ -249,7 +251,14 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		totalRewardForShard,
 		totalRewardForIncDAO,
 		totalRewardForCustodian,
-		err := curView.calculateReward(blockchain, blkHeight, epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
+		err := curView.calculateReward(
+		blockchain,
+		blkHeight,
+		epoch,
+		curView.GetBeaconRewardStateDB(),
+		isSplitRewardForCustodian,
+		percentCustodianRewards,
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -298,7 +307,7 @@ func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, 
 
 func (blockchain *BlockChain) buildInstRewardForIncDAO(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, blockchain.config.ChainParams.IncognitoDAOAddress)
+	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, config.Param().IncognitoDAOAddress)
 	if err != nil {
 		Logger.log.Errorf("buildInstRewardForIncDAO error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
 		return nil, err
@@ -336,22 +345,27 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 	if err != nil {
 		return nil, err
 	}
-	return blockchain.InitTxSalaryByCoinID(
-		&requestDetail.PaymentAddress,
-		amount,
-		blkProducerPrivateKey,
-		view.GetCopiedTransactionStateDB(),
-		blockchain.GetBeaconBestState().GetBeaconFeatureStateDB(),
-		responseMeta,
-		requestDetail.TokenID,
-		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &requestDetail.PaymentAddress, TokenID: &requestDetail.TokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil{
+			responseMeta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return responseMeta
+	}
+
+	salaryTx, err := txParam.BuildTxSalary(blkProducerPrivateKey, view.GetCopiedTransactionStateDB(), makeMD)
+	if err != nil {
+		return nil, errors.Errorf("cannot init salary tx. Error %v", err)
+	}
+	salaryTx.SetType(common.TxRewardType)
+	return salaryTx, nil
 }
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
-	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
+	blockBeaconInterval := config.Param().BlockTime.MinBeaconBlockInterval.Seconds()
 	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
 	n := (blkHeight - 1) / blockInYear
-	reward := uint64(blockchain.config.ChainParams.BasicReward)
+	reward := uint64(config.Param().BasicReward)
 	for ; n > 0; n-- {
 		reward *= 91
 		reward /= 100

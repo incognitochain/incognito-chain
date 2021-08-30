@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/wallet"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -27,6 +29,10 @@ var (
 	commitmentLengthPrefix             = []byte("com-length-")
 	snDerivatorPrefix                  = []byte("sn-derivator-")
 	outputCoinPrefix                   = []byte("output-coin-")
+	otaCoinPrefix                      = []byte("ota-coin-")
+	otaCoinIndexPrefix                 = []byte("ota-index-")
+	otaCoinLengthPrefix                = []byte("ota-length-")
+	onetimeAddressPrefix               = []byte("onetime-address-")
 	tokenPrefix                        = []byte("token-")
 	tokenTransactionPrefix             = []byte("token-transaction-")
 	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
@@ -39,6 +45,7 @@ var (
 	pdeWithdrawalStatusPrefix          = []byte("pdewithdrawalstatus-")
 	pdeStatusPrefix                    = []byte("pdestatus-")
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
+	bridgeBSCTxPrefix                  = []byte("bri-bsc-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
@@ -94,6 +101,18 @@ var (
 	portalExternalTxPrefix      = []byte("portalexttx-")
 	portalConfirmProofPrefix    = []byte("portalproof-")
 	withdrawCollateralProofType = []byte("0-")
+
+	// portal v4
+	portalV4StatusPrefix                         = []byte("portalv4status-")
+	portalUTXOStatePrefix                        = []byte("portalutxo-")
+	portalShieldRequestPrefix                    = []byte("portalshieldrequest-")
+	portalWaitingUnshieldRequestsPrefix          = []byte("portalwaitingunshieldrequest-")
+	portalUnshieldRequestsProcessedPrefix        = []byte("portalprocessingbatchunshield-")
+	portalUnshieldRequestStatusPrefix            = []byte("unshieldrequest-")
+	portalBatchUnshieldRequestStatusPrefix       = []byte("batchunshield-")
+	portalUnshielFeeReplacementBatchStatusPrefix = []byte("unshieldrequestbatchfeereplacementprocessed-")
+	portalUnshielSubmitConfirmedTxStatusPrefix   = []byte("unshieldrequestsubmitconfirmedtx-")
+	portalConvertVaultRequestPrefix              = []byte("portalconvertvaultrequest-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -196,6 +215,30 @@ func GetOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []
 	return h[:][:prefixHashKeyLength]
 }
 
+func GetOTACoinPrefix(tokenID common.Hash, shardID byte, height []byte) []byte {
+	// non-PRV coins will be indexed together
+	if tokenID != common.PRVCoinID {
+		tokenID = common.ConfidentialAssetID
+	}
+	h := common.HashH(append(otaCoinPrefix, append(tokenID[:], append(height, shardID)...)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOTACoinIndexPrefix(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(otaCoinIndexPrefix, append(tokenID[:], shardID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOTACoinLengthPrefix() []byte {
+	h := common.HashH(otaCoinLengthPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOnetimeAddressPrefix(tokenID common.Hash) []byte {
+	h := common.HashH(append(onetimeAddressPrefix, tokenID[:]...))
+	return h[:][:prefixHashKeyLength]
+}
+
 func GetTokenPrefix() []byte {
 	h := common.HashH(tokenPrefix)
 	return h[:][:prefixHashKeyLength]
@@ -233,6 +276,11 @@ func GetPDEStatusPrefix() []byte {
 
 func GetBridgeEthTxPrefix() []byte {
 	h := common.HashH(bridgeEthTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeBSCTxPrefix() []byte {
+	h := common.HashH(bridgeBSCTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -292,19 +340,43 @@ func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string)
 }
 
 // GetPDEShareKey: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
-func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) ([]byte, error) {
 	prefix := append(pdeSharePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
-	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddress) == 0 {
+		keyAddr = contributorAddress
+	} else {
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+keyAddr)...), nil
 }
 
 // GetPDETradingFeeKey: PDETradingFeePrefix + beacon height + token1ID + token2ID
-func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) ([]byte, error) {
 	prefix := append(pdeTradingFeePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
-	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddress) == 0 {
+		keyAddr = contributorAddress
+	} else {
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+keyAddr)...), nil
 }
 
 func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
@@ -473,6 +545,60 @@ func PortalExpiredPortingReqPrefix() []byte {
 
 func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 	return portalReqMatchingRedeemStatusByTxReqIDPrefix
+}
+
+// TODO: rename
+// PORTAL V4
+// Portal v4 prefix for portal v4 status
+func PortalShieldingRequestStatusPrefix() []byte {
+	return portalShieldRequestPrefix
+}
+
+func PortalUnshieldRequestStatusPrefix() []byte {
+	return portalUnshieldRequestStatusPrefix
+}
+
+func PortalBatchUnshieldRequestStatusPrefix() []byte {
+	return portalBatchUnshieldRequestStatusPrefix
+}
+
+func PortaConvertVaultRequestStatusPrefix() []byte {
+	return portalConvertVaultRequestPrefix
+}
+
+// Portal v4 prefix hash of the key
+
+func GetPortalV4StatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(portalV4StatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPortalUTXOStatePrefix(tokenID string) []byte {
+	h := common.HashH(append(portalUTXOStatePrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetShieldingRequestPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalShieldRequestPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetWaitingUnshieldRequestPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalWaitingUnshieldRequestsPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetProcessedUnshieldRequestBatchPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalUnshieldRequestsProcessedPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func PortalUnshielFeeReplacementBatchStatusPrefix() []byte {
+	return portalUnshielFeeReplacementBatchStatusPrefix
+}
+
+func PortalSubmitConfirmedTxStatusPrefix() []byte {
+	return portalUnshielSubmitConfirmedTxStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

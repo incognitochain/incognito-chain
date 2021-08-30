@@ -86,14 +86,14 @@ func (pm *PoolManager) GetShardTxsPool(shardID byte) (TxPool, error) {
 	return pm.ShardTxsPool[shardID], nil
 }
 
-func (pm *PoolManager) FilterMemPoolOutcoinsToSpent(outCoins []*privacy.OutputCoin, sID int) []*privacy.OutputCoin {
+func (pm *PoolManager) FilterMemPoolOutcoinsToSpent(outCoins []privacy.PlainCoin, sID int) []privacy.PlainCoin {
 	if sID < len(pm.ShardTxsPool) {
 		sPool := pm.ShardTxsPool[sID]
 		if sPool.IsRunning() {
-			res := []*privacy.OutputCoin{}
+			res := []privacy.PlainCoin{}
 			mapPoolOutcoins := sPool.snapshotPoolOutCoin()
 			for _, out := range outCoins {
-				if _, ok := mapPoolOutcoins[common.HashH(out.CoinDetails.GetSerialNumber().ToBytesS())]; !ok {
+				if _, ok := mapPoolOutcoins[common.HashH(out.GetKeyImage().ToBytesS())]; !ok {
 					res = append(res, out)
 				}
 			}

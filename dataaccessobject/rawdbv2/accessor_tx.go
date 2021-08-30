@@ -2,10 +2,11 @@ package rawdbv2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 func StoreTransactionIndex(db incdb.Database, txHash common.Hash, blockHash common.Hash, index int) error {
@@ -124,3 +125,148 @@ func GetTxByPublicKeyV2(
 	return result, skip, limit, nil
 }
 
+
+func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
+	for _, outputCoin := range outputCoins {
+		key := generateIndexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
+		value := outputCoin
+		err := db.Put(key, value)
+		if err != nil {
+			return NewRawdbError(StoreOutcoinByOTAKeyError, err)
+		}
+	}
+	return nil
+}
+
+func GetOutCoinsByIndexedOTAKey(db incdb.Database, tokenID common.Hash, shardID byte, publicKey []byte) ([][]byte, error) {
+	it := db.NewIteratorWithPrefix(getIndexedOutputCoinPrefix(tokenID, shardID, publicKey))
+	var outputCoins [][]byte
+	for it.Next() {
+		value := it.Value()
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		outputCoins = append(outputCoins, newValue)
+	}
+	return outputCoins, nil
+}
+
+func StoreIndexedOTAKey(db incdb.Database, theKey []byte) error {
+	key := generateIndexedOTAKeyObjectKey(theKey)
+	// only care about `PublicKey` field
+	value := theKey
+	err := db.Put(key, value)
+	if err != nil {
+		return NewRawdbError(StoreOTAKeyError, err)
+	}
+	return nil
+}
+
+func DeleteIndexedOTAKey(db incdb.Database, theKey []byte) error {
+	key := generateIndexedOTAKeyObjectKey(theKey)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(DeleteOTAKeyError, err)
+	}
+	return nil
+}
+
+func GetIndexedOTAKeys(db incdb.Database) ([][]byte,error) {
+	it := db.NewIteratorWithPrefix(getIndexedKeysPrefix())
+	var otaKeys [][]byte
+	for it.Next() {
+		value := it.Value()
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		otaKeys = append(otaKeys, newValue)
+	}
+	return otaKeys, nil
+}
+
+func StoreCachedCoinHash(db incdb.Database, theCoinHash []byte) error {
+	key := generateCachedCoinHashObjectKey(theCoinHash)
+	value := theCoinHash
+	err := db.Put(key, value)
+	if err != nil {
+		return NewRawdbError(StoreCoinHashError, err)
+	}
+
+	return nil
+}
+
+func GetCachedCoinHashes(db incdb.Database) ([][]byte, error) {
+	it := db.NewIteratorWithPrefix(getCoinHashKeysPrefix())
+	var otaKeys [][]byte
+	for it.Next() {
+		value := it.Value()
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		otaKeys = append(otaKeys, newValue)
+	}
+	return otaKeys, nil
+}
+
+//These functions are used for storing and getting a transaction by an output coin index
+//TODO: refactor these functions for more efficient read/write
+func StoreTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, shardID byte, txID common.Hash) error {
+	key := generateTxByCoinIndexObjectKey(index, tokenID, shardID)
+	value := txID.Bytes()
+	if err := db.Put(key, value); err != nil {
+		return NewRawdbError(StoreTxByCoinIndexError, err, txID.String(), index, tokenID.String(), shardID)
+	}
+	return nil
+}
+
+func GetTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, shardID byte) (*common.Hash, error) {
+	iterator := db.NewIteratorWithPrefix(generateTxByCoinIndexObjectKey(index, tokenID, shardID))
+	if iterator.Next() {
+		value := iterator.Value()
+		txHash, err := new(common.Hash).NewHash(value)
+		if err != nil {
+			return nil, NewRawdbError(GetTxByCoinIndexError, err, index, tokenID.String(), shardID)
+		}
+
+		return txHash, nil
+	}
+
+	//If this is a token transaction, try with assetTag
+	if tokenID.String() != common.PRVIDStr {
+		iterator := db.NewIteratorWithPrefix(generateTxByCoinIndexObjectKey(index, common.ConfidentialAssetID, shardID))
+		if iterator.Next() {
+			value := iterator.Value()
+			txHash, err := new(common.Hash).NewHash(value)
+			if err != nil {
+				return nil, NewRawdbError(GetTxByCoinIndexError, err, index, tokenID.String(), shardID)
+			}
+
+			return txHash, nil
+		}
+	}
+
+	return nil, NewRawdbError(GetTxByCoinIndexError, fmt.Errorf("no tx found for index %v, tokenID %v, shardID %v", index, tokenID.String(), shardID))
+}
+
+//These functions are used for storing/retrieving a transaction by an input coin serial number
+//TODO: refactor these functions for more efficient read/write
+func StoreTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID common.Hash, shardID byte, txID common.Hash) error {
+	key := generateTxBySerialNumberObjectKey(serialNumber, tokenID, shardID)
+	value := txID.Bytes()
+	if err := db.Put(key, value); err != nil {
+		return NewRawdbError(StoreTxBySerialNumberError, err, txID.String(), serialNumber, tokenID.String(), shardID)
+	}
+	return nil
+}
+
+func GetTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID common.Hash, shardID byte) (*common.Hash, error) {
+	iterator := db.NewIteratorWithPrefix(generateTxBySerialNumberObjectKey(serialNumber, tokenID, shardID))
+	if iterator.Next() {
+		value := iterator.Value()
+		txHash, err := new(common.Hash).NewHash(value)
+		if err != nil {
+			return nil, NewRawdbError(GetTxBySerialNumberError, err, serialNumber, tokenID.String(), shardID)
+		}
+
+		return txHash, nil
+	}
+
+	return nil, NewRawdbError(GetTxBySerialNumberError, fmt.Errorf("no tx found for serialNumber %v, tokenID %v, shardID %v", serialNumber, tokenID.String(), shardID))
+}

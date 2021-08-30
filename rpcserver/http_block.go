@@ -2,8 +2,10 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -182,9 +184,9 @@ getblockchaininfo RPC return information for blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
-		ChainName:    httpServer.config.ChainParams.Name,
+		ChainName:    config.Param().Name,
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
-		ActiveShards: httpServer.config.ChainParams.ActiveShards,
+		ActiveShards: config.Param().ActiveShards,
 	}
 	shardsBestState := httpServer.blockService.GetShardBestStates()
 	for shardID, bestState := range shardsBestState {
@@ -328,12 +330,12 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 			}
 			for _, crossTransaction := range crossTransactions {
 				for _, outputCoin := range crossTransaction.OutputCoin {
-					pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
+					pubkey := outputCoin.GetPublicKey().ToBytesS()
 					pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-					if outputCoin.CoinDetailsEncrypted == nil {
+					if !outputCoin.IsEncrypted() {
 						crossShardPRVResult := jsonresult.CrossShardPRVResult{
 							PublicKey: pubkeyStr,
-							Value:     outputCoin.CoinDetails.GetValue(),
+							Value:     outputCoin.GetValue(),
 						}
 						res.CrossShardPRVResultList = append(res.CrossShardPRVResultList, crossShardPRVResult)
 					} else {
@@ -353,7 +355,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 						CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
 					}
 					for _, outputCoin := range tokenPrivacyData.OutputCoin {
-						pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
+						pubkey := outputCoin.GetPublicKey().ToBytesS()
 						pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 						crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
 							PublicKey: pubkeyStr,
