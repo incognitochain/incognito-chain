@@ -99,6 +99,11 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 		}
 	}
 
+	_, isExisted := withdrawal.Receivers[withdrawal.NftID]
+	if !isExisted {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
+	}
+
 	return true, true, nil
 }
 
