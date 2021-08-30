@@ -146,6 +146,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
 	if checkView != nil {
+		Logger.log.Errorf("SHARD %+v | Block %+v, hash %+v already inserted", shardID, blockHeight, blockHash)
 		return nil
 	}
 	if ok := checkLimitTxAction(false, map[int]int{}, shardBlock); !ok {
