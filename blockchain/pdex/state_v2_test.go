@@ -793,3 +793,827 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 		})
 	}
 }
+
+func Test_stateV2_GetDiff(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+
+	type fields struct {
+		stateBase                   stateBase
+		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
+		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
+		poolPairs                   map[string]*PoolPairState
+		params                      Params
+		stakingPoolStates           map[string]*StakingPoolState
+		nftIDs                      map[string]uint64
+		producer                    stateProducerV2
+		processor                   stateProcessorV2
+	}
+	type args struct {
+		compareState State
+		stateChange  *StateChange
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    State
+		want1   *StateChange
+		wantErr bool
+	}{
+		{
+			name: "full pool pair",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount: 200,
+								tradingFees: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs:                   map[string]*PoolPairState{},
+					params: Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PRVDiscountPercent:              25,
+						LimitProtocolFeePercent:         0,
+						LimitStakingPoolRewardPercent:   10,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						DefaultStakingPoolsShare:        0,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{},
+					shares:      map[string]*ShareChange{},
+					orderIDs:    map[string]bool{},
+					stakingPool: map[string]map[string]*StakingChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount: 200,
+								tradingFees: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				params:            Params{},
+				stakingPoolStates: map[string]*StakingPoolState{},
+				nftIDs:            map[string]uint64{},
+				producer:          stateProducerV2{},
+				processor:         stateProcessorV2{},
+			},
+			want1: &StateChange{
+				poolPairIDs: map[string]bool{
+					poolPairID: true,
+				},
+				shares: map[string]*ShareChange{
+					nftID1: &ShareChange{
+						isChanged: true,
+						tokenIDs: map[string]bool{
+							common.PRVIDStr: true,
+						},
+					},
+				},
+				orderIDs:    map[string]bool{},
+				stakingPool: map[string]map[string]*StakingChange{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Only poolpair trading fees",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount: 200,
+								tradingFees: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs: map[string]*PoolPairState{
+						poolPairID: &PoolPairState{
+							state: *rawdbv2.NewPdexv3PoolPairWithValue(
+								*token0ID, *token1ID, 200, 100, 400,
+								big.NewInt(0).SetUint64(200),
+								big.NewInt(0).SetUint64(800), 20000,
+							),
+							shares: map[string]*Share{
+								nftID1: &Share{
+									amount:                  200,
+									tradingFees:             map[string]uint64{},
+									lastUpdatedBeaconHeight: 11,
+								},
+							},
+							orderbook: Orderbook{[]*Order{}},
+						},
+					},
+					params: Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PRVDiscountPercent:              25,
+						LimitProtocolFeePercent:         0,
+						LimitStakingPoolRewardPercent:   10,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						DefaultStakingPoolsShare:        0,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{},
+					shares:      map[string]*ShareChange{},
+					orderIDs:    map[string]bool{},
+					stakingPool: map[string]map[string]*StakingChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount: 200,
+								tradingFees: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				params:            Params{},
+				stakingPoolStates: map[string]*StakingPoolState{},
+				nftIDs:            map[string]uint64{},
+				producer:          stateProducerV2{},
+				processor:         stateProcessorV2{},
+			},
+			want1: &StateChange{
+				poolPairIDs: map[string]bool{},
+				shares: map[string]*ShareChange{
+					nftID1: &ShareChange{
+						tokenIDs: map[string]bool{
+							common.PRVIDStr: true,
+						},
+					},
+				},
+				orderIDs:    map[string]bool{},
+				stakingPool: map[string]map[string]*StakingChange{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Only poolpair + share",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:                  200,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs:                   map[string]*PoolPairState{},
+					params: Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PRVDiscountPercent:              25,
+						LimitProtocolFeePercent:         0,
+						LimitStakingPoolRewardPercent:   10,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						DefaultStakingPoolsShare:        0,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{},
+					shares:      map[string]*ShareChange{},
+					orderIDs:    map[string]bool{},
+					stakingPool: map[string]map[string]*StakingChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:                  200,
+								tradingFees:             map[string]uint64{},
+								lastUpdatedBeaconHeight: 11,
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				params:            Params{},
+				stakingPoolStates: map[string]*StakingPoolState{},
+				nftIDs:            map[string]uint64{},
+				producer:          stateProducerV2{},
+				processor:         stateProcessorV2{},
+			},
+			want1: &StateChange{
+				poolPairIDs: map[string]bool{
+					poolPairID: true,
+				},
+				shares: map[string]*ShareChange{
+					nftID1: &ShareChange{
+						isChanged: true,
+					},
+				},
+				orderIDs:    map[string]bool{},
+				stakingPool: map[string]map[string]*StakingChange{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Full stakingPoolStates",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 20,
+								rewards: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+							},
+						},
+					},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs:                   map[string]*PoolPairState{},
+					params: Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PRVDiscountPercent:              25,
+						LimitProtocolFeePercent:         0,
+						LimitStakingPoolRewardPercent:   10,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						DefaultStakingPoolsShare:        0,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{},
+					shares:      map[string]*ShareChange{},
+					orderIDs:    map[string]bool{},
+					stakingPool: map[string]map[string]*StakingChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				params:                      Params{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 20,
+								rewards: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+							},
+						},
+					},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			want1: &StateChange{
+				poolPairIDs: map[string]bool{},
+				shares:      map[string]*ShareChange{},
+				orderIDs:    map[string]bool{},
+				stakingPool: map[string]map[string]*StakingChange{
+					common.PRVIDStr: map[string]*StakingChange{
+						nftID1: &StakingChange{
+							isChanged: true,
+							tokenIDs: map[string]bool{
+								common.PRVIDStr: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Only stakingPoolStates rewards",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 20,
+								rewards: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+							},
+						},
+					},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs:                   map[string]*PoolPairState{},
+					params: Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PRVDiscountPercent:              25,
+						LimitProtocolFeePercent:         0,
+						LimitStakingPoolRewardPercent:   10,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						DefaultStakingPoolsShare:        0,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{
+							liquidity: 100,
+							stakers: map[string]*Staker{
+								nftID1: &Staker{
+									liquidity:               100,
+									lastUpdatedBeaconHeight: 20,
+									rewards:                 map[string]uint64{},
+								},
+							},
+						},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{},
+					shares:      map[string]*ShareChange{},
+					orderIDs:    map[string]bool{},
+					stakingPool: map[string]map[string]*StakingChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				params:                      Params{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 20,
+								rewards: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+							},
+						},
+					},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			want1: &StateChange{
+				poolPairIDs: map[string]bool{},
+				shares:      map[string]*ShareChange{},
+				orderIDs:    map[string]bool{},
+				stakingPool: map[string]map[string]*StakingChange{
+					common.PRVIDStr: map[string]*StakingChange{
+						nftID1: &StakingChange{
+							tokenIDs: map[string]bool{
+								common.PRVIDStr: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Only stakingPoolStates + stakers",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				params: Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					LimitProtocolFeePercent:         0,
+					LimitStakingPoolRewardPercent:   10,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					DefaultStakingPoolsShare:        0,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 20,
+								rewards: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+							},
+						},
+					},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs:                   map[string]*PoolPairState{},
+					params: Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PRVDiscountPercent:              25,
+						LimitProtocolFeePercent:         0,
+						LimitStakingPoolRewardPercent:   10,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						DefaultStakingPoolsShare:        0,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{
+							liquidity: 100,
+							stakers: map[string]*Staker{
+								nftID1: &Staker{
+									liquidity:               100,
+									lastUpdatedBeaconHeight: 20,
+									rewards:                 map[string]uint64{},
+								},
+							},
+						},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					poolPairIDs: map[string]bool{},
+					shares:      map[string]*ShareChange{},
+					orderIDs:    map[string]bool{},
+					stakingPool: map[string]map[string]*StakingChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs:                   map[string]*PoolPairState{},
+				params:                      Params{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 100,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               100,
+								lastUpdatedBeaconHeight: 20,
+								rewards: map[string]uint64{
+									common.PRVIDStr: 100,
+								},
+							},
+						},
+					},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			want1: &StateChange{
+				poolPairIDs: map[string]bool{},
+				shares:      map[string]*ShareChange{},
+				orderIDs:    map[string]bool{},
+				stakingPool: map[string]map[string]*StakingChange{
+					common.PRVIDStr: map[string]*StakingChange{
+						nftID1: &StakingChange{
+							tokenIDs: map[string]bool{
+								common.PRVIDStr: true,
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &stateV2{
+				stateBase:                   tt.fields.stateBase,
+				waitingContributions:        tt.fields.waitingContributions,
+				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
+				poolPairs:                   tt.fields.poolPairs,
+				params:                      tt.fields.params,
+				stakingPoolStates:           tt.fields.stakingPoolStates,
+				nftIDs:                      tt.fields.nftIDs,
+				producer:                    tt.fields.producer,
+				processor:                   tt.fields.processor,
+			}
+			got, got1, err := s.GetDiff(tt.args.compareState, tt.args.stateChange)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateV2.GetDiff() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateV2.GetDiff() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateV2.GetDiff() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

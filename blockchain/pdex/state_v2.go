@@ -42,6 +42,10 @@ type Params struct {
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
+func (params *Params) IsZeroValue() bool {
+	return reflect.DeepEqual(*params, Params{})
+}
+
 func (params *Params) readConfig() *Params {
 	res := &Params{
 		DefaultFeeRateBPS:               config.Param().PDexParams.Params.DefaultFeeRateBPS,
@@ -64,19 +68,21 @@ func (params *Params) readConfig() *Params {
 	return res
 }
 
-func newStateV2() *stateV2 {
-	params := Params{}
-	params = *params.readConfig()
+func (s *stateV2) readConfig() {
+	s.params = *s.params.readConfig()
 	stakingPoolStates := make(map[string]*StakingPoolState)
-	for k := range params.StakingPoolsShare {
+	for k := range s.params.StakingPoolsShare {
 		stakingPoolStates[k] = NewStakingPoolState()
 	}
+}
+
+func newStateV2() *stateV2 {
 	return &stateV2{
-		params:                      params,
+		params:                      Params{},
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
-		stakingPoolStates:           stakingPoolStates,
+		stakingPoolStates:           make(map[string]*StakingPoolState),
 		nftIDs:                      make(map[string]uint64),
 	}
 }
@@ -434,27 +440,29 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
-	err := statedb.StorePdexv3Params(
-		env.StateDB(),
-		s.params.DefaultFeeRateBPS,
-		s.params.FeeRateBPS,
-		s.params.PRVDiscountPercent,
-		s.params.LimitProtocolFeePercent,
-		s.params.LimitStakingPoolRewardPercent,
-		s.params.TradingProtocolFeePercent,
-		s.params.TradingStakingPoolRewardPercent,
-		s.params.DefaultStakingPoolsShare,
-		s.params.StakingPoolsShare,
-		s.params.MintNftRequireAmount,
-	)
-	if err != nil {
-		return err
+	if !s.params.IsZeroValue() {
+		err := statedb.StorePdexv3Params(
+			env.StateDB(),
+			s.params.DefaultFeeRateBPS,
+			s.params.FeeRateBPS,
+			s.params.PRVDiscountPercent,
+			s.params.LimitProtocolFeePercent,
+			s.params.LimitStakingPoolRewardPercent,
+			s.params.TradingProtocolFeePercent,
+			s.params.TradingStakingPoolRewardPercent,
+			s.params.DefaultStakingPoolsShare,
+			s.params.StakingPoolsShare,
+			s.params.MintNftRequireAmount,
+		)
+		if err != nil {
+			return err
+		}
 	}
 	deletedWaitingContributionsKeys := []string{}
 	for k := range s.deletedWaitingContributions {
 		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
 	}
-	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
+	err := statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
 	if err != nil {
 		return err
 	}
@@ -527,8 +535,11 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		return err
 	}
 	for k, v := range s.stakingPoolStates {
+		if stateChange.stakingPool[k] == nil || len(stateChange.stakingPool) == 0 {
+			continue
+		}
 		for nftID, staker := range v.stakers {
-			if stateChange.stakingPool[k][nftID] == nil {
+			if stateChange.stakingPool[k][nftID] == nil || len(stateChange.stakingPool[k]) == 0 {
 				continue
 			}
 			if stateChange.stakingPool[k][nftID].isChanged {
@@ -575,17 +586,19 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	res := newStateV2()
 	compareStateV2 := compareState.(*stateV2)
 
-	res.params = s.params
-	clonedFeeRateBPS := map[string]uint{}
-	for k, v := range s.params.FeeRateBPS {
-		clonedFeeRateBPS[k] = v
+	if !reflect.DeepEqual(s.params, compareStateV2.params) {
+		res.params = s.params
+		clonedFeeRateBPS := map[string]uint{}
+		for k, v := range s.params.FeeRateBPS {
+			clonedFeeRateBPS[k] = v
+		}
+		clonedStakingPoolsShare := map[string]uint{}
+		for k, v := range s.params.StakingPoolsShare {
+			clonedStakingPoolsShare[k] = v
+		}
+		res.params.FeeRateBPS = clonedFeeRateBPS
+		res.params.StakingPoolsShare = clonedStakingPoolsShare
 	}
-	clonedStakingPoolsShare := map[string]uint{}
-	for k, v := range s.params.StakingPoolsShare {
-		clonedStakingPoolsShare[k] = v
-	}
-	res.params.FeeRateBPS = clonedFeeRateBPS
-	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	for k, v := range s.waitingContributions {
 		if m, ok := compareStateV2.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {

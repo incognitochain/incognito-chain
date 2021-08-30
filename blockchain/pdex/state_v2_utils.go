@@ -105,10 +105,9 @@ func (share *Share) getDiff(
 			newStateChange.shares[nftID].tokenIDs[tokenID] = true
 		}
 	} else {
+		newStateChange.shares[nftID] = &ShareChange{}
 		if share.amount != compareShare.amount || share.lastUpdatedBeaconHeight != compareShare.lastUpdatedBeaconHeight {
-			newStateChange.shares[nftID] = &ShareChange{
-				isChanged: true,
-			}
+			newStateChange.shares[nftID].isChanged = true
 		}
 		for k, v := range share.tradingFees {
 			if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
@@ -228,21 +227,21 @@ func (staker *Staker) Clone() *Staker {
 
 func (staker *Staker) getDiff(stakingPoolID, nftID string, compareStaker *Staker, stateChange *StateChange) *StateChange {
 	newStateChange := stateChange
-	var stakingChange *StakingChange
+	stakingChange := &StakingChange{}
 	if compareStaker == nil {
 		stakingChange = &StakingChange{
 			isChanged: true,
 			tokenIDs:  make(map[string]bool),
 		}
+		newStateChange.stakingPool[stakingPoolID][nftID] = stakingChange
 		for tokenID := range staker.rewards {
 			newStateChange.stakingPool[stakingPoolID][nftID].tokenIDs[tokenID] = true
 		}
 	} else {
 		if staker.liquidity != compareStaker.liquidity {
-			stakingChange = &StakingChange{
-				isChanged: true,
-			}
+			stakingChange.isChanged = true
 		}
+		newStateChange.stakingPool[stakingPoolID][nftID] = stakingChange
 		for tokenID, value := range staker.rewards {
 			if v, ok := compareStaker.rewards[nftID]; !ok || !reflect.DeepEqual(v, value) {
 				if stakingChange.tokenIDs == nil {
@@ -251,9 +250,6 @@ func (staker *Staker) getDiff(stakingPoolID, nftID string, compareStaker *Staker
 				newStateChange.stakingPool[stakingPoolID][nftID].tokenIDs[tokenID] = true
 			}
 		}
-	}
-	if stakingChange != nil {
-		newStateChange.stakingPool[stakingPoolID][nftID] = stakingChange
 	}
 	return newStateChange
 }
