@@ -164,14 +164,13 @@ func (sp *stateProducerV2) addLiquidity(
 				continue
 			}
 		}
-		poolPair := rootPoolPair.Clone()
-		token0Contribution, token1Contribution := poolPair.getContributionsByOrder(
+		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
 		actualToken0ContributionAmount,
 			returnedToken0ContributionAmount,
 			actualToken1ContributionAmount,
-			returnedToken1ContributionAmount := poolPair.
+			returnedToken1ContributionAmount := rootPoolPair.
 			computeActualContributedAmounts(&token0Contribution, &token1Contribution)
 
 		token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
@@ -190,6 +189,7 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
+		poolPair := rootPoolPair.Clone()
 		shareAmount, err := poolPair.addReserveDataAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
@@ -581,8 +581,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		poolPair := rootPoolPair.Clone()
-		shares, ok := poolPair.shares[metaData.NftID()]
+		shares, ok := rootPoolPair.shares[metaData.NftID()]
 		if !ok || shares == nil {
 			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 			if err != nil {
@@ -591,6 +590,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
+		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
 			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
 		)
@@ -685,7 +685,6 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		stakingPoolState := rootStakingPoolState.Clone()
 		_, found = nftIDs[metaData.NftID()]
 		if metaData.NftID() == utils.EmptyString || !found {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
@@ -697,6 +696,7 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
+		stakingPoolState := rootStakingPoolState.Clone()
 		err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
 		if err != nil {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
