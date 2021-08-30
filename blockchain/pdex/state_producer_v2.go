@@ -189,7 +189,10 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		poolPair := rootPoolPair.Clone()
+		//clone props gonna change before process
+		poolPair := NewPoolPairState()
+		poolPair.withShares(rootPoolPair.cloneShares())
+		poolPair.withState(*rootPoolPair.state.Clone())
 		shareAmount, err := poolPair.addReserveDataAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
@@ -218,7 +221,10 @@ func (sp *stateProducerV2) addLiquidity(
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
 		}
+		//assign which props not change after process
+		poolPair.withOrderBook(rootPoolPair.orderbook)
 		poolPairs[poolPairID] = poolPair
+
 		res = append(res, insts...)
 	}
 	return res, poolPairs, waitingContributions, nil
@@ -590,7 +596,11 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		poolPair := rootPoolPair.Clone()
+		//clone props gonna change before process
+		poolPair := NewPoolPairState()
+		poolPair.withShares(rootPoolPair.cloneShares())
+		poolPair.withState(*rootPoolPair.state.Clone())
+
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
 			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
 		)
@@ -612,6 +622,8 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			return res, poolPairs, err
 		}
 		res = append(res, insts...)
+		//assign which props not change after process
+		poolPair.withOrderBook(rootPoolPair.orderbook)
 		poolPairs[metaData.PoolPairID()] = poolPair
 	}
 	return res, poolPairs, nil

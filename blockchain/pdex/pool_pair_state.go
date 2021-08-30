@@ -343,3 +343,23 @@ func (p *PoolPairState) updateSingleTokenAmount(
 	}
 	return nil
 }
+
+func (p *PoolPairState) withState(state rawdbv2.Pdexv3PoolPair) {
+	p.state = state
+}
+
+func (p *PoolPairState) withShares(shares map[string]*Share) {
+	p.shares = shares
+}
+
+func (p *PoolPairState) withOrderBook(orderbook Orderbook) {
+	p.orderbook = orderbook
+}
+
+func (p *PoolPairState) cloneShares() map[string]*Share {
+	res := make(map[string]*Share)
+	for k, v := range p.shares {
+		res[k] = v.Clone()
+	}
+	return res
+}
