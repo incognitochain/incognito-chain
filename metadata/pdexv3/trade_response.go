@@ -34,7 +34,7 @@ type AcceptedTrade struct {
 	TradePath    []string                 `json:"TradePath"`
 	TokenToBuy   common.Hash              `json:"TokenToBuy"`
 	PairChanges  [][2]*big.Int            `json:"PairChanges"`
-	RewardEarned map[common.Hash]uint64   `json:"RewardEarned"`
+	RewardEarned []map[common.Hash]uint64 `json:"RewardEarned"`
 	OrderChanges []map[string][2]*big.Int `json:"OrderChanges"`
 }
 

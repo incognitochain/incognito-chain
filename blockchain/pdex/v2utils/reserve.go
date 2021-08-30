@@ -246,15 +246,20 @@ func TrackFee(
 		return nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
 	}
 
+	acceptedMeta.RewardEarned = make([]map[common.Hash]uint64, mutualLen)
+	for i := 0; i < mutualLen; i++ {
+		acceptedMeta.RewardEarned[i] = make(map[common.Hash]uint64)
+	}
+
 	if feeInPRV {
 		// uniformly split fee into reserves
 		feePerReserve := fee / uint64(mutualLen)
-		for _, reserve := range reserves {
+		for i, reserve := range reserves {
 			(&TradingPair{reserve}).AddFee(
 				common.PRVCoinID, feePerReserve, baseLPPerShare,
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 			)
-			acceptedMeta.RewardEarned[common.PRVCoinID] = feePerReserve
+			acceptedMeta.RewardEarned[i][common.PRVCoinID] = feePerReserve
 		}
 		return acceptedMeta, nil
 	}
@@ -272,7 +277,7 @@ func TrackFee(
 			rewardToken, rewardAmount, baseLPPerShare,
 			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 		)
-		acceptedMeta.RewardEarned[rewardToken] = rewardAmount
+		acceptedMeta.RewardEarned[i][rewardToken] = rewardAmount
 
 		sellAmountRemain -= rewardAmount
 		if i == mutualLen-1 {
@@ -331,6 +336,29 @@ func (tp *TradingPair) AddFee(
 	tokenID common.Hash, amount uint64, baseLPPerShare *big.Int,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
 ) {
+	isStakingRewardToken := false
+	for _, stakingRewardToken := range stakingRewardTokens {
+		if tokenID == stakingRewardToken {
+			isStakingRewardToken = true
+			break
+		}
+	}
+
+	if !isStakingRewardToken {
+		stakingPoolRewardPercent = 0
+	}
+
+	// if there is no LP for this pair, then there is no LP fee to add
+	if tp.ShareAmount() == 0 {
+		if !isStakingRewardToken {
+			// move all LP fee to protocol fee
+			protocolFeePercent = 100
+		} else {
+			// move all LP fee to staking pool fee
+			stakingPoolRewardPercent = 100 - protocolFeePercent
+		}
+	}
+
 	fee := new(big.Int).SetUint64(amount)
 
 	protocolFees := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(protocolFeePercent)))
@@ -345,27 +373,20 @@ func (tp *TradingPair) AddFee(
 
 	tp.SetProtocolFees(tempProtocolFees)
 
-	isStakingRewardToken := false
-	for _, stakingRewardToken := range stakingRewardTokens {
-		if tokenID == stakingRewardToken {
-			isStakingRewardToken = true
-			break
-		}
+	stakingRewards := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
+	stakingRewards = new(big.Int).Div(stakingRewards, new(big.Int).SetUint64(100))
+
+	oldStakingRewards, isExisted := tp.StakingPoolFees()[tokenID]
+	if !isExisted {
+		oldStakingRewards = uint64(0)
 	}
+	tempStakingRewards := tp.StakingPoolFees()
+	tempStakingRewards[tokenID] = oldStakingRewards + stakingRewards.Uint64()
 
-	stakingRewards := new(big.Int).SetUint64(0)
-	if isStakingRewardToken {
-		stakingRewards = new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
-		stakingRewards = new(big.Int).Div(stakingRewards, new(big.Int).SetUint64(100))
+	tp.SetStakingPoolFees(tempStakingRewards)
 
-		oldStakingRewards, isExisted := tp.StakingPoolFees()[tokenID]
-		if !isExisted {
-			oldStakingRewards = uint64(0)
-		}
-		tempStakingRewards := tp.StakingPoolFees()
-		tempStakingRewards[tokenID] = oldStakingRewards + stakingRewards.Uint64()
-
-		tp.SetStakingPoolFees(tempStakingRewards)
+	if tp.ShareAmount() == 0 {
+		return
 	}
 
 	oldLPFeesPerShare, isExisted := tp.LPFeesPerShare()[tokenID]

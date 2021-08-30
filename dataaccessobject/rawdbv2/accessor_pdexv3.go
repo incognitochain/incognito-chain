@@ -310,7 +310,11 @@ func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
 }
 
 func NewPdexv3PoolPair() *Pdexv3PoolPair {
-	return &Pdexv3PoolPair{}
+	return &Pdexv3PoolPair{
+		lpFeesPerShare:  map[common.Hash]*big.Int{},
+		protocolFees:    map[common.Hash]uint64{},
+		stakingPoolFees: map[common.Hash]uint64{},
+	}
 }
 
 func NewPdexv3PoolPairWithValue(
@@ -412,9 +416,9 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 		Token0Rate     uint64      `json:"Token0Rate"`
 		Token1Rate     uint64      `json:"Token1Rate"`
 		Token0Balance  uint64      `json:"Token0Balance"`
-		Token1Balance  uint64 `json:"Token1Balance"`
-		TradeDirection byte   `json:"TradeDirection"`
-		Fee            uint64 `json:"Fee"`
+		Token1Balance  uint64      `json:"Token1Balance"`
+		TradeDirection byte        `json:"TradeDirection"`
+		Fee            uint64      `json:"Fee"`
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

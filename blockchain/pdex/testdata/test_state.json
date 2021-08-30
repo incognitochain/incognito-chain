@@ -13,6 +13,9 @@
                 "Token0VirtualAmount": 1000,
                 "Token1VirtualAmount": 2000,
                 "Amplifier": 21000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
                 "ShareAmount": 0
             },
             "orderbook":

@@ -16,7 +16,6 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/stretchr/testify/assert"
 )
@@ -718,7 +717,6 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	//invalidPoolPairID
 	invalidPoolPairIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		"123", nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
-		map[common.Hash]privacy.OTAReceiver{},
 	)
 	invalidPoolPairIDTx := &metadataMocks.Transaction{}
 	invalidPoolPairIDTx.On("GetMetadata").Return(invalidPoolPairIDMetaData)
@@ -748,7 +746,6 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	//invalidNftID
 	invalidNftIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		poolPairID, common.PRVIDStr, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
-		map[common.Hash]privacy.OTAReceiver{},
 	)
 	invalidNftIDTx := &metadataMocks.Transaction{}
 	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetaData)
@@ -759,7 +756,6 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	//deductShareAmountFail
 	deductShareAmountFailMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 0,
-		map[common.Hash]privacy.OTAReceiver{},
 	)
 	deductShareAmountFailTx := &metadataMocks.Transaction{}
 	deductShareAmountFailTx.On("GetMetadata").Return(deductShareAmountFailMetaData)
@@ -770,7 +766,6 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	//validInput
 	validInputMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
-		map[common.Hash]privacy.OTAReceiver{},
 	)
 	validInputTx := &metadataMocks.Transaction{}
 	validInputTx.On("GetMetadata").Return(validInputMetaData)

@@ -429,7 +429,7 @@ func (sp *stateProcessorV2) trade(
 				return pairs, err
 			}
 
-			for tokenID, amount := range md.RewardEarned {
+			for tokenID, amount := range md.RewardEarned[index] {
 				reserveState.AddFee(
 					tokenID, amount, BaseLPFeesPerShare,
 					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
