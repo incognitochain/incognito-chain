@@ -605,7 +605,8 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
-		return committees, committees, nil
+		signingCommittees := incognitokey.DeepCopy(committees)
+		return committees, signingCommittees, nil
 	case types.BLOCK_PRODUCINGV3_VERSION:
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
