@@ -111,40 +111,30 @@ func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight
 		var tempLiquidity uint64
 		switch operator {
 		case subOperator:
-			tempLiquidity = staker.liquidity + liquidity
-			if tempLiquidity < s.liquidity {
-				return errors.New("Staking pool liquidity is out of range")
-			}
-		case addOperator:
 			tempLiquidity = staker.liquidity - liquidity
 			if tempLiquidity >= s.liquidity {
-				return errors.New("Staking pool liquidity is out of range")
+				return errors.New("Staker liquidity is out of range")
+			}
+		case addOperator:
+			tempLiquidity = staker.liquidity + liquidity
+			if tempLiquidity < s.liquidity {
+				return errors.New("Staker liquidity is out of range")
 			}
 		}
 		staker.liquidity = tempLiquidity
 	}
-	tempLiquidity := s.liquidity + liquidity
-	if tempLiquidity < s.liquidity {
-		return errors.New("Staking pool liquidity is out of range")
-	}
-	s.liquidity = tempLiquidity
-	return nil
-}
-
-func (s *StakingPoolState) addLiquidity(nftID string, liquidity, beaconHeight uint64) error {
-	staker, found := s.stakers[nftID]
-	if !found {
-		s.stakers[nftID] = NewStakerWithValue(liquidity, beaconHeight, make(map[string]uint64))
-	} else {
-		tempLiquidity := staker.liquidity + liquidity
+	var tempLiquidity uint64
+	switch operator {
+	case subOperator:
+		tempLiquidity = s.liquidity - liquidity
+		if tempLiquidity >= s.liquidity {
+			return errors.New("Staking pool liquidity is out of range")
+		}
+	case addOperator:
+		tempLiquidity = s.liquidity + liquidity
 		if tempLiquidity < s.liquidity {
 			return errors.New("Staking pool liquidity is out of range")
 		}
-		staker.liquidity = tempLiquidity
-	}
-	tempLiquidity := s.liquidity + liquidity
-	if tempLiquidity < s.liquidity {
-		return errors.New("Staking pool liquidity is out of range")
 	}
 	s.liquidity = tempLiquidity
 	return nil

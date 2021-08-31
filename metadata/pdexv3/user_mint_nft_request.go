@@ -81,6 +81,9 @@ func (request *UserMintNftRequest) ValidateSanityData(
 	if tx.GetType() != common.TxNormalType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be normal privacy type"))
 	}
+	if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
+	}
 	return true, true, nil
 }
 

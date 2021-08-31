@@ -706,7 +706,7 @@ func (sp *stateProducerV2) staking(
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
+		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
 				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
@@ -770,7 +770,7 @@ func (sp *stateProducerV2) unstaking(
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
+		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
 			if err != nil {

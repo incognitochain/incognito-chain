@@ -643,6 +643,11 @@ func Pdexv3StakingStatusPrefix() []byte {
 	return pdexv3StakingStatusPrefix
 }
 
+// pDex v3 prefix for unstaking status
+func Pdexv3UnstakingStatusPrefix() []byte {
+	return pdexv3UnstakingStatusPrefix
+}
+
 var _ = func() (_ struct{}) {
 	m := make(map[string]string)
 	prefixs := [][]byte{}

@@ -94,6 +94,9 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 		if !otaReceiver.IsValid() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiveNft is not valid"))
 		}
+		if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
+		}
 	}
 	if request.shareAmount == 0 {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("shareAmount can not be 0"))

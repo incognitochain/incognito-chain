@@ -136,7 +136,7 @@ type AcceptWithdrawLiquidity struct {
 	NftID       common.Hash `json:"NftID"`
 	TokenID     common.Hash `json:"TokenID"`
 	TokenAmount uint64      `json:"TokenAmount"`
-	OtaReceive  string      `json:"OtaReceive"`
+	OtaReceiver string      `json:"OtaReceiver"`
 	ShareAmount uint64      `json:"ShareAmount"`
 	TxReqID     common.Hash `json:"TxReqID"`
 	ShardID     byte        `jdon:"ShardID"`
@@ -193,8 +193,8 @@ func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		paidAmount := mintCoin.GetValue()
 
 		otaReceiver := coin.OTAReceiver{}
-		metadataCommon.Logger.Log.Info("instContent.OtaReceive:", instContent.OtaReceive)
-		err = otaReceiver.FromString(instContent.OtaReceive)
+		metadataCommon.Logger.Log.Info("instContent.OtaReceiver:", instContent.OtaReceiver)
+		err = otaReceiver.FromString(instContent.OtaReceiver)
 		if err != nil {
 			return false, errors.New("Invalid ota receiver")
 		}

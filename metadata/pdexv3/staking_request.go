@@ -115,6 +115,9 @@ func (request *StakingRequest) ValidateSanityData(
 	default:
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Not recognize tx type"))
 	}
+	if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
+	}
 	return true, true, nil
 }
 

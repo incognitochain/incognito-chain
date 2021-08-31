@@ -43,7 +43,7 @@ type Params struct {
 }
 
 func (params *Params) IsZeroValue() bool {
-	return reflect.DeepEqual(*params, Params{})
+	return reflect.DeepEqual(params, Params{})
 }
 
 func (params *Params) readConfig() *Params {
@@ -298,6 +298,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.stakingPoolStates, _, err = s.processor.staking(
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
 			)
+		case metadataCommon.Pdexv3UnstakingRequestMeta:
+			s.stakingPoolStates, _, err = s.processor.unstaking(
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -455,21 +459,24 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
-	err := statedb.StorePdexv3Params(
-		env.StateDB(),
-		s.params.DefaultFeeRateBPS,
-		s.params.FeeRateBPS,
-		s.params.PRVDiscountPercent,
-		s.params.LimitProtocolFeePercent,
-		s.params.LimitStakingPoolRewardPercent,
-		s.params.TradingProtocolFeePercent,
-		s.params.TradingStakingPoolRewardPercent,
-		s.params.DefaultStakingPoolsShare,
-		s.params.StakingPoolsShare,
-		s.params.MintNftRequireAmount,
-	)
-	if err != nil {
-		return err
+	var err error
+	if !s.params.IsZeroValue() {
+		err = statedb.StorePdexv3Params(
+			env.StateDB(),
+			s.params.DefaultFeeRateBPS,
+			s.params.FeeRateBPS,
+			s.params.PRVDiscountPercent,
+			s.params.LimitProtocolFeePercent,
+			s.params.LimitStakingPoolRewardPercent,
+			s.params.TradingProtocolFeePercent,
+			s.params.TradingStakingPoolRewardPercent,
+			s.params.DefaultStakingPoolsShare,
+			s.params.StakingPoolsShare,
+			s.params.MintNftRequireAmount,
+		)
+		if err != nil {
+			return err
+		}
 	}
 	deletedWaitingContributionsKeys := []string{}
 	for k := range s.deletedWaitingContributions {
@@ -598,17 +605,21 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	res := newStateV2()
 	compareStateV2 := compareState.(*stateV2)
 
-	res.params = s.params
-	clonedFeeRateBPS := map[string]uint{}
-	for k, v := range s.params.FeeRateBPS {
-		clonedFeeRateBPS[k] = v
+	if !reflect.DeepEqual(s.params, compareStateV2.params) {
+		res.params = s.params
+		clonedFeeRateBPS := map[string]uint{}
+		for k, v := range s.params.FeeRateBPS {
+			clonedFeeRateBPS[k] = v
+		}
+		clonedStakingPoolsShare := map[string]uint{}
+		for k, v := range s.params.StakingPoolsShare {
+			clonedStakingPoolsShare[k] = v
+		}
+		res.params.FeeRateBPS = clonedFeeRateBPS
+		res.params.StakingPoolsShare = clonedStakingPoolsShare
+	} else {
+		res.params = Params{}
 	}
-	clonedStakingPoolsShare := map[string]uint{}
-	for k, v := range s.params.StakingPoolsShare {
-		clonedStakingPoolsShare[k] = v
-	}
-	res.params.FeeRateBPS = clonedFeeRateBPS
-	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	for k, v := range s.waitingContributions {
 		if m, ok := compareStateV2.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
