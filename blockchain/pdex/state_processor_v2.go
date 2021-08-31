@@ -356,11 +356,12 @@ func (sp *stateProcessorV2) modifyParams(
 	beaconHeight uint64,
 	inst []string,
 	params Params,
-) (Params, error) {
+	stakingPoolStates map[string]*StakingPoolState,
+) (Params, map[string]*StakingPoolState, error) {
 	if len(inst) != 4 {
 		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
 		Logger.log.Errorf(msg)
-		return params, errors.New(msg)
+		return params, stakingPoolStates, errors.New(msg)
 	}
 
 	// unmarshal instructions content
@@ -369,7 +370,7 @@ func (sp *stateProcessorV2) modifyParams(
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
 		Logger.log.Errorf(msg)
-		return params, err
+		return params, stakingPoolStates, err
 	}
 
 	modifyingStatus := inst[2]
@@ -377,6 +378,7 @@ func (sp *stateProcessorV2) modifyParams(
 	if modifyingStatus == metadataPdexv3.RequestAcceptedChainStatus {
 		params = Params(actionData.Content)
 		reqTrackStatus = metadataPdexv3.ParamsModifyingSuccessStatus
+		stakingPoolStates = addStakingPoolState(stakingPoolStates, params.StakingPoolsShare)
 	} else {
 		reqTrackStatus = metadataPdexv3.ParamsModifyingFailedStatus
 	}
@@ -396,7 +398,7 @@ func (sp *stateProcessorV2) modifyParams(
 		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking shielding request tx - Error: %v", err)
 	}
 
-	return params, nil
+	return params, stakingPoolStates, nil
 }
 
 func (sp *stateProcessorV2) trade(
@@ -479,13 +481,14 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	stateDB *statedb.StateDB,
 	inst []string,
 	poolPairs map[string]*PoolPairState,
+	beaconHeight uint64,
 ) (map[string]*PoolPairState, error) {
 	var err error
 	switch inst[1] {
 	case common.PDEWithdrawalRejectedChainStatus:
 		_, err = sp.rejectWithdrawLiquidity(stateDB, inst)
 	case common.PDEWithdrawalAcceptedChainStatus:
-		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs)
+		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight)
 	}
 	if err != nil {
 		return poolPairs, err
@@ -517,6 +520,7 @@ func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	stateDB *statedb.StateDB, inst []string,
 	poolPairs map[string]*PoolPairState,
+	beaconHeight uint64,
 ) (map[string]*PoolPairState, *v2.WithdrawStatus, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
 	err := acceptWithdrawLiquidity.FromStringSlice(inst)
@@ -543,8 +547,9 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	}
 	var withdrawStatus *v2.WithdrawStatus
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
-		poolPair.shares[acceptWithdrawLiquidity.NftID().String()], err = poolPair.updateShareAmount(
-			acceptWithdrawLiquidity.ShareAmount(), share, subOperator)
+		err = poolPair.updateShareValue(
+			acceptWithdrawLiquidity.ShareAmount(), beaconHeight,
+			acceptWithdrawLiquidity.NftID().String(), subOperator)
 		if err != nil {
 			return poolPairs, nil, err
 		}
@@ -752,9 +757,67 @@ func (sp *stateProcessorV2) userMintNft(
 
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3MintNftStatusPrefix(),
+		statedb.Pdexv3UserMintNftStatusPrefix(),
 		txReqID.Bytes(),
 		data,
 	)
 	return nftIDs, &mintNftStatus, nil
+}
+
+func (sp *stateProcessorV2) staking(
+	stateDB *statedb.StateDB,
+	inst []string, nftIDs map[string]uint64, stakingPoolStates map[string]*StakingPoolState,
+	beaconHeight uint64,
+) (map[string]*StakingPoolState, *v2.StakingStatus, error) {
+	if len(inst) < 2 {
+		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
+	}
+	var status, nftID, stakingPoolID string
+	var txReqID common.Hash
+	var liquidity uint64
+	switch inst[1] {
+	case common.Pdexv3AcceptStakingStatus:
+		acceptInst := instruction.NewAcceptStaking()
+		err := acceptInst.FromStringSlice(inst)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+		txReqID = acceptInst.TxReqID()
+		status = common.Pdexv3AcceptStakingStatus
+		stakingPoolID = acceptInst.StakingPoolID().String()
+		liquidity = acceptInst.Liquidity()
+		nftID = acceptInst.NftID().String()
+		stakingPoolState := stakingPoolStates[stakingPoolID]
+		err = stakingPoolState.addLiquidity(nftID, liquidity, beaconHeight)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+	case common.Pdexv3RejectStakingStatus:
+		rejectInst := instruction.NewRejectStaking()
+		err := rejectInst.FromStringSlice(inst)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+		txReqID = rejectInst.TxReqID()
+		status = common.Pdexv3RejectStakingStatus
+		stakingPoolID = rejectInst.TokenID().String()
+		liquidity = rejectInst.Amount()
+	}
+	stakingStatus := v2.StakingStatus{
+		Status:        status,
+		NftID:         nftID,
+		StakingPoolID: stakingPoolID,
+		Liquidity:     liquidity,
+	}
+	data, err := json.Marshal(stakingStatus)
+	if err != nil {
+		return stakingPoolStates, nil, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3StakingStatusPrefix(),
+		txReqID.Bytes(),
+		data,
+	)
+	return stakingPoolStates, &stakingStatus, nil
 }

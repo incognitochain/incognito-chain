@@ -21,7 +21,7 @@ func BuildRejectWithdrawLiquidityInstructions(
 	res = append(res, inst)
 	nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 	inst, err = instruction.NewMintNftWithValue(
-		*nftHash, metaData.OtaReceiveNft(), shardID, txReqID,
+		*nftHash, metaData.OtaReceivers()[metaData.NftID()], shardID, txReqID,
 	).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 	if err != nil {
 		return res, err
@@ -44,7 +44,7 @@ func BuildAcceptWithdrawLiquidityInstructions(
 	inst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
 		metaData.PoolPairID(), *nftHash,
 		token0ID, token0Amount, shareAmount,
-		metaData.OtaReceiveToken0(), txReqID, shardID,
+		metaData.OtaReceivers()[token0ID.String()], txReqID, shardID,
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -53,14 +53,15 @@ func BuildAcceptWithdrawLiquidityInstructions(
 	inst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
 		metaData.PoolPairID(), *nftHash,
 		token1ID, token1Amount, shareAmount,
-		metaData.OtaReceiveToken1(), txReqID, shardID,
+		metaData.OtaReceivers()[token1ID.String()], txReqID, shardID,
 	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, inst1)
 
-	inst, err := instruction.NewMintNftWithValue(*nftHash, metaData.OtaReceiveNft(), shardID, txReqID).
+	inst, err := instruction.NewMintNftWithValue(
+		*nftHash, metaData.OtaReceivers()[metaData.NftID()], shardID, txReqID).
 		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 	if err != nil {
 		return res, err

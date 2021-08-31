@@ -60,6 +60,8 @@ const (
 	ErrInvalidPdexv3TradingFeetateType    = "invalid pdex v3 trading fee state type"
 	ErrInvalidPdexv3NftStateType          = "invalid pdex v3 nft state type"
 	ErrInvalidPdexv3OrderStateType        = "invalid pdex v3 order state type"
+	ErrInvalidPdexv3StakerStateType       = "invalid pdex v3 staker state type"
+	ErrInvalidPdexv3StakerRewardStateType = "invalid pdex v3 staker reward state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

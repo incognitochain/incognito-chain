@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddLiquidity_ValidateSanityData(t *testing.T) {
+func TestStakingRequest_ValidateSanityData(t *testing.T) {
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
+	assert.Nil(t, err)
+	nftHash, err := common.Hash{}.NewHashFromStr("123456")
 	assert.Nil(t, err)
 
 	notBurnTx := &metadataCommonMocks.Transaction{}
@@ -39,19 +41,20 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 	invalidCustomTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
 	invalidCustomTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
 
+	invalidTypeTx := &metadataCommonMocks.Transaction{}
+	invalidTypeTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
+	invalidTypeTx.On("GetType").Return(common.TxTokenConversionType)
+
 	validTx := &metadataCommonMocks.Transaction{}
 	validTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
 
 	type fields struct {
-		poolPairID   string
-		pairHash     string
-		otaReceiver  string
+		MetadataBase metadataCommon.MetadataBase
 		tokenID      string
+		otaReceiver  string
 		nftID        string
 		tokenAmount  uint64
-		amplifier    uint
-		MetadataBase metadataCommon.MetadataBase
 	}
 	type args struct {
 		chainRetriever      metadataCommon.ChainRetriever
@@ -69,32 +72,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Invalid PairHash",
-			fields: fields{
-				pairHash: "",
-			},
-			args:    args{},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
 			name: "Invalid tokenID",
 			fields: fields{
-				pairHash: "pair hash",
-				tokenID:  "asdb",
-			},
-			args:    args{},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Invalid tokenID",
-			fields: fields{
-				pairHash: "pair hash",
-				tokenID:  tokenHash.String(),
-				nftID:    "abacv",
+				tokenID: "asdb",
 			},
 			args:    args{},
 			want:    false,
@@ -104,8 +84,7 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Empty tokenID",
 			fields: fields{
-				pairHash: "pair hash",
-				tokenID:  "",
+				tokenID: common.Hash{}.String(),
 			},
 			args:    args{},
 			want:    false,
@@ -113,10 +92,10 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid otaReceive",
+			name: "Invalid NftID",
 			fields: fields{
-				pairHash: "pair hash",
-				tokenID:  tokenHash.String(),
+				tokenID: tokenHash.String(),
+				nftID:   "asbc",
 			},
 			args:    args{},
 			want:    false,
@@ -124,11 +103,22 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid RefundAddress",
+			name: "Empty NftID",
 			fields: fields{
-				pairHash:    "pair hash",
+				tokenID: tokenHash.String(),
+				nftID:   common.Hash{}.String(),
+			},
+			args:    args{},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "Invalid OtaReceiver",
+			fields: fields{
 				tokenID:     tokenHash.String(),
-				otaReceiver: validOTAReceiver0,
+				nftID:       nftHash.String(),
+				otaReceiver: "123",
 			},
 			args:    args{},
 			want:    false,
@@ -136,24 +126,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid amplifier",
+			name: "Not burn tx",
 			fields: fields{
-				pairHash:    "pair hash",
 				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-			},
-			args:    args{},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Tx is not burn tx",
-			fields: fields{
-				pairHash:    "pair hash",
-				tokenID:     tokenHash.String(),
-				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
 			},
 			args: args{
 				tx: notBurnTx,
@@ -163,12 +140,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "tokenID not match with burnCoin",
+			name: "Burnt Token != tokenID",
 			fields: fields{
-				pairHash:    "pair hash",
 				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
 			},
 			args: args{
 				tx: notMactchTokenIDTx,
@@ -180,10 +156,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		{
 			name: "Token amount = 0",
 			fields: fields{
-				pairHash:    "pair hash",
 				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
 			},
 			args: args{
 				tx: notMactchAmountTx0,
@@ -193,13 +168,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Contributed amount is not match with burn amount",
+			name: "requet.tokenAmount != burnCoin.GetValue()",
 			fields: fields{
-				pairHash:    "pair hash",
 				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
-				tokenAmount: 200,
 			},
 			args: args{
 				tx: notMactchAmountTx1,
@@ -209,13 +182,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Normal tx && tokenID != prv",
+			name: "normatl tx && tokenID != prv",
 			fields: fields{
-				pairHash:    "pair hash",
 				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
-				tokenAmount: 200,
 			},
 			args: args{
 				tx: invalidNormalTx,
@@ -225,13 +196,11 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Custom token tx && tokenID == prv",
+			name: "custom token tx && tokenID == prv",
 			fields: fields{
-				pairHash:    "pair hash",
-				tokenID:     common.PRVCoinID.String(),
+				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
-				tokenAmount: 200,
 			},
 			args: args{
 				tx: invalidCustomTx,
@@ -241,59 +210,65 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Valid Input",
+			name: "invalid tx type",
 			fields: fields{
-				pairHash:    "pair hash",
 				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
 				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
-				tokenAmount: 200,
-				nftID:       tokenHash.String(),
+			},
+			args: args{
+				tx: invalidTypeTx,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "Valid input",
+			fields: fields{
+				tokenID:     tokenHash.String(),
+				nftID:       nftHash.String(),
+				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
 				tx: validTx,
 			},
-			want:    true,
-			want1:   true,
-			wantErr: false,
+			want:    false,
+			want1:   false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			al := &AddLiquidityRequest{
-				poolPairID:   tt.fields.poolPairID,
-				pairHash:     tt.fields.pairHash,
-				otaReceiver:  tt.fields.otaReceiver,
+			request := &StakingRequest{
+				MetadataBase: tt.fields.MetadataBase,
 				tokenID:      tt.fields.tokenID,
+				otaReceiver:  tt.fields.otaReceiver,
 				nftID:        tt.fields.nftID,
 				tokenAmount:  tt.fields.tokenAmount,
-				amplifier:    tt.fields.amplifier,
-				MetadataBase: tt.fields.MetadataBase,
 			}
-			got, got1, err := al.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
+			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("AddLiquidity.ValidateSanityData() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("StakingRequest.ValidateSanityData() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("AddLiquidity.ValidateSanityData() got = %v, want %v", got, tt.want)
+				t.Errorf("StakingRequest.ValidateSanityData() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("AddLiquidity.ValidateSanityData() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("StakingRequest.ValidateSanityData() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
 }
 
-func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
+func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
-		poolPairID   string
-		pairHash     string
-		otaReceiver  string
-		tokenID      string
-		tokenAmount  uint64
-		amplifier    uint
 		MetadataBase metadataCommon.MetadataBase
+		tokenID      string
+		otaReceiver  string
+		nftID        string
+		tokenAmount  uint64
 	}
 	tests := []struct {
 		name   string
@@ -313,7 +288,7 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 			name: "Valid Input",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
-					Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
+					Type: metadataCommon.Pdexv3StakingRequestMeta,
 				},
 			},
 			want: true,
@@ -321,17 +296,15 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			al := &AddLiquidityRequest{
-				poolPairID:   tt.fields.poolPairID,
-				pairHash:     tt.fields.pairHash,
-				otaReceiver:  tt.fields.otaReceiver,
-				tokenID:      tt.fields.tokenID,
-				tokenAmount:  tt.fields.tokenAmount,
-				amplifier:    tt.fields.amplifier,
+			request := &StakingRequest{
 				MetadataBase: tt.fields.MetadataBase,
+				tokenID:      tt.fields.tokenID,
+				otaReceiver:  tt.fields.otaReceiver,
+				nftID:        tt.fields.nftID,
+				tokenAmount:  tt.fields.tokenAmount,
 			}
-			if got := al.ValidateMetadataByItself(); got != tt.want {
-				t.Errorf("AddLiquidity.ValidateMetadataByItself() = %v, want %v", got, tt.want)
+			if got := request.ValidateMetadataByItself(); got != tt.want {
+				t.Errorf("StakingRequest.ValidateMetadataByItself() = %v, want %v", got, tt.want)
 			}
 		})
 	}
