@@ -182,12 +182,11 @@ type Pdexv3AddLiquidityRequest struct {
 }
 
 type Pdexv3WithdrawLiquidityRequest struct {
-	TokenID      string `json:"TokenID"`
-	TokenAmount  string `json:"TokenAmount"`
-	PoolPairID   string `json:"PoolPairID"`
-	Index        string `json:"Index"`
-	Token0Amount string `json:"Token0Amount"`
-	Token1Amount string `json:"Token1Amount"`
+	TokenID     string `json:"TokenID"`
+	TokenAmount string `json:"TokenAmount"`
+	PoolPairID  string `json:"PoolPairID"`
+	Index       string `json:"Index"`
+	ShareAmount string `json:"ShareAmount"`
 }
 
 type Pdexv3StakingRequest struct {
