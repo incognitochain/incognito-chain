@@ -13,39 +13,39 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type WithdrawLiquidityRequest struct {
+type UnstakingRequest struct {
 	metadataCommon.MetadataBase
-	poolPairID   string
-	nftID        string
-	otaReceivers map[string]string
-	shareAmount  uint64
+	stakingPoolID   string
+	otaReceivers    map[string]string
+	nftID           string
+	unstakingAmount uint64
 }
 
-func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
-	return &WithdrawLiquidityRequest{
+func NewUnstakingRequest() *UnstakingRequest {
+	return &UnstakingRequest{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3WithdrawLiquidityRequestMeta,
+			Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 		},
 	}
 }
 
-func NewWithdrawLiquidityRequestWithValue(
-	poolPairID, nftID string,
+func NewUnstakingRequestWithValue(
+	stakingPoolID, nftID string,
 	otaReceivers map[string]string,
-	shareAmount uint64,
-) *WithdrawLiquidityRequest {
-	return &WithdrawLiquidityRequest{
+	unstakingAmount uint64,
+) *UnstakingRequest {
+	return &UnstakingRequest{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3WithdrawLiquidityRequestMeta,
+			Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 		},
-		poolPairID:   poolPairID,
-		nftID:        nftID,
-		otaReceivers: otaReceivers,
-		shareAmount:  shareAmount,
+		stakingPoolID:   stakingPoolID,
+		nftID:           nftID,
+		otaReceivers:    otaReceivers,
+		unstakingAmount: unstakingAmount,
 	}
 }
 
-func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
+func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -57,22 +57,28 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, request.nftID, request.shareAmount)
+	err = beaconViewRetriever.IsValidPdexv3UnstakingAmount(
+		request.stakingPoolID, request.nftID, request.unstakingAmount,
+	)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (request *WithdrawLiquidityRequest) ValidateSanityData(
+func (request *UnstakingRequest) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	if request.poolPairID == "" {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pool pair id should not be empty"))
+	stakingPoolID, err := common.Hash{}.NewHashFromStr(request.stakingPoolID)
+	if err != nil {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if stakingPoolID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
 	}
 	nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
 	if err != nil {
@@ -95,7 +101,7 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiveNft is not valid"))
 		}
 	}
-	if request.shareAmount == 0 {
+	if request.unstakingAmount == 0 {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("shareAmount can not be 0"))
 	}
 
@@ -119,39 +125,39 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	return true, true, nil
 }
 
-func (request *WithdrawLiquidityRequest) ValidateMetadataByItself() bool {
-	return request.Type == metadataCommon.Pdexv3WithdrawLiquidityRequestMeta
+func (request *UnstakingRequest) ValidateMetadataByItself() bool {
+	return request.Type == metadataCommon.Pdexv3UnstakingRequestMeta
 }
 
-func (request *WithdrawLiquidityRequest) Hash() *common.Hash {
+func (request *UnstakingRequest) Hash() *common.Hash {
 	record := request.MetadataBase.Hash().String()
-	record += request.poolPairID
+	record += request.stakingPoolID
 	record += request.nftID
 	otaReceiverData, _ := json.Marshal(request.otaReceivers)
 	record += string(otaReceiverData)
-	record += strconv.FormatUint(uint64(request.shareAmount), 10)
+	record += strconv.FormatUint(uint64(request.unstakingAmount), 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (request *WithdrawLiquidityRequest) CalculateSize() uint64 {
+func (request *UnstakingRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
-func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
+func (request *UnstakingRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID   string            `json:"PoolPairID"`
-		NftID        string            `json:"NftID"`
-		OtaReceivers map[string]string `json:"OtaReceivers"`
-		ShareAmount  uint64            `json:"ShareAmount"`
+		StakingPoolID   string            `json:"StakingPoolID"`
+		NftID           string            `json:"NftID"`
+		OtaReceivers    map[string]string `json:"OtaReceivers"`
+		UnstakingAmount uint64            `json:"UnstakingAmount"`
 		metadataCommon.MetadataBase
 	}{
-		PoolPairID:   request.poolPairID,
-		NftID:        request.nftID,
-		OtaReceivers: request.otaReceivers,
-		ShareAmount:  request.shareAmount,
-		MetadataBase: request.MetadataBase,
+		StakingPoolID:   request.stakingPoolID,
+		NftID:           request.nftID,
+		OtaReceivers:    request.otaReceivers,
+		UnstakingAmount: request.unstakingAmount,
+		MetadataBase:    request.MetadataBase,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -159,43 +165,43 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
+func (request *UnstakingRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID   string            `json:"PoolPairID"`
-		NftID        string            `json:"NftID"`
-		OtaReceivers map[string]string `json:"OtaReceivers"`
-		ShareAmount  uint64            `json:"ShareAmount"`
+		StakingPoolID   string            `json:"StakingPoolID"`
+		NftID           string            `json:"NftID"`
+		OtaReceivers    map[string]string `json:"OtaReceivers"`
+		UnstakingAmount uint64            `json:"UnstakingAmount"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	request.poolPairID = temp.PoolPairID
+	request.stakingPoolID = temp.StakingPoolID
 	request.nftID = temp.NftID
 	request.otaReceivers = temp.OtaReceivers
-	request.shareAmount = temp.ShareAmount
+	request.unstakingAmount = temp.UnstakingAmount
 	request.MetadataBase = temp.MetadataBase
 	return nil
 }
 
-func (request *WithdrawLiquidityRequest) PoolPairID() string {
-	return request.poolPairID
+func (request *UnstakingRequest) StakingPoolID() string {
+	return request.stakingPoolID
 }
 
-func (request *WithdrawLiquidityRequest) OtaReceivers() map[string]string {
+func (request *UnstakingRequest) OtaReceivers() map[string]string {
 	return request.otaReceivers
 }
 
-func (request *WithdrawLiquidityRequest) ShareAmount() uint64 {
-	return request.shareAmount
+func (request *UnstakingRequest) UnstakingAmount() uint64 {
+	return request.unstakingAmount
 }
 
-func (request *WithdrawLiquidityRequest) NftID() string {
+func (request *UnstakingRequest) NftID() string {
 	return request.nftID
 }
 
-func (request *WithdrawLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+func (request *UnstakingRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for tokenID, val := range request.otaReceivers {
 		tokenHash := common.PRVCoinID
