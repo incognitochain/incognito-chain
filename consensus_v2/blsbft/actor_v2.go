@@ -529,16 +529,16 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		}
 
 		previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
-		a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures",
+		a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
 			v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
 
 		delete(a.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
-	}
+	} else {
 
-	if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
-		return err
+		if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
+			return err
+		}
 	}
-
 	loggedCommittee, _ := incognitokey.CommitteeKeyListToString(v.signingCommittees)
 	a.logger.Infof("Successfully Insert Block \n "+
 		"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+

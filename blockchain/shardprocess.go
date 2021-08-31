@@ -1311,7 +1311,11 @@ func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Has
 		if err := rawdbv2.StoreShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), blockHash, shardBlock); err != nil {
 			return NewBlockChainError(ReplacePreviousValidationDataError, err)
 		}
+
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, ReplacePreviousValidationData new number of signatures %+v",
+			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
 	}
+
 	return nil
 }
 
