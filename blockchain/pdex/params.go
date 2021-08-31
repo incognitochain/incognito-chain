@@ -19,20 +19,6 @@ type Params struct {
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
-func NewParams() *Params {
-	return &Params{
-		DefaultFeeRateBPS:               InitFeeRateBPS,
-		FeeRateBPS:                      map[string]uint{},
-		PRVDiscountPercent:              InitPRVDiscountPercent,
-		TradingProtocolFeePercent:       InitProtocolFeePercent,
-		TradingStakingPoolRewardPercent: InitStakingPoolRewardPercent,
-		PDEXRewardPoolPairsShare:        map[string]uint{},
-		StakingPoolsShare:               map[string]uint{},
-		StakingRewardTokens:             []common.Hash{},
-		MintNftRequireAmount:            InitMintNftRequireAmount,
-	}
-}
-
 func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 	return &Params{
 		DefaultFeeRateBPS:               paramsState.DefaultFeeRateBPS(),
@@ -48,8 +34,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 }
 
 func (p *Params) Clone() *Params {
-	result := NewParams()
-	result = p
+	result := &Params{}
 
 	clonedFeeRateBPS := map[string]uint{}
 	for k, v := range p.FeeRateBPS {

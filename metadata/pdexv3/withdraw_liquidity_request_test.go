@@ -14,6 +14,10 @@ import (
 func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
 
 	validationEnv := &metadataCommonMocks.ValidationEnviroment{}
 	validationEnv.On("ShardID").Return(0)
@@ -51,13 +55,11 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	validTx.On("GetValidationEnv").Return(validationEnv)
 
 	type fields struct {
-		MetadataBase     metadataCommon.MetadataBase
-		poolPairID       string
-		nftID            string
-		otaReceiveNft    string
-		otaReceiveToken0 string
-		otaReceiveToken1 string
-		shareAmount      uint64
+		MetadataBase metadataCommon.MetadataBase
+		poolPairID   string
+		nftID        string
+		otaReceivers map[string]string
+		shareAmount  uint64
 	}
 	type args struct {
 		chainRetriever      metadataCommon.ChainRetriever
@@ -120,10 +122,12 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid ota token 0",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: "123",
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  "123",
+				},
 			},
 			args:    args{},
 			want:    false,
@@ -133,11 +137,13 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid ota token 1",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: "123",
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  "123",
+				},
 			},
 			args:    args{},
 			want:    false,
@@ -147,12 +153,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid shareAmount",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      0,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 0,
 			},
 			args:    args{},
 			want:    false,
@@ -162,12 +170,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Tx is not burnt tx",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      100,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 100,
 			},
 			args: args{
 				tx: notBurnTx,
@@ -179,12 +189,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "tokenID not match with burn coin",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      100,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 100,
 			},
 			args: args{
 				tx: notMactchTokenIDTx,
@@ -196,12 +208,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "burn coin value is not 1",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      100,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 100,
 			},
 			args: args{
 				tx: notMactchAmountTx,
@@ -213,12 +227,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "type of tx not is custom privacy type",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      100,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 100,
 			},
 			args: args{
 				tx: normalTx,
@@ -230,12 +246,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "nftID == prv",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      100,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 100,
 			},
 			args: args{
 				tx: customTx,
@@ -247,12 +265,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				poolPairID:       "123",
-				nftID:            tokenHash.String(),
-				otaReceiveNft:    validOTAReceiver0,
-				otaReceiveToken0: validOTAReceiver1,
-				otaReceiveToken1: validOTAReceiver1,
-				shareAmount:      100,
+				poolPairID: "123",
+				nftID:      tokenHash.String(),
+				otaReceivers: map[string]string{
+					tokenHash.String(): validOTAReceiver0,
+					token0ID.String():  validOTAReceiver1,
+					token1ID.String():  validOTAReceiver1,
+				},
+				shareAmount: 100,
 			},
 			args: args{
 				tx: validTx,
@@ -265,13 +285,11 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := &WithdrawLiquidityRequest{
-				MetadataBase:     tt.fields.MetadataBase,
-				poolPairID:       tt.fields.poolPairID,
-				nftID:            tt.fields.nftID,
-				otaReceiveNft:    tt.fields.otaReceiveNft,
-				otaReceiveToken0: tt.fields.otaReceiveToken0,
-				shareAmount:      tt.fields.shareAmount,
-				otaReceiveToken1: tt.fields.otaReceiveToken1,
+				MetadataBase: tt.fields.MetadataBase,
+				poolPairID:   tt.fields.poolPairID,
+				nftID:        tt.fields.nftID,
+				shareAmount:  tt.fields.shareAmount,
+				otaReceivers: tt.fields.otaReceivers,
 			}
 			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
 			if (err != nil) != tt.wantErr {
@@ -290,13 +308,11 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 
 func TestWithdrawLiquidityRequest_ValidateMetadataByItself(t *testing.T) {
 	type fields struct {
-		MetadataBase     metadataCommon.MetadataBase
-		poolPairID       string
-		nftID            string
-		otaReceiveNft    string
-		otaReceiveToken0 string
-		otaReceiveToken1 string
-		shareAmount      uint64
+		MetadataBase metadataCommon.MetadataBase
+		poolPairID   string
+		nftID        string
+		otaReceivers map[string]string
+		shareAmount  uint64
 	}
 	tests := []struct {
 		name   string
@@ -325,13 +341,11 @@ func TestWithdrawLiquidityRequest_ValidateMetadataByItself(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := &WithdrawLiquidityRequest{
-				MetadataBase:     tt.fields.MetadataBase,
-				poolPairID:       tt.fields.poolPairID,
-				nftID:            tt.fields.nftID,
-				otaReceiveNft:    tt.fields.otaReceiveNft,
-				otaReceiveToken0: tt.fields.otaReceiveToken0,
-				otaReceiveToken1: tt.fields.otaReceiveToken1,
-				shareAmount:      tt.fields.shareAmount,
+				MetadataBase: tt.fields.MetadataBase,
+				poolPairID:   tt.fields.poolPairID,
+				nftID:        tt.fields.nftID,
+				otaReceivers: tt.fields.otaReceivers,
+				shareAmount:  tt.fields.shareAmount,
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("WithdrawLiquidityRequest.ValidateMetadataByItself() = %v, want %v", got, tt.want)

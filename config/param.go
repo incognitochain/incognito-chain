@@ -226,6 +226,14 @@ type bscParam struct {
 type pdexParam struct {
 	Pdexv3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
 	AdminAddress           string `mapstructure:"admin_address"`
+	Params                 struct {
+		DefaultFeeRateBPS               uint            `mapstructure:"default_fee_rate_bps"`
+		PRVDiscountPercent              uint            `mapstructure:"prv_discount_percent"`
+		TradingProtocolFeePercent       uint            `mapstructure:"trading_protocol_fee_percent"`
+		TradingStakingPoolRewardPercent uint            `mapstructure:"trading_staking_pool_reward_percent"`
+		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
+		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
+	} `mapstructure:"params"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {

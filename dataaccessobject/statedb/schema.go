@@ -66,10 +66,15 @@ var (
 	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
 	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
 	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
-	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
-	pdexv3MintNftPrefix                     = []byte("pdexv3-mintnfts-")
-	pdexv3WithdrawLiquidityPrefix           = []byte("pdexv3-withdrawliquidities-")
+	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
+	pdexv3WithdrawLiquidityStatusPrefix     = []byte("pdexv3-withdrawliquidity-statuses-")
+	pdexv3WaitingContributionStatusPrefix   = []byte("pdexv3-waitingContribution-statuses-")
+	pdexv3StakerPrefix                      = []byte("pdexv3-stakers-")
+	pdexv3StakerRewardPrefix                = []byte("pdexv3-stakerrewards-")
+	pdexv3StakingStatusPrefix               = []byte("pdexv3-staking-statuses-")
+	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-statuses-")
+	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-statuses-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -613,29 +618,39 @@ func GetPdexv3TradingFeesPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
-func GetPdexv3StakingPoolsPrefix() []byte {
-	hash := common.HashH(pdexv3StakingPoolsPrefix)
-	return hash[:prefixHashKeyLength]
-}
-
 func GetPdexv3NftPrefix() []byte {
 	hash := common.HashH(pdexv3MintNftPrefix)
 	return hash[:prefixHashKeyLength]
 }
 
+func GetPdexv3StakersPrefix() []byte {
+	hash := common.HashH(pdexv3StakerPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3StakerRewardsPrefix() []byte {
+	hash := common.HashH(pdexv3StakerRewardPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
 //
 func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
-	return pdexv3WithdrawLiquidityPrefix
+	return pdexv3WithdrawLiquidityStatusPrefix
 }
 
-// pDex v3 prefix for status
-func Pdexv3MintNftStatusPrefix() []byte {
-	return pdexv3MintNftPrefix
+// pDex v3 prefix for mintnft status
+func Pdexv3UserMintNftStatusPrefix() []byte {
+	return pdexv3UserMintNftStatusPrefix
 }
 
-// pDex v3 prefix for status
+// pDex v3 prefix for contribution status
 func Pdexv3ContributionStatusPrefix() []byte {
-	return pdexv3WaitingContributionsPrefix
+	return pdexv3WaitingContributionStatusPrefix
+}
+
+// pDex v3 prefix for staking status
+func Pdexv3StakingStatusPrefix() []byte {
+	return pdexv3StakingStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

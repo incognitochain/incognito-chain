@@ -71,6 +71,8 @@ const (
 	Pdexv3TradingFeeObjectType
 	Pdexv3NftObjectType
 	Pdexv3OrderObjectType
+	Pdexv3StakerObjectType
+	Pdexv3StakerRewardObjectType
 )
 
 // Prefix length

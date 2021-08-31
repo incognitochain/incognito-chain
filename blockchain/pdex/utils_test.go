@@ -129,3 +129,13 @@ func getStrPoolPairState(p *PoolPairState) string {
 	}
 	return result
 }
+
+func getStrStakingPoolState(p *StakingPoolState) string {
+	result := "\n"
+	result += fmt.Sprintf("Staking Pool: %+v\n", p)
+	result += fmt.Sprintf("Total liquidity: %v\n", p.liquidity)
+	for tokenID, value := range p.stakers {
+		result += fmt.Sprintf(" %v: %v\n", tokenID, value)
+	}
+	return result
+}

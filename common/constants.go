@@ -183,6 +183,10 @@ const (
 const (
 	Pdexv3RejectUserMintNftStatus = "rejected"
 	Pdexv3AcceptUserMintNftStatus = "accept"
+	Pdexv3RejectStakingStatus     = "rejected"
+	Pdexv3AcceptStakingStatus     = "accept"
+	Pdexv3RejectUnstakingStatus   = "rejected"
+	Pdexv3AcceptUnstakingStatus   = "accept"
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"

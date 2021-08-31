@@ -236,6 +236,7 @@ const (
 	//
 
 	// pDex v3
+	pdexv3MintNft                         = "pdexv3_txMintNft"
 	getPdexv3State                        = "pdexv3_getState"
 	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
 	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
@@ -243,15 +244,17 @@ const (
 	pdexv3WithdrawLiquidityV3             = "pdexv3_txWithdrawLiquidity"
 	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
 
+	getPdexv3WithdrawLiquidityStatus              = "pdexv3_getWithdrawLiquidityStatus"
+	getPdexv3MintNftStatus                        = "pdexv3_getMintNftStatus"
 	pdexv3TxTrade                                 = "pdexv3_txTrade"
 	pdexv3TxAddOrder                              = "pdexv3_txAddOrder"
 	pdexv3TxWithdrawOrder                         = "pdexv3_txWithdrawOrder"
 	pdexv3GetTradeStatus                          = "pdexv3_getTradeStatus"
 	pdexv3GetAddOrderStatus                       = "pdexv3_getAddOrderStatus"
 	pdexv3GetWithdrawOrderStatus                  = "pdexv3_getWithdrawOrderStatus"
-	pdexv3MintNft                                 = "pdexv3_txMintNft"
-	getPdexv3WithdrawLiquidityStatus              = "pdexv3_getWithdrawLiquidityStatus"
-	getPdexv3MintNftStatus                        = "pdexv3_getMintNftStatus"
+	pdexv3Staking                                 = "pdexv3_txStake"
+	pdexv3Unstaking                               = "pdexv3_txUnstake"
+	pdexv3GetStakingStatus                        = "pdexv3_getStakingStatus"
 	getPdexv3EstimatedLPFee                       = "pdexv3_getEstimatedUncollectedLPFee"
 	createAndSendTxWithPdexv3WithdrawlLPFee       = "pdexv3_txWithdrawLPFee"
 	getPdexv3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"

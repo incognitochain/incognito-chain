@@ -20,4 +20,5 @@ type StateReader interface {
 	Shares() map[string]uint64
 	TradingFees() map[string]uint64
 	NftIDs() map[string]uint64
+	StakingPools() map[string]*StakingPoolState
 }

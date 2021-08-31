@@ -550,7 +550,15 @@ func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
 
 func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
 	if beaconBestState.pdeState.Reader().Params().MintNftRequireAmount != amount {
-		return errors.New("Burn amount is not equal to mint nft require amount")
+		return fmt.Errorf("Expect mint nft require amount by %v but got %v",
+			beaconBestState.pdeState.Reader().Params().MintNftRequireAmount, amount)
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
+	if _, found := beaconBestState.pdeState.Reader().Params().StakingPoolsShare[tokenID]; !found {
+		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
 	}
 	return nil
 }

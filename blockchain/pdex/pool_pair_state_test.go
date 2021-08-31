@@ -367,8 +367,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 		orderbook Orderbook
 	}
 	type args struct {
-		nftID       string
-		shareAmount uint64
+		nftID        string
+		shareAmount  uint64
+		beaconHeight uint64
 	}
 	tests := []struct {
 		name               string
@@ -402,8 +403,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				orderbook: Orderbook{},
 			},
 			args: args{
-				nftID:       nftID,
-				shareAmount: 100,
+				nftID:        nftID,
+				shareAmount:  100,
+				beaconHeight: 20,
 			},
 			want:  50,
 			want1: 200,
@@ -451,8 +453,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				orderbook: Orderbook{},
 			},
 			args: args{
-				nftID:       nftID,
-				shareAmount: 100,
+				nftID:        nftID,
+				shareAmount:  100,
+				beaconHeight: 20,
 			},
 			want:  50,
 			want1: 200,
@@ -486,7 +489,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				shares:    tt.fields.shares,
 				orderbook: tt.fields.orderbook,
 			}
-			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount)
+			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount, tt.args.beaconHeight)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PoolPairState.deductShare() error = %v, wantErr %v", err, tt.wantErr)
 				return

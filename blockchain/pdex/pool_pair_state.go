@@ -180,29 +180,7 @@ func (p *PoolPairState) addShare(
 	amount, beaconHeight uint64,
 	txHash string,
 ) error {
-	var shareAmount uint64
-	var tradingFee map[common.Hash]uint64
-	var err error
-
-	if p.shares[nftID.String()] == nil {
-		shareAmount = amount
-		tradingFee = map[common.Hash]uint64{}
-	} else {
-		shareAmount = p.shares[nftID.String()].amount + amount
-		tradingFee, err = p.RecomputeLPFee(nftID)
-		if err != nil {
-			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
-		}
-	}
-
-	share := NewShareWithValue(shareAmount, tradingFee, p.state.LPFeesPerShare())
-	p.shares[nftID.String()] = share
-	newShareAmount := p.state.ShareAmount() + amount
-	if newShareAmount < p.state.ShareAmount() {
-		return fmt.Errorf("Share amount is out of range")
-	}
-	p.state.SetShareAmount(newShareAmount)
-	return nil
+	return p.updateShareValue(amount, beaconHeight, nftID.String(), addOperator)
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -216,9 +194,7 @@ func (p *PoolPairState) Clone() *PoolPairState {
 }
 
 func (p *PoolPairState) getDiff(
-	poolPairID string,
-	comparePoolPair *PoolPairState,
-	stateChange *StateChange,
+	poolPairID string, comparePoolPair *PoolPairState, stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
 	if comparePoolPair == nil {
@@ -250,7 +226,7 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 
 func (p *PoolPairState) deductShare(
 	nftID string,
-	shareAmount uint64,
+	shareAmount, beaconHeight uint64,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -276,34 +252,46 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	p.shares[nftID], err = p.updateShare(nftID, tempShareAmount, share, subOperator)
+	err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, subOperator)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
-func (p *PoolPairState) updateShare(
-	nftID string,
-	shareAmount uint64, share *Share, operator byte,
-) (*Share, error) {
-	newShare := share.Clone()
-	var err error
-	newShare.amount, err = executeOperationUint64(newShare.amount, shareAmount, operator)
-	if err != nil {
-		return newShare, errors.New("newShare.amount is out of range")
+func (p *PoolPairState) updateShareValue(
+	shareAmount, beaconHeight uint64, nftID string, operator byte,
+) error {
+	share, found := p.shares[nftID]
+	if !found {
+		if operator == subOperator {
+			return errors.New("Deduct nil share amount")
+		}
+		share = NewShare()
+	} else {
+		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
+		if err != nil {
+			return fmt.Errorf("Invalid nftID: %s", nftID)
+		}
+		share.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
+		if err != nil {
+			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
+		}
 	}
 
-	nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
-	newShare.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
-	newShare.lastLPFeesPerShare = p.state.LPFeesPerShare()
+	share.lastLPFeesPerShare = p.state.LPFeesPerShare()
+
+	var err error
+	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)
 	if err != nil {
-		return newShare, fmt.Errorf("Error when tracking LP reward: %v\n", err)
+		return errors.New("newShare.amount is out of range")
 	}
 
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
 	if err != nil {
-		return newShare, errors.New("poolPairShareAmount is out of range")
+		return errors.New("poolPairShareAmount is out of range")
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
-	return newShare, nil
+
+	p.shares[nftID] = share
+	return nil
 }
 
 func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64, operator byte) error {
@@ -416,4 +404,24 @@ func (p *PoolPairState) RecomputeLPFee(
 		}
 	}
 	return result, nil
+}
+
+func (p *PoolPairState) withState(state rawdbv2.Pdexv3PoolPair) {
+	p.state = state
+}
+
+func (p *PoolPairState) withShares(shares map[string]*Share) {
+	p.shares = shares
+}
+
+func (p *PoolPairState) withOrderBook(orderbook Orderbook) {
+	p.orderbook = orderbook
+}
+
+func (p *PoolPairState) cloneShares() map[string]*Share {
+	res := make(map[string]*Share)
+	for k, v := range p.shares {
+		res[k] = v.Clone()
+	}
+	return res
 }
