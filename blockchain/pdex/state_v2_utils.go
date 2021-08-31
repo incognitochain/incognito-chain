@@ -56,6 +56,14 @@ func (share *Share) Clone() *Share {
 	return res
 }
 
+func (share *Share) cloneState() *Share {
+	res := NewShare()
+	res.amount = share.amount
+	res.lastUpdatedBeaconHeight = share.lastUpdatedBeaconHeight
+	res.tradingFees = share.tradingFees
+	return res
+}
+
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Amount                  uint64            `json:"Amount"`
@@ -222,6 +230,14 @@ func (staker *Staker) Clone() *Staker {
 	for k, v := range staker.rewards {
 		res.rewards[k] = v
 	}
+	return res
+}
+
+func (staker *Staker) cloneState() *Staker {
+	res := NewStaker()
+	res.liquidity = staker.liquidity
+	res.lastUpdatedBeaconHeight = staker.lastUpdatedBeaconHeight
+	res.rewards = staker.rewards
 	return res
 }
 

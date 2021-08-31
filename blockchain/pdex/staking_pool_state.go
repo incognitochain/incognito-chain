@@ -139,3 +139,23 @@ func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight
 	s.liquidity = tempLiquidity
 	return nil
 }
+
+func (s *StakingPoolState) withLiquidity(liquidity uint64) {
+	s.liquidity = liquidity
+}
+
+func (s *StakingPoolState) withStakers(stakers map[string]*Staker) {
+	s.stakers = stakers
+}
+
+func (s *StakingPoolState) cloneStaker(nftID string) map[string]*Staker {
+	res := make(map[string]*Staker)
+	for k, v := range s.stakers {
+		if k == nftID {
+			res[k] = v.cloneState()
+		} else {
+			res[k] = v
+		}
+	}
+	return res
+}

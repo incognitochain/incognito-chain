@@ -191,7 +191,7 @@ func (sp *stateProducerV2) addLiquidity(
 		}
 		//clone props gonna change before process
 		poolPair := NewPoolPairState()
-		poolPair.withShares(rootPoolPair.cloneShares())
+		poolPair.withShares(rootPoolPair.cloneShare(nftHash.String()))
 		poolPair.withState(*rootPoolPair.state.Clone())
 		shareAmount, err := poolPair.addReserveDataAndCalculateShare(
 			token0Contribution.TokenID().String(), token1Contribution.TokenID().String(),
@@ -224,7 +224,6 @@ func (sp *stateProducerV2) addLiquidity(
 		//assign which props not change after process
 		poolPair.withOrderBook(rootPoolPair.orderbook)
 		poolPairs[poolPairID] = poolPair
-
 		res = append(res, insts...)
 	}
 	return res, poolPairs, waitingContributions, nil
@@ -598,7 +597,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		//clone props gonna change before process
 		poolPair := NewPoolPairState()
-		poolPair.withShares(rootPoolPair.cloneShares())
+		poolPair.withShares(rootPoolPair.cloneShare(metaData.NftID()))
 		poolPair.withState(*rootPoolPair.state.Clone())
 
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
@@ -705,7 +704,9 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		stakingPoolState := rootStakingPoolState.Clone()
+		stakingPoolState := NewStakingPoolState()
+		stakingPoolState.withLiquidity(rootStakingPoolState.liquidity)
+		stakingPoolState.withStakers(rootStakingPoolState.cloneStaker(metaData.NftID()))
 		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
 			rejectInst, err := instruction.NewRejectStakingWithValue(
@@ -769,7 +770,10 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, insts...)
 			continue
 		}
-		stakingPoolState := rootStakingPoolState.Clone()
+		stakingPoolState := NewStakingPoolState()
+		stakingPoolState.withLiquidity(rootStakingPoolState.liquidity)
+		stakingPoolState.withStakers(rootStakingPoolState.cloneStaker(metaData.NftID()))
+
 		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
@@ -794,6 +798,7 @@ func (sp *stateProducerV2) unstaking(
 			return res, stakingPoolStates, err
 		}
 		res = append(res, insts...)
+
 		stakingPoolStates[metaData.NftID()] = stakingPoolState
 	}
 	return res, stakingPoolStates, nil
