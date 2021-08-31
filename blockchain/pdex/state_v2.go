@@ -318,6 +318,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addOrderTxs := []metadata.Transaction{}
 	withdrawOrderTxs := []metadata.Transaction{}
 	stakingTxs := []metadata.Transaction{}
+	unstakingTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -346,6 +347,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				withdrawOrderTxs = append(withdrawOrderTxs, tx)
 			case metadataCommon.Pdexv3StakingRequestMeta:
 				stakingTxs = append(stakingTxs, tx)
+			case metadataCommon.Pdexv3UnstakingRequestMeta:
+				unstakingTxs = append(unstakingTxs, tx)
 			}
 		}
 	}
@@ -412,6 +415,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, withdrawOrderInstructions...)
+
+	var unstakingInstructions [][]string
+	unstakingInstructions, s.stakingPoolStates, err = s.producer.staking(
+		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, unstakingInstructions...)
 
 	var stakingInstructions [][]string
 	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(

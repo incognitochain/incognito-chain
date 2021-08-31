@@ -57,7 +57,9 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPdexv3StakingPool(request.stakingPoolID)
+	err = beaconViewRetriever.IsValidPdexv3UnstakingAmount(
+		request.stakingPoolID, request.nftID, request.unstakingAmount,
+	)
 	if err != nil {
 		return false, err
 	}

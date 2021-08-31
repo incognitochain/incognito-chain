@@ -57,7 +57,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
+	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, request.nftID, request.shareAmount)
 	if err != nil {
 		return false, err
 	}

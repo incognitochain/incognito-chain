@@ -535,7 +535,7 @@ func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) err
 	}
 	_, found := poolPairs[poolPairID]
 	if !found {
-		return errors.New("Can't not find pool pair ID")
+		return fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
 	}
 	return nil
 }
@@ -543,7 +543,7 @@ func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) err
 func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
 	nftIDs := beaconBestState.pdeState.Reader().NftIDs()
 	if _, found := nftIDs[nftID]; !found {
-		return errors.New("Can't not find nftID")
+		return fmt.Errorf("Can't not find nftID %s", nftID)
 	}
 	return nil
 }
@@ -557,10 +557,50 @@ func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint6
 }
 
 func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
-	if _, found := beaconBestState.pdeState.Reader().Params().StakingPoolsShare[tokenID]; !found {
+	if _, found := beaconBestState.pdeState.Reader().StakingPools()[tokenID]; !found {
 		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
 	}
 	return nil
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
+	tokenID, nftID string, unstakingAmount uint64,
+) error {
+	stakingPoolState, found := beaconBestState.pdeState.Reader().StakingPools()[tokenID]
+	if !found || stakingPoolState == nil {
+		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
+	}
+	staker, found := stakingPoolState.Stakers()[nftID]
+	if !found || staker == nil {
+		return fmt.Errorf("Can not find nftID %s", nftID)
+	}
+	if staker.Liquidity() < unstakingAmount {
+		return errors.New("unstakingAmount > current staker liquidity")
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
+	poolPairID, nftID string, shareAmount uint64,
+) error {
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err := json.Unmarshal(beaconBestState.PdeState().Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return err
+	}
+	poolPair, found := poolPairs[poolPairID]
+	if !found || poolPair == nil {
+		return fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
+	}
+	share, found := poolPair.Shares()[nftID]
+	if !found || share == nil {
+		return fmt.Errorf("Can't not find nftID %s", nftID)
+	}
+	if share.Amount() < shareAmount {
+		return errors.New("shareAmount > current share amount")
+	}
+	return nil
+
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

@@ -196,6 +196,13 @@ type Pdexv3StakingRequest struct {
 	NftID       string `json:"NftID"`
 }
 
+type Pdexv3UnstakingRequest struct {
+	StakingPoolID   string `json:"StakingPoolID"`
+	TokenAmount     string `json:"TokenAmount"`
+	TokenID         string `json:"NftID"`
+	UnstakingAmount string `json:"UnstakingAmount"`
+}
+
 // Uint64Reader wraps the unmarshaling of uint64 numbers from both integer & string formats.
 type Uint64Reader uint64
 

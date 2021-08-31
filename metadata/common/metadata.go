@@ -104,6 +104,8 @@ type BeaconViewRetriever interface {
 	IsValidPoolPairID(string) error
 	IsValidMintNftRequireAmount(uint64) error
 	IsValidPdexv3StakingPool(string) error
+	IsValidPdexv3UnstakingAmount(string, string, uint64) error
+	IsValidPdexv3ShareAmount(string, string, uint64) error
 }
 
 type ShardViewRetriever interface {
