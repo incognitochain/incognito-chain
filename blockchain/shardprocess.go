@@ -1282,15 +1282,14 @@ func (blockchain *BlockChain) processStoreShardBlock(
 // new aggregated signatures is combined from a larger subset of committees
 func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error {
 
-	//TODO: @hung test
-	//if hasBlock, err := blockchain.HasShardBlockByHash(blockHash); err != nil {
-	//	return NewBlockChainError(ReplacePreviousValidationDataError, err)
-	//} else {
-	//	if !hasBlock {
-	//		// This block is not inserted yet, no need to replace
-	//		return nil
-	//	}
-	//}
+	if hasBlock, err := blockchain.HasShardBlockByHash(blockHash); err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	} else {
+		if !hasBlock {
+			// This block is not inserted yet, no need to replace
+			return nil
+		}
+	}
 
 	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
 	if err != nil {

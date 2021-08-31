@@ -514,7 +514,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 
 		previousProposeBlockInfo = a.validateVotes(previousProposeBlockInfo)
 
-		previousValidationData, err := a.createBLSAggregatedSignatures(
+		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
 			previousProposeBlockInfo.signingCommittees,
 			previousProposeBlockInfo.block.GetValidationField(),
 			previousProposeBlockInfo.votes)
@@ -523,10 +523,14 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			return err
 		}
 
-		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData)
-		if err := a.chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData); err != nil {
+		previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
+		if err := a.chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
 			return err
 		}
+
+		previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
+		a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures",
+			v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
 
 		delete(a.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	}
