@@ -91,6 +91,7 @@ func (request *StakingRequest) ValidateSanityData(
 	if !otaReceiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
+	//TODO: check otaReceiver shardid need to be the same with tx shard id
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
