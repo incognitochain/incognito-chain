@@ -1312,7 +1312,7 @@ func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Has
 			return NewBlockChainError(ReplacePreviousValidationDataError, err)
 		}
 
-		Logger.log.Infof("SHARD %+v | Shard Height %+v, ReplacePreviousValidationData new number of signatures %+v",
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
 			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
 	}
 
