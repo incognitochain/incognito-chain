@@ -100,6 +100,37 @@ func (s *StakingPoolState) getDiff(
 	return newStateChange
 }
 
+func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight uint64, operator byte) error {
+	staker, found := s.stakers[nftID]
+	if !found {
+		if operator == subOperator {
+			return errors.New("remove liquidity from invalid staker")
+		}
+		s.stakers[nftID] = NewStakerWithValue(liquidity, beaconHeight, make(map[string]uint64))
+	} else {
+		var tempLiquidity uint64
+		switch operator {
+		case subOperator:
+			tempLiquidity = staker.liquidity + liquidity
+			if tempLiquidity < s.liquidity {
+				return errors.New("Staking pool liquidity is out of range")
+			}
+		case addOperator:
+			tempLiquidity = staker.liquidity - liquidity
+			if tempLiquidity >= s.liquidity {
+				return errors.New("Staking pool liquidity is out of range")
+			}
+		}
+		staker.liquidity = tempLiquidity
+	}
+	tempLiquidity := s.liquidity + liquidity
+	if tempLiquidity < s.liquidity {
+		return errors.New("Staking pool liquidity is out of range")
+	}
+	s.liquidity = tempLiquidity
+	return nil
+}
+
 func (s *StakingPoolState) addLiquidity(nftID string, liquidity, beaconHeight uint64) error {
 	staker, found := s.stakers[nftID]
 	if !found {

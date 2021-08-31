@@ -15,7 +15,7 @@ type AcceptWithdrawLiquidity struct {
 	tokenID     common.Hash
 	tokenAmount uint64
 	shareAmount uint64
-	otaReceive  string
+	otaReceiver string
 	txReqID     common.Hash
 	shardID     byte
 }
@@ -28,7 +28,7 @@ func NewAcceptWithdrawLiquidityWithValue(
 	poolPairID string,
 	nftID, tokenID common.Hash,
 	tokenAmount, shareAmount uint64,
-	otaReceive string,
+	otaReceiver string,
 	txReqID common.Hash, shardID byte,
 ) *AcceptWithdrawLiquidity {
 	return &AcceptWithdrawLiquidity{
@@ -39,7 +39,7 @@ func NewAcceptWithdrawLiquidityWithValue(
 		tokenID:     tokenID,
 		tokenAmount: tokenAmount,
 		shareAmount: shareAmount,
-		otaReceive:  otaReceive,
+		otaReceiver: otaReceiver,
 	}
 }
 
@@ -76,7 +76,7 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		TokenID     common.Hash `json:"TokenID"`
 		TokenAmount uint64      `json:"TokenAmount"`
 		ShareAmount uint64      `json:"ShareAmount"`
-		OtaReceive  string      `json:"OtaReceive"`
+		OtaReceiver string      `json:"OtaReceiver"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `jdon:"ShardID"`
 	}{
@@ -85,7 +85,7 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		TokenID:     a.tokenID,
 		TokenAmount: a.tokenAmount,
 		ShareAmount: a.shareAmount,
-		OtaReceive:  a.otaReceive,
+		OtaReceiver: a.otaReceiver,
 		TxReqID:     a.txReqID,
 		ShardID:     a.shardID,
 	})
@@ -101,7 +101,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 		NftID       common.Hash `json:"NftID"`
 		TokenID     common.Hash `json:"TokenID"`
 		TokenAmount uint64      `json:"TokenAmount"`
-		OtaReceive  string      `json:"OtaReceive"`
+		OtaReceiver string      `json:"OtaReceiver"`
 		ShareAmount uint64      `json:"ShareAmount"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `jdon:"ShardID"`
@@ -115,7 +115,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	a.poolPairID = temp.PoolPairID
 	a.nftID = temp.NftID
 	a.shareAmount = temp.ShareAmount
-	a.otaReceive = temp.OtaReceive
+	a.otaReceiver = temp.OtaReceiver
 	a.txReqID = temp.TxReqID
 	a.shardID = temp.ShardID
 	return nil
@@ -149,6 +149,6 @@ func (a *AcceptWithdrawLiquidity) ShareAmount() uint64 {
 	return a.shareAmount
 }
 
-func (a *AcceptWithdrawLiquidity) OtaReceive() string {
-	return a.otaReceive
+func (a *AcceptWithdrawLiquidity) OtaReceiver() string {
+	return a.otaReceiver
 }

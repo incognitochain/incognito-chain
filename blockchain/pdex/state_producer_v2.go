@@ -672,86 +672,11 @@ func (sp *stateProducerV2) staking(
 	beaconHeight uint64,
 ) ([][]string, map[string]*StakingPoolState, error) {
 	res := [][]string{}
-	/*for _, tx := range txs {*/
-	//shardID := byte(tx.GetValidationEnv().ShardID())
-	//metaData, _ := tx.GetMetadata().(*metadataPdexv3.UnstakingRequest)
-	//txReqID := *tx.Hash()
-	//stakingTokenHash, err := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
-	//if err != nil {
-	//Logger.log.Infof("tx hash %s error %v", txReqID, err)
-	//continue
-	//}
-	//nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
-	//if err != nil {
-	//Logger.log.Infof("tx hash %s error %v", txReqID, err)
-	//continue
-	//}
-	//rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
-	//if !found || rootStakingPoolState == nil {
-	//rejectInst, err := instruction.NewRejectStakingWithValue(
-	//metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-	//).StringSlice()
-	//if err != nil {
-	//Logger.log.Infof("tx hash %s error %v", txReqID, err)
-	//return res, stakingPoolStates, err
-	//}
-	//res = append(res, rejectInst)
-	//continue
-	//}
-	//_, found = nftIDs[metaData.NftID()]
-	//if metaData.NftID() == utils.EmptyString || !found {
-	//rejectInst, err := instruction.NewRejectStakingWithValue(
-	//metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-	//).StringSlice()
-	//if err != nil {
-	//Logger.log.Infof("tx hash %s error %v", txReqID, err)
-	//return res, stakingPoolStates, err
-	//}
-	//res = append(res, rejectInst)
-	//continue
-	//}
-	//stakingPoolState := rootStakingPoolState.Clone()
-	//err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
-	//if err != nil {
-	//rejectInst, err := instruction.NewRejectStakingWithValue(
-	//metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-	//).StringSlice()
-	//if err != nil {
-	//Logger.log.Infof("tx hash %s error %v", txReqID, err)
-	//return res, stakingPoolStates, err
-	//}
-	//res = append(res, rejectInst)
-	//continue
-	//}
-	//inst, err := instruction.NewAcceptStakingWtihValue(
-	//*nftHash, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-	//).StringSlice()
-	//if err != nil {
-	//return res, stakingPoolStates, err
-	//}
-	//res = append(res, inst)
-	//stakingPoolStates[metaData.TokenID()] = stakingPoolState
-	/*}*/
-	return res, stakingPoolStates, nil
-}
-
-func (sp *stateProducerV2) unstaking(
-	txs []metadata.Transaction,
-	nftIDs map[string]uint64,
-	stakingPoolStates map[string]*StakingPoolState,
-	beaconHeight uint64,
-) ([][]string, map[string]*StakingPoolState, error) {
-	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.StakingRequest)
 		txReqID := *tx.Hash()
 		stakingTokenHash, err := common.Hash{}.NewHashFromStr(metaData.TokenID())
-		if err != nil {
-			Logger.log.Infof("tx hash %s error %v", txReqID, err)
-			continue
-		}
-		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
 			Logger.log.Infof("tx hash %s error %v", txReqID, err)
 			continue
@@ -793,6 +718,11 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, rejectInst)
 			continue
 		}
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
+		if err != nil {
+			Logger.log.Infof("tx hash %s error %v", txReqID, err)
+			continue
+		}
 		inst, err := instruction.NewAcceptStakingWtihValue(
 			*nftHash, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 		).StringSlice()
@@ -801,6 +731,70 @@ func (sp *stateProducerV2) unstaking(
 		}
 		res = append(res, inst)
 		stakingPoolStates[metaData.TokenID()] = stakingPoolState
+	}
+	return res, stakingPoolStates, nil
+}
+
+func (sp *stateProducerV2) unstaking(
+	txs []metadata.Transaction,
+	nftIDs map[string]uint64,
+	stakingPoolStates map[string]*StakingPoolState,
+	beaconHeight uint64,
+) ([][]string, map[string]*StakingPoolState, error) {
+	res := [][]string{}
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UnstakingRequest)
+		txReqID := *tx.Hash()
+		stakingPoolID, err := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
+		if err != nil {
+			Logger.log.Infof("tx hash %s error %v", txReqID, err)
+			continue
+		}
+		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
+		if !found || rootStakingPoolState == nil {
+			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+		_, found = nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+		stakingPoolState := rootStakingPoolState.Clone()
+		err = stakingPoolState.addLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight)
+		if err != nil {
+			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, insts...)
+			continue
+		}
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
+		if err != nil {
+			Logger.log.Infof("tx hash %s error %v", txReqID, err)
+			continue
+		}
+		insts, err := v2.BuildAcceptUnstakingInstructions(
+			*stakingPoolID, *nftHash, metaData.UnstakingAmount(),
+			metaData.OtaReceivers()[metaData.NftID()],
+			metaData.OtaReceivers()[metaData.StakingPoolID()],
+			txReqID, shardID,
+		)
+		if err != nil {
+			return res, stakingPoolStates, err
+		}
+		res = append(res, insts...)
+		stakingPoolStates[metaData.NftID()] = stakingPoolState
 	}
 	return res, stakingPoolStates, nil
 }
