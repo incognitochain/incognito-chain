@@ -233,6 +233,7 @@ type pdexParam struct {
 		TradingStakingPoolRewardPercent uint            `mapstructure:"trading_staking_pool_reward_percent"`
 		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
 		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
+		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
 	} `mapstructure:"params"`
 }
 

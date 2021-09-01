@@ -44,6 +44,7 @@ func (params *Params) readConfig() *Params {
 		StakingPoolsShare:               config.Param().PDexParams.Params.StakingPoolsShare,
 		StakingRewardTokens:             []common.Hash{},
 		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
+		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
 	}
 	if res.FeeRateBPS == nil {
 		res.FeeRateBPS = make(map[string]uint)
@@ -497,6 +498,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		s.params.StakingPoolsShare,
 		s.params.StakingRewardTokens,
 		s.params.MintNftRequireAmount,
+		s.params.MaxOrdersPerNft,
 	)
 	if err != nil {
 		return err

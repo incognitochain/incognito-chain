@@ -17,6 +17,7 @@ type Params struct {
 	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
 	StakingRewardTokens             []common.Hash   // list of staking reward tokens
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
+	MaxOrdersPerNft                 uint            // max orders per nft
 }
 
 func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
@@ -30,6 +31,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		StakingPoolsShare:               paramsState.StakingPoolsShare(),
 		StakingRewardTokens:             paramsState.StakingRewardTokens(),
 		MintNftRequireAmount:            paramsState.MintNftRequireAmount(),
+		MaxOrdersPerNft:                 paramsState.MaxOrdersPerNft(),
 	}
 }
 

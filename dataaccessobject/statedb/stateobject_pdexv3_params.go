@@ -18,6 +18,7 @@ type Pdexv3Params struct {
 	stakingPoolsShare               map[string]uint
 	stakingRewardTokens             []common.Hash
 	mintNftRequireAmount            uint64
+	maxOrdersPerNft                 uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -47,6 +48,9 @@ func (pp Pdexv3Params) StakingRewardTokens() []common.Hash {
 func (pp Pdexv3Params) MintNftRequireAmount() uint64 {
 	return pp.mintNftRequireAmount
 }
+func (pp Pdexv3Params) MaxOrdersPerNft() uint {
+	return pp.maxOrdersPerNft
+}
 
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
@@ -59,6 +63,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		StakingPoolsShare               map[string]uint
 		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
+		MaxOrdersPerNft                 uint
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
@@ -69,6 +74,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		StakingPoolsShare:               pp.stakingPoolsShare,
 		StakingRewardTokens:             pp.stakingRewardTokens,
 		MintNftRequireAmount:            pp.mintNftRequireAmount,
+		MaxOrdersPerNft:                 pp.maxOrdersPerNft,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -87,6 +93,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		StakingPoolsShare               map[string]uint
 		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
+		MaxOrdersPerNft                 uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -101,6 +108,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.stakingPoolsShare = temp.StakingPoolsShare
 	pp.stakingRewardTokens = temp.StakingRewardTokens
 	pp.mintNftRequireAmount = temp.MintNftRequireAmount
+	pp.maxOrdersPerNft = temp.MaxOrdersPerNft
 	return nil
 }
 
@@ -118,6 +126,7 @@ func NewPdexv3ParamsWithValue(
 	stakingPoolsShare map[string]uint,
 	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
+	maxOrdersPerNft uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
@@ -129,6 +138,7 @@ func NewPdexv3ParamsWithValue(
 		stakingPoolsShare:               stakingPoolsShare,
 		stakingRewardTokens:             stakingRewardTokens,
 		mintNftRequireAmount:            mintNftRequireAmount,
+		maxOrdersPerNft:                 maxOrdersPerNft,
 	}
 }
 

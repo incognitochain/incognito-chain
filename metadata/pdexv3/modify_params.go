@@ -21,6 +21,7 @@ type Pdexv3Params struct {
 	StakingPoolsShare               map[string]uint `json:"StakingPoolsShare"`
 	StakingRewardTokens             []common.Hash   `json:"StakingRewardTokens"`
 	MintNftRequireAmount            uint64          `json:"MintNftRequireAmount"`
+	MaxOrdersPerNft                 uint            `json:"MaxOrdersPerNft"`
 }
 
 type ParamsModifyingRequest struct {

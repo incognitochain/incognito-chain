@@ -230,7 +230,7 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3MintNftStatus:                (*HttpServer).handleGetPdexv3MintNftStatus,
 	pdexv3Staking:                         (*HttpServer).handlePdexv3Staking,
 	//pdexv3Unstaking:                       (*HttpServer).handlePdexv3Unstaking,
-	getPdexv3EstimatedLPFee:                       (*HttpServer).handleGetPdexv3EstimatedLPFee,
+	getPdexv3EstimatedLPValue:                     (*HttpServer).handleGetPdexv3EstimatedLPValue,
 	createAndSendTxWithPdexv3WithdrawlLPFee:       (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawLPFee,
 	getPdexv3WithdrawalLPFeeStatus:                (*HttpServer).handleGetPdexv3WithdrawalLPFeeStatus,
 	createAndSendTxWithPdexv3WithdrawlProtocolFee: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawProtocolFee,

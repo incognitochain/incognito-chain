@@ -255,7 +255,7 @@ const (
 	pdexv3Staking                                 = "pdexv3_txStake"
 	pdexv3Unstaking                               = "pdexv3_txUnstake"
 	pdexv3GetStakingStatus                        = "pdexv3_getStakingStatus"
-	getPdexv3EstimatedLPFee                       = "pdexv3_getEstimatedUncollectedLPFee"
+	getPdexv3EstimatedLPValue                     = "pdexv3_getEstimatedLPValue"
 	createAndSendTxWithPdexv3WithdrawlLPFee       = "pdexv3_txWithdrawLPFee"
 	getPdexv3WithdrawalLPFeeStatus                = "pdexv3_getWithdrawalLPFeeStatus"
 	createAndSendTxWithPdexv3WithdrawlProtocolFee = "pdexv3_txWithdrawProtocolFee"

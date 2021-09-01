@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
@@ -171,12 +172,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		stakingPoolsShare[key] = uint(value)
 	}
 
-	stakingRewardTokensStr := newParams["StakingRewardTokens"].([]string)
+	stakingRewardTokensRaw, ok := newParams["StakingRewardTokens"].([]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingRewardTokens is invalid"))
 	}
 	stakingRewardTokens := []common.Hash{}
-	for _, tokenIDStr := range stakingRewardTokensStr {
+	for _, tokenIDRaw := range stakingRewardTokensRaw {
+		tokenIDStr, ok := tokenIDRaw.(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingRewardTokens is invalid"))
+		}
 		tokenID, err := new(common.Hash).NewHashFromStr(tokenIDStr)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Token %v of StakingRewardTokens is invalid", tokenIDStr))
@@ -187,6 +192,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 	mintNftRequireAmount, err := common.AssertAndConvertStrToNumber(newParams["MintNftRequireAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MintNftRequireAmount is invalid"))
+	}
+
+	maxOrdersPerNft, err := common.AssertAndConvertStrToNumber(newParams["MaxOrdersPerNft"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MaxOrdersPerNft is invalid"))
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
@@ -201,6 +211,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			StakingPoolsShare:               stakingPoolsShare,
 			StakingRewardTokens:             stakingRewardTokens,
 			MintNftRequireAmount:            mintNftRequireAmount,
+			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
 		},
 	)
 	if err != nil {
@@ -254,7 +265,7 @@ func (httpServer *HttpServer) handleGetPdexv3ParamsModifyingRequestStatus(params
 /*
 	Fee Management
 */
-func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
@@ -295,19 +306,57 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPFee(params interface{}, 
 	}
 
 	if _, ok := poolPairs[pairID]; !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("PairID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("PairID is not existed"))
 	}
-	curPairState := poolPairs[pairID]
 
-	uncollectedTradingFees, err := curPairState.RecomputeLPFee(*nftID)
+	pair := poolPairs[pairID]
+	pairState := pair.State()
 
+	if _, ok := pair.Shares()[nftIDStr]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("NftID is not existed"))
+	}
+
+	result := jsonresult.Pdexv3LPValue{
+		PoolValue:  map[string]uint64{},
+		TradingFee: map[string]uint64{},
+	}
+
+	shareAmount := pair.Shares()[nftIDStr].Amount()
+	if shareAmount != 0 {
+		poolAmount0 := new(big.Int).Mul(
+			new(big.Int).SetUint64(pairState.Token0RealAmount()),
+			new(big.Int).SetUint64(shareAmount),
+		)
+		poolAmount0 = new(big.Int).Div(
+			poolAmount0,
+			new(big.Int).SetUint64(pairState.ShareAmount()),
+		)
+		if !poolAmount0.IsUint64() {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+		}
+
+		poolAmount1 := new(big.Int).Mul(
+			new(big.Int).SetUint64(pairState.Token1RealAmount()),
+			new(big.Int).SetUint64(shareAmount),
+		)
+		poolAmount1 = new(big.Int).Div(
+			poolAmount1,
+			new(big.Int).SetUint64(pairState.ShareAmount()),
+		)
+		if !poolAmount0.IsUint64() {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+		}
+
+		result.PoolValue[pairState.Token0ID().String()] = poolAmount0.Uint64()
+		result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
+	}
+
+	uncollectedTradingFees, err := pair.RecomputeLPFee(*nftID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 	}
-
-	result := map[string]uint64{}
 	for tokenID := range uncollectedTradingFees {
-		result[tokenID.String()] = uncollectedTradingFees[tokenID]
+		result.TradingFee[tokenID.String()] = uncollectedTradingFees[tokenID]
 	}
 
 	return result, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
