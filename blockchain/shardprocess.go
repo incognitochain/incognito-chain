@@ -146,6 +146,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
 	if checkView != nil {
+		Logger.log.Errorf("SHARD %+v | Block %+v, hash %+v already inserted", shardID, blockHeight, blockHash)
 		return nil
 	}
 	if ok := checkLimitTxAction(false, map[int]int{}, shardBlock); !ok {
@@ -1281,6 +1282,15 @@ func (blockchain *BlockChain) processStoreShardBlock(
 // new aggregated signatures is combined from a larger subset of committees
 func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error {
 
+	if hasBlock, err := blockchain.HasShardBlockByHash(blockHash); err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	} else {
+		if !hasBlock {
+			// This block is not inserted yet, no need to replace
+			return nil
+		}
+	}
+
 	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
 	if err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
@@ -1299,9 +1309,13 @@ func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Has
 	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
 		shardBlock.ValidationData = newValidationData
 		if err := rawdbv2.StoreShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), blockHash, shardBlock); err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
+			return NewBlockChainError(ReplacePreviousValidationDataError, err)
 		}
+
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
+			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
 	}
+
 	return nil
 }
 

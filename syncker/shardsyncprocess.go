@@ -258,6 +258,8 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 //TODO: @hung review sync finish sync message when node in SYNC_MODE only???
 func (s *ShardSyncProcess) syncFinishSyncMessage() {
 
+	sleepTime := time.Duration(common.TIMESLOT/2) * time.Second
+
 	for {
 		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 		if committeeView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
@@ -266,13 +268,13 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 			now := time.Now().Unix()
 			ceiling := now + convertedTimeslot.Milliseconds()
 			floor := now - convertedTimeslot.Milliseconds()
-			if floor <= shardView.BestBlock.Header.Timestamp ||
+			if floor <= shardView.BestBlock.Header.Timestamp &&
 				shardView.BestBlock.Header.Timestamp <= ceiling {
 				s.trySendFinishSyncMessage()
 			}
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(sleepTime)
 	}
 
 }
