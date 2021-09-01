@@ -37,6 +37,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 
 func (p *Params) Clone() *Params {
 	result := &Params{}
+	*result = *p
 
 	clonedFeeRateBPS := map[string]uint{}
 	for k, v := range p.FeeRateBPS {

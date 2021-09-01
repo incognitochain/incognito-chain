@@ -69,7 +69,7 @@ var (
 	ConfidentialAssetID   = Hash{5}
 	ConfidentialAssetName = "CA"
 	PDEXCoinID            = Hash{6}
-	PDExCoinName          = "PDEX"
+	PDEXCoinName          = "PDEX"
 	MaxShardNumber        = 0
 )
 

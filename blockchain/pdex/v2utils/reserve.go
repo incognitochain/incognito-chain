@@ -255,6 +255,9 @@ func TrackFee(
 		// uniformly split fee into reserves
 		feePerReserve := fee / uint64(mutualLen)
 		for i, reserve := range reserves {
+			if i == len(reserves)-1 {
+				feePerReserve += fee % uint64(mutualLen)
+			}
 			(&TradingPair{reserve}).AddFee(
 				common.PRVCoinID, feePerReserve, baseLPPerShare,
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
