@@ -15,19 +15,20 @@ type Content interface {
 
 type Action struct {
 	Content
-	RequestTxID common.Hash `json:"RequestTxID"`
+	requestTxID common.Hash
 	shardID     byte
 }
 
 func NewAction(c Content, txID common.Hash, shardID byte) *Action {
 	return &Action{
 		Content:     c,
-		RequestTxID: txID,
+		requestTxID: txID,
 		shardID:     shardID,
 	}
 }
 
-func (acn Action) ShardID() byte { return acn.shardID }
+func (acn *Action) ShardID() byte { return acn.shardID }
+func (acn *Action) RequestTxID() common.Hash { return acn.requestTxID }
 
 func (acn *Action) FromStringSlice(source []string) error {
 	if len(source) != 5 {
@@ -46,7 +47,7 @@ func (acn *Action) FromStringSlice(source []string) error {
 		return fmt.Errorf("Metadata status mismatch")
 	}
 
-	if _, err := acn.RequestTxID.NewHashFromStr(source[3]); err != nil {
+	if _, err := acn.requestTxID.NewHashFromStr(source[3]); err != nil {
 		return fmt.Errorf("Invalid RequestTxID %v", source[3])
 	}
 
@@ -55,14 +56,13 @@ func (acn *Action) FromStringSlice(source []string) error {
 	} else {
 		acn.shardID = byte(res)
 	}
-	// acn.shardID = byte(shardID)
 
 	return nil
 }
 
 func (acn *Action) StringSlice() []string {
 	result := []string{strconv.Itoa(acn.GetType()), strconv.Itoa(acn.GetStatus()),
-		strconv.Itoa(int(acn.shardID)), acn.RequestTxID.String()}
+		strconv.Itoa(int(acn.shardID)), acn.requestTxID.String()}
 	jsonBytes, _ := json.Marshal(acn)
 	result = append(result, string(jsonBytes))
 	return result

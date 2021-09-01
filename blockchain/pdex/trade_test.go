@@ -105,7 +105,7 @@ func TestProduceTrade(t *testing.T) {
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
 
-			env := skipToProduce(&testdata.Metadata, 0)
+			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
 			testState := mustReadState("test_state.json")
 			testState.params = &Params{}
 			temp := &StateFormatter{}
@@ -120,32 +120,69 @@ func TestProduceTrade(t *testing.T) {
 	}
 }
 
-/*func TestProcessTrade(t *testing.T) {*/
-//type TestData struct {
-//Instructions [][]string `json:"instructions"`
-//}
+func TestProduceSameBlockTrades(t *testing.T) {
+	type TestData struct {
+		Metadata []metadataPdexv3.TradeRequest `json:"metadata"`
+	}
 
-//type TestResult StateFormatter
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
 
-//var testcases []Testcase
-//testcases = append(testcases, processTradeTestcases...)
-//for _, testcase := range testcases {
-//t.Run(testcase.Name, func(t *testing.T) {
-//var testdata TestData
-//err := json.Unmarshal([]byte(testcase.Data), &testdata)
-//NoError(t, err)
+	var testcases []Testcase
+	testcases = append(testcases, produceSameBlockTradesTestcases...)
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
 
-//env := skipToProcess(testdata.Instructions)
-//testState := mustReadState("test_state.json")
-//err = testState.Process(env)
-//NoError(t, err)
+			var mds []metadataCommon.Metadata
+			for _, md := range testdata.Metadata {
+				var temp metadataPdexv3.TradeRequest = md
+				mds = append(mds, &temp)
+			}
 
-//temp := (&StateFormatter{}).FromState(testState)
-//encodedResult, _ := json.Marshal(TestResult(*temp))
-//Equal(t, testcase.Expected, string(encodedResult))
-//})
-//}
-/*}*/
+			env := skipToProduce(mds, 0)
+			testState := mustReadState("test_state.json")
+			temp := &StateFormatter{}
+			temp.FromState(testState)
+
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+
+			encodedResult, _ := json.Marshal(TestResult{instructions})
+			Equal(t, testcase.Expected, string(encodedResult))
+		})
+	}
+}
+
+func TestProcessTrade(t *testing.T) {
+	type TestData struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	type TestResult StateFormatter
+
+	var testcases []Testcase
+	testcases = append(testcases, processTradeTestcases...)
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+
+			env := skipToProcess(testdata.Instructions)
+			testState := mustReadState("test_state.json")
+			err = testState.Process(env)
+			NoError(t, err)
+
+			temp := (&StateFormatter{}).FromState(testState)
+			encodedResult, _ := json.Marshal(TestResult(*temp))
+			Equal(t, testcase.Expected, string(encodedResult))
+		})
+	}
+}
 
 func TestBuildResponseTrade(t *testing.T) {
 	type TestData struct {
@@ -201,16 +238,20 @@ func TestBuildResponseTrade(t *testing.T) {
 	}
 }
 
-func skipToProduce(md metadataCommon.Metadata, shardID byte) StateEnvironment {
-	mytx := &transaction.TxVersion2{}
-	valEnv := tx_generic.DefaultValEnv()
-	valEnv = tx_generic.WithShardID(valEnv, int(shardID))
-	mytx.SetMetadata(md)
-	mytx.SetValidationEnv(valEnv)
+func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment {
+	var txLst []metadataCommon.Transaction
+	for _, md := range mds {
+		mytx := &transaction.TxVersion2{}
+		valEnv := tx_generic.DefaultValEnv()
+		valEnv = tx_generic.WithShardID(valEnv, int(shardID))
+		mytx.SetMetadata(md)
+		mytx.SetValidationEnv(valEnv)
+		txLst = append(txLst, mytx)
+	}
 
 	return NewStateEnvBuilder().
 		BuildBeaconHeight(10).
-		BuildListTxs(map[byte][]metadataCommon.Transaction{shardID: []metadataCommon.Transaction{mytx}}).
+		BuildListTxs(map[byte][]metadataCommon.Transaction{shardID: txLst}).
 		BuildBCHeightBreakPointPrivacyV2(0).
 		BuildStateDB(testDB).
 		Build()
@@ -238,7 +279,6 @@ type PoolFormatter struct {
 
 type StateFormatter struct {
 	PoolPairs map[string]PoolFormatter `json:"poolPairs"`
-	Params    *Params                  `json:"params"`
 }
 
 func (sf *StateFormatter) State() *stateV2 {
@@ -247,7 +287,6 @@ func (sf *StateFormatter) State() *stateV2 {
 	for k, v := range sf.PoolPairs {
 		s.poolPairs[k] = &PoolPairState{state: *v.State, shares: v.Shares, orderbook: v.Orderbook}
 	}
-	s.params = sf.Params
 	return s
 }
 
@@ -256,7 +295,6 @@ func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 	for k, v := range s.poolPairs {
 		sf.PoolPairs[k] = PoolFormatter{State: &v.state, Shares: v.shares, Orderbook: v.orderbook}
 	}
-	sf.Params = s.params
 	return sf
 }
 
@@ -289,5 +327,6 @@ func mustReadState(filename string) *stateV2 {
 
 var sortOrderTestcases = mustReadTestcases("sort_orders.json")
 var produceTradeTestcases = mustReadTestcases("produce_trade.json")
+var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trades.json")
 var processTradeTestcases = mustReadTestcases("process_trade.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")

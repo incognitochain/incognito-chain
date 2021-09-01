@@ -11,7 +11,7 @@
                 "Token1RealAmount": 1000,
                 "CurrentContributionID": 0,
                 "Token0VirtualAmount": 1000,
-                "Token1VirtualAmount": 2000,
+                "Token1VirtualAmount": 2200,
                 "Amplifier": 21000,
                 "ProtocolFees": {},
                 "LpFeesPerShare": {},
@@ -27,8 +27,7 @@
                     "Token1Rate": 100,
                     "Token0Balance": 0,
                     "Token1Balance": 2000,
-                    "TradeDirection": 0,
-                    "Fee": 11
+                    "TradeDirection": 0
                 },
                 {
                     "Id": "Order 2",
@@ -36,8 +35,7 @@
                     "Token1Rate": 2000,
                     "Token0Balance": 0,
                     "Token1Balance": 2000,
-                    "TradeDirection": 1,
-                    "Fee": 22
+                    "TradeDirection": 1
                 }]
             }
         }

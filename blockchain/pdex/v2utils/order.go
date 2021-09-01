@@ -88,9 +88,9 @@ func (order *MatchingOrder) Match(maxSellAmountAfterFee uint64, tradeDirection b
 	}
 	var maxBuyingAmount uint64
 	if tradeDirection == TradeDirectionSell0 {
-		maxBuyingAmount = order.Token1Rate()
+		maxBuyingAmount = order.Token1Balance()
 	} else {
-		maxBuyingAmount = order.Token0Rate()
+		maxBuyingAmount = order.Token0Balance()
 	}
 	if maxBuyingAmount < buyAmount {
 		buyAmount = maxBuyingAmount
