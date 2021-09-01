@@ -803,10 +803,10 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 }
 
 func Test_stateV2_GetDiff(t *testing.T) {
-	// token0ID, err := common.Hash{}.NewHashFromStr("123")
-	// assert.Nil(t, err)
-	// token1ID, err := common.Hash{}.NewHashFromStr("456")
-	// assert.Nil(t, err)
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
 
 	type fields struct {
 		stateBase                   stateBase
@@ -831,7 +831,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 		want1   *StateChange
 		wantErr bool
 	}{
-		/*{
+		{
 			name: "full pool pair",
 			fields: fields{
 				stateBase:                   stateBase{},
@@ -891,7 +891,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							"abc": 12,
 						},
 						PDEXRewardPoolPairsShare:        map[string]uint{},
-					PRVDiscountPercent:              25,
+						PRVDiscountPercent:              25,
 						TradingProtocolFeePercent:       0,
 						TradingStakingPoolRewardPercent: 10,
 						StakingPoolsShare: map[string]uint{
@@ -1047,7 +1047,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							"abc": 12,
 						},
 						PDEXRewardPoolPairsShare:        map[string]uint{},
-					PRVDiscountPercent:              25,
+						PRVDiscountPercent:              25,
 						TradingProtocolFeePercent:       0,
 						TradingStakingPoolRewardPercent: 10,
 						StakingPoolsShare: map[string]uint{
@@ -1181,7 +1181,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							"abc": 12,
 						},
 						PDEXRewardPoolPairsShare:        map[string]uint{},
-					PRVDiscountPercent:              25,
+						PRVDiscountPercent:              25,
 						TradingProtocolFeePercent:       0,
 						TradingStakingPoolRewardPercent: 10,
 						StakingPoolsShare: map[string]uint{
@@ -1308,7 +1308,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							"abc": 12,
 						},
 						PDEXRewardPoolPairsShare:        map[string]uint{},
-					PRVDiscountPercent:              25,
+						PRVDiscountPercent:              25,
 						TradingProtocolFeePercent:       0,
 						TradingStakingPoolRewardPercent: 10,
 						StakingPoolsShare: map[string]uint{
@@ -1435,7 +1435,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							"abc": 12,
 						},
 						PDEXRewardPoolPairsShare:        map[string]uint{},
-					PRVDiscountPercent:              25,
+						PRVDiscountPercent:              25,
 						TradingProtocolFeePercent:       0,
 						TradingStakingPoolRewardPercent: 10,
 						StakingPoolsShare: map[string]uint{
@@ -1518,7 +1518,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 			},
 			wantErr: false,
-		},*/
+		},
 		{
 			name: "Only stakingPoolStates + stakers",
 			fields: fields{

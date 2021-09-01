@@ -292,12 +292,23 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 }
 
 func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
-	return NewPdexv3PoolPairWithValue(
+	res := NewPdexv3PoolPairWithValue(
 		pp.token0ID, pp.token1ID, pp.shareAmount,
 		pp.token0RealAmount, pp.token1RealAmount,
 		pp.token0VirtualAmount, pp.token1VirtualAmount, pp.amplifier,
 		pp.lpFeesPerShare, pp.protocolFees, pp.stakingPoolFees,
 	)
+	for k, v := range pp.lpFeesPerShare {
+		res.lpFeesPerShare[k] = new(big.Int)
+		*res.lpFeesPerShare[k] = *v
+	}
+	for k, v := range pp.protocolFees {
+		res.protocolFees[k] = v
+	}
+	for k, v := range pp.stakingPoolFees {
+		res.stakingPoolFees[k] = v
+	}
+	return res
 }
 
 func NewPdexv3PoolPair() *Pdexv3PoolPair {
