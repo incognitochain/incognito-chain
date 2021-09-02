@@ -1411,3 +1411,28 @@ func (httpServer *HttpServer) createPdexv3UnstakingRawTx(
 	}
 	return res, nil
 }
+
+func (httpServer *HttpServer) handleGetPdexv3UnstakingStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3UnstakingStatusPrefix(),
+		txID.Bytes(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return string(data), nil
+}

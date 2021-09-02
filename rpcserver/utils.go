@@ -199,7 +199,7 @@ type Pdexv3StakingRequest struct {
 type Pdexv3UnstakingRequest struct {
 	StakingPoolID   string `json:"StakingPoolID"`
 	TokenAmount     string `json:"TokenAmount"`
-	TokenID         string `json:"NftID"`
+	TokenID         string `json:"TokenID"`
 	UnstakingAmount string `json:"UnstakingAmount"`
 }
 

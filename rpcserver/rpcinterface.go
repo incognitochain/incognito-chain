@@ -231,6 +231,7 @@ var HttpHandler = map[string]httpHandler{
 	pdexv3Staking:                         (*HttpServer).handlePdexv3Staking,
 	pdexv3Unstaking:                       (*HttpServer).handlePdexv3Unstaking,
 	pdexv3GetStakingStatus:                (*HttpServer).handleGetPdexv3StakingStatus,
+	pdexv3GetUnstakingStatus:              (*HttpServer).handleGetPdexv3UnstakingStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

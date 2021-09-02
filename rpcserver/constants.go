@@ -254,6 +254,7 @@ const (
 	pdexv3Staking                         = "pdexv3_txStake"
 	pdexv3Unstaking                       = "pdexv3_txUnstake"
 	pdexv3GetStakingStatus                = "pdexv3_getStakingStatus"
+	pdexv3GetUnstakingStatus              = "pdexv3_getUnstakingStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
