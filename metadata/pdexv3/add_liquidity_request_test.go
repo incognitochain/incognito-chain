@@ -12,6 +12,7 @@ import (
 )
 
 func TestAddLiquidity_ValidateSanityData(t *testing.T) {
+	common.MaxShardNumber = 8
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
 
@@ -39,9 +40,19 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 	invalidCustomTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
 	invalidCustomTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
 
+	invalidOtaReceiverShardIDTx := &metadataCommonMocks.Transaction{}
+	invalidOtaReceiverShardIDTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
+	invalidOtaReceiverShardIDTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	invalidValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
+	invalidValidationEnvironment.On("ShardID").Return(0)
+	invalidOtaReceiverShardIDTx.On("GetValidationEnv").Return(invalidValidationEnvironment)
+
 	validTx := &metadataCommonMocks.Transaction{}
 	validTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	validValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
+	validValidationEnvironment.On("ShardID").Return(1)
+	validTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	type fields struct {
 		poolPairID   string
@@ -235,6 +246,23 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			},
 			args: args{
 				tx: invalidCustomTx,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "invalid ota receiver shard id",
+			fields: fields{
+				pairHash:    "pair hash",
+				tokenID:     tokenHash.String(),
+				otaReceiver: validOTAReceiver0,
+				amplifier:   10000,
+				tokenAmount: 200,
+				nftID:       tokenHash.String(),
+			},
+			args: args{
+				tx: invalidOtaReceiverShardIDTx,
 			},
 			want:    false,
 			want1:   false,

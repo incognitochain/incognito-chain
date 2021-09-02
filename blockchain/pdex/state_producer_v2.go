@@ -747,11 +747,7 @@ func (sp *stateProducerV2) unstaking(
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UnstakingRequest)
 		txReqID := *tx.Hash()
-		stakingPoolID, err := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
-		if err != nil {
-			Logger.log.Infof("tx hash %s error %v", txReqID, err)
-			continue
-		}
+		stakingPoolID, _ := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
 		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
 		if !found || rootStakingPoolState == nil {
 			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
@@ -770,11 +766,20 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, insts...)
 			continue
 		}
+		staker, found := rootStakingPoolState.stakers[metaData.NftID()]
+		if !found || staker == nil {
+			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			res = append(res, insts...)
+			continue
+		}
 		stakingPoolState := NewStakingPoolState()
 		stakingPoolState.withLiquidity(rootStakingPoolState.liquidity)
 		stakingPoolState.withStakers(rootStakingPoolState.cloneStaker(metaData.NftID()))
 
-		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
+		err := stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
 			if err != nil {
@@ -783,11 +788,7 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, insts...)
 			continue
 		}
-		nftHash, err := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
-		if err != nil {
-			Logger.log.Infof("tx hash %s error %v", txReqID, err)
-			continue
-		}
+		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 		insts, err := v2.BuildAcceptUnstakingInstructions(
 			*stakingPoolID, *nftHash, metaData.UnstakingAmount(),
 			metaData.OtaReceivers()[metaData.NftID()],
@@ -799,7 +800,7 @@ func (sp *stateProducerV2) unstaking(
 		}
 		res = append(res, insts...)
 
-		stakingPoolStates[metaData.NftID()] = stakingPoolState
+		stakingPoolStates[metaData.StakingPoolID()] = stakingPoolState
 	}
 	return res, stakingPoolStates, nil
 }

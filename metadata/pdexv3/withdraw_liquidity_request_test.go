@@ -12,6 +12,7 @@ import (
 )
 
 func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
+	common.MaxShardNumber = 8
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
@@ -19,16 +20,22 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
 	assert.Nil(t, err)
 
+	validValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
+	validValidationEnvironment.On("ShardID").Return(1)
+
 	notBurnTx := &metadataCommonMocks.Transaction{}
 	notBurnTx.On("GetTxBurnData").Return(false, nil, nil, errors.New("Not tx burn"))
+	notBurnTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	notMactchTokenIDTx := &metadataCommonMocks.Transaction{}
 	notMactchTokenIDTx.On("GetTxBurnData").Return(true, nil, &common.PRVCoinID, nil)
+	notMactchTokenIDTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	notMatchAmountCoin := &coinMocks.Coin{}
 	notMatchAmountCoin.On("GetValue").Return(uint64(100))
 	notMactchAmountTx := &metadataCommonMocks.Transaction{}
 	notMactchAmountTx.On("GetTxBurnData").Return(true, notMatchAmountCoin, tokenHash, nil)
+	notMactchAmountTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	validCoin := &coinMocks.Coin{}
 	validCoin.On("GetValue").Return(uint64(1))
@@ -36,14 +43,17 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	normalTx := &metadataCommonMocks.Transaction{}
 	normalTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	normalTx.On("GetType").Return(common.TxNormalType)
+	normalTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	customTx := &metadataCommonMocks.Transaction{}
 	customTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
 	customTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	customTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	validTx := &metadataCommonMocks.Transaction{}
 	validTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	validTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	type fields struct {
 		MetadataBase metadataCommon.MetadataBase
@@ -120,7 +130,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 					token0ID.String():  "123",
 				},
 			},
-			args:    args{},
+			args: args{
+				tx: validTx,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -132,11 +144,13 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
 					token1ID.String():  "123",
 				},
 			},
-			args:    args{},
+			args: args{
+				tx: validTx,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -148,12 +162,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 0,
 			},
-			args:    args{},
+			args: args{
+				tx: validTx,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -165,8 +181,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
@@ -184,8 +200,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
@@ -203,8 +219,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
@@ -222,8 +238,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
@@ -241,8 +257,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
@@ -260,8 +276,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},

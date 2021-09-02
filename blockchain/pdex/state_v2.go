@@ -42,8 +42,15 @@ type Params struct {
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 }
 
+func NewParams() *Params {
+	return &Params{
+		FeeRateBPS:        make(map[string]uint),
+		StakingPoolsShare: make(map[string]uint),
+	}
+}
+
 func (params *Params) IsZeroValue() bool {
-	return reflect.DeepEqual(params, Params{})
+	return reflect.DeepEqual(params, NewParams()) || params == nil
 }
 
 func (params *Params) readConfig() *Params {
@@ -257,7 +264,6 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
 			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
-				Logger.log.Debugf("process inst %s err %v:", inst, err)
 				continue
 			}
 		case metadataCommon.Pdexv3ModifyParamsMeta:
@@ -308,6 +314,9 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		if err != nil {
 			return err
 		}
+	}
+	if s.params.IsZeroValue() {
+		s.readConfig()
 	}
 	return nil
 }
@@ -421,8 +430,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, withdrawOrderInstructions...)
 
 	var unstakingInstructions [][]string
-	unstakingInstructions, s.stakingPoolStates, err = s.producer.staking(
-		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
+		unstakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
 	)
 	if err != nil {
 		return instructions, err
@@ -460,6 +469,7 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 
 func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
 	var err error
+
 	if !s.params.IsZeroValue() {
 		err = statedb.StorePdexv3Params(
 			env.StateDB(),
@@ -618,7 +628,7 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 		res.params.FeeRateBPS = clonedFeeRateBPS
 		res.params.StakingPoolsShare = clonedStakingPoolsShare
 	} else {
-		res.params = Params{}
+		res.params = *NewParams()
 	}
 
 	for k, v := range s.waitingContributions {

@@ -72,8 +72,6 @@ pdex_param:
   admin_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
   params:
     default_fee_rate_bps: 30
-    fee_rate_bps: 
-      - "abc": 12
     prv_discount_percent: 25
     limit_protocol_fee_percent: 0
     limit_staking_pool_reward_percent: 10

@@ -576,7 +576,6 @@ func InitStateFromDB(
 	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
 			res := newStateV2()
-			res.readConfig()
 			return res, nil
 		}
 		return initStateV2(stateDB, beaconHeight)

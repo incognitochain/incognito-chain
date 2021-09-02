@@ -1388,3 +1388,149 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 		})
 	}
 }
+
+func Test_stateProcessorV2_unstaking(t *testing.T) {
+	initDB()
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
+	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+
+	rejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	assert.Nil(t, err)
+	acceptInst, err := instruction.NewAcceptUnstakingWithValue(
+		common.PRVCoinID, *nftHash1, 50, validOTAReceiver0, *txReqID, 1,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	type fields struct {
+		pairHashCache      map[string]string
+		withdrawTxCache    map[string]uint64
+		stateProcessorBase stateProcessorBase
+	}
+	type args struct {
+		stateDB           *statedb.StateDB
+		inst              []string
+		nftIDs            map[string]uint64
+		stakingPoolStates map[string]*StakingPoolState
+		beaconHeight      uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    map[string]*StakingPoolState
+		want1   *v2.UnstakingStatus
+		wantErr bool
+	}{
+		{
+			name: "Valid reject inst",
+			fields: fields{
+				stateProcessorBase: stateProcessorBase{},
+			},
+			args: args{
+				stateDB: sDB,
+				inst:    rejectInst,
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 150,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               150,
+							lastUpdatedBeaconHeight: 15,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			want1: &v2.UnstakingStatus{
+				Status: common.Pdexv3RejectUnstakingStatus,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid accept inst",
+			fields: fields{
+				stateProcessorBase: stateProcessorBase{},
+			},
+			args: args{
+				stateDB: sDB,
+				inst:    acceptInst,
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 100,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               100,
+							lastUpdatedBeaconHeight: 20,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			want1: &v2.UnstakingStatus{
+				Status:        common.Pdexv3AcceptUnstakingStatus,
+				NftID:         nftID1,
+				StakingPoolID: common.PRVIDStr,
+				Liquidity:     50,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProcessorV2{
+				pairHashCache:      tt.fields.pairHashCache,
+				withdrawTxCache:    tt.fields.withdrawTxCache,
+				stateProcessorBase: tt.fields.stateProcessorBase,
+			}
+			got, got1, err := sp.unstaking(tt.args.stateDB, tt.args.inst, tt.args.nftIDs, tt.args.stakingPoolStates, tt.args.beaconHeight)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProcessorV2.unstaking() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProcessorV2.unstaking() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProcessorV2.unstaking() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

@@ -846,7 +846,7 @@ func (sp *stateProcessorV2) unstaking(
 		liquidity = acceptInst.Amount()
 		nftID = acceptInst.NftID().String()
 		stakingPoolState := stakingPoolStates[stakingPoolID]
-		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, addOperator)
+		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, subOperator)
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}

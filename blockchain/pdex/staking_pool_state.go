@@ -122,6 +122,7 @@ func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight
 			}
 		}
 		staker.liquidity = tempLiquidity
+		staker.lastUpdatedBeaconHeight = beaconHeight
 	}
 	var tempLiquidity uint64
 	switch operator {
