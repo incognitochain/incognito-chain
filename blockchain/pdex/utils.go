@@ -569,21 +569,56 @@ func storePoolForPair(
 	poolPairs[pdePoolForPairKey] = poolForPair
 }
 
-func InitStateFromDB(
+func InitStatesFromDB(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+) (map[uint]State, error) {
+	res := make(map[uint]State)
+	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
+		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
+			res[AmplifierVersion] = newStateV2()
+		} else {
+			state, err := initStateV2(stateDB, beaconHeight)
+			if err != nil {
+				return res, err
+			}
+			res[AmplifierVersion] = state
+		}
+	}
+	if beaconHeight == 0 || beaconHeight == 1 {
+		res[BasicVersion] = newStateV1()
+	} else {
+		state, err := initStateV1(stateDB, beaconHeight)
+		if err != nil {
+			return res, err
+		}
+		res[BasicVersion] = state
+	}
+	return res, nil
+}
+
+func InitStateV1FromDB(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (State, error) {
-	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
-		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-			res := newStateV2()
-			return res, nil
-		}
-		return initStateV2(stateDB, beaconHeight)
-	}
-	if beaconHeight == 1 || beaconHeight == 0 {
+	if beaconHeight == 0 || beaconHeight == 1 {
 		return newStateV1(), nil
 	}
 	return initStateV1(stateDB, beaconHeight)
+}
+
+func InitStateV2FromDB(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+) (State, error) {
+	if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
+	}
+	if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return newStateV2(), nil
+	} else {
+		return initStateV2(stateDB, beaconHeight)
+	}
 }
 
 func generatePoolPairKey(token0Name, token1Name, txReqID string) string {

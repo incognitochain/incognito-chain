@@ -80,7 +80,7 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeState pdex.State
+	pdeStates map[uint]pdex.State
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -448,7 +448,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
-	beaconBestState.pdeState = target.pdeState.Clone()
+	for version, state := range target.pdeStates {
+		beaconBestState.pdeStates[version] = state.Clone()
+	}
 
 	return nil
 }
@@ -523,13 +525,13 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	return beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 }
 
-func (beaconBestState *BeaconBestState) PdeState() pdex.State {
-	return beaconBestState.pdeState
+func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
+	return beaconBestState.pdeStates[version]
 }
 
 func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
 	poolPairs := make(map[string]*pdex.PoolPairState)
-	err := json.Unmarshal(beaconBestState.PdeState().Reader().PoolPairs(), &poolPairs)
+	err := json.Unmarshal(beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().PoolPairs(), &poolPairs)
 	if err != nil {
 		return err
 	}
@@ -541,7 +543,7 @@ func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) err
 }
 
 func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
-	nftIDs := beaconBestState.pdeState.Reader().NftIDs()
+	nftIDs := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().NftIDs()
 	if _, found := nftIDs[nftID]; !found {
 		return fmt.Errorf("Can't not find nftID %s", nftID)
 	}
@@ -549,15 +551,15 @@ func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
 }
 
 func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
-	if beaconBestState.pdeState.Reader().Params().MintNftRequireAmount != amount {
+	if beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().Params().MintNftRequireAmount != amount {
 		return fmt.Errorf("Expect mint nft require amount by %v but got %v",
-			beaconBestState.pdeState.Reader().Params().MintNftRequireAmount, amount)
+			beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().Params().MintNftRequireAmount, amount)
 	}
 	return nil
 }
 
 func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
-	if _, found := beaconBestState.pdeState.Reader().StakingPools()[tokenID]; !found {
+	if _, found := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().StakingPools()[tokenID]; !found {
 		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
 	}
 	return nil
@@ -566,7 +568,7 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string)
 func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
 	tokenID, nftID string, unstakingAmount uint64,
 ) error {
-	stakingPoolState, found := beaconBestState.pdeState.Reader().StakingPools()[tokenID]
+	stakingPoolState, found := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().StakingPools()[tokenID]
 	if !found || stakingPoolState == nil {
 		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
 	}
@@ -584,7 +586,7 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
 	poolPairID, nftID string, shareAmount uint64,
 ) error {
 	poolPairs := make(map[string]*pdex.PoolPairState)
-	err := json.Unmarshal(beaconBestState.PdeState().Reader().PoolPairs(), &poolPairs)
+	err := json.Unmarshal(beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().PoolPairs(), &poolPairs)
 	if err != nil {
 		return err
 	}

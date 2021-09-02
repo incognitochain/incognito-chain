@@ -45,7 +45,7 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, fmt.Errorf("pDEX v3 is not available"))
 	}
-	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	pDexv3State, err := pdex.InitStateV2FromDB(beaconFeatureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
@@ -519,7 +519,7 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 	poolPairs := make(map[string]*pdex.PoolPairState)
-	err = json.Unmarshal(beaconBestView.PdeState().Reader().PoolPairs(), &poolPairs)
+	err = json.Unmarshal(beaconBestView.PdeState(pdex.AmplifierVersion).Reader().PoolPairs(), &poolPairs)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}

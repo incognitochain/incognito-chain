@@ -93,7 +93,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	allPdexv3Txs map[byte][]metadata.Transaction,
 ) ([][]string, error) {
 	// transfrom beacon height for pdex process
-	beaconBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconHeight - 1)
+	pdeVersions := []uint{}
+	for version := range beaconBestState.pdeStates {
+		pdeVersions = append(pdeVersions, version)
+	}
+
+	for _, version := range pdeVersions {
+		beaconBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconHeight - 1)
+	}
 
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(featureStateDB)
@@ -228,12 +235,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		Build()
 
-	pdeInstructions, err := beaconBestState.pdeState.BuildInstructions(pdeStateEnv)
-	if err != nil {
-		Logger.log.Error(err)
-		return utils.EmptyStringMatrix, err
+	for _, version := range pdeVersions {
+		pdeInstructions, err := beaconBestState.pdeStates[version].BuildInstructions(pdeStateEnv)
+		if err != nil {
+			Logger.log.Error(err)
+			return utils.EmptyStringMatrix, err
+		}
+		instructions = append(instructions, pdeInstructions...)
 	}
-	instructions = append(instructions, pdeInstructions...)
 
 	// handle portal instructions
 	// include portal v3, portal relaying header chain
