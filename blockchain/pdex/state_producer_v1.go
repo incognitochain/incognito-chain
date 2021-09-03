@@ -23,6 +23,7 @@ func (sp *stateProducerV1) crossPoolTrade(
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
+	pdexv3BreadkPoint uint64,
 ) ([][]string, map[string]*rawdbv2.PDEPoolForPair, map[string]uint64, error) {
 	res := [][]string{}
 
@@ -31,6 +32,7 @@ func (sp *stateProducerV1) crossPoolTrade(
 		actions,
 		beaconHeight,
 		poolPairs,
+		pdexv3BreadkPoint,
 	)
 	tradableInsts, tradingFeeByPair := sp.buildInstsForSortedTradableActions(sortedTradableActions, beaconHeight, poolPairs)
 	untradableInsts := buildInstsForUntradableActions(untradableActions)
@@ -329,6 +331,7 @@ func (sp *stateProducerV1) categorizeAndSortCrossPoolTradeInstsByFee(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+	pdexv3BreadkPoint uint64,
 ) (
 	[]metadata.PDECrossPoolTradeRequestAction,
 	[]metadata.PDECrossPoolTradeRequestAction,
@@ -353,11 +356,11 @@ func (sp *stateProducerV1) categorizeAndSortCrossPoolTradeInstsByFee(
 		tradeMeta := crossPoolTradeRequestAction.Meta
 		tokenIDToSell := tradeMeta.TokenIDToSellStr
 		tokenIDToBuy := tradeMeta.TokenIDToBuyStr
-		if (isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
+		if beaconHeight >= pdexv3BreadkPoint || ((isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
 			!isExistedInPoolPair(poolPairs, beaconHeight, tokenIDToSell, tokenIDToBuy)) ||
 			(!isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
 				(!isExistedInPoolPair(poolPairs, beaconHeight, prvIDStr, tokenIDToSell) ||
-					!isExistedInPoolPair(poolPairs, beaconHeight, prvIDStr, tokenIDToBuy))) {
+					!isExistedInPoolPair(poolPairs, beaconHeight, prvIDStr, tokenIDToBuy)))) {
 			untradableActions = append(untradableActions, crossPoolTradeRequestAction)
 			continue
 		}
@@ -574,6 +577,7 @@ func (sp *stateProducerV1) contribution(
 	waitingContributions map[string]*rawdbv2.PDEContribution,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
+	privacyV2BreakPoint, pdexv3BreadkPoint uint64,
 ) (
 	[][]string,
 	map[string]*rawdbv2.PDEContribution,
@@ -595,6 +599,38 @@ func (sp *stateProducerV1) contribution(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution action: %+v", err)
 			return [][]string{}, waitingContributions, poolPairs, shares, err
+		}
+		switch metaType {
+		case metadata.PDEContributionMeta:
+			if beaconHeight >= privacyV2BreakPoint || beaconHeight >= pdexv3BreadkPoint {
+				meta := contributionAction.Meta
+				refundInst := buildRefundContributionInst(
+					meta.PDEContributionPairID,
+					meta.ContributorAddressStr,
+					meta.ContributedAmount,
+					meta.TokenIDStr,
+					metaType,
+					contributionAction.ShardID,
+					contributionAction.TxReqID,
+				)
+				res = append(res, refundInst)
+				continue
+			}
+		case metadata.PDEPRVRequiredContributionRequestMeta:
+			if beaconHeight >= pdexv3BreadkPoint {
+				meta := contributionAction.Meta
+				refundInst := buildRefundContributionInst(
+					meta.PDEContributionPairID,
+					meta.ContributorAddressStr,
+					meta.ContributedAmount,
+					meta.TokenIDStr,
+					metaType,
+					contributionAction.ShardID,
+					contributionAction.TxReqID,
+				)
+				res = append(res, refundInst)
+				continue
+			}
 		}
 		meta := contributionAction.Meta
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, meta.PDEContributionPairID))
@@ -758,6 +794,7 @@ func (sp *stateProducerV1) trade(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+	privacyV2BreakPoint, pdexv3BreadkPoint uint64,
 ) ([][]string, map[string]*rawdbv2.PDEPoolForPair, error) {
 	res := [][]string{}
 
@@ -768,7 +805,9 @@ func (sp *stateProducerV1) trade(
 		poolPairs,
 	)
 	for _, tradeAction := range sortedTradesActions {
-		should, receiveAmount, err := shouldRefundTradeAction(tradeAction, beaconHeight, poolPairs)
+		should, receiveAmount, err := shouldRefundTradeAction(
+			tradeAction, beaconHeight, poolPairs, privacyV2BreakPoint, pdexv3BreadkPoint,
+		)
 		if err != nil {
 			return utils.EmptyStringMatrix, poolPairs, err
 		}

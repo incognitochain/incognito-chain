@@ -186,7 +186,11 @@ func shouldRefundTradeAction(
 	action metadata.PDETradeRequestAction,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+	privacyV2BreakPoint, pdexv3BreadkPoint uint64,
 ) (bool, uint64, error) {
+	if beaconHeight >= privacyV2BreakPoint || beaconHeight >= pdexv3BreadkPoint {
+		return true, 0, nil
+	}
 
 	if len(poolPairs) == 0 || poolPairs == nil {
 		return true, 0, nil

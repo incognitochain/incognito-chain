@@ -109,6 +109,9 @@ func (pc PDEContribution) ValidateSanityData(
 	if chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight) && pc.GetType() == PDEContributionMeta {
 		return false, false, fmt.Errorf("metadata type %v is no longer supported, consider using %v instead", PDEContributionMeta, PDEPRVRequiredContributionRequestMeta)
 	}
+	if chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, fmt.Errorf("metadata type %v is no longer supported", PDEPRVRequiredContributionRequestMeta)
+	}
 
 	if pc.PDEContributionPairID == "" {
 		return false, false, errors.New("PDE contribution pair id should not be empty.")

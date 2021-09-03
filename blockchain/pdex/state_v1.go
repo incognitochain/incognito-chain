@@ -132,9 +132,6 @@ func (s *stateV1) Process(env StateEnvironment) error {
 		}
 		switch metadataType {
 		case metadata.PDEContributionMeta:
-			if env.BeaconHeight() >= env.BCHeightBreakPointPrivacyV2() {
-				continue
-			}
 			s.waitingContributions,
 				s.deletedWaitingContributions,
 				s.poolPairs,
@@ -163,9 +160,6 @@ func (s *stateV1) Process(env StateEnvironment) error {
 				s.shares,
 			)
 		case metadata.PDETradeRequestMeta:
-			if env.BeaconHeight() >= env.BCHeightBreakPointPrivacyV2() {
-				continue
-			}
 			s.poolPairs, err = s.processor.trade(
 				env.StateDB(),
 				env.BeaconHeight(),
@@ -232,18 +226,18 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, feeWithdrawalInstructions...)
 
-	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
-		// handle trade
-		tradeInstructions, s.poolPairs, err = s.producer.trade(
-			env.TradeActions(),
-			env.BeaconHeight(),
-			s.poolPairs,
-		)
-		if err != nil {
-			return instructions, err
-		}
-		instructions = append(instructions, tradeInstructions...)
+	// handle trade
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		env.TradeActions(),
+		env.BeaconHeight(),
+		s.poolPairs,
+		env.BCHeightBreakPointPrivacyV2(),
+		env.Pdexv3BreakPoint(),
+	)
+	if err != nil {
+		return instructions, err
 	}
+	instructions = append(instructions, tradeInstructions...)
 
 	// handle cross pool trade
 	crossPoolTradeInstructions, s.poolPairs, s.shares, err = s.producer.crossPoolTrade(
@@ -251,6 +245,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		env.BeaconHeight(),
 		s.poolPairs,
 		s.shares,
+		env.Pdexv3BreakPoint(),
 	)
 	if err != nil {
 		return instructions, err
@@ -269,22 +264,22 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, withdrawalInstructions...)
 
-	if env.BeaconHeight() < env.BCHeightBreakPointPrivacyV2() {
-		// handle contribution
-		contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
-			env.ContributionActions(),
-			env.BeaconHeight(),
-			false,
-			metadata.PDEContributionMeta,
-			s.waitingContributions,
-			s.poolPairs,
-			s.shares,
-		)
-		if err != nil {
-			return instructions, err
-		}
-		instructions = append(instructions, contributionInstructions...)
+	// handle contribution
+	contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
+		env.ContributionActions(),
+		env.BeaconHeight(),
+		false,
+		metadata.PDEContributionMeta,
+		s.waitingContributions,
+		s.poolPairs,
+		s.shares,
+		env.BCHeightBreakPointPrivacyV2(),
+		env.Pdexv3BreakPoint(),
+	)
+	if err != nil {
+		return instructions, err
 	}
+	instructions = append(instructions, contributionInstructions...)
 
 	// handle prv required contribution
 	contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
@@ -295,6 +290,8 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		s.waitingContributions,
 		s.poolPairs,
 		s.shares,
+		env.BCHeightBreakPointPrivacyV2(),
+		env.Pdexv3BreakPoint(),
 	)
 	if err != nil {
 		return instructions, err

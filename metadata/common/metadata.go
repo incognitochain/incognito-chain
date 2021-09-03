@@ -73,6 +73,7 @@ type ChainRetriever interface {
 	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 	IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool
+	IsAfterPdexv3CheckPoint(beaconHeight uint64) bool
 	GetPortalFeederAddress(beaconHeight uint64) string
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
 	GetPortalETHContractAddrStr(beaconHeight uint64) string

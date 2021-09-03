@@ -233,6 +233,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
 		BuildListTxs(allPdexv3Txs).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
+		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
 		Build()
 
 	for _, version := range pdeVersions {
