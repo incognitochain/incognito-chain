@@ -2,7 +2,6 @@ package peerv2
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -167,7 +166,7 @@ func getAvgRTT(
 		select {
 		case res := <-ts:
 			if res.Error != nil {
-				log.Fatal(res.Error)
+				return 0, res.Error
 			}
 			s += res.RTT
 		case <-time.After(PingTimeout):
