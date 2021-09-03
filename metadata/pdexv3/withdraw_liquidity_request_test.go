@@ -9,6 +9,7 @@ import (
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
@@ -19,6 +20,11 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	assert.Nil(t, err)
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
 	assert.Nil(t, err)
+
+	invalidChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	invalidChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(false)
+	validChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	validChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(true)
 
 	validValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
 	validValidationEnvironment.On("ShardID").Return(1)
@@ -78,11 +84,25 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "Invalid chainRetriever",
+			fields: fields{
+				poolPairID: "",
+			},
+			args: args{
+				chainRetriever: invalidChainRetriever,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
 			name: "Invalid poolPairID",
 			fields: fields{
 				poolPairID: "",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -93,7 +113,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				poolPairID: "123",
 				nftID:      "abc",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -104,7 +126,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				poolPairID: "123",
 				nftID:      common.Hash{}.String(),
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -115,7 +139,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				poolPairID: "123",
 				nftID:      tokenHash.String(),
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -131,7 +157,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -149,7 +176,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -168,7 +196,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 0,
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -187,7 +216,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 100,
 			},
 			args: args{
-				tx: notBurnTx,
+				tx:             notBurnTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -206,7 +236,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 100,
 			},
 			args: args{
-				tx: notMactchTokenIDTx,
+				tx:             notMactchTokenIDTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -225,7 +256,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 100,
 			},
 			args: args{
-				tx: notMactchAmountTx,
+				tx:             notMactchAmountTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -244,7 +276,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 100,
 			},
 			args: args{
-				tx: normalTx,
+				tx:             normalTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -263,7 +296,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 100,
 			},
 			args: args{
-				tx: customTx,
+				tx:             customTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -282,7 +316,8 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				shareAmount: 100,
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    true,
 			want1:   true,

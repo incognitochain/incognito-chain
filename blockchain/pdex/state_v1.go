@@ -427,7 +427,7 @@ func (s *stateV1) GetDiff(compareState State, stateChange *StateChange) (State, 
 	return res, stateChange, nil
 }
 
-func (s *stateV1) WaitingContributionsV1() []byte {
+func (s *stateV1) WaitingContributions() []byte {
 	temp := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
 	for k, v := range s.waitingContributions {
 		temp[k] = new(rawdbv2.PDEContribution)

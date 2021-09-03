@@ -9,6 +9,7 @@ import (
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
@@ -17,6 +18,11 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 	assert.Nil(t, err)
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
+
+	invalidChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	invalidChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(false)
+	validChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	validChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(true)
 
 	validValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
 	validValidationEnvironment.On("ShardID").Return(1)
@@ -82,6 +88,21 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "invalid chainRetriever",
+			fields: fields{
+				MetadataBase: metadataCommon.MetadataBase{
+					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
+				},
+				stakingPoolID: "abc",
+			},
+			args: args{
+				chainRetriever: invalidChainRetriever,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
 			name: "stakingPoolID is invalid",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
@@ -89,7 +110,10 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 				stakingPoolID: "abc",
 			},
-			args:    args{},
+			args: args{
+
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -102,7 +126,10 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 				stakingPoolID: common.Hash{}.String(),
 			},
-			args:    args{},
+			args: args{
+
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -116,7 +143,10 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				stakingPoolID: common.PRVIDStr,
 				nftID:         "abc",
 			},
-			args:    args{},
+			args: args{
+
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -130,7 +160,10 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				stakingPoolID: common.PRVIDStr,
 				nftID:         common.Hash{}.String(),
 			},
-			args:    args{},
+			args: args{
+
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -147,7 +180,10 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					common.PRVIDStr: "abcd",
 				},
 			},
-			args:    args{},
+			args: args{
+
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -166,7 +202,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: invalidShardIDTx,
+				tx:             invalidShardIDTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -187,7 +224,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				unstakingAmount: 0,
 			},
 			args: args{
-				tx: notBurnTx,
+				tx:             notBurnTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -208,7 +246,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				unstakingAmount: 50,
 			},
 			args: args{
-				tx: notBurnTx,
+				tx:             notBurnTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -229,7 +268,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				unstakingAmount: 50,
 			},
 			args: args{
-				tx: notMactchTokenIDTx,
+				tx:             notMactchTokenIDTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -249,7 +289,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: notMactchAmountTx,
+				tx:             notMactchAmountTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -269,7 +310,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: normalTx,
+				tx:             normalTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -289,7 +331,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: customTx,
+				tx:             customTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -309,7 +352,8 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				},
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,

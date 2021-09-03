@@ -71,6 +71,9 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Feature pdexv3 has not been activated yet"))
+	}
 	if request.poolPairID == "" {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pool pair id should not be empty"))
 	}

@@ -846,18 +846,18 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	for version := range newBestState.pdeStates {
 		pdeVersions = append(pdeVersions, version)
 	}
+	pdeStateEnv := pdex.
+		NewStateEnvBuilder().
+		BuildBeaconInstructions(beaconBlock.Body.Instructions).
+		BuildStateDB(newBestState.featureStateDB).
+		BuildBeaconHeight(beaconBlock.Header.Height - 1).
+		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
+		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
+		Build()
 
 	for _, version := range pdeVersions {
 		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
-		pdeStateEnv := pdex.
-			NewStateEnvBuilder().
-			BuildBeaconInstructions(beaconBlock.Body.Instructions).
-			BuildStateDB(newBestState.featureStateDB).
-			BuildBeaconHeight(beaconBlock.Header.Height - 1).
-			BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
-			BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
-			Build()
 		err = newBestState.pdeStates[version].Process(pdeStateEnv)
 		if err != nil {
 			Logger.log.Error(err)
@@ -865,7 +865,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 
 		pdexStateChange := pdex.NewStateChange()
-		diffState, pdexStateChange, err := newBestState.pdeStates[version].GetDiff(newBestState.pdeStates[version], pdexStateChange)
+		diffState, pdexStateChange, err := newBestState.pdeStates[version].GetDiff(curView.pdeStates[version], pdexStateChange)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -889,6 +889,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			return NewBlockChainError(ProcessPDEInstructionError, err)
 		}
 	}
+
+	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight {
+		newBestState.pdeStates[pdex.AmplifierVersion], err = pdex.InitStateV2FromDB(
+			newBestState.featureStateDB, beaconBlock.Header.Height,
+		)
+		if err != nil {
+			return NewBlockChainError(ProcessPDEInstructionError, err)
+		}
+	}
+
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v2: sig on beacon only
 		strconv.Itoa(metadata.BurningConfirmMetaV2),

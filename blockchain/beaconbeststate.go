@@ -103,6 +103,7 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 
 func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
+	beaconBestState.pdeStates = make(map[uint]pdex.State)
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCommitteeEngine) *BeaconBestState {

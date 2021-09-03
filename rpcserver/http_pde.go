@@ -703,7 +703,7 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := pdex.InitStateV2FromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	pdeState, err := pdex.InitStateV1FromDB(beaconFeatureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}

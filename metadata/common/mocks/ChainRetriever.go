@@ -287,6 +287,20 @@ func (_m *ChainRetriever) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
 	return r0
 }
 
+// IsAfterPdexv3CheckPoint provides a mock function with given fields: beaconHeight
+func (_m *ChainRetriever) IsAfterPdexv3CheckPoint(beaconHeight uint64) bool {
+	ret := _m.Called(beaconHeight)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(uint64) bool); ok {
+		r0 = rf(beaconHeight)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // IsAfterPrivacyV2CheckPoint provides a mock function with given fields: beaconHeight
 func (_m *ChainRetriever) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool {
 	ret := _m.Called(beaconHeight)

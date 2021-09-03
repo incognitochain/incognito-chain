@@ -9,12 +9,18 @@ import (
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 	common.MaxShardNumber = 8
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
+
+	invalidChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	invalidChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(false)
+	validChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	validChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(true)
 
 	notBurnTx := &metadataCommonMocks.Transaction{}
 	notBurnTx.On("GetTxBurnData").Return(false, nil, nil, errors.New("Not tx burn"))
@@ -69,11 +75,27 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "Not enable pdexv3 yet",
+			fields: fields{
+				otaReceiver: "123",
+			},
+			args: args{
+				chainRetriever: invalidChainRetriever,
+				beaconHeight:   10,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
 			name: "Invalid ota receive",
 			fields: fields{
 				otaReceiver: "123",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -83,7 +105,10 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 			fields: fields{
 				otaReceiver: validOTAReceiver0,
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -95,7 +120,9 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 				amount:      1,
 			},
 			args: args{
-				tx: notBurnTx,
+				tx:             notBurnTx,
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
 			},
 			want:    false,
 			want1:   false,
@@ -108,7 +135,9 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 				amount:      1,
 			},
 			args: args{
-				tx: notMactchTokenIDTx,
+				tx:             notMactchTokenIDTx,
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
 			},
 			want:    false,
 			want1:   false,
@@ -121,7 +150,9 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 				amount:      1,
 			},
 			args: args{
-				tx: notMactchAmountTx,
+				tx:             notMactchAmountTx,
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
 			},
 			want:    false,
 			want1:   false,
@@ -134,7 +165,9 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 				amount:      1,
 			},
 			args: args{
-				tx: customTx,
+				tx:             customTx,
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
 			},
 			want:    false,
 			want1:   false,
@@ -147,7 +180,9 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 				amount:      1,
 			},
 			args: args{
-				tx: invalidOtaReceiverShardIDTx,
+				tx:             invalidOtaReceiverShardIDTx,
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
 			},
 			want:    false,
 			want1:   false,
@@ -160,7 +195,9 @@ func TestUserMintNftRequest_ValidateSanityData(t *testing.T) {
 				amount:      1,
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
+				beaconHeight:   10,
 			},
 			want:    true,
 			want1:   true,
