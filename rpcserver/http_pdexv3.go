@@ -474,14 +474,7 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	if tokenAmount != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Nft amount need to be 1"))
-	}
-	token0Amount, err := common.AssertAndConvertNumber(withdrawLiquidityRequest.Token0Amount)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	token1Amount, err := common.AssertAndConvertNumber(withdrawLiquidityRequest.Token1Amount)
+	shareAmount, err := common.AssertAndConvertNumber(withdrawLiquidityRequest.ShareAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -532,10 +525,6 @@ func (httpServer *HttpServer) createRawTxWithdrawLiquidityV3(
 	otaReceivers[poolPairState.Token0ID().String()] = otaReceiverToken0Str
 	otaReceivers[poolPairState.Token1ID().String()] = otaReceiverToken1Str
 
-	shareAmount := pdex.CalculateShareAmount(
-		poolPairState.Token0RealAmount(), poolPairState.Token1RealAmount(),
-		token0Amount, token1Amount, poolPairState.ShareAmount(),
-	)
 	metaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		withdrawLiquidityRequest.PoolPairID, withdrawLiquidityRequest.TokenID,
 		otaReceivers, shareAmount,
