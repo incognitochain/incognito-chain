@@ -133,7 +133,7 @@ func (a actorV2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 
 func (a *actorV2) Stop() error {
 	if a.isStarted {
-		a.logger.Info("stop bls-bftv3 consensus for chain", a.chainKey)
+		a.logger.Info("stop bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
 	}
 	a.isStarted = false
 	return nil
@@ -204,7 +204,7 @@ func (a *actorV2) SignData(data []byte) (string, error) {
 
 func (a *actorV2) Start() error {
 	if !a.isStarted {
-		a.logger.Info("start bls-bftv3 consensus for chain", a.chainKey)
+		a.logger.Info("start bls-bft-%+v consensus for chain", a.blockVersion, a.chainKey)
 	}
 	a.isStarted = true
 	return nil
@@ -215,7 +215,7 @@ func (a *actorV2) run() error {
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
-		a.logger.Infof("init bls-bft-v2 consensus for chain %+v", a.chainKey)
+		a.logger.Infof("init bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
 
 		for { //actor loop
 			if !a.isStarted { //sleep if this process is not start
