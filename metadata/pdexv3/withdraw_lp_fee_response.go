@@ -125,8 +125,13 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 		}
 		pk := mintCoin.GetPublicKey().ToBytesS()
 		paidAmount := mintCoin.GetValue()
-		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+		mintCoinV2, ok := mintCoin.(*coin.CoinV2)
+		if !ok {
+			metadataCommon.Logger.Log.Warnf("Mint coin is not CoinV2")
+			continue
+		}
 
+		txR := mintCoinV2.GetTxRandom()
 		publicKey := receiverAddress.PublicKey
 		txRandom := receiverAddress.TxRandom
 
