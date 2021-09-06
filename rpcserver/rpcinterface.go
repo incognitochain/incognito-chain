@@ -103,6 +103,8 @@ var HttpHandler = map[string]httpHandler{
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
+	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
+	getDetailBlocksOfEpoch:     (*HttpServer).handleGetDetailBlocksOfEpoch,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,

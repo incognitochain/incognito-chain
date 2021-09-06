@@ -246,7 +246,22 @@ func GenerateZeroValueHash() (Hash, error) {
 	return hash, nil
 }
 
-func GenerateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (Hash, error) {
+func GenerateHashFromMapByteString(maps1 map[byte][]string) (Hash, error) {
+	var keys1 []int
+	for k := range maps1 {
+		keys1 = append(keys1, int(k))
+	}
+	sort.Ints(keys1)
+	temp1 := []string{}
+	// To perform the opertion you want
+	for _, k := range keys1 {
+		temp1 = append(temp1, maps1[byte(k)]...)
+	}
+
+	return GenerateHashFromStringArray(temp1)
+}
+
+func GenerateHashFromTwoMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (Hash, error) {
 	var keys1 []int
 	for k := range maps1 {
 		keys1 = append(keys1, int(k))

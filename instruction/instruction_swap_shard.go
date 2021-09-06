@@ -35,6 +35,12 @@ func NewSwapShardInstruction() *SwapShardInstruction {
 	return &SwapShardInstruction{}
 }
 
+func NewSwapShardInstructionWithShardID(chainID int) *SwapShardInstruction {
+	return &SwapShardInstruction{
+		ChainID: chainID,
+	}
+}
+
 func (s *SwapShardInstruction) GetType() string {
 	return SWAP_SHARD_ACTION
 }

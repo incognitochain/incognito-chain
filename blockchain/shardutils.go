@@ -3,10 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -81,60 +79,6 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	return crossIDs, nil
 }
 
-func createShardSwapActionForKeyListV2(
-	shardCommittees []string,
-	minCommitteeSize int,
-	activeShard int,
-	shardID byte,
-	epoch uint64,
-) ([]string, []string) {
-	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(epoch, minCommitteeSize, activeShard)
-	remainShardCommittees := shardCommittees[minCommitteeSize:]
-	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
-}
-
-func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string {
-	requester := base58.Base58Check{}.Encode(pk, common.Base58Version)
-	return fmt.Sprintf("%s-%s", requester, coinID.String())
-}
-
-func reqTableFromReqTxs(
-	transactions []metadata.Transaction,
-) map[string]metadata.Transaction {
-	txRequestTable := map[string]metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
-			txRequestTable[key] = tx
-		}
-	}
-	return txRequestTable
-}
-
-func filterReqTxs(
-	transactions []metadata.Transaction,
-	txRequestTable map[string]metadata.Transaction,
-) []metadata.Transaction {
-	res := []metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
-			txReq, ok := txRequestTable[key]
-			if !ok {
-				continue
-			}
-			cmp, err := txReq.Hash().Cmp(tx.Hash())
-			if (err != nil) || (cmp != 0) {
-				continue
-			}
-		}
-		res = append(res, tx)
-	}
-	return res
-}
-
 func CreateMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransaction) (*common.Hash, error) {
 	if len(crossTransactions) == 0 {
 		res, err := generateZeroValueHash()
@@ -170,20 +114,12 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransa
 	return newHash.IsEqual(res)
 }
 
-//updateCommiteesWithAddedAndRemovedListValidator :
-func updateCommiteesWithAddedAndRemovedListValidator(
+//updateCommitteesWithAddedAndRemovedListValidator :
+func updateCommitteesWithAddedAndRemovedListValidator(
 	source,
-	addedCommittees,
-	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
+	addedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
 	m := make(map[string]bool)
-	for _, v := range removedCommittees {
-		str, err := v.ToBase58()
-		if err != nil {
-			return nil, err
-		}
-		m[str] = true
-	}
 	for _, v := range source {
 		str, err := v.ToBase58()
 		if err != nil {
