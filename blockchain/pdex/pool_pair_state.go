@@ -3,6 +3,7 @@ package pdex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"reflect"
 	"sort"
@@ -83,6 +84,8 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		0, contributions[0].Amount(), contributions[1].Amount(),
 		token0VirtualAmount, token1VirtualAmount,
 		contributions[0].Amplifier(),
+		map[common.Hash]*big.Int{},
+		map[common.Hash]uint64{}, map[common.Hash]uint64{},
 	)
 	return NewPoolPairStateWithValue(
 		*poolPairState,
@@ -262,18 +265,34 @@ func (p *PoolPairState) updateShareValue(
 			return errors.New("Deduct nil share amount")
 		}
 		share = NewShare()
+	} else {
+		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
+		if err != nil {
+			return fmt.Errorf("Invalid nftID: %s", nftID)
+		}
+		share.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
+		if err != nil {
+			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
+		}
 	}
+
+	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+	for tokenID, value := range p.state.LPFeesPerShare() {
+		share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+	}
+
 	var err error
 	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)
 	if err != nil {
 		return errors.New("newShare.amount is out of range")
 	}
+
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
 	if err != nil {
 		return errors.New("poolPairShareAmount is out of range")
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
-	share.lastUpdatedBeaconHeight = beaconHeight
+
 	p.shares[nftID] = share
 	return nil
 }
@@ -342,6 +361,52 @@ func (p *PoolPairState) updateSingleTokenAmount(
 		p.state.SetToken1VirtualAmount(newVirtualAmount)
 	}
 	return nil
+}
+
+func (p *PoolPairState) RecomputeLPFee(
+	nftID common.Hash,
+) (map[common.Hash]uint64, error) {
+	result := map[common.Hash]uint64{}
+
+	curShare, ok := p.shares[nftID.String()]
+	if !ok {
+		return nil, fmt.Errorf("Share not found")
+	}
+
+	curLPFeesPerShare := p.state.LPFeesPerShare()
+	oldLPFeesPerShare := curShare.lastLPFeesPerShare
+
+	listTokenIDs := []common.Hash{
+		p.state.Token0ID(),
+		p.state.Token1ID(),
+		common.PRVCoinID,
+		common.PDEXCoinID,
+	}
+	for _, tokenID := range listTokenIDs {
+		tradingFee, isExisted := curShare.tradingFees[tokenID]
+		if !isExisted {
+			tradingFee = 0
+		}
+		oldFees, isExisted := oldLPFeesPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees, isExisted := curLPFeesPerShare[tokenID]
+		if !isExisted {
+			newFees = big.NewInt(0)
+		}
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(curShare.amount))
+		reward = new(big.Int).Div(reward, BaseLPFeesPerShare)
+		reward = new(big.Int).Add(reward, new(big.Int).SetUint64(tradingFee))
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		if reward.Uint64() > 0 {
+			result[tokenID] = reward.Uint64()
+		}
+	}
+	return result, nil
 }
 
 func (p *PoolPairState) withState(state rawdbv2.Pdexv3PoolPair) {

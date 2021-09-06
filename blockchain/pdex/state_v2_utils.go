@@ -2,25 +2,28 @@ package pdex
 
 import (
 	"encoding/json"
+	"math/big"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type Share struct {
-	amount                  uint64
-	tradingFees             map[string]uint64
-	lastUpdatedBeaconHeight uint64
+	amount             uint64
+	tradingFees        map[common.Hash]uint64
+	lastLPFeesPerShare map[common.Hash]*big.Int
 }
 
 func (share *Share) Amount() uint64 {
 	return share.amount
 }
 
-func (share *Share) LastUpdatedBeaconHeight() uint64 {
-	return share.lastUpdatedBeaconHeight
+func (share *Share) LastLPFeesPerShare() map[common.Hash]*big.Int {
+	return share.lastLPFeesPerShare
 }
 
-func (share *Share) TradingFees() map[string]uint64 {
-	res := make(map[string]uint64)
+func (share *Share) TradingFees() map[common.Hash]uint64 {
+	res := make(map[common.Hash]uint64)
 	for k, v := range share.tradingFees {
 		res[k] = v
 	}
@@ -29,42 +32,47 @@ func (share *Share) TradingFees() map[string]uint64 {
 
 func NewShare() *Share {
 	return &Share{
-		tradingFees: make(map[string]uint64),
+		amount:             0,
+		tradingFees:        map[common.Hash]uint64{},
+		lastLPFeesPerShare: map[common.Hash]*big.Int{},
 	}
 }
 
 func NewShareWithValue(
 	amount uint64,
-	tradingFees map[string]uint64,
-	lastUpdatedBeaconHeight uint64,
+	tradingFees map[common.Hash]uint64,
+	lastLPFeesPerShare map[common.Hash]*big.Int,
 ) *Share {
 	return &Share{
-		amount:                  amount,
-		tradingFees:             tradingFees,
-		lastUpdatedBeaconHeight: lastUpdatedBeaconHeight,
+		amount:             amount,
+		tradingFees:        tradingFees,
+		lastLPFeesPerShare: lastLPFeesPerShare,
 	}
 }
 
 func (share *Share) Clone() *Share {
 	res := NewShare()
 	res.amount = share.amount
-	res.lastUpdatedBeaconHeight = share.lastUpdatedBeaconHeight
-	res.tradingFees = make(map[string]uint64)
+	res.tradingFees = map[common.Hash]uint64{}
 	for k, v := range share.tradingFees {
 		res.tradingFees[k] = v
+	}
+	res.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+	for k, v := range share.lastLPFeesPerShare {
+		res.lastLPFeesPerShare[k] = new(big.Int).Set(v)
 	}
 	return res
 }
 
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Amount                  uint64            `json:"Amount"`
-		TradingFees             map[string]uint64 `json:"TradingFees"`
-		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
+		Amount             uint64                   `json:"Amount"`
+		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
+		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{
-		Amount:                  share.amount,
-		TradingFees:             share.tradingFees,
-		LastUpdatedBeaconHeight: share.lastUpdatedBeaconHeight,
+		Amount:             share.amount,
+		TradingFees:        share.tradingFees,
+		LastLPFeesPerShare: share.lastLPFeesPerShare,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -74,17 +82,17 @@ func (share *Share) MarshalJSON() ([]byte, error) {
 
 func (share *Share) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Amount                  uint64            `json:"Amount"`
-		TradingFees             map[string]uint64 `json:"TradingFees"`
-		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
+		Amount             uint64                   `json:"Amount"`
+		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
+		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	share.amount = temp.Amount
-	share.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
 	share.tradingFees = temp.TradingFees
+	share.lastLPFeesPerShare = temp.LastLPFeesPerShare
 	return nil
 }
 
@@ -94,36 +102,10 @@ func (share *Share) getDiff(
 	stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
-	if compareShare == nil {
-		newStateChange.shares[nftID] = &ShareChange{
-			isChanged: true,
-		}
-		for tokenID := range share.tradingFees {
-			if newStateChange.shares[nftID].tokenIDs == nil {
-				newStateChange.shares[nftID].tokenIDs = make(map[string]bool)
-			}
-			newStateChange.shares[nftID].tokenIDs[tokenID] = true
-		}
-	} else {
-		newStateChange.shares[nftID] = &ShareChange{}
-		if share.amount != compareShare.amount || share.lastUpdatedBeaconHeight != compareShare.lastUpdatedBeaconHeight {
-			newStateChange.shares[nftID].isChanged = true
-		}
-		for k, v := range share.tradingFees {
-			if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
-				if newStateChange.shares[nftID].tokenIDs == nil {
-					newStateChange.shares[nftID].tokenIDs = make(map[string]bool)
-				}
-				newStateChange.shares[nftID].tokenIDs[k] = true
-			}
-		}
+	if compareShare == nil || !reflect.DeepEqual(share, compareShare) {
+		newStateChange.shares[nftID] = true
 	}
 	return newStateChange
-}
-
-type ShareChange struct {
-	isChanged bool
-	tokenIDs  map[string]bool
 }
 
 type StakingChange struct {
@@ -133,7 +115,8 @@ type StakingChange struct {
 
 type StateChange struct {
 	poolPairIDs map[string]bool
-	shares      map[string]*ShareChange
+	shares      map[string]bool
+	orders      map[string]map[int]bool
 	orderIDs    map[string]bool
 	stakingPool map[string]map[string]*StakingChange
 }
@@ -141,7 +124,8 @@ type StateChange struct {
 func NewStateChange() *StateChange {
 	return &StateChange{
 		poolPairIDs: make(map[string]bool),
-		shares:      make(map[string]*ShareChange),
+		shares:      make(map[string]bool),
+		orders:      make(map[string]map[int]bool),
 		orderIDs:    make(map[string]bool),
 		stakingPool: make(map[string]map[string]*StakingChange),
 	}

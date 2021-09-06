@@ -123,8 +123,6 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairObjectWithValue(db, hash, value)
 	case Pdexv3ShareObjectType:
 		return newPdexv3ShareObjectWithValue(db, hash, value)
-	case Pdexv3TradingFeeObjectType:
-		return newPdexv3TradingFeeObjectWithValue(db, hash, value)
 	case Pdexv3NftObjectType:
 		return newPdexv3NftObjectWithValue(db, hash, value)
 	case Pdexv3OrderObjectType:
@@ -236,8 +234,6 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairObject(db, hash)
 	case Pdexv3ShareObjectType:
 		return newPdexv3StatusObject(db, hash)
-	case Pdexv3TradingFeeObjectType:
-		return newPdexv3TradingFeeObject(db, hash)
 	case Pdexv3NftObjectType:
 		return newPdexv3NftObject(db, hash)
 	case Pdexv3OrderObjectType:

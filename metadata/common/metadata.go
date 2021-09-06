@@ -419,6 +419,18 @@ func IsPdexv3Type(metadataType int) bool {
 		return true
 	case Pdexv3WithdrawLiquidityResponseMeta:
 		return true
+	case Pdexv3WithdrawLPFeeRequestMeta:
+		return true
+	case Pdexv3WithdrawLPFeeResponseMeta:
+		return true
+	case Pdexv3WithdrawProtocolFeeRequestMeta:
+		return true
+	case Pdexv3WithdrawProtocolFeeResponseMeta:
+		return true
+	case Pdexv3MintPDEXGenesisMeta:
+		return true
+	case Pdexv3MintPDEXBlockRewardMeta:
+		return true
 	case Pdexv3StakingRequestMeta:
 		return true
 	case Pdexv3StakingResponseMeta:

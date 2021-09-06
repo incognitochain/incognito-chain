@@ -12,12 +12,12 @@ import (
 
 // WithdrawOrderRequest
 type WithdrawOrderRequest struct {
-	PoolPairID string              `json:"PoolPairID"`
-	OrderID    string              `json:"OrderID"`
-	TokenID    common.Hash         `json:"TokenID"`
-	Amount     uint64              `json:"Amount"`
-	Receiver   privacy.OTAReceiver `json:"Receiver"`
-	NftID      common.Hash         `json:"NftID"`
+	PoolPairID string                              `json:"PoolPairID"`
+	OrderID    string                              `json:"OrderID"`
+	TokenID    common.Hash                         `json:"TokenID"`
+	Amount     uint64                              `json:"Amount"`
+	Receiver   map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
+	NftID      common.Hash                         `json:"NftID"`
 	metadataCommon.MetadataBase
 }
 
@@ -25,7 +25,7 @@ func NewWithdrawOrderRequest(
 	pairID, orderID string,
 	tokenID common.Hash,
 	amount uint64,
-	recv privacy.OTAReceiver,
+	recv map[common.Hash]privacy.OTAReceiver,
 	nftID common.Hash,
 	metaType int,
 ) (*WithdrawOrderRequest, error) {
@@ -49,15 +49,17 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 
 func (req WithdrawOrderRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	// OTAReceiver check
-	if !req.Receiver.IsValid() {
-		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid OTAReceiver %v", req.Receiver))
-	}
-	if tx.GetSenderAddrLastByte() != req.Receiver.GetShardID() {
-		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError,
-			fmt.Errorf("Invalid shard %d for Receiver - must equal sender shard",
-				req.Receiver.GetShardID()))
+	for _, item := range req.Receiver {
+		if !item.IsValid() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid OTAReceiver %v", item))
+		}
+		if tx.GetSenderAddrLastByte() != item.GetShardID() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Invalid shard %d for Receiver - must equal sender shard",
+					item.GetShardID()))
+		}
 	}
 
 	// Burned coin check
@@ -71,6 +73,15 @@ func (req WithdrawOrderRequest) ValidateSanityData(chainRetriever metadataCommon
 		return false, false, metadataCommon.NewMetadataTxError(
 			metadataCommon.PDEInvalidMetadataValueError,
 			fmt.Errorf("Burned nftID mismatch - %v vs %v on metadata", *burnedTokenID, req.NftID))
+	}
+	receivingTokenList := []common.Hash{req.NftID, req.TokenID}
+	for _, tokenID := range receivingTokenList {
+		_, exists := req.Receiver[tokenID]
+		if !exists {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Missing OTAReceiver for token %v", tokenID))
+		}
 	}
 
 	// Type vs burned token id + amount check
@@ -111,12 +122,13 @@ func (req *WithdrawOrderRequest) CalculateSize() uint64 {
 
 func (req *WithdrawOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	tokenID := req.TokenID
-	if tokenID != common.PRVCoinID {
-		tokenID = common.ConfidentialAssetID
+	for currentTokenID, val := range req.Receiver {
+		if currentTokenID != common.PRVCoinID {
+			currentTokenID = common.ConfidentialAssetID
+		}
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
 	}
-	result = append(result, metadataCommon.OTADeclaration{
-		PublicKey: req.Receiver.PublicKey.ToBytes(), TokenID: tokenID,
-	})
 	return result
 }

@@ -15,13 +15,13 @@ type Pdexv3Params struct {
 	DefaultFeeRateBPS               uint            `json:"DefaultFeeRateBPS"`
 	FeeRateBPS                      map[string]uint `json:"FeeRateBPS"`
 	PRVDiscountPercent              uint            `json:"PRVDiscountPercent"`
-	LimitProtocolFeePercent         uint            `json:"LimitProtocolFeePercent"`
-	LimitStakingPoolRewardPercent   uint            `json:"LimitStakingPoolRewardPercent"`
 	TradingProtocolFeePercent       uint            `json:"TradingProtocolFeePercent"`
 	TradingStakingPoolRewardPercent uint            `json:"TradingStakingPoolRewardPercent"`
-	DefaultStakingPoolsShare        uint            `json:"DefaultStakingPoolsShare"`
+	PDEXRewardPoolPairsShare        map[string]uint `json:"PDEXRewardPoolPairsShare"`
 	StakingPoolsShare               map[string]uint `json:"StakingPoolsShare"`
+	StakingRewardTokens             []common.Hash   `json:"StakingRewardTokens"`
 	MintNftRequireAmount            uint64          `json:"MintNftRequireAmount"`
+	MaxOrdersPerNft                 uint            `json:"MaxOrdersPerNft"`
 }
 
 type ParamsModifyingRequest struct {
@@ -30,40 +30,16 @@ type ParamsModifyingRequest struct {
 }
 
 type ParamsModifyingContent struct {
-	Content Pdexv3Params `json:"Content"`
-	TxReqID common.Hash  `json:"TxReqID"`
-	ShardID byte         `json:"ShardID"`
+	Content  Pdexv3Params `json:"Content"`
+	ErrorMsg string       `json:"ErrorMsg"`
+	TxReqID  common.Hash  `json:"TxReqID"`
+	ShardID  byte         `json:"ShardID"`
 }
 
 type ParamsModifyingRequestStatus struct {
-	Status       int `json:"Status"`
+	Status       int    `json:"Status"`
+	ErrorMsg     string `json:"ErrorMsg"`
 	Pdexv3Params `json:"Pdexv3Params"`
-}
-
-func NewPdexv3ParamsModifyingRequestStatus(
-	status int,
-	feeRateBPS map[string]uint,
-	prvDiscountPercent uint,
-	limitProtocolFeePercent uint,
-	limitStakingPoolRewardPercent uint,
-	tradingProtocolFeePercent uint,
-	tradingStakingPoolRewardPercent uint,
-	stakingPoolsShare map[string]uint,
-	mintNftRequireAmount uint64,
-) *ParamsModifyingRequestStatus {
-	return &ParamsModifyingRequestStatus{
-		Pdexv3Params: Pdexv3Params{
-			FeeRateBPS:                      feeRateBPS,
-			PRVDiscountPercent:              prvDiscountPercent,
-			LimitProtocolFeePercent:         limitProtocolFeePercent,
-			LimitStakingPoolRewardPercent:   limitStakingPoolRewardPercent,
-			TradingProtocolFeePercent:       tradingProtocolFeePercent,
-			TradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
-			StakingPoolsShare:               stakingPoolsShare,
-			MintNftRequireAmount:            mintNftRequireAmount,
-		},
-		Status: status,
-	}
 }
 
 func NewPdexv3ParamsModifyingRequest(

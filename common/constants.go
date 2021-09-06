@@ -68,6 +68,8 @@ var (
 	PRVCoinName           = "PRV"   // To send PRV in custom token
 	ConfidentialAssetID   = Hash{5}
 	ConfidentialAssetName = "CA"
+	PDEXCoinID            = Hash{6}
+	PDEXCoinName          = "PDEX"
 	MaxShardNumber        = 0
 )
 
@@ -188,6 +190,8 @@ const (
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
+const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
+const PDEXDenominatingDecimal = 9
 
 const ETHChainName = "eth"
 

@@ -63,6 +63,8 @@ var (
 	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
 	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
 	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
+	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
+	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
 	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
 	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
 	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
@@ -576,6 +578,14 @@ func Pdexv3ParamsModifyingStatusPrefix() []byte {
 
 func Pdexv3TradeStatusPrefix() []byte {
 	return pdexv3TradeStatusPrefix
+}
+
+func Pdexv3WithdrawalLPFeeStatusPrefix() []byte {
+	return pdexv3WithdrawalLPFeePrefix
+}
+
+func Pdexv3WithdrawalProtocolFeeStatusPrefix() []byte {
+	return pdexv3WithdrawalProtocolFeePrefix
 }
 
 func Pdexv3AddOrderStatusPrefix() []byte {

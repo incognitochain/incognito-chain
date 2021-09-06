@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -34,26 +35,26 @@ func StorePdexv3Params(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	limitProtocolFeePercent uint,
-	limitStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
-	defaultStakingPoolsShare uint,
+	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
+	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
+	maxOrdersPerNft uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
 		defaultFeeRateBPS,
 		feeRateBPS,
 		prvDiscountPercent,
-		limitProtocolFeePercent,
-		limitStakingPoolRewardPercent,
 		tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent,
-		defaultStakingPoolsShare,
+		pdexRewardPoolPairsShare,
 		stakingPoolsShare,
+		stakingRewardTokens,
 		mintNftRequireAmount,
+		maxOrdersPerNft,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {
@@ -106,9 +107,9 @@ func DeletePdexv3WaitingContributions(
 
 func StorePdexv3Share(
 	stateDB *StateDB, poolPairID string, nftID common.Hash,
-	amount, lastUpdatedBeaconHeight uint64,
+	amount uint64, tradingFees map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int,
 ) error {
-	state := NewPdexv3ShareStateWithValue(nftID, amount, lastUpdatedBeaconHeight)
+	state := NewPdexv3ShareStateWithValue(nftID, amount, tradingFees, lastLPFeesPerShare)
 	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID.String())
 	return stateDB.SetStateObject(Pdexv3ShareObjectType, key, state)
 }
@@ -121,24 +122,6 @@ func StorePdexv3PoolPair(
 	state := NewPdexv3PoolPairStateWithValue(poolPairID, poolPair)
 	key := GeneratePdexv3PoolPairObjectKey(poolPairID)
 	return stateDB.SetStateObject(Pdexv3PoolPairObjectType, key, state)
-}
-
-func StorePdexv3TradingFee(
-	stateDB *StateDB,
-	poolPairID, nftID, tokenID string,
-	tradingFee uint64,
-) error {
-	tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
-	if err != nil {
-		return NewStatedbError(StorePdexv3ShareError, err)
-	}
-	key := GeneratePdexv3TradingFeesObjectKey(poolPairID, nftID, tokenID)
-	tradingFeeState := NewPdexv3TradingFeeStateWithValue(*tokenHash, tradingFee)
-	err = stateDB.SetStateObject(Pdexv3TradingFeeObjectType, key, tradingFeeState)
-	if err != nil {
-		return NewStatedbError(StorePdexv3TradingFeesError, err)
-	}
-	return nil
 }
 
 func StorePdexv3NftIDs(stateDB *StateDB, nftIDs map[string]uint64) error {
@@ -196,14 +179,6 @@ func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (
 ) {
 	prefixHash := generatePdexv3ShareObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3Shares(prefixHash)
-}
-
-func GetPdexv3TradingFees(stateDB *StateDB, poolPairID, nftID string) (
-	map[string]Pdexv3TradingFeeState,
-	error,
-) {
-	prefixHash := generatePdexv3TradingFeesObjectPrefix(poolPairID, nftID)
-	return stateDB.iterateWithPdexv3TradingFees(prefixHash)
 }
 
 func GetPdexv3NftIDs(stateDB *StateDB) (map[string]uint64, error) {
