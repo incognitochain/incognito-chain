@@ -84,11 +84,11 @@ func (withdrawalResponse WithdrawalProtocolFeeResponse) VerifyMinerCreatedTxBefo
 	// verify mining tx with the request tx
 	idx := -1
 	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not WithdrawalProtocolFeeResponse instruction
+		if len(inst) < 4 { // this is not WithdrawalProtocolFeeRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3WithdrawProtocolFeeResponseMeta)) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta)) {
 			continue
 		}
 

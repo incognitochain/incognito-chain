@@ -84,11 +84,11 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 	// verify mining tx with the request tx
 	idx := -1
 	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not WithdrawalLPFeeResponse instruction
+		if len(inst) < 4 { // this is not WithdrawalLPFeeRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeResponseMeta)) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta)) {
 			continue
 		}
 

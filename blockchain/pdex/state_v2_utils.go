@@ -102,22 +102,8 @@ func (share *Share) getDiff(
 	stateChange *StateChange,
 ) *StateChange {
 	newStateChange := stateChange
-	if compareShare == nil {
+	if compareShare == nil || !reflect.DeepEqual(share, compareShare) {
 		newStateChange.shares[nftID] = true
-	} else {
-		if share.amount != compareShare.amount {
-			newStateChange.shares[nftID] = true
-		}
-		for k, v := range share.tradingFees {
-			if m, ok := compareShare.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
-				newStateChange.shares[nftID] = true
-			}
-		}
-		for k, v := range share.lastLPFeesPerShare {
-			if m, ok := compareShare.lastLPFeesPerShare[k]; !ok || !reflect.DeepEqual(m, v) {
-				newStateChange.shares[nftID] = true
-			}
-		}
 	}
 	return newStateChange
 }
