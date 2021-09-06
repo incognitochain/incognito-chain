@@ -2,6 +2,7 @@ package metadata_test
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -57,8 +58,8 @@ func TestUnStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	initPublicKey()
 
 	type fields struct {
-		MetadataBase       metadata.MetadataBase
-		CommitteePublicKey string
+		MetadataBaseWithSignature metadata.MetadataBaseWithSignature
+		CommitteePublicKey        string
 	}
 	tests := []struct {
 		name   string
@@ -68,8 +69,10 @@ func TestUnStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		{
 			name: "Wrong metadata type",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.BeaconStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
 			},
@@ -78,8 +81,10 @@ func TestUnStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		{
 			name: "Invalid Format of Public Keys",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: "123",
 			},
@@ -88,8 +93,10 @@ func TestUnStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -99,10 +106,8 @@ func TestUnStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			unStakingMetadata := &metadata.UnStakingMetadata{
-				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
-					MetadataBase: tt.fields.MetadataBase,
-				},
-				CommitteePublicKey: tt.fields.CommitteePublicKey,
+				MetadataBaseWithSignature: tt.fields.MetadataBaseWithSignature,
+				CommitteePublicKey:        tt.fields.CommitteePublicKey,
 			}
 			if got := unStakingMetadata.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("UnStakingMetadata.ValidateMetadataByItself() = %v, want %v", got, tt.want)
@@ -215,8 +220,8 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		Return(byte(0), common.Hash{}, uint64(0), int(0), stakingTx, nil)
 
 	type fields struct {
-		MetadataBase       metadata.MetadataBase
-		CommitteePublicKey string
+		MetadataBaseWithSignature metadata.MetadataBaseWithSignature
+		CommitteePublicKey        string
 	}
 	type args struct {
 		tx                  metadata.Transaction
@@ -236,8 +241,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Get Subtitute Committees Public Key Error",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -250,8 +257,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Public Key Is Not In Committees List Or Subtitutes List",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -264,8 +273,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Can't Get Staker Info In Beacon Chain",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -278,8 +289,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Public Key Is Not In Staker Info List",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -292,8 +305,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Staker Info Is Null",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -306,8 +321,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Can't Get Transaction By Hash With Staker Info's Transaction Hash",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -321,8 +338,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Sender Of Staking Tx From Staker Info != Requester Public Key",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -337,8 +356,10 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		{
 			name: "Key has already been unstaked",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -350,30 +371,30 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			want:    false,
 			wantErr: true,
 		},
-		/*{*/
-		//name: "Valid Input",
-		//fields: fields{
-		//MetadataBase: metadata.MetadataBase{
-		//Type: metadata.UnStakingMeta,
-		//},
-		//CommitteePublicKey: key1,
-		//},
-		//args: args{
-		//tx:                  stakingTx,
-		//beaconViewRetriever: beaconViewValidInput,
-		//chainRetriever:      chainViewValidInput,
-		//},
-		//want:    true,
-		//wantErr: false,
-		/*},*/
+		{
+			name: "Valid Input",
+			fields: fields{
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
+				},
+				CommitteePublicKey: key1,
+			},
+			args: args{
+				tx:                  stakingTx,
+				beaconViewRetriever: beaconViewValidInput,
+				chainRetriever:      chainViewValidInput,
+			},
+			want:    true,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			unStakingMetadata := metadata.UnStakingMetadata{
-				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
-					MetadataBase: tt.fields.MetadataBase,
-				},
-				CommitteePublicKey: tt.fields.CommitteePublicKey,
+				MetadataBaseWithSignature: tt.fields.MetadataBaseWithSignature,
+				CommitteePublicKey:        tt.fields.CommitteePublicKey,
 			}
 			got, err := unStakingMetadata.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.shardID, tt.args.transactionStateDB)
 			if (err != nil) != tt.wantErr {
@@ -398,8 +419,8 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 	normalTx.On("IsPrivacy").Return(false)
 
 	type fields struct {
-		MetadataBase       metadata.MetadataBase
-		CommitteePublicKey string
+		MetadataBaseWithSignature metadata.MetadataBaseWithSignature
+		CommitteePublicKey        string
 	}
 	type args struct {
 		chainRetriever      metadata.ChainRetriever
@@ -419,8 +440,10 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "Wrong Metadata Type",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.BeaconStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.BeaconStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -432,8 +455,10 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid Format Committee Public Keys",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: "123",
 			},
@@ -445,8 +470,10 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "Transaction Is Privacy",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -460,8 +487,10 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{
-					Type: metadata.UnStakingMeta,
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
 				},
 				CommitteePublicKey: key1,
 			},
@@ -476,10 +505,8 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			unStakingMetadata := metadata.UnStakingMetadata{
-				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
-					MetadataBase: tt.fields.MetadataBase,
-				},
-				CommitteePublicKey: tt.fields.CommitteePublicKey,
+				MetadataBaseWithSignature: tt.fields.MetadataBaseWithSignature,
+				CommitteePublicKey:        tt.fields.CommitteePublicKey,
 			}
 			got, got1, err := unStakingMetadata.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
 			if (err != nil) != tt.wantErr {
@@ -496,42 +523,42 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 	}
 }
 
-/*func TestNewUnStakingMetadata(t *testing.T) {*/
-//type args struct {
-//committeePublicKey string
-//}
-//tests := []struct {
-//name    string
-//args    args
-//want    *metadata.UnStakingMetadata
-//wantErr bool
-//}{
-//{
-//name: "Valid Input",
-//args: args{
-//committeePublicKey: "keys",
-//},
-//want: &metadata.UnStakingMetadata{
-//MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
-//MetadataBase: metadata.MetadataBase{
-//Type: metadata.UnStakingMeta,
-//},
-//},
-//CommitteePublicKey: "keys",
-//},
-//wantErr: false,
-//},
-//}
-//for _, tt := range tests {
-//t.Run(tt.name, func(t *testing.T) {
-//got, err := metadata.NewUnStakingMetadata(tt.args.committeePublicKey)
-//if (err != nil) != tt.wantErr {
-//t.Errorf("NewUnStakingMetadata() error = %v, wantErr %v", err, tt.wantErr)
-//return
-//}
-//if !reflect.DeepEqual(got, tt.want) {
-//t.Errorf("NewUnStakingMetadata() = %v, want %v", got, tt.want)
-//}
-//})
-//}
-/*}*/
+func TestNewUnStakingMetadata(t *testing.T) {
+	type args struct {
+		committeePublicKey string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *metadata.UnStakingMetadata
+		wantErr bool
+	}{
+		{
+			name: "Valid Input",
+			args: args{
+				committeePublicKey: "keys",
+			},
+			want: &metadata.UnStakingMetadata{
+				MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+					MetadataBase: metadata.MetadataBase{
+						Type: metadata.UnStakingMeta,
+					},
+				},
+				CommitteePublicKey: "keys",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := metadata.NewUnStakingMetadata(tt.args.committeePublicKey)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewUnStakingMetadata() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewUnStakingMetadata() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

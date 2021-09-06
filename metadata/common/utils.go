@@ -8,6 +8,7 @@ import (
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -484,6 +485,11 @@ func IsPortalRelayingMetaType(metaType int) bool {
 	return res
 }
 
+func IsPortalMetaTypeV4(metaType int) bool {
+	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
+	return res
+}
+
 //genTokenID generates a (deterministically) random tokenID for the request transaction.
 //From now on, users cannot generate their own tokenID.
 //The generated tokenID is calculated as the hash of the following components:
@@ -499,4 +505,20 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 type OTADeclaration struct {
 	PublicKey [32]byte
 	TokenID   common.Hash
+}
+
+func CheckIncognitoAddress(address, txRandom string) (bool, error, int) {
+	version := 0
+	if len(txRandom) > 0 {
+		version = 2
+		_, _, err := coin.ParseOTAInfoFromString(address, txRandom)
+		if err != nil {
+			return false, err, version
+		}
+	} else {
+		version = 1
+		_, err := AssertPaymentAddressAndTxVersion(address, 1)
+		return err == nil, err, version
+	}
+	return true, nil, version
 }

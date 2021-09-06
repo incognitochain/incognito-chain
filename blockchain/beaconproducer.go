@@ -126,7 +126,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	newBeaconBlock.Header.AddBeaconHeaderHash(
 		instructionHash,
 		shardStatesHash,
-		GetKeccak256MerkleRoot(flattenInsts),
+		types.GetKeccak256MerkleRoot(flattenInsts),
 		hashes.BeaconCommitteeAndValidatorHash,
 		hashes.BeaconCandidateHash,
 		hashes.ShardCandidateHash,
@@ -155,28 +155,42 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
 
-	if blockchain.IsLastBeaconHeightInEpoch(curView.BeaconHeight) {
+	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
+
 		featureStateDB := curView.GetBeaconFeatureStateDB()
 		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
-
 		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
 		isSplitRewardForCustodian := totalLockedCollateral > 0
 		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
 		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
 			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
-			curView,
-			newBeaconBlock.Header.Height,
-			curView.Epoch,
-			isSplitRewardForCustodian,
-			percentCustodianRewards,
-		)
-		if err != nil {
-			return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+
+		if newBeaconBlock.Header.Height < config.Param().ConsensusParam.EnableSlashingHeightV2 {
+			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+				curView,
+				newBeaconBlock.Header.Height,
+				curView.Epoch,
+				isSplitRewardForCustodian,
+				percentCustodianRewards,
+			)
+			if err != nil {
+				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+			}
+		} else {
+			rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+				curView,
+				newBeaconBlock.Header.Height-1,
+				newBeaconBlock.Header.Epoch-1,
+				isSplitRewardForCustodian,
+				percentCustodianRewards,
+			)
+			if err != nil {
+				return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+			}
 		}
 	}
 
@@ -415,7 +429,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 				instructions = append(instructions, beaconRootInst)
 			}
 		}
-	} else if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+	} else if curView.CommitteeEngineVersion() >= committeestate.SLASHING_VERSION {
 		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment()

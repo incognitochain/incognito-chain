@@ -3716,7 +3716,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodianKey5 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress5").String()
 	custodianKey6 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress6").String()
 	custodianKey7 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress7").String()
-
 	custodian1 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_1, 7000*1e9, 6680*1e9,
 		map[string]uint64{
@@ -3730,7 +3729,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		},
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
-
 	custodian2 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_2, 1000*1e9, 976000000000,
 		map[string]uint64{
@@ -3743,7 +3741,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		},
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
-
 	custodian3 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_3, 200*1e9, 0,
 		map[string]uint64{
@@ -3764,7 +3761,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 				ETH_ID: 2 * 1e9,
 			},
 		})
-
 	custodian4 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_4, 0, 0,
 		map[string]uint64{
@@ -3783,7 +3779,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 				ETH_ID: 1e9,
 			},
 		})
-
 	custodian5 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress5", 20*1e9, 20*1e9,
 		map[string]uint64{},
@@ -3792,7 +3787,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 			pCommon.PortalBNBIDStr: "bnbAddress5",
 		},
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
-
 	custodian6 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress6", 10*1e9, 10*1e9,
 		map[string]uint64{},
@@ -3805,7 +3799,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		}, map[string]uint64{
 			ETH_ID: 1 * 1e9,
 		}, map[string]map[string]uint64{})
-
 	custodian7 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress7", 0, 0,
 		map[string]uint64{},
@@ -3818,7 +3811,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		}, map[string]uint64{
 			ETH_ID: 2 * 1e9,
 		}, map[string]map[string]uint64{})
-
 	custodians := map[string]*statedb.CustodianState{
 		custodianKey1: custodian1,
 		custodianKey2: custodian2,
@@ -3828,7 +3820,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		custodianKey6: custodian6,
 		custodianKey7: custodian7,
 	}
-
 	// redeem match prv only
 	redeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	redeemRequest1 := statedb.NewRedeemRequestWithValue(
@@ -3838,7 +3829,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_1, CUS_BNB_ADDRESS_1, 8*1e9),
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 0.3*1e9),
 		}, 4600000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
-
 	// redeem match prv and eth
 	redeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-btc-2").String()
 	redeemRequest2 := statedb.NewRedeemRequestWithValue(
@@ -3847,7 +3837,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_3, CUS_BTC_ADDRESS_3, 0.05*1e9),
 		}, 30000000, 1500, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
-
 	// redeem match eth only
 	redeemReqKey3 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	redeemRequest3 := statedb.NewRedeemRequestWithValue(
@@ -3856,13 +3845,11 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_4, CUS_BNB_ADDRESS_3, 10*1e9),
 		}, 30000000, 1500, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
-
 	matchedRedeemRequest := map[string]*statedb.RedeemRequest{
 		redeemReqKey1: redeemRequest1,
 		redeemReqKey2: redeemRequest2,
 		redeemReqKey3: redeemRequest3,
 	}
-
 	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 	wRedeemRequest3 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-3", pCommon.PortalBNBIDStr,
@@ -3870,11 +3857,9 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 0.1*1e9),
 		}, 4600000, 1500, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
-
 	wRedeemRequests := map[string]*statedb.RedeemRequest{
 		wRedeemReqKey3: wRedeemRequest3,
 	}
-
 	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
 		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
@@ -3887,7 +3872,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 				LockedAmountCollateral: 20 * 1e9,
 			},
 		}, 2000000, 1500, 1500, 0)
-
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
 		"porting-bnb-2", common.Hash{}, pCommon.PortalBNBIDStr,
@@ -3903,7 +3887,6 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 				},
 			},
 		}, 2000000, 1500, 1500, 0)
-
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
 		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
@@ -3918,24 +3901,20 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 				},
 			},
 		}, 2000000, 1500, 1500, 0)
-
 	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
 		wPortingReqKey1: wPortingRequest1,
 		wPortingReqKey2: wPortingRequest2,
 		wPortingReqKey3: wPortingRequest3,
 	}
-
 	s.currentPortalStateForProducer.CustodianPoolState = custodians
 	s.currentPortalStateForProducer.MatchedRedeemRequests = matchedRedeemRequest
 	s.currentPortalStateForProducer.WaitingRedeemRequests = wRedeemRequests
 	s.currentPortalStateForProducer.WaitingPortingRequests = wPortingRequests
-
 	s.currentPortalStateForProcess.CustodianPoolState = cloneCustodians(custodians)
 	s.currentPortalStateForProcess.MatchedRedeemRequests = cloneRedeemRequests(matchedRedeemRequest)
 	s.currentPortalStateForProcess.WaitingRedeemRequests = cloneRedeemRequests(wRedeemRequests)
 	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
 }
-
 func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 	fmt.Println("Running TestAutoLiquidationCustodian - beacon height 3161 ...")
 	bc := s.blockChain
@@ -3948,24 +3927,18 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 	//pm := NewPortalManager()
 	//newMatchedRedeemReqIDs := []string{}
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
-
 	s.SetupTestAutoLiquidation()
-
 	newInsts, err := s.blockChain.CheckAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.portalParams)
 	s.Equal(nil, err)
-
 	// process new instructions redeem
 	err = processPortalInstructions(
 		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
-
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
 	s.Equal(expectedResult.custodianPool, s.currentPortalStateForProducer.CustodianPoolState)
 	s.Equal(expectedResult.waitingPortingRes, s.currentPortalStateForProducer.WaitingPortingRequests)
-
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
-
 */
 
 /*

@@ -39,6 +39,7 @@ const (
 	NetworkError
 	TokenIsInvalidError
 	GetClonedBeaconBestStateError
+	GetBeaconViewByBlockHashError
 	GetBeaconBestBlockHashError
 	GetBeaconBestBlockError
 	GetClonedShardBestStateError
@@ -131,6 +132,16 @@ const (
 	RestoreCandidateShardWaitingForNextRandom
 
 	GetTotalStakerError
+
+	// Portal v4
+	GetPortalV4StateError
+	GetPortalV4ParamsError
+	GetPortalV4ShieldReqStatusError
+	GetPortalV4UnshieldReqStatusError
+	GetPortalV4BatchUnshieldReqStatusError
+	GetPortalV4FeeReplacementReqStatusError
+	GetPortalV4SubmitConfirmedTxStatusError
+	GetPortalV4ConvertVaultTxStatusError
 
 	CacheQueueError
 
@@ -276,6 +287,13 @@ var ErrCodeMessage = map[int]struct {
 	GetPdexv3StateError:                {-14001, "Get pDex V3 state error"},
 	GenerateOTAFailError:               {-14002, "Generate ota fail"},
 	GetPdexv3ParamsModyfingStatusError: {-14003, "Get pDex v3 params modyfing status error"},
+	// Portal v4
+	GetPortalV4ShieldReqStatusError:         {-12501, "Get portal v4 shielding request status error"},
+	GetPortalV4UnshieldReqStatusError:       {-12502, "Get portal v4 unshielding request status error"},
+	GetPortalV4BatchUnshieldReqStatusError:  {-12503, "Get portal v4 batch unshielding request status error"},
+	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
+	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
+	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,13 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"strings"
 )
-
-func (httpServer *HttpServer) isPortalV3RPC(methodName string) bool {
-	result, _ := common.SliceExists(PortalV3RPCs, methodName)
-	return result
-}
 
 /*
 ====== Portal state
@@ -108,7 +104,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	if !httpServer.config.BlockChain.IsPortalToken(0, tokenID) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, tokenID, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID should be a portal token"))
 	}
 
@@ -173,7 +169,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenId, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
