@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sort"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
@@ -18,51 +20,11 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type stateProducerV2 struct {
 	stateProducerBase
-}
-
-func buildModifyParamsInst(
-	params metadataPdexv3.Pdexv3Params,
-	shardID byte,
-	reqTxID common.Hash,
-	status string,
-) []string {
-	modifyingParamsReqContent := metadataPdexv3.ParamsModifyingContent{
-		Content: params,
-		TxReqID: reqTxID,
-		ShardID: shardID,
-	}
-	modifyingParamsReqContentBytes, _ := json.Marshal(modifyingParamsReqContent)
-	return []string{
-		strconv.Itoa(metadataCommon.Pdexv3ModifyParamsMeta),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(modifyingParamsReqContentBytes),
-	}
-}
-
-func isValidPdexv3Params(params Params) bool {
-	if params.DefaultFeeRateBPS > MaxFeeRateBPS {
-		return false
-	}
-	for _, feeRate := range params.FeeRateBPS {
-		if feeRate > MaxFeeRateBPS {
-			return false
-		}
-	}
-	if params.PRVDiscountPercent > MaxPRVDiscountPercent {
-		return false
-	}
-	if params.TradingStakingPoolRewardPercent+params.TradingProtocolFeePercent > 100 {
-		return false
-	}
-	if params.LimitProtocolFeePercent+params.LimitStakingPoolRewardPercent > 100 {
-		return false
-	}
-	return true
 }
 
 func (sp *stateProducerV2) addLiquidity(
@@ -229,12 +191,42 @@ func (sp *stateProducerV2) addLiquidity(
 	return res, poolPairs, waitingContributions, nil
 }
 
+func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
+	daoPaymentAddressStr := config.Param().IncognitoDAOAddress
+	keyWallet, err := wallet.Base58CheckDeserialize(daoPaymentAddressStr)
+	if err != nil {
+		return [][]string{}, errors.New("Could not deserialize DAO payment address")
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return [][]string{}, errors.New("DAO payment address is invalid")
+	}
+
+	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
+
+	mintingPDEXGenesisContent := metadataPdexv3.MintPDEXGenesisContent{
+		MintingPaymentAddress: daoPaymentAddressStr,
+		MintingAmount:         uint64(GenesisMintingAmount * math.Pow(10, common.PDEXDenominatingDecimal)),
+		ShardID:               shardID,
+	}
+	mintingPDEXGenesisContentBytes, _ := json.Marshal(mintingPDEXGenesisContent)
+
+	inst := []string{
+		strconv.Itoa(metadataCommon.Pdexv3MintPDEXGenesisMeta),
+		strconv.Itoa(int(shardID)),
+		metadataPdexv3.RequestAcceptedChainStatus,
+		string(mintingPDEXGenesisContentBytes),
+	}
+
+	return [][]string{inst}, nil
+}
+
 func (sp *stateProducerV2) modifyParams(
 	txs []metadata.Transaction,
 	beaconHeight uint64,
-	params Params,
-	stakingPoolStates map[string]*StakingPoolState,
-) ([][]string, Params, map[string]*StakingPoolState, error) {
+	params *Params,
+	pairs map[string]*PoolPairState,
+	stakingPools map[string]*StakingPoolState,
+) ([][]string, *Params, map[string]*StakingPoolState, error) {
 	instructions := [][]string{}
 
 	for _, tx := range txs {
@@ -242,25 +234,26 @@ func (sp *stateProducerV2) modifyParams(
 		txReqID := *tx.Hash()
 		metaData, ok := tx.GetMetadata().(*metadataPdexv3.ParamsModifyingRequest)
 		if !ok {
-			return instructions, params, stakingPoolStates, errors.New("Can not parse params modifying metadata")
+			return instructions, params, stakingPools, errors.New("Can not parse params modifying metadata")
 		}
 
 		// check conditions
 		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
-		isValidParams := isValidPdexv3Params(newParams)
+		isValidParams, errorMsg := isValidPdexv3Params(&newParams, pairs, stakingPools)
 
 		status := ""
 		if isValidParams {
 			status = metadataPdexv3.RequestAcceptedChainStatus
-			params = newParams
-			stakingPoolStates = addStakingPoolState(stakingPoolStates, params.StakingPoolsShare)
+			params = &newParams
+			stakingPools = addStakingPoolState(stakingPools, params.StakingPoolsShare)
 		} else {
 			status = metadataPdexv3.RequestRejectedChainStatus
 		}
 
-		inst := buildModifyParamsInst(
+		inst := v2utils.BuildModifyParamsInst(
 			metadataParams,
+			errorMsg,
 			shardID,
 			txReqID,
 			status,
@@ -268,17 +261,53 @@ func (sp *stateProducerV2) modifyParams(
 		instructions = append(instructions, inst)
 	}
 
-	return instructions, params, stakingPoolStates, nil
+	return instructions, params, stakingPools, nil
+}
+
+func (sp *stateProducerV2) mintPDEX(
+	mintingAmount uint64,
+	params *Params,
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	instructions := [][]string{}
+
+	totalRewardShare := uint64(0)
+	for _, shareAmount := range params.PDEXRewardPoolPairsShare {
+		totalRewardShare += uint64(shareAmount)
+	}
+
+	for pairID, shareRewardAmount := range params.PDEXRewardPoolPairsShare {
+		pair, isExisted := pairs[pairID]
+		if !isExisted {
+			return instructions, pairs, fmt.Errorf("Could not find pair %v for distributing PDEX reward", pairID)
+		}
+
+		// pairReward = mintingAmount * shareRewardAmount / totalRewardShare
+		pairReward := new(big.Int).Mul(new(big.Int).SetUint64(mintingAmount), new(big.Int).SetUint64(uint64(shareRewardAmount)))
+		pairReward = new(big.Int).Div(pairReward, new(big.Int).SetUint64(totalRewardShare))
+
+		if !pairReward.IsUint64() {
+			return instructions, pairs, fmt.Errorf("Could not calculate PDEX reward for pair %v", pairID)
+		}
+
+		(&v2utils.TradingPair{&pair.state}).AddFee(
+			common.PDEXCoinID, pairReward.Uint64(), BaseLPFeesPerShare,
+			0, 0, []common.Hash{})
+
+		instructions = append(instructions, v2utils.BuildMintPDEXInst(pairID, pairReward.Uint64())...)
+	}
+
+	return instructions, pairs, nil
 }
 
 func (sp *stateProducerV2) trade(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
-	params Params,
+	params *Params,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	var invalidTxs []metadataCommon.Transaction
-	var fees, sellAmounts []uint64
+	var fees, sellAmounts map[string]uint64
 	var feeInPRVMap map[string]bool
 	var err error
 	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
@@ -287,10 +316,10 @@ func (sp *stateProducerV2) trade(
 	}
 	sort.SliceStable(txs, func(i, j int) bool {
 		// compare the fee / sellAmount ratio by comparing products
-		fi := big.NewInt(0).SetUint64(fees[i])
-		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
-		fj := big.NewInt(0).SetUint64(fees[j])
-		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
+		fi := big.NewInt(0).SetUint64(fees[txs[i].Hash().String()])
+		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[txs[j].Hash().String()]))
+		fj := big.NewInt(0).SetUint64(fees[txs[j].Hash().String()])
+		fj.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[txs[i].Hash().String()]))
 
 		// sort descending
 		return fi.Cmp(fj) == 1
@@ -308,6 +337,7 @@ func (sp *stateProducerV2) trade(
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
+		// get relevant, cloned data from state for the trade path
 		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		tradeOutputReceiver, exists := currentTrade.Receiver[tokenToBuy]
@@ -319,7 +349,7 @@ func (sp *stateProducerV2) trade(
 		}
 
 		acceptedTradeMd, _, err := v2.MaybeAcceptTrade(
-			currentTrade.SellAmount, currentTrade.TradingFee, currentTrade.TradePath,
+			currentTrade.SellAmount, 0, currentTrade.TradePath,
 			tradeOutputReceiver, reserves, tradeDirections,
 			tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList,
 		)
@@ -328,6 +358,28 @@ func (sp *stateProducerV2) trade(
 			result = append(result, refundInstructions...)
 			continue
 		}
+
+		acceptedTradeMd, err = v2.TrackFee(
+			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], BaseLPFeesPerShare,
+			currentTrade.TradePath, reserves, tradeDirections, orderbookList,
+			acceptedTradeMd,
+			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+		)
+		if err != nil {
+			Logger.log.Warnf("Error handling fee distribution: %v", err)
+			result = append(result, refundInstructions...)
+			continue
+		}
+
+		// apply state changes for trade consistency in the same block
+		for index, pairID := range currentTrade.TradePath {
+			changedPair := pairs[pairID]
+			changedPair.state = *reserves[index]
+			orderbook, _ := orderbookList[index].(*Orderbook) // type is determined; see tradePathFromState()
+			changedPair.orderbook = *orderbook
+			pairs[pairID] = changedPair
+		}
+		// "accept" instruction
 		action := instruction.NewAction(
 			acceptedTradeMd,
 			*tx.Hash(),
@@ -357,27 +409,9 @@ func (sp *stateProducerV2) addOrder(
 	txs []metadata.Transaction,
 	pairs map[string]*PoolPairState,
 	nftIDs map[string]uint64,
-	params Params,
+	params *Params,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
-	var invalidTxs []metadataCommon.Transaction
-	var fees, sellAmounts []uint64
-	var feeInPRVMap map[string]bool
-	var err error
-	txs, feeInPRVMap, fees, sellAmounts, invalidTxs, err = getWeightedFee(txs, pairs, params)
-	if err != nil {
-		return result, pairs, fmt.Errorf("Error converting fee %v", err)
-	}
-	sort.SliceStable(txs, func(i, j int) bool {
-		// compare the fee / sellAmount ratio by comparing products
-		fi := big.NewInt(0).SetUint64(fees[i])
-		fi.Mul(fi, big.NewInt(0).SetUint64(sellAmounts[j]))
-		fj := big.NewInt(0).SetUint64(fees[j])
-		fi.Mul(fj, big.NewInt(0).SetUint64(sellAmounts[i]))
-
-		// sort descending
-		return fi.Cmp(fj) == 1
-	})
 
 TransactionLoop:
 	for _, tx := range txs {
@@ -387,7 +421,7 @@ TransactionLoop:
 		}
 		// sender & receiver shard must be the same
 		refundInstructions, err := getRefundedAddOrderInstructions(currentOrderReq,
-			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
+			*tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
 		if err != nil {
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
@@ -416,11 +450,6 @@ TransactionLoop:
 			}
 		}
 
-		if currentOrderReq.TradingFee >= currentOrderReq.SellAmount {
-			Logger.log.Warnf("Order %s cannot afford trading fee of %d", orderID, currentOrderReq.TradingFee)
-			result = append(result, refundInstructions...)
-			continue TransactionLoop
-		}
 		// prepare order data
 		sellAmountAfterFee := currentOrderReq.SellAmount
 
@@ -462,20 +491,6 @@ TransactionLoop:
 		result = append(result, acceptedAction.StringSlice())
 	}
 
-	// refund invalid-by-fee addOrder requests
-	for _, tx := range invalidTxs {
-		currentOrderReq, ok := tx.GetMetadata().(*metadataPdexv3.AddOrderRequest)
-		if !ok {
-			return result, pairs, fmt.Errorf("Cannot parse AddOrder metadata")
-		}
-		refundInstructions, err := getRefundedAddOrderInstructions(currentOrderReq,
-			feeInPRVMap[tx.Hash().String()], *tx.Hash(), byte(tx.GetValidationEnv().ShardID()))
-		if err != nil {
-			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
-		}
-		result = append(result, refundInstructions...)
-	}
-
 	Logger.log.Warnf("AddOrder instructions: %v", result)
 	return result, pairs, nil
 }
@@ -491,6 +506,24 @@ TransactionLoop:
 		if !ok {
 			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
+
+		// always return NFT in response
+		nftReceiver, exists := currentOrderReq.Receiver[currentOrderReq.NftID]
+		if !exists {
+			return result, pairs, fmt.Errorf("NFT receiver not found in WithdrawOrder Request")
+		}
+		withdrawOutputReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenID]
+		if !exists {
+			return result, pairs, fmt.Errorf("WithdrawOrder receiver not found")
+		}
+		recvStr, err := nftReceiver.String()
+		if err != nil {
+			return result, pairs, fmt.Errorf("NFT receiver invalid in WithdrawOrder Request")
+		}
+		mintInstruction, err := instruction.NewMintNftWithValue(
+			currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
+		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
+		result = append(result, mintInstruction)
 
 		// default to reject
 		currentAction := instruction.NewAction(
@@ -514,27 +547,35 @@ TransactionLoop:
 			if ord.Id() == orderID {
 				if ord.NftID() == currentOrderReq.NftID {
 					var currentBalance uint64
+					withdrawAmount := currentOrderReq.Amount
 					switch currentOrderReq.TokenID {
+					// cap withdrawAmount & set new balance in state
 					case pair.state.Token0ID():
 						currentBalance = ord.Token0Balance()
+						if currentBalance < withdrawAmount {
+							withdrawAmount = currentBalance
+						}
+						ord.SetToken0Balance(currentBalance - withdrawAmount)
 					case pair.state.Token1ID():
 						currentBalance = ord.Token1Balance()
+						if currentBalance < withdrawAmount {
+							withdrawAmount = currentBalance
+						}
+						ord.SetToken1Balance(currentBalance - withdrawAmount)
 					default:
 						Logger.log.Warnf("Invalid withdraw tokenID %v for order %s",
 							currentOrderReq.TokenID, orderID)
 						result = append(result, currentAction.StringSlice())
 						continue TransactionLoop
 					}
+					// apply orderbook changes for withdraw consistency in the same block
+					pairs[currentOrderReq.PoolPairID] = pair
 
-					withdrawAmount := currentOrderReq.Amount
-					if currentBalance < currentOrderReq.Amount {
-						withdrawAmount = currentBalance
-					}
-					// accepted
+					// "accepted" metadata
 					currentAction.Content = &metadataPdexv3.AcceptedWithdrawOrder{
 						PoolPairID: currentOrderReq.PoolPairID,
 						OrderID:    currentOrderReq.OrderID,
-						Receiver:   currentOrderReq.Receiver,
+						Receiver:   withdrawOutputReceiver,
 						TokenID:    currentOrderReq.TokenID,
 						Amount:     withdrawAmount,
 					}
@@ -555,6 +596,162 @@ TransactionLoop:
 	return result, pairs, nil
 }
 
+func (sp *stateProducerV2) withdrawLPFee(
+	txs []metadata.Transaction,
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	instructions := [][]string{}
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := *tx.Hash()
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalLPFeeRequest)
+		if !ok {
+			return instructions, pairs, errors.New("Can not parse withdrawal LP fee metadata")
+		}
+
+		_, isExisted := metaData.Receivers[metaData.NftID]
+		if !isExisted {
+			return instructions, pairs, fmt.Errorf("NFT receiver not found in WithdrawalLPFeeRequest")
+		}
+		addressStr, err := metaData.Receivers[metaData.NftID].String()
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("NFT receiver invalid in WithdrawalLPFeeRequest")
+		}
+		mintNftInst := instruction.NewMintNftWithValue(metaData.NftID, addressStr, shardID, txReqID)
+		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
+		}
+
+		instructions = append(instructions, mintNftInstStr)
+
+		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
+			metaData.PoolPairID,
+			metaData.NftID,
+			map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestRejectedChainStatus,
+		)
+
+		// check conditions
+		poolPair, isExisted := pairs[metaData.PoolPairID]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		share, isExisted := poolPair.shares[metaData.NftID.String()]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		// compute amount of received LP fee
+		reward, err := poolPair.RecomputeLPFee(metaData.NftID)
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
+		}
+
+		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		notEnoughOTA := false
+		for tokenID := range reward {
+			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
+				notEnoughOTA = true
+				break
+			}
+			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
+				Address: metaData.Receivers[tokenID],
+				Amount:  reward[tokenID],
+			}
+		}
+		if notEnoughOTA {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
+			metaData.PoolPairID,
+			metaData.NftID,
+			receiversInfo,
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestAcceptedChainStatus,
+		)
+
+		// update state after fee withdrawal
+		share.tradingFees = map[common.Hash]uint64{}
+		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		}
+
+		instructions = append(instructions, acceptedInst...)
+	}
+
+	return instructions, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawProtocolFee(
+	txs []metadata.Transaction,
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	instructions := [][]string{}
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := *tx.Hash()
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalProtocolFeeRequest)
+		if !ok {
+			return instructions, pairs, errors.New("Can not parse withdrawal protocol fee metadata")
+		}
+
+		rejectInst := v2utils.BuildWithdrawProtocolFeeInsts(
+			metaData.PoolPairID,
+			map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestRejectedChainStatus,
+		)
+
+		// check conditions
+		pair, isExisted := pairs[metaData.PoolPairID]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		reward := pair.state.ProtocolFees()
+
+		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		for tokenID := range reward {
+			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
+				return instructions, pairs, fmt.Errorf("Could not find receiver for token %v\n", tokenID)
+			}
+			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
+				Address: metaData.Receivers[tokenID],
+				Amount:  reward[tokenID],
+			}
+		}
+
+		acceptedInst := v2utils.BuildWithdrawProtocolFeeInsts(
+			metaData.PoolPairID,
+			receiversInfo,
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestAcceptedChainStatus,
+		)
+
+		// update state after fee withdrawal
+		pair.state.SetProtocolFees(map[common.Hash]uint64{})
+
+		instructions = append(instructions, acceptedInst...)
+	}
+
+	return instructions, pairs, nil
+}
+
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
 	beaconHeight uint64,
@@ -568,31 +765,25 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
+
+		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+		if err != nil {
+			return res, poolPairs, err
+		}
+
 		_, found := nftIDs[metaData.NftID()]
 		if metaData.NftID() == utils.EmptyString || !found {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		rootPoolPair, ok := poolPairs[metaData.PoolPairID()]
 		if !ok || rootPoolPair == nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		shares, ok := rootPoolPair.shares[metaData.NftID()]
 		if !ok || shares == nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		//clone props gonna change before process
@@ -604,11 +795,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
 		)
 		if err != nil {
-			insts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, poolPairs, err
-			}
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 

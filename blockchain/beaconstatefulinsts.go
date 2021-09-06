@@ -7,14 +7,17 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/portal"
-	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/utils"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 // build instructions at beacon chain before syncing to shards
@@ -72,7 +75,12 @@ func collectStatefulActions(
 			metadata.PortalCustodianTopupMetaV3,
 			metadata.PortalTopUpWaitingPortingRequestMetaV3,
 			metadata.PortalRequestPortingMetaV3,
-			metadata.PortalRedeemRequestMetaV3:
+			metadata.PortalRedeemRequestMetaV3,
+			metadataCommon.PortalV4ShieldingRequestMeta,
+			metadataCommon.PortalV4UnshieldingRequestMeta,
+			metadataCommon.PortalV4FeeReplacementRequestMeta,
+			metadataCommon.PortalV4SubmitConfirmedTxMeta,
+			metadataCommon.PortalV4ConvertVaultRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -108,7 +116,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 		return utils.EmptyStringMatrix, err
 	}
-	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB()
+	relayingHeaderState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(
+		featureStateDB,
+		beaconBestState.portalStateV4,
+		portalParams.GetPortalParamsV4(beaconHeight))
 	if err != nil {
 		Logger.log.Error(err)
 		return utils.EmptyStringMatrix, err
@@ -147,7 +162,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			contentStr := action[1]
 			newInst := [][]string{}
 
-			// group portal instructions
+			// group portal instructions (both portal relaying, portal v3, portal v4)
 			isCollected := portal.CollectPortalInstructions(pm, metaType, action, shardID)
 			if isCollected {
 				continue
@@ -246,17 +261,17 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	// handle portal instructions
-	// include portal v3, portal relaying header chain
+	// include portal v3, portal v4, portal relaying header chain
 	portalInsts, err := blockchain.handlePortalInsts(
 		featureStateDB,
 		beaconHeight-1,
 		currentPortalStateV3,
+		currentPortalStateV4,
 		relayingHeaderState,
 		rewardForCustodianByEpoch,
 		portalParams,
 		pm,
 	)
-
 	if err != nil {
 		Logger.log.Error(err)
 		return instructions, err

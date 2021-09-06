@@ -89,7 +89,6 @@ func (txBuilder *TxBuilderV2) Build(
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
-
 	case metadataCommon.Pdexv3AddOrderRequestMeta:
 		switch inst[1] {
 		case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
@@ -123,6 +122,42 @@ func (txBuilder *TxBuilderV2) Build(
 			return nil, nil
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		}
+	case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
+		if len(inst) == 4 {
+			tx, err = v2.WithdrawLPFee(
+				inst[2],
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+		} else {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+	case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:
+		if len(inst) == 4 {
+			tx, err = v2.WithdrawProtocolFee(
+				inst[2],
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+		} else {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
+	case metadataCommon.Pdexv3MintPDEXGenesisMeta:
+		if len(inst) == 4 {
+			tx, err = v2.MintPDEXGenesis(
+				inst[2],
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+		} else {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	}
 

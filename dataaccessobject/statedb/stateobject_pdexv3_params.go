@@ -12,13 +12,13 @@ type Pdexv3Params struct {
 	defaultFeeRateBPS               uint
 	feeRateBPS                      map[string]uint
 	prvDiscountPercent              uint
-	limitProtocolFeePercent         uint
-	limitStakingPoolRewardPercent   uint
 	tradingProtocolFeePercent       uint
 	tradingStakingPoolRewardPercent uint
-	defaultStakingPoolsShare        uint
+	pdexRewardPoolPairsShare        map[string]uint
 	stakingPoolsShare               map[string]uint
+	stakingRewardTokens             []common.Hash
 	mintNftRequireAmount            uint64
+	maxOrdersPerNft                 uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -30,26 +30,26 @@ func (pp Pdexv3Params) FeeRateBPS() map[string]uint {
 func (pp Pdexv3Params) PRVDiscountPercent() uint {
 	return pp.prvDiscountPercent
 }
-func (pp Pdexv3Params) LimitProtocolFeePercent() uint {
-	return pp.limitProtocolFeePercent
-}
-func (pp Pdexv3Params) LimitStakingPoolRewardPercent() uint {
-	return pp.limitStakingPoolRewardPercent
-}
 func (pp Pdexv3Params) TradingProtocolFeePercent() uint {
 	return pp.tradingProtocolFeePercent
 }
 func (pp Pdexv3Params) TradingStakingPoolRewardPercent() uint {
 	return pp.tradingStakingPoolRewardPercent
 }
-func (pp Pdexv3Params) DefaultStakingPoolsShare() uint {
-	return pp.defaultStakingPoolsShare
+func (pp Pdexv3Params) PDEXRewardPoolPairsShare() map[string]uint {
+	return pp.pdexRewardPoolPairsShare
 }
 func (pp Pdexv3Params) StakingPoolsShare() map[string]uint {
 	return pp.stakingPoolsShare
 }
+func (pp Pdexv3Params) StakingRewardTokens() []common.Hash {
+	return pp.stakingRewardTokens
+}
 func (pp Pdexv3Params) MintNftRequireAmount() uint64 {
 	return pp.mintNftRequireAmount
+}
+func (pp Pdexv3Params) MaxOrdersPerNft() uint {
+	return pp.maxOrdersPerNft
 }
 
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
@@ -57,24 +57,24 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
 		PRVDiscountPercent              uint
-		LimitProtocolFeePercent         uint
-		LimitStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
-		DefaultStakingPoolsShare        uint
+		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
+		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
+		MaxOrdersPerNft                 uint
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
 		PRVDiscountPercent:              pp.prvDiscountPercent,
-		LimitProtocolFeePercent:         pp.limitProtocolFeePercent,
-		LimitStakingPoolRewardPercent:   pp.limitStakingPoolRewardPercent,
 		TradingProtocolFeePercent:       pp.tradingProtocolFeePercent,
 		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
-		DefaultStakingPoolsShare:        pp.defaultStakingPoolsShare,
+		PDEXRewardPoolPairsShare:        pp.pdexRewardPoolPairsShare,
 		StakingPoolsShare:               pp.stakingPoolsShare,
+		StakingRewardTokens:             pp.stakingRewardTokens,
 		MintNftRequireAmount:            pp.mintNftRequireAmount,
+		MaxOrdersPerNft:                 pp.maxOrdersPerNft,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -87,13 +87,13 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		DefaultFeeRateBPS               uint
 		FeeRateBPS                      map[string]uint
 		PRVDiscountPercent              uint
-		LimitProtocolFeePercent         uint
-		LimitStakingPoolRewardPercent   uint
 		TradingProtocolFeePercent       uint
 		TradingStakingPoolRewardPercent uint
-		DefaultStakingPoolsShare        uint
+		PDEXRewardPoolPairsShare        map[string]uint
 		StakingPoolsShare               map[string]uint
+		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
+		MaxOrdersPerNft                 uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -102,13 +102,13 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.defaultFeeRateBPS = temp.DefaultFeeRateBPS
 	pp.feeRateBPS = temp.FeeRateBPS
 	pp.prvDiscountPercent = temp.PRVDiscountPercent
-	pp.limitProtocolFeePercent = temp.LimitProtocolFeePercent
-	pp.limitStakingPoolRewardPercent = temp.LimitStakingPoolRewardPercent
 	pp.tradingProtocolFeePercent = temp.TradingProtocolFeePercent
 	pp.tradingStakingPoolRewardPercent = temp.TradingStakingPoolRewardPercent
-	pp.defaultStakingPoolsShare = temp.DefaultStakingPoolsShare
+	pp.pdexRewardPoolPairsShare = temp.PDEXRewardPoolPairsShare
 	pp.stakingPoolsShare = temp.StakingPoolsShare
+	pp.stakingRewardTokens = temp.StakingRewardTokens
 	pp.mintNftRequireAmount = temp.MintNftRequireAmount
+	pp.maxOrdersPerNft = temp.MaxOrdersPerNft
 	return nil
 }
 
@@ -120,25 +120,25 @@ func NewPdexv3ParamsWithValue(
 	defaultFeeRateBPS uint,
 	feeRateBPS map[string]uint,
 	prvDiscountPercent uint,
-	limitProtocolFeePercent uint,
-	limitStakingPoolRewardPercent uint,
 	tradingProtocolFeePercent uint,
 	tradingStakingPoolRewardPercent uint,
-	defaultStakingPoolsShare uint,
+	pdexRewardPoolPairsShare map[string]uint,
 	stakingPoolsShare map[string]uint,
+	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
+	maxOrdersPerNft uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
 		feeRateBPS:                      feeRateBPS,
 		prvDiscountPercent:              prvDiscountPercent,
-		limitProtocolFeePercent:         limitProtocolFeePercent,
-		limitStakingPoolRewardPercent:   limitStakingPoolRewardPercent,
 		tradingProtocolFeePercent:       tradingProtocolFeePercent,
 		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
-		defaultStakingPoolsShare:        defaultStakingPoolsShare,
+		pdexRewardPoolPairsShare:        pdexRewardPoolPairsShare,
 		stakingPoolsShare:               stakingPoolsShare,
+		stakingRewardTokens:             stakingRewardTokens,
 		mintNftRequireAmount:            mintNftRequireAmount,
+		maxOrdersPerNft:                 maxOrdersPerNft,
 	}
 }
 

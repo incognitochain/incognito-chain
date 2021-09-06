@@ -2,6 +2,8 @@ package common
 
 import (
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 const (
@@ -53,25 +55,31 @@ const (
 	PDETradingFeesDistributionMeta        = 209
 
 	// pDEX v3
-	Pdexv3ModifyParamsMeta              = 270
-	Pdexv3AddLiquidityRequestMeta       = 271
-	Pdexv3AddLiquidityResponseMeta      = 272
-	Pdexv3WithdrawLiquidityRequestMeta  = 273
-	Pdexv3WithdrawLiquidityResponseMeta = 274
-	Pdexv3TradeRequestMeta              = 275
-	Pdexv3TradeResponseMeta             = 276
-	Pdexv3AddOrderRequestMeta           = 277
-	Pdexv3AddOrderResponseMeta          = 278
-	Pdexv3WithdrawOrderRequestMeta      = 279
-	Pdexv3WithdrawOrderResponseMeta     = 280
-	Pdexv3UserMintNftRequestMeta        = 281
-	Pdexv3UserMintNftResponseMeta       = 282
-	Pdexv3MintNftRequestMeta            = 283
-	Pdexv3MintNftResponseMeta           = 284
-	Pdexv3StakingRequestMeta            = 285
-	Pdexv3StakingResponseMeta           = 286
-	Pdexv3UnstakingRequestMeta          = 287
-	Pdexv3UnstakingResponseMeta         = 288
+	Pdexv3ModifyParamsMeta                = 270
+	Pdexv3AddLiquidityRequestMeta         = 271
+	Pdexv3AddLiquidityResponseMeta        = 272
+	Pdexv3WithdrawLiquidityRequestMeta    = 273
+	Pdexv3WithdrawLiquidityResponseMeta   = 274
+	Pdexv3TradeRequestMeta                = 275
+	Pdexv3TradeResponseMeta               = 276
+	Pdexv3AddOrderRequestMeta             = 277
+	Pdexv3AddOrderResponseMeta            = 278
+	Pdexv3WithdrawOrderRequestMeta        = 279
+	Pdexv3WithdrawOrderResponseMeta       = 280
+	Pdexv3UserMintNftRequestMeta          = 281
+	Pdexv3UserMintNftResponseMeta         = 282
+	Pdexv3MintNftRequestMeta              = 283
+	Pdexv3MintNftResponseMeta             = 284
+	Pdexv3StakingRequestMeta              = 285
+	Pdexv3StakingResponseMeta             = 286
+	Pdexv3UnstakingRequestMeta            = 287
+	Pdexv3UnstakingResponseMeta           = 288
+	Pdexv3WithdrawLPFeeRequestMeta        = 289
+	Pdexv3WithdrawLPFeeResponseMeta       = 290
+	Pdexv3WithdrawProtocolFeeRequestMeta  = 291
+	Pdexv3WithdrawProtocolFeeResponseMeta = 292
+	Pdexv3MintPDEXGenesisMeta             = 293
+	Pdexv3MintPDEXBlockRewardMeta         = 294
 
 	// portal
 	PortalCustodianDepositMeta                  = 100
@@ -139,6 +147,16 @@ const (
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
 
+	// PORTAL V4
+	PortalV4ShieldingRequestMeta      = 260
+	PortalV4ShieldingResponseMeta     = 261
+	PortalV4UnshieldingRequestMeta    = 262
+	PortalV4UnshieldingResponseMeta   = 263
+	PortalV4UnshieldBatchingMeta      = 264
+	PortalV4FeeReplacementRequestMeta = 265
+	PortalV4SubmitConfirmedTxMeta     = 266
+	PortalV4ConvertVaultRequestMeta   = 267
+
 	InitTokenRequestMeta  = 244
 	InitTokenResponseMeta = 245
 
@@ -174,6 +192,8 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingResponseMeta,
 	InitTokenResponseMeta,
 	Pdexv3AddLiquidityResponseMeta,
 	Pdexv3MintNftResponseMeta,
@@ -182,6 +202,9 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3TradeResponseMeta,
 	Pdexv3AddOrderResponseMeta,
 	Pdexv3WithdrawOrderResponseMeta,
+	Pdexv3WithdrawLPFeeResponseMeta,
+	Pdexv3WithdrawProtocolFeeResponseMeta,
+	Pdexv3MintPDEXGenesisMeta,
 	Pdexv3StakingResponseMeta,
 	Pdexv3UnstakingResponseMeta,
 }
@@ -273,4 +296,21 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmMetaV2),
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
 	strconv.Itoa(BurningBSCConfirmMeta),
+}
+
+var portalV4MetaTypes = []int{
+	PortalV4ShieldingRequestMeta,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingRequestMeta,
+	PortalV4UnshieldBatchingMeta,
+	PortalV4FeeReplacementRequestMeta,
+	PortalV4SubmitConfirmedTxMeta,
+	PortalV4ConvertVaultRequestMeta,
+}
+
+// NOTE: add new records when add new feature flags
+var FeatureFlagWithMetaTypes = map[string][]int{
+	common.PortalRelayingFlag: portalRelayingMetaTypes,
+	common.PortalV3Flag:       portalMetaTypesV3,
+	common.PortalV4Flag:       portalV4MetaTypes,
 }

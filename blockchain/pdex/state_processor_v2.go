@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -353,11 +354,10 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 
 func (sp *stateProcessorV2) modifyParams(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	inst []string,
-	params Params,
+	params *Params,
 	stakingPoolStates map[string]*StakingPoolState,
-) (Params, map[string]*StakingPoolState, error) {
+) (*Params, map[string]*StakingPoolState, error) {
 	if len(inst) != 4 {
 		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
 		Logger.log.Errorf(msg)
@@ -376,7 +376,7 @@ func (sp *stateProcessorV2) modifyParams(
 	modifyingStatus := inst[2]
 	var reqTrackStatus int
 	if modifyingStatus == metadataPdexv3.RequestAcceptedChainStatus {
-		params = Params(actionData.Content)
+		*params = Params(actionData.Content)
 		reqTrackStatus = metadataPdexv3.ParamsModifyingSuccessStatus
 		stakingPoolStates = addStakingPoolState(stakingPoolStates, params.StakingPoolsShare)
 	} else {
@@ -385,6 +385,7 @@ func (sp *stateProcessorV2) modifyParams(
 
 	modifyingReqStatus := metadataPdexv3.ParamsModifyingRequestStatus{
 		Status:       reqTrackStatus,
+		ErrorMsg:     actionData.ErrorMsg,
 		Pdexv3Params: metadataPdexv3.Pdexv3Params(actionData.Content),
 	}
 	modifyingReqStatusBytes, _ := json.Marshal(modifyingReqStatus)
@@ -395,7 +396,7 @@ func (sp *stateProcessorV2) modifyParams(
 		modifyingReqStatusBytes,
 	)
 	if err != nil {
-		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking shielding request tx - Error: %v", err)
+		Logger.log.Errorf("PDex Params Modifying: An error occurred while tracking request tx - Error: %v", err)
 	}
 
 	return params, stakingPoolStates, nil
@@ -405,6 +406,7 @@ func (sp *stateProcessorV2) trade(
 	stateDB *statedb.StateDB,
 	inst []string,
 	pairs map[string]*PoolPairState,
+	params *Params,
 ) (map[string]*PoolPairState, error) {
 	var currentTrade *instruction.Action
 	var trackedStatus metadataPdexv3.TradeStatus
@@ -427,6 +429,13 @@ func (sp *stateProcessorV2) trade(
 			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
 			if err != nil {
 				return pairs, err
+			}
+
+			for tokenID, amount := range md.RewardEarned[index] {
+				reserveState.AddFee(
+					tokenID, amount, BaseLPFeesPerShare,
+					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+				)
 			}
 
 			orderbook := pair.orderbook
@@ -468,10 +477,11 @@ func (sp *stateProcessorV2) trade(
 	if err != nil {
 		return pairs, err
 	}
+	txID := currentTrade.RequestTxID()
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3TradeStatusPrefix(),
-		currentTrade.RequestTxID[:],
+		txID[:],
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
@@ -518,7 +528,8 @@ func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 }
 
 func (sp *stateProcessorV2) acceptWithdrawLiquidity(
-	stateDB *statedb.StateDB, inst []string,
+	stateDB *statedb.StateDB,
+	inst []string,
 	poolPairs map[string]*PoolPairState,
 	beaconHeight uint64,
 ) (map[string]*PoolPairState, *v2.WithdrawStatus, error) {
@@ -618,10 +629,11 @@ func (sp *stateProcessorV2) addOrder(
 	if err != nil {
 		return pairs, err
 	}
+	txID := currentOrder.RequestTxID()
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3AddOrderStatusPrefix(),
-		currentOrder.RequestTxID[:],
+		txID[:],
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
@@ -698,13 +710,175 @@ func (sp *stateProcessorV2) withdrawOrder(
 	if err != nil {
 		return pairs, err
 	}
+	txID := currentOrder.RequestTxID()
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawOrderStatusPrefix(),
-		currentOrder.RequestTxID[:],
+		txID[:],
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
+}
+
+func (sp *stateProcessorV2) withdrawLPFee(
+	stateDB *statedb.StateDB,
+	inst []string,
+	beaconHeight uint64,
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.WithdrawalLPFeeContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	withdrawalStatus := inst[2]
+	var reqTrackStatus int
+	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+		// check conditions
+		poolPair, isExisted := pairs[actionData.PoolPairID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PoolPairID)
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		share, isExisted := poolPair.shares[actionData.NftID.String()]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NftID.String())
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		// update state after fee wirthdrawal
+		share.tradingFees = map[common.Hash]uint64{}
+		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		}
+
+		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
+	} else {
+		reqTrackStatus = metadataPdexv3.WithdrawLPFeeFailedStatus
+	}
+
+	withdrawalReqStatus := metadataPdexv3.WithdrawalLPFeeStatus{
+		Status:    reqTrackStatus,
+		Receivers: actionData.Receivers,
+	}
+	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawalLPFeeStatusPrefix(),
+		[]byte(actionData.TxReqID.String()),
+		withdrawalReqStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("PDex v3 Withdrawal LP Fee: An error occurred while tracking request tx - Error: %v", err)
+	}
+	return pairs, err
+}
+
+func (sp *stateProcessorV2) withdrawProtocolFee(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.WithdrawalProtocolFeeContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	withdrawalStatus := inst[2]
+	var reqTrackStatus int
+	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+		// check conditions
+		poolPair, isExisted := pairs[actionData.PoolPairID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PoolPairID)
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		poolPair.state.SetProtocolFees(map[common.Hash]uint64{})
+		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeSuccessStatus
+	} else {
+		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeFailedStatus
+	}
+
+	withdrawalReqStatus := metadataPdexv3.WithdrawalProtocolFeeStatus{
+		Status:    reqTrackStatus,
+		Receivers: actionData.Receivers,
+	}
+	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawalProtocolFeeStatusPrefix(),
+		[]byte(actionData.TxReqID.String()),
+		withdrawalReqStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("PDex v3 Withdrawal Protocol Fee: An error occurred while tracking request tx - Error: %v", err)
+	}
+	return pairs, err
+}
+
+func (sp *stateProcessorV2) mintPDEX(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.MintPDEXBlockRewardContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	pair, isExisted := pairs[actionData.PoolPairID]
+	if !isExisted {
+		msg := fmt.Sprintf("Could not find pair %s for minting", actionData.PoolPairID)
+		Logger.log.Errorf(msg)
+		return pairs, fmt.Errorf(msg)
+	}
+
+	pairReward := actionData.Amount
+
+	(&v2utils.TradingPair{&pair.state}).AddFee(
+		common.PDEXCoinID, pairReward, BaseLPFeesPerShare,
+		0, 0, []common.Hash{},
+	)
+
+	return pairs, err
 }
 
 func (sp *stateProcessorV2) userMintNft(

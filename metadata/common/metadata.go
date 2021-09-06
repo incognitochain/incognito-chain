@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/privacy"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
@@ -70,6 +68,7 @@ type ChainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetBTCChainParams() *chaincfg.Params
 	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 	IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool
@@ -81,11 +80,17 @@ type ChainRetriever interface {
 	GetBNBDataHash(blockHeight int64) ([]byte, error)
 	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
 	IsPortalExchangeRateToken(beaconHeight uint64, tokenIDStr string) bool
-	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
-	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
-	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
-	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error)
-	IsEnableFeature(featureFlag int, epoch uint64) bool
+	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64, version uint) (uint64, error)
+	IsPortalToken(beaconHeight uint64, tokenIDStr string, version uint) (bool, error)
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error)
+	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64, version uint) (bool, error)
+	IsEnableFeature(featureFlag string, epoch uint64) bool
+	GetPortalV4MinUnshieldAmount(tokenIDStr string, beaconHeight uint64) uint64
+	GetPortalV4GeneralMultiSigAddress(tokenIDStr string, beaconHeight uint64) string
+	GetPortalReplacementAddress(beaconHeight uint64) string
+	CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool
+	GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64
+	GetFinalBeaconHeight() uint64
 }
 
 type BeaconViewRetriever interface {
@@ -416,6 +421,18 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3WithdrawLiquidityRequestMeta:
 		return true
 	case Pdexv3WithdrawLiquidityResponseMeta:
+		return true
+	case Pdexv3WithdrawLPFeeRequestMeta:
+		return true
+	case Pdexv3WithdrawLPFeeResponseMeta:
+		return true
+	case Pdexv3WithdrawProtocolFeeRequestMeta:
+		return true
+	case Pdexv3WithdrawProtocolFeeResponseMeta:
+		return true
+	case Pdexv3MintPDEXGenesisMeta:
+		return true
+	case Pdexv3MintPDEXBlockRewardMeta:
 		return true
 	case Pdexv3StakingRequestMeta:
 		return true

@@ -63,6 +63,8 @@ var (
 	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
 	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
 	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
+	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
+	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
 	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
 	pdexv3TradingFeesPrefix                 = []byte("pdexv3-tradingfees-")
 	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
@@ -123,6 +125,18 @@ var (
 	portalExternalTxPrefix      = []byte("portalexttx-")
 	portalConfirmProofPrefix    = []byte("portalproof-")
 	withdrawCollateralProofType = []byte("0-")
+
+	// portal v4
+	portalV4StatusPrefix                         = []byte("portalv4status-")
+	portalUTXOStatePrefix                        = []byte("portalutxo-")
+	portalShieldRequestPrefix                    = []byte("portalshieldrequest-")
+	portalWaitingUnshieldRequestsPrefix          = []byte("portalwaitingunshieldrequest-")
+	portalUnshieldRequestsProcessedPrefix        = []byte("portalprocessingbatchunshield-")
+	portalUnshieldRequestStatusPrefix            = []byte("unshieldrequest-")
+	portalBatchUnshieldRequestStatusPrefix       = []byte("batchunshield-")
+	portalUnshielFeeReplacementBatchStatusPrefix = []byte("unshieldrequestbatchfeereplacementprocessed-")
+	portalUnshielSubmitConfirmedTxStatusPrefix   = []byte("unshieldrequestsubmitconfirmedtx-")
+	portalConvertVaultRequestPrefix              = []byte("portalconvertvaultrequest-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -566,6 +580,14 @@ func Pdexv3TradeStatusPrefix() []byte {
 	return pdexv3TradeStatusPrefix
 }
 
+func Pdexv3WithdrawalLPFeeStatusPrefix() []byte {
+	return pdexv3WithdrawalLPFeePrefix
+}
+
+func Pdexv3WithdrawalProtocolFeeStatusPrefix() []byte {
+	return pdexv3WithdrawalProtocolFeePrefix
+}
+
 func Pdexv3AddOrderStatusPrefix() []byte {
 	return pdexv3AddOrderStatusPrefix
 }
@@ -646,6 +668,60 @@ func Pdexv3StakingStatusPrefix() []byte {
 // pDex v3 prefix for unstaking status
 func Pdexv3UnstakingStatusPrefix() []byte {
 	return pdexv3UnstakingStatusPrefix
+}
+
+// TODO: rename
+// PORTAL V4
+// Portal v4 prefix for portal v4 status
+func PortalShieldingRequestStatusPrefix() []byte {
+	return portalShieldRequestPrefix
+}
+
+func PortalUnshieldRequestStatusPrefix() []byte {
+	return portalUnshieldRequestStatusPrefix
+}
+
+func PortalBatchUnshieldRequestStatusPrefix() []byte {
+	return portalBatchUnshieldRequestStatusPrefix
+}
+
+func PortaConvertVaultRequestStatusPrefix() []byte {
+	return portalConvertVaultRequestPrefix
+}
+
+// Portal v4 prefix hash of the key
+
+func GetPortalV4StatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(portalV4StatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPortalUTXOStatePrefix(tokenID string) []byte {
+	h := common.HashH(append(portalUTXOStatePrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetShieldingRequestPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalShieldRequestPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetWaitingUnshieldRequestPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalWaitingUnshieldRequestsPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetProcessedUnshieldRequestBatchPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalUnshieldRequestsProcessedPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func PortalUnshielFeeReplacementBatchStatusPrefix() []byte {
+	return portalUnshielFeeReplacementBatchStatusPrefix
+}
+
+func PortalSubmitConfirmedTxStatusPrefix() []byte {
+	return portalUnshielSubmitConfirmedTxStatusPrefix
 }
 
 var _ = func() (_ struct{}) {
