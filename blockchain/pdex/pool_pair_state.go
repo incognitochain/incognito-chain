@@ -276,7 +276,10 @@ func (p *PoolPairState) updateShareValue(
 		}
 	}
 
-	share.lastLPFeesPerShare = p.state.LPFeesPerShare()
+	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+	for tokenID, value := range p.state.LPFeesPerShare() {
+		share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+	}
 
 	var err error
 	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)

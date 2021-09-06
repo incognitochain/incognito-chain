@@ -683,7 +683,10 @@ func (sp *stateProducerV2) withdrawLPFee(
 
 		// update state after fee withdrawal
 		share.tradingFees = map[common.Hash]uint64{}
-		share.lastLPFeesPerShare = poolPair.state.LPFeesPerShare()
+		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		}
 
 		instructions = append(instructions, acceptedInst...)
 	}

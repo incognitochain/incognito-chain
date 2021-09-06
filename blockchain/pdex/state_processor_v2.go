@@ -759,9 +759,12 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			return pairs, errors.New(msg)
 		}
 
-		// update state after fee wirthdrawl
+		// update state after fee wirthdrawal
 		share.tradingFees = map[common.Hash]uint64{}
-		share.lastLPFeesPerShare = poolPair.state.LPFeesPerShare()
+		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
 	} else {

@@ -64,6 +64,7 @@ func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	ps.nftID = temp.NftID
 	ps.amount = temp.Amount
 	ps.tradingFees = temp.TradingFees
+	ps.lastLPFeesPerShare = temp.LastLPFeesPerShare
 	return nil
 }
 
