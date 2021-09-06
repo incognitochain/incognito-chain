@@ -53,14 +53,13 @@ func NewShareWithValue(
 func (share *Share) Clone() *Share {
 	res := NewShare()
 	res.amount = share.amount
-	res.tradingFees = make(map[common.Hash]uint64)
+	res.tradingFees = map[common.Hash]uint64{}
 	for k, v := range share.tradingFees {
 		res.tradingFees[k] = v
 	}
-	res.lastLPFeesPerShare = make(map[common.Hash]*big.Int)
+	res.lastLPFeesPerShare = map[common.Hash]*big.Int{}
 	for k, v := range share.lastLPFeesPerShare {
-		res.lastLPFeesPerShare[k] = new(big.Int)
-		*res.lastLPFeesPerShare[k] = *v
+		res.lastLPFeesPerShare[k] = new(big.Int).Set(v)
 	}
 	return res
 }

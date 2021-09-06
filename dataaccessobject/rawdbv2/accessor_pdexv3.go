@@ -298,13 +298,17 @@ func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
 		pp.token0VirtualAmount, pp.token1VirtualAmount, pp.amplifier,
 		pp.lpFeesPerShare, pp.protocolFees, pp.stakingPoolFees,
 	)
+	res.token0VirtualAmount = new(big.Int).Set(pp.token0VirtualAmount)
+	res.token1VirtualAmount = new(big.Int).Set(pp.token1VirtualAmount)
+	res.lpFeesPerShare = map[common.Hash]*big.Int{}
 	for k, v := range pp.lpFeesPerShare {
-		res.lpFeesPerShare[k] = new(big.Int)
-		*res.lpFeesPerShare[k] = *v
+		res.lpFeesPerShare[k] = new(big.Int).Set(v)
 	}
+	res.protocolFees = map[common.Hash]uint64{}
 	for k, v := range pp.protocolFees {
 		res.protocolFees[k] = v
 	}
+	res.stakingPoolFees = map[common.Hash]uint64{}
 	for k, v := range pp.stakingPoolFees {
 		res.stakingPoolFees[k] = v
 	}
