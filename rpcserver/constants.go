@@ -335,6 +335,7 @@ const (
 	getSignedRawReplaceFeeTransaction          = "getportalsignedrawreplacebyfeetransaction"
 	createAndSendTxPortalConvertVaultRequest   = "createandsendtxportalconvertvault"
 	getPortalConvertVaultTxStatus              = "getportalconvertvaultstatus"
+	generatePortalShieldMultisigAddress        = "generateportalshieldmultisigaddress"
 
 	// stake
 	unstake = "createunstaketransaction"
@@ -438,5 +439,6 @@ var FeatureFlagWithMethodNames = map[string][]string{
 		createAndSendTxPortalConvertVaultRequest,
 		getPortalConvertVaultTxStatus,
 		getPortalV4Params,
+		generatePortalShieldMultisigAddress,
 	},
 }

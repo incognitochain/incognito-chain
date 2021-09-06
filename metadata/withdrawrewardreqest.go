@@ -3,13 +3,14 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type WithDrawRewardRequest struct {
@@ -125,9 +126,9 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	}
 	result := &WithDrawRewardRequest{
 		MetadataBaseWithSignature: *metadataBase,
-		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
-		TokenID:        *tokenID,
-		Version:        common.SALARY_VER_FIX_HASH,
+		PaymentAddress:            requesterPublicKeySet.KeySet.PaymentAddress,
+		TokenID:                   *tokenID,
+		Version:                   common.SALARY_VER_FIX_HASH,
 	}
 
 	// versionFloat, ok := data["Version"].(float64)
@@ -146,7 +147,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transa
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	if tx.IsPrivacy()  && tx.GetVersion() <= 1 {
+	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
 		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
 	}
 
@@ -158,15 +159,15 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	//check token valid (!= PRV)
 	tokenIDReq := withDrawRewardRequest.TokenID
 	isTokenValid := false
+	var err error
 	if !tokenIDReq.IsEqual(&common.PRVCoinID) {
-		allTokenID, err := chainRetriever.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()))
+		bridgeDB := beaconViewRetriever.GetBeaconFeatureStateDB()
+		isTokenValid, err = statedb.IsBridgeToken(bridgeDB, tokenIDReq)
 		if err != nil {
 			return false, err
-		}
-		for _, availableCoinID := range allTokenID {
-			if cmp := tokenIDReq.IsEqual(&availableCoinID); cmp {
-				isTokenValid = true
-				break
+		} else {
+			if !isTokenValid {
+				isTokenValid = statedb.PrivacyTokenIDExisted(transactionStateDB, tokenIDReq)
 			}
 		}
 		if !isTokenValid {

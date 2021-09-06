@@ -18,7 +18,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
-
 	if includeCommittee {
 		var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
 		if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
