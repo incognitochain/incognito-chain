@@ -49,8 +49,11 @@ func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection byte) (uint6
 func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection byte, ord *MatchingOrder) (uint64, uint64, *big.Int, *big.Int, error) {
 	token0Change := big.NewInt(0)
 	token1Change := big.NewInt(0)
-
 	maxDeltaX := big.NewInt(0).SetUint64(maxSellAmountAfterFee)
+
+	if IsEmptyLiquidity(*tp.Pdexv3PoolPair) {
+		return 0, 0, nil, nil, fmt.Errorf("No liquidity in pool for swap")
+	}
 
 	// x, y represent selling & buying reserves, respectively
 	var xV, yV *big.Int
@@ -160,8 +163,8 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
-func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver, 
-	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte, 
+func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver,
+	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte,
 	tokenToBuy common.Hash, minAmount uint64, orderbooks []OrderBookIterator,
 ) (*metadataPdexv3.AcceptedTrade, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
@@ -232,4 +235,9 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 	}
 	acceptedMeta.Amount = totalBuyAmount
 	return &acceptedMeta, reserves, nil
+}
+
+func IsEmptyLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {
+	return poolPair.Token0VirtualAmount().Cmp(big.NewInt(0)) <= 0 &&
+		poolPair.Token1VirtualAmount().Cmp(big.NewInt(0)) <= 0
 }
