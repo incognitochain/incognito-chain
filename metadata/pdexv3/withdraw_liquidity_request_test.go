@@ -19,16 +19,22 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
 	assert.Nil(t, err)
 
+	validationEnv := &metadataCommonMocks.ValidationEnviroment{}
+	validationEnv.On("ShardID").Return(0)
+
 	notBurnTx := &metadataCommonMocks.Transaction{}
 	notBurnTx.On("GetTxBurnData").Return(false, nil, nil, errors.New("Not tx burn"))
+	notBurnTx.On("GetValidationEnv").Return(validationEnv)
 
 	notMactchTokenIDTx := &metadataCommonMocks.Transaction{}
 	notMactchTokenIDTx.On("GetTxBurnData").Return(true, nil, &common.PRVCoinID, nil)
+	notMactchTokenIDTx.On("GetValidationEnv").Return(validationEnv)
 
 	notMatchAmountCoin := &coinMocks.Coin{}
 	notMatchAmountCoin.On("GetValue").Return(uint64(100))
 	notMactchAmountTx := &metadataCommonMocks.Transaction{}
 	notMactchAmountTx.On("GetTxBurnData").Return(true, notMatchAmountCoin, tokenHash, nil)
+	notMactchAmountTx.On("GetValidationEnv").Return(validationEnv)
 
 	validCoin := &coinMocks.Coin{}
 	validCoin.On("GetValue").Return(uint64(1))
@@ -36,14 +42,17 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	normalTx := &metadataCommonMocks.Transaction{}
 	normalTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	normalTx.On("GetType").Return(common.TxNormalType)
+	normalTx.On("GetValidationEnv").Return(validationEnv)
 
 	customTx := &metadataCommonMocks.Transaction{}
 	customTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
 	customTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	customTx.On("GetValidationEnv").Return(validationEnv)
 
 	validTx := &metadataCommonMocks.Transaction{}
 	validTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	validTx.On("GetValidationEnv").Return(validationEnv)
 
 	type fields struct {
 		MetadataBase metadataCommon.MetadataBase

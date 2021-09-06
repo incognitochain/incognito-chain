@@ -228,15 +228,12 @@ type pdexParam struct {
 	AdminAddress           string `mapstructure:"admin_address"`
 	Params                 struct {
 		DefaultFeeRateBPS               uint            `mapstructure:"default_fee_rate_bps"`
-		FeeRateBPS                      map[string]uint `mapstructure:"fee_rate_bps"`
 		PRVDiscountPercent              uint            `mapstructure:"prv_discount_percent"`
-		LimitProtocolFeePercent         uint            `mapstructure:"limit_protocol_fee_percent"`
-		LimitStakingPoolRewardPercent   uint            `mapstructure:"limit_staking_pool_reward_percent"`
 		TradingProtocolFeePercent       uint            `mapstructure:"trading_protocol_fee_percent"`
 		TradingStakingPoolRewardPercent uint            `mapstructure:"trading_staking_pool_reward_percent"`
-		DefaultStakingPoolsShare        uint            `mapstructure:"default_staking_pool_share"`
 		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
 		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
+		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
 	} `mapstructure:"params"`
 }
 

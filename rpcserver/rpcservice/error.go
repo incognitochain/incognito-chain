@@ -138,6 +138,9 @@ const (
 	GetPdexv3StateError
 	GenerateOTAFailError
 	GetPdexv3ParamsModyfingStatusError
+	GetPdexv3LPFeeError
+	GetPdexv3WithdrawlLPFeeStatusError
+	GetPdexv3WithdrawlProtocolFeeStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.

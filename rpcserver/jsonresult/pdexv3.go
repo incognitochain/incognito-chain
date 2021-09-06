@@ -13,3 +13,8 @@ type Pdexv3State struct {
 	NftIDs               map[string]uint64                      `json:"NftIDs"`
 	StakingPools         map[string]*pdex.StakingPoolState      `json:"StakingPools"`
 }
+
+type Pdexv3LPValue struct {
+	PoolValue  map[string]uint64 `json:"PoolValue"`
+	TradingFee map[string]uint64 `json:"TradingFee"`
+}

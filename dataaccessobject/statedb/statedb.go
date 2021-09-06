@@ -1956,25 +1956,10 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (map[string]Pdexv
 	return shares, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3TradingFees(prefix []byte) (map[string]Pdexv3TradingFeeState, error) {
-	tradingFees := map[string]Pdexv3TradingFeeState{}
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		tradingFeeState := NewPdexv3TradingFeeState()
-		err := json.Unmarshal(newValue, tradingFeeState)
-		if err != nil {
-			return tradingFees, err
-		}
-		tradingFees[tradingFeeState.tokenID.String()] = *tradingFeeState
-	}
-	return tradingFees, nil
-}
-
-func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (map[string]Pdexv3OrderState, error) {
+func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (
+	map[string]Pdexv3OrderState,
+	error,
+) {
 	orders := map[string]Pdexv3OrderState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)

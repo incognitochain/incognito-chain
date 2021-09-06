@@ -16,7 +16,6 @@ type AddOrderRequest struct {
 	PoolPairID          string                              `json:"PoolPairID"`
 	SellAmount          uint64                              `json:"SellAmount"`
 	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
-	TradingFee          uint64                              `json:"TradingFee"`
 	Receiver            map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
 	NftID               common.Hash                         `json:"NftID"`
 	metadataCommon.MetadataBase
@@ -27,7 +26,6 @@ func NewAddOrderRequest(
 	pairID string,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
-	tradingFee uint64,
 	recv map[common.Hash]privacy.OTAReceiver,
 	nftID common.Hash,
 	metaType int,
@@ -37,7 +35,6 @@ func NewAddOrderRequest(
 		PoolPairID:          pairID,
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
-		TradingFee:          tradingFee,
 		Receiver:            recv,
 		NftID:               nftID,
 		MetadataBase: metadataCommon.MetadataBase{
@@ -106,47 +103,25 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Sell amount invalid - must not exceed %d PRV burned", burnedPRVCoin.GetValue()))
 		}
-		if req.SellAmount+req.TradingFee != burnedPRVCoin.GetValue() {
+		if req.SellAmount != burnedPRVCoin.GetValue() {
 			return false, false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Sell amount invalid - must equal burned amount %d PRV after fee",
 					burnedPRVCoin.GetValue()))
 		}
 	case common.TxCustomTokenPrivacyType:
-		if req.TokenToSell != *burnedTokenID || burnedCoin == nil {
+		if req.TokenToSell != *burnedTokenID || burnedCoin == nil || burnedPRVCoin != nil {
 			return false, false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Burned token invalid - must be %v", req.TokenToSell))
 		}
-		if burnedPRVCoin == nil {
-			// pay fee with the same token
-			// range check before adding
-			if req.SellAmount > burnedCoin.GetValue() {
-				return false, false, metadataCommon.NewMetadataTxError(
-					metadataCommon.PDEInvalidMetadataValueError,
-					fmt.Errorf("Sell amount invalid - must not exceed %d burned", burnedCoin.GetValue()))
-			}
-			if req.SellAmount+req.TradingFee != burnedCoin.GetValue() {
-				return false, false, metadataCommon.NewMetadataTxError(
-					metadataCommon.PDEInvalidMetadataValueError,
-					fmt.Errorf("Sell amount invalid - must equal burned amount %d after fee",
-						burnedCoin.GetValue()))
-			}
-		} else {
-			// pay fee using PRV
-			if req.TradingFee != burnedPRVCoin.GetValue() {
-				return false, false, metadataCommon.NewMetadataTxError(
-					metadataCommon.PDEInvalidMetadataValueError,
-					fmt.Errorf("Trading fee in PRV invalid - must equal burned amount %d",
-						burnedPRVCoin.GetValue()))
-			}
-			if req.SellAmount != burnedCoin.GetValue() {
-				return false, false, metadataCommon.NewMetadataTxError(
-					metadataCommon.PDEInvalidMetadataValueError,
-					fmt.Errorf("Sell amount in - must equal burned amount %d of token %v",
-						burnedCoin.GetValue(), *burnedTokenID))
-			}
+		if req.SellAmount != burnedCoin.GetValue() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Sell amount invalid - must equal burned amount %d after fee",
+					burnedCoin.GetValue()))
 		}
+
 	default:
 		return false, false, fmt.Errorf("Invalid transaction type %v for trade request", tx.GetType())
 	}
