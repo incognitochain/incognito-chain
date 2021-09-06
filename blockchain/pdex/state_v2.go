@@ -488,15 +488,15 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 			return err
 		}
 	}
+	err = statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
+	if err != nil {
+		return err
+	}
 	deletedWaitingContributionsKeys := []string{}
 	for k := range s.deletedWaitingContributions {
 		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
 	}
 	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
-	if err != nil {
-		return err
-	}
-	err = statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
 	if err != nil {
 		return err
 	}
