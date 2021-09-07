@@ -238,11 +238,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	// TODO: remove after testing
-	// hard code the fixed ota for testing
-	//otaPublicKeyStr = "1297N3bbmtDQVEX5mxVm7efobwQxT8XyL4xFrkqMN2dfhKCzHk6"
-	//otaTxRandomStr = "1crTvXc9VtocvtFwD4HoD4Fs7GejVhnWnKXF6GyL1i1x5cMpPXjjvBa8ZxvRpfQ7RrLyBdk4eMHAiyoJsBfFK4YmDfkgkb9awg7"
-
 	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
@@ -778,4 +773,51 @@ func (httpServer *HttpServer) handleGetPortalConvertVaultTxStatus(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4ConvertVaultTxStatusError, err)
 	}
 	return status, nil
+}
+
+func (httpServer *HttpServer) handleGenerateShieldingMultisigAddress(
+	params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	// parse params
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one element"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	incAddressStr, ok := data["IncAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncAddressStr is invalid"))
+	}
+	// validate incAddressStr must be a version 2 one.
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(incAddressStr, 2); err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("IncAddressStr must be a valid payment address version 2"))
+	}
+	tokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is invalid"))
+	}
+
+	// get portal params with the latest beacon height
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(latestBeaconHeight)
+
+	// check is Portal token
+	if !portalParamV4.IsPortalToken(tokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("TokenID is not a portal token"))
+	}
+
+	// generate shielding multisig address
+	_, shieldingAddress, err := portalParamV4.PortalTokens[tokenID].GenerateOTMultisigAddress(
+		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), incAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("Error when generating multisig address %v\n", err))
+	}
+
+	return shieldingAddress, nil
 }
