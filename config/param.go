@@ -111,6 +111,7 @@ type consensusParam struct {
 	StakingFlowV2Height       uint64   `mapstructure:"staking_flow_v2_height"`
 	AssignRuleV3Height        uint64   `mapstructure:"assign_rule_v3_height"`
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
+	EnableSlashingHeightV2    uint64   `mapstructure:"enable_slashing_height_v2"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }
