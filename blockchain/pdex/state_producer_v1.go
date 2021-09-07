@@ -23,7 +23,7 @@ func (sp *stateProducerV1) crossPoolTrade(
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-	pdexv3BreadkPoint uint64,
+	pdexv3BreakPoint uint64,
 ) ([][]string, map[string]*rawdbv2.PDEPoolForPair, map[string]uint64, error) {
 	res := [][]string{}
 
@@ -32,7 +32,7 @@ func (sp *stateProducerV1) crossPoolTrade(
 		actions,
 		beaconHeight,
 		poolPairs,
-		pdexv3BreadkPoint,
+		pdexv3BreakPoint,
 	)
 	tradableInsts, tradingFeeByPair := sp.buildInstsForSortedTradableActions(sortedTradableActions, beaconHeight, poolPairs)
 	untradableInsts := buildInstsForUntradableActions(untradableActions)
@@ -331,7 +331,7 @@ func (sp *stateProducerV1) categorizeAndSortCrossPoolTradeInstsByFee(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-	pdexv3BreadkPoint uint64,
+	pdexv3BreakPoint uint64,
 ) (
 	[]metadata.PDECrossPoolTradeRequestAction,
 	[]metadata.PDECrossPoolTradeRequestAction,
@@ -356,11 +356,15 @@ func (sp *stateProducerV1) categorizeAndSortCrossPoolTradeInstsByFee(
 		tradeMeta := crossPoolTradeRequestAction.Meta
 		tokenIDToSell := tradeMeta.TokenIDToSellStr
 		tokenIDToBuy := tradeMeta.TokenIDToBuyStr
-		if beaconHeight >= pdexv3BreadkPoint || ((isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
+		if beaconHeight >= pdexv3BreakPoint {
+			untradableActions = append(untradableActions, crossPoolTradeRequestAction)
+			continue
+		}
+		if (isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
 			!isExistedInPoolPair(poolPairs, beaconHeight, tokenIDToSell, tokenIDToBuy)) ||
 			(!isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
 				(!isExistedInPoolPair(poolPairs, beaconHeight, prvIDStr, tokenIDToSell) ||
-					!isExistedInPoolPair(poolPairs, beaconHeight, prvIDStr, tokenIDToBuy)))) {
+					!isExistedInPoolPair(poolPairs, beaconHeight, prvIDStr, tokenIDToBuy))) {
 			untradableActions = append(untradableActions, crossPoolTradeRequestAction)
 			continue
 		}
@@ -577,7 +581,7 @@ func (sp *stateProducerV1) contribution(
 	waitingContributions map[string]*rawdbv2.PDEContribution,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 	shares map[string]uint64,
-	privacyV2BreakPoint, pdexv3BreadkPoint uint64,
+	privacyV2BreakPoint, pdexv3BreakPoint uint64,
 ) (
 	[][]string,
 	map[string]*rawdbv2.PDEContribution,
@@ -602,7 +606,7 @@ func (sp *stateProducerV1) contribution(
 		}
 		switch metaType {
 		case metadata.PDEContributionMeta:
-			if beaconHeight >= privacyV2BreakPoint || beaconHeight >= pdexv3BreadkPoint {
+			if beaconHeight >= privacyV2BreakPoint || beaconHeight >= pdexv3BreakPoint {
 				meta := contributionAction.Meta
 				refundInst := buildRefundContributionInst(
 					meta.PDEContributionPairID,
@@ -617,7 +621,7 @@ func (sp *stateProducerV1) contribution(
 				continue
 			}
 		case metadata.PDEPRVRequiredContributionRequestMeta:
-			if beaconHeight >= pdexv3BreadkPoint {
+			if beaconHeight >= pdexv3BreakPoint {
 				meta := contributionAction.Meta
 				refundInst := buildRefundContributionInst(
 					meta.PDEContributionPairID,
@@ -794,7 +798,7 @@ func (sp *stateProducerV1) trade(
 	actions [][]string,
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-	privacyV2BreakPoint, pdexv3BreadkPoint uint64,
+	privacyV2BreakPoint, pdexv3BreakPoint uint64,
 ) ([][]string, map[string]*rawdbv2.PDEPoolForPair, error) {
 	res := [][]string{}
 
@@ -806,7 +810,7 @@ func (sp *stateProducerV1) trade(
 	)
 	for _, tradeAction := range sortedTradesActions {
 		should, receiveAmount, err := shouldRefundTradeAction(
-			tradeAction, beaconHeight, poolPairs, privacyV2BreakPoint, pdexv3BreadkPoint,
+			tradeAction, beaconHeight, poolPairs, privacyV2BreakPoint, pdexv3BreakPoint,
 		)
 		if err != nil {
 			return utils.EmptyStringMatrix, poolPairs, err

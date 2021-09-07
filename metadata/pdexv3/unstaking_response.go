@@ -197,15 +197,21 @@ func (response *UnstakingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			return false, errors.New("Invalid ota receiver")
 		}
 
-		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+		tempMintCoin, ok := mintCoin.(*coin.CoinV2)
+		if !ok {
+			return false, errors.New("mint coin is not coin v2")
+		}
+		txR := tempMintCoin.GetTxRandom()
+
 		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
 			instContent.Amount != paidAmount ||
 			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
 			instContent.StakingPoolID.String() != coinID.String() {
+			metadataCommon.Logger.Log.Debug("Coin is invalid")
 			return false, errors.New("Coin is invalid")
 		}
 		idx = i
-		fmt.Println("BUGLOG Verify Metadata --- OK")
+		metadataCommon.Logger.Log.Info("BUGLOG Verify Metadata --- OK")
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response

@@ -39,7 +39,7 @@ func (s *stateV2) readConfig() {
 
 func newStateV2() *stateV2 {
 	return &stateV2{
-		params:                      &Params{},
+		params:                      NewParams(),
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
