@@ -314,6 +314,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
 	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
 	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

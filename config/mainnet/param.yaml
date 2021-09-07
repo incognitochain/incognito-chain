@@ -43,7 +43,7 @@ consensus_param:
   staking_flow_v2_height: 1207793
   enable_slashing_height: 1000000000000
   assign_rule_v3_height: 1410217
-  enable_slashing_height_v2: 1000000000000
+  enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1000000000000
   block_producing_v3_height: 1000000000000
   timeslot: 40
