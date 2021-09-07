@@ -46,7 +46,7 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, fmt.Errorf("pDEX v3 is not available"))
 	}
-	pDexv3State, err := pdex.InitStateV2FromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
@@ -294,7 +294,7 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 
 	beaconFeatureStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	pDexv3State, err := pdex.InitStateV2FromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 	}

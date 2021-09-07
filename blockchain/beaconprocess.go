@@ -905,8 +905,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight {
-		newBestState.pdeStates[pdex.AmplifierVersion], err = pdex.InitStateV2FromDB(
-			newBestState.featureStateDB, beaconBlock.Header.Height,
+		newBestState.pdeStates[pdex.AmplifierVersion], err = pdex.InitStateFromDB(
+			newBestState.featureStateDB, beaconBlock.Header.Height, pdex.AmplifierVersion,
 		)
 		if err != nil {
 			return NewBlockChainError(ProcessPDEInstructionError, err)

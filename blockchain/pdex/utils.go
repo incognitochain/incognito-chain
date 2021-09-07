@@ -597,27 +597,24 @@ func InitStatesFromDB(
 	return res, nil
 }
 
-func InitStateV1FromDB(
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
-) (State, error) {
-	if beaconHeight == 0 || beaconHeight == 1 {
-		return newStateV1(), nil
-	}
-	return initStateV1(stateDB, beaconHeight)
-}
-
-func InitStateV2FromDB(
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
-) (State, error) {
-	if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
-		return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
-	}
-	if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-		return newStateV2(), nil
-	} else {
-		return initStateV2(stateDB, beaconHeight)
+func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint) (State, error) {
+	switch version {
+	case BasicVersion:
+		if beaconHeight == 0 || beaconHeight == 1 {
+			return newStateV1(), nil
+		}
+		return initStateV1(stateDB, beaconHeight)
+	case AmplifierVersion:
+		if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
+			return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
+		}
+		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
+			return newStateV2(), nil
+		} else {
+			return initStateV2(stateDB, beaconHeight)
+		}
+	default:
+		return nil, errors.New("Can not recognize version")
 	}
 }
 
