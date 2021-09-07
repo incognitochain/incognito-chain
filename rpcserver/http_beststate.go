@@ -17,6 +17,30 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 }
 
 /*
+handleGetBeaconViewByHash
+*/
+func (httpServer *HttpServer) handleGetBeaconViewByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not enough param"))
+	}
+	blockHashStr, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block Hash is invalid"))
+	}
+	blockHash, err := common.Hash{}.NewHashFromStr(blockHashStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block Hash format is invalid"))
+	}
+	bView, err := httpServer.blockService.BlockChain.GetBeaconViewStateDataFromBlockHash(*blockHash, true)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBeaconViewByBlockHashError, err)
+	}
+	return jsonresult.NewGetBeaconBestState(bView), nil
+
+}
+
+/*
 handleGetShardBestState - RPC get shard best state
 */
 func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

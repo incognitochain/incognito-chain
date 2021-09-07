@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -57,7 +56,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
+	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, request.nftID, request.shareAmount)
 	if err != nil {
 		return false, err
 	}
@@ -71,6 +70,9 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Feature pdexv3 has not been activated yet"))
+	}
 	if request.poolPairID == "" {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pool pair id should not be empty"))
 	}
@@ -93,6 +95,9 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 		}
 		if !otaReceiver.IsValid() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiveNft is not valid"))
+		}
+		if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 		}
 	}
 	if request.shareAmount == 0 {
@@ -124,14 +129,8 @@ func (request *WithdrawLiquidityRequest) ValidateMetadataByItself() bool {
 }
 
 func (request *WithdrawLiquidityRequest) Hash() *common.Hash {
-	record := request.MetadataBase.Hash().String()
-	record += request.poolPairID
-	record += request.nftID
-	otaReceiverData, _ := json.Marshal(request.otaReceivers)
-	record += string(otaReceiverData)
-	record += strconv.FormatUint(uint64(request.shareAmount), 10)
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&request)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 

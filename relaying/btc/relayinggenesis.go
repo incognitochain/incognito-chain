@@ -9,18 +9,18 @@ import (
 )
 
 func getHardcodedMainNetGenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
-	// Block 634140 from bitcoin mainnet
-	genesisHash, _ := chainhash.NewHashFromStr("00000000000000000008d18906abd79b6f21ffb02a805d5c85f976efc6d76d6c")
-	prevBlkHash, _ := chainhash.NewHashFromStr("000000000000000000086affd69c8e851cf061c6f677ba585bd5dcdf86e050fc")
-	merkleRoot, _ := chainhash.NewHashFromStr("43c7222b1016819809181ef15cc9d80502fa27c67232695a21f2e08626394419")
+	// Block 697298 from bitcoin mainnet
+	genesisHash, _ := chainhash.NewHashFromStr("0000000000000000001128af8d34e168792e04d80109d5bd568aee079fa312d3")
+	prevBlkHash, _ := chainhash.NewHashFromStr("0000000000000000000694bf9cafd23dc163ae42c583169dc047599c02e7eccc")
+	merkleRoot, _ := chainhash.NewHashFromStr("439630ecdc993a273dce80e7d3b8d15003fb15b75a79861a8cff8afc5317436e")
 	var genesisBlock = wire.MsgBlock{
 		Header: wire.BlockHeader{
-			Version:    int32(536870912),
+			Version:    int32(805298180),
 			PrevBlock:  *prevBlkHash,
 			MerkleRoot: *merkleRoot,
-			Timestamp:  time.Unix(1591847533, 0),
-			Bits:       uint32(387219253),
-			Nonce:      uint32(124268688),
+			Timestamp:  time.Unix(1629770313, 0),
+			Bits:       uint32(387061771),
+			Nonce:      uint32(3047844147),
 		},
 		Transactions: []*wire.MsgTx{},
 	}
@@ -28,18 +28,18 @@ func getHardcodedMainNetGenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
 }
 
 func getHardcodedTestNet3GenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
-	// Block 1896910 from bitcoin testnet3
-	genesisHash, _ := chainhash.NewHashFromStr("000000000000003b095b39f4048771e77cc8b2e0885228b6df12cf684242cdf1")
-	prevBlkHash, _ := chainhash.NewHashFromStr("0000000000000034b04cb66e042432ef3114e5834abb4cf60706b5f4a1c33ea6")
-	merkleRoot, _ := chainhash.NewHashFromStr("c3079548c42fb4f76b12cd3f28be6a7e80b3c854e33bc259c8353327a0cfda31")
+	// Block 2063133 from bitcoin testnet3
+	genesisHash, _ := chainhash.NewHashFromStr("0000000000000039e1af0389c1cdd005b57bc8bd9a753b6b261e6141ad692e38")
+	prevBlkHash, _ := chainhash.NewHashFromStr("0000000000000038bacae6a99ac6264297689d4b3dda5974f1ff72ea9478d3ae")
+	merkleRoot, _ := chainhash.NewHashFromStr("5f67482540307a8e0adc8f9e9d5dce129c866d5e47913dfec82eadefeeacab32")
 	var genesisBlock = wire.MsgBlock{
 		Header: wire.BlockHeader{
-			Version:    int32(1073733632),
+			Version:    int32(536870912),
 			PrevBlock:  *prevBlkHash,
 			MerkleRoot: *merkleRoot,
-			Timestamp:  time.Unix(1607582969, 0),
-			Bits:       uint32(424004321),
-			Nonce:      uint32(2341547277),
+			Timestamp:  time.Unix(1628065055, 0),
+			Bits:       uint32(423816192),
+			Nonce:      uint32(1143442369),
 		},
 		Transactions: []*wire.MsgTx{},
 	}
@@ -47,18 +47,18 @@ func getHardcodedTestNet3GenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
 }
 
 func getHardcodedTestNet3GenesisBlockForInc2() (*wire.MsgBlock, *chainhash.Hash) {
-	// Block 1863675 from bitcoin testnet3
-	genesisHash, _ := chainhash.NewHashFromStr("0000000000000087badd69a52c3f2afa787d7d073081041ccf12ae172e4432de")
-	prevBlkHash, _ := chainhash.NewHashFromStr("00000000000000156ca9adbfe1873c5aada796fe31c8b3de32bdf9538a6ff4e6")
-	merkleRoot, _ := chainhash.NewHashFromStr("8cf9e50d1c4f88e1b000e67e8d9b1405a3aa39a64cae93b913957d05c31468e1")
+	// Block 2064989 from bitcoin testnet3
+	genesisHash, _ := chainhash.NewHashFromStr("00000000a51a6c208820e26b20eed4197dfb22c4851558286af4b19ea5dd6fc9")
+	prevBlkHash, _ := chainhash.NewHashFromStr("0000000021b46e28a781c075ab0f72dcd38316953a440517596105957249e6fc")
+	merkleRoot, _ := chainhash.NewHashFromStr("a98808832a23a706ba6f5fd0d2988a31e2fe87f904fbcf99fcd20c2931133bd7")
 	var genesisBlock = wire.MsgBlock{
 		Header: wire.BlockHeader{
 			Version:    int32(536870912),
 			PrevBlock:  *prevBlkHash,
 			MerkleRoot: *merkleRoot,
-			Timestamp:  time.Unix(1603172228, 0),
-			Bits:       uint32(436259028),
-			Nonce:      uint32(857120045),
+			Timestamp:  time.Unix(1629088229, 0),
+			Bits:       uint32(486604799),
+			Nonce:      uint32(1465578260),
 		},
 		Transactions: []*wire.MsgTx{},
 	}

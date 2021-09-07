@@ -165,6 +165,20 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case metadataCommon.PortalV4ShieldingRequestMeta:
+		md = &PortalShieldingRequest{}
+	case metadataCommon.PortalV4ShieldingResponseMeta:
+		md = &PortalShieldingResponse{}
+	case metadataCommon.PortalV4UnshieldingRequestMeta:
+		md = &PortalUnshieldRequest{}
+	case metadataCommon.PortalV4UnshieldingResponseMeta:
+		md = &PortalUnshieldResponse{}
+	case metadataCommon.PortalV4FeeReplacementRequestMeta:
+		md = &PortalReplacementFeeRequest{}
+	case metadataCommon.PortalV4SubmitConfirmedTxMeta:
+		md = &PortalSubmitConfirmedTxRequest{}
+	case metadataCommon.PortalV4ConvertVaultRequestMeta:
+		md = &PortalConvertVaultRequest{}
 	case metadataCommon.Pdexv3ModifyParamsMeta:
 		md = &metadataPdexv3.ParamsModifyingRequest{}
 	case metadataCommon.Pdexv3AddLiquidityRequestMeta:
@@ -197,6 +211,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.StakingRequest{}
 	case metadataCommon.Pdexv3StakingResponseMeta:
 		md = &metadataPdexv3.StakingResponse{}
+	case metadataCommon.Pdexv3UnstakingRequestMeta:
+		md = &metadataPdexv3.UnstakingRequest{}
+	case metadataCommon.Pdexv3UnstakingResponseMeta:
+		md = &metadataPdexv3.UnstakingResponse{}
 	case metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
 		md = &metadataPdexv3.WithdrawalLPFeeRequest{}
 	case metadataCommon.Pdexv3WithdrawLPFeeResponseMeta:

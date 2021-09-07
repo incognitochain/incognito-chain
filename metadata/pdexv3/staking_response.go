@@ -81,11 +81,8 @@ func (response *StakingResponse) ValidateMetadataByItself() bool {
 }
 
 func (response *StakingResponse) Hash() *common.Hash {
-	record := response.MetadataBase.Hash().String()
-	record += response.status
-	record += response.txReqID
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&response)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 

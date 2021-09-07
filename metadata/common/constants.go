@@ -2,6 +2,8 @@ package common
 
 import (
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 const (
@@ -145,6 +147,16 @@ const (
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
 
+	// PORTAL V4
+	PortalV4ShieldingRequestMeta      = 260
+	PortalV4ShieldingResponseMeta     = 261
+	PortalV4UnshieldingRequestMeta    = 262
+	PortalV4UnshieldingResponseMeta   = 263
+	PortalV4UnshieldBatchingMeta      = 264
+	PortalV4FeeReplacementRequestMeta = 265
+	PortalV4SubmitConfirmedTxMeta     = 266
+	PortalV4ConvertVaultRequestMeta   = 267
+
 	InitTokenRequestMeta  = 244
 	InitTokenResponseMeta = 245
 
@@ -180,6 +192,8 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingResponseMeta,
 	InitTokenResponseMeta,
 	Pdexv3AddLiquidityResponseMeta,
 	Pdexv3MintNftResponseMeta,
@@ -192,6 +206,7 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3WithdrawProtocolFeeResponseMeta,
 	Pdexv3MintPDEXGenesisMeta,
 	Pdexv3StakingResponseMeta,
+	Pdexv3UnstakingResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -281,4 +296,21 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmMetaV2),
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
 	strconv.Itoa(BurningBSCConfirmMeta),
+}
+
+var portalV4MetaTypes = []int{
+	PortalV4ShieldingRequestMeta,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingRequestMeta,
+	PortalV4UnshieldBatchingMeta,
+	PortalV4FeeReplacementRequestMeta,
+	PortalV4SubmitConfirmedTxMeta,
+	PortalV4ConvertVaultRequestMeta,
+}
+
+// NOTE: add new records when add new feature flags
+var FeatureFlagWithMetaTypes = map[string][]int{
+	common.PortalRelayingFlag: portalRelayingMetaTypes,
+	common.PortalV3Flag:       portalMetaTypesV3,
+	common.PortalV4Flag:       portalV4MetaTypes,
 }

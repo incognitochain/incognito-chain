@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 // TODO: Update error type to correct one
@@ -88,22 +87,6 @@ func NewPDECrossPoolTradeRequest(
 	return pdeCrossPoolTradeRequest, nil
 }
 
-func checkTraderAddress(address, txRandom string) (bool, error, int) {
-	version := 0
-	if len(txRandom) > 0 {
-		version = 2
-		_, _, err := coin.ParseOTAInfoFromString(address, txRandom)
-		if err != nil {
-			return false, err, version
-		}
-	} else {
-		version = 1
-		_, err := AssertPaymentAddressAndTxVersion(address, 1)
-		return err == nil, err, version
-	}
-	return true, nil, version
-}
-
 func (pc PDECrossPoolTradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
@@ -114,9 +97,12 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 	// if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
 	// }
+	if chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, fmt.Errorf("metadata type %v is no longer supported", PDECrossPoolTradeRequestMeta)
+	}
 
 	// check ota address string and tx random is valid
-	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
+	_, err, ver := metadataCommon.CheckIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
 		return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
 	}
@@ -124,7 +110,7 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		return false, false, fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
 	}
 	if ver == 2 {
-		_, errSub, verSub := checkTraderAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
+		_, errSub, verSub := metadataCommon.CheckIncognitoAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
 		if errSub != nil || verSub == 1 {
 			return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
 		}

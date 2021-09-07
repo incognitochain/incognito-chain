@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -272,7 +274,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
-	root := GetKeccak256MerkleRoot(flattenInsts)
+	root := types.GetKeccak256MerkleRoot(flattenInsts)
 
 	if !bytes.Equal(root, beaconBlock.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
@@ -569,9 +571,18 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
+	for shardID, shardStates := range beaconBlock.Body.ShardState {
+		beaconBestState.NumberOfShardBlock[shardID] = beaconBestState.NumberOfShardBlock[shardID] + uint(len(shardStates))
+	}
+
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
+		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
+		for i := 0; i < beaconBestState.ActiveShards; i++ {
+			shardID := byte(i)
+			beaconBestState.NumberOfShardBlock[shardID] = 0
+		}
 	}
 	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconBestState.missingSignatureCounter.CommitteeChange(beaconBestState.getUncommittedShardCommitteeFlattenList())
@@ -599,9 +610,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.BeaconProposerIndex = 0
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
 		beaconBestState.BestShardHeight[shardID] = 1
+		beaconBestState.NumberOfShardBlock[shardID] = 0
 	}
 	// Update new best new block hash
 	for shardID, shardStates := range genesisBeaconBlock.Body.ShardState {
@@ -636,7 +649,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false))
-	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
+	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	beaconBestState.Epoch = 1
 	return err
 }
@@ -825,6 +838,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if err != nil {
 			return err
 		}
+		Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
 	}
 	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
 	if err != nil {
@@ -841,45 +855,64 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	// execute, store PDE instruction
 
 	// transfrom beacon height for pdex process
-	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
+	pdeVersions := []uint{}
+	for version := range newBestState.pdeStates {
+		pdeVersions = append(pdeVersions, version)
+	}
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconInstructions(beaconBlock.Body.Instructions).
 		BuildStateDB(newBestState.featureStateDB).
 		BuildBeaconHeight(beaconBlock.Header.Height - 1).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
+		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
 		Build()
-	err = newBestState.pdeState.Process(pdeStateEnv)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
 
-	pdexStateChange := pdex.NewStateChange()
-	diffState, pdexStateChange, err := newBestState.pdeState.GetDiff(curView.pdeState, pdexStateChange)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	if diffState != nil {
-		err = diffState.StoreToDB(pdeStateEnv, pdexStateChange)
+	for _, version := range pdeVersions {
+		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
+
+		err = newBestState.pdeStates[version].Process(pdeStateEnv)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
+
+		pdexStateChange := pdex.NewStateChange()
+		diffState, pdexStateChange, err := newBestState.pdeStates[version].GetDiff(curView.pdeStates[version], pdexStateChange)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if diffState != nil {
+			err = diffState.StoreToDB(pdeStateEnv, pdexStateChange)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+
+		//clear DeletedWaitingPDEContributions
+		newBestState.pdeStates[version].ClearCache()
+		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
+
+		// transfrom beacon height for pdex process
+		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+
+		if err != nil {
+			return NewBlockChainError(ProcessPDEInstructionError, err)
+		}
 	}
 
-	//clear DeletedWaitingPDEContributions
-	newBestState.pdeState.ClearCache()
-	//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
-
-	// transfrom beacon height for pdex process
-	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
-
-	if err != nil {
-		return NewBlockChainError(ProcessPDEInstructionError, err)
+	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight {
+		newBestState.pdeStates[pdex.AmplifierVersion], err = pdex.InitStateFromDB(
+			newBestState.featureStateDB, beaconBlock.Header.Height, pdex.AmplifierVersion,
+		)
+		if err != nil {
+			return NewBlockChainError(ProcessPDEInstructionError, err)
+		}
 	}
+
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v2: sig on beacon only
 		strconv.Itoa(metadata.BurningConfirmMetaV2),
@@ -892,12 +925,25 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	// execute, store Portal Instruction
 	// execute, store Ralaying Instruction
-	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
-	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
+	newBestState.portalStateV4, err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
-	//}
+	// optimize storing PortalV4 state
+	if newBestState.portalStateV4 != nil {
+		if !reflect.DeepEqual(curView.portalStateV4, newBestState.portalStateV4) {
+			// check updated field in portalStateV4 and store these field into statedb
+			diffState := getDiffPortalStateV4(curView.portalStateV4, newBestState.portalStateV4)
+			err = portalprocessv4.StorePortalV4StateToDB(
+				newBestState.featureStateDB,
+				diffState,
+				blockchain.GetPortalParamsV4(beaconBlock.Header.Height))
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
@@ -964,9 +1010,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height {
-		newBestState.upgradeCommitteeEngineV2(blockchain)
-	}
+	newBestState.tryUpgradeConsensusRule(beaconBlock)
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 

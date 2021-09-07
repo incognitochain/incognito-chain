@@ -435,12 +435,12 @@ func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*Committee
 	return stateDB.getShardsCommitteeState(shardIDs)
 }
 
-func GetAllCommitteeStakeInfo(stateDB *StateDB, shardIDs []int) map[int][]*StakerInfo {
-	return stateDB.getShardsCommitteeInfo(shardIDs)
+func GetAllCommitteeStakeInfo(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfo {
+	return stateDB.getShardsCommitteeInfo(allShardCommittee)
 }
 
-func GetAllCommitteeStakeInfoV2(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfo {
-	return stateDB.getShardsCommitteeInfov2(allShardCommittee)
+func GetAllCommitteeStakeInfoV2(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfoV2 {
+	return stateDB.getShardsCommitteeInfoV2(allShardCommittee)
 }
 
 func GetStakingInfo(bcDB *StateDB, shardIDs []int) map[string]bool {

@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -330,7 +329,7 @@ func (bp *BlockProvider) createBlockShardMsgByType(
 		}
 		blkMsg.(*wire.MessageBlockShard).Block = block
 	case crossShard:
-		blkToSend, err := blockchain.CreateCrossShardBlock(block, crossShardID)
+		blkToSend, err := types.CreateCrossShardBlock(block, crossShardID)
 		if err != nil {
 			Logger.Error(err)
 			return nil, err

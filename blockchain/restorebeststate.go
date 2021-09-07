@@ -19,7 +19,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
-
 	if includeCommittee {
 		var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
 		if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
@@ -33,9 +32,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 			)
 		}
 		beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
-		if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
-			beaconBestState.upgradeCommitteeEngineV2(blockchain)
-		}
+		beaconBestState.tryUpgradeConsensusRule(block)
 		if blockchain.BeaconChain.GetBestView() != nil {
 			err = initMissingSignatureCounter(blockchain, beaconBestState, block)
 			if err != nil {
@@ -45,6 +42,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 
 	//TODO: @tin optimize here later
-	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
+	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	return err
 }

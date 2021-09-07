@@ -9,9 +9,11 @@ import (
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
+	common.MaxShardNumber = 8
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
@@ -19,22 +21,27 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
 	assert.Nil(t, err)
 
-	validationEnv := &metadataCommonMocks.ValidationEnviroment{}
-	validationEnv.On("ShardID").Return(0)
+	invalidChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	invalidChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(false)
+	validChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	validChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(true)
+
+	validValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
+	validValidationEnvironment.On("ShardID").Return(1)
 
 	notBurnTx := &metadataCommonMocks.Transaction{}
 	notBurnTx.On("GetTxBurnData").Return(false, nil, nil, errors.New("Not tx burn"))
-	notBurnTx.On("GetValidationEnv").Return(validationEnv)
+	notBurnTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	notMactchTokenIDTx := &metadataCommonMocks.Transaction{}
 	notMactchTokenIDTx.On("GetTxBurnData").Return(true, nil, &common.PRVCoinID, nil)
-	notMactchTokenIDTx.On("GetValidationEnv").Return(validationEnv)
+	notMactchTokenIDTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	notMatchAmountCoin := &coinMocks.Coin{}
 	notMatchAmountCoin.On("GetValue").Return(uint64(100))
 	notMactchAmountTx := &metadataCommonMocks.Transaction{}
 	notMactchAmountTx.On("GetTxBurnData").Return(true, notMatchAmountCoin, tokenHash, nil)
-	notMactchAmountTx.On("GetValidationEnv").Return(validationEnv)
+	notMactchAmountTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	validCoin := &coinMocks.Coin{}
 	validCoin.On("GetValue").Return(uint64(1))
@@ -42,17 +49,17 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 	normalTx := &metadataCommonMocks.Transaction{}
 	normalTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	normalTx.On("GetType").Return(common.TxNormalType)
-	normalTx.On("GetValidationEnv").Return(validationEnv)
+	normalTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	customTx := &metadataCommonMocks.Transaction{}
 	customTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
 	customTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
-	customTx.On("GetValidationEnv").Return(validationEnv)
+	customTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	validTx := &metadataCommonMocks.Transaction{}
 	validTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
-	validTx.On("GetValidationEnv").Return(validationEnv)
+	validTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	type fields struct {
 		MetadataBase metadataCommon.MetadataBase
@@ -77,11 +84,25 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "Invalid chainRetriever",
+			fields: fields{
+				poolPairID: "",
+			},
+			args: args{
+				chainRetriever: invalidChainRetriever,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
 			name: "Invalid poolPairID",
 			fields: fields{
 				poolPairID: "",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -92,7 +113,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				poolPairID: "123",
 				nftID:      "abc",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -103,7 +126,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				poolPairID: "123",
 				nftID:      common.Hash{}.String(),
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -114,7 +139,9 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				poolPairID: "123",
 				nftID:      tokenHash.String(),
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -129,7 +156,10 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 					token0ID.String():  "123",
 				},
 			},
-			args:    args{},
+			args: args{
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -141,11 +171,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
 					token1ID.String():  "123",
 				},
 			},
-			args:    args{},
+			args: args{
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -157,12 +190,15 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 0,
 			},
-			args:    args{},
+			args: args{
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -174,13 +210,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
 			args: args{
-				tx: notBurnTx,
+				tx:             notBurnTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -193,13 +230,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
 			args: args{
-				tx: notMactchTokenIDTx,
+				tx:             notMactchTokenIDTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -212,13 +250,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
 			args: args{
-				tx: notMactchAmountTx,
+				tx:             notMactchAmountTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -231,13 +270,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
 			args: args{
-				tx: normalTx,
+				tx:             normalTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -250,13 +290,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
 			args: args{
-				tx: customTx,
+				tx:             customTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -269,13 +310,14 @@ func TestWithdrawLiquidityRequest_ValidateSanityData(t *testing.T) {
 				nftID:      tokenHash.String(),
 				otaReceivers: map[string]string{
 					tokenHash.String(): validOTAReceiver0,
-					token0ID.String():  validOTAReceiver1,
-					token1ID.String():  validOTAReceiver1,
+					token0ID.String():  validOTAReceiver0,
+					token1ID.String():  validOTAReceiver0,
 				},
 				shareAmount: 100,
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    true,
 			want1:   true,

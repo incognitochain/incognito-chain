@@ -2,8 +2,10 @@ package pdex
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -18,6 +20,15 @@ type Params struct {
 	StakingRewardTokens             []common.Hash   // list of staking reward tokens
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 	MaxOrdersPerNft                 uint            // max orders per nft
+}
+
+func NewParams() *Params {
+	return &Params{
+		FeeRateBPS:               map[string]uint{},
+		PDEXRewardPoolPairsShare: map[string]uint{},
+		StakingPoolsShare:        map[string]uint{},
+		StakingRewardTokens:      []common.Hash{},
+	}
 }
 
 func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
@@ -94,4 +105,30 @@ func isValidPdexv3Params(
 		}
 	}
 	return true, ""
+}
+
+func (params *Params) IsZeroValue() bool {
+	return reflect.DeepEqual(params, NewParams()) || params == nil
+}
+
+func (params *Params) readConfig() *Params {
+	res := &Params{
+		DefaultFeeRateBPS:               config.Param().PDexParams.Params.DefaultFeeRateBPS,
+		PRVDiscountPercent:              config.Param().PDexParams.Params.PRVDiscountPercent,
+		TradingProtocolFeePercent:       config.Param().PDexParams.Params.TradingProtocolFeePercent,
+		TradingStakingPoolRewardPercent: config.Param().PDexParams.Params.TradingStakingPoolRewardPercent,
+		StakingPoolsShare:               config.Param().PDexParams.Params.StakingPoolsShare,
+		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
+		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
+	}
+	if res.FeeRateBPS == nil {
+		res.FeeRateBPS = make(map[string]uint)
+	}
+	if res.StakingPoolsShare == nil {
+		res.StakingPoolsShare = make(map[string]uint)
+	}
+	if res.PDEXRewardPoolPairsShare == nil {
+		res.PDEXRewardPoolPairsShare = make(map[string]uint)
+	}
+	return res
 }

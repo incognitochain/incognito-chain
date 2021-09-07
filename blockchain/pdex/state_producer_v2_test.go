@@ -1885,3 +1885,321 @@ func Test_stateProducerV2_staking(t *testing.T) {
 		})
 	}
 }
+
+func Test_stateProducerV2_unstaking(t *testing.T) {
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
+	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
+	assert.Nil(t, err)
+	//tokenHash, err := common.Hash{}.NewHashFromStr("123456")
+	//assert.Nil(t, err)
+
+	mintNft1Inst, err := instruction.NewMintNftWithValue(
+		*nftHash1, validOTAReceiver0, 1, *txReqID,
+	).StringSlice(
+		strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
+	)
+
+	mintNftInst, err := instruction.NewMintNftWithValue(
+		*nftHash, validOTAReceiver0, 1, *txReqID,
+	).StringSlice(
+		strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
+	)
+
+	otaReceivers := map[string]string{
+		common.PRVIDStr: validOTAReceiver1,
+		nftID1:          validOTAReceiver0,
+		nftID:           validOTAReceiver0,
+	}
+
+	//invalidStakingPoolID
+	invalidStakingPoolIDMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
+		"abcd", nftID1, otaReceivers, 50,
+	)
+	invalidStakingPoolIDTx := &metadataMocks.Transaction{}
+	invalidStakingPoolIDTx.On("GetMetadata").Return(invalidStakingPoolIDMetadata)
+	valEnv0 := tx_generic.DefaultValEnv()
+	valEnv0 = tx_generic.WithShardID(valEnv0, 1)
+	invalidStakingPoolIDTx.On("GetValidationEnv").Return(valEnv0)
+	invalidStakingPoolIDTx.On("Hash").Return(txReqID)
+	invalidStakingPoolIDRejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	assert.Nil(t, err)
+	//
+
+	//Not found nftID
+	invalidNftIDMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
+		common.PRVIDStr, nftID, otaReceivers, 50,
+	)
+	invalidNftIDTx := &metadataMocks.Transaction{}
+	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetadata)
+	valEnv1 := tx_generic.DefaultValEnv()
+	valEnv1 = tx_generic.WithShardID(valEnv1, 1)
+	invalidNftIDTx.On("GetValidationEnv").Return(valEnv1)
+	invalidNftIDTx.On("Hash").Return(txReqID)
+	invalidNftIDRejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	//
+
+	//invalidAmount
+	invalidAmountMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
+		common.PRVIDStr, nftID1, otaReceivers, 300,
+	)
+	invalidAmountTx := &metadataMocks.Transaction{}
+	invalidAmountTx.On("GetMetadata").Return(invalidAmountMetadata)
+	valEnv3 := tx_generic.DefaultValEnv()
+	valEnv3 = tx_generic.WithShardID(valEnv3, 1)
+	invalidAmountTx.On("GetValidationEnv").Return(valEnv3)
+	invalidAmountTx.On("Hash").Return(txReqID)
+	invalidAmountInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	//
+
+	//validTx
+	validMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
+		common.PRVIDStr, nftID1, otaReceivers, 50,
+	)
+	validTx := &metadataMocks.Transaction{}
+	validTx.On("GetMetadata").Return(validMetadata)
+	valEnv4 := tx_generic.DefaultValEnv()
+	valEnv4 = tx_generic.WithShardID(valEnv4, 1)
+	validTx.On("GetValidationEnv").Return(valEnv4)
+	validTx.On("Hash").Return(txReqID)
+	//
+
+	acceptInst, err := instruction.NewAcceptUnstakingWithValue(
+		common.PRVCoinID, *nftHash1, 50, validOTAReceiver1, *txReqID, 1,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	type fields struct {
+		stateProducerBase stateProducerBase
+	}
+	type args struct {
+		txs               []metadata.Transaction
+		nftIDs            map[string]uint64
+		stakingPoolStates map[string]*StakingPoolState
+		beaconHeight      uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    [][]string
+		want1   map[string]*StakingPoolState
+		wantErr bool
+	}{
+		{
+			name: "Not found staking pool",
+			fields: fields{
+				stateProducerBase: stateProducerBase{},
+			},
+			args: args{
+				txs: []metadata.Transaction{invalidStakingPoolIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{invalidStakingPoolIDRejectInst, mintNft1Inst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 150,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               150,
+							lastUpdatedBeaconHeight: 15,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Not found nftID in nftIDs list",
+			fields: fields{
+				stateProducerBase: stateProducerBase{},
+			},
+			args: args{
+				txs: []metadata.Transaction{invalidNftIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{invalidNftIDRejectInst, mintNftInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 150,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               150,
+							lastUpdatedBeaconHeight: 15,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Not found nftID in list staker",
+			fields: fields{
+				stateProducerBase: stateProducerBase{},
+			},
+			args: args{
+				txs: []metadata.Transaction{invalidNftIDTx},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{invalidNftIDRejectInst, mintNftInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 150,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               150,
+							lastUpdatedBeaconHeight: 15,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Can not update liquidity",
+			fields: fields{
+				stateProducerBase: stateProducerBase{},
+			},
+			args: args{
+				txs: []metadata.Transaction{invalidStakingPoolIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{invalidAmountInst, mintNft1Inst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 150,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               150,
+							lastUpdatedBeaconHeight: 15,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid input",
+			fields: fields{
+				stateProducerBase: stateProducerBase{},
+			},
+			args: args{
+				txs: []metadata.Transaction{validTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						liquidity: 150,
+						stakers: map[string]*Staker{
+							nftID1: &Staker{
+								liquidity:               150,
+								lastUpdatedBeaconHeight: 15,
+								rewards:                 map[string]uint64{},
+							},
+						},
+					},
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{acceptInst, mintNft1Inst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 100,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               100,
+							lastUpdatedBeaconHeight: 20,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProducerV2{
+				stateProducerBase: tt.fields.stateProducerBase,
+			}
+			got, got1, err := sp.unstaking(tt.args.txs, tt.args.nftIDs, tt.args.stakingPoolStates, tt.args.beaconHeight)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProducerV2.unstaking() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProducerV2.unstaking() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProducerV2.unstaking() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

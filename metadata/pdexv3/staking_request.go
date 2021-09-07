@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -69,6 +68,9 @@ func (request *StakingRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Feature pdexv3 has not been activated yet"))
+	}
 	tokenID, err := common.Hash{}.NewHashFromStr(request.tokenID)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
@@ -91,7 +93,6 @@ func (request *StakingRequest) ValidateSanityData(
 	if !otaReceiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
-	//TODO: check otaReceiver shardid need to be the same with tx shard id
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
@@ -115,6 +116,9 @@ func (request *StakingRequest) ValidateSanityData(
 	default:
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Not recognize tx type"))
 	}
+	if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
+	}
 	return true, true, nil
 }
 
@@ -123,13 +127,8 @@ func (request *StakingRequest) ValidateMetadataByItself() bool {
 }
 
 func (request *StakingRequest) Hash() *common.Hash {
-	record := request.MetadataBase.Hash().String()
-	record += request.otaReceiver
-	record += request.tokenID
-	record += request.nftID
-	record += strconv.FormatUint(request.tokenAmount, 10)
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&request)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 

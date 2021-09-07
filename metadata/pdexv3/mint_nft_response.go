@@ -15,8 +15,8 @@ import (
 )
 
 type MintNftResponse struct {
-	nftID      string
-	otaReceive string
+	nftID       string
+	otaReceiver string
 	metadataCommon.MetadataBase
 }
 
@@ -28,13 +28,13 @@ func NewMintNftResponse() *MintNftResponse {
 	}
 }
 
-func NewMintNftResponseWithValue(nftID, otaReceive string) *MintNftResponse {
+func NewMintNftResponseWithValue(nftID, otaReceiver string) *MintNftResponse {
 	return &MintNftResponse{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3MintNftResponseMeta,
 		},
-		nftID:      nftID,
-		otaReceive: otaReceive,
+		nftID:       nftID,
+		otaReceiver: otaReceiver,
 	}
 }
 
@@ -62,12 +62,12 @@ func (response *MintNftResponse) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	otaReceive := privacy.OTAReceiver{}
-	err := otaReceive.FromString(response.otaReceive)
+	otaReceiver := privacy.OTAReceiver{}
+	err := otaReceiver.FromString(response.otaReceiver)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if !otaReceive.IsValid() {
+	if !otaReceiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
 	nftID, err := common.Hash{}.NewHashFromStr(response.nftID)
@@ -87,7 +87,7 @@ func (response *MintNftResponse) ValidateMetadataByItself() bool {
 func (response *MintNftResponse) Hash() *common.Hash {
 	record := response.MetadataBase.Hash().String()
 	record += response.nftID
-	record += response.otaReceive
+	record += response.otaReceiver
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -99,12 +99,12 @@ func (response *MintNftResponse) CalculateSize() uint64 {
 
 func (response *MintNftResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID      string `json:"NftID"`
-		OtaReceive string `json:"OtaReceive"`
+		NftID       string `json:"NftID"`
+		OtaReceiver string `json:"OtaReceiver"`
 		metadataCommon.MetadataBase
 	}{
 		NftID:        response.nftID,
-		OtaReceive:   response.otaReceive,
+		OtaReceiver:  response.otaReceiver,
 		MetadataBase: response.MetadataBase,
 	})
 	if err != nil {
@@ -115,22 +115,22 @@ func (response *MintNftResponse) MarshalJSON() ([]byte, error) {
 
 func (response *MintNftResponse) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID      string `json:"NftID"`
-		OtaReceive string `json:"OtaReceive"`
+		NftID       string `json:"NftID"`
+		OtaReceiver string `json:"OtaReceiver"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	response.otaReceive = temp.OtaReceive
+	response.otaReceiver = temp.OtaReceiver
 	response.nftID = temp.NftID
 	response.MetadataBase = temp.MetadataBase
 	return nil
 }
 
-func (response *MintNftResponse) OtaReceive() string {
-	return response.otaReceive
+func (response *MintNftResponse) OtaReceiver() string {
+	return response.otaReceiver
 }
 
 func (response *MintNftResponse) NftID() string {

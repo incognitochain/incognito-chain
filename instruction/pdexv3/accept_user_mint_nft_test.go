@@ -15,7 +15,7 @@ func TestAcceptUserMintNft_FromStringSlice(t *testing.T) {
 	txReqID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	data := AcceptUserMintNft{
-		otaReceive:  validOTAReceiver0,
+		otaReceiver: validOTAReceiver0,
 		nftID:       common.PRVCoinID,
 		burntAmount: 100,
 		shardID:     1,
@@ -27,7 +27,7 @@ func TestAcceptUserMintNft_FromStringSlice(t *testing.T) {
 	type fields struct {
 		nftID       common.Hash
 		burntAmount uint64
-		otaReceive  string
+		otaReceiver string
 		shardID     byte
 		txReqID     common.Hash
 	}
@@ -82,7 +82,7 @@ func TestAcceptUserMintNft_FromStringSlice(t *testing.T) {
 			fieldsAfterProcess: fields{
 				nftID:       common.PRVCoinID,
 				burntAmount: 100,
-				otaReceive:  validOTAReceiver0,
+				otaReceiver: validOTAReceiver0,
 				shardID:     1,
 				txReqID:     *txReqID,
 			},
@@ -94,7 +94,7 @@ func TestAcceptUserMintNft_FromStringSlice(t *testing.T) {
 			a := &AcceptUserMintNft{
 				nftID:       tt.fields.nftID,
 				burntAmount: tt.fields.burntAmount,
-				otaReceive:  tt.fields.otaReceive,
+				otaReceiver: tt.fields.otaReceiver,
 				shardID:     tt.fields.shardID,
 				txReqID:     tt.fields.txReqID,
 			}
@@ -109,8 +109,8 @@ func TestAcceptUserMintNft_FromStringSlice(t *testing.T) {
 				t.Errorf("burntAmount got = %v, want %v", a.nftID, tt.fieldsAfterProcess.nftID)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(a.otaReceive, tt.fieldsAfterProcess.otaReceive) {
-				t.Errorf("otaReceive got = %v, want %v", a.otaReceive, tt.fieldsAfterProcess.otaReceive)
+			if !tt.wantErr && !reflect.DeepEqual(a.otaReceiver, tt.fieldsAfterProcess.otaReceiver) {
+				t.Errorf("otaReceive got = %v, want %v", a.otaReceiver, tt.fieldsAfterProcess.otaReceiver)
 				return
 			}
 			if !tt.wantErr && !reflect.DeepEqual(a.shardID, tt.fieldsAfterProcess.shardID) {
@@ -129,7 +129,7 @@ func TestAcceptUserMintNft_StringSlice(t *testing.T) {
 	txReqID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	data := AcceptUserMintNft{
-		otaReceive:  validOTAReceiver0,
+		otaReceiver: validOTAReceiver0,
 		nftID:       common.PRVCoinID,
 		burntAmount: 100,
 		shardID:     1,
@@ -141,7 +141,7 @@ func TestAcceptUserMintNft_StringSlice(t *testing.T) {
 	type fields struct {
 		nftID       common.Hash
 		burntAmount uint64
-		otaReceive  string
+		otaReceiver string
 		shardID     byte
 		txReqID     common.Hash
 	}
@@ -155,7 +155,7 @@ func TestAcceptUserMintNft_StringSlice(t *testing.T) {
 			name: "Valid input",
 			fields: fields{
 				nftID:       common.PRVCoinID,
-				otaReceive:  validOTAReceiver0,
+				otaReceiver: validOTAReceiver0,
 				burntAmount: 100,
 				shardID:     1,
 				txReqID:     *txReqID,
@@ -173,7 +173,7 @@ func TestAcceptUserMintNft_StringSlice(t *testing.T) {
 			a := &AcceptUserMintNft{
 				nftID:       tt.fields.nftID,
 				burntAmount: tt.fields.burntAmount,
-				otaReceive:  tt.fields.otaReceive,
+				otaReceiver: tt.fields.otaReceiver,
 				shardID:     tt.fields.shardID,
 				txReqID:     tt.fields.txReqID,
 			}

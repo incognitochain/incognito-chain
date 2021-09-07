@@ -10,22 +10,22 @@ import (
 )
 
 type RejectUserMintNft struct {
-	otaReceive string
-	amount     uint64
-	shardID    byte
-	txReqID    common.Hash
+	otaReceiver string
+	amount      uint64
+	shardID     byte
+	txReqID     common.Hash
 }
 
 func NewRejectUserMintNft() *RejectUserMintNft {
 	return &RejectUserMintNft{}
 }
 
-func NewRejectUserMintNftWithValue(otaReceive string, amount uint64, shardID byte, txReqID common.Hash) *RejectUserMintNft {
+func NewRejectUserMintNftWithValue(otaReceiver string, amount uint64, shardID byte, txReqID common.Hash) *RejectUserMintNft {
 	return &RejectUserMintNft{
-		otaReceive: otaReceive,
-		amount:     amount,
-		shardID:    shardID,
-		txReqID:    txReqID,
+		otaReceiver: otaReceiver,
+		amount:      amount,
+		shardID:     shardID,
+		txReqID:     txReqID,
 	}
 }
 
@@ -60,15 +60,15 @@ func (r *RejectUserMintNft) StringSlice() ([]string, error) {
 
 func (r *RejectUserMintNft) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		OtaReceive string      `json:"OtaReceive"`
-		Amount     uint64      `json:"Amount"`
-		ShardID    byte        `json:"ShardID"`
-		TxReqID    common.Hash `json:"TxReqID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		Amount      uint64      `json:"Amount"`
+		ShardID     byte        `json:"ShardID"`
+		TxReqID     common.Hash `json:"TxReqID"`
 	}{
-		OtaReceive: r.otaReceive,
-		Amount:     r.amount,
-		ShardID:    r.shardID,
-		TxReqID:    r.txReqID,
+		OtaReceiver: r.otaReceiver,
+		Amount:      r.amount,
+		ShardID:     r.shardID,
+		TxReqID:     r.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -78,24 +78,24 @@ func (r *RejectUserMintNft) MarshalJSON() ([]byte, error) {
 
 func (r *RejectUserMintNft) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		OtaReceive string      `json:"OtaReceive"`
-		Amount     uint64      `json:"Amount"`
-		ShardID    byte        `json:"ShardID"`
-		TxReqID    common.Hash `json:"TxReqID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		Amount      uint64      `json:"Amount"`
+		ShardID     byte        `json:"ShardID"`
+		TxReqID     common.Hash `json:"TxReqID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	r.amount = temp.Amount
-	r.otaReceive = temp.OtaReceive
+	r.otaReceiver = temp.OtaReceiver
 	r.shardID = temp.ShardID
 	r.txReqID = temp.TxReqID
 	return nil
 }
 
-func (r *RejectUserMintNft) OtaReceive() string {
-	return r.otaReceive
+func (r *RejectUserMintNft) OtaReceiver() string {
+	return r.otaReceiver
 }
 
 func (r *RejectUserMintNft) Amount() uint64 {

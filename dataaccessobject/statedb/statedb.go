@@ -810,20 +810,11 @@ func (stateDB *StateDB) getShardsCommitteeState(sIDs []int) (currentValidator ma
 	return currentValidator
 }
 
-func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map[int][]*StakerInfo) {
-	currentValidator := make(map[int][]*CommitteeState)
+func (stateDB *StateDB) getShardsCommitteeInfo(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfo) {
 	curValidatorInfo = make(map[int][]*StakerInfo)
-	for _, shardID := range sIDs {
-		// Current Validator
-		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
-		resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
-		tempCurrentValidator := []*CommitteeState{}
-		for _, v := range resCurrentValidator {
-			tempCurrentValidator = append(tempCurrentValidator, v)
-		}
-		currentValidator[shardID] = tempCurrentValidator
+	for shardID, listCommittee := range curValidator {
 		tempStakerInfos := []*StakerInfo{}
-		for _, c := range currentValidator[shardID] {
+		for _, c := range listCommittee {
 			cPKBytes, _ := c.committeePublicKey.RawBytes()
 			s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
 			if err != nil {
@@ -840,21 +831,21 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 	return curValidatorInfo
 }
 
-func (stateDB *StateDB) getShardsCommitteeInfov2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfo) {
-	curValidatorInfo = make(map[int][]*StakerInfo)
+func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfoV2) {
+	curValidatorInfo = make(map[int][]*StakerInfoV2)
 	for shardID, listCommittee := range curValidator {
-		tempStakerInfos := []*StakerInfo{}
+		tempStakerInfos := []*StakerInfoV2{}
 		for _, c := range listCommittee {
 			cPKBytes, _ := c.committeePublicKey.RawBytes()
+			committeePublicKeyString, _ := c.committeePublicKey.ToBase58()
 			s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
 			if err != nil {
 				panic(err)
 			}
 			if !has || s == nil {
-				res, err2 := c.committeePublicKey.ToBase58()
-				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+				panic(errors.Errorf("Can not found staker info for this committee %+v", committeePublicKeyString))
 			}
-			tempStakerInfos = append(tempStakerInfos, s)
+			tempStakerInfos = append(tempStakerInfos, NewStakerInfoV2(committeePublicKeyString, s))
 		}
 		curValidatorInfo[shardID] = tempStakerInfos
 	}
@@ -1865,6 +1856,109 @@ func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConf
 		return portalConfirmProofState.GetValue().(*PortalConfirmProofState), true, nil
 	}
 	return NewPortalConfirmProofState(), false, nil
+}
+
+// ================================= Portal V4 OBJECT =======================================
+func (stateDB *StateDB) getShieldingRequestByKey(key common.Hash) (*ShieldingRequest, bool, error) {
+	shieldingRequest, err := stateDB.getStateObject(PortalV4ShieldRequestObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if shieldingRequest != nil {
+		return shieldingRequest.GetValue().(*ShieldingRequest), true, nil
+	}
+	return NewShieldingRequest(), false, nil
+}
+
+func (stateDB *StateDB) getShieldingRequestsByTokenID(tokenID string) map[string]*ShieldingRequest {
+	shieldingRequests := make(map[string]*ShieldingRequest)
+	temp := stateDB.trie.NodeIterator(GetShieldingRequestPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		sr := NewShieldingRequest()
+		err := json.Unmarshal(newValue, sr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		shieldingRequests[keyHash.String()] = sr
+	}
+	return shieldingRequests
+}
+
+func (stateDB *StateDB) getUTXOsByTokenID(tokenID string) map[string]*UTXO {
+	utxos := make(map[string]*UTXO)
+	temp := stateDB.trie.NodeIterator(GetPortalUTXOStatePrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewUTXO()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		utxos[keyHash.String()] = wr
+	}
+	return utxos
+}
+
+func (stateDB *StateDB) getListWaitingUnshieldRequestsByTokenID(tokenID string) map[string]*WaitingUnshieldRequest {
+	waitingUnshieldRequests := make(map[string]*WaitingUnshieldRequest)
+	temp := stateDB.trie.NodeIterator(GetWaitingUnshieldRequestPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewWaitingUnshieldRequestState()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingUnshieldRequests[keyHash.String()] = wr
+	}
+	return waitingUnshieldRequests
+}
+
+func (stateDB *StateDB) getListProcessedBatchUnshieldRequestsByTokenID(tokenID string) map[string]*ProcessedUnshieldRequestBatch {
+	processedBatchUnshieldRequests := make(map[string]*ProcessedUnshieldRequestBatch)
+	temp := stateDB.trie.NodeIterator(GetProcessedUnshieldRequestBatchPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewProcessedUnshieldRequestBatch()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		processedBatchUnshieldRequests[keyHash.String()] = wr
+	}
+	return processedBatchUnshieldRequests
+}
+
+func (stateDB *StateDB) getPortalV4StatusByKey(key common.Hash) (*PortalV4StatusState, bool, error) {
+	portalStatusState, err := stateDB.getStateObject(PortalV4StatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalStatusState != nil {
+		return portalStatusState.GetValue().(*PortalV4StatusState), true, nil
+	}
+	return NewPortalV4StatusState(), false, nil
 }
 
 // ================================= BSC bridge OBJECT =======================================

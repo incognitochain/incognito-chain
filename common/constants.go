@@ -211,8 +211,13 @@ var (
 
 /* ================ Feature Flags ================ */
 const (
-	PortalRelayingFlag = 0
-	PortalV3Flag       = 1
+	PortalRelayingFlag = "PortalRelaying"
+	PortalV3Flag       = "PortalV3"
+	PortalV4Flag       = "PortalV4"
+)
+const (
+	PortalVersion3 = 3
+	PortalVersion4 = 4
 )
 
 var TIMESLOT = uint64(0) //need to be set when init chain
