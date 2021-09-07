@@ -29,28 +29,6 @@ type stateV2 struct {
 	processor                   stateProcessorV2
 }
 
-func (params *Params) readConfig() *Params {
-	res := &Params{
-		DefaultFeeRateBPS:               config.Param().PDexParams.Params.DefaultFeeRateBPS,
-		FeeRateBPS:                      map[string]uint{},
-		PRVDiscountPercent:              config.Param().PDexParams.Params.PRVDiscountPercent,
-		TradingProtocolFeePercent:       config.Param().PDexParams.Params.TradingProtocolFeePercent,
-		TradingStakingPoolRewardPercent: config.Param().PDexParams.Params.TradingStakingPoolRewardPercent,
-		PDEXRewardPoolPairsShare:        map[string]uint{},
-		StakingPoolsShare:               config.Param().PDexParams.Params.StakingPoolsShare,
-		StakingRewardTokens:             []common.Hash{},
-		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
-		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
-	}
-	if res.FeeRateBPS == nil {
-		res.FeeRateBPS = make(map[string]uint)
-	}
-	if res.StakingPoolsShare == nil {
-		res.StakingPoolsShare = make(map[string]uint)
-	}
-	return res
-}
-
 func (s *stateV2) readConfig() {
 	s.params = s.params.readConfig()
 	s.stakingPoolStates = make(map[string]*StakingPoolState)

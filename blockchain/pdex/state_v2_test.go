@@ -204,6 +204,22 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
+				params: &Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					PDEXRewardPoolPairsShare:        map[string]uint{},
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					StakingRewardTokens:  []common.Hash{},
+					MintNftRequireAmount: 1000000000,
+					MaxOrdersPerNft:      10,
+				},
 			},
 			fieldsAfterProcess: fields{
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
@@ -217,12 +233,15 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 							200, 100, 400,
 							big.NewInt(200), big.NewInt(800),
 							20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{},
+							map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID1: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -230,6 +249,22 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
+				},
+				params: &Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PRVDiscountPercent:              25,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					PDEXRewardPoolPairsShare:        map[string]uint{},
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					StakingRewardTokens:  []common.Hash{},
+					MintNftRequireAmount: 1000000000,
+					MaxOrdersPerNft:      10,
 				},
 			},
 			args: args{
@@ -427,7 +462,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
-				params: Params{},
+				params: NewParams(),
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
 						liquidity: 150,
@@ -677,12 +712,15 @@ func Test_stateV2_Process(t *testing.T) {
 							200, 100, 400,
 							big.NewInt(200), big.NewInt(800),
 							20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{},
+							map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID1: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -1841,74 +1879,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("stateV2.GetDiff() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func TestParams_IsZeroValue(t *testing.T) {
-	type fields struct {
-		DefaultFeeRateBPS               uint
-		FeeRateBPS                      map[string]uint
-		PRVDiscountPercent              uint
-		LimitProtocolFeePercent         uint
-		LimitStakingPoolRewardPercent   uint
-		TradingProtocolFeePercent       uint
-		TradingStakingPoolRewardPercent uint
-		DefaultStakingPoolsShare        uint
-		StakingPoolsShare               map[string]uint
-		MintNftRequireAmount            uint64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   bool
-	}{
-		{
-			name: "is zero value",
-			fields: fields{
-				FeeRateBPS:        make(map[string]uint),
-				StakingPoolsShare: make(map[string]uint),
-			},
-			want: true,
-		},
-		{
-			name: "not zero value",
-			fields: fields{
-				DefaultFeeRateBPS: 30,
-				FeeRateBPS: map[string]uint{
-					"abc": 12,
-				},
-				PRVDiscountPercent:              25,
-				LimitProtocolFeePercent:         0,
-				LimitStakingPoolRewardPercent:   10,
-				TradingProtocolFeePercent:       0,
-				TradingStakingPoolRewardPercent: 10,
-				DefaultStakingPoolsShare:        0,
-				StakingPoolsShare: map[string]uint{
-					common.PRVIDStr: 10,
-				},
-				MintNftRequireAmount: 1000000000,
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			params := &Params{
-				DefaultFeeRateBPS:               tt.fields.DefaultFeeRateBPS,
-				FeeRateBPS:                      tt.fields.FeeRateBPS,
-				PRVDiscountPercent:              tt.fields.PRVDiscountPercent,
-				LimitProtocolFeePercent:         tt.fields.LimitProtocolFeePercent,
-				LimitStakingPoolRewardPercent:   tt.fields.LimitStakingPoolRewardPercent,
-				TradingProtocolFeePercent:       tt.fields.TradingProtocolFeePercent,
-				TradingStakingPoolRewardPercent: tt.fields.TradingStakingPoolRewardPercent,
-				DefaultStakingPoolsShare:        tt.fields.DefaultStakingPoolsShare,
-				StakingPoolsShare:               tt.fields.StakingPoolsShare,
-				MintNftRequireAmount:            tt.fields.MintNftRequireAmount,
-			}
-			if got := params.IsZeroValue(); got != tt.want {
-				t.Errorf("Params.IsZeroValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
