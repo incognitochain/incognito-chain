@@ -1,11 +1,13 @@
 package coinIndexer
 
 import (
+	"bytes"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 const (
@@ -53,7 +55,8 @@ func getCoinFilterByOTAKey() CoinMatcher {
 }
 
 // GetCoinFilterByOTAKeyAndToken returns a functions that filters if an output coin is of a specific token and belongs to an OTAKey.
-// If the given token is the generic `common.ConfidentialAssetID`, it immediately returns true after the belonging check.
+// If the given token is the generic `common.ConfidentialAssetID` and the retrieved coin has an asset tag field,
+// it immediately returns true after the belonging check.
 func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool {
 		entry, exists := kvargs["otaKey"]
@@ -76,7 +79,7 @@ func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 		ks.OTAKey = vk
 
 		if pass, sharedSecret := c.DoesCoinBelongToKeySet(ks); pass {
-			if tokenID.String() == common.ConfidentialAssetID.String() {
+			if tokenID.String() == common.ConfidentialAssetID.String() && c.GetAssetTag() != nil {
 				return true
 			}
 			pass, _ = c.ValidateAssetTag(sharedSecret, tokenID)
@@ -135,6 +138,8 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 	pubKeyBytes := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
 
+	burningPubKey := wallet.GetBurningPublicKey()
+
 	var outCoins []privacy.Coin
 	// avoid overlap; unless lower height is 0
 	start := startHeight + 1
@@ -160,6 +165,12 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 				utils.Logger.Log.Error("get outCoins ver 2 from bytes error: %v\n", err)
 				return nil, err
 			}
+
+			// check if the output coin was sent to the burning address
+			if bytes.Equal(cv2.GetPublicKey().ToBytesS(), burningPubKey) {
+				continue
+			}
+
 			pass := false
 			for _, f := range filters {
 				if f(cv2, params) {
@@ -191,6 +202,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 		res[otaStr] = make([]privacy.Coin, 0)
 	}
 
+	burningPubKey := wallet.GetBurningPublicKey()
 	countSkipped := 0
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
@@ -204,6 +216,12 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 			if err != nil {
 				utils.Logger.Log.Error("Get outCoins ver 2 from bytes", err)
 				return nil, err
+			}
+
+			// check if the output coin was sent to the burning address
+			if bytes.Equal(cv2.GetPublicKey().ToBytesS(), burningPubKey) {
+				countSkipped++
+				continue
 			}
 
 			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {

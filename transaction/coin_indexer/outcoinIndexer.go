@@ -531,8 +531,8 @@ func (ci *CoinIndexer) Start() {
 		return
 	}
 
-	ci.IdxChan = make(chan IndexParam, 2*ci.numWorkers)
-	ci.statusChan = make(chan JobStatus, 2*ci.numWorkers)
+	ci.IdxChan = make(chan IndexParam, 10*ci.numWorkers)
+	ci.statusChan = make(chan JobStatus, 10*ci.numWorkers)
 	ci.quitChan = make(chan bool)
 	ci.idxQueue = make(map[byte][]IndexParam)
 	for shardID := 0; shardID < common.MaxShardNumber; shardID++ {

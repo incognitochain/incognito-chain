@@ -2139,6 +2139,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 				finalBeaconCommitteeStateV2:       tt.fields.finalBeaconCommitteeStateV2,
 				uncommittedBeaconCommitteeStateV2: tt.fields.uncommittedBeaconCommitteeStateV2,
 			}
+			engine.finalBeaconCommitteeStateV2.hashes = new(BeaconCommitteeStateHash)
 			_, got1, got2, err := engine.UpdateCommitteeState(tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("BeaconCommitteeEngineV2.UpdateCommitteeState() error = %v, wantErr %v", err, tt.wantErr)
@@ -5117,6 +5118,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 				finalBeaconCommitteeStateV2:       tt.fields.finalBeaconCommitteeStateV2,
 				uncommittedBeaconCommitteeStateV2: tt.fields.uncommittedBeaconCommitteeStateV2,
 			}
+			engine.finalBeaconCommitteeStateV2.hashes = new(BeaconCommitteeStateHash)
 			_, got1, got2, err := engine.UpdateCommitteeState(tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeEngineV2.UpdateCommitteeState() error = %v, wantErr %v", err, tt.wantErr)
