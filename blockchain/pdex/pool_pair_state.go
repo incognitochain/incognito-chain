@@ -425,7 +425,7 @@ func (p *PoolPairState) cloneShare(nftID string) map[string]*Share {
 	res := make(map[string]*Share)
 	for k, v := range p.shares {
 		if k == nftID {
-			res[k] = v.cloneState()
+			res[k] = v.Clone()
 		} else {
 			res[k] = v
 		}

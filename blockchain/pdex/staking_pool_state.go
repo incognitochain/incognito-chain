@@ -153,7 +153,7 @@ func (s *StakingPoolState) cloneStaker(nftID string) map[string]*Staker {
 	res := make(map[string]*Staker)
 	for k, v := range s.stakers {
 		if k == nftID {
-			res[k] = v.cloneState()
+			res[k] = v.Clone()
 		} else {
 			res[k] = v
 		}

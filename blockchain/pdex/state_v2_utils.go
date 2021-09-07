@@ -64,12 +64,18 @@ func (share *Share) Clone() *Share {
 	return res
 }
 
-func (share *Share) cloneState() *Share {
-	res := NewShare()
-	res.amount = share.amount
-	res.tradingFees = share.tradingFees
-	return res
-}
+/*func (share *Share) cloneState() *Share {*/
+//res := NewShare()
+//res.amount = share.amount
+//for k, v := range share.tradingFees {
+//res.tradingFees[k] = v
+//}
+//res.lastLPFeesPerShare = map[common.Hash]*big.Int{}
+//for k, v := range share.lastLPFeesPerShare {
+//res.lastLPFeesPerShare[k] = new(big.Int).Set(v)
+//}
+//return res
+/*}*/
 
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
@@ -216,13 +222,13 @@ func (staker *Staker) Clone() *Staker {
 	return res
 }
 
-func (staker *Staker) cloneState() *Staker {
-	res := NewStaker()
-	res.liquidity = staker.liquidity
-	res.lastUpdatedBeaconHeight = staker.lastUpdatedBeaconHeight
-	res.rewards = staker.rewards
-	return res
-}
+/*func (staker *Staker) cloneState() *Staker {*/
+//res := NewStaker()
+//res.liquidity = staker.liquidity
+//res.lastUpdatedBeaconHeight = staker.lastUpdatedBeaconHeight
+//res.rewards = staker.rewards
+//return res
+/*}*/
 
 func (staker *Staker) getDiff(stakingPoolID, nftID string, compareStaker *Staker, stateChange *StateChange) *StateChange {
 	newStateChange := stateChange
