@@ -155,7 +155,6 @@ func (engine *Engine) WatchCommitteeChange() {
 			engine.initProcess(chainID, chainName)
 		} else {
 			if engine.version[chainID] != currActorVersion {
-				engine.bftProcess[chainID].Stop()
 				engine.bftProcess[chainID].Destroy()
 				engine.initProcess(chainID, chainName)
 			}
