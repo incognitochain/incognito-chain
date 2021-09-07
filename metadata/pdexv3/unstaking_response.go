@@ -204,7 +204,10 @@ func (response *UnstakingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			instContent.Amount != paidAmount ||
 			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
 			instContent.StakingPoolID.String() != coinID.String() {
-			metadataCommon.Logger.Log.Debug("Coin is invalid")
+			metadataCommon.Logger.Log.Debugf("mintcoinPk %v otaReceiverPk %v", pk, otaReceiver.PublicKey.ToBytesS())
+			metadataCommon.Logger.Log.Debugf("instContent.Amount %v paidAmount %v", instContent.Amount, paidAmount)
+			metadataCommon.Logger.Log.Debugf("txR %v otaReceiver.TxRandom %v", txR, otaReceiver.TxRandom)
+			metadataCommon.Logger.Log.Debugf("instContent.StakingPoolID %v coinID %v", instContent.StakingPoolID.String(), coinID.String())
 			return false, errors.New("Coin is invalid")
 		}
 		idx = i
