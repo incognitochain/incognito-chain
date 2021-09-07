@@ -438,6 +438,11 @@ TransactionLoop:
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
+		if v2.IsEmptyLiquidity(pair.state) {
+			Logger.log.Warnf("No liquidity in pair %s", currentOrderReq.PoolPairID)
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
 
 		orderID := tx.Hash().String()
 		orderbook := pair.orderbook

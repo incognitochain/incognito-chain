@@ -49,8 +49,11 @@ func (tp TradingPair) AmountToSell(buyAmount uint64, tradeDirection byte) (uint6
 func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeDirection byte, ord *MatchingOrder) (uint64, uint64, *big.Int, *big.Int, error) {
 	token0Change := big.NewInt(0)
 	token1Change := big.NewInt(0)
-
 	maxDeltaX := big.NewInt(0).SetUint64(maxSellAmountAfterFee)
+
+	if IsEmptyLiquidity(*tp.Pdexv3PoolPair) {
+		return 0, 0, nil, nil, fmt.Errorf("No liquidity in pool for swap")
+	}
 
 	// x, y represent selling & buying reserves, respectively
 	var xV, yV *big.Int
@@ -410,4 +413,9 @@ func (tp *TradingPair) AddFee(
 	tempLPFeesPerShare[tokenID] = newLPFeesPerShare
 
 	tp.SetLPFeesPerShare(tempLPFeesPerShare)
+}
+
+func IsEmptyLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {
+	return poolPair.Token0VirtualAmount().Cmp(big.NewInt(0)) <= 0 &&
+		poolPair.Token1VirtualAmount().Cmp(big.NewInt(0)) <= 0
 }
