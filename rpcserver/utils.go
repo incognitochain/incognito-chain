@@ -182,12 +182,17 @@ type Pdexv3AddLiquidityRequest struct {
 }
 
 type Pdexv3WithdrawLiquidityRequest struct {
-	TokenID      string `json:"TokenID"`
-	TokenAmount  string `json:"TokenAmount"`
-	PoolPairID   string `json:"PoolPairID"`
-	Index        string `json:"Index"`
-	Token0Amount string `json:"Token0Amount"`
-	Token1Amount string `json:"Token1Amount"`
+	TokenID     string `json:"TokenID"`
+	TokenAmount string `json:"TokenAmount"`
+	PoolPairID  string `json:"PoolPairID"`
+	Index       string `json:"Index"`
+	ShareAmount string `json:"ShareAmount"`
+}
+
+type Pdexv3StakingRequest struct {
+	TokenID     string `json:"TokenID"`
+	TokenAmount string `json:"TokenAmount"`
+	NftID       string `json:"NftID"`
 }
 
 // Uint64Reader wraps the unmarshaling of uint64 numbers from both integer & string formats.
@@ -209,6 +214,3 @@ func (u *Uint64Reader) UnmarshalJSON(raw []byte) error {
 	*u = Uint64Reader(theNum)
 	return err
 }
-
-
-

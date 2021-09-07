@@ -575,7 +575,9 @@ func InitStateFromDB(
 ) (State, error) {
 	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-			return newStateV2(), nil
+			res := newStateV2()
+			res.readConfig()
+			return res, nil
 		}
 		return initStateV2(stateDB, beaconHeight)
 	}
@@ -751,7 +753,7 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 
 // getWeightedFee() converts the fee paid in PRV to the equivalent token amount,
 // then applies the system's discount rate. Fee paid in non-PRV tokens remain the same.
-func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState, params Params,
+func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState, params *Params,
 ) ([]metadata.Transaction, map[string]bool, map[string]uint64, map[string]uint64, []metadata.Transaction, error) {
 	temp := uint64(100) - uint64(params.PRVDiscountPercent)
 	if temp > 100 {

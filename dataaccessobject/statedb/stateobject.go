@@ -101,6 +101,16 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
+	case PortalV4StatusObjectType:
+		return newPortalV4StatusObjectWithValue(db, hash, value)
+	case PortalV4UTXOObjectType:
+		return newUTXOObjectWithValue(db, hash, value)
+	case PortalV4ShieldRequestObjectType:
+		return newShieldingRequestObjectWithValue(db, hash, value)
+	case PortalWaitingUnshieldObjectType:
+		return newWaitingUnshieldObjectWithValue(db, hash, value)
+	case PortalProcessedUnshieldRequestBatchObjectType:
+		return newProcessUnshieldRequestBatchObjectWithValue(db, hash, value)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObjectWithValue(db, hash, value)
 	case Pdexv3StatusObjectType:
@@ -113,12 +123,14 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairObjectWithValue(db, hash, value)
 	case Pdexv3ShareObjectType:
 		return newPdexv3ShareObjectWithValue(db, hash, value)
-	case Pdexv3TradingFeeObjectType:
-		return newPdexv3TradingFeeObjectWithValue(db, hash, value)
 	case Pdexv3NftObjectType:
 		return newPdexv3NftObjectWithValue(db, hash, value)
 	case Pdexv3OrderObjectType:
 		return newPdexv3OrderObjectWithValue(db, hash, value)
+	case Pdexv3StakerObjectType:
+		return newPdexv3StakerObjectWithValue(db, hash, value)
+	case Pdexv3StakerRewardObjectType:
+		return newPdexv3StakerRewardObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -200,6 +212,16 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPortalConfirmProofStateObject(db, hash)
 	case StakerObjectType:
 		return newStakerObject(db, hash)
+	case PortalV4StatusObjectType:
+		return newPortalV4StatusObject(db, hash)
+	case PortalV4UTXOObjectType:
+		return newUTXOObject(db, hash)
+	case PortalV4ShieldRequestObjectType:
+		return newShieldingRequestObject(db, hash)
+	case PortalWaitingUnshieldObjectType:
+		return newWaitingUnshieldObject(db, hash)
+	case PortalProcessedUnshieldRequestBatchObjectType:
+		return newProcessUnshieldRequestBatchObject(db, hash)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObject(db, hash)
 	case Pdexv3StatusObjectType:
@@ -212,12 +234,14 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairObject(db, hash)
 	case Pdexv3ShareObjectType:
 		return newPdexv3StatusObject(db, hash)
-	case Pdexv3TradingFeeObjectType:
-		return newPdexv3TradingFeeObject(db, hash)
 	case Pdexv3NftObjectType:
 		return newPdexv3NftObject(db, hash)
 	case Pdexv3OrderObjectType:
 		return newPdexv3OrderObject(db, hash)
+	case Pdexv3StakerObjectType:
+		return newPdexv3StakerObject(db, hash)
+	case Pdexv3StakerRewardObjectType:
+		return newPdexv3StakerRewardObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

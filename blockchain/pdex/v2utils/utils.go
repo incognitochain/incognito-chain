@@ -23,3 +23,10 @@ type WithdrawStatus struct {
 	Token1ID     string `json:"Token1ID"`
 	Token1Amount uint64 `json:"Token1Amount"`
 }
+
+type StakingStatus struct {
+	Status        string `json:"Status"`
+	NftID         string `json:"NftID"`
+	StakingPoolID string `json:"StakingPoolID"`
+	Liquidity     uint64 `json:"Liquidity"`
+}

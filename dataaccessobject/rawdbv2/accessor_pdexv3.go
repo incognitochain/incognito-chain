@@ -9,15 +9,14 @@ import (
 
 //Pdexv3Contribution Real data store to statedb
 type Pdexv3Contribution struct {
-	poolPairID     string
-	receiveAddress string
-	refundAddress  string
-	tokenID        common.Hash
-	amount         uint64
-	amplifier      uint
-	txReqID        common.Hash
-	nftID          common.Hash
-	shardID        byte
+	poolPairID  string
+	otaReceiver string
+	tokenID     common.Hash
+	amount      uint64
+	amplifier   uint
+	txReqID     common.Hash
+	nftID       common.Hash
+	shardID     byte
 }
 
 func (contribution *Pdexv3Contribution) NftID() common.Hash {
@@ -40,12 +39,8 @@ func (contribution *Pdexv3Contribution) PoolPairID() string {
 	return contribution.poolPairID
 }
 
-func (contribution *Pdexv3Contribution) ReceiveAddress() string {
-	return contribution.receiveAddress
-}
-
-func (contribution *Pdexv3Contribution) RefundAddress() string {
-	return contribution.refundAddress
+func (contribution *Pdexv3Contribution) OtaReceiver() string {
+	return contribution.otaReceiver
 }
 
 func (contribution *Pdexv3Contribution) TokenID() common.Hash {
@@ -62,25 +57,24 @@ func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID     string      `json:"PoolPairID"`
-		ReceiveAddress string      `json:"ReceiveAddress"`
-		RefundAddress  string      `json:"RefundAddress"`
-		TokenID        common.Hash `json:"TokenID"`
-		Amount         uint64      `json:"Amount"`
-		Amplifier      uint        `json:"Amplifier"`
-		TxReqID        common.Hash `json:"TxReqID"`
-		NftID          common.Hash `json:"NftID"`
-		ShardID        byte        `json:"ShardID"`
+		PoolPairID    string      `json:"PoolPairID"`
+		OtaReceiver   string      `json:"OtaReceiver"`
+		RefundAddress string      `json:"RefundAddress"`
+		TokenID       common.Hash `json:"TokenID"`
+		Amount        uint64      `json:"Amount"`
+		Amplifier     uint        `json:"Amplifier"`
+		TxReqID       common.Hash `json:"TxReqID"`
+		NftID         common.Hash `json:"NftID"`
+		ShardID       byte        `json:"ShardID"`
 	}{
-		PoolPairID:     contribution.poolPairID,
-		ReceiveAddress: contribution.receiveAddress,
-		RefundAddress:  contribution.refundAddress,
-		TokenID:        contribution.tokenID,
-		Amount:         contribution.amount,
-		TxReqID:        contribution.txReqID,
-		Amplifier:      contribution.amplifier,
-		NftID:          contribution.nftID,
-		ShardID:        contribution.shardID,
+		PoolPairID:  contribution.poolPairID,
+		OtaReceiver: contribution.otaReceiver,
+		TokenID:     contribution.tokenID,
+		Amount:      contribution.amount,
+		TxReqID:     contribution.txReqID,
+		Amplifier:   contribution.amplifier,
+		NftID:       contribution.nftID,
+		ShardID:     contribution.shardID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -90,23 +84,21 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 
 func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID     string      `json:"PoolPairID"`
-		ReceiveAddress string      `json:"ReceiveAddress"`
-		RefundAddress  string      `json:"RefundAddress"`
-		TokenID        common.Hash `json:"TokenID"`
-		Amount         uint64      `json:"Amount"`
-		Amplifier      uint        `json:"Amplifier"`
-		TxReqID        common.Hash `json:"TxReqID"`
-		NftID          common.Hash `json:"NftID"`
-		ShardID        byte        `json:"ShardID"`
+		PoolPairID  string      `json:"PoolPairID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TokenID     common.Hash `json:"TokenID"`
+		Amount      uint64      `json:"Amount"`
+		Amplifier   uint        `json:"Amplifier"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		NftID       common.Hash `json:"NftID"`
+		ShardID     byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	contribution.poolPairID = temp.PoolPairID
-	contribution.receiveAddress = temp.ReceiveAddress
-	contribution.refundAddress = temp.RefundAddress
+	contribution.otaReceiver = temp.OtaReceiver
 	contribution.tokenID = temp.TokenID
 	contribution.amount = temp.Amount
 	contribution.txReqID = temp.TxReqID
@@ -118,7 +110,7 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 
 func (contribution *Pdexv3Contribution) Clone() *Pdexv3Contribution {
 	return NewPdexv3ContributionWithValue(
-		contribution.poolPairID, contribution.receiveAddress, contribution.refundAddress,
+		contribution.poolPairID, contribution.otaReceiver,
 		contribution.tokenID, contribution.txReqID, contribution.nftID,
 		contribution.amount, contribution.amplifier, contribution.shardID,
 	)
@@ -129,20 +121,19 @@ func NewPdexv3Contribution() *Pdexv3Contribution {
 }
 
 func NewPdexv3ContributionWithValue(
-	poolPairID, receiveAddress, refundAddress string,
+	poolPairID, otaReceiver string,
 	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
-		poolPairID:     poolPairID,
-		refundAddress:  refundAddress,
-		receiveAddress: receiveAddress,
-		tokenID:        tokenID,
-		amount:         amount,
-		txReqID:        txReqID,
-		nftID:          nftID,
-		amplifier:      amplifier,
-		shardID:        shardID,
+		poolPairID:  poolPairID,
+		otaReceiver: otaReceiver,
+		tokenID:     tokenID,
+		amount:      amount,
+		txReqID:     txReqID,
+		nftID:       nftID,
+		amplifier:   amplifier,
+		shardID:     shardID,
 	}
 }
 
@@ -155,10 +146,9 @@ type Pdexv3PoolPair struct {
 	token0VirtualAmount *big.Int
 	token1VirtualAmount *big.Int
 	amplifier           uint
-}
-
-func (pp *Pdexv3PoolPair) SetShareAmount(shareAmount uint64) {
-	pp.shareAmount = shareAmount
+	lpFeesPerShare      map[common.Hash]*big.Int
+	protocolFees        map[common.Hash]uint64
+	stakingPoolFees     map[common.Hash]uint64
 }
 
 func (pp *Pdexv3PoolPair) ShareAmount() uint64 {
@@ -193,6 +183,22 @@ func (pp *Pdexv3PoolPair) Token1VirtualAmount() *big.Int {
 	return pp.token1VirtualAmount
 }
 
+func (pp *Pdexv3PoolPair) LPFeesPerShare() map[common.Hash]*big.Int {
+	return pp.lpFeesPerShare
+}
+
+func (pp *Pdexv3PoolPair) ProtocolFees() map[common.Hash]uint64 {
+	return pp.protocolFees
+}
+
+func (pp *Pdexv3PoolPair) StakingPoolFees() map[common.Hash]uint64 {
+	return pp.stakingPoolFees
+}
+
+func (pp *Pdexv3PoolPair) SetShareAmount(shareAmount uint64) {
+	pp.shareAmount = shareAmount
+}
+
 func (pp *Pdexv3PoolPair) SetToken0RealAmount(amount uint64) {
 	pp.token0RealAmount = amount
 }
@@ -209,16 +215,31 @@ func (pp *Pdexv3PoolPair) SetToken1VirtualAmount(amount *big.Int) {
 	pp.token1VirtualAmount = amount
 }
 
+func (pp *Pdexv3PoolPair) SetLPFeesPerShare(fees map[common.Hash]*big.Int) {
+	pp.lpFeesPerShare = fees
+}
+
+func (pp *Pdexv3PoolPair) SetProtocolFees(fees map[common.Hash]uint64) {
+	pp.protocolFees = fees
+}
+
+func (pp *Pdexv3PoolPair) SetStakingPoolFees(fees map[common.Hash]uint64) {
+	pp.stakingPoolFees = fees
+}
+
 func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Token0ID            common.Hash `json:"Token0ID"`
-		Token1ID            common.Hash `json:"Token1ID"`
-		Token0RealAmount    uint64      `json:"Token0RealAmount"`
-		Token1RealAmount    uint64      `json:"Token1RealAmount"`
-		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
-		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
-		Amplifier           uint        `json:"Amplifier"`
-		ShareAmount         uint64      `json:"ShareAmount"`
+		Token0ID            common.Hash              `json:"Token0ID"`
+		Token1ID            common.Hash              `json:"Token1ID"`
+		Token0RealAmount    uint64                   `json:"Token0RealAmount"`
+		Token1RealAmount    uint64                   `json:"Token1RealAmount"`
+		Token0VirtualAmount *big.Int                 `json:"Token0VirtualAmount"`
+		Token1VirtualAmount *big.Int                 `json:"Token1VirtualAmount"`
+		Amplifier           uint                     `json:"Amplifier"`
+		ShareAmount         uint64                   `json:"ShareAmount"`
+		LPFeesPerShare      map[common.Hash]*big.Int `json:"LPFeesPerShare"`
+		ProtocolFees        map[common.Hash]uint64   `json:"ProtocolFees"`
+		StakingPoolFees     map[common.Hash]uint64   `json:"StakingPoolFees"`
 	}{
 		Token0ID:            pp.token0ID,
 		Token1ID:            pp.token1ID,
@@ -228,6 +249,9 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 		Token1VirtualAmount: pp.token1VirtualAmount,
 		Amplifier:           pp.amplifier,
 		ShareAmount:         pp.shareAmount,
+		LPFeesPerShare:      pp.lpFeesPerShare,
+		ProtocolFees:        pp.protocolFees,
+		StakingPoolFees:     pp.stakingPoolFees,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -237,14 +261,17 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 
 func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Token0ID            common.Hash `json:"Token0ID"`
-		Token1ID            common.Hash `json:"Token1ID"`
-		Token0RealAmount    uint64      `json:"Token0RealAmount"`
-		Token1RealAmount    uint64      `json:"Token1RealAmount"`
-		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
-		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
-		Amplifier           uint        `json:"Amplifier"`
-		ShareAmount         uint64      `json:"ShareAmount"`
+		Token0ID            common.Hash              `json:"Token0ID"`
+		Token1ID            common.Hash              `json:"Token1ID"`
+		Token0RealAmount    uint64                   `json:"Token0RealAmount"`
+		Token1RealAmount    uint64                   `json:"Token1RealAmount"`
+		Token0VirtualAmount *big.Int                 `json:"Token0VirtualAmount"`
+		Token1VirtualAmount *big.Int                 `json:"Token1VirtualAmount"`
+		Amplifier           uint                     `json:"Amplifier"`
+		ShareAmount         uint64                   `json:"ShareAmount"`
+		LPFeesPerShare      map[common.Hash]*big.Int `json:"LPFeesPerShare"`
+		ProtocolFees        map[common.Hash]uint64   `json:"ProtocolFees"`
+		StakingPoolFees     map[common.Hash]uint64   `json:"StakingPoolFees"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -258,26 +285,50 @@ func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	pp.token1VirtualAmount = temp.Token1VirtualAmount
 	pp.amplifier = temp.Amplifier
 	pp.shareAmount = temp.ShareAmount
+	pp.lpFeesPerShare = temp.LPFeesPerShare
+	pp.protocolFees = temp.ProtocolFees
+	pp.stakingPoolFees = temp.StakingPoolFees
 	return nil
 }
 
 func (pp *Pdexv3PoolPair) Clone() *Pdexv3PoolPair {
-	return NewPdexv3PoolPairWithValue(
+	res := NewPdexv3PoolPairWithValue(
 		pp.token0ID, pp.token1ID, pp.shareAmount,
 		pp.token0RealAmount, pp.token1RealAmount,
 		pp.token0VirtualAmount, pp.token1VirtualAmount, pp.amplifier,
+		pp.lpFeesPerShare, pp.protocolFees, pp.stakingPoolFees,
 	)
+	res.token0VirtualAmount = new(big.Int).Set(pp.token0VirtualAmount)
+	res.token1VirtualAmount = new(big.Int).Set(pp.token1VirtualAmount)
+	res.lpFeesPerShare = map[common.Hash]*big.Int{}
+	for k, v := range pp.lpFeesPerShare {
+		res.lpFeesPerShare[k] = new(big.Int).Set(v)
+	}
+	res.protocolFees = map[common.Hash]uint64{}
+	for k, v := range pp.protocolFees {
+		res.protocolFees[k] = v
+	}
+	res.stakingPoolFees = map[common.Hash]uint64{}
+	for k, v := range pp.stakingPoolFees {
+		res.stakingPoolFees[k] = v
+	}
+	return res
 }
 
 func NewPdexv3PoolPair() *Pdexv3PoolPair {
-	return &Pdexv3PoolPair{}
+	return &Pdexv3PoolPair{
+		lpFeesPerShare:  map[common.Hash]*big.Int{},
+		protocolFees:    map[common.Hash]uint64{},
+		stakingPoolFees: map[common.Hash]uint64{},
+	}
 }
 
 func NewPdexv3PoolPairWithValue(
 	token0ID, token1ID common.Hash,
 	shareAmount, token0RealAmount, token1RealAmount uint64,
 	token0VirtualAmount, token1VirtualAmount *big.Int,
-	amplifier uint,
+	amplifier uint, lpFeesPerShare map[common.Hash]*big.Int,
+	protocolFees map[common.Hash]uint64, stakingPoolFees map[common.Hash]uint64,
 ) *Pdexv3PoolPair {
 	return &Pdexv3PoolPair{
 		token0ID:            token0ID,
@@ -288,6 +339,9 @@ func NewPdexv3PoolPairWithValue(
 		token1VirtualAmount: token1VirtualAmount,
 		amplifier:           amplifier,
 		shareAmount:         shareAmount,
+		lpFeesPerShare:      lpFeesPerShare,
+		protocolFees:        protocolFees,
+		stakingPoolFees:     stakingPoolFees,
 	}
 }
 
@@ -368,9 +422,9 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 		Token0Rate     uint64      `json:"Token0Rate"`
 		Token1Rate     uint64      `json:"Token1Rate"`
 		Token0Balance  uint64      `json:"Token0Balance"`
-		Token1Balance  uint64 `json:"Token1Balance"`
-		TradeDirection byte   `json:"TradeDirection"`
-		Fee            uint64 `json:"Fee"`
+		Token1Balance  uint64      `json:"Token1Balance"`
+		TradeDirection byte        `json:"TradeDirection"`
+		Fee            uint64      `json:"Fee"`
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

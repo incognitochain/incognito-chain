@@ -237,6 +237,184 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 	return &acceptedMeta, reserves, nil
 }
 
+func TrackFee(
+	fee uint64, feeInPRV bool, baseLPPerShare *big.Int,
+	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
+	tradeDirections []byte, orderbooks []OrderBookIterator,
+	acceptedMeta *metadataPdexv3.AcceptedTrade,
+	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
+) (*metadataPdexv3.AcceptedTrade, error) {
+	mutualLen := len(reserves)
+	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
+		return nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
+	}
+
+	acceptedMeta.RewardEarned = make([]map[common.Hash]uint64, mutualLen)
+	for i := 0; i < mutualLen; i++ {
+		acceptedMeta.RewardEarned[i] = make(map[common.Hash]uint64)
+	}
+
+	if feeInPRV {
+		// uniformly split fee into reserves
+		feePerReserve := fee / uint64(mutualLen)
+		for i, reserve := range reserves {
+			if i == len(reserves)-1 {
+				feePerReserve += fee % uint64(mutualLen)
+			}
+			(&TradingPair{reserve}).AddFee(
+				common.PRVCoinID, feePerReserve, baseLPPerShare,
+				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
+			)
+			acceptedMeta.RewardEarned[i][common.PRVCoinID] = feePerReserve
+		}
+		return acceptedMeta, nil
+	}
+
+	sellAmountRemain := fee
+
+	var totalBuyAmount uint64
+	for i := 0; i < mutualLen; i++ {
+		rewardAmount := sellAmountRemain / uint64(mutualLen-i)
+		rewardToken := reserves[i].Token0ID()
+		if tradeDirections[i] == TradeDirectionSell1 {
+			rewardToken = reserves[i].Token1ID()
+		}
+		(&TradingPair{reserves[i]}).AddFee(
+			rewardToken, rewardAmount, baseLPPerShare,
+			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
+		)
+		acceptedMeta.RewardEarned[i][rewardToken] = rewardAmount
+
+		sellAmountRemain -= rewardAmount
+		if i == mutualLen-1 {
+			break
+		}
+
+		accumulatedToken0Change := big.NewInt(0)
+		accumulatedToken1Change := big.NewInt(0)
+		totalBuyAmount = uint64(0)
+
+		for order, ordID, err := orderbooks[i].NextOrder(tradeDirections[i]); err == nil; order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]) {
+			buyAmount, temp, token0Change, token1Change, err := (&TradingPair{reserves[i]}).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
+			if err != nil {
+				return nil, err
+			}
+			sellAmountRemain = temp
+			if totalBuyAmount+buyAmount < totalBuyAmount {
+				return nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
+			}
+			totalBuyAmount += buyAmount
+			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)
+			accumulatedToken1Change.Add(accumulatedToken1Change, token1Change)
+			if sellAmountRemain == 0 {
+				break
+			}
+			if order != nil {
+				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i])
+				if err != nil {
+					return nil, err
+				}
+				sellAmountRemain = temp
+				if totalBuyAmount+buyAmount < totalBuyAmount {
+					return nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
+				}
+				totalBuyAmount += buyAmount
+				// add order balance changes to "accepted" instruction
+				acceptedMeta.OrderChanges[i][ordID] = [2]*big.Int{token0Change, token1Change}
+				if sellAmountRemain == 0 {
+					break
+				}
+			}
+		}
+
+		// add pair changes to "accepted" instruction
+		acceptedMeta.PairChanges[i][0] = new(big.Int).Add(acceptedMeta.PairChanges[i][0], accumulatedToken0Change)
+		acceptedMeta.PairChanges[i][1] = new(big.Int).Add(acceptedMeta.PairChanges[i][1], accumulatedToken1Change)
+
+		// set sell amount before moving on to next pair
+		sellAmountRemain = totalBuyAmount
+	}
+
+	return acceptedMeta, nil
+}
+
+func (tp *TradingPair) AddFee(
+	tokenID common.Hash, amount uint64, baseLPPerShare *big.Int,
+	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
+) {
+	isStakingRewardToken := false
+	for _, stakingRewardToken := range stakingRewardTokens {
+		if tokenID == stakingRewardToken {
+			isStakingRewardToken = true
+			break
+		}
+	}
+
+	if !isStakingRewardToken {
+		stakingPoolRewardPercent = 0
+	}
+
+	// if there is no LP for this pair, then there is no LP fee to add
+	if tp.ShareAmount() == 0 {
+		if !isStakingRewardToken {
+			// move all LP fee to protocol fee
+			protocolFeePercent = 100
+		} else {
+			// move all LP fee to staking pool fee
+			stakingPoolRewardPercent = 100 - protocolFeePercent
+		}
+	}
+
+	fee := new(big.Int).SetUint64(amount)
+
+	protocolFees := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(protocolFeePercent)))
+	protocolFees = new(big.Int).Div(protocolFees, new(big.Int).SetUint64(100))
+
+	oldProtocolFees, isExisted := tp.ProtocolFees()[tokenID]
+	if !isExisted {
+		oldProtocolFees = uint64(0)
+	}
+	tempProtocolFees := tp.ProtocolFees()
+	tempProtocolFees[tokenID] = oldProtocolFees + protocolFees.Uint64()
+
+	tp.SetProtocolFees(tempProtocolFees)
+
+	stakingRewards := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
+	stakingRewards = new(big.Int).Div(stakingRewards, new(big.Int).SetUint64(100))
+
+	oldStakingRewards, isExisted := tp.StakingPoolFees()[tokenID]
+	if !isExisted {
+		oldStakingRewards = uint64(0)
+	}
+	tempStakingRewards := tp.StakingPoolFees()
+	tempStakingRewards[tokenID] = oldStakingRewards + stakingRewards.Uint64()
+
+	tp.SetStakingPoolFees(tempStakingRewards)
+
+	if tp.ShareAmount() == 0 {
+		return
+	}
+
+	oldLPFeesPerShare, isExisted := tp.LPFeesPerShare()[tokenID]
+	if !isExisted {
+		oldLPFeesPerShare = big.NewInt(0)
+	}
+
+	lpRewards := new(big.Int).Sub(fee, protocolFees)
+	lpRewards = new(big.Int).Sub(lpRewards, stakingRewards)
+
+	// delta (fee / LP share) = LP Reward * BASE / totalLPShare
+	deltaLPFeesPerShare := new(big.Int).Mul(lpRewards, baseLPPerShare)
+	deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(tp.ShareAmount()))
+
+	// update accumulated sum of (fee / LP share)
+	newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
+	tempLPFeesPerShare := tp.LPFeesPerShare()
+	tempLPFeesPerShare[tokenID] = newLPFeesPerShare
+
+	tp.SetLPFeesPerShare(tempLPFeesPerShare)
+}
+
 func IsEmptyLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {
 	return poolPair.Token0VirtualAmount().Cmp(big.NewInt(0)) <= 0 &&
 		poolPair.Token1VirtualAmount().Cmp(big.NewInt(0)) <= 0

@@ -68,6 +68,8 @@ var (
 	PRVCoinName           = "PRV"   // To send PRV in custom token
 	ConfidentialAssetID   = Hash{5}
 	ConfidentialAssetName = "CA"
+	PDEXCoinID            = Hash{6}
+	PDEXCoinName          = "PDEX"
 	MaxShardNumber        = 0
 )
 
@@ -181,9 +183,15 @@ const (
 const (
 	Pdexv3RejectUserMintNftStatus = "rejected"
 	Pdexv3AcceptUserMintNftStatus = "accept"
+	Pdexv3RejectStakingStatus     = "rejected"
+	Pdexv3AcceptStakingStatus     = "accept"
+	Pdexv3RejectUnstakingStatus   = "rejected"
+	Pdexv3AcceptUnstakingStatus   = "accept"
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
+const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
+const PDEXDenominatingDecimal = 9
 
 const ETHChainName = "eth"
 
@@ -203,8 +211,13 @@ var (
 
 /* ================ Feature Flags ================ */
 const (
-	PortalRelayingFlag = 0
-	PortalV3Flag       = 1
+	PortalRelayingFlag = "PortalRelaying"
+	PortalV3Flag       = "PortalV3"
+	PortalV4Flag       = "PortalV4"
+)
+const (
+	PortalVersion3 = 3
+	PortalVersion4 = 4
 )
 
 var TIMESLOT = uint64(0) //need to be set when init chain

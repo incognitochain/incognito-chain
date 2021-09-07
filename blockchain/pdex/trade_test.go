@@ -60,7 +60,7 @@ func TestSortOrder(t *testing.T) {
 	testcases = append(testcases, sortOrderTestcases...)
 
 	testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		Params{}, nil, map[string]uint64{})
+		&Params{}, nil, map[string]uint64{})
 	blankPairID := "pair0"
 	testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
 	for _, testcase := range testcases {
@@ -107,6 +107,7 @@ func TestProduceTrade(t *testing.T) {
 
 			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
 			testState := mustReadState("test_state.json")
+			testState.params = &Params{}
 			temp := &StateFormatter{}
 			temp.FromState(testState)
 
@@ -282,7 +283,7 @@ type StateFormatter struct {
 
 func (sf *StateFormatter) State() *stateV2 {
 	s := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		Params{}, nil, make(map[string]uint64))
+		&Params{}, nil, make(map[string]uint64))
 	for k, v := range sf.PoolPairs {
 		s.poolPairs[k] = &PoolPairState{state: *v.State, shares: v.Shares, orderbook: v.Orderbook}
 	}

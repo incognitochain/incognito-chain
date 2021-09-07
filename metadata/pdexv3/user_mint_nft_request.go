@@ -15,20 +15,20 @@ import (
 
 type UserMintNftRequest struct {
 	metadataCommon.MetadataBase
-	otaReceive string
-	amount     uint64
+	otaReceiver string
+	amount      uint64
 }
 
 func NewUserMintNftRequest() *UserMintNftRequest {
 	return &UserMintNftRequest{}
 }
 
-func NewUserMintNftRequestWithValue(otaReceive string, amount uint64) *UserMintNftRequest {
+func NewUserMintNftRequestWithValue(otaReceiver string, amount uint64) *UserMintNftRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.Pdexv3UserMintNftRequestMeta,
 	}
 	return &UserMintNftRequest{
-		otaReceive:   otaReceive,
+		otaReceiver:  otaReceiver,
 		amount:       amount,
 		MetadataBase: metadataBase,
 	}
@@ -55,12 +55,12 @@ func (request *UserMintNftRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	otaReceive := privacy.OTAReceiver{}
-	err := otaReceive.FromString(request.otaReceive)
+	otaReceiver := privacy.OTAReceiver{}
+	err := otaReceiver.FromString(request.otaReceiver)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
-	if !otaReceive.IsValid() {
+	if !otaReceiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
 	if request.amount == 0 {
@@ -90,7 +90,7 @@ func (request *UserMintNftRequest) ValidateMetadataByItself() bool {
 
 func (request *UserMintNftRequest) Hash() *common.Hash {
 	record := request.MetadataBase.Hash().String()
-	record += request.otaReceive
+	record += request.otaReceiver
 	record += strconv.FormatUint(uint64(request.amount), 10)
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -103,12 +103,12 @@ func (request *UserMintNftRequest) CalculateSize() uint64 {
 
 func (request *UserMintNftRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		OtaReceive string `json:"OtaReceive"`
-		Amount     uint64 `json:"Amount"`
+		OtaReceiver string `json:"OtaReceiver"`
+		Amount      uint64 `json:"Amount"`
 		metadataCommon.MetadataBase
 	}{
 		Amount:       request.amount,
-		OtaReceive:   request.otaReceive,
+		OtaReceiver:  request.otaReceiver,
 		MetadataBase: request.MetadataBase,
 	})
 	if err != nil {
@@ -119,8 +119,8 @@ func (request *UserMintNftRequest) MarshalJSON() ([]byte, error) {
 
 func (request *UserMintNftRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		OtaReceive string `json:"OtaReceive"`
-		Amount     uint64 `json:"Amount"`
+		OtaReceiver string `json:"OtaReceiver"`
+		Amount      uint64 `json:"Amount"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -128,13 +128,13 @@ func (request *UserMintNftRequest) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	request.amount = temp.Amount
-	request.otaReceive = temp.OtaReceive
+	request.otaReceiver = temp.OtaReceiver
 	request.MetadataBase = temp.MetadataBase
 	return nil
 }
 
-func (request *UserMintNftRequest) OtaReceive() string {
-	return request.otaReceive
+func (request *UserMintNftRequest) OtaReceiver() string {
+	return request.otaReceiver
 }
 
 func (request *UserMintNftRequest) Amount() uint64 {
@@ -143,11 +143,13 @@ func (request *UserMintNftRequest) Amount() uint64 {
 
 func (request *UserMintNftRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	currentTokenID := common.ConfidentialAssetID
-	otaReceive := privacy.OTAReceiver{}
-	otaReceive.FromString(request.otaReceive)
+	otaReceiver := privacy.OTAReceiver{}
+	otaReceiver.FromString(request.otaReceiver)
 	result = append(result, metadataCommon.OTADeclaration{
-		PublicKey: otaReceive.PublicKey.ToBytes(), TokenID: currentTokenID,
+		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID,
+	})
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
 	})
 	return result
 }

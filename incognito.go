@@ -11,7 +11,6 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/portal"
@@ -42,9 +41,9 @@ func getBTCRelayingChain(btcRelayingChainID, btcDataFolderName string) (*btcrela
 		portal.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		portal.TestnetBTCChainID:  int32(1896910),
-		portal.Testnet2BTCChainID: int32(1863675),
-		portal.MainnetBTCChainID:  int32(634140),
+		portal.TestnetBTCChainID:  int32(2063133),
+		portal.Testnet2BTCChainID: int32(2064989),
+		portal.MainnetBTCChainID:  int32(697298),
 	}
 	return btcrelaying.GetChainV2(
 		filepath.Join(config.Config().DataDir, btcDataFolderName),
@@ -84,13 +83,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		fmt.Fprintln(os.Stderr, err)
 		panic(err)
 	}
-	param := config.LoadParam()
-
-	common.TIMESLOT = param.ConsensusParam.Timeslot
-	common.MaxShardNumber = param.ActiveShards
-
-	//load keys from file
-	param.LoadKey()
+	config.LoadParam()
 	portal.SetupParam()
 
 	//create genesis block

@@ -114,6 +114,7 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeList:         (*HttpServer).handleGetCommitteeList,
 	getShardBestState:        (*HttpServer).handleGetShardBestState,
 	getShardBestStateDetail:  (*HttpServer).handleGetShardBestStateDetail,
+	getBeaconViewByHash:      (*HttpServer).handleGetBeaconViewByHash,
 	getBeaconBestState:       (*HttpServer).handleGetBeaconBestState,
 	getBeaconBestStateDetail: (*HttpServer).handleGetBeaconBestStateDetail,
 	// getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
@@ -134,6 +135,7 @@ var HttpHandler = map[string]httpHandler{
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
 	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
 	listUnspentOutputTokens:                    (*HttpServer).handleListUnspentOutputTokens,
+	getOTACoinLength:                           (*HttpServer).handleGetOTACoinLength,
 	getOTACoinsByIndices:                       (*HttpServer).handleGetOTACoinsByIndices,
 
 	// Bridge
@@ -213,7 +215,6 @@ var HttpHandler = map[string]httpHandler{
 	//
 
 	// pDex v3
-	pdexv3MintNft:                         (*HttpServer).handlePdexv3MintNft,
 	getPdexv3State:                        (*HttpServer).handleGetPdexv3State,
 	createAndSendTxWithPdexv3ModifyParams: (*HttpServer).handleCreateAndSendTxWithPdexv3ModifyParams,
 	getPdexv3ParamsModifyingStatus:        (*HttpServer).handleGetPdexv3ParamsModifyingRequestStatus,
@@ -226,8 +227,17 @@ var HttpHandler = map[string]httpHandler{
 	pdexv3GetTradeStatus:                  (*HttpServer).handlePdexv3GetTradeStatus,
 	pdexv3GetAddOrderStatus:               (*HttpServer).handlePdexv3GetAddOrderStatus,
 	pdexv3GetWithdrawOrderStatus:          (*HttpServer).handlePdexv3GetWithdrawOrderStatus,
+	pdexv3MintNft:                         (*HttpServer).handlePdexv3MintNft,
 	getPdexv3WithdrawLiquidityStatus:      (*HttpServer).handleGetPdexv3WithdrawLiquidityStatus,
 	getPdexv3MintNftStatus:                (*HttpServer).handleGetPdexv3MintNftStatus,
+	pdexv3Staking:                         (*HttpServer).handlePdexv3Staking,
+	//pdexv3Unstaking:                       (*HttpServer).handlePdexv3Unstaking,
+	getPdexv3EstimatedLPValue:                     (*HttpServer).handleGetPdexv3EstimatedLPValue,
+	createAndSendTxWithPdexv3WithdrawlLPFee:       (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawLPFee,
+	getPdexv3WithdrawalLPFeeStatus:                (*HttpServer).handleGetPdexv3WithdrawalLPFeeStatus,
+	createAndSendTxWithPdexv3WithdrawlProtocolFee: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawProtocolFee,
+	getPdexv3WithdrawalProtocolFeeStatus:          (*HttpServer).handleGetPdexv3WithdrawalProtocolFeeStatus,
+	pdexv3GetStakingStatus:                        (*HttpServer).handleGetPdexv3StakingStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
@@ -311,6 +321,24 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// portal v4
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
+	createAndSendTxWithPortalReplacementFee:    (*HttpServer).handleCreateAndSendTxWithPortalReplaceUnshieldFee,
+	getPortalReplacementFeeStatus:              (*HttpServer).handleGetPortalReplacementFeeRequestStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx: (*HttpServer).handleCreateAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx:                 (*HttpServer).handleGetPortalPortalSubmitConfirmedTxStatus,
+	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
+	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
+	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
+	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

@@ -7,70 +7,79 @@ const (
 
 // Object type
 const (
-	TestObjectType = iota
-	CommitteeObjectType
-	CommitteeRewardObjectType
-	RewardRequestObjectType
-	BlackListProducerObjectType
-	SerialNumberObjectType
-	CommitmentObjectType
-	CommitmentIndexObjectType
-	CommitmentLengthObjectType
-	SNDerivatorObjectType
-	OutputCoinObjectType
-	OTACoinObjectType
-	OTACoinIndexObjectType
-	OTACoinLengthObjectType
-	OnetimeAddressObjectType
-	TokenObjectType
-	WaitingPDEContributionObjectType
-	PDEPoolPairObjectType
-	PDEShareObjectType
-	PDEStatusObjectType
-	BridgeEthTxObjectType
-	BridgeTokenInfoObjectType
-	BridgeStatusObjectType
-	BurningConfirmObjectType
-	TokenTransactionObjectType
+	TestObjectType                   = 0
+	CommitteeObjectType              = 1
+	CommitteeRewardObjectType        = 2
+	RewardRequestObjectType          = 3
+	BlackListProducerObjectType      = 4
+	SerialNumberObjectType           = 5
+	CommitmentObjectType             = 6
+	CommitmentIndexObjectType        = 7
+	CommitmentLengthObjectType       = 8
+	SNDerivatorObjectType            = 9
+	OutputCoinObjectType             = 10
+	OTACoinObjectType                = 11
+	OTACoinIndexObjectType           = 12
+	OTACoinLengthObjectType          = 13
+	OnetimeAddressObjectType         = 14
+	TokenObjectType                  = 15
+	WaitingPDEContributionObjectType = 16
+	PDEPoolPairObjectType            = 17
+	PDEShareObjectType               = 18
+	PDEStatusObjectType              = 19
+	BridgeEthTxObjectType            = 20
+	BridgeTokenInfoObjectType        = 21
+	BridgeStatusObjectType           = 22
+	BurningConfirmObjectType         = 23
+	TokenTransactionObjectType       = 24
 
 	// portal
 	//final exchange rates
-	PortalFinalExchangeRatesStateObjectType
+	PortalFinalExchangeRatesStateObjectType = 25
 	//waiting porting request
-	PortalWaitingPortingRequestObjectType
+	PortalWaitingPortingRequestObjectType = 26
 	//liquidation
-	PortalLiquidationPoolObjectType
-	PortalStatusObjectType
-	CustodianStateObjectType
-	WaitingRedeemRequestObjectType
-	PortalRewardInfoObjectType
-	LockedCollateralStateObjectType
-	RewardFeatureStateObjectType
+	PortalLiquidationPoolObjectType = 27
+	PortalStatusObjectType          = 28
+	CustodianStateObjectType        = 29
+	WaitingRedeemRequestObjectType  = 30
+	PortalRewardInfoObjectType      = 31
+	LockedCollateralStateObjectType = 32
+	RewardFeatureStateObjectType    = 33
 
 	// PDEX v2
-	PDETradingFeeObjectType
+	PDETradingFeeObjectType = 34
 
-	StakerObjectType
+	StakerObjectType = 35
 
 	// Portal v3
-	PortalExternalTxObjectType
-	PortalConfirmProofObjectType
-	PortalUnlockOverRateCollaterals
+	PortalExternalTxObjectType      = 36
+	PortalConfirmProofObjectType    = 37
+	PortalUnlockOverRateCollaterals = 38
 
-	SlashingCommitteeObjectType
+	SlashingCommitteeObjectType = 39
 
 	// bsc bridge
-	BridgeBSCTxObjectType
+	BridgeBSCTxObjectType = 40
+
+	// Portal v4
+	PortalV4StatusObjectType                      = 41
+	PortalV4UTXOObjectType                        = 42
+	PortalV4ShieldRequestObjectType               = 43
+	PortalWaitingUnshieldObjectType               = 44
+	PortalProcessedUnshieldRequestBatchObjectType = 45
 
 	// pDex v3
-	Pdexv3StatusObjectType // 41
-	Pdexv3ParamsObjectType
-	Pdexv3ContributionObjectType
-	Pdexv3PoolPairObjectType
-	Pdexv3ShareObjectType
-	Pdexv3TradingFeeObjectType
-	Pdexv3NftObjectType
-	Pdexv3OrderObjectType
+	Pdexv3StatusObjectType       = 46
+	Pdexv3ParamsObjectType       = 47
+	Pdexv3ContributionObjectType = 48
+	Pdexv3PoolPairObjectType     = 49
+	Pdexv3ShareObjectType        = 50
+	Pdexv3TradingFeeObjectType   = 51
+	Pdexv3NftObjectType          = 52
+	Pdexv3OrderObjectType        = 53
+	Pdexv3StakerObjectType       = 54
+	Pdexv3StakerRewardObjectType = 55
 )
 
 // Prefix length
@@ -108,7 +117,7 @@ const (
 
 // bridge
 const (
-	BridgeMinorOperator = "-"
+	BridgeMinusOperator = "-"
 	BridgePlusOperator  = "+"
 )
 

@@ -2,12 +2,12 @@ package pdex
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -16,6 +16,7 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +40,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	// first contribution tx
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token0ID.String(), nftID, 100, 20000,
 	)
 	assert.Nil(t, err)
@@ -51,7 +52,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	contributionTx.On("Hash").Return(firstTxHash)
 	waitingContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 		),
 		"pair_hash")
@@ -62,7 +63,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	// return contribution tx by sanity
 	refundContributionSanityMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token0ID.String(), nftID, 200, 20000,
 	)
 	assert.Nil(t, err)
@@ -72,7 +73,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	refundContributionSanityTx.On("Hash").Return(secondTxHash)
 	refundContributionSanityState0 := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 		),
 		"pair_hash")
@@ -80,7 +81,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	refundContributionSanityInstBytes0, err := json.Marshal(refundContributionSanityInst0)
 	refundContributionSanityState1 := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token0ID, *secondTxHash, *nftHash, 200, 20000, 1,
 		),
 		"pair_hash")
@@ -90,7 +91,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 
 	// match contribution
 	matchContributionMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
-		"", "pair_hash", validOTAReceiver0, validOTAReceiver1,
+		"", "pair_hash", validOTAReceiver0,
 		token1ID.String(), nftID, 400, 20000,
 	)
 	assert.Nil(t, err)
@@ -100,7 +101,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchContributionTx.On("Hash").Return(secondTxHash)
 	matchContributionState := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token1ID, *secondTxHash, *nftHash, 400, 20000, 1,
 		),
 		"pair_hash")
@@ -111,7 +112,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	// match contribution - 2
 	matchContribution2MetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token1ID.String(), nftID, 400, 20000,
 	)
 	matchContribution2Tx := &metadataMocks.Transaction{}
@@ -120,7 +121,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchContribution2Tx.On("Hash").Return(secondTxHash)
 	matchContribution2State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			"", validOTAReceiver0, validOTAReceiver1,
+			"", validOTAReceiver0,
 			*token1ID, *secondTxHash, *nftHash, 400, 20000, 1,
 		),
 		"pair_hash")
@@ -131,7 +132,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	// refund contributions by amount
 	refundContributionAmountMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		poolPairID, "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token1ID.String(), nftID, 0, 20000,
 	)
 	refundContributionAmountTx := &metadataMocks.Transaction{}
@@ -141,7 +142,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 
 	refundContributionAmount0State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			poolPairID, validOTAReceiver0, validOTAReceiver1,
+			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
 		),
 		"pair_hash")
@@ -149,7 +150,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	refundContributionAmount0InstBytes, err := json.Marshal(refundContributionAmount0Inst)
 	refundContributionAmount1State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			poolPairID, validOTAReceiver0, validOTAReceiver1,
+			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 0, 20000, 1,
 		),
 		"pair_hash")
@@ -160,7 +161,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	// match and return contribution
 	matchAndReturnContributionMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		poolPairID, "pair_hash",
-		validOTAReceiver0, validOTAReceiver1,
+		validOTAReceiver0,
 		token1ID.String(), nftID, 200, 20000,
 	)
 	matchAndReturnContributionTx := &metadataMocks.Transaction{}
@@ -170,7 +171,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 
 	matchAndReturnContribution0State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			poolPairID, validOTAReceiver0, validOTAReceiver1,
+			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
 		),
 		"pair_hash")
@@ -179,7 +180,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchAndReturnContritubtion0InstBytes, err := json.Marshal(matchAndReturnContritubtion0Inst)
 	matchAndReturnContribution1State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			poolPairID, validOTAReceiver0, validOTAReceiver1,
+			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 200, 20000, 1,
 		),
 		"pair_hash")
@@ -190,7 +191,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 
 	// match and return contribution - 2
 	matchAndReturnContribution2MetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
-		poolPairID, "pair_hash", validOTAReceiver0, validOTAReceiver1,
+		poolPairID, "pair_hash", validOTAReceiver0,
 		token1ID.String(), nftID, 200, 20000,
 	)
 	matchAndReturnContribution2Tx := &metadataMocks.Transaction{}
@@ -200,7 +201,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 
 	matchAndReturnContribution0State2 := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			poolPairID, validOTAReceiver0, validOTAReceiver1,
+			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
 		),
 		"pair_hash")
@@ -209,7 +210,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchAndReturnContritubtion0InstBytes2, err := json.Marshal(matchAndReturnContritubtion0Inst2)
 	matchAndReturnContribution1State2 := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
-			poolPairID, validOTAReceiver0, validOTAReceiver1,
+			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 200, 20000, 1,
 		),
 		"pair_hash")
@@ -264,7 +265,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 			want1: map[string]*PoolPairState{},
 			want2: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-					"", validOTAReceiver0, validOTAReceiver1,
+					"", validOTAReceiver0,
 					*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 				),
 			},
@@ -283,7 +284,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				poolPairs:    map[string]*PoolPairState{},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						"", validOTAReceiver0, validOTAReceiver1,
+						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 					),
 				},
@@ -320,7 +321,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				poolPairs:    map[string]*PoolPairState{},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						"", validOTAReceiver0, validOTAReceiver1,
+						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 					),
 				},
@@ -341,12 +342,14 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -374,12 +377,14 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -387,7 +392,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						"", validOTAReceiver0, validOTAReceiver1,
+						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
 					),
 				},
@@ -408,12 +413,14 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 10,
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -423,12 +430,14 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -456,19 +465,21 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						poolPairID, validOTAReceiver0, validOTAReceiver1,
+						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
 					),
 				},
@@ -494,12 +505,14 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 200, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 				},
@@ -523,19 +536,22 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
+						orderbook: Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						poolPairID, validOTAReceiver0, validOTAReceiver1,
+						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
 					),
 				},
@@ -561,14 +577,17 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 10,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -593,19 +612,22 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  200,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 10,
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
+						orderbook: Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
-						poolPairID, validOTAReceiver0, validOTAReceiver1,
+						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
 					),
 				},
@@ -631,14 +653,17 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 10,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -666,15 +691,6 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				t.Errorf("stateProducerV2.addLiquidity() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				for k, v := range got1 {
-					if !reflect.DeepEqual(v.shares, tt.want1[k].shares) {
-						for key, value := range v.shares {
-							fmt.Println("key & value:", key, value)
-							fmt.Println("want value:", tt.want1[k].shares[key])
-						}
-						t.Errorf("shares got1 = %v, want %v", v.shares, tt.want1[k].shares)
-					}
-				}
 				t.Errorf("stateProducerV2.addLiquidity() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
@@ -694,9 +710,16 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 	assert.Nil(t, err)
 
+	otaReceivers := map[string]string{
+		nftID:                     validOTAReceiver0,
+		token0ID.String():         validOTAReceiver1,
+		token1ID.String():         validOTAReceiver1,
+		common.PRVCoinID.String(): validOTAReceiver0,
+	}
+
 	//invalidPoolPairID
 	invalidPoolPairIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		"123", nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
+		"123", nftID, otaReceivers, 100,
 	)
 	invalidPoolPairIDTx := &metadataMocks.Transaction{}
 	invalidPoolPairIDTx.On("GetMetadata").Return(invalidPoolPairIDMetaData)
@@ -725,7 +748,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//invalidNftID
 	invalidNftIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, common.PRVIDStr, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
+		poolPairID, common.PRVIDStr, otaReceivers, 100,
 	)
 	invalidNftIDTx := &metadataMocks.Transaction{}
 	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetaData)
@@ -735,7 +758,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//deductShareAmountFail
 	deductShareAmountFailMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 0,
+		poolPairID, nftID, otaReceivers, 0,
 	)
 	deductShareAmountFailTx := &metadataMocks.Transaction{}
 	deductShareAmountFailTx.On("GetMetadata").Return(deductShareAmountFailMetaData)
@@ -745,7 +768,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//validInput
 	validInputMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, validOTAReceiver0, validOTAReceiver1, validOTAReceiver1, 100,
+		poolPairID, nftID, otaReceivers, 100,
 	)
 	validInputTx := &metadataMocks.Transaction{}
 	validInputTx.On("GetMetadata").Return(validInputMetaData)
@@ -765,6 +788,346 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	).StringSlice()
 	assert.Nil(t, err)
 	//
+
+	type fields struct {
+		stateProducerBase stateProducerBase
+	}
+	type args struct {
+		txs          []metadata.Transaction
+		poolPairs    map[string]*PoolPairState
+		nftIDs       map[string]uint64
+		beaconHeight uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    [][]string
+		want1   map[string]*PoolPairState
+		wantErr bool
+	}{
+		{
+			name:   "Invalid pool pair id",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{invalidPoolPairIDTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Invalid nftID",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{invalidNftIDTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{rejectWithdrawLiquidityInst, mintPrvNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Deduct share amount fail",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{deductShareAmountFailTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{validInputTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{acceptWithdrawLiquidityInst0, acceptWithdrawLiquidityInst1, mintNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 200, 100, 400,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(800), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProducerV2{
+				stateProducerBase: tt.fields.stateProducerBase,
+			}
+			got, got1, err := sp.withdrawLiquidity(tt.args.txs, tt.args.poolPairs, tt.args.nftIDs, tt.args.beaconHeight)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProducerV2.withdrawLiquidity() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProducerV2.withdrawLiquidity() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProducerV2.withdrawLiquidity() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+	txHash, err := common.Hash{}.NewHashFromStr("abc")
+	assert.Nil(t, err)
+	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
+	assert.Nil(t, err)
+
+	otaReceiver0 := privacy.OTAReceiver{}
+	err = otaReceiver0.FromString(validOTAReceiver0)
+	assert.Nil(t, err)
+	otaReceiver1 := privacy.OTAReceiver{}
+	err = otaReceiver1.FromString(validOTAReceiver1)
+	assert.Nil(t, err)
+
+	// invalidPoolPairID
+	invalidPoolPairIDMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
+		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+		"123", *nftHash, map[common.Hash]privacy.OTAReceiver{
+			*nftHash: otaReceiver0,
+		},
+	)
+
+	invalidPoolPairIDTx := &metadataMocks.Transaction{}
+	invalidPoolPairIDTx.On("GetMetadata").Return(invalidPoolPairIDMetaData)
+	valEnv := tx_generic.DefaultValEnv()
+	valEnv = tx_generic.WithShardID(valEnv, 1)
+	invalidPoolPairIDTx.On("GetValidationEnv").Return(valEnv)
+	invalidPoolPairIDTx.On("Hash").Return(txHash)
+
+	// invalid pool pair
+	rejectPoolPairInst := v2utils.BuildWithdrawLPFeeInsts(
+		"123", *nftHash,
+		map[common.Hash]metadataPdexv3.ReceiverInfo{},
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+	)[0]
+	assert.Nil(t, err)
+
+	//mint nft
+	mintNftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1, *txHash).
+		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+	assert.Nil(t, err)
+
+	// invalid nftID (PRV) mint PRV inst
+	mintPrvNftInst, err := instruction.NewMintNftWithValue(common.PRVCoinID, validOTAReceiver0, 1, *txHash).
+		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+	assert.Nil(t, err)
+
+	// invalidNftID
+	invalidNftIDMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
+		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+		poolPairID, common.PRVCoinID, map[common.Hash]privacy.OTAReceiver{
+			common.PRVCoinID: otaReceiver0,
+		},
+	)
+	invalidNftIDTx := &metadataMocks.Transaction{}
+	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetaData)
+	invalidNftIDTx.On("GetValidationEnv").Return(valEnv)
+	invalidNftIDTx.On("Hash").Return(txHash)
+
+	rejectNftIDInst := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, common.PRVCoinID,
+		map[common.Hash]metadataPdexv3.ReceiverInfo{},
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+	)[0]
+	assert.Nil(t, err)
+
+	// validInput
+	validInputMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
+		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+		poolPairID, *nftHash, map[common.Hash]privacy.OTAReceiver{
+			*nftHash:  otaReceiver0,
+			*token0ID: otaReceiver0,
+			*token1ID: otaReceiver1,
+		},
+	)
+	validInputTx := &metadataMocks.Transaction{}
+	validInputTx.On("GetMetadata").Return(validInputMetaData)
+	validInputTx.On("GetValidationEnv").Return(valEnv)
+	validInputTx.On("Hash").Return(txHash)
+
+	// accept instructions
+	acceptWithdrawLPInsts := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+			*token0ID: {
+				Address: otaReceiver0,
+				Amount:  300,
+			},
+			*token1ID: {
+				Address: otaReceiver1,
+				Amount:  1200,
+			},
+		},
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+	)
 
 	type fields struct {
 		stateProducerBase stateProducerBase
@@ -793,12 +1156,14 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -808,19 +1173,21 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					nftID: 100,
 				},
 			},
-			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
+			want: [][]string{mintNftInst, rejectPoolPairInst},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -839,12 +1206,14 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -854,65 +1223,21 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					nftID: 100,
 				},
 			},
-			want: [][]string{rejectWithdrawLiquidityInst, mintPrvNftInst},
+			want: [][]string{mintPrvNftInst, rejectNftIDInst},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 300, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
-						},
-					},
-					orderbook: Orderbook{[]*Order{}},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:   "Deduct share amount fail",
-			fields: fields{},
-			args: args{
-				txs: []metadata.Transaction{deductShareAmountFailTx},
-				poolPairs: map[string]*PoolPairState{
-					poolPairID: &PoolPairState{
-						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
-							big.NewInt(0).SetUint64(300),
-							big.NewInt(0).SetUint64(1200), 20000,
-						),
-						shares: map[string]*Share{
-							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
-							},
-						},
-						orderbook: Orderbook{[]*Order{}},
-					},
-				},
-				nftIDs: map[string]uint64{
-					nftID: 100,
-				},
-			},
-			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
-			want1: map[string]*PoolPairState{
-				poolPairID: &PoolPairState{
-					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
-						big.NewInt(0).SetUint64(300),
-						big.NewInt(0).SetUint64(1200), 20000,
-					),
-					shares: map[string]*Share{
-						nftID: &Share{
-							amount:                  300,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -931,12 +1256,23 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{
+								*token0ID: convertToLPFeesPerShare(300, 300),
+								*token1ID: convertToLPFeesPerShare(1200, 300),
+							},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount:                  300,
-								tradingFees:             map[string]uint64{},
-								lastUpdatedBeaconHeight: 11,
+								amount: 300,
+								tradingFees: map[common.Hash]uint64{
+									*token0ID: 100,
+									*token1ID: 200,
+								},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{
+									*token0ID: convertToLPFeesPerShare(100, 300),
+									*token1ID: convertToLPFeesPerShare(200, 300),
+								},
 							},
 						},
 						orderbook: Orderbook{[]*Order{}},
@@ -946,19 +1282,27 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					nftID: 100,
 				},
 			},
-			want: [][]string{acceptWithdrawLiquidityInst0, acceptWithdrawLiquidityInst1, mintNftInst},
+			want: [][]string{mintNftInst, acceptWithdrawLPInsts[0], acceptWithdrawLPInsts[1]},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 200, 100, 400,
-						big.NewInt(0).SetUint64(200),
-						big.NewInt(0).SetUint64(800), 20000,
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{
+							*token0ID: convertToLPFeesPerShare(300, 300),
+							*token1ID: convertToLPFeesPerShare(1200, 300),
+						},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
 					),
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount:                  200,
-							tradingFees:             map[string]uint64{},
-							lastUpdatedBeaconHeight: 11,
+							amount:      300,
+							tradingFees: map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{
+								*token0ID: convertToLPFeesPerShare(300, 300),
+								*token1ID: convertToLPFeesPerShare(1200, 300),
+							},
 						},
 					},
 					orderbook: Orderbook{[]*Order{}},
@@ -972,16 +1316,238 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 			sp := &stateProducerV2{
 				stateProducerBase: tt.fields.stateProducerBase,
 			}
-			got, got1, err := sp.withdrawLiquidity(tt.args.txs, tt.args.poolPairs, tt.args.nftIDs)
+			got, got1, err := sp.withdrawLPFee(tt.args.txs, tt.args.poolPairs)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("stateProducerV2.withdrawLiquidity() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("stateProducerV2.withdrawLPFee() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("stateProducerV2.withdrawLiquidity() got = %v, want %v", got, tt.want)
+				t.Errorf("stateProducerV2.withdrawLPFee() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("stateProducerV2.withdrawLiquidity() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("stateProducerV2.withdrawLPFee() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_stateProducerV2_withdrawProtocolFee(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+	txHash, err := common.Hash{}.NewHashFromStr("abc")
+	assert.Nil(t, err)
+
+	otaReceiver0 := privacy.OTAReceiver{}
+	err = otaReceiver0.FromString(validOTAReceiver0)
+	assert.Nil(t, err)
+	otaReceiver1 := privacy.OTAReceiver{}
+	err = otaReceiver1.FromString(validOTAReceiver1)
+	assert.Nil(t, err)
+
+	// invalidPoolPairID
+	invalidPoolPairIDMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
+		metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta,
+		"123", map[common.Hash]privacy.OTAReceiver{},
+	)
+
+	invalidPoolPairIDTx := &metadataMocks.Transaction{}
+	invalidPoolPairIDTx.On("GetMetadata").Return(invalidPoolPairIDMetaData)
+	valEnv := tx_generic.DefaultValEnv()
+	valEnv = tx_generic.WithShardID(valEnv, 1)
+	invalidPoolPairIDTx.On("GetValidationEnv").Return(valEnv)
+	invalidPoolPairIDTx.On("Hash").Return(txHash)
+
+	// invalid pool pair
+	rejectPoolPairInst := v2utils.BuildWithdrawProtocolFeeInsts(
+		"123",
+		map[common.Hash]metadataPdexv3.ReceiverInfo{},
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+	)[0]
+	assert.Nil(t, err)
+
+	// validInput
+	validInputMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
+		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+		poolPairID, map[common.Hash]privacy.OTAReceiver{
+			*token0ID: otaReceiver0,
+			*token1ID: otaReceiver1,
+		},
+	)
+	validInputTx := &metadataMocks.Transaction{}
+	validInputTx.On("GetMetadata").Return(validInputMetaData)
+	validInputTx.On("GetValidationEnv").Return(valEnv)
+	validInputTx.On("Hash").Return(txHash)
+
+	// accept instructions
+	acceptWithdrawLPInsts := v2utils.BuildWithdrawProtocolFeeInsts(
+		poolPairID, map[common.Hash]metadataPdexv3.ReceiverInfo{
+			*token0ID: {
+				Address: otaReceiver0,
+				Amount:  10,
+			},
+			*token1ID: {
+				Address: otaReceiver1,
+				Amount:  20,
+			},
+		},
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+	)
+
+	type fields struct {
+		stateProducerBase stateProducerBase
+	}
+	type args struct {
+		txs       []metadata.Transaction
+		poolPairs map[string]*PoolPairState
+		nftIDs    map[string]uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    [][]string
+		want1   map[string]*PoolPairState
+		wantErr bool
+	}{
+		{
+			name:   "Invalid pool pair id",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{invalidPoolPairIDTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{},
+							map[common.Hash]uint64{}, map[common.Hash]uint64{},
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+			},
+			want: [][]string{rejectPoolPairInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{validInputTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+							map[common.Hash]*big.Int{
+								*token0ID: convertToLPFeesPerShare(300, 300),
+								*token1ID: convertToLPFeesPerShare(1200, 300),
+							},
+							map[common.Hash]uint64{
+								*token0ID: 10,
+								*token1ID: 20,
+							}, map[common.Hash]uint64{},
+						),
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount: 300,
+								tradingFees: map[common.Hash]uint64{
+									*token0ID: 100,
+									*token1ID: 200,
+								},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{
+									*token0ID: convertToLPFeesPerShare(100, 300),
+									*token1ID: convertToLPFeesPerShare(200, 300),
+								},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+			},
+			want: [][]string{acceptWithdrawLPInsts[0], acceptWithdrawLPInsts[1]},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+						map[common.Hash]*big.Int{
+							*token0ID: convertToLPFeesPerShare(300, 300),
+							*token1ID: convertToLPFeesPerShare(1200, 300),
+						},
+						map[common.Hash]uint64{}, map[common.Hash]uint64{},
+					),
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount: 300,
+							tradingFees: map[common.Hash]uint64{
+								*token0ID: 100,
+								*token1ID: 200,
+							},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{
+								*token0ID: convertToLPFeesPerShare(100, 300),
+								*token1ID: convertToLPFeesPerShare(200, 300),
+							},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProducerV2{
+				stateProducerBase: tt.fields.stateProducerBase,
+			}
+			got, got1, err := sp.withdrawProtocolFee(tt.args.txs, tt.args.poolPairs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProducerV2.withdrawProtocolFee() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProducerV2.withdrawProtocolFee() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProducerV2.withdrawProtocolFee() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -1069,6 +1635,252 @@ func Test_stateProducerV2_userMintNft(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("stateProducerV2.userMintNft() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_stateProducerV2_staking(t *testing.T) {
+	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
+	assert.Nil(t, err)
+	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
+	assert.Nil(t, err)
+
+	acceptInst, err := instruction.NewAcceptStakingWtihValue(
+		*nftHash1, common.PRVCoinID, *txReqID, 1, 100,
+	).StringSlice()
+	assert.Nil(t, err)
+
+	//invalidStakingPoolID
+	invalidStakingPoolIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		"abcd", nftID1, validOTAReceiver0, 100,
+	)
+	invalidStakingPoolIDTx := &metadataMocks.Transaction{}
+	invalidStakingPoolIDTx.On("GetMetadata").Return(invalidStakingPoolIDMetadata)
+	valEnv0 := tx_generic.DefaultValEnv()
+	valEnv0 = tx_generic.WithShardID(valEnv0, 1)
+	invalidStakingPoolIDTx.On("GetValidationEnv").Return(valEnv0)
+	invalidStakingPoolIDTx.On("Hash").Return(txReqID)
+	tempHash, _ := common.Hash{}.NewHashFromStr("abcd")
+	invalidStakingPoolIDRejectInst, err := instruction.NewRejectStakingWithValue(
+		validOTAReceiver0, *tempHash, *txReqID, 1, 100,
+	).StringSlice()
+	assert.Nil(t, err)
+	//
+
+	//invalid nftID
+	invalidNftIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, "abdc", validOTAReceiver0, 100,
+	)
+	invalidNftIDTx := &metadataMocks.Transaction{}
+	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetadata)
+	valEnv1 := tx_generic.DefaultValEnv()
+	valEnv1 = tx_generic.WithShardID(valEnv1, 1)
+	invalidNftIDTx.On("GetValidationEnv").Return(valEnv1)
+	invalidNftIDTx.On("Hash").Return(txReqID)
+	invalidNftIDRejectInst, err := instruction.NewRejectStakingWithValue(
+		validOTAReceiver0, common.PRVCoinID, *txReqID, 1, 100,
+	).StringSlice()
+	//
+
+	//not found stakingpoolID
+	notFoundStakingPoolIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		txReqID.String(), nftID1, validOTAReceiver0, 100,
+	)
+	notFoundStakingPoolIDTx := &metadataMocks.Transaction{}
+	notFoundStakingPoolIDTx.On("GetMetadata").Return(notFoundStakingPoolIDMetadata)
+	valEnv2 := tx_generic.DefaultValEnv()
+	valEnv2 = tx_generic.WithShardID(valEnv2, 1)
+	notFoundStakingPoolIDTx.On("GetValidationEnv").Return(valEnv2)
+	notFoundStakingPoolIDTx.On("Hash").Return(txReqID)
+	notFoundStakingPoolIDRejectInst, err := instruction.NewRejectStakingWithValue(
+		validOTAReceiver0, *txReqID, *txReqID, 1, 100,
+	).StringSlice()
+	//
+
+	//not found nftID
+	notFoundNftIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, txReqID.String(), validOTAReceiver0, 100,
+	)
+	notFoundNftIDTx := &metadataMocks.Transaction{}
+	notFoundNftIDTx.On("GetMetadata").Return(notFoundNftIDMetadata)
+	valEnv3 := tx_generic.DefaultValEnv()
+	valEnv3 = tx_generic.WithShardID(valEnv3, 1)
+	notFoundNftIDTx.On("GetValidationEnv").Return(valEnv3)
+	notFoundNftIDTx.On("Hash").Return(txReqID)
+	notFoundNftIDRejectInst, err := instruction.NewRejectStakingWithValue(
+		validOTAReceiver0, common.PRVCoinID, *txReqID, 1, 100,
+	).StringSlice()
+
+	//
+
+	//validTx
+	validMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, nftID1, validOTAReceiver0, 100,
+	)
+	validTx := &metadataMocks.Transaction{}
+	validTx.On("GetMetadata").Return(validMetadata)
+	valEnv4 := tx_generic.DefaultValEnv()
+	valEnv4 = tx_generic.WithShardID(valEnv4, 1)
+	validTx.On("GetValidationEnv").Return(valEnv4)
+	validTx.On("Hash").Return(txReqID)
+	//
+
+	type fields struct {
+		stateProducerBase stateProducerBase
+	}
+	type args struct {
+		txs               []metadata.Transaction
+		nftIDs            map[string]uint64
+		stakingPoolStates map[string]*StakingPoolState
+		beaconHeight      uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    [][]string
+		want1   map[string]*StakingPoolState
+		wantErr bool
+	}{
+		{
+			name:   "Invalid StakingPoolID",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{invalidStakingPoolIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{invalidStakingPoolIDRejectInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					stakers: map[string]*Staker{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid NftID",
+			args: args{
+				txs: []metadata.Transaction{invalidNftIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{invalidNftIDRejectInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+
+					stakers: map[string]*Staker{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Not found stakingPoolID",
+			args: args{
+				txs: []metadata.Transaction{notFoundStakingPoolIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{notFoundStakingPoolIDRejectInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					stakers: map[string]*Staker{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Not found nftID",
+			args: args{
+				txs: []metadata.Transaction{notFoundNftIDTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{notFoundNftIDRejectInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+
+					stakers: map[string]*Staker{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid input",
+			args: args{
+				txs: []metadata.Transaction{validTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{acceptInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 100,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:               100,
+							lastUpdatedBeaconHeight: 10,
+							rewards:                 map[string]uint64{},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProducerV2{
+				stateProducerBase: tt.fields.stateProducerBase,
+			}
+			got, got1, err := sp.staking(tt.args.txs, tt.args.nftIDs, tt.args.stakingPoolStates, tt.args.beaconHeight)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProducerV2.staking() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("stateProducerV2.staking() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("stateProducerV2.staking() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

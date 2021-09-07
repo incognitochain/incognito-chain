@@ -14,10 +14,11 @@ type State interface {
 }
 
 type StateReader interface {
-	Params() Params
+	Params() *Params
 	WaitingContributions() []byte
 	PoolPairs() []byte
 	Shares() map[string]uint64
 	TradingFees() map[string]uint64
 	NftIDs() map[string]uint64
+	StakingPools() map[string]*StakingPoolState
 }

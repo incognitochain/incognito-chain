@@ -51,7 +51,7 @@ func (s *stateBase) GetDiff(compareState State, stateChange *StateChange) (State
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) Params() Params {
+func (s *stateBase) Params() *Params {
 	panic("Implement this fucntion")
 }
 
@@ -76,5 +76,9 @@ func (s *stateBase) NftIDs() map[string]uint64 {
 }
 
 func (s *stateBase) Reader() StateReader {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) StakingPools() map[string]*StakingPoolState {
 	panic("Implement this fucntion")
 }

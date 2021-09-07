@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/config"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	. "github.com/stretchr/testify/assert"
@@ -24,6 +25,9 @@ func TestProduceOrder(t *testing.T) {
 	var testcases []Testcase = mustReadTestcases("produce_order.json")
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
+			config.AbortParam()
+			config.Param().PDexParams.Pdexv3BreakPointHeight = 1
+
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)

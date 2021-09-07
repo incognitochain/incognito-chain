@@ -263,8 +263,14 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 	Logger.log.Debugf(" Handling new message tx %v", txHash)
 	if isAdded := netSync.handleCacheTx(*tx.Hash()); !isAdded {
 		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		err := netSync.config.Server.PushMessageToShard(msg, sID)
-		Logger.log.Error(err)
+		sBState := netSync.config.BlockChain.GetBestStateShard(sID)
+		if sBState == nil {
+			Logger.log.Debugf("Received tx from sID %v but cannot get shard Beststate", sID)
+			return
+		}
+		if (sBState.BestBlock == nil) || (sBState.BestBlock.GetProposeTime() < (time.Now().Unix() - int64(time.Hour.Seconds()))) {
+			return
+		}
 		if !netSync.usingNewPool {
 			hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
 			if err != nil {

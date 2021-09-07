@@ -15,7 +15,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -200,23 +199,9 @@ func (txToken *TxToken) SetTxNormal(inTx metadata.Transaction) error {
 }
 
 func checkIsBridgeTokenID(bridgeStateDB *statedb.StateDB, tokenID *common.Hash) error {
-	isBridgeToken := false
-	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
+	isBridgeToken, err := statedb.IsBridgeToken(bridgeStateDB, *tokenID)
 	if err != nil {
 		return utils.NewTransactionErr(utils.TokenIDExistedError, err)
-	}
-	if len(allBridgeTokensBytes) > 0 {
-		var allBridgeTokens []*rawdbv2.BridgeTokenInfo
-		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-		if err != nil {
-			return utils.NewTransactionErr(utils.TokenIDExistedError, err)
-		}
-		for _, bridgeTokens := range allBridgeTokens {
-			if tokenID.IsEqual(bridgeTokens.TokenID) {
-				isBridgeToken = true
-				break
-			}
-		}
 	}
 	if !isBridgeToken {
 		return utils.NewTransactionErr(utils.TokenIDExistedError, errors.New("invalid Token ID"))
@@ -702,6 +687,18 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 			valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenIdOnTx)
 			return valid, nil, err
 		}
+
+		// This transaction might be a tx burn, we must check its tokenId and assetTag
+		if tokenIdOnTx.String() != common.PRVIDStr || tokenIdOnTx.String() != common.ConfidentialAssetID.String() {
+			isBurned, burnedToken, _, err := txToken.GetTxBurnData()
+			if err != nil {
+				return false, nil, err
+			}
+			if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenIdOnTx[:])) {
+				return false, nil, fmt.Errorf("invalid burned tokenId")
+			}
+		}
+
 		isBatch, ok := boolParams["isBatch"]
 		if !ok {
 			isBatch = false
