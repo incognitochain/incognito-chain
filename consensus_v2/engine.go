@@ -118,7 +118,8 @@ func (engine *Engine) WatchCommitteeChange() {
 		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
-		Logger.Log.Infof("validator key %+v, shardID %+v, role %+v", *validator.MiningKey.GetPublicKey(), chainID, role)
+		logKey, _ := validator.MiningKey.GetPublicKey().ToBase58()
+		Logger.Log.Infof("validator key %+v, shardID %+v, role %+v", logKey, chainID, role)
 		if chainID == common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
 		} else if chainID > common.BeaconChainID {
