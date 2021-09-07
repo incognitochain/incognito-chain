@@ -649,7 +649,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false))
-	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
+	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	beaconBestState.Epoch = 1
 	return err
 }
@@ -855,45 +855,64 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	// execute, store PDE instruction
 
 	// transfrom beacon height for pdex process
-	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
+	pdeVersions := []uint{}
+	for version := range newBestState.pdeStates {
+		pdeVersions = append(pdeVersions, version)
+	}
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconInstructions(beaconBlock.Body.Instructions).
 		BuildStateDB(newBestState.featureStateDB).
 		BuildBeaconHeight(beaconBlock.Header.Height - 1).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
+		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
 		Build()
-	err = newBestState.pdeState.Process(pdeStateEnv)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
 
-	pdexStateChange := pdex.NewStateChange()
-	diffState, pdexStateChange, err := newBestState.pdeState.GetDiff(curView.pdeState, pdexStateChange)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	if diffState != nil {
-		err = diffState.StoreToDB(pdeStateEnv, pdexStateChange)
+	for _, version := range pdeVersions {
+		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
+
+		err = newBestState.pdeStates[version].Process(pdeStateEnv)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
+
+		pdexStateChange := pdex.NewStateChange()
+		diffState, pdexStateChange, err := newBestState.pdeStates[version].GetDiff(curView.pdeStates[version], pdexStateChange)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if diffState != nil {
+			err = diffState.StoreToDB(pdeStateEnv, pdexStateChange)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+
+		//clear DeletedWaitingPDEContributions
+		newBestState.pdeStates[version].ClearCache()
+		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
+
+		// transfrom beacon height for pdex process
+		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+
+		if err != nil {
+			return NewBlockChainError(ProcessPDEInstructionError, err)
+		}
 	}
 
-	//clear DeletedWaitingPDEContributions
-	newBestState.pdeState.ClearCache()
-	//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
-
-	// transfrom beacon height for pdex process
-	newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
-
-	if err != nil {
-		return NewBlockChainError(ProcessPDEInstructionError, err)
+	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight {
+		newBestState.pdeStates[pdex.AmplifierVersion], err = pdex.InitStateFromDB(
+			newBestState.featureStateDB, beaconBlock.Header.Height, pdex.AmplifierVersion,
+		)
+		if err != nil {
+			return NewBlockChainError(ProcessPDEInstructionError, err)
+		}
 	}
+
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v2: sig on beacon only
 		strconv.Itoa(metadata.BurningConfirmMetaV2),

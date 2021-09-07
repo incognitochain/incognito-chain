@@ -172,17 +172,15 @@ func (_m *Transaction) GetReceivers() ([][]byte, []uint64) {
 	return r0, r1
 }
 
-// GetSig provides a mock function with given fields:
-func (_m *Transaction) GetSig() []byte {
+// GetSenderAddrLastByte provides a mock function with given fields:
+func (_m *Transaction) GetSenderAddrLastByte() byte {
 	ret := _m.Called()
 
-	var r0 []byte
-	if rf, ok := ret.Get(0).(func() []byte); ok {
+	var r0 byte
+	if rf, ok := ret.Get(0).(func() byte); ok {
 		r0 = rf()
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
+		r0 = ret.Get(0).(byte)
 	}
 
 	return r0
@@ -638,31 +636,6 @@ func (_m *Transaction) SetLockTime(_a0 int64) {
 
 // SetMetadata provides a mock function with given fields: _a0
 func (_m *Transaction) SetMetadata(_a0 common.Metadata) {
-	_m.Called(_a0)
-}
-
-// SetProof provides a mock function with given fields: _a0
-func (_m *Transaction) SetProof(_a0 proof.Proof) {
-	_m.Called(_a0)
-}
-
-// SetSig provides a mock function with given fields: _a0
-func (_m *Transaction) SetSig(_a0 []byte) {
-	_m.Called(_a0)
-}
-
-// SetSigPubKey provides a mock function with given fields: _a0
-func (_m *Transaction) SetSigPubKey(_a0 []byte) {
-	_m.Called(_a0)
-}
-
-// SetTxFee provides a mock function with given fields: _a0
-func (_m *Transaction) SetTxFee(_a0 uint64) {
-	_m.Called(_a0)
-}
-
-// SetType provides a mock function with given fields: _a0
-func (_m *Transaction) SetType(_a0 string) {
 	_m.Called(_a0)
 }
 

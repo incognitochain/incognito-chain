@@ -962,7 +962,7 @@ func (sp *stateProcessorV2) staking(
 		liquidity = acceptInst.Liquidity()
 		nftID = acceptInst.NftID().String()
 		stakingPoolState := stakingPoolStates[stakingPoolID]
-		err = stakingPoolState.addLiquidity(nftID, liquidity, beaconHeight)
+		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, addOperator)
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
@@ -994,4 +994,60 @@ func (sp *stateProcessorV2) staking(
 		data,
 	)
 	return stakingPoolStates, &stakingStatus, nil
+}
+
+func (sp *stateProcessorV2) unstaking(
+	stateDB *statedb.StateDB,
+	inst []string, nftIDs map[string]uint64, stakingPoolStates map[string]*StakingPoolState,
+	beaconHeight uint64,
+) (map[string]*StakingPoolState, *v2.UnstakingStatus, error) {
+	if len(inst) < 2 {
+		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
+	}
+	var status, nftID, stakingPoolID string
+	var txReqID common.Hash
+	var liquidity uint64
+	switch inst[1] {
+	case common.Pdexv3AcceptUnstakingStatus:
+		acceptInst := instruction.NewAcceptUnstaking()
+		err := acceptInst.FromStringSlice(inst)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+		txReqID = acceptInst.TxReqID()
+		status = common.Pdexv3AcceptStakingStatus
+		stakingPoolID = acceptInst.StakingPoolID().String()
+		liquidity = acceptInst.Amount()
+		nftID = acceptInst.NftID().String()
+		stakingPoolState := stakingPoolStates[stakingPoolID]
+		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, subOperator)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+	case common.Pdexv3RejectUnstakingStatus:
+		rejectInst := instruction.NewRejectUnstaking()
+		err := rejectInst.FromStringSlice(inst)
+		if err != nil {
+			return stakingPoolStates, nil, err
+		}
+		txReqID = rejectInst.TxReqID()
+		status = common.Pdexv3RejectStakingStatus
+	}
+	unstakingStatus := v2.UnstakingStatus{
+		Status:        status,
+		NftID:         nftID,
+		StakingPoolID: stakingPoolID,
+		Liquidity:     liquidity,
+	}
+	data, err := json.Marshal(unstakingStatus)
+	if err != nil {
+		return stakingPoolStates, nil, err
+	}
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3UnstakingStatusPrefix(),
+		txReqID.Bytes(),
+		data,
+	)
+	return stakingPoolStates, &unstakingStatus, nil
 }

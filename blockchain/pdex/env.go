@@ -17,6 +17,7 @@ type StateEnvBuilder interface {
 	BuildBeaconInstructions([][]string) StateEnvBuilder
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
 	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
+	BuildPdexv3BreakPoint(uint64) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -36,6 +37,12 @@ type stateEnvironment struct {
 	listTxs                        map[byte][]metadata.Transaction
 	stateDB                        *statedb.StateDB
 	bcHeightBreakPointPrivacyV2    uint64
+	pdexv3BreakPoint               uint64
+}
+
+func (env *stateEnvironment) BuildPdexv3BreakPoint(beaconHeight uint64) StateEnvBuilder {
+	env.pdexv3BreakPoint = beaconHeight
+	return env
 }
 
 func (env *stateEnvironment) BuildBCHeightBreakPointPrivacyV2(beaconHeight uint64) StateEnvBuilder {
@@ -109,6 +116,7 @@ type StateEnvironment interface {
 	ListTxs() map[byte][]metadata.Transaction
 	StateDB() *statedb.StateDB
 	BCHeightBreakPointPrivacyV2() uint64
+	Pdexv3BreakPoint() uint64
 }
 
 func (env *stateEnvironment) ContributionActions() [][]string {
@@ -153,4 +161,8 @@ func (env *stateEnvironment) StateDB() *statedb.StateDB {
 
 func (env *stateEnvironment) BCHeightBreakPointPrivacyV2() uint64 {
 	return env.bcHeightBreakPointPrivacyV2
+}
+
+func (env *stateEnvironment) Pdexv3BreakPoint() uint64 {
+	return env.pdexv3BreakPoint
 }

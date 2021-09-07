@@ -29,32 +29,6 @@ type stateV2 struct {
 	processor                   stateProcessorV2
 }
 
-func (params *Params) IsZeroValue() bool {
-	return reflect.DeepEqual(*params, Params{})
-}
-
-func (params *Params) readConfig() *Params {
-	res := &Params{
-		DefaultFeeRateBPS:               config.Param().PDexParams.Params.DefaultFeeRateBPS,
-		FeeRateBPS:                      map[string]uint{},
-		PRVDiscountPercent:              config.Param().PDexParams.Params.PRVDiscountPercent,
-		TradingProtocolFeePercent:       config.Param().PDexParams.Params.TradingProtocolFeePercent,
-		TradingStakingPoolRewardPercent: config.Param().PDexParams.Params.TradingStakingPoolRewardPercent,
-		PDEXRewardPoolPairsShare:        map[string]uint{},
-		StakingPoolsShare:               config.Param().PDexParams.Params.StakingPoolsShare,
-		StakingRewardTokens:             []common.Hash{},
-		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
-		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
-	}
-	if res.FeeRateBPS == nil {
-		res.FeeRateBPS = make(map[string]uint)
-	}
-	if res.StakingPoolsShare == nil {
-		res.StakingPoolsShare = make(map[string]uint)
-	}
-	return res
-}
-
 func (s *stateV2) readConfig() {
 	s.params = s.params.readConfig()
 	s.stakingPoolStates = make(map[string]*StakingPoolState)
@@ -65,7 +39,7 @@ func (s *stateV2) readConfig() {
 
 func newStateV2() *stateV2 {
 	return &stateV2{
-		params:                      &Params{},
+		params:                      NewParams(),
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
@@ -224,7 +198,6 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
 			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
-				Logger.log.Debugf("process inst %s err %v:", inst, err)
 				continue
 			}
 		case metadataCommon.Pdexv3ModifyParamsMeta:
@@ -277,12 +250,19 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.stakingPoolStates, _, err = s.processor.staking(
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
 			)
+		case metadataCommon.Pdexv3UnstakingRequestMeta:
+			s.stakingPoolStates, _, err = s.processor.unstaking(
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
 		if err != nil {
 			return err
 		}
+	}
+	if s.params.IsZeroValue() {
+		s.readConfig()
 	}
 	return nil
 }
@@ -299,6 +279,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addOrderTxs := []metadata.Transaction{}
 	withdrawOrderTxs := []metadata.Transaction{}
 	stakingTxs := []metadata.Transaction{}
+	unstakingTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -331,6 +312,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				withdrawOrderTxs = append(withdrawOrderTxs, tx)
 			case metadataCommon.Pdexv3StakingRequestMeta:
 				stakingTxs = append(stakingTxs, tx)
+			case metadataCommon.Pdexv3UnstakingRequestMeta:
+				unstakingTxs = append(unstakingTxs, tx)
 			}
 		}
 	}
@@ -456,6 +439,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, withdrawOrderInstructions...)
 
+	var unstakingInstructions [][]string
+	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
+		unstakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, unstakingInstructions...)
+
 	var stakingInstructions [][]string
 	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(
 		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
@@ -487,19 +479,27 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 }
 
 func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
-	err := statedb.StorePdexv3Params(
-		env.StateDB(),
-		s.params.DefaultFeeRateBPS,
-		s.params.FeeRateBPS,
-		s.params.PRVDiscountPercent,
-		s.params.TradingProtocolFeePercent,
-		s.params.TradingStakingPoolRewardPercent,
-		s.params.PDEXRewardPoolPairsShare,
-		s.params.StakingPoolsShare,
-		s.params.StakingRewardTokens,
-		s.params.MintNftRequireAmount,
-		s.params.MaxOrdersPerNft,
-	)
+	var err error
+
+	if !s.params.IsZeroValue() {
+		err = statedb.StorePdexv3Params(
+			env.StateDB(),
+			s.params.DefaultFeeRateBPS,
+			s.params.FeeRateBPS,
+			s.params.PRVDiscountPercent,
+			s.params.TradingProtocolFeePercent,
+			s.params.TradingStakingPoolRewardPercent,
+			s.params.PDEXRewardPoolPairsShare,
+			s.params.StakingPoolsShare,
+			s.params.StakingRewardTokens,
+			s.params.MintNftRequireAmount,
+			s.params.MaxOrdersPerNft,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	err = statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
 	if err != nil {
 		return err
 	}
@@ -508,10 +508,6 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
 	}
 	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
-	if err != nil {
-		return err
-	}
-	err = statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
 	if err != nil {
 		return err
 	}
@@ -591,22 +587,26 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	res := newStateV2()
 	compareStateV2 := compareState.(*stateV2)
 
-	res.params = s.params
-	clonedFeeRateBPS := map[string]uint{}
-	for k, v := range s.params.FeeRateBPS {
-		clonedFeeRateBPS[k] = v
+	if !reflect.DeepEqual(s.params, compareStateV2.params) {
+		res.params = s.params
+		clonedFeeRateBPS := map[string]uint{}
+		for k, v := range s.params.FeeRateBPS {
+			clonedFeeRateBPS[k] = v
+		}
+		clonedPDEXRewardPoolPairsShare := map[string]uint{}
+		for k, v := range s.params.PDEXRewardPoolPairsShare {
+			clonedPDEXRewardPoolPairsShare[k] = v
+		}
+		clonedStakingPoolsShare := map[string]uint{}
+		for k, v := range s.params.StakingPoolsShare {
+			clonedStakingPoolsShare[k] = v
+		}
+		res.params.FeeRateBPS = clonedFeeRateBPS
+		res.params.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
+		res.params.StakingPoolsShare = clonedStakingPoolsShare
+	} else {
+		res.params = NewParams()
 	}
-	clonedPDEXRewardPoolPairsShare := map[string]uint{}
-	for k, v := range s.params.PDEXRewardPoolPairsShare {
-		clonedPDEXRewardPoolPairsShare[k] = v
-	}
-	clonedStakingPoolsShare := map[string]uint{}
-	for k, v := range s.params.StakingPoolsShare {
-		clonedStakingPoolsShare[k] = v
-	}
-	res.params.FeeRateBPS = clonedFeeRateBPS
-	res.params.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
-	res.params.StakingPoolsShare = clonedStakingPoolsShare
 
 	for k, v := range s.waitingContributions {
 		if m, ok := compareStateV2.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {

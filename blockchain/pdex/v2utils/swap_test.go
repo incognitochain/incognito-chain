@@ -4,66 +4,59 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
-	"testing"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
-	"github.com/incognitochain/incognito-chain/privacy"
-	. "github.com/stretchr/testify/assert"
+	//. "github.com/stretchr/testify/assert"
 )
 
-func TestProduceAcceptedTrade(t *testing.T) {
-	type TestData struct {
-		AmountIn        uint64                    `json:"amountIn"`
-		Fee             uint64                    `json:"fee"`
-		Reserves        []*rawdbv2.Pdexv3PoolPair `json:"reserves"`
-		TradeDirections []byte                    `json:"tradeDirections"`
-		Orderbooks      []OrderList               `json:"orders"` // assume orders have been sorted
-	}
+/*func TestProduceAcceptedTrade(t *testing.T) {*/
+//type TestData struct {
+//AmountIn        uint64                    `json:"amountIn"`
+//Fee             uint64                    `json:"fee"`
+//Reserves        []*rawdbv2.Pdexv3PoolPair `json:"reserves"`
+//TradeDirections []byte                    `json:"tradeDirections"`
+//Orderbooks      []OrderList               `json:"orders"` // assume orders have been sorted
+//}
 
-	type TestResult struct {
-		Instructions    []string                  `json:"instructions"`
-		ChangedReserves []*rawdbv2.Pdexv3PoolPair `json:"changedReserves"`
-	}
+//type TestResult struct {
+//Instructions    []string                  `json:"instructions"`
+//ChangedReserves []*rawdbv2.Pdexv3PoolPair `json:"changedReserves"`
+//}
 
-	// use all available testcases in testdata/
-	var testcases []Testcase
-	testcases = append(testcases, singleTradeTestcases...)
-	testcases = append(testcases, pathTradeTestcases...)
-	testcases = append(testcases, orderMatchTestcases...)
+//// use all available testcases in testdata/
+//var testcases []Testcase
+//testcases = append(testcases, singleTradeTestcases...)
+//testcases = append(testcases, pathTradeTestcases...)
+//testcases = append(testcases, orderMatchTestcases...)
 
-	var blankReceiver privacy.OTAReceiver
-	for _, testcase := range testcases {
-		t.Run(testcase.Name, func(t *testing.T) {
-			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
-			NoError(t, err)
-			// s, _ := json.Marshal(testdata)
-			// fmt.Println(string(s))
+//var blankReceiver privacy.OTAReceiver
+//for _, testcase := range testcases {
+//t.Run(testcase.Name, func(t *testing.T) {
+//var testdata TestData
+//err := json.Unmarshal([]byte(testcase.Data), &testdata)
+//NoError(t, err)
+//// s, _ := json.Marshal(testdata)
+//// fmt.Println(string(s))
 
-			orderbooks := make([]OrderBookIterator, len(testdata.Reserves))
-			dummyTradePath := make([]string, len(testdata.Reserves))
-			for index, item := range testdata.Orderbooks {
-				orderbooks[index] = &item
-				dummyTradePath[index] = "pair" + strconv.Itoa(index)
-			}
+//orderbooks := make([]OrderBookIterator, len(testdata.Reserves))
+//dummyTradePath := make([]string, len(testdata.Reserves))
+//for index, item := range testdata.Orderbooks {
+//orderbooks[index] = &item
+//dummyTradePath[index] = "pair" + strconv.Itoa(index)
+//}
 
-			// expected outputs will have RequestTxID, shardID zeroed. Those data are out of scope for this test
-			acceptedMd, changedReserves, err := MaybeAcceptTrade(testdata.AmountIn, testdata.Fee, dummyTradePath, blankReceiver, testdata.Reserves, testdata.TradeDirections, common.PRVCoinID, 0, orderbooks)
-			acn := instruction.Action{Content: acceptedMd}
-			if testcase.ExpectSuccess {
-				encodedResult, _ := json.Marshal(TestResult{acn.StringSlice(), changedReserves})
-				NoError(t, err)
-				Equal(t, testcase.Expected, string(encodedResult))
-			} else {
-				Equal(t, testcase.Expected, err.Error())
-			}
+//// expected outputs will have RequestTxID, shardID zeroed. Those data are out of scope for this test
+//acceptedMd, changedReserves, err := MaybeAcceptTrade(testdata.AmountIn, testdata.Fee, dummyTradePath, blankReceiver, testdata.Reserves, testdata.TradeDirections, common.PRVCoinID, 0, orderbooks)
+//acn := instruction.Action{Content: acceptedMd}
+//if testcase.ExpectSuccess {
+//encodedResult, _ := json.Marshal(TestResult{acn.StringSlice(), changedReserves})
+//NoError(t, err)
+//Equal(t, testcase.Expected, string(encodedResult))
+//} else {
+//Equal(t, testcase.Expected, err.Error())
+//}
 
-		})
-	}
-}
+//})
+//}
+/*}*/
 
 type OrderList []MatchingOrder
 

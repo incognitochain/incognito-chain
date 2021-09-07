@@ -665,6 +665,11 @@ func Pdexv3StakingStatusPrefix() []byte {
 	return pdexv3StakingStatusPrefix
 }
 
+// pDex v3 prefix for unstaking status
+func Pdexv3UnstakingStatusPrefix() []byte {
+	return pdexv3UnstakingStatusPrefix
+}
+
 // TODO: rename
 // PORTAL V4
 // Portal v4 prefix for portal v4 status

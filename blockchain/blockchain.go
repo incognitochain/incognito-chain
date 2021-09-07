@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
@@ -828,6 +828,13 @@ func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bo
 	}
 
 	return beaconHeight >= config.Param().BCHeightBreakPointPrivacyV2
+}
+
+func (blockchain *BlockChain) IsAfterPdexv3CheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+	return beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
 }
 
 func (s *BlockChain) AddRelayShard(sid int) error {
