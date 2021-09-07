@@ -18,9 +18,10 @@ type MintPDEXGenesisResponse struct {
 	SharedRandom          []byte `json:"SharedRandom"`
 }
 
-type MintPDEXBlockRewardContent struct {
-	PoolPairID string `json:"PoolPairID"`
-	Amount     uint64 `json:"Amount"`
+type MintBlockRewardContent struct {
+	PoolPairID string      `json:"PoolPairID"`
+	Amount     uint64      `json:"Amount"`
+	TokenID    common.Hash `json:"TokenID"`
 }
 
 type MintPDEXGenesisContent struct {

@@ -32,19 +32,21 @@ func BuildModifyParamsInst(
 	}
 }
 
-func BuildMintPDEXInst(
+func BuildMintBlockRewardInst(
 	pairID string,
 	mintingAmount uint64,
+	mintingTokenID common.Hash,
 ) [][]string {
-	reqContent := metadataPdexv3.MintPDEXBlockRewardContent{
+	reqContent := metadataPdexv3.MintBlockRewardContent{
 		PoolPairID: pairID,
 		Amount:     mintingAmount,
+		TokenID:    mintingTokenID,
 	}
 	reqContentBytes, _ := json.Marshal(reqContent)
 
 	return [][]string{
 		{
-			strconv.Itoa(metadataCommon.Pdexv3MintPDEXBlockRewardMeta),
+			strconv.Itoa(metadataCommon.Pdexv3MintBlockRewardMeta),
 			strconv.Itoa(-1),
 			metadataPdexv3.RequestAcceptedChainStatus,
 			string(reqContentBytes),

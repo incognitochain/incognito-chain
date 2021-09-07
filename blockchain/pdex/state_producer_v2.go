@@ -265,7 +265,8 @@ func (sp *stateProducerV2) modifyParams(
 	return instructions, params, stakingPools, nil
 }
 
-func (sp *stateProducerV2) mintPDEX(
+func (sp *stateProducerV2) mintReward(
+	tokenID common.Hash,
 	mintingAmount uint64,
 	params *Params,
 	pairs map[string]*PoolPairState,
@@ -291,11 +292,15 @@ func (sp *stateProducerV2) mintPDEX(
 			return instructions, pairs, fmt.Errorf("Could not calculate PDEX reward for pair %v", pairID)
 		}
 
+		if pairReward.Uint64() == 0 {
+			continue
+		}
+
 		(&v2utils.TradingPair{&pair.state}).AddFee(
-			common.PDEXCoinID, pairReward.Uint64(), BaseLPFeesPerShare,
+			tokenID, pairReward.Uint64(), BaseLPFeesPerShare,
 			0, 0, []common.Hash{})
 
-		instructions = append(instructions, v2utils.BuildMintPDEXInst(pairID, pairReward.Uint64())...)
+		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, pairReward.Uint64(), tokenID)...)
 	}
 
 	return instructions, pairs, nil
@@ -820,8 +825,9 @@ func (sp *stateProducerV2) userMintNft(
 	txs []metadata.Transaction,
 	nftIDs map[string]uint64,
 	beaconHeight, mintNftRequireAmount uint64,
-) ([][]string, map[string]uint64, error) {
+) ([][]string, map[string]uint64, uint64, error) {
 	res := [][]string{}
+	burningPRVAmount := uint64(0)
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UserMintNftRequest)
@@ -846,10 +852,11 @@ func (sp *stateProducerV2) userMintNft(
 				Logger.log.Debugf("Can not mint nftID with txHash %s", txReqID.String())
 				continue
 			}
+			burningPRVAmount += metaData.Amount()
 		}
 		res = append(res, inst)
 	}
-	return res, nftIDs, nil
+	return res, nftIDs, burningPRVAmount, nil
 }
 
 func (sp *stateProducerV2) staking(

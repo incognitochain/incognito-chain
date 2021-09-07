@@ -844,7 +844,7 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 	return pairs, err
 }
 
-func (sp *stateProcessorV2) mintPDEX(
+func (sp *stateProcessorV2) mintBlockReward(
 	stateDB *statedb.StateDB,
 	inst []string,
 	pairs map[string]*PoolPairState,
@@ -856,7 +856,7 @@ func (sp *stateProcessorV2) mintPDEX(
 	}
 
 	// unmarshal instructions content
-	var actionData metadataPdexv3.MintPDEXBlockRewardContent
+	var actionData metadataPdexv3.MintBlockRewardContent
 	err := json.Unmarshal([]byte(inst[3]), &actionData)
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
@@ -874,7 +874,7 @@ func (sp *stateProcessorV2) mintPDEX(
 	pairReward := actionData.Amount
 
 	(&v2utils.TradingPair{&pair.state}).AddFee(
-		common.PDEXCoinID, pairReward, BaseLPFeesPerShare,
+		actionData.TokenID, pairReward, BaseLPFeesPerShare,
 		0, 0, []common.Hash{},
 	)
 

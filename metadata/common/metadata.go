@@ -424,7 +424,7 @@ func IsPdexv3Type(metadataType int) bool {
 		return true
 	case Pdexv3MintPDEXGenesisMeta:
 		return true
-	case Pdexv3MintPDEXBlockRewardMeta:
+	case Pdexv3MintBlockRewardMeta:
 		return true
 	case Pdexv3StakingRequestMeta:
 		return true

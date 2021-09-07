@@ -215,8 +215,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			continue // Not error, just not PDE instructions
 		}
 		switch metadataType {
-		case metadataCommon.Pdexv3MintPDEXBlockRewardMeta:
-			s.poolPairs, err = s.processor.mintPDEX(
+		case metadataCommon.Pdexv3MintBlockRewardMeta:
+			s.poolPairs, err = s.processor.mintBlockReward(
 				env.StateDB(),
 				inst,
 				s.poolPairs,
@@ -341,12 +341,27 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	mintNftInstructions := [][]string{}
-	mintNftInstructions, s.nftIDs, err = s.producer.userMintNft(
+	burningPRVAmount := uint64(0)
+	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
 		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
 	instructions = append(instructions, mintNftInstructions...)
+
+	if burningPRVAmount > 0 {
+		var mintInstructions [][]string
+		mintInstructions, s.poolPairs, err = s.producer.mintReward(
+			common.PRVCoinID,
+			burningPRVAmount,
+			s.params,
+			s.poolPairs,
+		)
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, mintInstructions...)
+	}
 
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
@@ -392,7 +407,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	if pdexBlockRewards > 0 {
 		var mintInstructions [][]string
-		mintInstructions, s.poolPairs, err = s.producer.mintPDEX(
+		mintInstructions, s.poolPairs, err = s.producer.mintReward(
+			common.PDEXCoinID,
 			pdexBlockRewards,
 			s.params,
 			s.poolPairs,
