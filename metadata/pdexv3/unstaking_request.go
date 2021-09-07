@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -136,14 +135,8 @@ func (request *UnstakingRequest) ValidateMetadataByItself() bool {
 }
 
 func (request *UnstakingRequest) Hash() *common.Hash {
-	record := request.MetadataBase.Hash().String()
-	record += request.stakingPoolID
-	record += request.nftID
-	otaReceiverData, _ := json.Marshal(request.otaReceivers)
-	record += string(otaReceiverData)
-	record += strconv.FormatUint(uint64(request.unstakingAmount), 10)
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&request)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 

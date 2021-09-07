@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -142,16 +141,8 @@ func (request *AddLiquidityRequest) ValidateMetadataByItself() bool {
 }
 
 func (request *AddLiquidityRequest) Hash() *common.Hash {
-	record := request.MetadataBase.Hash().String()
-	record += request.poolPairID
-	record += request.pairHash
-	record += request.otaReceiver
-	record += request.tokenID
-	record += request.nftID
-	record += strconv.FormatUint(uint64(request.amplifier), 10)
-	record += strconv.FormatUint(request.tokenAmount, 10)
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&request)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
