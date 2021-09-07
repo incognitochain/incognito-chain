@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/portal"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/wire"
 	"net"
 	"os"
 	"path/filepath"
@@ -673,4 +674,23 @@ func InitChainParam(customParam func()) *NodeEngine {
 		node.GenerateBlock().NextRound()
 	}
 	return node
+}
+
+func (s *NodeEngine) SendFinishSync(accs []account.Account, sid byte) {
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	for _, v := range accs {
+		signature, err := v.MiningKeySet.BriSignData([]byte(wire.CmdMsgFinishSync))
+		if err != nil {
+			continue
+		}
+		cpk := v.SelfCommitteePubkey
+		finishedSyncSignatures = append(finishedSyncSignatures, signature)
+		finishedSyncValidators = append(finishedSyncValidators, cpk)
+	}
+	if len(finishedSyncValidators) == 0 {
+		return
+	}
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, sid)
+	s.GetBlockchain().AddFinishedSyncValidators(msg.CommitteePublicKey, msg.Signature, msg.ShardID)
 }

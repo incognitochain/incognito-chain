@@ -22,6 +22,8 @@ func Test_Stakingv3() {
 		config.Param().ConsensusParam.StakingFlowV2Height = 5
 		config.Param().ConsensusParam.AssignRuleV3Height = 10
 		config.Param().ConsensusParam.StakingFlowV3Height = 15
+		config.Param().CommitteeSize.MaxShardCommitteeSize = 16
+		config.Param().CommitteeSize.MinShardCommitteeSize = 4
 		config.Param().ConsensusParam.ConsensusV2Epoch = 1
 		config.Param().EpochParam.NumberOfBlockInEpoch = 20
 		config.Param().EpochParam.RandomTime = 10
@@ -32,7 +34,7 @@ func Test_Stakingv3() {
 
 	//stake node
 	stakers := []account.Account{}
-	for i := 0; i < 22; i++ {
+	for i := 0; i < 30; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 
@@ -83,7 +85,7 @@ func Test_Stakingv3() {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
-		if epoch > 15 {
+		if epoch > 20 {
 			break
 		}
 
@@ -95,8 +97,32 @@ func Test_Stakingv3() {
 	}
 
 	for {
+		node.SendFinishSync(stakers, 0)
+		node.SendFinishSync(stakers, 1)
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
+		epoch := currentBeaconBlock.GetCurrentEpoch()
+		if epoch > 40 {
+			break
+		}
+		//epoch := currentBeaconBlock.GetCurrentEpoch()
+		if height%20 == 1 || height%20 == 11 {
+			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
+			fmt.Println(currentBeaconBlock.GetInstructions())
+			node.ShowAccountPosition(stakers)
+		}
+		node.GenerateBlock().NextRound()
+
+		shard0Block := node.GetBlockchain().GetChain(0).GetBestView().GetBlock().(*types.ShardBlock)
+		if shard0Block.Header.BeaconHeight%20 == 1 {
+			fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
+		}
+	}
+
+	for {
+		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
+		height := currentBeaconBlock.GetHeight()
+
 		//epoch := currentBeaconBlock.GetCurrentEpoch()
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
@@ -113,6 +139,7 @@ func Test_Stakingv3() {
 		for _, v := range signIndex {
 			valIndex = append(valIndex, v)
 		}
+		node.Pause()
 		//fmt.Println(valIndex, signIndex)
 		node.ApplyChain(0).GenerateBlock(valIndex)
 		node.NextRound()
@@ -120,14 +147,6 @@ func Test_Stakingv3() {
 		shard0Block := node.GetBlockchain().GetChain(0).GetBestView().GetBlock().(*types.ShardBlock)
 		if shard0Block.Header.BeaconHeight%20 == 1 {
 			fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
-			node.Pause()
 		}
-		//shard0Block := node.GetBlockchain().GetChain(0).GetBestView().GetBlock().(*types.ShardBlock)
-		//fmt.Println(shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
-		//shard1Block := node.GetBlockchain().GetChain(1).GetBestView().GetBlock().(*types.ShardBlock)
-		//fmt.Println(shard1Block.Header.BeaconHeight, shard1Block.Body.Transactions, shard1Block.Body.Instructions, shard1Block.Body.CrossTransactions)
-
-		//fmt.Println()
 	}
-
 }

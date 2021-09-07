@@ -2,6 +2,8 @@ package account
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -19,6 +21,7 @@ type Account struct {
 	PaymentAddress      string
 	Keyset              *incognitokey.KeySet
 	SelfCommitteePubkey string
+	MiningKeySet        *signatureschemes.MiningKey
 }
 
 func GetShardIDFromPubkey(pk string, args ...interface{}) (int, error) {
@@ -86,6 +89,8 @@ func NewAccountFromPrivatekey(privateKey string) (Account, error) {
 
 	validatorKeyBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	acc.MiningKey = base58.Base58Check{}.Encode(validatorKeyBytes, common.ZeroByte)
+	privateSeed, err := consensus_v2.GenMiningKeyFromPrivateKey(privateKey)
+	acc.MiningKeySet, _ = consensus_v2.GetMiningKeyFromPrivateSeed(privateSeed)
 	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
 	acc.MiningPubkey = committeeKey.GetMiningKeyBase58("bls")
 	acc.SelfCommitteePubkey, _ = committeeKey.ToBase58()
