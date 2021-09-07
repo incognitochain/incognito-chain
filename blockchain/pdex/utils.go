@@ -569,22 +569,53 @@ func storePoolForPair(
 	poolPairs[pdePoolForPairKey] = poolForPair
 }
 
-func InitStateFromDB(
+func InitStatesFromDB(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
-) (State, error) {
+) (map[uint]State, error) {
+	res := make(map[uint]State)
 	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-			res := newStateV2()
-			res.readConfig()
-			return res, nil
+			res[AmplifierVersion] = newStateV2()
+		} else {
+			state, err := initStateV2(stateDB, beaconHeight)
+			if err != nil {
+				return res, err
+			}
+			res[AmplifierVersion] = state
 		}
-		return initStateV2(stateDB, beaconHeight)
 	}
-	if beaconHeight == 1 || beaconHeight == 0 {
-		return newStateV1(), nil
+	if beaconHeight == 0 || beaconHeight == 1 {
+		res[BasicVersion] = newStateV1()
+	} else {
+		state, err := initStateV1(stateDB, beaconHeight)
+		if err != nil {
+			return res, err
+		}
+		res[BasicVersion] = state
 	}
-	return initStateV1(stateDB, beaconHeight)
+	return res, nil
+}
+
+func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint) (State, error) {
+	switch version {
+	case BasicVersion:
+		if beaconHeight == 0 || beaconHeight == 1 {
+			return newStateV1(), nil
+		}
+		return initStateV1(stateDB, beaconHeight)
+	case AmplifierVersion:
+		if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
+			return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
+		}
+		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
+			return newStateV2(), nil
+		} else {
+			return initStateV2(stateDB, beaconHeight)
+		}
+	default:
+		return nil, errors.New("Can not recognize version")
+	}
 }
 
 func generatePoolPairKey(token0Name, token1Name, txReqID string) string {

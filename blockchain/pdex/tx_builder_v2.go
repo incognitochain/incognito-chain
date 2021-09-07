@@ -30,6 +30,11 @@ func (txBuilder *TxBuilderV2) Build(
 	var err error
 
 	switch metaType {
+	case metadataCommon.Pdexv3UnstakingResponseMeta:
+		if len(inst) != 3 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
+		}
+		tx, err = buildUnstakingTx(inst, producerPrivateKey, shardID, transactionStateDB)
 	case metadataCommon.Pdexv3StakingRequestMeta:
 		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
@@ -212,7 +217,7 @@ func buildUserMintNftTx(
 
 	var instShardID byte
 	var tokenID common.Hash
-	var otaReceiveStr, status, txReqID string
+	var otaReceiverStr, status, txReqID string
 	var amount uint64
 	switch inst[1] {
 	case common.Pdexv3RejectUserMintNftStatus:
@@ -223,7 +228,7 @@ func buildUserMintNftTx(
 		}
 		instShardID = refundInst.ShardID()
 		tokenID = common.PRVCoinID
-		otaReceiveStr = refundInst.OtaReceive()
+		otaReceiverStr = refundInst.OtaReceiver()
 		amount = refundInst.Amount()
 		txReqID = refundInst.TxReqID().String()
 	case common.Pdexv3AcceptUserMintNftStatus:
@@ -234,7 +239,7 @@ func buildUserMintNftTx(
 		}
 		instShardID = acceptInst.ShardID()
 		tokenID = acceptInst.NftID()
-		otaReceiveStr = acceptInst.OtaReceive()
+		otaReceiverStr = acceptInst.OtaReceiver()
 		amount = 1
 		txReqID = acceptInst.TxReqID().String()
 	default:
@@ -245,13 +250,13 @@ func buildUserMintNftTx(
 	}
 
 	status = inst[1]
-	otaReceive := privacy.OTAReceiver{}
-	err := otaReceive.FromString(otaReceiveStr)
+	otaReceiver := privacy.OTAReceiver{}
+	err := otaReceiver.FromString(otaReceiverStr)
 	if err != nil {
 		return tx, err
 	}
 	metaData := metadataPdexv3.NewUserMintNftResponseWithValue(status, txReqID)
-	tx, err = buildMintTokenTx(tokenID, amount, otaReceive, producerPrivateKey, transactionStateDB, metaData)
+	tx, err = buildMintTokenTx(tokenID, amount, otaReceiver, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}
@@ -297,7 +302,6 @@ func buildStakingTx(
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}
 	return tx, err
-
 }
 
 func buildMintNftTx(
@@ -411,7 +415,7 @@ func buildAcceptedWithdrawLiquidity(
 		withdrawLiquidityInst.TxReqID().String(),
 	)
 	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromString(withdrawLiquidityInst.OtaReceive())
+	err = otaReceiver.FromString(withdrawLiquidityInst.OtaReceiver())
 	if err != nil {
 		return tx, err
 	}
@@ -419,6 +423,46 @@ func buildAcceptedWithdrawLiquidity(
 		withdrawLiquidityInst.TokenID(), withdrawLiquidityInst.TokenAmount(),
 		otaReceiver, producerPrivateKey, transactionStateDB, metaData,
 	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+	}
+	return tx, err
+}
+
+func buildUnstakingTx(
+	inst []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	if len(inst) != 3 {
+		return tx, fmt.Errorf("Expect inst length to be %v but get %v", 3, len(inst))
+	}
+	if inst[1] != common.Pdexv3AcceptUnstakingStatus {
+		return tx, nil
+	}
+
+	acceptInst := instruction.AcceptUnstaking{}
+	err := acceptInst.FromStringSlice(inst)
+	if err != nil {
+		return tx, err
+	}
+
+	if acceptInst.ShardID() != shardID || acceptInst.StakingPoolID().IsZeroValue() {
+		return tx, nil
+	}
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromString(acceptInst.OtaReceiver())
+	if err != nil {
+		return tx, err
+	}
+	metaData := metadataPdexv3.NewUnstakingResponseWithValue(
+		common.Pdexv3AcceptUnstakingStatus, acceptInst.TxReqID().String(),
+	)
+	tx, err = buildMintTokenTx(
+		acceptInst.StakingPoolID(), acceptInst.Amount(),
+		otaReceiver, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}

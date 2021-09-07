@@ -72,6 +72,7 @@ type ChainRetriever interface {
 	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 	IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool
+	IsAfterPdexv3CheckPoint(beaconHeight uint64) bool
 	GetPortalFeederAddress(beaconHeight uint64) string
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
 	GetPortalETHContractAddrStr(beaconHeight uint64) string
@@ -109,6 +110,8 @@ type BeaconViewRetriever interface {
 	IsValidPoolPairID(string) error
 	IsValidMintNftRequireAmount(uint64) error
 	IsValidPdexv3StakingPool(string) error
+	IsValidPdexv3UnstakingAmount(string, string, uint64) error
+	IsValidPdexv3ShareAmount(string, string, uint64) error
 }
 
 type ShardViewRetriever interface {

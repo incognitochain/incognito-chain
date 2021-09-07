@@ -100,21 +100,63 @@ func (s *StakingPoolState) getDiff(
 	return newStateChange
 }
 
-func (s *StakingPoolState) addLiquidity(nftID string, liquidity, beaconHeight uint64) error {
+func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight uint64, operator byte) error {
 	staker, found := s.stakers[nftID]
 	if !found {
+		if operator == subOperator {
+			return errors.New("remove liquidity from invalid staker")
+		}
 		s.stakers[nftID] = NewStakerWithValue(liquidity, beaconHeight, make(map[string]uint64))
 	} else {
-		tempLiquidity := staker.liquidity + liquidity
+		var tempLiquidity uint64
+		switch operator {
+		case subOperator:
+			tempLiquidity = staker.liquidity - liquidity
+			if tempLiquidity >= s.liquidity {
+				return errors.New("Staker liquidity is out of range")
+			}
+		case addOperator:
+			tempLiquidity = staker.liquidity + liquidity
+			if tempLiquidity < s.liquidity {
+				return errors.New("Staker liquidity is out of range")
+			}
+		}
+		staker.liquidity = tempLiquidity
+		staker.lastUpdatedBeaconHeight = beaconHeight
+	}
+	var tempLiquidity uint64
+	switch operator {
+	case subOperator:
+		tempLiquidity = s.liquidity - liquidity
+		if tempLiquidity >= s.liquidity {
+			return errors.New("Staking pool liquidity is out of range")
+		}
+	case addOperator:
+		tempLiquidity = s.liquidity + liquidity
 		if tempLiquidity < s.liquidity {
 			return errors.New("Staking pool liquidity is out of range")
 		}
-		staker.liquidity = tempLiquidity
-	}
-	tempLiquidity := s.liquidity + liquidity
-	if tempLiquidity < s.liquidity {
-		return errors.New("Staking pool liquidity is out of range")
 	}
 	s.liquidity = tempLiquidity
 	return nil
+}
+
+func (s *StakingPoolState) withLiquidity(liquidity uint64) {
+	s.liquidity = liquidity
+}
+
+func (s *StakingPoolState) withStakers(stakers map[string]*Staker) {
+	s.stakers = stakers
+}
+
+func (s *StakingPoolState) cloneStaker(nftID string) map[string]*Staker {
+	res := make(map[string]*Staker)
+	for k, v := range s.stakers {
+		if k == nftID {
+			res[k] = v.Clone()
+		} else {
+			res[k] = v
+		}
+	}
+	return res
 }

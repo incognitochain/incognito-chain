@@ -14,7 +14,7 @@ func TestAcceptWithdrawLiquidity_FromStringSlice(t *testing.T) {
 		tokenID     common.Hash
 		tokenAmount uint64
 		shareAmount uint64
-		otaReceive  string
+		otaReceiver string
 		txReqID     common.Hash
 		shardID     byte
 	}
@@ -37,7 +37,7 @@ func TestAcceptWithdrawLiquidity_FromStringSlice(t *testing.T) {
 				tokenID:     tt.fields.tokenID,
 				tokenAmount: tt.fields.tokenAmount,
 				shareAmount: tt.fields.shareAmount,
-				otaReceive:  tt.fields.otaReceive,
+				otaReceiver: tt.fields.otaReceiver,
 				txReqID:     tt.fields.txReqID,
 				shardID:     tt.fields.shardID,
 			}
@@ -55,7 +55,7 @@ func TestAcceptWithdrawLiquidity_StringSlice(t *testing.T) {
 		tokenID     common.Hash
 		tokenAmount uint64
 		shareAmount uint64
-		otaReceive  string
+		otaReceiver string
 		txReqID     common.Hash
 		shardID     byte
 	}
@@ -75,7 +75,7 @@ func TestAcceptWithdrawLiquidity_StringSlice(t *testing.T) {
 				tokenID:     tt.fields.tokenID,
 				tokenAmount: tt.fields.tokenAmount,
 				shareAmount: tt.fields.shareAmount,
-				otaReceive:  tt.fields.otaReceive,
+				otaReceiver: tt.fields.otaReceiver,
 				txReqID:     tt.fields.txReqID,
 				shardID:     tt.fields.shardID,
 			}

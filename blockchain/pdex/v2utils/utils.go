@@ -30,3 +30,10 @@ type StakingStatus struct {
 	StakingPoolID string `json:"StakingPoolID"`
 	Liquidity     uint64 `json:"Liquidity"`
 }
+
+type UnstakingStatus struct {
+	Status        string `json:"Status"`
+	NftID         string `json:"NftID"`
+	StakingPoolID string `json:"StakingPoolID"`
+	Liquidity     uint64 `json:"Liquidity"`
+}

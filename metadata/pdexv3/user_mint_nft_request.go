@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -55,6 +54,9 @@ func (request *UserMintNftRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Feature pdexv3 has not been activated yet"))
+	}
 	otaReceiver := privacy.OTAReceiver{}
 	err := otaReceiver.FromString(request.otaReceiver)
 	if err != nil {
@@ -81,6 +83,9 @@ func (request *UserMintNftRequest) ValidateSanityData(
 	if tx.GetType() != common.TxNormalType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be normal privacy type"))
 	}
+	if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
+	}
 	return true, true, nil
 }
 
@@ -89,11 +94,8 @@ func (request *UserMintNftRequest) ValidateMetadataByItself() bool {
 }
 
 func (request *UserMintNftRequest) Hash() *common.Hash {
-	record := request.MetadataBase.Hash().String()
-	record += request.otaReceiver
-	record += strconv.FormatUint(uint64(request.amount), 10)
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&request)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 

@@ -12,7 +12,7 @@ import (
 type AcceptUserMintNft struct {
 	nftID       common.Hash
 	burntAmount uint64
-	otaReceive  string
+	otaReceiver string
 	shardID     byte
 	txReqID     common.Hash
 }
@@ -22,10 +22,10 @@ func NewAcceptUserMintNft() *AcceptUserMintNft {
 }
 
 func NewAcceptUserMintNftWithValue(
-	otaReceive string, burntAmount uint64, shardID byte, nftID, txReqID common.Hash,
+	otaReceiver string, burntAmount uint64, shardID byte, nftID, txReqID common.Hash,
 ) *AcceptUserMintNft {
 	return &AcceptUserMintNft{
-		otaReceive:  otaReceive,
+		otaReceiver: otaReceiver,
 		burntAmount: burntAmount,
 		nftID:       nftID,
 		shardID:     shardID,
@@ -64,13 +64,13 @@ func (a *AcceptUserMintNft) StringSlice() ([]string, error) {
 
 func (a *AcceptUserMintNft) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		OtaReceive  string      `json:"OtaReceive"`
+		OtaReceiver string      `json:"OtaReceiver"`
 		BurntAmount uint64      `json:"BurntAmount"`
 		NftID       common.Hash `json:"NftID"`
 		ShardID     byte        `json:"ShardID"`
 		TxReqID     common.Hash `json:"TxReqID"`
 	}{
-		OtaReceive:  a.otaReceive,
+		OtaReceiver: a.otaReceiver,
 		BurntAmount: a.burntAmount,
 		ShardID:     a.shardID,
 		NftID:       a.nftID,
@@ -84,7 +84,7 @@ func (a *AcceptUserMintNft) MarshalJSON() ([]byte, error) {
 
 func (a *AcceptUserMintNft) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		OtaReceive  string      `json:"OtaReceive"`
+		OtaReceiver string      `json:"OtaReceiver"`
 		BurntAmount uint64      `json:"BurntAmount"`
 		NftID       common.Hash `json:"NftID"`
 		ShardID     byte        `json:"ShardID"`
@@ -94,7 +94,7 @@ func (a *AcceptUserMintNft) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	a.otaReceive = temp.OtaReceive
+	a.otaReceiver = temp.OtaReceiver
 	a.burntAmount = temp.BurntAmount
 	a.nftID = temp.NftID
 	a.shardID = temp.ShardID
@@ -102,8 +102,8 @@ func (a *AcceptUserMintNft) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (a *AcceptUserMintNft) OtaReceive() string {
-	return a.otaReceive
+func (a *AcceptUserMintNft) OtaReceiver() string {
+	return a.otaReceiver
 }
 
 func (a *AcceptUserMintNft) NftID() common.Hash {

@@ -15,19 +15,19 @@ func TestRejectUserMintNft_FromStringSlice(t *testing.T) {
 	txReqID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	data := RejectUserMintNft{
-		otaReceive: validOTAReceiver0,
-		amount:     100,
-		shardID:    1,
-		txReqID:    *txReqID,
+		otaReceiver: validOTAReceiver0,
+		amount:      100,
+		shardID:     1,
+		txReqID:     *txReqID,
 	}
 	dataBytes, err := json.Marshal(&data)
 	assert.Nil(t, err)
 
 	type fields struct {
-		otaReceive string
-		amount     uint64
-		shardID    byte
-		txReqID    common.Hash
+		otaReceiver string
+		amount      uint64
+		shardID     byte
+		txReqID     common.Hash
 	}
 	type args struct {
 		source []string
@@ -82,10 +82,10 @@ func TestRejectUserMintNft_FromStringSlice(t *testing.T) {
 				},
 			},
 			fieldsAfterProcess: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     100,
-				shardID:    1,
-				txReqID:    *txReqID,
+				otaReceiver: validOTAReceiver0,
+				amount:      100,
+				shardID:     1,
+				txReqID:     *txReqID,
 			},
 			wantErr: false,
 		},
@@ -93,16 +93,16 @@ func TestRejectUserMintNft_FromStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &RejectUserMintNft{
-				otaReceive: tt.fields.otaReceive,
-				amount:     tt.fields.amount,
-				shardID:    tt.fields.shardID,
-				txReqID:    tt.fields.txReqID,
+				otaReceiver: tt.fields.otaReceiver,
+				amount:      tt.fields.amount,
+				shardID:     tt.fields.shardID,
+				txReqID:     tt.fields.txReqID,
 			}
 			if err := r.FromStringSlice(tt.args.source); (err != nil) != tt.wantErr {
 				t.Errorf("RejectUserMintNft.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !tt.wantErr && !reflect.DeepEqual(tt.fieldsAfterProcess.otaReceive, r.otaReceive) {
-				t.Errorf("otaReceive got = %v, want %v", r.otaReceive, tt.fieldsAfterProcess.otaReceive)
+			if !tt.wantErr && !reflect.DeepEqual(tt.fieldsAfterProcess.otaReceiver, r.otaReceiver) {
+				t.Errorf("otaReceive got = %v, want %v", r.otaReceiver, tt.fieldsAfterProcess.otaReceiver)
 			}
 			if !tt.wantErr && !reflect.DeepEqual(tt.fieldsAfterProcess.amount, r.amount) {
 				t.Errorf("amount got = %v, want %v", r.amount, tt.fieldsAfterProcess.amount)
@@ -121,19 +121,19 @@ func TestRejectUserMintNft_StringSlice(t *testing.T) {
 	txReqID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	data := RejectUserMintNft{
-		otaReceive: validOTAReceiver0,
-		amount:     100,
-		shardID:    1,
-		txReqID:    *txReqID,
+		otaReceiver: validOTAReceiver0,
+		amount:      100,
+		shardID:     1,
+		txReqID:     *txReqID,
 	}
 	dataBytes, err := json.Marshal(&data)
 	assert.Nil(t, err)
 
 	type fields struct {
-		otaReceive string
-		amount     uint64
-		shardID    byte
-		txReqID    common.Hash
+		otaReceiver string
+		amount      uint64
+		shardID     byte
+		txReqID     common.Hash
 	}
 	tests := []struct {
 		name    string
@@ -144,10 +144,10 @@ func TestRejectUserMintNft_StringSlice(t *testing.T) {
 		{
 			name: "Valid input",
 			fields: fields{
-				otaReceive: validOTAReceiver0,
-				amount:     100,
-				shardID:    1,
-				txReqID:    *txReqID,
+				otaReceiver: validOTAReceiver0,
+				amount:      100,
+				shardID:     1,
+				txReqID:     *txReqID,
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta),
@@ -160,10 +160,10 @@ func TestRejectUserMintNft_StringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &RejectUserMintNft{
-				otaReceive: tt.fields.otaReceive,
-				amount:     tt.fields.amount,
-				shardID:    tt.fields.shardID,
-				txReqID:    tt.fields.txReqID,
+				otaReceiver: tt.fields.otaReceiver,
+				amount:      tt.fields.amount,
+				shardID:     tt.fields.shardID,
+				txReqID:     tt.fields.txReqID,
 			}
 			got, err := r.StringSlice()
 			if (err != nil) != tt.wantErr {

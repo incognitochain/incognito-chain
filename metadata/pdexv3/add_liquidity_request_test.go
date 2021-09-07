@@ -9,11 +9,18 @@ import (
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestAddLiquidity_ValidateSanityData(t *testing.T) {
+	common.MaxShardNumber = 8
 	tokenHash, err := common.Hash{}.NewHashFromStr("123123")
 	assert.Nil(t, err)
+
+	invalidChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	invalidChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(false)
+	validChainRetriever := &metadataCommonMocks.ChainRetriever{}
+	validChainRetriever.On("IsAfterPdexv3CheckPoint", mock.AnythingOfType("uint64")).Return(true)
 
 	notBurnTx := &metadataCommonMocks.Transaction{}
 	notBurnTx.On("GetTxBurnData").Return(false, nil, nil, errors.New("Not tx burn"))
@@ -39,9 +46,19 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 	invalidCustomTx.On("GetTxBurnData").Return(true, validCoin, &common.PRVCoinID, nil)
 	invalidCustomTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
 
+	invalidOtaReceiverShardIDTx := &metadataCommonMocks.Transaction{}
+	invalidOtaReceiverShardIDTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
+	invalidOtaReceiverShardIDTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	invalidValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
+	invalidValidationEnvironment.On("ShardID").Return(0)
+	invalidOtaReceiverShardIDTx.On("GetValidationEnv").Return(invalidValidationEnvironment)
+
 	validTx := &metadataCommonMocks.Transaction{}
 	validTx.On("GetTxBurnData").Return(true, validCoin, tokenHash, nil)
 	validTx.On("GetType").Return(common.TxCustomTokenPrivacyType)
+	validValidationEnvironment := &metadataCommonMocks.ValidationEnviroment{}
+	validValidationEnvironment.On("ShardID").Return(1)
+	validTx.On("GetValidationEnv").Return(validValidationEnvironment)
 
 	type fields struct {
 		poolPairID   string
@@ -69,11 +86,25 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "Invalid chainRetriever",
+			fields: fields{
+				pairHash: "",
+			},
+			args: args{
+				chainRetriever: invalidChainRetriever,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
 			name: "Invalid PairHash",
 			fields: fields{
 				pairHash: "",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -84,7 +115,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				pairHash: "pair hash",
 				tokenID:  "asdb",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -96,7 +129,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				tokenID:  tokenHash.String(),
 				nftID:    "abacv",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -107,7 +142,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				pairHash: "pair hash",
 				tokenID:  "",
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -118,7 +155,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				pairHash: "pair hash",
 				tokenID:  tokenHash.String(),
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -130,7 +169,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				tokenID:     tokenHash.String(),
 				otaReceiver: validOTAReceiver0,
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -142,7 +183,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				tokenID:     tokenHash.String(),
 				otaReceiver: validOTAReceiver0,
 			},
-			args:    args{},
+			args: args{
+				chainRetriever: validChainRetriever,
+			},
 			want:    false,
 			want1:   false,
 			wantErr: true,
@@ -156,7 +199,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				amplifier:   10000,
 			},
 			args: args{
-				tx: notBurnTx,
+				tx:             notBurnTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -171,7 +215,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				amplifier:   10000,
 			},
 			args: args{
-				tx: notMactchTokenIDTx,
+				tx:             notMactchTokenIDTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -186,7 +231,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				amplifier:   10000,
 			},
 			args: args{
-				tx: notMactchAmountTx0,
+				tx:             notMactchAmountTx0,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -202,7 +248,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				tokenAmount: 200,
 			},
 			args: args{
-				tx: notMactchAmountTx1,
+				tx:             notMactchAmountTx1,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -218,7 +265,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				tokenAmount: 200,
 			},
 			args: args{
-				tx: invalidNormalTx,
+				tx:             invalidNormalTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -234,7 +282,26 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				tokenAmount: 200,
 			},
 			args: args{
-				tx: invalidCustomTx,
+				tx:             invalidCustomTx,
+				chainRetriever: validChainRetriever,
+			},
+			want:    false,
+			want1:   false,
+			wantErr: true,
+		},
+		{
+			name: "invalid ota receiver shard id",
+			fields: fields{
+				pairHash:    "pair hash",
+				tokenID:     tokenHash.String(),
+				otaReceiver: validOTAReceiver0,
+				amplifier:   10000,
+				tokenAmount: 200,
+				nftID:       tokenHash.String(),
+			},
+			args: args{
+				tx:             invalidOtaReceiverShardIDTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    false,
 			want1:   false,
@@ -251,7 +318,8 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				nftID:       tokenHash.String(),
 			},
 			args: args{
-				tx: validTx,
+				tx:             validTx,
+				chainRetriever: validChainRetriever,
 			},
 			want:    true,
 			want1:   true,

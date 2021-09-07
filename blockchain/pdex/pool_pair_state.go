@@ -421,10 +421,14 @@ func (p *PoolPairState) withOrderBook(orderbook Orderbook) {
 	p.orderbook = orderbook
 }
 
-func (p *PoolPairState) cloneShares() map[string]*Share {
+func (p *PoolPairState) cloneShare(nftID string) map[string]*Share {
 	res := make(map[string]*Share)
 	for k, v := range p.shares {
-		res[k] = v.Clone()
+		if k == nftID {
+			res[k] = v.Clone()
+		} else {
+			res[k] = v
+		}
 	}
 	return res
 }

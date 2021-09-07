@@ -97,6 +97,9 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 	// if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
 	// }
+	if chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, fmt.Errorf("metadata type %v is no longer supported", PDECrossPoolTradeRequestMeta)
+	}
 
 	// check ota address string and tx random is valid
 	_, err, ver := metadataCommon.CheckIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)

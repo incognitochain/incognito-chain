@@ -79,11 +79,8 @@ func (response *UserMintNftResponse) ValidateMetadataByItself() bool {
 }
 
 func (response *UserMintNftResponse) Hash() *common.Hash {
-	record := response.MetadataBase.Hash().String()
-	record += response.status
-	record += response.txReqID
-	// final hash
-	hash := common.HashH([]byte(record))
+	rawBytes, _ := json.Marshal(&response)
+	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
@@ -132,18 +129,18 @@ func (response *UserMintNftResponse) Status() string {
 }
 
 type acceptUserMintNft struct {
-	NftID       common.Hash
-	BurntAmount uint64
-	OtaReceive  string
-	ShardID     byte
-	TxReqID     common.Hash
+	NftID       common.Hash `json:"NftID"`
+	BurntAmount uint64      `json:"BurntAmount"`
+	OtaReceiver string      `json:"OtaReceiver"`
+	ShardID     byte        `json:"ShardID"`
+	TxReqID     common.Hash `json:"TxReqID"`
 }
 
 type refundUserMintNft struct {
-	OtaReceive string
-	Amount     uint64
-	ShardID    byte
-	TxReqID    common.Hash
+	OtaReceiver string      `json:"OtaReceiver"`
+	Amount      uint64      `json:"Amount"`
+	ShardID     byte        `json:"ShardID"`
+	TxReqID     common.Hash `json:"TxReqID"`
 }
 
 func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
@@ -176,7 +173,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		var instShardID byte
 		var tokenID common.Hash
-		var otaReceiveStr, txReqID string
+		var otaReceiverStr, txReqID string
 		var amount uint64
 		switch inst[1] {
 		case common.Pdexv3RejectUserMintNftStatus:
@@ -188,7 +185,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			}
 			instShardID = instContent.ShardID
 			tokenID = common.PRVCoinID
-			otaReceiveStr = instContent.OtaReceive
+			otaReceiverStr = instContent.OtaReceiver
 			amount = instContent.Amount
 			txReqID = instContent.TxReqID.String()
 		case common.Pdexv3AcceptUserMintNftStatus:
@@ -201,7 +198,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			}
 			instShardID = instContent.ShardID
 			tokenID = instContent.NftID
-			otaReceiveStr = instContent.OtaReceive
+			otaReceiverStr = instContent.OtaReceiver
 			amount = 1
 			txReqID = instContent.TxReqID.String()
 		default:
@@ -224,16 +221,16 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		pk := mintCoin.GetPublicKey().ToBytesS()
 		paidAmount := mintCoin.GetValue()
 
-		otaReceive := coin.OTAReceiver{}
-		err = otaReceive.FromString(otaReceiveStr)
+		otaReceiver := coin.OTAReceiver{}
+		err = otaReceiver.FromString(otaReceiverStr)
 		if err != nil {
 			return false, errors.New("Invalid ota receiver")
 		}
 
 		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
-		if !bytes.Equal(otaReceive.PublicKey.ToBytesS(), pk[:]) ||
+		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
 			amount != paidAmount ||
-			!bytes.Equal(txR[:], otaReceive.TxRandom[:]) ||
+			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
 			tokenID.String() != coinID.String() {
 			return false, errors.New("Coin is invalid")
 		}
