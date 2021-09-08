@@ -80,8 +80,9 @@ const (
 	Pdexv3WithdrawProtocolFeeResponseMeta   = 292
 	Pdexv3MintPDEXGenesisMeta               = 293
 	Pdexv3MintBlockRewardMeta               = 294
-	Pdexv3WithdrawStakingRewardRequestMeta  = 295
-	Pdexv3WithdrawStakingRewardResponseMeta = 296
+	Pdexv3DistributeStakingRewardMeta       = 295
+	Pdexv3WithdrawStakingRewardRequestMeta  = 296
+	Pdexv3WithdrawStakingRewardResponseMeta = 297
 
 	// portal
 	PortalCustodianDepositMeta                  = 100

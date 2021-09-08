@@ -260,6 +260,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.stakingPoolStates, _, err = s.processor.unstaking(
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
 			)
+		case metadataCommon.Pdexv3DistributeStakingRewardMeta:
+			s.stakingPoolStates, err = s.processor.distributeStakingReward(
+				env.StateDB(), inst, s.stakingPoolStates,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -460,6 +464,28 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, withdrawOrderInstructions...)
+
+	// Prepare staking reward for distributing
+	stakingRewards := map[common.Hash]uint64{}
+	for _, poolPair := range s.poolPairs {
+		for tokenID, reward := range poolPair.state.StakingPoolFees() {
+			_, ok := stakingRewards[tokenID]
+			if !ok {
+				stakingRewards[tokenID] = 0
+			}
+			stakingRewards[tokenID] += reward
+		}
+	}
+	var distributingInstruction [][]string
+	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
+		stakingRewards,
+		s.params,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, distributingInstruction...)
 
 	var unstakingInstructions [][]string
 	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(

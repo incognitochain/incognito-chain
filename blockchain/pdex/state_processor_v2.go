@@ -1051,3 +1051,37 @@ func (sp *stateProcessorV2) unstaking(
 	)
 	return stakingPoolStates, &unstakingStatus, nil
 }
+
+func (sp *stateProcessorV2) distributeStakingReward(
+	stateDB *statedb.StateDB,
+	inst []string,
+	stakingPools map[string]*StakingPoolState,
+) (map[string]*StakingPoolState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return stakingPools, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.DistributeStakingRewardContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return stakingPools, err
+	}
+
+	pool, isExisted := stakingPools[actionData.StakingTokenID]
+	if !isExisted {
+		msg := fmt.Sprintf("Could not find stsaking pool %v for distributing", actionData.StakingTokenID)
+		Logger.log.Errorf(msg)
+		return stakingPools, fmt.Errorf(msg)
+	}
+
+	for rewardToken, rewardAmount := range actionData.Rewards {
+		pool.AddReward(rewardToken, rewardAmount)
+	}
+
+	return stakingPools, err
+}

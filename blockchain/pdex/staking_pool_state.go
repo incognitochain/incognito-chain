@@ -55,6 +55,10 @@ func (stakingPoolState *StakingPoolState) RewardsPerShare() map[common.Hash]*big
 	return res
 }
 
+func (stakingPoolState *StakingPoolState) SetRewardsPerShare(rewardsPerShare map[common.Hash]*big.Int) {
+	stakingPoolState.rewardsPerShare = rewardsPerShare
+}
+
 func (stakingPoolState *StakingPoolState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Liquidity       uint64                   `json:"Liquidity"`
@@ -233,4 +237,28 @@ func (s *StakingPoolState) RecomputeStakingRewards(
 		}
 	}
 	return result, nil
+}
+
+func (s *StakingPoolState) AddReward(
+	tokenID common.Hash, amount uint64,
+) {
+	if s.Liquidity() == 0 {
+		return
+	}
+
+	oldRewardsPerShare, isExisted := s.RewardsPerShare()[tokenID]
+	if !isExisted {
+		oldRewardsPerShare = big.NewInt(0)
+	}
+
+	// delta (reward / total share) = reward * BASE / totalShare
+	deltaRewardsPerShare := new(big.Int).Mul(new(big.Int).SetUint64(amount), BaseLPFeesPerShare)
+	deltaRewardsPerShare = new(big.Int).Div(deltaRewardsPerShare, new(big.Int).SetUint64(s.Liquidity()))
+
+	// update accumulated sum of (fee / LP share)
+	newLPFeesPerShare := new(big.Int).Add(oldRewardsPerShare, deltaRewardsPerShare)
+	tempRewardsPerShare := s.RewardsPerShare()
+	tempRewardsPerShare[tokenID] = newLPFeesPerShare
+
+	s.SetRewardsPerShare(tempRewardsPerShare)
 }

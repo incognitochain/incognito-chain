@@ -170,3 +170,23 @@ func BuildWithdrawProtocolFeeInsts(
 
 	return insts
 }
+
+func BuildDistributeStakingRewardInst(
+	stakingToken string,
+	rewards map[common.Hash]uint64,
+) [][]string {
+	reqContent := metadataPdexv3.DistributeStakingRewardContent{
+		StakingTokenID: stakingToken,
+		Rewards:        rewards,
+	}
+	reqContentBytes, _ := json.Marshal(reqContent)
+
+	return [][]string{
+		{
+			strconv.Itoa(metadataCommon.Pdexv3DistributeStakingRewardMeta),
+			strconv.Itoa(-1),
+			metadataPdexv3.RequestAcceptedChainStatus,
+			string(reqContentBytes),
+		},
+	}
+}

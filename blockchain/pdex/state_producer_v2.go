@@ -998,3 +998,49 @@ func (sp *stateProducerV2) unstaking(
 	}
 	return res, stakingPoolStates, nil
 }
+
+func (sp *stateProducerV2) distributeStakingReward(
+	rewards map[common.Hash]uint64,
+	params *Params,
+	stakingPools map[string]*StakingPoolState,
+) ([][]string, map[string]*StakingPoolState, error) {
+	instructions := [][]string{}
+
+	totalRewardShare := uint64(0)
+	for _, shareAmount := range params.StakingPoolsShare {
+		totalRewardShare += uint64(shareAmount)
+	}
+
+	if totalRewardShare == 0 {
+		Logger.log.Warnf("Total staking reward share is 0")
+		return instructions, stakingPools, nil
+	}
+
+	for stakingToken, shareRewardAmount := range params.StakingPoolsShare {
+		pool, isExisted := stakingPools[stakingToken]
+		if !isExisted {
+			return instructions, stakingPools, fmt.Errorf("Could not find pool %v for distributing staking reward", stakingToken)
+		}
+
+		poolReward := map[common.Hash]uint64{}
+		for rewardToken, rewardAmount := range rewards {
+			// pairReward = mintingAmount * shareRewardAmount / totalRewardShare
+			pairReward := new(big.Int).Mul(new(big.Int).SetUint64(rewardAmount), new(big.Int).SetUint64(uint64(shareRewardAmount)))
+			pairReward = new(big.Int).Div(pairReward, new(big.Int).SetUint64(totalRewardShare))
+
+			if !pairReward.IsUint64() {
+				return instructions, stakingPools, fmt.Errorf("Could not calculate staking reward for pool %v", stakingToken)
+			}
+
+			if pairReward.Uint64() == 0 {
+				continue
+			}
+
+			poolReward[rewardToken] = pairReward.Uint64()
+			pool.AddReward(rewardToken, pairReward.Uint64())
+		}
+		instructions = append(instructions, v2utils.BuildDistributeStakingRewardInst(stakingToken, poolReward)...)
+	}
+
+	return instructions, stakingPools, nil
+}

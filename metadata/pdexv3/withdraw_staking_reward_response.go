@@ -17,6 +17,11 @@ type WithdrawalStakingRewardResponse struct {
 	ReqTxID common.Hash `json:"ReqTxID"`
 }
 
+type DistributeStakingRewardContent struct {
+	StakingTokenID string                 `json:"StakingTokenID"`
+	Rewards        map[common.Hash]uint64 `json:"Rewards"`
+}
+
 func NewPdexv3WithdrawalStakingRewardResponse(
 	metaType int,
 	reqTxID common.Hash,
