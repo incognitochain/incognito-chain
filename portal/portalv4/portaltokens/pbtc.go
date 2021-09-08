@@ -41,7 +41,7 @@ func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint6
 }
 
 func (p PortalBTCTokenProcessor) GetTxHashFromProof(proof string) (string, error) {
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	btcTxProof, err := btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(proof)
 	if err != nil {
 		Logger.log.Errorf("Can not decode proof string %v\n", err)
 		return "", fmt.Errorf("Can not decode proof string %v\n", err)
@@ -60,7 +60,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		return false, nil, errors.New("BTC relaying chain should not be null")
 	}
 	// parse BTCProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	btcTxProof, err := btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(proof)
 	if err != nil {
 		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
 		return false, nil, fmt.Errorf("ShieldingProof is invalid %v\n", err)
@@ -135,10 +135,10 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		return false, nil, "", 0, errors.New("BTC relaying chain should not be null")
 	}
 	// parse BTCProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	btcTxProof, err := btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(proof)
 	if err != nil {
-		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
-		return false, nil, "", 0, fmt.Errorf("ShieldingProof is invalid %v\n", err)
+		Logger.log.Errorf("UnShieldingProof is invalid %v\n", err)
+		return false, nil, "", 0, fmt.Errorf("UnShieldingProof is invalid %v\n", err)
 	}
 
 	// verify tx with merkle proofs
