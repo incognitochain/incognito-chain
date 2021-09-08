@@ -339,6 +339,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 	submitKey:                        (*HttpServer).handleSubmitKey,
 	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
+	getKeySubmissionInfo:             (*HttpServer).handleGetKeySubmissionInfo,
 }
 
 var WsHandler = map[string]wsHandler{

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -93,6 +94,37 @@ func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error {
 	}
 	coin.SetCommitment(com)
 	return nil
+}
+
+// GetTokenId attempts to retrieve the asset a CoinV2.
+// Parameters:
+// 	- keySet: the key set of the user, must contain an OTAKey
+//	- rawAssetTags: a pre-computed mapping from a raw assetTag to the tokenId (e.g, HashToPoint(PRV) => PRV).
+func (c *CoinV2) GetTokenId(keySet *incognitokey.KeySet, rawAssetTags map[string]*common.Hash) (*common.Hash, error) {
+	if c.GetAssetTag() == nil {
+		return &common.PRVCoinID, nil
+	}
+
+	if asset, ok := rawAssetTags[c.GetAssetTag().String()]; ok {
+		return asset, nil
+	}
+
+	belong, sharedSecret := c.DoesCoinBelongToKeySet(keySet)
+	if !belong {
+		return nil, fmt.Errorf("coin does not belong to the keyset")
+	}
+
+	blinder := operation.HashToScalar(append(sharedSecret.ToBytesS(), []byte("assettag")...))
+	rawAssetTag := new(operation.Point).Sub(
+		c.GetAssetTag(),
+		new(operation.Point).ScalarMult(operation.PedCom.G[PedersenRandomnessIndex], blinder),
+	)
+
+	if asset, ok := rawAssetTags[rawAssetTag.String()]; ok {
+		return asset, nil
+	}
+
+	return nil, fmt.Errorf("cannot find the tokenId")
 }
 
 // for confidential asset only
