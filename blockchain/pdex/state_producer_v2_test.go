@@ -1844,7 +1844,6 @@ func Test_stateProducerV2_staking(t *testing.T) {
 				},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
-
 						stakers: map[string]*Staker{},
 					},
 				},
@@ -1856,11 +1855,12 @@ func Test_stateProducerV2_staking(t *testing.T) {
 					liquidity: 100,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               100,
-							lastUpdatedBeaconHeight: 10,
-							rewards:                 map[string]uint64{},
+							liquidity:           100,
+							rewards:             map[common.Hash]uint64{},
+							lastRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 					},
+					rewardsPerShare: map[common.Hash]*big.Int{},
 				},
 			},
 			wantErr: false,
@@ -2003,9 +2003,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
 					},
@@ -2018,9 +2016,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 					liquidity: 150,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               150,
-							lastUpdatedBeaconHeight: 15,
-							rewards:                 map[string]uint64{},
+							liquidity: 150,
 						},
 					},
 				},
@@ -2042,9 +2038,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
 					},
@@ -2057,9 +2051,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 					liquidity: 150,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               150,
-							lastUpdatedBeaconHeight: 15,
-							rewards:                 map[string]uint64{},
+							liquidity: 150,
 						},
 					},
 				},
@@ -2081,9 +2073,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
 					},
@@ -2096,9 +2086,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 					liquidity: 150,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               150,
-							lastUpdatedBeaconHeight: 15,
-							rewards:                 map[string]uint64{},
+							liquidity: 150,
 						},
 					},
 				},
@@ -2120,9 +2108,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
 					},
@@ -2135,9 +2121,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 					liquidity: 150,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               150,
-							lastUpdatedBeaconHeight: 15,
-							rewards:                 map[string]uint64{},
+							liquidity: 150,
 						},
 					},
 				},
@@ -2159,9 +2143,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
 					},
@@ -2174,11 +2156,12 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 					liquidity: 100,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               100,
-							lastUpdatedBeaconHeight: 20,
-							rewards:                 map[string]uint64{},
+							liquidity:           100,
+							rewards:             map[common.Hash]uint64{},
+							lastRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 					},
+					rewardsPerShare: map[common.Hash]*big.Int{},
 				},
 			},
 			wantErr: false,

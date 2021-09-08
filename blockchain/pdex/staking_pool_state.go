@@ -116,7 +116,8 @@ func (s *StakingPoolState) getDiff(
 			newStateChange = staker.getDiff(stakingPoolID, nftID, nil, newStateChange)
 		}
 	} else {
-		if !reflect.DeepEqual(s, compareStakingPoolState) {
+		if !reflect.DeepEqual(s.liquidity, compareStakingPoolState.liquidity) ||
+			!reflect.DeepEqual(s.rewardsPerShare, compareStakingPoolState.rewardsPerShare) {
 			newStateChange.stakingPools[stakingPoolID] = true
 		}
 		for nftID, staker := range s.stakers {
