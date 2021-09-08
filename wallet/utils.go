@@ -69,6 +69,17 @@ func addChecksum(data []byte) []byte {
 	return dataBigInt.Bytes()
 }
 
+// GetBurningPublicKey returns the public key of the burning address.
+func GetBurningPublicKey() []byte {
+	// get burning address
+	w, err := Base58CheckDeserialize(common.BurningAddress2)
+	if err != nil {
+		return nil
+	}
+
+	return w.KeySet.PaymentAddress.Pk
+}
+
 func IsPublicKeyBurningAddress(publicKey []byte) bool {
 	// get burning address
 	keyWalletBurningAdd1, err := Base58CheckDeserialize(common.BurningAddress)

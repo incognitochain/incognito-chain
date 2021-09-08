@@ -573,35 +573,12 @@ func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 		}
 	}
 	return true, nil
-
-	// sumInput, sumOutput := uint64(0), uint64(0)
-	// for i := 0; i < len(proof.inputCoins); i++ {
-	// 	if proof.inputCoins[i].IsEncrypted() {
-	// 		return false, errors.New("Verify has no privacy should not have any coin encrypted")
-	// 	}
-	// 	sumInput += proof.inputCoins[i].GetValue()
-	// }
-	// for i := 0; i < len(proof.outputCoins); i++ {
-	// 	if proof.outputCoins[i].IsEncrypted() {
-	// 		return false, errors.New("Verify has no privacy should not have any coin encrypted")
-	// 	}
-	// 	sumOutput += proof.outputCoins[i].GetValue()
-	// }
-	// tmpSum := sumOutput + fee
-	// if tmpSum < sumOutput || tmpSum < fee {
-	// 	return false, errors.New(fmt.Sprintf("Overflown sumOutput+fee: output value = %v, fee = %v, tmpSum = %v\n", sumOutput, fee, tmpSum))
-	// }
-
-	// if sumInput != tmpSum {
-	// 	return false, errors.New("VerifyHasNo privacy has sum input different from sum output with fee")
-	// }
-	// return true, nil
 }
 
 // Verify performs verification on this payment proof.
 // It verifies the Bulletproof inside & checks for duplicates among outputs.
 // It works with Bulletproof batching (in which case it skips that verification, since that is handled in batchTransaction struct).
-func (proof PaymentProofV2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
+func (proof PaymentProofV2) Verify(boolParams map[string]bool, _ key.PublicKey, _ uint64, _ byte, _ *common.Hash, _ interface{}) (bool, error) {
 	hasConfidentialAsset, ok := boolParams["hasConfidentialAsset"]
 	if !ok {
 		hasConfidentialAsset = true
@@ -614,11 +591,11 @@ func (proof PaymentProofV2) Verify(boolParams map[string]bool, pubKey key.Public
 
 	inputCoins := proof.GetInputCoins()
 	dupMap := make(map[string]bool)
-	for _, coin := range inputCoins {
-		identifier := base64.StdEncoding.EncodeToString(coin.GetKeyImage().ToBytesS())
+	for _, inCoin := range inputCoins {
+		identifier := base64.StdEncoding.EncodeToString(inCoin.GetKeyImage().ToBytesS())
 		_, exists := dupMap[identifier]
 		if exists {
-			return false, errors.New("Duplicate input coin in PaymentProofV2")
+			return false, errors.New("Duplicate input inCoin in PaymentProofV2")
 		}
 		dupMap[identifier] = true
 	}
