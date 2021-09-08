@@ -193,7 +193,7 @@ func TestTxV2Salary(t *testing.T) {
 
 		Convey("create salary coins", func() {
 			// create 2 otaCoins, the second one will already be stored in the db
-			for i, _ := range theCoins {
+			for i := range theCoins {
 				var tempCoin *coin.CoinV2
 				var err error
 				for {
@@ -257,7 +257,7 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 		Convey("create & store UTXOs", func() {
 			// pastCoins are coins we manually store in the dummyDB to simulate the db having OTAs from chaindata
 			pastCoins = make([]coin.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
-			for i, _ := range pastCoins {
+			for i := range pastCoins {
 				tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)
@@ -275,7 +275,7 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 		Convey("prepare payment info", func() {
 			// in this test, we randomize the length of inputCoins & fix the length of outputCoins to len(dummyPrivateKeys)
 			paymentInfoOut = make([]*privacy.PaymentInfo, len(dummyPrivateKeys))
-			for i, _ := range dummyPrivateKeys {
+			for i := range dummyPrivateKeys {
 				paymentInfoOut[i] = key.InitPaymentInfo(keySets[i].PaymentAddress, uint64(3000), []byte("test out"))
 			}
 		})
@@ -285,7 +285,7 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 			// for the TX to be valid, these inputs must associate to one same private key
 			// (it's guaranteed by our way of indexing the pastCoins array)
 			inputCoins = make([]coin.PlainCoin, numOfInputs)
-			for i, _ := range inputCoins {
+			for i := range inputCoins {
 				var err error
 				inputCoins[i], err = pastCoins[i*len(dummyPrivateKeys)].Decrypt(keySets[0])
 				So(err, ShouldBeNil)
