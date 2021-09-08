@@ -14,21 +14,25 @@ var (
 	numTest = 100
 )
 
-func TestCoinIndexer_splitWorkers(t *testing.T) {
+func TestCoinIndexer_getIdxParamsForIndexing(t *testing.T) {
 	for i := 0; i < numTest; i++ {
 		fmt.Printf("TEST %v\n", i)
 		//Prepare data
-		ci := CoinIndexer{numWorkers: NumWorkers}
-		ci.IdxChan = make(chan IndexParam, 2*ci.numWorkers)
-		ci.statusChan = make(chan JobStatus, 2*ci.numWorkers)
+		scaleFactor := 50
+
+		numWorkers := common.RandInt()%10 + 1
+		fmt.Printf("totalNumWorkers: %v\n", numWorkers)
+		ci := CoinIndexer{numWorkers: numWorkers}
+		ci.IdxChan = make(chan IndexParam, scaleFactor*ci.numWorkers)
+		ci.statusChan = make(chan JobStatus, scaleFactor*ci.numWorkers)
 		ci.quitChan = make(chan bool)
 		ci.idxQueue = make(map[byte][]IndexParam)
 		ci.queueSize = 0
-		common.MaxShardNumber = common.RandInt() % 7 + 1
+		common.MaxShardNumber = common.RandInt()%7 + 1
 		fmt.Printf("#shards: %v\n", common.MaxShardNumber)
 		for shardID := 0; shardID < common.MaxShardNumber; shardID++ {
 			tmpIdxParams := make([]IndexParam, 0)
-			r := common.RandInt() % (2* NumWorkers)
+			r := common.RandInt() % (scaleFactor * numWorkers)
 			for j := 0; j < r; j++ {
 				tmpIdxParams = append(tmpIdxParams, IndexParam{})
 			}
@@ -39,14 +43,14 @@ func TestCoinIndexer_splitWorkers(t *testing.T) {
 		}
 		fmt.Printf("totalQueueSize: %v\n", ci.queueSize)
 
-		workersToBeSplit := common.RandInt() % (2 * NumWorkers)
-		fmt.Printf("workersToBeSplit: %v\n", workersToBeSplit)
-		res := ci.splitWorkers(workersToBeSplit)
+		remainingWorkers := common.RandInt() % numWorkers
+		fmt.Printf("remainingWorkers: %v\n", remainingWorkers)
+		res := ci.getIdxParamsForIndexing(remainingWorkers)
 		total := 0
 		for _, num := range res {
 			total += num
 		}
-		fmt.Printf("%v, #workers %v, #splits: %v\n", res, workersToBeSplit, total)
+		fmt.Printf("%v, #workers %v, #splits: %v\n", res, remainingWorkers, total)
 
 		fmt.Printf("END TEST %v\n\n", i)
 	}
