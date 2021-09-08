@@ -149,7 +149,7 @@ func TestRelayBTCHeaders(t *testing.T) {
 	}
 	btcProofBytes, _ := json.Marshal(btcProof)
 	btcProofStr := base64.StdEncoding.EncodeToString(btcProofBytes)
-	decodedProof, err := ParseBTCProofFromB64EncodeStr(btcProofStr)
+	decodedProof, err := ParseAndValidateSanityBTCProofFromB64EncodeStr(btcProofStr)
 	if err != nil {
 		t.Errorf("Could not parse btc proof from base64 string with err: %v", err)
 		return
@@ -406,7 +406,7 @@ func TestBuildBTCMerkleProof(t *testing.T) {
 	fmt.Println("btcProofStr: ", btcProofStr)
 
 	// verify btc proof
-	decodedProof, err := ParseBTCProofFromB64EncodeStr(btcProofStr)
+	decodedProof, err := ParseAndValidateSanityBTCProofFromB64EncodeStr(btcProofStr)
 	if err != nil {
 		t.Errorf("Could not parse btc proof from base64 string with err: %v", err)
 		return
