@@ -245,3 +245,48 @@ func WithdrawProtocolFee(
 		return meta
 	})
 }
+
+func WithdrawStakingReward(
+	instStatus string,
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadataCommon.Transaction, error) {
+	contentBytes := []byte(contentStr)
+	var instContent metadataPdexv3.WithdrawalStakingRewardContent
+	err := json.Unmarshal(contentBytes, &instContent)
+	if err != nil {
+		return nil, nil
+	}
+
+	receiver, ok := instContent.Receivers[instContent.TokenID]
+	if !ok {
+		return nil, nil
+	}
+	receiverAddress := receiver.Address
+
+	if instContent.ShardID != shardID || receiver.Amount == 0 {
+		return nil, nil
+	}
+
+	meta := metadataPdexv3.NewPdexv3WithdrawalStakingRewardResponse(
+		metadataCommon.Pdexv3WithdrawLPFeeResponseMeta,
+		instContent.TxReqID,
+	)
+
+	if !receiverAddress.IsValid() {
+		return nil, nil
+	}
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount:          receiver.Amount,
+		ReceiverAddress: nil,
+		PublicKey:       &receiverAddress.PublicKey,
+		TxRandom:        &receiverAddress.TxRandom,
+		TokenID:         &instContent.TokenID, Info: []byte{}}
+
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
+		return meta
+	})
+}

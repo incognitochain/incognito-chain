@@ -190,3 +190,63 @@ func BuildDistributeStakingRewardInst(
 		},
 	}
 }
+
+func BuildWithdrawStakingRewardInsts(
+	stakingTokenID string,
+	nftID common.Hash,
+	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
+	shardID byte,
+	reqTxID common.Hash,
+	status string,
+) [][]string {
+	if status == metadataPdexv3.RequestRejectedChainStatus {
+		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
+			StakingTokenID: stakingTokenID,
+			NftID:          nftID,
+			TokenID:        common.Hash{},
+			Receivers:      map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			TxReqID:        reqTxID,
+			ShardID:        shardID,
+		}
+		reqContentBytes, _ := json.Marshal(reqContent)
+		inst := []string{
+			strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta),
+			strconv.Itoa(int(shardID)),
+			status,
+			string(reqContentBytes),
+		}
+		return [][]string{inst}
+	}
+
+	// To store the keys in slice in sorted order
+	keys := make([]common.Hash, len(receivers))
+	i := 0
+	for k := range receivers {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+
+	insts := [][]string{}
+	for _, tokenID := range keys {
+		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
+			StakingTokenID: stakingTokenID,
+			NftID:          nftID,
+			TokenID:        tokenID,
+			Receivers:      receivers,
+			TxReqID:        reqTxID,
+			ShardID:        shardID,
+		}
+		reqContentBytes, _ := json.Marshal(reqContent)
+		insts = append(insts, []string{
+			strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta),
+			strconv.Itoa(int(shardID)),
+			status,
+			string(reqContentBytes),
+		})
+	}
+
+	return insts
+}

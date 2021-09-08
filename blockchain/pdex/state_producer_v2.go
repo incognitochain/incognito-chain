@@ -672,6 +672,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 			}
 		}
 		if notEnoughOTA {
+			Logger.log.Warnf("Not enough OTA in withdraw LP fee request")
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
@@ -1043,4 +1044,99 @@ func (sp *stateProducerV2) distributeStakingReward(
 	}
 
 	return instructions, stakingPools, nil
+}
+
+func (sp *stateProducerV2) withdrawStakingReward(
+	txs []metadata.Transaction,
+	pools map[string]*StakingPoolState,
+) ([][]string, map[string]*StakingPoolState, error) {
+	instructions := [][]string{}
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		txReqID := *tx.Hash()
+		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalStakingRewardRequest)
+		if !ok {
+			return instructions, pools, errors.New("Can not parse withdrawal staking reward metadata")
+		}
+
+		_, isExisted := metaData.Receivers[metaData.NftID]
+		if !isExisted {
+			return instructions, pools, fmt.Errorf("NFT receiver not found in WithdrawalStakingRewardRequest")
+		}
+		addressStr, err := metaData.Receivers[metaData.NftID].String()
+		if err != nil {
+			return instructions, pools, fmt.Errorf("NFT receiver invalid in WithdrawalStakingRewardRequest")
+		}
+		mintNftInst := instruction.NewMintNftWithValue(metaData.NftID, addressStr, shardID, txReqID)
+		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
+		if err != nil {
+			return instructions, pools, fmt.Errorf("Can not parse mint NFT instruction")
+		}
+
+		instructions = append(instructions, mintNftInstStr)
+
+		rejectInst := v2utils.BuildWithdrawStakingRewardInsts(
+			metaData.StakingTokenID,
+			metaData.NftID,
+			map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestRejectedChainStatus,
+		)
+
+		// check conditions
+		pool, isExisted := pools[metaData.StakingTokenID]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		share, isExisted := pool.stakers[metaData.NftID.String()]
+		if !isExisted {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		// compute amount of received staking reward
+		reward, err := pool.RecomputeStakingRewards(metaData.NftID)
+		if err != nil {
+			return instructions, pools, fmt.Errorf("Could not track staking reward: %v\n", err)
+		}
+
+		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		notEnoughOTA := false
+		for tokenID := range reward {
+			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
+				notEnoughOTA = true
+				break
+			}
+			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
+				Address: metaData.Receivers[tokenID],
+				Amount:  reward[tokenID],
+			}
+		}
+		if notEnoughOTA {
+			Logger.log.Warnf("Not enough OTA in withdrawal staking reward request")
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
+		acceptedInst := v2utils.BuildWithdrawStakingRewardInsts(
+			metaData.StakingTokenID,
+			metaData.NftID,
+			receiversInfo,
+			shardID,
+			txReqID,
+			metadataPdexv3.RequestAcceptedChainStatus,
+		)
+
+		// update state after fee withdrawal
+		share.rewards = map[common.Hash]uint64{}
+		share.lastRewardsPerShare = pool.RewardsPerShare()
+
+		instructions = append(instructions, acceptedInst...)
+	}
+
+	return instructions, pools, nil
 }

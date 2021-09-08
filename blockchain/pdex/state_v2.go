@@ -235,7 +235,6 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.withdrawLPFee(
 				env.StateDB(),
 				inst,
-				env.BeaconHeight(),
 				s.poolPairs,
 			)
 		case metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta:
@@ -252,6 +251,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.withdrawOrder(env.StateDB(), inst,
 				s.poolPairs,
 			)
+		case metadataCommon.Pdexv3DistributeStakingRewardMeta:
+			s.stakingPoolStates, err = s.processor.distributeStakingReward(
+				env.StateDB(), inst, s.stakingPoolStates,
+			)
 		case metadataCommon.Pdexv3StakingRequestMeta:
 			s.stakingPoolStates, _, err = s.processor.staking(
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
@@ -260,9 +263,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.stakingPoolStates, _, err = s.processor.unstaking(
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
 			)
-		case metadataCommon.Pdexv3DistributeStakingRewardMeta:
-			s.stakingPoolStates, err = s.processor.distributeStakingReward(
-				env.StateDB(), inst, s.stakingPoolStates,
+
+		case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
+			s.stakingPoolStates, err = s.processor.withdrawStakingReward(
+				env.StateDB(),
+				inst,
+				s.stakingPoolStates,
 			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
@@ -290,6 +296,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	withdrawOrderTxs := []metadata.Transaction{}
 	stakingTxs := []metadata.Transaction{}
 	unstakingTxs := []metadata.Transaction{}
+	withdrawStakingRewardTxs := []metadata.Transaction{}
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -324,6 +331,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				stakingTxs = append(stakingTxs, tx)
 			case metadataCommon.Pdexv3UnstakingRequestMeta:
 				unstakingTxs = append(unstakingTxs, tx)
+			case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
+				withdrawStakingRewardTxs = append(withdrawStakingRewardTxs, tx)
 			}
 		}
 	}
@@ -495,6 +504,16 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, unstakingInstructions...)
+
+	var withdrawStakingRewardInstructions [][]string
+	withdrawStakingRewardInstructions, s.stakingPoolStates, err = s.producer.withdrawStakingReward(
+		withdrawStakingRewardTxs,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawStakingRewardInstructions...)
 
 	var stakingInstructions [][]string
 	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(

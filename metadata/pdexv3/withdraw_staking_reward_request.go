@@ -13,18 +13,18 @@ import (
 
 type WithdrawalStakingRewardRequest struct {
 	metadataCommon.MetadataBase
-	StakingToken string                              `json:"StakingToken"`
-	NftID        common.Hash                         `json:"NftID"`
-	Receivers    map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
+	StakingTokenID string                              `json:"StakingTokenID"`
+	NftID          common.Hash                         `json:"NftID"`
+	Receivers      map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
 }
 
 type WithdrawalStakingRewardContent struct {
-	StakingToken string                       `json:"StakingToken"`
-	NftID        common.Hash                  `json:"NftID"`
-	TokenID      common.Hash                  `json:"TokenID"`
-	Receivers    map[common.Hash]ReceiverInfo `json:"Receivers"`
-	TxReqID      common.Hash                  `json:"TxReqID"`
-	ShardID      byte                         `json:"ShardID"`
+	StakingTokenID string                       `json:"StakingTokenID"`
+	NftID          common.Hash                  `json:"NftID"`
+	TokenID        common.Hash                  `json:"TokenID"`
+	Receivers      map[common.Hash]ReceiverInfo `json:"Receivers"`
+	TxReqID        common.Hash                  `json:"TxReqID"`
+	ShardID        byte                         `json:"ShardID"`
 }
 
 type WithdrawalStakingRewardStatus struct {
@@ -41,10 +41,10 @@ func NewPdexv3WithdrawalStakingRewardRequest(
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
 
 	return &WithdrawalStakingRewardRequest{
-		MetadataBase: *metadataBase,
-		StakingToken: stakingToken,
-		NftID:        nftID,
-		Receivers:    receivers,
+		MetadataBase:   *metadataBase,
+		StakingTokenID: stakingToken,
+		NftID:          nftID,
+		Receivers:      receivers,
 	}, nil
 }
 
