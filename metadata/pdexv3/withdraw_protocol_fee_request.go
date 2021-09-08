@@ -88,7 +88,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 	}
 
 	if len(withdrawal.Receivers) > MaxPoolPairWithdrawalReceiver {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawProtocolFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
 	}
 
 	// Check OTA address string and tx random is valid

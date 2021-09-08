@@ -150,8 +150,9 @@ const (
 	GenerateOTAFailError
 	GetPdexv3ParamsModyfingStatusError
 	GetPdexv3LPFeeError
-	GetPdexv3WithdrawlLPFeeStatusError
-	GetPdexv3WithdrawlProtocolFeeStatusError
+	GetPdexv3WithdrawalLPFeeStatusError
+	GetPdexv3WithdrawalProtocolFeeStatusError
+	GetPdexv3WithdrawalStakingRewardStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.

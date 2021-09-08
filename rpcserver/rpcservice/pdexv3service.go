@@ -211,3 +211,23 @@ func (blockService BlockService) GetPdexv3WithdrawalProtocolFeeStatus(reqTxID st
 
 	return &status, nil
 }
+
+func (blockService BlockService) GetPdexv3WithdrawalStakingRewardStatus(reqTxID string) (*metadataPdexv3.WithdrawalStakingRewardStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawalStakingRewardStatusPrefix(),
+		[]byte(reqTxID),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadataPdexv3.WithdrawalStakingRewardStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
