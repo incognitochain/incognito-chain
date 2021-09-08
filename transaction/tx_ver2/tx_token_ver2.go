@@ -683,48 +683,54 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 	tokenIdOnTx := txToken.TokenData.PropertyID
 	switch txToken.TokenData.Type {
 	case utils.CustomTokenTransfer:
-		if txToken.GetType() == common.TxTokenConversionType {
-			valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenIdOnTx)
-			return valid, nil, err
-		}
-
-		// This transaction might be a tx burn, we must check its tokenId and assetTag
-		if tokenIdOnTx.String() != common.PRVIDStr || tokenIdOnTx.String() != common.ConfidentialAssetID.String() {
-			isBurned, burnedToken, _, err := txToken.GetTxBurnData()
-			if err != nil {
-				return false, nil, err
-			}
-			if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenIdOnTx[:])) {
-				return false, nil, fmt.Errorf("invalid burned tokenId")
-			}
-		}
-
 		isBatch, ok := boolParams["isBatch"]
 		if !ok {
 			isBatch = false
 		}
 
-		// for CA, bulletproof batching is not supported
-		boolParams["isBatch"] = false
-		boolParams["hasPrivacy"] = true
-		resTxTokenData, _, err := txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenIdOnTx)
-		if err != nil {
-			return resTxTokenData, nil, err
+		// validate the token sub-transaction
+		var resToken bool
+		if txToken.GetType() == common.TxTokenConversionType {
+			resToken, err = validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenIdOnTx)
+			if err != nil {
+				return resToken, nil, err
+			}
+		} else {
+			// This transaction might be a tx burn, we must check its tokenId and assetTag
+			if tokenIdOnTx.String() != common.ConfidentialAssetID.String() {
+				isBurned, burnedToken, _, err := txToken.GetTxBurnData()
+				if err != nil {
+					return false, nil, err
+				}
+				if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenIdOnTx[:])) {
+					return false, nil, fmt.Errorf("invalid burned tokenId")
+				}
+			}
+
+			// for CA, bulletproof batching is not supported
+			boolParams["isBatch"] = false
+			boolParams["hasPrivacy"] = true
+			resToken, _, err = txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenIdOnTx)
+			if err != nil {
+				return resToken, nil, err
+			}
 		}
+
+		// validate the fee-paying sub-transaction. The signature part has been verified above, so we skip it here.
 		txFeeProof := txToken.Tx.GetProof()
 		if txFeeProof == nil {
 			return false, nil, errors.New("Missing proof for PRV")
 		}
-
 		boolParams["isBatch"] = isBatch
-		boolParams["hasConfidentialAsset"] = false
+		boolParams["hasConfidentialAsset"] = false // we are validating the PRV part, so `hasConfidentialAsset` must be false.
 		// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
-		bpValid, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
-		resultProofs := []privacy.Proof{}
+		resTxFee, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
+		resultProofs := make([]privacy.Proof, 0)
 		if isBatch {
 			resultProofs = append(resultProofs, txFeeProof)
 		}
-		return bpValid && resTxTokenData, resultProofs, err
+		return resTxFee && resToken, resultProofs, err
+
 	default:
 		return false, nil, errors.New("Cannot validate Tx Token. Unavailable type")
 	}
