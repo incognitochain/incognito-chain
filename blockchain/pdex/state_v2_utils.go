@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -112,36 +113,13 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 func (share *Share) getDiff(
 	nftID string,
 	compareShare *Share,
-	stateChange *StateChange,
-) *StateChange {
+	stateChange *v2utils.StateChange,
+) *v2utils.StateChange {
 	newStateChange := stateChange
 	if compareShare == nil || !reflect.DeepEqual(share, compareShare) {
-		newStateChange.shares[nftID] = true
+		//newStateChange.shares[nftID].IsChanged = true
 	}
 	return newStateChange
-}
-
-type StakingChange struct {
-	isChanged bool
-	tokenIDs  map[string]bool
-}
-
-type StateChange struct {
-	poolPairIDs map[string]bool
-	shares      map[string]bool
-	orders      map[string]map[int]bool
-	orderIDs    map[string]bool
-	stakingPool map[string]map[string]*StakingChange
-}
-
-func NewStateChange() *StateChange {
-	return &StateChange{
-		poolPairIDs: make(map[string]bool),
-		shares:      make(map[string]bool),
-		orders:      make(map[string]map[int]bool),
-		orderIDs:    make(map[string]bool),
-		stakingPool: make(map[string]map[string]*StakingChange),
-	}
 }
 
 type Staker struct {
@@ -230,29 +208,31 @@ func (staker *Staker) Clone() *Staker {
 //return res
 /*}*/
 
-func (staker *Staker) getDiff(stakingPoolID, nftID string, compareStaker *Staker, stateChange *StateChange) *StateChange {
+func (staker *Staker) getDiff(
+	stakingPoolID, nftID string, compareStaker *Staker, stateChange *v2utils.StateChange,
+) *v2utils.StateChange {
 	newStateChange := stateChange
-	stakingChange := &StakingChange{}
+	stakingChange := &v2utils.StakingPoolChange{}
 	if compareStaker == nil {
-		stakingChange = &StakingChange{
-			isChanged: true,
-			tokenIDs:  make(map[string]bool),
+		stakingChange = &v2utils.StakingPoolChange{
+			IsChanged: true,
+			TokenIDs:  make(map[string]bool),
 		}
-		newStateChange.stakingPool[stakingPoolID][nftID] = stakingChange
+		newStateChange.StakingPool[stakingPoolID][nftID] = stakingChange
 		for tokenID := range staker.rewards {
-			newStateChange.stakingPool[stakingPoolID][nftID].tokenIDs[tokenID] = true
+			newStateChange.StakingPool[stakingPoolID][nftID].TokenIDs[tokenID] = true
 		}
 	} else {
 		if staker.liquidity != compareStaker.liquidity {
-			stakingChange.isChanged = true
+			stakingChange.IsChanged = true
 		}
-		newStateChange.stakingPool[stakingPoolID][nftID] = stakingChange
+		newStateChange.StakingPool[stakingPoolID][nftID] = stakingChange
 		for tokenID, value := range staker.rewards {
 			if v, ok := compareStaker.rewards[nftID]; !ok || !reflect.DeepEqual(v, value) {
-				if stakingChange.tokenIDs == nil {
-					stakingChange.tokenIDs = make(map[string]bool)
+				if stakingChange.TokenIDs == nil {
+					stakingChange.TokenIDs = make(map[string]bool)
 				}
-				newStateChange.stakingPool[stakingPoolID][nftID].tokenIDs[tokenID] = true
+				newStateChange.StakingPool[stakingPoolID][nftID].TokenIDs[tokenID] = true
 			}
 		}
 	}

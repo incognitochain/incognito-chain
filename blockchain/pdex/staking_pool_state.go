@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 )
 
 type StakingPoolState struct {
@@ -77,12 +79,12 @@ func (s *StakingPoolState) Clone() *StakingPoolState {
 }
 
 func (s *StakingPoolState) getDiff(
-	stakingPoolID string, compareStakingPoolState *StakingPoolState, stateChange *StateChange,
-) *StateChange {
+	stakingPoolID string, compareStakingPoolState *StakingPoolState, stateChange *v2utils.StateChange,
+) *v2utils.StateChange {
 	newStateChange := stateChange
 	if compareStakingPoolState == nil {
-		if newStateChange.stakingPool[stakingPoolID] == nil {
-			newStateChange.stakingPool[stakingPoolID] = make(map[string]*StakingChange)
+		if newStateChange.StakingPool[stakingPoolID] == nil {
+			newStateChange.StakingPool[stakingPoolID] = make(map[string]*v2utils.StakingPoolChange)
 		}
 		for nftID, staker := range s.stakers {
 			newStateChange = staker.getDiff(stakingPoolID, nftID, nil, newStateChange)
@@ -90,8 +92,8 @@ func (s *StakingPoolState) getDiff(
 	} else {
 		for nftID, staker := range s.stakers {
 			if m, ok := compareStakingPoolState.stakers[nftID]; !ok || !reflect.DeepEqual(m, staker) {
-				if newStateChange.stakingPool[stakingPoolID] == nil {
-					newStateChange.stakingPool[stakingPoolID] = make(map[string]*StakingChange)
+				if newStateChange.StakingPool[stakingPoolID] == nil {
+					newStateChange.StakingPool[stakingPoolID] = make(map[string]*v2utils.StakingPoolChange)
 				}
 				newStateChange = staker.getDiff(stakingPoolID, nftID, m, newStateChange)
 			}

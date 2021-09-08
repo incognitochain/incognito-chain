@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -478,7 +479,7 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 	return nil
 }
 
-func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
+func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChange) error {
 	var err error
 
 	if !s.params.IsZeroValue() {
@@ -512,14 +513,14 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		return err
 	}
 	for poolPairID, poolPairState := range s.poolPairs {
-		if stateChange.poolPairIDs[poolPairID] {
+		if stateChange.PoolPairs[poolPairID].IsChanged {
 			err := statedb.StorePdexv3PoolPair(env.StateDB(), poolPairID, poolPairState.state)
 			if err != nil {
 				return err
 			}
 		}
 		for nftID, share := range poolPairState.shares {
-			if stateChange.shares[nftID] {
+			if stateChange.PoolPairs[poolPairID].Shares[nftID].IsChanged {
 				nftID, err := common.Hash{}.NewHashFromStr(nftID)
 				err = statedb.StorePdexv3Share(
 					env.StateDB(), poolPairID,
@@ -537,14 +538,14 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 		return err
 	}
 	for k, v := range s.stakingPoolStates {
-		if stateChange.stakingPool[k] == nil || len(stateChange.stakingPool) == 0 {
+		if stateChange.StakingPool[k] == nil || len(stateChange.StakingPool) == 0 {
 			continue
 		}
 		for nftID, staker := range v.stakers {
-			if stateChange.stakingPool[k][nftID] == nil || len(stateChange.stakingPool[k]) == 0 {
+			if stateChange.StakingPool[k][nftID] == nil || len(stateChange.StakingPool[k]) == 0 {
 				continue
 			}
-			if stateChange.stakingPool[k][nftID].isChanged {
+			if stateChange.StakingPool[k][nftID].IsChanged {
 				nftHash, _ := common.Hash{}.NewHashFromStr(nftID)
 				state := statedb.NewPdexv3StakerStateWithValue(
 					*nftHash,
@@ -556,10 +557,10 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 					return err
 				}
 			}
-			if stateChange.stakingPool[k][nftID].tokenIDs == nil {
+			if stateChange.StakingPool[k][nftID].TokenIDs == nil {
 				continue
 			}
-			for tokenID := range stateChange.stakingPool[k][nftID].tokenIDs {
+			for tokenID := range stateChange.StakingPool[k][nftID].TokenIDs {
 				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 				if err != nil {
 					return err
@@ -579,7 +580,9 @@ func (s *stateV2) ClearCache() {
 	s.deletedWaitingContributions = make(map[string]rawdbv2.Pdexv3Contribution)
 }
 
-func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
+func (s *stateV2) GetDiff(
+	compareState State, stateChange *v2utils.StateChange,
+) (State, *v2utils.StateChange, error) {
 	newStateChange := stateChange
 	if compareState == nil {
 		return nil, newStateChange, errors.New("compareState is nil")

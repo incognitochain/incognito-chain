@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -194,17 +195,17 @@ func (p *PoolPairState) Clone() *PoolPairState {
 }
 
 func (p *PoolPairState) getDiff(
-	poolPairID string, comparePoolPair *PoolPairState, stateChange *StateChange,
-) *StateChange {
+	poolPairID string, comparePoolPair *PoolPairState, stateChange *v2utils.StateChange,
+) *v2utils.StateChange {
 	newStateChange := stateChange
 	if comparePoolPair == nil {
-		newStateChange.poolPairIDs[poolPairID] = true
+		newStateChange.PoolPairs[poolPairID].IsChanged = true
 		for nftID, share := range p.shares {
 			newStateChange = share.getDiff(nftID, nil, newStateChange)
 		}
 	} else {
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
-			newStateChange.poolPairIDs[poolPairID] = true
+			newStateChange.PoolPairs[poolPairID].IsChanged = true
 		}
 		for nftID, share := range p.shares {
 			if m, ok := comparePoolPair.shares[nftID]; !ok || !reflect.DeepEqual(m, share) {

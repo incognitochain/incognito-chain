@@ -19,6 +19,12 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
+type StateChange = v2.StateChange
+
+func NewStateChange() *StateChange {
+	return v2.NewStateChange()
+}
+
 func InitVersionByBeaconHeight(beaconHeight uint64) State {
 	var state State
 	return state

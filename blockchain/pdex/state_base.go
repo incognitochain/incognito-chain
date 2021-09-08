@@ -1,5 +1,7 @@
 package pdex
 
+import "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+
 type stateBase struct {
 }
 
@@ -26,7 +28,7 @@ func (s *stateBase) Process(env StateEnvironment) error {
 	return nil
 }
 
-func (s *stateBase) StoreToDB(env StateEnvironment, stateChagne *StateChange) error {
+func (s *stateBase) StoreToDB(env StateEnvironment, stateChagne *v2utils.StateChange) error {
 	var err error
 	return err
 }
@@ -47,7 +49,7 @@ func (s *stateBase) ClearCache() {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
+func (s *stateBase) GetDiff(compareState State, stateChange *v2utils.StateChange) (State, *v2utils.StateChange, error) {
 	panic("Implement this fucntion")
 }
 
