@@ -75,11 +75,10 @@ const (
 	Pdexv3ContributionObjectType = 48
 	Pdexv3PoolPairObjectType     = 49
 	Pdexv3ShareObjectType        = 50
-	Pdexv3TradingFeeObjectType   = 51
-	Pdexv3NftObjectType          = 52
-	Pdexv3OrderObjectType        = 53
+	Pdexv3NftObjectType          = 51
+	Pdexv3OrderObjectType        = 52
+	Pdexv3StakingPoolObjectType  = 53
 	Pdexv3StakerObjectType       = 54
-	Pdexv3StakerRewardObjectType = 55
 )
 
 // Prefix length

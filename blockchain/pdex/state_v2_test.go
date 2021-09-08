@@ -1167,7 +1167,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					poolPairIDs: map[string]bool{},
 					shares:      map[string]bool{},
 					orderIDs:    map[string]bool{},
-					stakingPool: map[string]map[string]*StakingChange{},
+					stakers:     map[string]map[string]*StakingChange{},
 				},
 			},
 			want: &stateV2{
@@ -1208,8 +1208,8 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				shares: map[string]bool{
 					nftID1: true,
 				},
-				orderIDs:    map[string]bool{},
-				stakingPool: map[string]map[string]*StakingChange{},
+				orderIDs: map[string]bool{},
+				stakers:  map[string]map[string]*StakingChange{},
 			},
 			wantErr: false,
 		},
@@ -1310,7 +1310,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					poolPairIDs: map[string]bool{},
 					shares:      map[string]bool{},
 					orderIDs:    map[string]bool{},
-					stakingPool: map[string]map[string]*StakingChange{},
+					stakers:     map[string]map[string]*StakingChange{},
 				},
 			},
 			want: &stateV2{
@@ -1349,8 +1349,8 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				shares: map[string]bool{
 					nftID1: true,
 				},
-				orderIDs:    map[string]bool{},
-				stakingPool: map[string]map[string]*StakingChange{},
+				orderIDs: map[string]bool{},
+				stakers:  map[string]map[string]*StakingChange{},
 			},
 			wantErr: false,
 		},
@@ -1431,7 +1431,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					poolPairIDs: map[string]bool{},
 					shares:      map[string]bool{},
 					orderIDs:    map[string]bool{},
-					stakingPool: map[string]map[string]*StakingChange{},
+					stakers:     map[string]map[string]*StakingChange{},
 				},
 			},
 			want: &stateV2{
@@ -1470,8 +1470,8 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				shares: map[string]bool{
 					nftID1: true,
 				},
-				orderIDs:    map[string]bool{},
-				stakingPool: map[string]map[string]*StakingChange{},
+				orderIDs: map[string]bool{},
+				stakers:  map[string]map[string]*StakingChange{},
 			},
 			wantErr: false,
 		},
@@ -1545,7 +1545,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					poolPairIDs: map[string]bool{},
 					shares:      map[string]bool{},
 					orderIDs:    map[string]bool{},
-					stakingPool: map[string]map[string]*StakingChange{},
+					stakers:     map[string]map[string]*StakingChange{},
 				},
 			},
 			want: &stateV2{
@@ -1576,7 +1576,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				poolPairIDs: map[string]bool{},
 				shares:      map[string]bool{},
 				orderIDs:    map[string]bool{},
-				stakingPool: map[string]map[string]*StakingChange{
+				stakers: map[string]map[string]*StakingChange{
 					common.PRVIDStr: map[string]*StakingChange{
 						nftID1: &StakingChange{
 							isChanged: true,
@@ -1668,7 +1668,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					poolPairIDs: map[string]bool{},
 					shares:      map[string]bool{},
 					orderIDs:    map[string]bool{},
-					stakingPool: map[string]map[string]*StakingChange{},
+					stakers:     map[string]map[string]*StakingChange{},
 				},
 			},
 			want: &stateV2{
@@ -1699,7 +1699,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				poolPairIDs: map[string]bool{},
 				shares:      map[string]bool{},
 				orderIDs:    map[string]bool{},
-				stakingPool: map[string]map[string]*StakingChange{
+				stakers: map[string]map[string]*StakingChange{
 					common.PRVIDStr: map[string]*StakingChange{
 						nftID1: &StakingChange{
 							tokenIDs: map[string]bool{
@@ -1790,7 +1790,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					poolPairIDs: map[string]bool{},
 					shares:      map[string]bool{},
 					orderIDs:    map[string]bool{},
-					stakingPool: map[string]map[string]*StakingChange{},
+					stakers:     map[string]map[string]*StakingChange{},
 				},
 			},
 			want: &stateV2{
@@ -1821,7 +1821,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				poolPairIDs: map[string]bool{},
 				shares:      map[string]bool{},
 				orderIDs:    map[string]bool{},
-				stakingPool: map[string]map[string]*StakingChange{
+				stakers: map[string]map[string]*StakingChange{
 					common.PRVIDStr: map[string]*StakingChange{
 						nftID1: &StakingChange{
 							tokenIDs: map[string]bool{
