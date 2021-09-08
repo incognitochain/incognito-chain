@@ -4,7 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -95,6 +98,12 @@ func (convertVaultReq PortalConvertVaultRequest) ValidateSanityData(chainRetriev
 	if !isPortalToken || err != nil {
 		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
 			errors.New("TokenID is not supported currently on Portal v4"))
+	}
+
+	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(convertVaultReq.ConvertProof)
+	if err != nil {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+			fmt.Errorf("ConvertProof is invalid sanity %v", err))
 	}
 
 	return true, true, nil

@@ -27,7 +27,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyProof(
 		return false, errors.New("BTC relaying chain should not be null")
 	}
 	// parse BTCProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	btcTxProof, err := btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(proof)
 	if err != nil {
 		Logger.log.Errorf("PortingProof is invalid %v\n", err)
 		return false, fmt.Errorf("PortingProof is invalid %v\n", err)
