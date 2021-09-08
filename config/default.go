@@ -399,7 +399,7 @@ var LocalDCSParam = &param{
 	EnableFeatureFlags: map[string]uint64{
 		"PortalRelaying": 1,
 		"PortalV3":       0,
-		"PortalV4":       0,
+		"PortalV4":       30225,
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,

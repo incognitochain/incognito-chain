@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -382,7 +383,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	commitments := make([][]byte, 0)
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
-	var hasAssetTags bool = true
+	hasAssetTags := true
 	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
@@ -393,9 +394,15 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		if err := coinDB.SetBytes(coinBytes); err != nil {
 			return nil, nil, nil, nil, err
 		}
-		publicKey := coinDB.GetPublicKey()
-		commitment := coinDB.GetCommitment()
 
+		publicKey := coinDB.GetPublicKey()
+		// we do not use burned coins since they will reduce the privacy level of the transaction.
+		if wallet.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
+			i--
+			continue
+		}
+
+		commitment := coinDB.GetCommitment()
 		indices = append(indices, idx.Uint64())
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())

@@ -238,7 +238,7 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 		ks := keySets[chosenIndex]
 		// fmt.Printf("Get coin by key %x\n", ks.PaymentAddress.Pk)
 		// pubKey, _ := new(operation.Point).FromBytesS(ks.PaymentAddress.Pk)
-		results, err := coinIndexer.QueryDbCoinVer1(ks.PaymentAddress.Pk, shardID, &common.PRVCoinID, coinDB)
+		results, err := coinIndexer.QueryDbCoinVer1(ks.PaymentAddress.Pk, &common.PRVCoinID, coinDB)
 		if err != nil {
 			panic(err)
 		}
@@ -370,7 +370,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[chosenIndex]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			results, err := coinIndexer.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
+			results, err := coinIndexer.QueryDbCoinVer2(otaKey, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
 			assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)

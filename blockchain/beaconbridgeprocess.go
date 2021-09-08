@@ -100,7 +100,6 @@ func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.Sta
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
-
 	var issuingEVMAcceptedInst metadata.IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 	if err != nil {
