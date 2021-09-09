@@ -1071,9 +1071,9 @@ func (sp *stateProcessorV2) distributeStakingReward(
 		return stakingPools, err
 	}
 
-	pool, isExisted := stakingPools[actionData.StakingTokenID]
+	pool, isExisted := stakingPools[actionData.StakingPoolID]
 	if !isExisted {
-		msg := fmt.Sprintf("Could not find stsaking pool %v for distributing", actionData.StakingTokenID)
+		msg := fmt.Sprintf("Could not find staking pool %v for distributing", actionData.StakingPoolID)
 		Logger.log.Errorf(msg)
 		return stakingPools, fmt.Errorf(msg)
 	}
@@ -1109,9 +1109,9 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 	var reqTrackStatus int
 	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
 		// check conditions
-		pool, isExisted := pools[actionData.StakingTokenID]
+		pool, isExisted := pools[actionData.StakingPoolID]
 		if !isExisted {
-			msg := fmt.Sprintf("Could not find staking pool %s for withdrawal", actionData.StakingTokenID)
+			msg := fmt.Sprintf("Could not find staking pool %s for withdrawal", actionData.StakingPoolID)
 			Logger.log.Errorf(msg)
 			return pools, errors.New(msg)
 		}

@@ -1683,7 +1683,7 @@ func Test_stateProducerV2_staking(t *testing.T) {
 	).StringSlice()
 	//
 
-	//not found stakingpoolID
+	//not found stakingPoolID
 	notFoundStakingPoolIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
 		txReqID.String(), nftID1, validOTAReceiver0, 100,
 	)

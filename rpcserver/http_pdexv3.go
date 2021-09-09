@@ -1823,9 +1823,9 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params inter
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	stakingTokenID, ok := data["TokenID"].(string)
+	stakingPoolID, ok := data["StakingPoolID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolID is invalid"))
 	}
 	nftIDStr, ok := data["NftID"].(string)
 	if !ok {
@@ -1850,11 +1850,11 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params inter
 
 	stakingPools := pDexv3State.Reader().StakingPools()
 
-	if _, ok := stakingPools[stakingTokenID]; !ok {
+	if _, ok := stakingPools[stakingPoolID]; !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("TokenID is not existed"))
 	}
 
-	pool := stakingPools[stakingTokenID].Clone()
+	pool := stakingPools[stakingPoolID].Clone()
 
 	if _, ok := pool.Stakers()[nftIDStr]; !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("NftID is not existed"))
@@ -1915,9 +1915,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawStakingReward(p
 	}
 	stakingPools := beaconBestView.PdeState(pdex.AmplifierVersion).Reader().StakingPools()
 
-	stakingToken, ok := tokenParamsRaw["TokenID"].(string)
+	stakingToken, ok := tokenParamsRaw["StakingPoolID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolID is invalid"))
 	}
 
 	pool, found := stakingPools[stakingToken]

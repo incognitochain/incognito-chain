@@ -1045,7 +1045,9 @@ func (sp *stateProducerV2) distributeStakingReward(
 			poolReward[rewardToken] = pairReward.Uint64()
 			pool.AddReward(rewardToken, pairReward.Uint64())
 		}
-		instructions = append(instructions, v2utils.BuildDistributeStakingRewardInst(stakingToken, poolReward)...)
+		if len(poolReward) > 0 {
+			instructions = append(instructions, v2utils.BuildDistributeStakingRewardInst(stakingToken, poolReward)...)
+		}
 	}
 
 	return instructions, stakingPools, nil
@@ -1082,7 +1084,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		instructions = append(instructions, mintNftInstStr)
 
 		rejectInst := v2utils.BuildWithdrawStakingRewardInsts(
-			metaData.StakingTokenID,
+			metaData.StakingPoolID,
 			metaData.NftID,
 			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
@@ -1091,7 +1093,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		)
 
 		// check conditions
-		pool, isExisted := pools[metaData.StakingTokenID]
+		pool, isExisted := pools[metaData.StakingPoolID]
 		if !isExisted {
 			instructions = append(instructions, rejectInst...)
 			continue
@@ -1128,7 +1130,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		}
 
 		acceptedInst := v2utils.BuildWithdrawStakingRewardInsts(
-			metaData.StakingTokenID,
+			metaData.StakingPoolID,
 			metaData.NftID,
 			receiversInfo,
 			shardID,

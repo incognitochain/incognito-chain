@@ -176,8 +176,8 @@ func BuildDistributeStakingRewardInst(
 	rewards map[common.Hash]uint64,
 ) [][]string {
 	reqContent := metadataPdexv3.DistributeStakingRewardContent{
-		StakingTokenID: stakingToken,
-		Rewards:        rewards,
+		StakingPoolID: stakingToken,
+		Rewards:       rewards,
 	}
 	reqContentBytes, _ := json.Marshal(reqContent)
 
@@ -192,7 +192,7 @@ func BuildDistributeStakingRewardInst(
 }
 
 func BuildWithdrawStakingRewardInsts(
-	stakingTokenID string,
+	stakingPoolID string,
 	nftID common.Hash,
 	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
@@ -201,12 +201,12 @@ func BuildWithdrawStakingRewardInsts(
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
-			StakingTokenID: stakingTokenID,
-			NftID:          nftID,
-			TokenID:        common.Hash{},
-			Receivers:      map[common.Hash]metadataPdexv3.ReceiverInfo{},
-			TxReqID:        reqTxID,
-			ShardID:        shardID,
+			StakingPoolID: stakingPoolID,
+			NftID:         nftID,
+			TokenID:       common.Hash{},
+			Receivers:     map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			TxReqID:       reqTxID,
+			ShardID:       shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		inst := []string{
@@ -232,12 +232,12 @@ func BuildWithdrawStakingRewardInsts(
 	insts := [][]string{}
 	for _, tokenID := range keys {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
-			StakingTokenID: stakingTokenID,
-			NftID:          nftID,
-			TokenID:        tokenID,
-			Receivers:      receivers,
-			TxReqID:        reqTxID,
-			ShardID:        shardID,
+			StakingPoolID: stakingPoolID,
+			NftID:         nftID,
+			TokenID:       tokenID,
+			Receivers:     receivers,
+			TxReqID:       reqTxID,
+			ShardID:       shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{

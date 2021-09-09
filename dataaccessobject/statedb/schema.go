@@ -70,7 +70,7 @@ var (
 	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
 	pdexv3WithdrawLiquidityStatusPrefix     = []byte("pdexv3-withdrawliquidity-statuses-")
 	pdexv3WaitingContributionStatusPrefix   = []byte("pdexv3-waitingContribution-statuses-")
-	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpairs-")
+	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 	pdexv3StakerPrefix                      = []byte("pdexv3-stakers-")
 	pdexv3StakingStatusPrefix               = []byte("pdexv3-staking-statuses-")
 	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-statuses-")

@@ -18,8 +18,8 @@ type WithdrawalStakingRewardResponse struct {
 }
 
 type DistributeStakingRewardContent struct {
-	StakingTokenID string                 `json:"StakingTokenID"`
-	Rewards        map[common.Hash]uint64 `json:"Rewards"`
+	StakingPoolID string                 `json:"StakingPoolID"`
+	Rewards       map[common.Hash]uint64 `json:"Rewards"`
 }
 
 func NewPdexv3WithdrawalStakingRewardResponse(
