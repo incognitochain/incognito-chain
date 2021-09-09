@@ -1,8 +1,11 @@
 package pdex
 
 import (
+	"math/big"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 func TestStakingPoolState_updateLiquidity(t *testing.T) {
@@ -53,9 +56,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 100,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               100,
-						lastUpdatedBeaconHeight: 20,
-						rewards:                 map[string]uint64{},
+						liquidity:           100,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -67,9 +70,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 100,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               100,
-						lastUpdatedBeaconHeight: 20,
-						rewards:                 map[string]uint64{},
+						liquidity:           100,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -83,9 +86,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 150,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               150,
-						lastUpdatedBeaconHeight: 30,
-						rewards:                 map[string]uint64{},
+						liquidity:           150,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -97,9 +100,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 100,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               100,
-						lastUpdatedBeaconHeight: 20,
-						rewards:                 map[string]uint64{},
+						liquidity:           100,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -113,14 +116,14 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 150,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               100,
-						lastUpdatedBeaconHeight: 20,
-						rewards:                 map[string]uint64{},
+						liquidity:           100,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 					nftID: &Staker{
-						liquidity:               50,
-						lastUpdatedBeaconHeight: 30,
-						rewards:                 map[string]uint64{},
+						liquidity:           50,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -132,9 +135,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 100,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               100,
-						lastUpdatedBeaconHeight: 20,
-						rewards:                 map[string]uint64{},
+						liquidity:           100,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -148,9 +151,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 50,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               50,
-						lastUpdatedBeaconHeight: 30,
-						rewards:                 map[string]uint64{},
+						liquidity:           50,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -162,14 +165,14 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 150,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               100,
-						lastUpdatedBeaconHeight: 20,
-						rewards:                 map[string]uint64{},
+						liquidity:           100,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 					nftID: &Staker{
-						liquidity:               50,
-						lastUpdatedBeaconHeight: 25,
-						rewards:                 map[string]uint64{},
+						liquidity:           50,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -183,14 +186,14 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				liquidity: 100,
 				stakers: map[string]*Staker{
 					nftID1: &Staker{
-						liquidity:               50,
-						lastUpdatedBeaconHeight: 30,
-						rewards:                 map[string]uint64{},
+						liquidity:           50,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 					nftID: &Staker{
-						liquidity:               50,
-						lastUpdatedBeaconHeight: 25,
-						rewards:                 map[string]uint64{},
+						liquidity:           50,
+						rewards:             map[common.Hash]uint64{},
+						lastRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 			},
@@ -200,8 +203,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &StakingPoolState{
-				liquidity: tt.fields.liquidity,
-				stakers:   tt.fields.stakers,
+				liquidity:       tt.fields.liquidity,
+				stakers:         tt.fields.stakers,
+				rewardsPerShare: map[common.Hash]*big.Int{},
 			}
 			if err := s.updateLiquidity(tt.args.nftID, tt.args.liquidity, tt.args.beaconHeight, tt.args.operator); (err != nil) != tt.wantErr {
 				t.Errorf("StakingPoolState.updateLiquidity() error = %v, wantErr %v", err, tt.wantErr)

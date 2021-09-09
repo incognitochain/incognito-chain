@@ -54,6 +54,7 @@ const (
 	Pdexv3ModifyParamsValidateSanityDataError
 	Pdexv3WithdrawLPFeeValidateSanityDataError
 	Pdexv3WithdrawProtocolFeeValidateSanityDataError
+	Pdexv3WithdrawStakingRewardValidateSanityDataError
 
 	// portal
 	PortalRequestPTokenParamError

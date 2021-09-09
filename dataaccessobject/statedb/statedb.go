@@ -2091,8 +2091,26 @@ func (stateDB *StateDB) iterateWithPdexv3Nfts(prefix []byte) (map[string]uint64,
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte, currentLiquidity uint64) (
-	map[string]Pdexv3StakerState, uint64, error,
+func (stateDB *StateDB) iterateWithPdexv3StakingPools(prefix []byte) (map[string]*Pdexv3StakingPoolState, error) {
+	res := map[string]*Pdexv3StakingPoolState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		stakingPoolState := NewPdexv3StakingPoolState()
+		err := json.Unmarshal(newValue, stakingPoolState)
+		if err != nil {
+			return res, err
+		}
+		res[stakingPoolState.tokenID] = stakingPoolState
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte) (
+	map[string]Pdexv3StakerState, error,
 ) {
 	stakers := map[string]Pdexv3StakerState{}
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -2104,32 +2122,9 @@ func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte, currentLiquidity
 		stakerState := NewPdexv3StakerState()
 		err := json.Unmarshal(newValue, stakerState)
 		if err != nil {
-			return stakers, currentLiquidity, err
+			return stakers, err
 		}
 		stakers[stakerState.nftID.String()] = *stakerState
-		tempLiquidity := currentLiquidity + stakerState.liquidity
-		if tempLiquidity < currentLiquidity {
-			return stakers, currentLiquidity, errors.New("currentLiquidity is out of range")
-		}
-		currentLiquidity = tempLiquidity
 	}
-	return stakers, currentLiquidity, nil
-}
-
-func (stateDB *StateDB) iterateWithPdexv3StakerRewards(prefix []byte) (map[string]uint64, error) {
-	stakerRewards := map[string]uint64{}
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		stakerRewardState := NewPdexv3StakerRewardState()
-		err := json.Unmarshal(newValue, stakerRewardState)
-		if err != nil {
-			return stakerRewards, err
-		}
-		stakerRewards[stakerRewardState.tokenID.String()] = stakerRewardState.value
-	}
-	return stakerRewards, nil
+	return stakers, nil
 }

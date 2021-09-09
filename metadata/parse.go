@@ -225,6 +225,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.WithdrawalProtocolFeeResponse{}
 	case metadataCommon.Pdexv3MintPDEXGenesisMeta:
 		md = &metadataPdexv3.MintPDEXGenesisResponse{}
+	case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
+		md = &metadataPdexv3.WithdrawalStakingRewardRequest{}
+	case metadataCommon.Pdexv3WithdrawStakingRewardResponseMeta:
+		md = &metadataPdexv3.WithdrawalStakingRewardResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

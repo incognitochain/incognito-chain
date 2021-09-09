@@ -723,7 +723,6 @@ func (sp *stateProcessorV2) withdrawOrder(
 func (sp *stateProcessorV2) withdrawLPFee(
 	stateDB *statedb.StateDB,
 	inst []string,
-	beaconHeight uint64,
 	pairs map[string]*PoolPairState,
 ) (map[string]*PoolPairState, error) {
 	if len(inst) != 4 {
@@ -844,7 +843,7 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 	return pairs, err
 }
 
-func (sp *stateProcessorV2) mintPDEX(
+func (sp *stateProcessorV2) mintBlockReward(
 	stateDB *statedb.StateDB,
 	inst []string,
 	pairs map[string]*PoolPairState,
@@ -856,7 +855,7 @@ func (sp *stateProcessorV2) mintPDEX(
 	}
 
 	// unmarshal instructions content
-	var actionData metadataPdexv3.MintPDEXBlockRewardContent
+	var actionData metadataPdexv3.MintBlockRewardContent
 	err := json.Unmarshal([]byte(inst[3]), &actionData)
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
@@ -874,7 +873,7 @@ func (sp *stateProcessorV2) mintPDEX(
 	pairReward := actionData.Amount
 
 	(&v2utils.TradingPair{&pair.state}).AddFee(
-		common.PDEXCoinID, pairReward, BaseLPFeesPerShare,
+		actionData.TokenID, pairReward, BaseLPFeesPerShare,
 		0, 0, []common.Hash{},
 	)
 
@@ -1050,4 +1049,103 @@ func (sp *stateProcessorV2) unstaking(
 		data,
 	)
 	return stakingPoolStates, &unstakingStatus, nil
+}
+
+func (sp *stateProcessorV2) distributeStakingReward(
+	stateDB *statedb.StateDB,
+	inst []string,
+	stakingPools map[string]*StakingPoolState,
+) (map[string]*StakingPoolState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return stakingPools, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.DistributeStakingRewardContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return stakingPools, err
+	}
+
+	pool, isExisted := stakingPools[actionData.StakingPoolID]
+	if !isExisted {
+		msg := fmt.Sprintf("Could not find staking pool %v for distributing", actionData.StakingPoolID)
+		Logger.log.Errorf(msg)
+		return stakingPools, fmt.Errorf(msg)
+	}
+
+	for rewardToken, rewardAmount := range actionData.Rewards {
+		pool.AddReward(rewardToken, rewardAmount)
+	}
+
+	return stakingPools, err
+}
+
+func (sp *stateProcessorV2) withdrawStakingReward(
+	stateDB *statedb.StateDB,
+	inst []string,
+	pools map[string]*StakingPoolState,
+) (map[string]*StakingPoolState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pools, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.WithdrawalStakingRewardContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pools, err
+	}
+
+	withdrawalStatus := inst[2]
+	var reqTrackStatus int
+	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+		// check conditions
+		pool, isExisted := pools[actionData.StakingPoolID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find staking pool %s for withdrawal", actionData.StakingPoolID)
+			Logger.log.Errorf(msg)
+			return pools, errors.New(msg)
+		}
+
+		share, isExisted := pool.stakers[actionData.NftID.String()]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find staker %s for withdrawal", actionData.NftID.String())
+			Logger.log.Errorf(msg)
+			return pools, errors.New(msg)
+		}
+
+		// update state after reward wirthdrawal
+		share.rewards = map[common.Hash]uint64{}
+		share.lastRewardsPerShare = pool.RewardsPerShare()
+
+		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardSuccessStatus
+	} else {
+		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardFailedStatus
+	}
+
+	withdrawalReqStatus := metadataPdexv3.WithdrawalStakingRewardStatus{
+		Status:    reqTrackStatus,
+		Receivers: actionData.Receivers,
+	}
+	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3WithdrawalStakingRewardStatusPrefix(),
+		[]byte(actionData.TxReqID.String()),
+		withdrawalReqStatusBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("PDex v3 Withdrawal Staking Reward Fee: An error occurred while tracking request tx - Error: %v", err)
+	}
+	return pools, err
 }

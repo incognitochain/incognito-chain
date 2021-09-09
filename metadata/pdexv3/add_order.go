@@ -49,6 +49,10 @@ func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transactio
 }
 
 func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
+	}
+	
 	// OTAReceiver check
 	for _, item := range req.Receiver {
 		if !item.IsValid() {

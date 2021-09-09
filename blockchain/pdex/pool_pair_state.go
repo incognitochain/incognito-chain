@@ -376,13 +376,7 @@ func (p *PoolPairState) RecomputeLPFee(
 	curLPFeesPerShare := p.state.LPFeesPerShare()
 	oldLPFeesPerShare := curShare.lastLPFeesPerShare
 
-	listTokenIDs := []common.Hash{
-		p.state.Token0ID(),
-		p.state.Token1ID(),
-		common.PRVCoinID,
-		common.PDEXCoinID,
-	}
-	for _, tokenID := range listTokenIDs {
+	for tokenID := range curLPFeesPerShare {
 		tradingFee, isExisted := curShare.tradingFees[tokenID]
 		if !isExisted {
 			tradingFee = 0
@@ -391,10 +385,8 @@ func (p *PoolPairState) RecomputeLPFee(
 		if !isExisted {
 			oldFees = big.NewInt(0)
 		}
-		newFees, isExisted := curLPFeesPerShare[tokenID]
-		if !isExisted {
-			newFees = big.NewInt(0)
-		}
+		newFees := curLPFeesPerShare[tokenID]
+
 		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(curShare.amount))
 		reward = new(big.Int).Div(reward, BaseLPFeesPerShare)
 		reward = new(big.Int).Add(reward, new(big.Int).SetUint64(tradingFee))

@@ -1,8 +1,9 @@
 package pdexv3
 
 const (
-	BaseAmplifier                 = 10000
-	MaxPoolPairWithdrawalReceiver = 5
+	BaseAmplifier                      = 10000
+	MaxPoolPairWithdrawalReceiver      = 5
+	MaxStakingRewardWithdrawalReceiver = 15
 )
 
 const (
@@ -17,6 +18,9 @@ const (
 
 	WithdrawProtocolFeeFailedStatus  = 0
 	WithdrawProtocolFeeSuccessStatus = 1
+
+	WithdrawStakingRewardFailedStatus  = 0
+	WithdrawStakingRewardSuccessStatus = 1
 )
 
 // trade status

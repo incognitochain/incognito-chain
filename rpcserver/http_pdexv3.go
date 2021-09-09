@@ -509,7 +509,7 @@ func (httpServer *HttpServer) handleGetPdexv3WithdrawalLPFeeStatus(params interf
 	}
 	status, err := httpServer.blockService.GetPdexv3WithdrawalLPFeeStatus(reqTxID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3WithdrawlLPFeeStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3WithdrawalLPFeeStatusError, err)
 	}
 	return status, nil
 }
@@ -593,7 +593,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
-		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+		metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta,
 		pairID,
 		receivers,
 	)
@@ -640,7 +640,7 @@ func (httpServer *HttpServer) handleGetPdexv3WithdrawalProtocolFeeStatus(params 
 	}
 	status, err := httpServer.blockService.GetPdexv3WithdrawalProtocolFeeStatus(reqTxID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3WithdrawlProtocolFeeStatusError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3WithdrawalProtocolFeeStatusError, err)
 	}
 	return status, nil
 }
@@ -1812,4 +1812,209 @@ func (httpServer *HttpServer) handleGetPdexv3UnstakingStatus(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return string(data), nil
+}
+
+func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	stakingPoolID, ok := data["StakingPoolID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolID is invalid"))
+	}
+	nftIDStr, ok := data["NftID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
+	}
+	nftID, err := common.Hash{}.NewHashFromStr(nftIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
+	}
+
+	beaconFeatureStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+
+	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	}
+
+	stakingPools := pDexv3State.Reader().StakingPools()
+
+	if _, ok := stakingPools[stakingPoolID]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("TokenID is not existed"))
+	}
+
+	pool := stakingPools[stakingPoolID].Clone()
+
+	if _, ok := pool.Stakers()[nftIDStr]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("NftID is not existed"))
+	}
+
+	uncollectedStakingRewards, err := pool.RecomputeStakingRewards(*nftID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	}
+	result := map[string]uint64{}
+	for tokenID := range uncollectedStakingRewards {
+		result[tokenID.String()] = uncollectedStakingRewards[tokenID]
+	}
+
+	return result, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithPdexv3WithdrawStakingReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithPdexv3WithdrawStakingReward(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// send raw transaction
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawStakingReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// parse params
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) >= 7 {
+		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("HasPrivacyToken is invalid"))
+		}
+		hasPrivacyToken := int(hasPrivacyTokenParam) > 0
+		if hasPrivacyToken {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be disabled"))
+		}
+	}
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
+	}
+
+	beaconBestView, err := httpServer.blockService.GetBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	stakingPools := beaconBestView.PdeState(pdex.AmplifierVersion).Reader().StakingPools()
+
+	stakingToken, ok := tokenParamsRaw["StakingPoolID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("StakingPoolID is invalid"))
+	}
+
+	pool, found := stakingPools[stakingToken]
+	if !found {
+		err = fmt.Errorf("Can't find staking token %s", stakingToken)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+	}
+
+	nftIDStr, ok := tokenParamsRaw["NftID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
+	}
+	nftID, err := common.Hash{}.NewHashFromStr(nftIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
+	}
+
+	// payment address v2
+	feeReceiver, ok := tokenParamsRaw["FeeReceiver"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
+	}
+
+	tokenIDStrs := []string{
+		nftIDStr,
+	}
+
+	for tokenID := range pool.RewardsPerShare() {
+		tokenIDStrs = append(tokenIDStrs, tokenID.String())
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(feeReceiver)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize payment address: %v", err))
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address is invalid"))
+	}
+
+	receivers := map[common.Hash]privacy.OTAReceiver{}
+	for _, tokenIDStr := range tokenIDStrs {
+		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
+		}
+		receiver := privacy.OTAReceiver{}
+		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		receivers[*tokenID] = receiver
+	}
+
+	meta, err := metadataPdexv3.NewPdexv3WithdrawalStakingRewardRequest(
+		metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,
+		stakingToken,
+		*nftID,
+		receivers,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetPdexv3WithdrawalStakingRewardStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPdexv3WithdrawalStakingRewardStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3WithdrawalStakingRewardStatusError, err)
+	}
+	return status, nil
 }
