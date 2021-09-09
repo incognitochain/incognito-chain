@@ -1945,7 +1945,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawStakingReward(p
 		nftIDStr,
 	}
 
-	for _, tokenID := range pool.RewardsPerShare() {
+	for tokenID := range pool.RewardsPerShare() {
 		tokenIDStrs = append(tokenIDStrs, tokenID.String())
 	}
 
