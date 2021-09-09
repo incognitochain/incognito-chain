@@ -735,6 +735,11 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 		reward := pair.state.ProtocolFees()
 
+		if reward == nil || len(reward) == 0 {
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
 		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 		for tokenID := range reward {
 			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
