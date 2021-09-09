@@ -65,12 +65,13 @@ var (
 	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
 	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
 	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
+	pdexv3WithdrawalStakingRewardPrefix     = []byte("pdexv3-withdrawalstakingrewardstatus-")
 	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
 	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
 	pdexv3WithdrawLiquidityStatusPrefix     = []byte("pdexv3-withdrawliquidity-statuses-")
 	pdexv3WaitingContributionStatusPrefix   = []byte("pdexv3-waitingContribution-statuses-")
+	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
 	pdexv3StakerPrefix                      = []byte("pdexv3-staker-")
-	pdexv3StakerRewardPrefix                = []byte("pdexv3-stakerreward-")
 	pdexv3StakingStatusPrefix               = []byte("pdexv3-staking-status-")
 	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-status-")
 	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-status-")
@@ -592,6 +593,10 @@ func Pdexv3WithdrawalProtocolFeeStatusPrefix() []byte {
 	return pdexv3WithdrawalProtocolFeePrefix
 }
 
+func Pdexv3WithdrawalStakingRewardStatusPrefix() []byte {
+	return pdexv3WithdrawalStakingRewardPrefix
+}
+
 func Pdexv3AddOrderStatusPrefix() []byte {
 	return pdexv3AddOrderStatusPrefix
 }
@@ -634,13 +639,13 @@ func GetPdexv3NftPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
-func GetPdexv3StakersPrefix() []byte {
-	hash := common.HashH(pdexv3StakerPrefix)
+func GetPdexv3StakingPoolsPrefix() []byte {
+	hash := common.HashH(pdexv3StakingPoolsPrefix)
 	return hash[:prefixHashKeyLength]
 }
 
-func GetPdexv3StakerRewardsPrefix() []byte {
-	hash := common.HashH(pdexv3StakerRewardPrefix)
+func GetPdexv3StakersPrefix() []byte {
+	hash := common.HashH(pdexv3StakerPrefix)
 	return hash[:prefixHashKeyLength]
 }
 

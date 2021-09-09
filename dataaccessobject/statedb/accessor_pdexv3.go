@@ -99,7 +99,7 @@ func DeletePdexv3WaitingContributions(
 	for _, pairHash := range pairHashes {
 		key := GeneratePdexv3ContributionObjectKey(pairHash)
 		if !stateDB.MarkDeleteStateObject(Pdexv3ContributionObjectType, key) {
-			return fmt.Errorf("Can't delete contributions with pair hash %v", pairHash)
+			fmt.Printf("Can't delete contributions with pair hash %v maybe 2 contributions have been matched\n", pairHash)
 		}
 	}
 	return nil
@@ -140,14 +140,20 @@ func StorePdexv3NftIDs(stateDB *StateDB, nftIDs map[string]uint64) error {
 	return nil
 }
 
+func StorePdexv3StakingPool(
+	stateDB *StateDB,
+	tokenID string,
+	totalAmount uint64,
+	rewardsPerShare map[common.Hash]*big.Int,
+) error {
+	state := NewPdexv3StakingPoolStateWithValue(tokenID, totalAmount, rewardsPerShare)
+	key := GeneratePdexv3StakingPoolObjectKey(tokenID)
+	return stateDB.SetStateObject(Pdexv3StakingPoolObjectType, key, state)
+}
+
 func StorePdexv3Staker(stateDB *StateDB, stakingPoolID, nftID string, state *Pdexv3StakerState) error {
 	key := GeneratePdexv3StakerObjectKey(stakingPoolID, nftID)
 	return stateDB.SetStateObject(Pdexv3StakerObjectType, key, state)
-}
-
-func StorePdexv3StakerReward(stateDB *StateDB, stakingPoolID, nftID, tokenID string, state *Pdexv3StakerRewardState) error {
-	key := GeneratePdexv3StakerRewardObjectKey(stakingPoolID, nftID, tokenID)
-	return stateDB.SetStateObject(Pdexv3StakerRewardObjectType, key, state)
 }
 
 func StorePdexv3Order(stateDB *StateDB, orderState Pdexv3OrderState) error {
@@ -194,13 +200,12 @@ func GetPdexv3Orders(stateDB *StateDB, poolPairID string) (
 	return stateDB.iterateWithPdexv3Orders(prefixHash)
 }
 
-func GetPdexv3Stakers(stateDB *StateDB, stakingPoolID string) (map[string]Pdexv3StakerState, uint64, error) {
-	prefixHash := generatePdexv3StakerObjectPrefix(stakingPoolID)
-	var liquidity uint64
-	return stateDB.iterateWithPdexv3Stakers(prefixHash, liquidity)
+func GetPdexv3StakingPools(stateDB *StateDB) (map[string]*Pdexv3StakingPoolState, error) {
+	prefixHash := GetPdexv3StakingPoolsPrefix()
+	return stateDB.iterateWithPdexv3StakingPools(prefixHash)
 }
 
-func GetPdexv3StakerRewards(stateDB *StateDB, stakingPoolID, nftID string) (map[string]uint64, error) {
-	prefixHash := generatePdexv3StakerRewardObjectPrefix(stakingPoolID, nftID)
-	return stateDB.iterateWithPdexv3StakerRewards(prefixHash)
+func GetPdexv3Stakers(stateDB *StateDB, stakingPoolID string) (map[string]Pdexv3StakerState, error) {
+	prefixHash := generatePdexv3StakerObjectPrefix(stakingPoolID)
+	return stateDB.iterateWithPdexv3Stakers(prefixHash)
 }

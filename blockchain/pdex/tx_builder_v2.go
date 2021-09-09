@@ -159,6 +159,18 @@ func (txBuilder *TxBuilderV2) Build(
 		} else {
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
+	case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
+		if len(inst) == 4 {
+			tx, err = v2.WithdrawStakingReward(
+				inst[2],
+				inst[3],
+				producerPrivateKey,
+				shardID,
+				transactionStateDB,
+			)
+		} else {
+			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
+		}
 	}
 
 	return tx, err

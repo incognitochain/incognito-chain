@@ -65,19 +65,6 @@ func (share *Share) Clone() *Share {
 	return res
 }
 
-/*func (share *Share) cloneState() *Share {*/
-//res := NewShare()
-//res.amount = share.amount
-//for k, v := range share.tradingFees {
-//res.tradingFees[k] = v
-//}
-//res.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-//for k, v := range share.lastLPFeesPerShare {
-//res.lastLPFeesPerShare[k] = new(big.Int).Set(v)
-//}
-//return res
-/*}*/
-
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Amount             uint64                   `json:"Amount"`
@@ -123,21 +110,21 @@ func (share *Share) getDiff(
 }
 
 type Staker struct {
-	liquidity               uint64
-	lastUpdatedBeaconHeight uint64
-	rewards                 map[string]uint64
+	liquidity           uint64
+	rewards             map[common.Hash]uint64
+	lastRewardsPerShare map[common.Hash]*big.Int
 }
 
 func (staker *Staker) Liquidity() uint64 {
 	return staker.liquidity
 }
 
-func (staker *Staker) LastUpdatedBeaconHeight() uint64 {
-	return staker.lastUpdatedBeaconHeight
+func (staker *Staker) LastRewardsPerShare() map[common.Hash]*big.Int {
+	return staker.lastRewardsPerShare
 }
 
-func (staker *Staker) Rewards() map[string]uint64 {
-	res := make(map[string]uint64)
+func (staker *Staker) Rewards() map[common.Hash]uint64 {
+	res := make(map[common.Hash]uint64)
 	for k, v := range staker.rewards {
 		res[k] = v
 	}
@@ -146,13 +133,13 @@ func (staker *Staker) Rewards() map[string]uint64 {
 
 func (staker *Staker) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Liquidity               uint64            `json:"Liquidity"`
-		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
-		Rewards                 map[string]uint64 `json:"Rewards"`
+		Liquidity           uint64                   `json:"Liquidity"`
+		Rewards             map[common.Hash]uint64   `json:"Rewards"`
+		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{
-		Liquidity:               staker.liquidity,
-		LastUpdatedBeaconHeight: staker.lastUpdatedBeaconHeight,
-		Rewards:                 staker.rewards,
+		Liquidity:           staker.liquidity,
+		Rewards:             staker.rewards,
+		LastRewardsPerShare: staker.lastRewardsPerShare,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -162,40 +149,43 @@ func (staker *Staker) MarshalJSON() ([]byte, error) {
 
 func (staker *Staker) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Liquidity               uint64            `json:"Liquidity"`
-		LastUpdatedBeaconHeight uint64            `json:"LastUpdatedBeaconHeight"`
-		Rewards                 map[string]uint64 `json:"Rewards"`
+		Liquidity          uint64                   `json:"Liquidity"`
+		Rewards            map[common.Hash]uint64   `json:"Rewards"`
+		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	staker.liquidity = temp.Liquidity
-	staker.lastUpdatedBeaconHeight = temp.LastUpdatedBeaconHeight
 	staker.rewards = temp.Rewards
+	staker.lastRewardsPerShare = temp.LastLPFeesPerShare
 	return nil
 }
 
 func NewStaker() *Staker {
 	return &Staker{
-		rewards: make(map[string]uint64),
+		rewards:             make(map[common.Hash]uint64),
+		lastRewardsPerShare: make(map[common.Hash]*big.Int),
 	}
 }
 
-func NewStakerWithValue(liquidity, lastUpdatedBeaconHeight uint64, rewards map[string]uint64) *Staker {
+func NewStakerWithValue(liquidity uint64, rewards map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int) *Staker {
 	return &Staker{
-		liquidity:               liquidity,
-		lastUpdatedBeaconHeight: lastUpdatedBeaconHeight,
-		rewards:                 rewards,
+		liquidity:           liquidity,
+		rewards:             rewards,
+		lastRewardsPerShare: lastLPFeesPerShare,
 	}
 }
 
 func (staker *Staker) Clone() *Staker {
 	res := NewStaker()
 	res.liquidity = staker.liquidity
-	res.lastUpdatedBeaconHeight = staker.lastUpdatedBeaconHeight
 	for k, v := range staker.rewards {
 		res.rewards[k] = v
+	}
+	for k, v := range staker.lastRewardsPerShare {
+		res.lastRewardsPerShare[k] = new(big.Int).Set(v)
 	}
 	return res
 }

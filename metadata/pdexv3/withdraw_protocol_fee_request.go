@@ -64,6 +64,10 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
+	}
+
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
 	if err != nil {
@@ -88,7 +92,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 	}
 
 	if len(withdrawal.Receivers) > MaxPoolPairWithdrawalReceiver {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawProtocolFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
 	}
 
 	// Check OTA address string and tx random is valid
@@ -119,7 +123,16 @@ func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {
 }
 
 func (withdrawal WithdrawalProtocolFeeRequest) HashWithoutSig() *common.Hash {
-	rawBytes, _ := json.Marshal(withdrawal)
+	rawBytes, _ := json.Marshal(struct {
+		Type       int                                 `json:"Type"`
+		PoolPairID string                              `json:"PoolPairID"`
+		Receivers  map[common.Hash]privacy.OTAReceiver `json:"Value"`
+	}{
+		Type:       metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta,
+		PoolPairID: withdrawal.PoolPairID,
+		Receivers:  withdrawal.Receivers,
+	})
+
 	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }

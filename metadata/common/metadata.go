@@ -432,7 +432,7 @@ func IsPdexv3Type(metadataType int) bool {
 		return true
 	case Pdexv3MintPDEXGenesisMeta:
 		return true
-	case Pdexv3MintPDEXBlockRewardMeta:
+	case Pdexv3MintBlockRewardMeta:
 		return true
 	case Pdexv3StakingRequestMeta:
 		return true
@@ -441,6 +441,12 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3UnstakingRequestMeta:
 		return true
 	case Pdexv3UnstakingResponseMeta:
+		return true
+	case Pdexv3DistributeStakingRewardMeta:
+		return true
+	case Pdexv3WithdrawStakingRewardRequestMeta:
+		return true
+	case Pdexv3WithdrawStakingRewardResponseMeta:
 		return true
 	default:
 		return false

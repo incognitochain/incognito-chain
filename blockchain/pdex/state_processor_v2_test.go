@@ -1374,8 +1374,9 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 				},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
-						liquidity: 0,
-						stakers:   map[string]*Staker{},
+						liquidity:       0,
+						stakers:         map[string]*Staker{},
+						rewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				beaconHeight: 20,
@@ -1385,11 +1386,12 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 					liquidity: 100,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               100,
-							lastUpdatedBeaconHeight: 20,
-							rewards:                 map[string]uint64{},
+							liquidity:           100,
+							rewards:             map[common.Hash]uint64{},
+							lastRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 					},
+					rewardsPerShare: map[common.Hash]*big.Int{},
 				},
 			},
 			want1: &v2.StakingStatus{
@@ -1875,9 +1877,7 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
 					},
@@ -1889,9 +1889,7 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 					liquidity: 150,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               150,
-							lastUpdatedBeaconHeight: 15,
-							rewards:                 map[string]uint64{},
+							liquidity: 150,
 						},
 					},
 				},
@@ -1917,11 +1915,10 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 						liquidity: 150,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:               150,
-								lastUpdatedBeaconHeight: 15,
-								rewards:                 map[string]uint64{},
+								liquidity: 150,
 							},
 						},
+						rewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				beaconHeight: 20,
@@ -1931,11 +1928,12 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 					liquidity: 100,
 					stakers: map[string]*Staker{
 						nftID1: &Staker{
-							liquidity:               100,
-							lastUpdatedBeaconHeight: 20,
-							rewards:                 map[string]uint64{},
+							liquidity:           100,
+							rewards:             map[common.Hash]uint64{},
+							lastRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 					},
+					rewardsPerShare: map[common.Hash]*big.Int{},
 				},
 			},
 			want1: &v2.UnstakingStatus{
