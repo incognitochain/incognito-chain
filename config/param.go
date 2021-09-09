@@ -237,6 +237,7 @@ type bscParam struct {
 
 type pdexParam struct {
 	Pdexv3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
+	ProtocolFundAddress    string `mapstructure:"protocol_fund_address"`
 	AdminAddress           string `mapstructure:"admin_address"`
 	Params                 struct {
 		DefaultFeeRateBPS               uint            `mapstructure:"default_fee_rate_bps"`

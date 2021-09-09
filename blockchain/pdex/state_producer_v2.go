@@ -192,8 +192,8 @@ func (sp *stateProducerV2) addLiquidity(
 }
 
 func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
-	daoPaymentAddressStr := config.Param().IncognitoDAOAddress
-	keyWallet, err := wallet.Base58CheckDeserialize(daoPaymentAddressStr)
+	receivingAddressStr := config.Param().PDexParams.ProtocolFundAddress
+	keyWallet, err := wallet.Base58CheckDeserialize(receivingAddressStr)
 	if err != nil {
 		return [][]string{}, errors.New("Could not deserialize DAO payment address")
 	}
@@ -204,7 +204,7 @@ func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
 	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
 
 	mintingPDEXGenesisContent := metadataPdexv3.MintPDEXGenesisContent{
-		MintingPaymentAddress: daoPaymentAddressStr,
+		MintingPaymentAddress: receivingAddressStr,
 		MintingAmount:         uint64(GenesisMintingAmount * math.Pow(10, common.PDEXDenominatingDecimal)),
 		ShardID:               shardID,
 	}
