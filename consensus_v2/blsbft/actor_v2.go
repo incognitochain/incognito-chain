@@ -133,7 +133,7 @@ func (a actorV2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 
 func (a *actorV2) Stop() error {
 	if a.isStarted {
-		a.logger.Info("stop bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
+		a.logger.Infof("stop bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
 	}
 	a.isStarted = false
 	return nil
@@ -204,7 +204,7 @@ func (a *actorV2) SignData(data []byte) (string, error) {
 
 func (a *actorV2) Start() error {
 	if !a.isStarted {
-		a.logger.Info("start bls-bft-%+v consensus for chain", a.blockVersion, a.chainKey)
+		a.logger.Infof("start bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
 	}
 	a.isStarted = true
 	return nil
