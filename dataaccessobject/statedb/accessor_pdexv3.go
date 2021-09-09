@@ -99,7 +99,7 @@ func DeletePdexv3WaitingContributions(
 	for _, pairHash := range pairHashes {
 		key := GeneratePdexv3ContributionObjectKey(pairHash)
 		if !stateDB.MarkDeleteStateObject(Pdexv3ContributionObjectType, key) {
-			return fmt.Errorf("Can't delete contributions with pair hash %v", pairHash)
+			fmt.Printf("Can't delete contributions with pair hash %v maybe 2 contributions have been matched\n", pairHash)
 		}
 	}
 	return nil
