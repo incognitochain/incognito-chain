@@ -27,7 +27,7 @@ func NewAction(c Content, txID common.Hash, shardID byte) *Action {
 	}
 }
 
-func (acn *Action) ShardID() byte { return acn.shardID }
+func (acn *Action) ShardID() byte            { return acn.shardID }
 func (acn *Action) RequestTxID() common.Hash { return acn.requestTxID }
 
 func (acn *Action) FromStringSlice(source []string) error {
@@ -47,8 +47,10 @@ func (acn *Action) FromStringSlice(source []string) error {
 		return fmt.Errorf("Metadata status mismatch")
 	}
 
-	if _, err := acn.requestTxID.NewHashFromStr(source[3]); err != nil {
+	if h, err := acn.requestTxID.NewHashFromStr(source[3]); err != nil {
 		return fmt.Errorf("Invalid RequestTxID %v", source[3])
+	} else {
+		acn.requestTxID = *h
 	}
 
 	if res, err := strconv.Atoi(source[2]); err != nil {
