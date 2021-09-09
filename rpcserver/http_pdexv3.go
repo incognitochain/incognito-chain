@@ -593,7 +593,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
-		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+		metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta,
 		pairID,
 		receivers,
 	)
