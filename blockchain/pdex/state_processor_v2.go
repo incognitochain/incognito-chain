@@ -646,6 +646,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 ) (map[string]*PoolPairState, error) {
 	var currentOrder *instruction.Action
 	var trackedStatus metadataPdexv3.WithdrawOrderStatus
+	var statusSuffix []byte
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.WithdrawOrderAcceptedStatus):
 		currentOrder = &instruction.Action{Content: &metadataPdexv3.AcceptedWithdrawOrder{}}
@@ -658,6 +659,8 @@ func (sp *stateProcessorV2) withdrawOrder(
 		md, _ := currentOrder.Content.(*metadataPdexv3.AcceptedWithdrawOrder)
 		trackedStatus.TokenID = md.TokenID
 		trackedStatus.WithdrawAmount = md.Amount
+		txID := currentOrder.RequestTxID()
+		statusSuffix = append(txID[:], md.TokenID[:]...)
 
 		pair, exists := pairs[md.PoolPairID]
 		if !exists {
@@ -700,6 +703,8 @@ func (sp *stateProcessorV2) withdrawOrder(
 		if err != nil {
 			return pairs, err
 		}
+		txID := currentOrder.RequestTxID()
+		statusSuffix = txID[:]
 	default:
 		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
@@ -710,11 +715,11 @@ func (sp *stateProcessorV2) withdrawOrder(
 	if err != nil {
 		return pairs, err
 	}
-	txID := currentOrder.RequestTxID()
+
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawOrderStatusPrefix(),
-		txID[:],
+		statusSuffix,
 		marshaledTrackedStatus,
 	)
 	return pairs, nil
