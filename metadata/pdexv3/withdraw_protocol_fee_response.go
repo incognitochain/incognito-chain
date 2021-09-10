@@ -9,22 +9,32 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type WithdrawalProtocolFeeResponse struct {
 	metadataCommon.MetadataBase
-	ReqTxID common.Hash `json:"ReqTxID"`
+	Address      string      `json:"Address"`
+	TokenID      common.Hash `json:"TokenID"`
+	Amount       uint64      `json:"Amount"`
+	ReqTxID      common.Hash `json:"ReqTxID"`
+	SharedRandom []byte      `json:"SharedRandom"`
 }
 
 func NewPdexv3WithdrawalProtocolFeeResponse(
 	metaType int,
+	address string,
+	tokenID common.Hash,
+	amount uint64,
 	reqTxID common.Hash,
 ) *WithdrawalProtocolFeeResponse {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
 
 	return &WithdrawalProtocolFeeResponse{
 		MetadataBase: *metadataBase,
+		Address:      address,
+		TokenID:      tokenID,
+		Amount:       amount,
 		ReqTxID:      reqTxID,
 	}
 }
@@ -101,15 +111,6 @@ func (withdrawalResponse WithdrawalProtocolFeeResponse) VerifyMinerCreatedTxBefo
 
 		shardIDFromInst := instContent.ShardID
 		txReqIDFromInst := instContent.TxReqID
-		receiver, ok := instContent.Receivers[instContent.TokenID]
-		if !ok {
-			continue
-		}
-
-		receiverAddress, err := isValidOTAReceiver(receiver.Address, shardIDFromInst)
-		if err != nil {
-			continue
-		}
 
 		if !bytes.Equal(withdrawalResponse.ReqTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
@@ -117,29 +118,17 @@ func (withdrawalResponse WithdrawalProtocolFeeResponse) VerifyMinerCreatedTxBefo
 		}
 
 		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || assetID.String() != instContent.TokenID.String() {
+			continue
+		}
+
+		keyWallet, err := wallet.Base58CheckDeserialize(instContent.Address)
 		if err != nil {
 			continue
 		}
-		if !isMinted {
-			continue
-		}
-		pk := mintCoin.GetPublicKey().ToBytesS()
-		paidAmount := mintCoin.GetValue()
-		mintCoinV2, ok := mintCoin.(*coin.CoinV2)
-		if !ok {
-			metadataCommon.Logger.Log.Warnf("Mint coin is not CoinV2")
-			continue
-		}
+		paymentAddress := keyWallet.KeySet.PaymentAddress
 
-		txR := mintCoinV2.GetTxRandom()
-
-		publicKey := receiverAddress.PublicKey
-		txRandom := receiverAddress.TxRandom
-
-		if !bytes.Equal(publicKey.ToBytesS(), pk[:]) ||
-			receiver.Amount != paidAmount ||
-			!bytes.Equal(txR[:], txRandom[:]) ||
-			instContent.TokenID != *assetID {
+		if ok := mintCoin.CheckCoinValid(paymentAddress, withdrawalResponse.SharedRandom, instContent.Amount); !ok {
 			continue
 		}
 
@@ -151,4 +140,8 @@ func (withdrawalResponse WithdrawalProtocolFeeResponse) VerifyMinerCreatedTxBefo
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (withdrawalResponse WithdrawalProtocolFeeResponse) SetSharedRandom(r []byte) {
+	withdrawalResponse.SharedRandom = r
 }

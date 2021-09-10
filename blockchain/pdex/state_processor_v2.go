@@ -21,12 +21,14 @@ import (
 type stateProcessorV2 struct {
 	pairHashCache   map[string]string
 	withdrawTxCache map[string]uint64
+	rewardCache     map[string]map[common.Hash]uint64
 	stateProcessorBase
 }
 
 func (sp *stateProcessorV2) clearCache() {
 	sp.pairHashCache = make(map[string]string)
 	sp.withdrawTxCache = make(map[string]uint64)
+	sp.rewardCache = make(map[string]map[common.Hash]uint64)
 }
 
 func (sp *stateProcessorV2) addLiquidity(
@@ -821,13 +823,23 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 
 		poolPair.state.SetProtocolFees(map[common.Hash]uint64{})
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeSuccessStatus
+
+		_, found := sp.rewardCache[actionData.TxReqID.String()]
+		if !found {
+			sp.rewardCache[actionData.TxReqID.String()] = map[common.Hash]uint64{}
+		}
+		sp.rewardCache[actionData.TxReqID.String()][actionData.TokenID] = actionData.Amount
 	} else {
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeFailedStatus
 	}
 
+	if reqTrackStatus == metadataPdexv3.WithdrawProtocolFeeSuccessStatus && !actionData.IsLastInst {
+		return pairs, nil
+	}
+
 	withdrawalReqStatus := metadataPdexv3.WithdrawalProtocolFeeStatus{
-		Status:    reqTrackStatus,
-		Receivers: actionData.Receivers,
+		Status: reqTrackStatus,
+		Amount: sp.rewardCache[actionData.TxReqID.String()],
 	}
 	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
 

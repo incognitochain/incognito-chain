@@ -163,6 +163,10 @@ func WithdrawLPFee(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadataCommon.Transaction, error) {
+	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
+		return nil, fmt.Errorf("Pdex v3 withdraw LPFee: Not support status %v", instStatus)
+	}
+
 	contentBytes := []byte(contentStr)
 	var instContent metadataPdexv3.WithdrawalLPFeeContent
 	err := json.Unmarshal(contentBytes, &instContent)
@@ -208,6 +212,10 @@ func WithdrawProtocolFee(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadataCommon.Transaction, error) {
+	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
+		return nil, fmt.Errorf("Pdex v3 withdraw protocol fee: Not support status %v", instStatus)
+	}
+
 	contentBytes := []byte(contentStr)
 	var instContent metadataPdexv3.WithdrawalProtocolFeeContent
 	err := json.Unmarshal(contentBytes, &instContent)
@@ -215,35 +223,40 @@ func WithdrawProtocolFee(
 		return nil, nil
 	}
 
-	receiver, ok := instContent.Receivers[instContent.TokenID]
-	if !ok {
-		return nil, nil
-	}
-	receiverAddress := receiver.Address
-
-	if instContent.ShardID != shardID || receiver.Amount == 0 {
+	if instContent.ShardID != shardID || instContent.Amount == 0 {
 		return nil, nil
 	}
 
 	meta := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeResponse(
 		metadataCommon.Pdexv3WithdrawProtocolFeeResponseMeta,
+		instContent.Address,
+		instContent.TokenID,
+		instContent.Amount,
 		instContent.TxReqID,
 	)
 
-	if !receiverAddress.IsValid() {
+	keyWallet, err := wallet.Base58CheckDeserialize(instContent.Address)
+	if err != nil {
 		return nil, nil
+	}
+	// in case the returned currency is privacy custom token
+	receiver := &privacy.PaymentInfo{
+		Amount:         instContent.Amount,
+		PaymentAddress: keyWallet.KeySet.PaymentAddress,
 	}
 
 	txParam := transaction.TxSalaryOutputParams{
 		Amount:          receiver.Amount,
-		ReceiverAddress: nil,
-		PublicKey:       &receiverAddress.PublicKey,
-		TxRandom:        &receiverAddress.TxRandom,
-		TokenID:         &instContent.TokenID, Info: []byte{}}
-
-	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
+		ReceiverAddress: &receiver.PaymentAddress,
+		TokenID:         &instContent.TokenID,
+	}
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
 		return meta
-	})
+	}
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, makeMD)
 }
 
 func WithdrawStakingReward(

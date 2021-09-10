@@ -195,10 +195,10 @@ func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
 	receivingAddressStr := config.Param().PDexParams.ProtocolFundAddress
 	keyWallet, err := wallet.Base58CheckDeserialize(receivingAddressStr)
 	if err != nil {
-		return [][]string{}, errors.New("Could not deserialize DAO payment address")
+		return [][]string{}, fmt.Errorf("Can not parse protocol fund address: %v", err)
 	}
 	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return [][]string{}, errors.New("DAO payment address is invalid")
+		return [][]string{}, fmt.Errorf("Protocol fund address is invalid")
 	}
 
 	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
@@ -710,8 +710,18 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 ) ([][]string, map[string]*PoolPairState, error) {
 	instructions := [][]string{}
 
+	receivingAddressStr := config.Param().PDexParams.ProtocolFundAddress
+	keyWallet, err := wallet.Base58CheckDeserialize(receivingAddressStr)
+	if err != nil {
+		return instructions, pairs, fmt.Errorf("Can not parse protocol fund address: %v", err)
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return instructions, pairs, fmt.Errorf("Protocol fund address is invalid")
+	}
+
+	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
+
 	for _, tx := range txs {
-		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := *tx.Hash()
 		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalProtocolFeeRequest)
 		if !ok {
@@ -720,7 +730,8 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 		rejectInst := v2utils.BuildWithdrawProtocolFeeInsts(
 			metaData.PoolPairID,
-			map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			receivingAddressStr,
+			map[common.Hash]uint64{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
@@ -733,27 +744,17 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 			continue
 		}
 
-		reward := pair.state.ProtocolFees()
+		rewardAmount := pair.state.ProtocolFees()
 
-		if reward == nil || len(reward) == 0 {
+		if rewardAmount == nil || len(rewardAmount) == 0 {
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
 
-		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
-		for tokenID := range reward {
-			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
-				return instructions, pairs, fmt.Errorf("Could not find receiver for token %v\n", tokenID)
-			}
-			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
-				Address: metaData.Receivers[tokenID],
-				Amount:  reward[tokenID],
-			}
-		}
-
 		acceptedInst := v2utils.BuildWithdrawProtocolFeeInsts(
 			metaData.PoolPairID,
-			receiversInfo,
+			receivingAddressStr,
+			rewardAmount,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
