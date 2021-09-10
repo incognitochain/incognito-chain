@@ -3,16 +3,14 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type Pdexv3StakingPoolState struct {
-	tokenID         string
-	totalAmount     uint64
-	rewardsPerShare map[common.Hash]*big.Int
+	tokenID     string
+	totalAmount uint64
 }
 
 func (pp *Pdexv3StakingPoolState) TokenID() string {
@@ -23,19 +21,13 @@ func (pp *Pdexv3StakingPoolState) TotalAmount() uint64 {
 	return pp.totalAmount
 }
 
-func (pp *Pdexv3StakingPoolState) RewardsPerShare() map[common.Hash]*big.Int {
-	return pp.rewardsPerShare
-}
-
 func (pp *Pdexv3StakingPoolState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID         string                   `json:"TokenID"`
-		TotalAmount     uint64                   `json:"TotalAmount"`
-		RewardsPerShare map[common.Hash]*big.Int `json:"RewardsPerShare"`
+		TokenID     string `json:"TokenID"`
+		TotalAmount uint64 `json:"TotalAmount"`
 	}{
-		TokenID:         pp.tokenID,
-		TotalAmount:     pp.totalAmount,
-		RewardsPerShare: pp.rewardsPerShare,
+		TokenID:     pp.tokenID,
+		TotalAmount: pp.totalAmount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -45,9 +37,8 @@ func (pp *Pdexv3StakingPoolState) MarshalJSON() ([]byte, error) {
 
 func (pp *Pdexv3StakingPoolState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID         string                   `json:"TokenID"`
-		TotalAmount     uint64                   `json:"TotalAmount"`
-		RewardsPerShare map[common.Hash]*big.Int `json:"RewardsPerShare"`
+		TokenID     string `json:"TokenID"`
+		TotalAmount uint64 `json:"TotalAmount"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -55,35 +46,26 @@ func (pp *Pdexv3StakingPoolState) UnmarshalJSON(data []byte) error {
 	}
 	pp.tokenID = temp.TokenID
 	pp.totalAmount = temp.TotalAmount
-	pp.rewardsPerShare = temp.RewardsPerShare
 	return nil
 }
 
 func (pp *Pdexv3StakingPoolState) Clone() *Pdexv3StakingPoolState {
-	rewardsPerShare := make(map[common.Hash]*big.Int)
-	for k, v := range pp.rewardsPerShare {
-		rewardsPerShare[k] = new(big.Int).Set(v)
-	}
 	return &Pdexv3StakingPoolState{
-		tokenID:         pp.tokenID,
-		totalAmount:     pp.totalAmount,
-		rewardsPerShare: rewardsPerShare,
+		tokenID:     pp.tokenID,
+		totalAmount: pp.totalAmount,
 	}
 }
 
 func NewPdexv3StakingPoolState() *Pdexv3StakingPoolState {
-	return &Pdexv3StakingPoolState{
-		rewardsPerShare: make(map[common.Hash]*big.Int),
-	}
+	return &Pdexv3StakingPoolState{}
 }
 
 func NewPdexv3StakingPoolStateWithValue(
-	tokenID string, totalAmount uint64, rewardsPerShare map[common.Hash]*big.Int,
+	tokenID string, totalAmount uint64,
 ) *Pdexv3StakingPoolState {
 	return &Pdexv3StakingPoolState{
-		tokenID:         tokenID,
-		totalAmount:     totalAmount,
-		rewardsPerShare: rewardsPerShare,
+		tokenID:     tokenID,
+		totalAmount: totalAmount,
 	}
 }
 

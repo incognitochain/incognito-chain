@@ -3,17 +3,14 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type Pdexv3StakerState struct {
-	nftID               common.Hash
-	liquidity           uint64
-	rewards             map[common.Hash]uint64
-	lastRewardsPerShare map[common.Hash]*big.Int
+	nftID     common.Hash
+	liquidity uint64
 }
 
 func (staker *Pdexv3StakerState) NftID() common.Hash {
@@ -24,25 +21,13 @@ func (staker *Pdexv3StakerState) Liquidity() uint64 {
 	return staker.liquidity
 }
 
-func (staker *Pdexv3StakerState) Rewards() map[common.Hash]uint64 {
-	return staker.rewards
-}
-
-func (staker *Pdexv3StakerState) LastRewardsPerShare() map[common.Hash]*big.Int {
-	return staker.lastRewardsPerShare
-}
-
 func (staker *Pdexv3StakerState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID               common.Hash              `json:"NftID"`
-		Liquidity           uint64                   `json:"Liquidity"`
-		Rewards             map[common.Hash]uint64   `json:"Rewards"`
-		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
+		NftID     common.Hash `json:"NftID"`
+		Liquidity uint64      `json:"Liquidity"`
 	}{
-		NftID:               staker.nftID,
-		Liquidity:           staker.liquidity,
-		Rewards:             staker.rewards,
-		LastRewardsPerShare: staker.lastRewardsPerShare,
+		NftID:     staker.nftID,
+		Liquidity: staker.liquidity,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -52,10 +37,8 @@ func (staker *Pdexv3StakerState) MarshalJSON() ([]byte, error) {
 
 func (staker *Pdexv3StakerState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID               common.Hash              `json:"NftID"`
-		Liquidity           uint64                   `json:"Liquidity"`
-		Rewards             map[common.Hash]uint64   `json:"Rewards"`
-		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
+		NftID     common.Hash `json:"NftID"`
+		Liquidity uint64      `json:"Liquidity"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -63,30 +46,22 @@ func (staker *Pdexv3StakerState) UnmarshalJSON(data []byte) error {
 	}
 	staker.nftID = temp.NftID
 	staker.liquidity = temp.Liquidity
-	staker.rewards = temp.Rewards
-	staker.lastRewardsPerShare = temp.LastRewardsPerShare
 	return nil
 }
 
 func (staker *Pdexv3StakerState) Clone() *Pdexv3StakerState {
 	return &Pdexv3StakerState{
-		nftID:               staker.nftID,
-		liquidity:           staker.liquidity,
-		rewards:             staker.rewards,
-		lastRewardsPerShare: staker.lastRewardsPerShare,
+		nftID:     staker.nftID,
+		liquidity: staker.liquidity,
 	}
 }
 
 func NewPdexv3StakerState() *Pdexv3StakerState { return &Pdexv3StakerState{} }
 
-func NewPdexv3StakerStateWithValue(
-	nftID common.Hash, liquidity uint64,
-	rewards map[common.Hash]uint64, lastRewardsPerShare map[common.Hash]*big.Int) *Pdexv3StakerState {
+func NewPdexv3StakerStateWithValue(nftID common.Hash, liquidity uint64) *Pdexv3StakerState {
 	return &Pdexv3StakerState{
-		nftID:               nftID,
-		liquidity:           liquidity,
-		rewards:             rewards,
-		lastRewardsPerShare: lastRewardsPerShare,
+		nftID:     nftID,
+		liquidity: liquidity,
 	}
 }
 

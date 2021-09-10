@@ -80,6 +80,9 @@ var (
 	pdexv3PoolPairStakingPoolFeePrefix      = []byte("pdexv3-poolpair-stakingpoolfee-")
 	pdexv3ShareTradingFeePrefix             = []byte("pdexv3-share-tradingfee-")
 	pdexv3ShareLastLpFeesPerSharePrefix     = []byte("pdexv3-share-lastlpfeespershare-")
+	pdexv3StakingPoolRewardPerSharePrefix   = []byte("pdexv3-stakingpool-rewardpershare-")
+	pdexv3StakerRewardPrefix                = []byte("pdexv3-staker-reward-")
+	pdexv3StakerLastRewardPerSharePrefix    = []byte("pdexv3-staker-lastrewardpershare-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -671,6 +674,21 @@ func GetPdexv3ShareTradingFeesPrefix() []byte {
 
 func GetPdexv3ShareLastLpFeePerSharesPrefix() []byte {
 	hash := common.HashH(pdexv3ShareLastLpFeesPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3StakingPoolRewardPerSharePrefix() []byte {
+	hash := common.HashH(pdexv3StakingPoolRewardPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3StakerReward() []byte {
+	hash := common.HashH(pdexv3StakerRewardPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3StakerLastRewardPerShare() []byte {
+	hash := common.HashH(pdexv3StakerLastRewardPerSharePrefix)
 	return hash[:prefixHashKeyLength]
 }
 
