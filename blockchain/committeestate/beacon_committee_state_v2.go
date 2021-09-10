@@ -103,7 +103,7 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 	}
 
 	b.addData(env)
-	b.setHashes(env.PreviousBlockHashes)
+	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {

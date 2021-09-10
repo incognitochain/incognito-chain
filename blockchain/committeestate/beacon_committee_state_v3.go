@@ -141,8 +141,8 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
 
-	b.addData(env)
-	b.setHashes(env.PreviousBlockHashes)
+	b.addDataToEnvironment(env)
+	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -370,7 +370,7 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	return committeeChange
 }
 
-func (b *BeaconCommitteeStateV3) addData(env *BeaconCommitteeStateEnvironment) {
+func (b *BeaconCommitteeStateV3) addDataToEnvironment(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
 	env.newAllRoles = append([]string{}, env.newUnassignedCommonPool...)
