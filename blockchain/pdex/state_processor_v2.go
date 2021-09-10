@@ -22,6 +22,7 @@ type stateProcessorV2 struct {
 	pairHashCache   map[string]string
 	withdrawTxCache map[string]uint64
 	rewardCache     map[string]map[common.Hash]uint64
+	receiverCache   map[string]map[common.Hash]metadataPdexv3.ReceiverInfo
 	stateProcessorBase
 }
 
@@ -29,6 +30,7 @@ func (sp *stateProcessorV2) clearCache() {
 	sp.pairHashCache = make(map[string]string)
 	sp.withdrawTxCache = make(map[string]uint64)
 	sp.rewardCache = make(map[string]map[common.Hash]uint64)
+	sp.receiverCache = make(map[string]map[common.Hash]metadataPdexv3.ReceiverInfo)
 }
 
 func (sp *stateProcessorV2) addLiquidity(
@@ -768,13 +770,23 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
+
+		_, found := sp.receiverCache[actionData.TxReqID.String()]
+		if !found {
+			sp.receiverCache[actionData.TxReqID.String()] = map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		}
+		sp.receiverCache[actionData.TxReqID.String()][actionData.TokenID] = actionData.Receiver
 	} else {
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeFailedStatus
 	}
 
+	if reqTrackStatus == metadataPdexv3.WithdrawProtocolFeeSuccessStatus && !actionData.IsLastInst {
+		return pairs, nil
+	}
+
 	withdrawalReqStatus := metadataPdexv3.WithdrawalLPFeeStatus{
 		Status:    reqTrackStatus,
-		Receivers: actionData.Receivers,
+		Receivers: sp.receiverCache[actionData.TxReqID.String()],
 	}
 	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
 
@@ -1140,13 +1152,23 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 		share.lastRewardsPerShare = pool.RewardsPerShare()
 
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardSuccessStatus
+
+		_, found := sp.receiverCache[actionData.TxReqID.String()]
+		if !found {
+			sp.receiverCache[actionData.TxReqID.String()] = map[common.Hash]metadataPdexv3.ReceiverInfo{}
+		}
+		sp.receiverCache[actionData.TxReqID.String()][actionData.TokenID] = actionData.Receiver
 	} else {
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardFailedStatus
 	}
 
+	if reqTrackStatus == metadataPdexv3.WithdrawProtocolFeeSuccessStatus && !actionData.IsLastInst {
+		return pools, nil
+	}
+
 	withdrawalReqStatus := metadataPdexv3.WithdrawalStakingRewardStatus{
 		Status:    reqTrackStatus,
-		Receivers: actionData.Receivers,
+		Receivers: sp.receiverCache[actionData.TxReqID.String()],
 	}
 	withdrawalReqStatusBytes, _ := json.Marshal(withdrawalReqStatus)
 

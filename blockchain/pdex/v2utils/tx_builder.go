@@ -174,10 +174,7 @@ func WithdrawLPFee(
 		return nil, nil
 	}
 
-	receiver, ok := instContent.Receivers[instContent.TokenID]
-	if !ok {
-		return nil, nil
-	}
+	receiver := instContent.Receiver
 	receiverAddress := receiver.Address
 
 	if instContent.ShardID != shardID || receiver.Amount == 0 {
@@ -273,10 +270,7 @@ func WithdrawStakingReward(
 		return nil, nil
 	}
 
-	receiver, ok := instContent.Receivers[instContent.TokenID]
-	if !ok {
-		return nil, nil
-	}
+	receiver := instContent.Receiver
 	receiverAddress := receiver.Address
 
 	if instContent.ShardID != shardID || receiver.Amount == 0 {

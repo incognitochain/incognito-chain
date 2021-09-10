@@ -67,7 +67,7 @@ func BuildWithdrawLPFeeInsts(
 			PoolPairID: pairID,
 			NftID:      nftID,
 			TokenID:    common.Hash{},
-			Receivers:  map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			Receiver:   metadataPdexv3.ReceiverInfo{},
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -93,12 +93,14 @@ func BuildWithdrawLPFeeInsts(
 	})
 
 	insts := [][]string{}
-	for _, tokenID := range keys {
+	for i, tokenID := range keys {
+		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PoolPairID: pairID,
 			NftID:      nftID,
 			TokenID:    tokenID,
-			Receivers:  receivers,
+			Receiver:   receivers[tokenID],
+			IsLastInst: isLastInstOfReqTx,
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -209,7 +211,7 @@ func BuildWithdrawStakingRewardInsts(
 			StakingPoolID: stakingPoolID,
 			NftID:         nftID,
 			TokenID:       common.Hash{},
-			Receivers:     map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			Receiver:      metadataPdexv3.ReceiverInfo{},
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
 		}
@@ -235,12 +237,14 @@ func BuildWithdrawStakingRewardInsts(
 	})
 
 	insts := [][]string{}
-	for _, tokenID := range keys {
+	for i, tokenID := range keys {
+		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,
 			NftID:         nftID,
 			TokenID:       tokenID,
-			Receivers:     receivers,
+			Receiver:      receivers[tokenID],
+			IsLastInst:    isLastInstOfReqTx,
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
 		}
