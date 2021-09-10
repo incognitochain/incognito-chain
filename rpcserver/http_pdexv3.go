@@ -570,7 +570,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 	}
 
 	// payment address v2
-	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.ProtocolFundAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize paymentAddress: %v", err))
 	}
