@@ -137,7 +137,7 @@ func (mintResponse MintPDEXGenesisResponse) VerifyMinerCreatedTxBeforeGettingInB
 			continue
 		}
 		paymentAddress := keyWallet.KeySet.PaymentAddress
-		if ok := mintCoin.CheckCoinValid(paymentAddress, mintResponse.SharedRandom, mintResponse.MintingAmount); !ok {
+		if ok := mintCoin.CheckCoinValid(paymentAddress, mintResponse.SharedRandom, instContent.MintingAmount); !ok {
 			continue
 		}
 
