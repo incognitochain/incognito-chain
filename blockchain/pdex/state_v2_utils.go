@@ -190,14 +190,6 @@ func (staker *Staker) Clone() *Staker {
 	return res
 }
 
-/*func (staker *Staker) cloneState() *Staker {*/
-//res := NewStaker()
-//res.liquidity = staker.liquidity
-//res.lastUpdatedBeaconHeight = staker.lastUpdatedBeaconHeight
-//res.rewards = staker.rewards
-//return res
-/*}*/
-
 func (staker *Staker) getDiff(
 	stakingPoolID, nftID string, compareStaker *Staker, stateChange *v2utils.StateChange,
 ) *v2utils.StateChange {
