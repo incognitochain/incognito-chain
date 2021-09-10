@@ -215,10 +215,10 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
-//assignToSync assign validatrors to syncPool
+//assignToSyncPool assign validatrors to syncPool
 // update beacon committee state and committeechange
 // UPDATE SYNC POOL ONLY
-func (b *BeaconCommitteeStateV3) assignToSync(
+func (b *BeaconCommitteeStateV3) assignToSyncPool(
 	shardID byte,
 	candidates []string,
 	committeeChange *CommitteeChange,
@@ -261,7 +261,7 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction)
+	candidates, newCommitteeChange, returnStakingInstruction, err := b.classifyValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction)
 	if err != nil {
 		return newCommitteeChange, returnStakingInstruction, err
 	}
@@ -278,9 +278,9 @@ func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
 	newCommitteeChange, candidates := b.getCandidatesForRandomAssignment(committeeChange)
-	assignedCandidates := b.assignCandidates(candidates, rand, numberOfValidator)
+	assignedCandidates := b.processRandomAssignment(candidates, rand, numberOfValidator)
 	for shardID, candidates := range assignedCandidates {
-		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange)
+		newCommitteeChange = b.assignToSyncPool(shardID, candidates, newCommitteeChange)
 	}
 	return newCommitteeChange
 }

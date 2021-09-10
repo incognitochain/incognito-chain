@@ -200,7 +200,7 @@ func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDelet
 		publicKey,
 		stakerInfo.TxStakingID().String(),
 	)
-	committeeChange = b.removeFromState(committeePublicKeyStruct, publicKey, committeeChange)
+	committeeChange = b.deleteStakerInfo(committeePublicKeyStruct, publicKey, committeeChange)
 
 	return returnStakingInstruction, committeeChange
 }
@@ -214,7 +214,7 @@ func buildReturnStakingInstruction(
 	return returnStakingInstruction
 }
 
-func (b *beaconCommitteeStateSlashingBase) removeFromState(committeePublicKeyStruct incognitokey.CommitteePublicKey, committeePublicKey string, committeeChange *CommitteeChange) *CommitteeChange {
+func (b *beaconCommitteeStateSlashingBase) deleteStakerInfo(committeePublicKeyStruct incognitokey.CommitteePublicKey, committeePublicKey string, committeeChange *CommitteeChange) *CommitteeChange {
 	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
@@ -252,7 +252,7 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 	return newCommitteeChange
 }
 
-func (b *beaconCommitteeStateSlashingBase) assignCandidates(
+func (b *beaconCommitteeStateSlashingBase) processRandomAssignment(
 	candidates []string,
 	rand int64,
 	numberOfValidator []int,
@@ -264,7 +264,7 @@ func (b *beaconCommitteeStateSlashingBase) assignCandidates(
 func (b *beaconCommitteeStateSlashingBase) assign(
 	candidates []string, rand int64, numberOfValidator []int, committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	assignedCandidates := b.assignCandidates(candidates, rand, numberOfValidator)
+	assignedCandidates := b.processRandomAssignment(candidates, rand, numberOfValidator)
 	for shardID, tempCandidates := range assignedCandidates {
 		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
@@ -366,7 +366,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	return newCommitteeChange, returnStakingInstruction, nil
 }
 
-func (b *beaconCommitteeStateSlashingBase) getValidatorsByAutoStake(
+func (b *beaconCommitteeStateSlashingBase) classifyValidatorsByAutoStake(
 	env *BeaconCommitteeStateEnvironment,
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
@@ -408,7 +408,7 @@ func (b *beaconCommitteeStateSlashingBase) processAfterNormalSwap(
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
-	candidates, committeeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, committeeChange, returnStakingInstruction)
+	candidates, committeeChange, returnStakingInstruction, err := b.classifyValidatorsByAutoStake(env, outPublicKeys, committeeChange, returnStakingInstruction)
 	if err != nil {
 		return committeeChange, returnStakingInstruction, err
 	}
