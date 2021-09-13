@@ -563,9 +563,11 @@ TransactionLoop:
 						if currentBalance < amt || amt == 0 {
 							amt = currentBalance
 						}
-						ord.SetToken0Balance(currentBalance - amt)
-						withdrawResults[pair.state.Token0ID()] = amt
-						accepted = true
+						if amt > 0 {
+							ord.SetToken0Balance(currentBalance - amt)
+							withdrawResults[pair.state.Token0ID()] = amt
+							accepted = true
+						}
 					}
 					if _, exists := currentOrderReq.Receiver[pair.state.Token1ID()]; exists {
 						currentBalance := ord.Token1Balance()
@@ -573,9 +575,11 @@ TransactionLoop:
 						if currentBalance < amt || amt == 0 {
 							amt = currentBalance
 						}
-						ord.SetToken1Balance(currentBalance - amt)
-						withdrawResults[pair.state.Token1ID()] = amt
-						accepted = true
+						if amt > 0 {
+							ord.SetToken1Balance(currentBalance - amt)
+							withdrawResults[pair.state.Token1ID()] = amt
+							accepted = true
+						}
 					}
 
 					if !accepted {
