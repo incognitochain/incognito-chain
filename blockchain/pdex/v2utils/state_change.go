@@ -1,27 +1,41 @@
 package v2utils
 
 type StateChange struct {
-	PoolPairs   map[string]*PoolPairChange
-	OrderIDs    map[string]bool
-	StakingPool map[string]map[string]*StakingPoolChange
+	PoolPairs    map[string]*PoolPairChange
+	OrderIDs     map[string]bool
+	StakingPools map[string]*StakingPoolChange
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
-		PoolPairs:   make(map[string]*PoolPairChange),
-		OrderIDs:    make(map[string]bool),
-		StakingPool: make(map[string]map[string]*StakingPoolChange),
+		PoolPairs:    make(map[string]*PoolPairChange),
+		OrderIDs:     make(map[string]bool),
+		StakingPools: make(map[string]*StakingPoolChange),
 	}
 }
 
 type StakingPoolChange struct {
-	IsChanged bool
-	TokenIDs  map[string]bool
+	Stakers         map[string]*StakerChange
+	RewardsPerShare map[string]bool
+}
+
+type StakerChange struct {
+	isChanged           bool
+	Rewards             map[string]bool
+	LastRewardsPerShare map[string]bool
 }
 
 func NewStakingChange() *StakingPoolChange {
 	return &StakingPoolChange{
-		TokenIDs: make(map[string]bool),
+		Stakers:         make(map[string]*StakerChange),
+		RewardsPerShare: make(map[string]bool),
+	}
+}
+
+func NewStakerChange() *StakerChange {
+	return &StakerChange{
+		Rewards:             make(map[string]bool),
+		LastRewardsPerShare: make(map[string]bool),
 	}
 }
 

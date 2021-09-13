@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type StakingPoolState struct {
@@ -262,4 +263,74 @@ func (s *StakingPoolState) AddReward(
 	tempRewardsPerShare[tokenID] = newLPFeesPerShare
 
 	s.SetRewardsPerShare(tempRewardsPerShare)
+}
+
+func initStakingPools(stateDB *statedb.StateDB, beaconHeight uint64) (map[string]*StakingPoolState, error) {
+	stakingPoolStates, err := statedb.GetPdexv3StakingPools(stateDB)
+	if err != nil {
+		return nil, err
+	}
+
+	stakingPools := map[string]*StakingPoolState{}
+	for stakingPoolID, stakingPoolState := range stakingPoolStates {
+		stakerStates, err := statedb.GetPdexv3Stakers(stateDB, stakingPoolID)
+		if err != nil {
+			return nil, err
+		}
+		stakers := make(map[string]*Staker)
+		for nftID, stakerState := range stakerStates {
+			stakers[nftID] = NewStakerWithValue(stakerState.Liquidity(), stakerState.Rewards(), stakerState.LastRewardsPerShare())
+		}
+		stakingPools[stakingPoolID] = NewStakingPoolStateWithValue(
+			stakingPoolState.TotalAmount(),
+			stakers,
+			stakingPoolState.RewardsPerShare(),
+		)
+	}
+	return stakingPools, nil
+}
+
+func (s *StakingPoolState) updateToDB(
+	env StateEnvironment, stakingPoolID string, stakingPoolChange *v2utils.StakingPoolChange,
+) error {
+	for tokenID, value := range s.rewardsPerShare {
+		if stakingPoolChange.RewardsPerShare[tokenID.String()] {
+			err := statedb.StorePdexv3StakingPoolRewardPerShare(
+				env.StateDB(), stakingPoolID,
+				statedb.NewPdexv3StakingPoolRewardPerShareStateWithValue(tokenID, value),
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for nftID, staker := range s.stakers {
+		stakerChange, found := stakingPoolChange.Stakers[nftID]
+		if !found || stakerChange == nil {
+			continue
+		}
+		for tokenID, value := range staker.lastRewardsPerShare {
+			if stakerChange.LastRewardsPerShare[tokenID.String()] {
+				err := statedb.StorePdexv3StakerLastRewardPerShare(
+					env.StateDB(), stakingPoolID, nftID,
+					statedb.NewPdexv3StakerLastRewardPerShareStateWithValue(tokenID, value),
+				)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		for tokenID, value := range staker.rewards {
+			if stakerChange.Rewards[tokenID.String()] {
+				err := statedb.StorePdexv3StakerReward(
+					env.StateDB(), stakingPoolID, nftID,
+					statedb.NewPdexv3StakerRewardStateWithValue(tokenID, value),
+				)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }

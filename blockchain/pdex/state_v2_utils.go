@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type Share struct {
@@ -230,4 +231,43 @@ func addStakingPoolState(
 		}
 	}
 	return stakingPoolStates
+}
+
+func (share *Share) updateToDB(
+	env StateEnvironment, poolPairID, nftID string, shareChange *v2utils.ShareChange,
+) error {
+	if shareChange.IsChanged {
+		nftID, err := common.Hash{}.NewHashFromStr(nftID)
+		err = statedb.StorePdexv3Share(
+			env.StateDB(), poolPairID,
+			*nftID,
+			share.amount, share.tradingFees, share.lastLPFeesPerShare,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	for tokenID, value := range share.tradingFees {
+		if shareChange.TradingFees[tokenID.String()] {
+			err := statedb.StorePdexv3ShareTradingFee(
+				env.StateDB(), poolPairID, nftID,
+				statedb.NewPdexv3ShareTradingFeeStateWithValue(tokenID, value),
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for tokenID, value := range share.lastLPFeesPerShare {
+		if shareChange.LastLPFeesPerShare[tokenID.String()] {
+			err := statedb.StorePdexv3ShareLastLpFeePerShare(
+				env.StateDB(), poolPairID, nftID,
+				statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(tokenID, value),
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

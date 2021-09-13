@@ -146,7 +146,7 @@ func StorePdexv3StakingPool(
 	totalAmount uint64,
 	rewardsPerShare map[common.Hash]*big.Int,
 ) error {
-	state := NewPdexv3StakingPoolStateWithValue(tokenID, totalAmount, rewardsPerShare)
+	state := NewPdexv3StakingPoolStateWithValue(tokenID, totalAmount)
 	key := GeneratePdexv3StakingPoolObjectKey(tokenID)
 	return stateDB.SetStateObject(Pdexv3StakingPoolObjectType, key, state)
 }
@@ -160,6 +160,62 @@ func StorePdexv3Order(stateDB *StateDB, orderState Pdexv3OrderState) error {
 	v := orderState.Value()
 	key := GeneratePdexv3OrderObjectKey(orderState.PoolPairID(), v.Id())
 	return stateDB.SetStateObject(Pdexv3OrderObjectType, key, &orderState)
+}
+
+func StorePdexv3PoolPairLpFeePerShare(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairLpFeePerShareState,
+) error {
+	key := GeneratePdexv3PoolPairLpFeePerShareObjectKey(poolPairID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3PoolPairLpFeePerShareObjectType, key, state)
+}
+
+func StorePdexv3PoolPairProtocolFee(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairProtocolFeeState,
+) error {
+	key := GeneratePdexv3PoolPairProtocolFeeObjectKey(poolPairID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3PoolPairProtocolFeeObjectType, key, state)
+}
+
+func StorePdexv3PoolPairStakingPoolFee(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairStakingPoolFeeState,
+) error {
+	key := GeneratePdexv3PoolPairStakingPoolFeeObjectKey(poolPairID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3PoolPairStakingPoolFeeObjectType, key, state)
+}
+
+func StorePdexv3ShareTradingFee(
+	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3ShareTradingFeeState,
+) error {
+	key := GeneratePdexv3ShareTradingFeeObjectKey(poolPairID, nftID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3ShareTradingFeeObjectType, key, state)
+}
+
+func StorePdexv3ShareLastLpFeePerShare(
+	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3ShareLastLpFeePerShareState,
+) error {
+	key := GeneratePdexv3ShareLastLpFeePerShareObjectKey(poolPairID, nftID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3ShareLastLPFeesPerShareObjectType, key, state)
+}
+
+func StorePdexv3StakingPoolRewardPerShare(
+	stateDB *StateDB, stakingPoolID string, state *Pdexv3StakingPoolRewardPerShareState,
+) error {
+	key := GeneratePdexv3StakingPoolRewardPerShareObjectKey(stakingPoolID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3StakingPoolRewardPerShareObjectType, key, state)
+}
+
+func StorePdexv3StakerLastRewardPerShare(
+	stateDB *StateDB, stakingPoolID, nftID string, state *Pdexv3StakerLastRewardPerShareState,
+) error {
+	key := GeneratePdexv3StakerLastRewardPerShareObjectKey(stakingPoolID, nftID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3StakerLastRewardPerShareObjectType, key, state)
+}
+
+func StorePdexv3StakerReward(
+	stateDB *StateDB, stakingPoolID, nftID string, state *Pdexv3StakerRewardState,
+) error {
+	key := GeneratePdexv3StakerRewardObjectKey(stakingPoolID, nftID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3StakerRewardObjectType, key, state)
 }
 
 func DeletePdexv3Order(stateDB *StateDB, pairID, orderID string) error {

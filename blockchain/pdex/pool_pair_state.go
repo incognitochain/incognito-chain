@@ -11,17 +11,73 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type PoolPairState struct {
-	state     rawdbv2.Pdexv3PoolPair
-	shares    map[string]*Share
-	orderbook Orderbook
+	state           rawdbv2.Pdexv3PoolPair
+	shares          map[string]*Share
+	orderbook       Orderbook
+	lpFeesPerShare  map[common.Hash]*big.Int
+	protocolFees    map[common.Hash]uint64
+	stakingPoolFees map[common.Hash]uint64
+}
+
+func NewPoolPairState() *PoolPairState {
+	return &PoolPairState{
+		shares:          make(map[string]*Share),
+		state:           *rawdbv2.NewPdexv3PoolPair(),
+		orderbook:       Orderbook{[]*Order{}},
+		lpFeesPerShare:  make(map[common.Hash]*big.Int),
+		protocolFees:    make(map[common.Hash]uint64),
+		stakingPoolFees: make(map[common.Hash]uint64),
+	}
+}
+
+func NewPoolPairStateWithValue(
+	state rawdbv2.Pdexv3PoolPair,
+	shares map[string]*Share,
+	orderbook Orderbook,
+	lpFeesPerShare map[common.Hash]*big.Int,
+	protocolFees, stakingPoolFees map[common.Hash]uint64,
+) *PoolPairState {
+	return &PoolPairState{
+		state:           state,
+		shares:          shares,
+		orderbook:       orderbook,
+		lpFeesPerShare:  lpFeesPerShare,
+		protocolFees:    protocolFees,
+		stakingPoolFees: stakingPoolFees,
+	}
 }
 
 func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
 	return poolPairState.state
+}
+
+func (poolPairState *PoolPairState) LpFeesPerShare() map[common.Hash]*big.Int {
+	res := make(map[common.Hash]*big.Int)
+	for k, v := range poolPairState.lpFeesPerShare {
+		res[k] = big.NewInt(0).SetBytes(v.Bytes())
+	}
+	return res
+}
+
+func (poolPairState *PoolPairState) ProtocolFees() map[common.Hash]uint64 {
+	res := make(map[common.Hash]uint64)
+	for k, v := range poolPairState.protocolFees {
+		res[k] = v
+	}
+	return res
+}
+
+func (poolPairState *PoolPairState) StakingPoolFees() map[common.Hash]uint64 {
+	res := make(map[common.Hash]uint64)
+	for k, v := range poolPairState.stakingPoolFees {
+		res[k] = v
+	}
+	return res
 }
 
 func (poolPairState *PoolPairState) Shares() map[string]*Share {
@@ -35,13 +91,19 @@ func (poolPairState *PoolPairState) Shares() map[string]*Share {
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State     *rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares    map[string]*Share       `json:"Shares"`
-		Orderbook Orderbook               `json:"Orderbook"`
+		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
+		Shares          map[string]*Share        `json:"Shares"`
+		Orderbook       Orderbook                `json:"Orderbook"`
+		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
+		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
+		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
 	}{
-		State:     &poolPairState.state,
-		Shares:    poolPairState.shares,
-		Orderbook: poolPairState.orderbook,
+		State:           &poolPairState.state,
+		Shares:          poolPairState.shares,
+		Orderbook:       poolPairState.orderbook,
+		LpFeesPerShare:  poolPairState.lpFeesPerShare,
+		ProtocolFees:    poolPairState.protocolFees,
+		StakingPoolFees: poolPairState.stakingPoolFees,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -51,9 +113,12 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State     *rawdbv2.Pdexv3PoolPair `json:"State"`
-		Shares    map[string]*Share       `json:"Shares"`
-		Orderbook Orderbook               `json:"Orderbook"`
+		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
+		Shares          map[string]*Share        `json:"Shares"`
+		Orderbook       Orderbook                `json:"Orderbook"`
+		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
+		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
+		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -64,6 +129,9 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 		poolPairState.state = *temp.State
 	}
 	poolPairState.orderbook = temp.Orderbook
+	poolPairState.lpFeesPerShare = temp.LpFeesPerShare
+	poolPairState.protocolFees = temp.ProtocolFees
+	poolPairState.stakingPoolFees = temp.StakingPoolFees
 	return nil
 }
 
@@ -85,34 +153,14 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		0, contributions[0].Amount(), contributions[1].Amount(),
 		token0VirtualAmount, token1VirtualAmount,
 		contributions[0].Amplifier(),
-		map[common.Hash]*big.Int{},
-		map[common.Hash]uint64{}, map[common.Hash]uint64{},
 	)
 	return NewPoolPairStateWithValue(
 		*poolPairState,
 		make(map[string]*Share),
 		Orderbook{[]*Order{}},
+		make(map[common.Hash]*big.Int),
+		make(map[common.Hash]uint64), make(map[common.Hash]uint64),
 	)
-}
-
-func NewPoolPairState() *PoolPairState {
-	return &PoolPairState{
-		shares:    make(map[string]*Share),
-		state:     *rawdbv2.NewPdexv3PoolPair(),
-		orderbook: Orderbook{[]*Order{}},
-	}
-}
-
-func NewPoolPairStateWithValue(
-	state rawdbv2.Pdexv3PoolPair,
-	shares map[string]*Share,
-	orderbook Orderbook,
-) *PoolPairState {
-	return &PoolPairState{
-		state:     state,
-		shares:    shares,
-		orderbook: orderbook,
-	}
 }
 
 func (p *PoolPairState) getContributionsByOrder(
@@ -278,7 +326,7 @@ func (p *PoolPairState) updateShareValue(
 	}
 
 	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-	for tokenID, value := range p.state.LPFeesPerShare() {
+	for tokenID, value := range p.lpFeesPerShare {
 		share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
 	}
 
@@ -374,7 +422,7 @@ func (p *PoolPairState) RecomputeLPFee(
 		return nil, fmt.Errorf("Share not found")
 	}
 
-	curLPFeesPerShare := p.state.LPFeesPerShare()
+	curLPFeesPerShare := p.lpFeesPerShare
 	oldLPFeesPerShare := curShare.lastLPFeesPerShare
 
 	for tokenID := range curLPFeesPerShare {
@@ -424,4 +472,88 @@ func (p *PoolPairState) cloneShare(nftID string) map[string]*Share {
 		}
 	}
 	return res
+}
+
+func (p *PoolPairState) updateToDB(
+	env StateEnvironment, poolPairID string, poolPairChange *v2utils.PoolPairChange,
+) error {
+	var err error
+	if poolPairChange.IsChanged {
+		err = statedb.StorePdexv3PoolPair(env.StateDB(), poolPairID, p.state)
+		if err != nil {
+			return err
+		}
+	}
+	for nftID, share := range p.shares {
+		shareChange, found := poolPairChange.Shares[nftID]
+		if !found || shareChange == nil {
+			return errors.New("Can not found share change")
+		}
+		err := share.updateToDB(env, poolPairID, nftID, shareChange)
+		if err != nil {
+			return err
+		}
+	}
+	for tokenID, value := range p.lpFeesPerShare {
+		if poolPairChange.LpFeesPerShare[tokenID.String()] {
+			statedb.StorePdexv3PoolPairLpFeePerShare(
+				env.StateDB(), poolPairID,
+				statedb.NewPdexv3PoolPairLpFeePerShareStateWithValue(tokenID, value),
+			)
+		}
+	}
+	for tokenID, value := range p.protocolFees {
+		if poolPairChange.ProtocolFees[tokenID.String()] {
+			statedb.StorePdexv3PoolPairProtocolFee(
+				env.StateDB(), poolPairID,
+				statedb.NewPdexv3PoolPairProtocolFeeStateWithValue(tokenID, value),
+			)
+		}
+	}
+	for tokenID, value := range p.stakingPoolFees {
+		if poolPairChange.StakingPoolFees[tokenID.String()] {
+			statedb.StorePdexv3PoolPairStakingPoolFee(
+				env.StateDB(), poolPairID,
+				statedb.NewPdexv3PoolPairStakingPoolFeeStateWithValue(tokenID, value),
+			)
+		}
+	}
+	return nil
+}
+
+func initPoolPairStates(stateDB *statedb.StateDB, beaconHeight uint64) (map[string]*PoolPairState, error) {
+	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	poolPairs := make(map[string]*PoolPairState)
+	for poolPairID, poolPairState := range poolPairsStates {
+		shares := make(map[string]*Share)
+		shareStates := make(map[string]statedb.Pdexv3ShareState)
+		shareStates, err = statedb.GetPdexv3Shares(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		for nftID, shareState := range shareStates {
+			shares[nftID] = NewShareWithValue(
+				shareState.Amount(),
+				shareState.TradingFees(), shareState.LastLPFeesPerShare(),
+			)
+		}
+
+		orderbook := &Orderbook{[]*Order{}}
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairState.PoolPairID())
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range orderMap {
+			v := item.Value()
+			orderbook.InsertOrder(&v)
+		}
+		poolPair := NewPoolPairStateWithValue(
+			poolPairState.Value(), shares, *orderbook,
+		)
+		poolPairs[poolPairID] = poolPair
+	}
+	return nil, nil
 }
