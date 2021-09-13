@@ -1214,18 +1214,22 @@ func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Incorrect parameter length"))
 	}
-	s, ok := arrayParams[0].(string)
-	txID, err := common.Hash{}.NewHashFromStr(s)
-	if !ok || err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Invalid TxID from parameters"))
+	var statusSuffix []byte
+	for _, item := range arrayParams {
+		s, ok := item.(string)
+		h, err := common.Hash{}.NewHashFromStr(s)
+		if !ok || err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				errors.New("Invalid hash from parameters"))
+		}
+		statusSuffix = append(statusSuffix, h[:]...)
 	}
 
 	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawOrderStatusPrefix(),
-		txID[:],
+		statusSuffix,
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
@@ -1416,11 +1420,11 @@ func createPdexv3WithdrawOrderRequestTransaction(
 ) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError) {
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		PoolPairID string
-		OrderID    string
-		TokenID    common.Hash
-		Amount     Uint64Reader
-		NftID      common.Hash
+		PoolPairID       string
+		OrderID          string
+		WithdrawTokenIDs []common.Hash
+		Amount           Uint64Reader
+		NftID            common.Hash
 	}{}
 
 	// parse params & metadata
@@ -1429,7 +1433,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
 	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
-		mdReader.PoolPairID, mdReader.OrderID, mdReader.TokenID, uint64(mdReader.Amount),
+		mdReader.PoolPairID, mdReader.OrderID, uint64(mdReader.Amount),
 		nil, mdReader.NftID, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
 
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
@@ -1438,7 +1442,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 			fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
 	}
 	paramSelect.SetTokenID(md.NftID)
-	tokenList := []common.Hash{md.NftID, md.TokenID}
+	tokenList := append(mdReader.WithdrawTokenIDs, md.NftID)
 	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {

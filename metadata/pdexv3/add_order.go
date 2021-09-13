@@ -52,7 +52,7 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
 	}
-	
+
 	// OTAReceiver check
 	for _, item := range req.Receiver {
 		if !item.IsValid() {
@@ -90,6 +90,11 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Missing refund OTAReceiver for token %v", tokenID))
 		}
+	}
+
+	if req.MinAcceptableAmount == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError,
+			fmt.Errorf("MinAcceptableAmount cannot be 0"))
 	}
 
 	// Type vs burned token id + amount check
