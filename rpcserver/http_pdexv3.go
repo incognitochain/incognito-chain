@@ -820,8 +820,12 @@ func (httpServer *HttpServer) handleGetPdexv3ContributionStatus(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handleWithdrawLiquidityV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1081,14 +1085,20 @@ func (httpServer *HttpServer) handleGetPdexv3WithdrawLiquidityStatus(params inte
 		statedb.Pdexv3WithdrawLiquidityStatusPrefix(),
 		txID.Bytes(),
 	)
-	Logger.log.Info("[pdex] 2")
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
-func (httpServer *HttpServer) handleGetPdexv3MintNftStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPdexv3MintNftStatus(
+	params interface{}, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
@@ -1110,7 +1120,12 @@ func (httpServer *HttpServer) handleGetPdexv3MintNftStatus(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 // --- Trade - Order ---
@@ -1173,8 +1188,12 @@ func (httpServer *HttpServer) handlePdexv3GetTradeStatus(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get TradeStatus data"))
 	}
-
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handlePdexv3GetAddOrderStatus(params interface{}, closeChan <-chan struct{},
@@ -1202,8 +1221,12 @@ func (httpServer *HttpServer) handlePdexv3GetAddOrderStatus(params interface{}, 
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get AddOrderStatus data"))
 	}
-
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interface{}, closeChan <-chan struct{},
@@ -1231,8 +1254,12 @@ func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get WithdrawOrderStatus data"))
 	}
-
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 // --- Helpers ---
@@ -1661,7 +1688,12 @@ func (httpServer *HttpServer) handleGetPdexv3StakingStatus(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handlePdexv3Unstaking(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1811,7 +1843,12 @@ func (httpServer *HttpServer) handleGetPdexv3UnstakingStatus(params interface{},
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	return string(data), nil
+	res := make(map[string]interface{})
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
