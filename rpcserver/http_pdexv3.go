@@ -649,7 +649,7 @@ func (httpServer *HttpServer) handleAddLiquidityV3(params interface{}, closeChan
 	var res interface{}
 	data, isPRV, err := httpServer.createRawTxAddLiquidityV3(params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	base58CheckData := data.Base58CheckData
 	newParam := make([]interface{}, 0)
@@ -657,7 +657,7 @@ func (httpServer *HttpServer) handleAddLiquidityV3(params interface{}, closeChan
 
 	res, err = sendCreatedTransaction(httpServer, newParam, isPRV, closeChan)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -832,14 +832,14 @@ func (httpServer *HttpServer) handleWithdrawLiquidityV3(params interface{}, clos
 	var res interface{}
 	data, err := httpServer.createRawTxWithdrawLiquidityV3(params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	base58CheckData := data.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	res, err = sendCreatedTransaction(httpServer, newParam, false, closeChan)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -977,7 +977,7 @@ func (httpServer *HttpServer) handlePdexv3MintNft(params interface{}, closeChan 
 	var res interface{}
 	data, err := httpServer.createRawTxPdexv3MintNft(params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	base58CheckData := data.Base58CheckData
 	newParam := make([]interface{}, 0)
@@ -985,7 +985,7 @@ func (httpServer *HttpServer) handlePdexv3MintNft(params interface{}, closeChan 
 
 	res, err = sendCreatedTransaction(httpServer, newParam, true, closeChan)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -1134,7 +1134,7 @@ func (httpServer *HttpServer) handlePdexv3TxTradeRequest(params interface{}, clo
 	// create tx
 	data, isPRV, err := createPdexv3TradeRequestTransaction(httpServer, params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	createTxResult := []interface{}{data.Base58CheckData}
 	// send tx
@@ -1145,7 +1145,7 @@ func (httpServer *HttpServer) handlePdexv3TxAddOrderRequest(params interface{}, 
 	// create tx
 	data, isPRV, err := createPdexv3AddOrderRequestTransaction(httpServer, params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	createTxResult := []interface{}{data.Base58CheckData}
 	// send tx
@@ -1156,7 +1156,7 @@ func (httpServer *HttpServer) handlePdexv3TxWithdrawOrderRequest(params interfac
 	// create tx
 	data, err := createPdexv3WithdrawOrderRequestTransaction(httpServer, params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	createTxResult := []interface{}{data.Base58CheckData}
 	// send tx
@@ -1348,7 +1348,7 @@ func createPdexv3TradeRequestTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
@@ -1424,7 +1424,7 @@ func createPdexv3AddOrderRequestTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
@@ -1498,7 +1498,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
@@ -1521,7 +1521,7 @@ func sendCreatedTransaction(httpServer *HttpServer, params interface{}, isPRV bo
 		sendTxResult, err = httpServer.handleSendRawPrivacyCustomTokenTransaction(params, closeChan)
 	}
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	return sendTxResult, nil
 }
@@ -1530,14 +1530,14 @@ func (httpServer *HttpServer) handlePdexv3Staking(params interface{}, closeChan 
 	var res interface{}
 	data, isPRV, err := httpServer.createPdexv3StakingRawTx(params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	base58CheckData := data.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	res, err = sendCreatedTransaction(httpServer, newParam, isPRV, closeChan)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -1700,14 +1700,14 @@ func (httpServer *HttpServer) handlePdexv3Unstaking(params interface{}, closeCha
 	var res interface{}
 	data, err := httpServer.createPdexv3UnstakingRawTx(params)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	base58CheckData := data.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	res, err = sendCreatedTransaction(httpServer, newParam, false, closeChan)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	return res, nil
 }
