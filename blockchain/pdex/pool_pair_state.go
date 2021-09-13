@@ -521,33 +521,28 @@ func (p *PoolPairState) updateToDB(
 	return nil
 }
 
-func initPoolPairStates(stateDB *statedb.StateDB, beaconHeight uint64) (map[string]*PoolPairState, error) {
+func initPoolPairStates(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
 	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
 	if err != nil {
 		return nil, err
 	}
 	poolPairs := make(map[string]*PoolPairState)
 	for poolPairID, poolPairState := range poolPairsStates {
-		//get lpFeesPerShare
 		lpFeesPerShare, err := statedb.GetPdexv3PoolPairLpFeesPerShares(stateDB, poolPairID)
 		if err != nil {
 			return nil, err
 		}
-		//get protocolFees
-
-		//get staking pool fees
-
-		shares := make(map[string]*Share)
-		shareStates := make(map[string]statedb.Pdexv3ShareState)
-		shareStates, err = statedb.GetPdexv3Shares(stateDB, poolPairID)
+		protocolFees, err := statedb.GetPdexv3PoolPairProtocolFees(stateDB, poolPairID)
 		if err != nil {
 			return nil, err
 		}
-		for nftID, shareState := range shareStates {
-			shares[nftID] = NewShareWithValue(
-				shareState.Amount(),
-				shareState.TradingFees(), shareState.LastLPFeesPerShare(),
-			)
+		stakingPoolFees, err := statedb.GetPdexv3PoolPairStakingPoolFees(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		shares, err := initShares(poolPairID, stateDB)
+		if err != nil {
+			return nil, err
 		}
 
 		orderbook := &Orderbook{[]*Order{}}
@@ -561,7 +556,7 @@ func initPoolPairStates(stateDB *statedb.StateDB, beaconHeight uint64) (map[stri
 		}
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), shares, *orderbook,
-			lpFeesPerShare,
+			lpFeesPerShare, protocolFees, stakingPoolFees,
 		)
 		poolPairs[poolPairID] = poolPair
 	}

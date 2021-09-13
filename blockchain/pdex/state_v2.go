@@ -69,7 +69,6 @@ func newStateV2WithValue(
 
 func initStateV2(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 ) (*stateV2, error) {
 	paramsState, err := statedb.GetPdexv3Params(stateDB)
 	params := NewParamsWithValue(paramsState)
@@ -80,7 +79,7 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
-	poolPairs, err := initPoolPairStates(stateDB, beaconHeight)
+	poolPairs, err := initPoolPairStates(stateDB)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
-	stakingPools, err := initStakingPools(stateDB, beaconHeight)
+	stakingPools, err := initStakingPools(params.StakingPoolsShare, stateDB)
 	if err != nil {
 		return nil, err
 	}

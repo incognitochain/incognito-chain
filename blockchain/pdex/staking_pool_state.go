@@ -265,29 +265,20 @@ func (s *StakingPoolState) AddReward(
 	s.SetRewardsPerShare(tempRewardsPerShare)
 }
 
-func initStakingPools(stateDB *statedb.StateDB, beaconHeight uint64) (map[string]*StakingPoolState, error) {
-	stakingPoolStates, err := statedb.GetPdexv3StakingPools(stateDB)
-	if err != nil {
-		return nil, err
-	}
-
-	stakingPools := map[string]*StakingPoolState{}
-	for stakingPoolID, stakingPoolState := range stakingPoolStates {
-		stakerStates, err := statedb.GetPdexv3Stakers(stateDB, stakingPoolID)
+func initStakingPools(stakingPoolsShare map[string]uint, stateDB *statedb.StateDB) (map[string]*StakingPoolState, error) {
+	res := map[string]*StakingPoolState{}
+	for stakingPoolID := range stakingPoolsShare {
+		stakers, liquidity, err := initStakers(stakingPoolID, stateDB)
 		if err != nil {
 			return nil, err
 		}
-		stakers := make(map[string]*Staker)
-		for nftID, stakerState := range stakerStates {
-			stakers[nftID] = NewStakerWithValue(stakerState.Liquidity(), stakerState.Rewards(), stakerState.LastRewardsPerShare())
+		rewardsPerShare, err := statedb.GetPdexv3StakingPoolRewardsPerShare(stateDB, stakingPoolID)
+		if err != nil {
+			return nil, err
 		}
-		stakingPools[stakingPoolID] = NewStakingPoolStateWithValue(
-			stakingPoolState.TotalAmount(),
-			stakers,
-			stakingPoolState.RewardsPerShare(),
-		)
+		res[stakingPoolID] = NewStakingPoolStateWithValue(liquidity, stakers, rewardsPerShare)
 	}
-	return stakingPools, nil
+	return res, nil
 }
 
 func (s *StakingPoolState) updateToDB(

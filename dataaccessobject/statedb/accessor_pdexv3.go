@@ -140,17 +140,6 @@ func StorePdexv3NftIDs(stateDB *StateDB, nftIDs map[string]uint64) error {
 	return nil
 }
 
-func StorePdexv3StakingPool(
-	stateDB *StateDB,
-	tokenID string,
-	totalAmount uint64,
-	rewardsPerShare map[common.Hash]*big.Int,
-) error {
-	state := NewPdexv3StakingPoolStateWithValue(tokenID, totalAmount)
-	key := GeneratePdexv3StakingPoolObjectKey(tokenID)
-	return stateDB.SetStateObject(Pdexv3StakingPoolObjectType, key, state)
-}
-
 func StorePdexv3Staker(stateDB *StateDB, stakingPoolID, nftID string, state *Pdexv3StakerState) error {
 	key := GeneratePdexv3StakerObjectKey(stakingPoolID, nftID)
 	return stateDB.SetStateObject(Pdexv3StakerObjectType, key, state)
@@ -256,11 +245,6 @@ func GetPdexv3Orders(stateDB *StateDB, poolPairID string) (
 	return stateDB.iterateWithPdexv3Orders(prefixHash)
 }
 
-func GetPdexv3StakingPools(stateDB *StateDB) (map[string]*Pdexv3StakingPoolState, error) {
-	prefixHash := GetPdexv3StakingPoolsPrefix()
-	return stateDB.iterateWithPdexv3StakingPools(prefixHash)
-}
-
 func GetPdexv3Stakers(stateDB *StateDB, stakingPoolID string) (map[string]Pdexv3StakerState, error) {
 	prefixHash := generatePdexv3StakerObjectPrefix(stakingPoolID)
 	return stateDB.iterateWithPdexv3Stakers(prefixHash)
@@ -271,4 +255,53 @@ func GetPdexv3PoolPairLpFeesPerShares(stateDB *StateDB, poolPairID string) (
 ) {
 	prefixHash := generatePdexv3PoolPairLpFeePerShareObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3PoolPairLpFeesPerShare(prefixHash)
+}
+
+func GetPdexv3PoolPairProtocolFees(stateDB *StateDB, poolPairID string) (
+	map[common.Hash]uint64, error,
+) {
+	prefixHash := generatePdexv3PoolPairProtocolFeeObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairProtocolFees(prefixHash)
+}
+
+func GetPdexv3PoolPairStakingPoolFees(stateDB *StateDB, poolPairID string) (
+	map[common.Hash]uint64, error,
+) {
+	prefixHash := generatePdexv3PoolPairStakingPoolFeeObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairStakingPoolFees(prefixHash)
+}
+
+func GetPdexv3ShareTradingFees(stateDB *StateDB, poolPairID, nftID string) (
+	map[common.Hash]uint64, error,
+) {
+	prefixHash := generatePdexv3ShareTradingFeeObjectPrefix(poolPairID, nftID)
+	return stateDB.iterateWithPdexv3ShareTradingFees(prefixHash)
+}
+
+func GetPdexv3ShareLastLpFeesPerShare(stateDB *StateDB, poolPairID, nftID string) (
+	map[common.Hash]*big.Int, error,
+) {
+	prefixHash := generatePdexv3ShareLastLpFeePerShareObjectPrefix(poolPairID, nftID)
+	return stateDB.iterateWithPdexv3ShareLastLpFeesPerShare(prefixHash)
+}
+
+func GetPdexv3StakingPoolRewardsPerShare(stateDB *StateDB, stakingPoolID string) (
+	map[common.Hash]*big.Int, error,
+) {
+	prefixHash := generatePdexv3StakingPoolRewardPerShareObjectPrefix(stakingPoolID)
+	return stateDB.iterateWithPdexv3StakingPoolRewardsPerShare(prefixHash)
+}
+
+func GetPdexv3StakerRewards(stateDB *StateDB, stakingPoolID, nftID string) (
+	map[common.Hash]uint64, error,
+) {
+	prefixHash := generatePdexv3StakerRewardObjectPrefix(stakingPoolID, nftID)
+	return stateDB.iterateWithPdexv3StakerRewards(prefixHash)
+}
+
+func GetPdexv3StakerLastRewardsPerShare(stateDB *StateDB, stakingPoolID, nftID string) (
+	map[common.Hash]*big.Int, error,
+) {
+	prefixHash := generatePdexv3StakerLastRewardPerShareObjectPrefix(stakingPoolID, nftID)
+	return stateDB.iterateWithPdexv3StakerLastRewardsPerShare(prefixHash)
 }
