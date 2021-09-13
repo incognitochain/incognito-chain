@@ -265,3 +265,10 @@ func GetPdexv3Stakers(stateDB *StateDB, stakingPoolID string) (map[string]Pdexv3
 	prefixHash := generatePdexv3StakerObjectPrefix(stakingPoolID)
 	return stateDB.iterateWithPdexv3Stakers(prefixHash)
 }
+
+func GetPdexv3PoolPairLpFeesPerShares(stateDB *StateDB, poolPairID string) (
+	map[common.Hash]*big.Int, error,
+) {
+	prefixHash := generatePdexv3PoolPairLpFeePerShareObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairLpFeesPerShare(prefixHash)
+}

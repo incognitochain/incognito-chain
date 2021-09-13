@@ -528,6 +528,15 @@ func initPoolPairStates(stateDB *statedb.StateDB, beaconHeight uint64) (map[stri
 	}
 	poolPairs := make(map[string]*PoolPairState)
 	for poolPairID, poolPairState := range poolPairsStates {
+		//get lpFeesPerShare
+		lpFeesPerShare, err := statedb.GetPdexv3PoolPairLpFeesPerShares(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		//get protocolFees
+
+		//get staking pool fees
+
 		shares := make(map[string]*Share)
 		shareStates := make(map[string]statedb.Pdexv3ShareState)
 		shareStates, err = statedb.GetPdexv3Shares(stateDB, poolPairID)
@@ -552,6 +561,7 @@ func initPoolPairStates(stateDB *statedb.StateDB, beaconHeight uint64) (map[stri
 		}
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), shares, *orderbook,
+			lpFeesPerShare,
 		)
 		poolPairs[poolPairID] = poolPair
 	}
