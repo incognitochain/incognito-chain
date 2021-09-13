@@ -366,6 +366,7 @@ func buildMatchAndReturnContributionTxv2(
 	if matchAndReturnContributionValue.ShardID() != shardID {
 		return res, nil
 	}
+
 	metaData := metadataPdexv3.NewAddLiquidityResponseWithValue(
 		common.PDEContributionMatchedNReturnedChainStatus,
 		matchAndReturnContributionValue.TxReqID().String(),

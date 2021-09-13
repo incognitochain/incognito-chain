@@ -172,36 +172,6 @@ func interfaceAddrs() ([]net.Addr, error) {
 	return net.InterfaceAddrs()
 }
 
-type Pdexv3AddLiquidityRequest struct {
-	TokenID     string `json:"TokenID"`
-	TokenAmount string `json:"TokenAmount"`
-	PoolPairID  string `json:"PoolPairID"`
-	Amplifier   string `json:"Amplifier"`
-	PairHash    string `json:"PairHash"`
-	NftID       string `json:"NftID"`
-}
-
-type Pdexv3WithdrawLiquidityRequest struct {
-	TokenID     string `json:"TokenID"`
-	TokenAmount string `json:"TokenAmount"`
-	PoolPairID  string `json:"PoolPairID"`
-	Index       string `json:"Index"`
-	ShareAmount string `json:"ShareAmount"`
-}
-
-type Pdexv3StakingRequest struct {
-	TokenID     string `json:"TokenID"`
-	TokenAmount string `json:"TokenAmount"`
-	NftID       string `json:"NftID"`
-}
-
-type Pdexv3UnstakingRequest struct {
-	StakingPoolID   string `json:"StakingPoolID"`
-	TokenAmount     string `json:"TokenAmount"`
-	TokenID         string `json:"TokenID"`
-	UnstakingAmount string `json:"UnstakingAmount"`
-}
-
 // Uint64Reader wraps the unmarshaling of uint64 numbers from both integer & string formats.
 type Uint64Reader uint64
 
