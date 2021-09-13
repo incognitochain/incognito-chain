@@ -154,7 +154,7 @@ func (staker *Staker) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Liquidity           uint64                   `json:"Liquidity"`
 		Rewards             map[common.Hash]uint64   `json:"Rewards"`
-		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{
 		Liquidity:           staker.liquidity,
 		Rewards:             staker.rewards,
@@ -170,7 +170,7 @@ func (staker *Staker) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Liquidity          uint64                   `json:"Liquidity"`
 		Rewards            map[common.Hash]uint64   `json:"Rewards"`
-		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
