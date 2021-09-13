@@ -156,7 +156,7 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.setHashes(env.PreviousBlockHashes)
+	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
 	incurredInstructions := [][]string{}
 	committeeChange := NewCommitteeChange()
 

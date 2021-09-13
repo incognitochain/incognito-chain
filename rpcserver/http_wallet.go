@@ -102,6 +102,28 @@ func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, clos
 	return result, nil
 }
 
+// handleAuthorizedSubmitKey is the advanced version of the handleSubmitKey. The main different is that, all output coins will be indexed
+// from the beginning, instead of only being indexed after key submitting.
+//
+// This RPC is for limited users only and requires some sort of authentication.
+func (httpServer *HttpServer) handleGetKeySubmissionInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return 0, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("need exactly one parameter"))
+	}
+	keyStr, ok := arrayParams[0].(string)
+	if !ok {
+		return 0, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA keyStr is invalid"))
+	}
+
+	status, err := httpServer.walletService.BlockChain.GetKeySubmissionInfo(keyStr)
+	if err != nil {
+		return 0, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	return status, nil
+}
+
 /*
 getaccount RPC returns the name of the account associated with the given address.
 - Param #1: address

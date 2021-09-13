@@ -1465,11 +1465,11 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			if got := b.assignToSync(tt.args.shardID, tt.args.candidates, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeStateV3.assignToSync() = %v, want %v", got, tt.want)
+			if got := b.assignToSyncPool(tt.args.shardID, tt.args.candidates, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BeaconCommitteeStateV3.assignToSyncPool() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(b.syncPool, tt.fieldsAfterProcess.syncPool) {
-				t.Errorf("BeaconCommitteeStateV3.assignToSync() b = %v, tt.fieldsAfterProcess %v", b, tt.fieldsAfterProcess)
+				t.Errorf("BeaconCommitteeStateV3.assignToSyncPool() b = %v, tt.fieldsAfterProcess %v", b, tt.fieldsAfterProcess)
 			}
 		})
 	}
@@ -2059,7 +2059,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			b.addData(tt.args.env)
+			b.addDataToEnvironment(tt.args.env)
 			got, got1, err := b.processUnstakeInstruction(tt.args.unstakeInstruction, tt.args.env, tt.args.committeeChange, tt.args.returnStakingInstruction)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processUnstakeInstruction() error = %v, wantErr %v", err, tt.wantErr)

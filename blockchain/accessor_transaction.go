@@ -5,7 +5,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"sort"
 	"strconv"
@@ -318,7 +319,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 	if versionsIncluded[1] {
-		results, err := coinIndexer.QueryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
+		results, err := coinIndexer.QueryDbCoinVer1(keyset.PaymentAddress.Pk, tokenID, transactionStateDB)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -336,7 +337,8 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 			upToHeight = latest
 		}
 		fromHeight = coinIndexer.GetNextLowerHeight(upToHeight, lowestHeightForV2)
-		results, err := coinIndexer.QueryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, coinIndexer.GetCoinFilterByOTAKeyAndToken())
+		filter := coinIndexer.GetCoinFilterByOTAKeyAndToken()
+		results, err := coinIndexer.QueryDbCoinVer2(keyset.OTAKey, tokenID, fromHeight, upToHeight, transactionStateDB, filter)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -348,7 +350,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 					//indexer supports v2 only
 					coinsToStore = append(coinsToStore, c)
 				}
-				cInd.StoreIndexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
+				_ = cInd.StoreIndexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
 			}
 		}
 		outCoins = append(outCoins, results...)
@@ -369,6 +371,34 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		return nil, outCoins, fromHeight, nil
 	}
 
+}
+
+// getTokenBalanceV1 returns the balance v1 (balance of all v1 UTXOs) of a tokenId.
+func (blockchain *BlockChain) getTokenBalanceV1(keySet *incognitokey.KeySet, shardID byte, tokenId *common.Hash) (uint64, error) {
+	decryptedCoins, unDecryptedCoins, err := blockchain.GetListDecryptedOutputCoinsVer1ByKeyset(keySet, shardID, tokenId)
+	if err != nil {
+		return 0, err
+	}
+
+	if unDecryptedCoins != nil || len(unDecryptedCoins) > 0 {
+		return 0, fmt.Errorf("cannot decrypt all coins, something's wrong with the key-set")
+	}
+
+	balance := uint64(0)
+	transactionDB := blockchain.GetBestStateTransactionStateDB(shardID)
+	for _, plainCoin := range decryptedCoins {
+		keyImage := plainCoin.GetKeyImage()
+		if keyImage == nil {
+			continue
+		}
+		exists, err := statedb.HasSerialNumber(transactionDB, *tokenId, keyImage.ToBytesS(), shardID)
+		if err != nil || exists {
+			continue
+		}
+		balance += plainCoin.GetValue()
+	}
+
+	return balance, nil
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
@@ -400,9 +430,9 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 	}
 
 	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
-	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
-	if keyExists && !isReset && processing != 2 {
-		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
+	keyExists, state := outcoinIndexer.HasOTAKey(otaBytes)
+	if keyExists && !isReset && state != coinIndexer.StatusKeySubmittedUsual {
+		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, state)
 	}
 
 	if accessToken != "" && !outcoinIndexer.IsAuthorizedRunning() {
@@ -410,42 +440,74 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 	}
 
 	otaKeyStr := fmt.Sprintf("%x", otaBytes)
-	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaKeyStr, keyExists, processing, isReset)
+	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaKeyStr, keyExists, state, isReset)
 
 	pkb := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
-	if outcoinIndexer.IsValidAccessToken(accessToken) { //if the token is authorized
-		if outcoinIndexer.IsQueueFull(shardID) {
-			return fmt.Errorf("the current authorized queue is full, please check back later")
+
+	if accessToken != "" {
+		if outcoinIndexer.IsValidAccessToken(accessToken) { //if the token is authorized
+			if outcoinIndexer.IsQueueFull(shardID) {
+				return fmt.Errorf("the current authorized queue is full, please check back later")
+			}
+
+			bss := blockchain.GetBestStateShard(shardID)
+			transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
+
+			lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
+			if heightToSyncFrom < lowestHeightForV2 {
+				heightToSyncFrom = lowestHeightForV2
+			}
+
+			if heightToSyncFrom > bss.ShardHeight {
+				return fmt.Errorf("fromHeight (%v) is larger than the current shard height (%v)", heightToSyncFrom, bss.ShardHeight)
+			}
+
+			idxParams := coinIndexer.IndexParam{
+				FromHeight: heightToSyncFrom,
+				ToHeight:   bss.ShardHeight + 1,
+				OTAKey:     otaKey,
+				TxDb:       transactionStateDB,
+				ShardID:    shardID,
+				IsReset:    isReset,
+			}
+
+			outcoinIndexer.IdxChan <- idxParams
+
+			Logger.log.Infof("Authorized OTA Key Submission %x", otaKey)
+			return nil
+		} else {
+			return fmt.Errorf("invalid access token")
 		}
+	} else {
+		Logger.log.Infof("OTA Key Submission %x using the regular cache", otaKey)
+		return outcoinIndexer.AddOTAKey(otaKey, coinIndexer.StatusKeySubmittedUsual)
+	}
+}
 
-		bss := blockchain.GetBestStateShard(shardID)
-		transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
-
-		lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
-		if heightToSyncFrom < lowestHeightForV2 {
-			heightToSyncFrom = lowestHeightForV2
-		}
-
-		if heightToSyncFrom > bss.ShardHeight {
-			return fmt.Errorf("fromHeight (%v) is larger than the current shard height (%v)", heightToSyncFrom, bss.ShardHeight)
-		}
-
-		idxParams := coinIndexer.IndexParam{
-			FromHeight: heightToSyncFrom,
-			ToHeight:   bss.ShardHeight,
-			OTAKey:     otaKey,
-			TxDb:       transactionStateDB,
-			ShardID:    shardID,
-			IsReset:    isReset,
-		}
-
-		outcoinIndexer.IdxChan <- idxParams
-		return nil
+func (blockchain *BlockChain) GetKeySubmissionInfo(keyStr string) (int, error) {
+	if !EnableIndexingCoinByOTAKey {
+		return 0, fmt.Errorf("OTA key submission not supported by this node configuration")
 	}
 
-	Logger.log.Infof("OTA Key Submission %x", otaKey)
-	return outcoinIndexer.AddOTAKey(otaKey)
+	w, err := wallet.Base58CheckDeserialize(keyStr)
+	if err != nil {
+		return 0, fmt.Errorf("cannot deserialize key")
+	}
+
+	otaKey := w.KeySet.OTAKey
+	if otaKey.GetPublicSpend() == nil || otaKey.GetOTASecretKey() == nil {
+		return 0, fmt.Errorf("otaKey is not valid")
+	}
+
+	otaBytes := coinIndexer.OTAKeyToRaw(otaKey)
+	keyExists, state := outcoinIndexer.HasOTAKey(otaBytes)
+
+	if !keyExists {
+		return 0, fmt.Errorf("ota key hasn't been submitted")
+	}
+
+	return state, nil
 }
 
 // GetAllOutputCoinsByKeyset retrieves and tries to decrypt all output coins of a key-set.
@@ -454,58 +516,135 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin, []privacy.Coin, error) {
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
+	var err error
+	var decryptedResults []privacy.PlainCoin
+	var otherResults []privacy.Coin
+
+	// get output coins v1 (if required)
+	if withVersion1 {
+		decryptedResults, otherResults, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1: true})
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	if !EnableIndexingCoinByOTAKey {
 		if !withVersion1 {
 			return nil, nil, errors.New("Getting all coins not supported by this node configuration")
 		} else {
-			decryptedResults, otherResults, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1: true})
-			if err != nil {
-				return nil, nil, err
-			}
-
 			return decryptedResults, otherResults, nil
 		}
 	}
+
+	// get output coins v2 from the cache
 	outCoins, state, err := outcoinIndexer.GetIndexedOutCoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
-	switch state {
-	case 2, 3:
-		var decryptedResults []privacy.PlainCoin
-		var otherResults []privacy.Coin
-		if withVersion1 {
-			decryptedResults, otherResults, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1: true})
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-		for _, outCoin := range outCoins {
-			decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
-			if decryptedOut != nil {
-				decryptedResults = append(decryptedResults, decryptedOut)
-			} else {
-				otherResults = append(otherResults, outCoin)
-			}
-		}
-		Logger.log.Infof("Retrieved output coins ver2 for view key %v, status %v", keyset.OTAKey.GetOTASecretKey(), state)
-		return decryptedResults, otherResults, nil
-	case 1:
+	if err != nil {
 		return nil, nil, err
-	case 0:
-		if !withVersion1 {
-			return nil, nil, err
-		} else {
-			decryptedResults, otherResults, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1: true})
-			if err != nil {
-				return nil, nil, err
-			}
-
-			return decryptedResults, otherResults, nil
-		}
-	default:
-		return nil, nil, errors.New("OTA Key indexing state is corrupted")
 	}
+	Logger.log.Infof("current cache state: %v\n", state)
+	for _, outCoin := range outCoins {
+		// try to decrypt each outCoin. If the privateKey is provided, it also checks if the outCoin is spent or not.
+		// If outCoin cannot be decrypted by the keySet, just return the raw outCoin.
+		decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+		if decryptedOut != nil {
+			decryptedResults = append(decryptedResults, decryptedOut)
+		} else {
+			otherResults = append(otherResults, outCoin)
+		}
+	}
+	Logger.log.Infof("Retrieved output coins ver2 for view key %v", keyset.OTAKey.GetOTASecretKey())
+	return decryptedResults, otherResults, nil
 }
 
-// any coins that failed to decrypt are skipped
+// GetAllTokenBalancesV1 returns the balance v1 of all tokens.
+func (blockchain *BlockChain) GetAllTokenBalancesV1(keySet *incognitokey.KeySet) (map[string]uint64, error) {
+	// get shardID from the keySet
+	pubKeyBytes := keySet.PaymentAddress.Pk
+	if len(pubKeyBytes) == 0 {
+		pubKeyBytes = keySet.OTAKey.GetPublicSpend().ToBytesS()
+	}
+	if len(pubKeyBytes) == 0 || len(keySet.PrivateKey) == 0 {
+		return nil, fmt.Errorf("invalid key set")
+	}
+	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
+
+	// get all token
+	allTokens, err := blockchain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make(map[string]uint64)
+
+	// get balanceV1 for each token
+	var balance uint64
+	for _, tokenID := range allTokens {
+		balance, err = blockchain.getTokenBalanceV1(keySet, shardID, &tokenID)
+		if err != nil {
+			return nil, err
+		}
+		res[tokenID.String()] = balance
+	}
+
+	return res, nil
+}
+
+// GetAllTokenBalancesV2 returns the balance v2 of all tokens.
+func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet) (map[string]uint64, error) {
+	if !EnableIndexingCoinByOTAKey {
+		return nil, errors.New("getting v2 coins not supported by this node configuration")
+	}
+
+	// get shardID from the keySet
+	pubKeyBytes := keySet.PaymentAddress.Pk
+	if len(pubKeyBytes) == 0 {
+		pubKeyBytes = keySet.OTAKey.GetPublicSpend().ToBytesS()
+	}
+	if len(pubKeyBytes) == 0 || len(keySet.PrivateKey) == 0 {
+		return nil, fmt.Errorf("invalid key set")
+	}
+	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
+
+	// get all token
+	allTokens, err := blockchain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
+	if err != nil {
+		return nil, err
+	}
+
+	// create a map from Hash(TokenID) => TokenID
+	rawAssetTags := make(map[string]*common.Hash)
+	for _, tokenID := range allTokens {
+		rawAssetTags[privacy.HashToPoint(tokenID[:]).String()] = &tokenID
+	}
+
+	res := make(map[string]uint64)
+
+	// get all token output coins v2 using the generic common.ConfidentialAssetID
+	decryptedOutCoins, err := blockchain.TryGetAllOutputCoinsByKeyset(keySet, shardID, &common.ConfidentialAssetID, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// try to get the tokenId of each output coin from its assetTag.
+	for _, outCoin := range decryptedOutCoins {
+		outCoinV2, ok := outCoin.(*privacy.CoinV2)
+		if !ok {
+			return nil, fmt.Errorf("cannot parse outCoin as a CoinV2")
+		}
+
+		tokenId, err := outCoinV2.GetTokenId(keySet, rawAssetTags)
+		if err != nil {
+			return nil, err
+		}
+
+		res[tokenId.String()] += outCoin.GetValue()
+	}
+
+	return res, nil
+}
+
+// TryGetAllOutputCoinsByKeyset gets and decrypts all output coins of a tokenID given the keySet.
+// Any coins that are failed to decrypt are skipped.
 func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin, error) {
 	res, _, err := blockchain.GetAllOutputCoinsByKeyset(keyset, shardID, tokenID, withVersion1)
 	return res, err

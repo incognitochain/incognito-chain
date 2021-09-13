@@ -41,7 +41,7 @@ func TestPrivacyV2TxToken(t *testing.T) {
 
 		Convey("create & store PRV UTXOs", func() {
 			pastCoins = make([]privacy.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
-			for i, _ := range pastCoins {
+			for i := range pastCoins {
 				tempCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)
@@ -60,7 +60,7 @@ func TestPrivacyV2TxToken(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			pastTokenCoins = make([]privacy.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
-			for i, _ := range pastTokenCoins {
+			for i := range pastTokenCoins {
 				tempCoin, _, err := privacy.NewCoinCA(paymentInfo[i%len(dummyPrivateKeys)], tokenID)
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)

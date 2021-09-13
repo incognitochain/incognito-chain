@@ -113,12 +113,13 @@ func (engine *Engine) WatchCommitteeChange() {
 		return
 	}
 
-	ValidatorGroup := make(map[int][]consensus.Validator)
+	validatorGroup := make(map[int][]consensus.Validator)
 	for _, validator := range engine.validators {
 		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
-		//Logger.Log.Info("validator key", validator.MiningKey.GetPublicKeyBase58())
+		logKey, _ := validator.MiningKey.GetPublicKey().ToBase58()
+		Logger.Log.Infof("validator key %+v, shardID %+v, role %+v", logKey, chainID, role)
 		if chainID == common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
 		} else if chainID > common.BeaconChainID {
@@ -134,31 +135,21 @@ func (engine *Engine) WatchCommitteeChange() {
 		//group all validator as committee by chainID
 		if role == common.CommitteeRole {
 			//fmt.Println("Consensus", chainID, validator.PrivateSeed, validator.State)
-			ValidatorGroup[chainID] = append(ValidatorGroup[chainID], *validator)
+			validatorGroup[chainID] = append(validatorGroup[chainID], *validator)
 		}
 	}
 
 	miningProc := blsbft.Actor(nil)
-	for chainID, validators := range ValidatorGroup {
+	for chainID, validators := range validatorGroup {
 		chainName := common.BeaconChainKey
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
 		}
 
-		currActorVersion := 0
-		if engine.bftProcess[chainID] != nil {
-			currActorVersion = engine.version[chainID]
-		}
-
 		engine.updateVersion(chainID)
+
 		if _, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
-		} else {
-			if engine.version[chainID] != currActorVersion {
-				engine.bftProcess[chainID].Stop()
-				engine.bftProcess[chainID].Destroy()
-				engine.initProcess(chainID, chainName)
-			}
 		}
 
 		validatorMiningKey := []signatureschemes2.MiningKey{}
@@ -172,7 +163,7 @@ func (engine *Engine) WatchCommitteeChange() {
 	}
 
 	for chainID, proc := range engine.bftProcess {
-		if _, ok := ValidatorGroup[chainID]; !ok {
+		if _, ok := validatorGroup[chainID]; !ok {
 			if proc.IsStarted() {
 				proc.Stop()
 				engine.NotifyNewRole(chainID, common.WaitingRole)
@@ -211,6 +202,8 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 			chainID, chainName, engine.config.Node, Logger.Log)
 	}
 	engine.bftProcess[chainID] = bftActor
+	Logger.Log.Infof("CONSENSUS: init process, chain %+v, chain-name %+v, version %+v",
+		chainID, chainName, blockVersion)
 }
 
 func (engine *Engine) updateVersion(chainID int) {

@@ -314,6 +314,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
 	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
 	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
@@ -340,6 +341,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 	submitKey:                        (*HttpServer).handleSubmitKey,
 	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
+	getKeySubmissionInfo:             (*HttpServer).handleGetKeySubmissionInfo,
 }
 
 var WsHandler = map[string]wsHandler{
