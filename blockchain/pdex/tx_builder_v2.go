@@ -30,7 +30,7 @@ func (txBuilder *TxBuilderV2) Build(
 	var err error
 
 	switch metaType {
-	case metadataCommon.Pdexv3UnstakingResponseMeta:
+	case metadataCommon.Pdexv3UnstakingRequestMeta:
 		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
@@ -449,25 +449,22 @@ func buildUnstakingTx(
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	var tx metadata.Transaction
-	if len(inst) != 3 {
-		return tx, fmt.Errorf("Expect inst length to be %v but get %v", 3, len(inst))
-	}
-	if inst[1] != common.Pdexv3AcceptUnstakingStatus {
-		return tx, nil
-	}
-
 	acceptInst := instruction.AcceptUnstaking{}
 	err := acceptInst.FromStringSlice(inst)
 	if err != nil {
-		return tx, err
+		Logger.log.Debug("[pdex] err:", err)
+		return tx, nil
 	}
+	Logger.log.Info("[pdex] acceptInst:", acceptInst)
 
 	if acceptInst.ShardID() != shardID || acceptInst.StakingPoolID().IsZeroValue() {
+		Logger.log.Info("[pdex] 0")
 		return tx, nil
 	}
 	otaReceiver := privacy.OTAReceiver{}
 	err = otaReceiver.FromString(acceptInst.OtaReceiver())
 	if err != nil {
+		Logger.log.Info("[pdex] err:", err)
 		return tx, err
 	}
 	metaData := metadataPdexv3.NewUnstakingResponseWithValue(
@@ -477,6 +474,7 @@ func buildUnstakingTx(
 		acceptInst.StakingPoolID(), acceptInst.Amount(),
 		otaReceiver, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
+		Logger.log.Info("[pdex] err:", err)
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}
 	return tx, err
