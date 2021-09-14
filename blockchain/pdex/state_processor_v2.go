@@ -19,7 +19,7 @@ import (
 )
 
 type stateProcessorV2 struct {
-	pairHashCache   map[string]string
+	pairHashCache   map[string]common.Hash
 	withdrawTxCache map[string]uint64
 	rewardCache     map[string]map[common.Hash]uint64
 	receiverCache   map[string]map[common.Hash]metadataPdexv3.ReceiverInfo
@@ -27,7 +27,7 @@ type stateProcessorV2 struct {
 }
 
 func (sp *stateProcessorV2) clearCache() {
-	sp.pairHashCache = make(map[string]string)
+	sp.pairHashCache = make(map[string]common.Hash)
 	sp.withdrawTxCache = make(map[string]uint64)
 	sp.rewardCache = make(map[string]map[common.Hash]uint64)
 	sp.receiverCache = make(map[string]map[common.Hash]metadataPdexv3.ReceiverInfo)
@@ -304,7 +304,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
 		}
-		sp.pairHashCache[matchAndReturnContribution.PairHash()] = matchAndReturnContributionValue.TxReqID().String()
+		sp.pairHashCache[matchAndReturnContribution.PairHash()] = matchAndReturnContributionValue.TxReqID()
 		deletedWaitingContributions[matchAndReturnContribution.PairHash()] = waitingContribution
 		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {
@@ -344,7 +344,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		err = statedb.TrackPdexv3Status(
 			stateDB,
 			statedb.Pdexv3ContributionStatusPrefix(),
-			[]byte(sp.pairHashCache[matchAndReturnContribution.PairHash()]),
+			sp.pairHashCache[matchAndReturnContribution.PairHash()].Bytes(),
 			contribStatusBytes,
 		)
 		if err != nil {
@@ -488,7 +488,7 @@ func (sp *stateProcessorV2) trade(
 		txID[:],
 		marshaledTrackedStatus,
 	)
-	return pairs, nil
+	return pairs, err
 }
 
 func (sp *stateProcessorV2) withdrawLiquidity(
@@ -640,7 +640,7 @@ func (sp *stateProcessorV2) addOrder(
 		txID[:],
 		marshaledTrackedStatus,
 	)
-	return pairs, nil
+	return pairs, err
 }
 
 func (sp *stateProcessorV2) withdrawOrder(
@@ -650,6 +650,8 @@ func (sp *stateProcessorV2) withdrawOrder(
 ) (map[string]*PoolPairState, error) {
 	var currentOrder *instruction.Action
 	var trackedStatus metadataPdexv3.WithdrawOrderStatus
+	var txID common.Hash
+	suffixWithToken := []byte{}
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.WithdrawOrderAcceptedStatus):
 		currentOrder = &instruction.Action{Content: &metadataPdexv3.AcceptedWithdrawOrder{}}
@@ -662,6 +664,8 @@ func (sp *stateProcessorV2) withdrawOrder(
 		md, _ := currentOrder.Content.(*metadataPdexv3.AcceptedWithdrawOrder)
 		trackedStatus.TokenID = md.TokenID
 		trackedStatus.WithdrawAmount = md.Amount
+		txID = currentOrder.RequestTxID()
+		suffixWithToken = append(txID[:], md.TokenID[:]...)
 
 		pair, exists := pairs[md.PoolPairID]
 		if !exists {
@@ -704,6 +708,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 		if err != nil {
 			return pairs, err
 		}
+		txID = currentOrder.RequestTxID()
 	default:
 		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}
@@ -714,14 +719,29 @@ func (sp *stateProcessorV2) withdrawOrder(
 	if err != nil {
 		return pairs, err
 	}
-	txID := currentOrder.RequestTxID()
+
+	// store accepted / rejected status
 	err = statedb.TrackPdexv3Status(
 		stateDB,
 		statedb.Pdexv3WithdrawOrderStatusPrefix(),
 		txID[:],
 		marshaledTrackedStatus,
 	)
-	return pairs, nil
+
+	// store withdrawal info (tokenID & amount) specific to this instruction
+	if len(suffixWithToken) > 0 {
+		err := statedb.TrackPdexv3Status(
+			stateDB,
+			statedb.Pdexv3WithdrawOrderStatusPrefix(),
+			suffixWithToken,
+			marshaledTrackedStatus,
+		)
+		if err != nil {
+			return pairs, err
+		}
+	}
+
+	return pairs, err
 }
 
 func (sp *stateProcessorV2) withdrawLPFee(

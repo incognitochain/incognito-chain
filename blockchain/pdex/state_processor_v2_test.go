@@ -538,7 +538,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 	//
 
 	type fields struct {
-		pairHashCache      map[string]string
+		pairHashCache      map[string]common.Hash
 		withdrawTxCache    map[string]uint64
 		stateProcessorBase stateProcessorBase
 	}
@@ -564,7 +564,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 		{
 			name: "First Instruction",
 			fields: fields{
-				pairHashCache:      map[string]string{},
+				pairHashCache:      map[string]common.Hash{},
 				stateProcessorBase: stateProcessorBase{},
 			},
 			args: args{
@@ -633,8 +633,8 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 		{
 			name: "Second Instruction",
 			fields: fields{
-				pairHashCache: map[string]string{
-					"pair_hash": thirdTxHash.String(),
+				pairHashCache: map[string]common.Hash{
+					"pair_hash": *thirdTxHash,
 				},
 				stateProcessorBase: stateProcessorBase{},
 			},
@@ -1160,7 +1160,7 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 	assert.Nil(t, err)
 
 	type fields struct {
-		pairHashCache      map[string]string
+		pairHashCache      map[string]common.Hash
 		withdrawTxCache    map[string]uint64
 		stateProcessorBase stateProcessorBase
 	}
@@ -1225,7 +1225,7 @@ func Test_stateProcessorV2_userMintNft(t *testing.T) {
 	assert.Nil(t, err)
 
 	type fields struct {
-		pairHashCache      map[string]string
+		pairHashCache      map[string]common.Hash
 		withdrawTxCache    map[string]uint64
 		stateProcessorBase stateProcessorBase
 	}
@@ -1317,7 +1317,7 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 	assert.Nil(t, err)
 
 	type fields struct {
-		pairHashCache      map[string]string
+		pairHashCache      map[string]common.Hash
 		withdrawTxCache    map[string]uint64
 		stateProcessorBase stateProcessorBase
 	}
@@ -1842,7 +1842,7 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 	assert.Nil(t, err)
 
 	type fields struct {
-		pairHashCache      map[string]string
+		pairHashCache      map[string]common.Hash
 		withdrawTxCache    map[string]uint64
 		stateProcessorBase stateProcessorBase
 	}

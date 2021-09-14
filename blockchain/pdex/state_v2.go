@@ -602,6 +602,29 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 				}
 			}
 		}
+		// store / delete orders
+		ordersByID := make(map[string]*Order)
+		for _, ord := range poolPairState.orderbook.orders {
+			ordersByID[ord.Id()] = ord
+		}
+		for orderID, changed := range stateChange.orderIDs {
+			if changed {
+				if order, exists := ordersByID[orderID]; exists {
+					// update order in db
+					orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
+					err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
+					if err != nil {
+						return err
+					}
+				} else {
+					// delete order from db
+					err = statedb.DeletePdexv3Order(env.StateDB(), poolPairID, orderID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
 	}
 	err = statedb.StorePdexv3NftIDs(env.StateDB(), s.nftIDs)
 	if err != nil {
