@@ -117,8 +117,8 @@ func getStrPoolPairState(p *PoolPairState) string {
 	result += fmt.Sprintf("Pool Pair: %+v\n", p)
 	result += fmt.Sprintf("Virtual amount: token0 %v, token1 %v\n", p.state.Token0VirtualAmount().String(), p.state.Token1VirtualAmount().String())
 	result += fmt.Sprintf("LP Fees Per Share\n")
-	for tokenID := range p.state.LPFeesPerShare() {
-		result += fmt.Sprintf(" %v: %v\n", tokenID, p.state.LPFeesPerShare()[tokenID].String())
+	for tokenID := range p.lpFeesPerShare {
+		result += fmt.Sprintf(" %v: %v\n", tokenID, p.lpFeesPerShare[tokenID].String())
 	}
 	result += fmt.Sprintf("Shares\n")
 	for tokenID, value := range p.shares {
