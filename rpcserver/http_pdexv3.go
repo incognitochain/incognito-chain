@@ -560,47 +560,15 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawProtocolFee(par
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PairID is invalid"))
 	}
 
-	poolPair, found := poolPairs[pairID]
+	_, found := poolPairs[pairID]
 	if !found {
 		err = fmt.Errorf("Can't find poolPairID %s", pairID)
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-	poolPairState := poolPair.State()
-
-	tokenIDs := []string{
-		poolPairState.Token0ID().String(),
-		poolPairState.Token1ID().String(),
-		common.PRVIDStr,
-		common.PDEXIDStr,
-	}
-
-	// payment address v2
-	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.ProtocolFundAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot deserialize paymentAddress: %v", err))
-	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("pDEX v3 admin payment address is invalid"))
-	}
-
-	receivers := map[common.Hash]privacy.OTAReceiver{}
-	for _, tokenIDStr := range tokenIDs {
-		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
-		}
-		receiver := privacy.OTAReceiver{}
-		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-		}
-		receivers[*tokenID] = receiver
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
 		metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta,
 		pairID,
-		receivers,
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

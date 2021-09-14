@@ -67,7 +67,7 @@ func BuildWithdrawLPFeeInsts(
 			PoolPairID: pairID,
 			NftID:      nftID,
 			TokenID:    common.Hash{},
-			Receivers:  map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			Receiver:   metadataPdexv3.ReceiverInfo{},
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -93,12 +93,14 @@ func BuildWithdrawLPFeeInsts(
 	})
 
 	insts := [][]string{}
-	for _, tokenID := range keys {
+	for i, tokenID := range keys {
+		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PoolPairID: pairID,
 			NftID:      nftID,
 			TokenID:    tokenID,
-			Receivers:  receivers,
+			Receiver:   receivers[tokenID],
+			IsLastInst: isLastInstOfReqTx,
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -116,7 +118,8 @@ func BuildWithdrawLPFeeInsts(
 
 func BuildWithdrawProtocolFeeInsts(
 	pairID string,
-	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
+	address string,
+	amounts map[common.Hash]uint64,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
@@ -124,8 +127,9 @@ func BuildWithdrawProtocolFeeInsts(
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
 			PoolPairID: pairID,
+			Address:    address,
 			TokenID:    common.Hash{},
-			Receivers:  map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			Amount:     0,
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -140,9 +144,9 @@ func BuildWithdrawProtocolFeeInsts(
 	}
 
 	// To store the keys in slice in sorted order
-	keys := make([]common.Hash, len(receivers))
+	keys := make([]common.Hash, len(amounts))
 	i := 0
-	for k := range receivers {
+	for k := range amounts {
 		keys[i] = k
 		i++
 	}
@@ -151,11 +155,14 @@ func BuildWithdrawProtocolFeeInsts(
 	})
 
 	insts := [][]string{}
-	for _, tokenID := range keys {
+	for i, tokenID := range keys {
+		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalProtocolFeeContent{
 			PoolPairID: pairID,
+			Address:    address,
 			TokenID:    tokenID,
-			Receivers:  receivers,
+			Amount:     amounts[tokenID],
+			IsLastInst: isLastInstOfReqTx,
 			TxReqID:    reqTxID,
 			ShardID:    shardID,
 		}
@@ -204,7 +211,7 @@ func BuildWithdrawStakingRewardInsts(
 			StakingPoolID: stakingPoolID,
 			NftID:         nftID,
 			TokenID:       common.Hash{},
-			Receivers:     map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			Receiver:      metadataPdexv3.ReceiverInfo{},
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
 		}
@@ -230,12 +237,14 @@ func BuildWithdrawStakingRewardInsts(
 	})
 
 	insts := [][]string{}
-	for _, tokenID := range keys {
+	for i, tokenID := range keys {
+		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,
 			NftID:         nftID,
 			TokenID:       tokenID,
-			Receivers:     receivers,
+			Receiver:      receivers[tokenID],
+			IsLastInst:    isLastInstOfReqTx,
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
 		}

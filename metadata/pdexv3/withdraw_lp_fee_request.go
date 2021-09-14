@@ -19,12 +19,13 @@ type WithdrawalLPFeeRequest struct {
 }
 
 type WithdrawalLPFeeContent struct {
-	PoolPairID string                       `json:"PoolPairID"`
-	NftID      common.Hash                  `json:"NftID"`
-	TokenID    common.Hash                  `json:"TokenID"`
-	Receivers  map[common.Hash]ReceiverInfo `json:"Receivers"`
-	TxReqID    common.Hash                  `json:"TxReqID"`
-	ShardID    byte                         `json:"ShardID"`
+	PoolPairID string       `json:"PoolPairID"`
+	NftID      common.Hash  `json:"NftID"`
+	TokenID    common.Hash  `json:"TokenID"`
+	Receiver   ReceiverInfo `json:"Receiver"`
+	IsLastInst bool         `json:"IsLastInst"`
+	TxReqID    common.Hash  `json:"TxReqID"`
+	ShardID    byte         `json:"ShardID"`
 }
 
 type WithdrawalLPFeeStatus struct {
