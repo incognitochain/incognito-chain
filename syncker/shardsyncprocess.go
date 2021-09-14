@@ -258,7 +258,6 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 func (s *ShardSyncProcess) syncFinishSyncMessage() {
 
 	sleepTime := time.Duration(common.TIMESLOT/2) * time.Second
-
 	for {
 		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 		if committeeView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
