@@ -19,13 +19,13 @@ import (
 )
 
 type stateProcessorV2 struct {
-	pairHashCache   map[string]string
+	pairHashCache   map[string]common.Hash
 	withdrawTxCache map[string]uint64
 	stateProcessorBase
 }
 
 func (sp *stateProcessorV2) clearCache() {
-	sp.pairHashCache = make(map[string]string)
+	sp.pairHashCache = make(map[string]common.Hash)
 	sp.withdrawTxCache = make(map[string]uint64)
 }
 
@@ -300,7 +300,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
 		}
-		sp.pairHashCache[matchAndReturnContribution.PairHash()] = matchAndReturnContributionValue.TxReqID().String()
+		sp.pairHashCache[matchAndReturnContribution.PairHash()] = matchAndReturnContributionValue.TxReqID()
 		deletedWaitingContributions[matchAndReturnContribution.PairHash()] = waitingContribution
 		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {
@@ -340,7 +340,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		err = statedb.TrackPdexv3Status(
 			stateDB,
 			statedb.Pdexv3ContributionStatusPrefix(),
-			[]byte(sp.pairHashCache[matchAndReturnContribution.PairHash()]),
+			sp.pairHashCache[matchAndReturnContribution.PairHash()].Bytes(),
 			contribStatusBytes,
 		)
 		if err != nil {

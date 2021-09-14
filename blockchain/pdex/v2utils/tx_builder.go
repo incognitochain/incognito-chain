@@ -271,7 +271,7 @@ func WithdrawStakingReward(
 	}
 
 	meta := metadataPdexv3.NewPdexv3WithdrawalStakingRewardResponse(
-		metadataCommon.Pdexv3WithdrawLPFeeResponseMeta,
+		metadataCommon.Pdexv3WithdrawStakingRewardResponseMeta,
 		instContent.TxReqID,
 	)
 
