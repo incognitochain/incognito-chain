@@ -1977,19 +1977,19 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {
 		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard committee in shard state
 				return common.CommitteeRole, chain.GetShardID()
 			}
 		}
 
 		for _, v := range shardSyncingValidatorsFromBeaconView[byte(chain.GetShardID())] {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard syncing committee in shard state
 				return common.SyncingRole, chain.GetShardID()
 			}
 		}
 
 		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending committee in shard state
 				return common.PendingRole, chain.GetShardID()
 			}
 		}
