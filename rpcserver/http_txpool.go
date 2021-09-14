@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 )
 
 /*
@@ -148,17 +147,22 @@ func (httpServer *HttpServer) handleHasSerialNumbersInMempool(params interface{}
 
 // handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
 func (httpServer *HttpServer) handleGetSyncPoolValidator(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return finishsync.DefaultFinishSyncMsgPool.GetFinishedSyncValidators(), nil
+	res := httpServer.blockService.BlockChain.GetBeaconBestState().GetSyncingValidators()
+	validators := make(map[byte][]string)
+	for k, v := range res {
+		temp, _ := incognitokey.CommitteeKeyListToString(v)
+		validators[k] = temp
+	}
+	return validators, nil
 }
 
 // handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
 func (httpServer *HttpServer) handleGetSyncPoolValidatorDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	validators := finishsync.DefaultFinishSyncMsgPool.GetFinishedSyncValidators()
+	validators := httpServer.blockService.BlockChain.GetBeaconBestState().GetSyncingValidators()
 
 	validatorsDetail := make(map[byte][]incognitokey.CommitteeKeyString)
 	for k, v := range validators {
-		temp, _ := incognitokey.CommitteeBase58KeyListToStruct(v)
-		validatorsDetail[k] = incognitokey.CommitteeKeyListToStringList(temp)
+		validatorsDetail[k] = incognitokey.CommitteeKeyListToStringList(v)
 	}
 
 	return validatorsDetail, nil
