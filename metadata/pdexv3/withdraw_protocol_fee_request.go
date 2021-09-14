@@ -67,7 +67,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 	}
 
 	// validate IncAddressStr
-	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.ProtocolFundAddress)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawProtocolFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}

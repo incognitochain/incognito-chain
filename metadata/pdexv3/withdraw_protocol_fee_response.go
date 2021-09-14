@@ -74,7 +74,20 @@ func (withdrawalResponse WithdrawalProtocolFeeResponse) ValidateMetadataByItself
 }
 
 func (withdrawalResponse WithdrawalProtocolFeeResponse) Hash() *common.Hash {
-	rawBytes, _ := json.Marshal(withdrawalResponse)
+	rawBytes, _ := json.Marshal(struct {
+		Type    int         `json:"Type"`
+		Address string      `json:"Address"`
+		TokenID common.Hash `json:"TokenID"`
+		Amount  uint64      `json:"Amount"`
+		ReqTxID common.Hash `json:"ReqTxID"`
+	}{
+		Type:    metadataCommon.Pdexv3WithdrawProtocolFeeResponseMeta,
+		Address: withdrawalResponse.Address,
+		TokenID: withdrawalResponse.TokenID,
+		Amount:  withdrawalResponse.Amount,
+		ReqTxID: withdrawalResponse.ReqTxID,
+	})
+
 	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
@@ -142,6 +155,6 @@ func (withdrawalResponse WithdrawalProtocolFeeResponse) VerifyMinerCreatedTxBefo
 	return true, nil
 }
 
-func (withdrawalResponse WithdrawalProtocolFeeResponse) SetSharedRandom(r []byte) {
+func (withdrawalResponse *WithdrawalProtocolFeeResponse) SetSharedRandom(r []byte) {
 	withdrawalResponse.SharedRandom = r
 }
