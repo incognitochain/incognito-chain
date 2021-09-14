@@ -347,7 +347,7 @@ func (sub *SubManager) registerToProxy(
 	role string,
 	shardID []byte,
 ) (msgToTopics, userRole, error) {
-	messagesWanted := getMessagesForLayer2(layer, pubkey, shardID)
+	messagesWanted := getMessagesForLayer(layer, shardID)
 	Logger.Infof("Registering: message: %v", messagesWanted)
 	// Logger.Infof("Registering: nodeMode: %v", sub.nodeMode)
 	Logger.Infof("Registering: layer: %v", layer)
