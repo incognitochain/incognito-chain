@@ -77,16 +77,15 @@ const (
 	Pdexv3ShareObjectType                     = 50
 	Pdexv3NftObjectType                       = 51
 	Pdexv3OrderObjectType                     = 52
-	Pdexv3StakingPoolObjectType               = 53
-	Pdexv3StakerObjectType                    = 54
-	Pdexv3PoolPairLpFeePerShareObjectType     = 55
-	Pdexv3PoolPairProtocolFeeObjectType       = 56
-	Pdexv3PoolPairStakingPoolFeeObjectType    = 57
-	Pdexv3ShareTradingFeeObjectType           = 58
-	Pdexv3ShareLastLPFeesPerShareObjectType   = 59
-	Pdexv3StakingPoolRewardPerShareObjectType = 60
-	Pdexv3StakerRewardObjectType              = 61
-	Pdexv3StakerLastRewardPerShareObjectType  = 62
+	Pdexv3StakerObjectType                    = 53
+	Pdexv3PoolPairLpFeePerShareObjectType     = 54
+	Pdexv3PoolPairProtocolFeeObjectType       = 55
+	Pdexv3PoolPairStakingPoolFeeObjectType    = 56
+	Pdexv3ShareTradingFeeObjectType           = 57
+	Pdexv3ShareLastLPFeesPerShareObjectType   = 58
+	Pdexv3StakingPoolRewardPerShareObjectType = 59
+	Pdexv3StakerRewardObjectType              = 60
+	Pdexv3StakerLastRewardPerShareObjectType  = 61
 )
 
 // Prefix length

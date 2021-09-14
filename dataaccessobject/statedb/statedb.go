@@ -2091,24 +2091,6 @@ func (stateDB *StateDB) iterateWithPdexv3Nfts(prefix []byte) (map[string]uint64,
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3StakingPools(prefix []byte) (map[string]*Pdexv3StakingPoolState, error) {
-	res := map[string]*Pdexv3StakingPoolState{}
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		stakingPoolState := NewPdexv3StakingPoolState()
-		err := json.Unmarshal(newValue, stakingPoolState)
-		if err != nil {
-			return res, err
-		}
-		res[stakingPoolState.tokenID] = stakingPoolState
-	}
-	return res, nil
-}
-
 func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte) (
 	map[string]Pdexv3StakerState, error,
 ) {
