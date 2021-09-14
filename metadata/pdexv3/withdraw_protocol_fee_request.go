@@ -9,40 +9,38 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type WithdrawalProtocolFeeRequest struct {
 	metadataCommon.MetadataBaseWithSignature
-	PoolPairID string                              `json:"PoolPairID"`
-	Receivers  map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
+	PoolPairID string `json:"PoolPairID"`
 }
 
 type WithdrawalProtocolFeeContent struct {
-	PoolPairID string                       `json:"PoolPairID"`
-	TokenID    common.Hash                  `json:"TokenID"`
-	Receivers  map[common.Hash]ReceiverInfo `json:"Receivers"`
-	TxReqID    common.Hash                  `json:"TxReqID"`
-	ShardID    byte                         `json:"ShardID"`
+	PoolPairID string      `json:"PoolPairID"`
+	Address    string      `json:"Address"`
+	TokenID    common.Hash `json:"TokenID"`
+	Amount     uint64      `json:"Amount"`
+	IsLastInst bool        `json:"IsLastInst"`
+	TxReqID    common.Hash `json:"TxReqID"`
+	ShardID    byte        `json:"ShardID"`
 }
 
 type WithdrawalProtocolFeeStatus struct {
-	Status    int                          `json:"Status"`
-	Receivers map[common.Hash]ReceiverInfo `json:"Receivers"`
+	Status int                    `json:"Status"`
+	Amount map[common.Hash]uint64 `json:"Amount"`
 }
 
 func NewPdexv3WithdrawalProtocolFeeRequest(
 	metaType int,
 	pairID string,
-	receivers map[common.Hash]privacy.OTAReceiver,
 ) (*WithdrawalProtocolFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metaType)
 
 	return &WithdrawalProtocolFeeRequest{
 		MetadataBaseWithSignature: *metadataBase,
 		PoolPairID:                pairID,
-		Receivers:                 receivers,
 	}, nil
 }
 
@@ -69,7 +67,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 	}
 
 	// validate IncAddressStr
-	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.AdminAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().PDexParams.ProtocolFundAddress)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawProtocolFeeValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
@@ -89,19 +87,6 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(
 
 	if tx.GetVersion() != 2 {
 		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 protocol fee withdrawal must be version 2"))
-	}
-
-	if len(withdrawal.Receivers) > MaxPoolPairWithdrawalReceiver {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawProtocolFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
-	}
-
-	// Check OTA address string and tx random is valid
-	shardID := byte(tx.GetValidationEnv().ShardID())
-	for _, receiver := range withdrawal.Receivers {
-		_, err = isValidOTAReceiver(receiver, shardID)
-		if err != nil {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
 	}
 
 	return true, true, nil
@@ -124,13 +109,11 @@ func (withdrawal WithdrawalProtocolFeeRequest) Hash() *common.Hash {
 
 func (withdrawal WithdrawalProtocolFeeRequest) HashWithoutSig() *common.Hash {
 	rawBytes, _ := json.Marshal(struct {
-		Type       int                                 `json:"Type"`
-		PoolPairID string                              `json:"PoolPairID"`
-		Receivers  map[common.Hash]privacy.OTAReceiver `json:"Value"`
+		Type       int    `json:"Type"`
+		PoolPairID string `json:"PoolPairID"`
 	}{
 		Type:       metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta,
 		PoolPairID: withdrawal.PoolPairID,
-		Receivers:  withdrawal.Receivers,
 	})
 
 	hash := common.HashH([]byte(rawBytes))
@@ -139,17 +122,4 @@ func (withdrawal WithdrawalProtocolFeeRequest) HashWithoutSig() *common.Hash {
 
 func (withdrawal *WithdrawalProtocolFeeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(withdrawal)
-}
-
-func (withdrawal *WithdrawalProtocolFeeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
-	result := []metadataCommon.OTADeclaration{}
-	for currentTokenID, val := range withdrawal.Receivers {
-		if currentTokenID != common.PRVCoinID {
-			currentTokenID = common.ConfidentialAssetID
-		}
-		result = append(result, metadataCommon.OTADeclaration{
-			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
-		})
-	}
-	return result
 }

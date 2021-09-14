@@ -101,10 +101,7 @@ func (withdrawalResponse WithdrawalLPFeeResponse) VerifyMinerCreatedTxBeforeGett
 
 		shardIDFromInst := instContent.ShardID
 		txReqIDFromInst := instContent.TxReqID
-		receiver, ok := instContent.Receivers[instContent.TokenID]
-		if !ok {
-			continue
-		}
+		receiver := instContent.Receiver
 
 		receiverAddress, err := isValidOTAReceiver(receiver.Address, shardIDFromInst)
 		if err != nil {

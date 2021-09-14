@@ -195,10 +195,10 @@ func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
 	receivingAddressStr := config.Param().PDexParams.ProtocolFundAddress
 	keyWallet, err := wallet.Base58CheckDeserialize(receivingAddressStr)
 	if err != nil {
-		return [][]string{}, errors.New("Could not deserialize DAO payment address")
+		return [][]string{}, fmt.Errorf("Can not parse protocol fund address: %v", err)
 	}
 	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return [][]string{}, errors.New("DAO payment address is invalid")
+		return [][]string{}, fmt.Errorf("Protocol fund address is invalid")
 	}
 
 	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
@@ -527,21 +527,18 @@ TransactionLoop:
 		if !exists {
 			return result, pairs, fmt.Errorf("NFT receiver not found in WithdrawOrder Request")
 		}
-		withdrawOutputReceiver, exists := currentOrderReq.Receiver[currentOrderReq.TokenID]
-		if !exists {
-			return result, pairs, fmt.Errorf("WithdrawOrder receiver not found")
-		}
-		recvStr, err := nftReceiver.String()
-		if err != nil {
-			return result, pairs, fmt.Errorf("NFT receiver invalid in WithdrawOrder Request")
-		}
+		recvStr, _ := nftReceiver.String() // error handled in tx validation
+
 		mintInstruction, err := instruction.NewMintNftWithValue(
 			currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
 		result = append(result, mintInstruction)
+		if err != nil {
+			return result, pairs, err
+		}
 
 		// default to reject
-		currentAction := instruction.NewAction(
+		refundAction := instruction.NewAction(
 			&metadataPdexv3.RejectedWithdrawOrder{
 				PoolPairID: currentOrderReq.PoolPairID,
 				OrderID:    currentOrderReq.OrderID,
@@ -553,7 +550,7 @@ TransactionLoop:
 		pair, exists := pairs[currentOrderReq.PoolPairID]
 		if !exists {
 			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
-			result = append(result, currentAction.StringSlice())
+			result = append(result, refundAction.StringSlice())
 			continue TransactionLoop
 		}
 
@@ -561,50 +558,70 @@ TransactionLoop:
 		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
 				if ord.NftID() == currentOrderReq.NftID {
-					var currentBalance uint64
-					withdrawAmount := currentOrderReq.Amount
-					switch currentOrderReq.TokenID {
-					// cap withdrawAmount & set new balance in state
-					case pair.state.Token0ID():
-						currentBalance = ord.Token0Balance()
-						if currentBalance < withdrawAmount {
-							withdrawAmount = currentBalance
+					withdrawResults := make(map[common.Hash]uint64)
+					accepted := false
+
+					// for each token in pool that will be withdrawn, cap withdrawAmount & set new balance in state
+					if _, exists := currentOrderReq.Receiver[pair.state.Token0ID()]; exists {
+						currentBalance := ord.Token0Balance()
+						amt := currentOrderReq.Amount
+						if currentBalance < amt || amt == 0 {
+							amt = currentBalance
 						}
-						ord.SetToken0Balance(currentBalance - withdrawAmount)
-					case pair.state.Token1ID():
-						currentBalance = ord.Token1Balance()
-						if currentBalance < withdrawAmount {
-							withdrawAmount = currentBalance
+						if amt > 0 {
+							ord.SetToken0Balance(currentBalance - amt)
+							withdrawResults[pair.state.Token0ID()] = amt
+							accepted = true
 						}
-						ord.SetToken1Balance(currentBalance - withdrawAmount)
-					default:
+					}
+					if _, exists := currentOrderReq.Receiver[pair.state.Token1ID()]; exists {
+						currentBalance := ord.Token1Balance()
+						amt := currentOrderReq.Amount
+						if currentBalance < amt || amt == 0 {
+							amt = currentBalance
+						}
+						if amt > 0 {
+							ord.SetToken1Balance(currentBalance - amt)
+							withdrawResults[pair.state.Token1ID()] = amt
+							accepted = true
+						}
+					}
+
+					if !accepted {
 						Logger.log.Warnf("Invalid withdraw tokenID %v for order %s",
-							currentOrderReq.TokenID, orderID)
-						result = append(result, currentAction.StringSlice())
+							currentOrderReq.Receiver, orderID)
+						result = append(result, refundAction.StringSlice())
 						continue TransactionLoop
 					}
 					// apply orderbook changes for withdraw consistency in the same block
 					pairs[currentOrderReq.PoolPairID] = pair
 
 					// "accepted" metadata
-					currentAction.Content = &metadataPdexv3.AcceptedWithdrawOrder{
-						PoolPairID: currentOrderReq.PoolPairID,
-						OrderID:    currentOrderReq.OrderID,
-						Receiver:   withdrawOutputReceiver,
-						TokenID:    currentOrderReq.TokenID,
-						Amount:     withdrawAmount,
+					for tokenID, withdrawAmount := range withdrawResults {
+						acceptedAction := instruction.NewAction(
+							&metadataPdexv3.AcceptedWithdrawOrder{
+								PoolPairID: currentOrderReq.PoolPairID,
+								OrderID:    currentOrderReq.OrderID,
+								Receiver:   currentOrderReq.Receiver[tokenID],
+								TokenID:    tokenID,
+								Amount:     withdrawAmount,
+							},
+							*tx.Hash(),
+							byte(tx.GetValidationEnv().ShardID()),
+						)
+						result = append(result, acceptedAction.StringSlice())
 					}
 				} else {
 					Logger.log.Warnf("Incorrect NftID %v for withdrawing order %s",
 						currentOrderReq.NftID, orderID)
+					result = append(result, refundAction.StringSlice())
 				}
-				result = append(result, currentAction.StringSlice())
 				continue TransactionLoop
 			}
 		}
 
 		Logger.log.Warnf("No order with ID %s found for withdrawal", orderID)
-		result = append(result, currentAction.StringSlice())
+		result = append(result, refundAction.StringSlice())
 	}
 
 	Logger.log.Warnf("WithdrawOrder instructions: %v", result)
@@ -715,8 +732,18 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 ) ([][]string, map[string]*PoolPairState, error) {
 	instructions := [][]string{}
 
+	receivingAddressStr := config.Param().PDexParams.ProtocolFundAddress
+	keyWallet, err := wallet.Base58CheckDeserialize(receivingAddressStr)
+	if err != nil {
+		return instructions, pairs, fmt.Errorf("Can not parse protocol fund address: %v", err)
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return instructions, pairs, fmt.Errorf("Protocol fund address is invalid")
+	}
+
+	shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[common.PublicKeySize-1])
+
 	for _, tx := range txs {
-		shardID := byte(tx.GetValidationEnv().ShardID())
 		txReqID := *tx.Hash()
 		metaData, ok := tx.GetMetadata().(*metadataPdexv3.WithdrawalProtocolFeeRequest)
 		if !ok {
@@ -725,7 +752,8 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 		rejectInst := v2utils.BuildWithdrawProtocolFeeInsts(
 			metaData.PoolPairID,
-			map[common.Hash]metadataPdexv3.ReceiverInfo{},
+			receivingAddressStr,
+			map[common.Hash]uint64{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
@@ -738,27 +766,17 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 			continue
 		}
 
-		reward := pair.protocolFees
+		rewardAmount := pair.protocolFees
 
-		if reward == nil || len(reward) == 0 {
+		if rewardAmount == nil || len(rewardAmount) == 0 {
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
 
-		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
-		for tokenID := range reward {
-			if _, isExisted := metaData.Receivers[tokenID]; !isExisted {
-				return instructions, pairs, fmt.Errorf("Could not find receiver for token %v\n", tokenID)
-			}
-			receiversInfo[tokenID] = metadataPdexv3.ReceiverInfo{
-				Address: metaData.Receivers[tokenID],
-				Amount:  reward[tokenID],
-			}
-		}
-
 		acceptedInst := v2utils.BuildWithdrawProtocolFeeInsts(
 			metaData.PoolPairID,
-			receiversInfo,
+			receivingAddressStr,
+			rewardAmount,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,

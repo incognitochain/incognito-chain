@@ -409,25 +409,30 @@ func (tp *TradingPair) AddFee(
 	protocolFees := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(protocolFeePercent)))
 	protocolFees = new(big.Int).Div(protocolFees, new(big.Int).SetUint64(100))
 
-	oldProtocolFees, isExisted := tp.protocolFees[tokenID]
-	if !isExisted {
-		oldProtocolFees = uint64(0)
-	}
-	tempProtocolFees := tp.protocolFees
-	tempProtocolFees[tokenID] = oldProtocolFees + protocolFees.Uint64()
+	if protocolFees.IsUint64() && protocolFees.Uint64() != 0 {
+		oldProtocolFees, isExisted := tp.protocolFees[tokenID]
+		if !isExisted {
+			oldProtocolFees = uint64(0)
+		}
+		tempProtocolFees := tp.protocolFees
+		tempProtocolFees[tokenID] = oldProtocolFees + protocolFees.Uint64()
 
-	tp.protocolFees = tempProtocolFees
+		tp.protocolFees = tempProtocolFees
+	}
 
 	stakingRewards := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
 	stakingRewards = new(big.Int).Div(stakingRewards, new(big.Int).SetUint64(100))
 
-	oldStakingRewards, isExisted := tp.stakingPoolFees[tokenID]
-	if !isExisted {
-		oldStakingRewards = uint64(0)
+	if stakingRewards.IsUint64() && stakingRewards.Uint64() != 0 {
+		oldStakingRewards, isExisted := tp.stakingPoolFees[tokenID]
+		if !isExisted {
+			oldStakingRewards = uint64(0)
+		}
+		tempStakingRewards := tp.stakingPoolFees
+		tempStakingRewards[tokenID] = oldStakingRewards + stakingRewards.Uint64()
+
+		tp.stakingPoolFees = tempStakingRewards
 	}
-	tempStakingRewards := tp.stakingPoolFees
-	tempStakingRewards[tokenID] = oldStakingRewards + stakingRewards.Uint64()
-	tp.stakingPoolFees = tempStakingRewards
 
 	if tp.ShareAmount() == 0 {
 		return
