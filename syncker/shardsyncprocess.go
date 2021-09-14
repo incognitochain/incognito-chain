@@ -252,7 +252,9 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 		}
 		Logger.Infof("Send Finish Sync Message, shard %+v, key %+v \n signature %+v", byte(s.shardID), finishedSyncValidators, finishedSyncSignatures)
 		msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
-		s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
+		if err := s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+			Logger.Errorf("trySendFinishSyncMessage Public Message to Chain %+v, error", common.BeaconChainSyncID, err)
+		}
 	}
 }
 
