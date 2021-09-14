@@ -250,6 +250,7 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 		if len(finishedSyncValidators) == 0 {
 			return
 		}
+		Logger.Infof("Send Finish Sync Message, shard %+v, key %+v \n signature %+v", byte(s.shardID), finishedSyncValidators, finishedSyncSignatures)
 		msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
 		s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
 	}

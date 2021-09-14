@@ -27,6 +27,8 @@ const (
 
 	getMiningInfo                 = "getmininginfo"
 	getRawMempool                 = "getrawmempool"
+	getSyncPoolValidator          = "getsyncpoolvalidator"
+	getSyncPoolValidatorDetail    = "getsyncpoolvalidatordetail"
 	getMempoolInfoDetails         = "getmempoolinfodetails"
 	getNumberOfTxsInMempool       = "getnumberoftxsinmempool"
 	getMempoolEntry               = "getmempoolentry"
