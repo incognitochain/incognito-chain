@@ -408,7 +408,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	//Logger.Infof("Publishing to topic %s", topic)
+	Logger.Infof("Publishing to topic %s, data %v", topic, common.HashH([]byte(messageHex)).String())
 	return ps.Publish(topic, []byte(messageHex))
 }
 

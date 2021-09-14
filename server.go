@@ -1714,9 +1714,15 @@ func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousVali
 		}
 		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*types.BeaconBlock)
 		if !ok || msg.(*wire.MessageBlockBeacon).Block == nil {
-			return fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
+			err := fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
+			Logger.log.Error(err)
+			return err
 		}
-		serverObj.PushMessageToAll(msg)
+		err = serverObj.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 		return nil
 	} else {
 		shardBlock, ok := block.(*types.ShardBlock)
@@ -1730,8 +1736,11 @@ func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousVali
 		}
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
 		msgShard.(*wire.MessageBlockShard).PreviousValidationData = previousValidationData
-		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID)
-
+		err = serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 		crossShardBlks := types.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
@@ -1740,7 +1749,11 @@ func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousVali
 				return err
 			}
 			msgCrossShardShard.(*wire.MessageCrossShard).Block = crossShardBlk
-			serverObj.PushMessageToShard(msgCrossShardShard, shardID)
+			err = serverObj.PushMessageToShard(msgCrossShardShard, shardID)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
 		}
 	}
 	return nil
