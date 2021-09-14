@@ -26,23 +26,22 @@ type ShardPeerState struct {
 }
 
 type ShardSyncProcess struct {
-	isCommittee            bool
-	isCatchUp              bool
-	finalBeaconBlockHeight uint64
-	shardID                int
-	status                 string                    //stop, running
-	shardPeerState         map[string]ShardPeerState //peerid -> state
-	shardPeerStateCh       chan *wire.MessagePeerState
-	crossShardSyncProcess  *CrossShardSyncProcess
-	blockchain             *blockchain.BlockChain
-	Network                Network
-	Chain                  ShardChainInterface
-	beaconChain            Chain
-	shardPool              *BlkPool
-	actionCh               chan func()
-	consensus              peerv2.ConsensusData
-	lock                   *sync.RWMutex
-	lastInsert             string
+	isCommittee           bool
+	isCatchUp             bool
+	shardID               int
+	status                string                    //stop, running
+	shardPeerState        map[string]ShardPeerState //peerid -> state
+	shardPeerStateCh      chan *wire.MessagePeerState
+	crossShardSyncProcess *CrossShardSyncProcess
+	blockchain            *blockchain.BlockChain
+	Network               Network
+	Chain                 ShardChainInterface
+	beaconChain           Chain
+	shardPool             *BlkPool
+	actionCh              chan func()
+	consensus             peerv2.ConsensusData
+	lock                  *sync.RWMutex
+	lastInsert            string
 }
 
 func NewShardSyncProcess(
@@ -233,28 +232,25 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
-	if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
-		s.finalBeaconBlockHeight = committeeView.BeaconHeight
-		validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
-			s.consensus.GetSyncingValidators(), byte(s.shardID))
-		finishedSyncValidators := []string{}
-		finishedSyncSignatures := [][]byte{}
-		for i, v := range validatorFromUserKeys {
-			signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
-			if err != nil {
-				continue
-			}
-			finishedSyncSignatures = append(finishedSyncSignatures, signature)
-			finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
+	validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
+		s.consensus.GetSyncingValidators(), byte(s.shardID))
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	for i, v := range validatorFromUserKeys {
+		signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+		if err != nil {
+			continue
 		}
-		if len(finishedSyncValidators) == 0 {
-			return
-		}
-		Logger.Infof("Send Finish Sync Message, shard %+v, key %+v \n signature %+v", byte(s.shardID), finishedSyncValidators, finishedSyncSignatures)
-		msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
-		if err := s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID); err != nil {
-			Logger.Errorf("trySendFinishSyncMessage Public Message to Chain %+v, error %+v", common.BeaconChainSyncID, err)
-		}
+		finishedSyncSignatures = append(finishedSyncSignatures, signature)
+		finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
+	}
+	if len(finishedSyncValidators) == 0 {
+		return
+	}
+	Logger.Infof("Send Finish Sync Message, shard %+v, key %+v \n signature %+v", byte(s.shardID), finishedSyncValidators, finishedSyncSignatures)
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
+	if err := s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+		Logger.Errorf("trySendFinishSyncMessage Public Message to Chain %+v, error %+v", common.BeaconChainSyncID, err)
 	}
 }
 
