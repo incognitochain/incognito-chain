@@ -20,7 +20,7 @@ type StakingPoolChange struct {
 }
 
 type StakerChange struct {
-	isChanged           bool
+	IsChanged           bool
 	Rewards             map[string]bool
 	LastRewardsPerShare map[string]bool
 }

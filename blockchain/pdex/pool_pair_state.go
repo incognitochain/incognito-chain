@@ -243,26 +243,33 @@ func (p *PoolPairState) Clone() *PoolPairState {
 }
 
 func (p *PoolPairState) getDiff(
-	poolPairID string, comparePoolPair *PoolPairState, stateChange *v2utils.StateChange,
-) *v2utils.StateChange {
+	poolPairID string, comparePoolPair *PoolPairState,
+	poolPairChange *v2utils.PoolPairChange,
+	stateChange *v2utils.StateChange,
+) (*v2utils.PoolPairChange, *v2utils.StateChange) {
+	newPoolPairChange := poolPairChange
 	newStateChange := stateChange
 	if comparePoolPair == nil {
-		newStateChange.PoolPairs[poolPairID].IsChanged = true
+		newPoolPairChange.IsChanged = true
 		for nftID, share := range p.shares {
-			newStateChange = share.getDiff(nftID, nil, newStateChange)
+			shareChange := v2utils.NewShareChange()
+			shareChange = share.getDiff(nftID, nil, shareChange)
+			poolPairChange.Shares[nftID] = shareChange
 		}
 	} else {
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
-			newStateChange.PoolPairs[poolPairID].IsChanged = true
+			newPoolPairChange.IsChanged = true
 		}
 		for nftID, share := range p.shares {
 			if m, ok := comparePoolPair.shares[nftID]; !ok || !reflect.DeepEqual(m, share) {
-				newStateChange = share.getDiff(nftID, m, newStateChange)
+				shareChange := v2utils.NewShareChange()
+				shareChange = share.getDiff(nftID, m, shareChange)
+				poolPairChange.Shares[nftID] = shareChange
 			}
 		}
 		newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
 	}
-	return newStateChange
+	return newPoolPairChange, newStateChange
 }
 
 func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {

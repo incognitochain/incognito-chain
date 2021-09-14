@@ -664,16 +664,25 @@ func tradePathFromState(
 	sellToken common.Hash,
 	tradePath []string,
 	pairs map[string]*PoolPairState,
-) ([]*rawdbv2.Pdexv3PoolPair, []v2.OrderBookIterator, []byte, common.Hash, error) {
+) (
+	[]*rawdbv2.Pdexv3PoolPair, []map[common.Hash]*big.Int, []map[common.Hash]uint64, []map[common.Hash]uint64,
+	[]v2.OrderBookIterator, []byte, common.Hash, error,
+) {
 	var results []*rawdbv2.Pdexv3PoolPair
 	var orderbookList []v2.OrderBookIterator
 	var tradeDirections []byte
+	var lpFeesPerShare []map[common.Hash]*big.Int
+	var protocolFees []map[common.Hash]uint64
+	var stakingPoolFees []map[common.Hash]uint64
 
 	nextTokenToSell := sellToken
 	for _, pairID := range tradePath {
 		if pair, exists := pairs[pairID]; exists {
 			pair = pair.Clone() // work on cloned state in case trade is rejected
 			results = append(results, &pair.state)
+			lpFeesPerShare = append(lpFeesPerShare, pair.lpFeesPerShare)
+			protocolFees = append(protocolFees, pair.protocolFees)
+			stakingPoolFees = append(stakingPoolFees, pair.stakingPoolFees)
 			ob := pair.orderbook
 			orderbookList = append(orderbookList, &ob)
 			var td byte
@@ -686,14 +695,14 @@ func tradePathFromState(
 				td = v2.TradeDirectionSell1
 				nextTokenToSell = pair.state.Token0ID()
 			default:
-				return nil, nil, nil, nextTokenToSell, fmt.Errorf("Incompatible selling token %s vs next pair %s", nextTokenToSell.String(), pairID)
+				return nil, nil, nil, nil, nil, nil, nextTokenToSell, fmt.Errorf("Incompatible selling token %s vs next pair %s", nextTokenToSell.String(), pairID)
 			}
 			tradeDirections = append(tradeDirections, td)
 		} else {
-			return nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains nonexistent pair %s", pairID)
+			return nil, nil, nil, nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains nonexistent pair %s", pairID)
 		}
 	}
-	return results, orderbookList, tradeDirections, nextTokenToSell, nil
+	return results, lpFeesPerShare, protocolFees, stakingPoolFees, orderbookList, tradeDirections, nextTokenToSell, nil
 }
 
 func genNFT(index, beaconHeight uint64) common.Hash {

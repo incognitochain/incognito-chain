@@ -425,7 +425,9 @@ func (sp *stateProcessorV2) trade(
 			if !exists {
 				return pairs, fmt.Errorf("Cannot find pair %s for trade", pairID)
 			}
-			reserveState := &v2.TradingPair{&pair.state}
+			reserveState := v2utils.NewTradingPairWithValue(
+				&pair.state, pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
+			)
 			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
 			if err != nil {
 				return pairs, err
@@ -761,7 +763,7 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		// update state after fee wirthdrawal
 		share.tradingFees = map[common.Hash]uint64{}
 		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+		for tokenID, value := range poolPair.lpFeesPerShare {
 			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
 		}
 
@@ -819,7 +821,7 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 			return pairs, errors.New(msg)
 		}
 
-		poolPair.state.SetProtocolFees(map[common.Hash]uint64{})
+		poolPair.protocolFees = map[common.Hash]uint64{}
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeSuccessStatus
 	} else {
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeFailedStatus
@@ -872,7 +874,9 @@ func (sp *stateProcessorV2) mintBlockReward(
 
 	pairReward := actionData.Amount
 
-	(&v2utils.TradingPair{&pair.state}).AddFee(
+	v2utils.NewTradingPairWithValue(
+		&pair.state, pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
+	).AddFee(
 		actionData.TokenID, pairReward, BaseLPFeesPerShare,
 		0, 0, []common.Hash{},
 	)

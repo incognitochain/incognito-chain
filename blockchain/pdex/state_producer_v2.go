@@ -295,7 +295,9 @@ func (sp *stateProducerV2) mintReward(
 			continue
 		}
 
-		(&v2utils.TradingPair{&pair.state}).AddFee(
+		v2utils.NewTradingPairWithValue(
+			&pair.state, pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
+		).AddFee(
 			tokenID, pairReward.Uint64(), BaseLPFeesPerShare,
 			0, 0, []common.Hash{})
 
@@ -343,7 +345,7 @@ func (sp *stateProducerV2) trade(
 		}
 
 		// get relevant, cloned data from state for the trade path
-		reserves, orderbookList, tradeDirections, tokenToBuy, err :=
+		reserves, lpFeesPerShares, protocolFees, stakingPoolFees, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		tradeOutputReceiver, exists := currentTrade.Receiver[tokenToBuy]
 		// anytime the trade handler fails, add a refund instruction
@@ -355,7 +357,9 @@ func (sp *stateProducerV2) trade(
 
 		acceptedTradeMd, _, err := v2.MaybeAcceptTrade(
 			currentTrade.SellAmount, 0, currentTrade.TradePath,
-			tradeOutputReceiver, reserves, tradeDirections,
+			tradeOutputReceiver, reserves,
+			lpFeesPerShares, protocolFees, stakingPoolFees,
+			tradeDirections,
 			tokenToBuy, currentTrade.MinAcceptableAmount, orderbookList,
 		)
 		if err != nil {
@@ -366,7 +370,8 @@ func (sp *stateProducerV2) trade(
 
 		acceptedTradeMd, err = v2.TrackFee(
 			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], BaseLPFeesPerShare,
-			currentTrade.TradePath, reserves, tradeDirections, orderbookList,
+			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
+			tradeDirections, orderbookList,
 			acceptedTradeMd,
 			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
 		)
@@ -694,7 +699,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		// update state after fee withdrawal
 		share.tradingFees = map[common.Hash]uint64{}
 		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+		for tokenID, value := range poolPair.lpFeesPerShare {
 			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
 		}
 
@@ -733,7 +738,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 			continue
 		}
 
-		reward := pair.state.ProtocolFees()
+		reward := pair.protocolFees
 
 		if reward == nil || len(reward) == 0 {
 			instructions = append(instructions, rejectInst...)
@@ -760,7 +765,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 		)
 
 		// update state after fee withdrawal
-		pair.state.SetProtocolFees(map[common.Hash]uint64{})
+		pair.protocolFees = map[common.Hash]uint64{}
 
 		instructions = append(instructions, acceptedInst...)
 	}

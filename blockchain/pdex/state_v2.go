@@ -131,7 +131,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
-		poolPair.state.SetStakingPoolFees(map[common.Hash]uint64{})
+		poolPair.stakingPoolFees = map[common.Hash]uint64{}
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -579,13 +579,17 @@ func (s *stateV2) GetDiff(
 	}
 	for k, v := range s.poolPairs {
 		if m, ok := compareStateV2.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange = v.getDiff(k, m, newStateChange)
+			poolPairChange := v2utils.NewPoolPairChange()
+			poolPairChange, newStateChange = v.getDiff(k, m, poolPairChange, newStateChange)
+			newStateChange.PoolPairs[k] = poolPairChange
 			res.poolPairs[k] = v.Clone()
 		}
 	}
 	for k, v := range s.stakingPoolStates {
 		if m, ok := compareStateV2.stakingPoolStates[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange = v.getDiff(k, m, newStateChange)
+			stakingPoolChange := v2utils.NewStakingChange()
+			stakingPoolChange = v.getDiff(k, m, stakingPoolChange)
+			newStateChange.StakingPools[k] = stakingPoolChange
 			res.stakingPoolStates[k] = v.Clone()
 		}
 	}

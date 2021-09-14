@@ -106,31 +106,34 @@ func (s *StakingPoolState) Clone() *StakingPoolState {
 }
 
 func (s *StakingPoolState) getDiff(
-	stakingPoolID string, compareStakingPoolState *StakingPoolState, stateChange *v2utils.StateChange,
-) *v2utils.StateChange {
-	newStateChange := stateChange
+	stakingPoolID string, compareStakingPoolState *StakingPoolState,
+	stakingPoolChange *v2utils.StakingPoolChange,
+) *v2utils.StakingPoolChange {
+	newStakingPoolChange := stakingPoolChange
 	if compareStakingPoolState == nil {
-		if newStateChange.StakingPool[stakingPoolID] == nil {
-			newStateChange.StakingPool[stakingPoolID] = make(map[string]*v2utils.StakingPoolChange)
+		for tokenID := range s.rewardsPerShare {
+			newStakingPoolChange.RewardsPerShare[tokenID.String()] = true
 		}
 		for nftID, staker := range s.stakers {
-			newStateChange = staker.getDiff(stakingPoolID, nftID, nil, newStateChange)
+			stakerChange := v2utils.NewStakerChange()
+			stakerChange = staker.getDiff(stakingPoolID, nftID, nil, stakerChange)
+			stakingPoolChange.Stakers[nftID] = stakerChange
 		}
 	} else {
-		if !reflect.DeepEqual(s.liquidity, compareStakingPoolState.liquidity) ||
-			!reflect.DeepEqual(s.rewardsPerShare, compareStakingPoolState.rewardsPerShare) {
-			newStateChange.stakingPools[stakingPoolID] = true
+		for tokenID, value := range s.rewardsPerShare {
+			if m, ok := compareStakingPoolState.rewardsPerShare[tokenID]; !ok || !reflect.DeepEqual(m, value) {
+				newStakingPoolChange.RewardsPerShare[tokenID.String()] = true
+			}
 		}
 		for nftID, staker := range s.stakers {
 			if m, ok := compareStakingPoolState.stakers[nftID]; !ok || !reflect.DeepEqual(m, staker) {
-				if newStateChange.StakingPool[stakingPoolID] == nil {
-					newStateChange.StakingPool[stakingPoolID] = make(map[string]*v2utils.StakingPoolChange)
-				}
-				newStateChange = staker.getDiff(stakingPoolID, nftID, m, newStateChange)
+				stakerChange := v2utils.NewStakerChange()
+				stakerChange = staker.getDiff(stakingPoolID, nftID, m, stakerChange)
+				stakingPoolChange.Stakers[nftID] = stakerChange
 			}
 		}
 	}
-	return newStateChange
+	return newStakingPoolChange
 }
 
 func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight uint64, operator byte) error {
