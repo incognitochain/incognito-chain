@@ -883,6 +883,17 @@ func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 		}
 	}
 
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.BlockProducingV3Height {
+		if err := beaconBestState.checkBlockProducingV3Config(); err != nil {
+			return err
+		}
+		if err := beaconBestState.upgradeBlockProducingV3Config(); err != nil {
+			return err
+		}
+		Logger.log.Infof("Upgrade Block Producing V3, min %+v, max %+v",
+			beaconBestState.MinShardCommitteeSize, beaconBestState.MaxShardCommitteeSize)
+	}
+
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.AssignRuleV3Height {
 		beaconBestState.upgradeAssignRuleV3()
 	}
@@ -899,9 +910,6 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		return nil
 	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
-		if err := beaconBestState.checkStakingFlowV3Config(); err != nil {
-			return err
-		}
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2 {
 			return nil
 		}
@@ -917,17 +925,19 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 			return nil
 		}
 	}
+
+	Logger.log.Infof("Try Upgrade Staking Flow, current version %+v, beacon height %+v"+
+		"Staking Flow v2 %+v, Staking Flow v3 %+v",
+		beaconBestState.beaconCommitteeState.Version(), beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.StakingFlowV3Height)
+
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
 		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.AssignRuleV3Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		beaconBestState.BestBlockHash,
 	)
-
-	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
-		if err := beaconBestState.upgradeStakingFlowV3Config(); err != nil {
-			return err
-		}
-	}
 
 	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)
 	beaconBestState.beaconCommitteeState = committeeState
@@ -935,20 +945,7 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) checkAndUpgradeStakingFlowV3Config() error {
-
-	if err := beaconBestState.checkStakingFlowV3Config(); err != nil {
-		return NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
-	}
-
-	if err := beaconBestState.upgradeStakingFlowV3Config(); err != nil {
-		return NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
-	}
-
-	return nil
-}
-
-func (beaconBestState *BeaconBestState) checkStakingFlowV3Config() error {
+func (beaconBestState *BeaconBestState) checkBlockProducingV3Config() error {
 
 	for shardID, shardCommittee := range beaconBestState.GetShardCommittee() {
 		shardCommitteeSize := len(shardCommittee)
@@ -961,7 +958,7 @@ func (beaconBestState *BeaconBestState) checkStakingFlowV3Config() error {
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
+func (beaconBestState *BeaconBestState) upgradeBlockProducingV3Config() error {
 
 	if beaconBestState.MinShardCommitteeSize < SFV3_MinShardCommitteeSize {
 		beaconBestState.MinShardCommitteeSize = SFV3_MinShardCommitteeSize

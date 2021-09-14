@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -491,6 +492,8 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		swapRule,
 		assignRule,
 	)
+	Logger.log.Infof("Upgrade Committee State V2 to V3, swap rule %+v, assign rule $+v",
+		reflect.TypeOf(swapRule), reflect.TypeOf(assignRule))
 	return committeeStateV2
 }
 
