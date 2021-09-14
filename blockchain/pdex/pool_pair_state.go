@@ -238,6 +238,16 @@ func (p *PoolPairState) Clone() *PoolPairState {
 	for k, v := range p.shares {
 		res.shares[k] = v.Clone()
 	}
+	for k, v := range p.lpFeesPerShare {
+		res.lpFeesPerShare[k] = big.NewInt(0).Set(v)
+	}
+	for k, v := range p.protocolFees {
+		res.protocolFees[k] = v
+	}
+	for k, v := range p.stakingPoolFees {
+		res.stakingPoolFees[k] = v
+	}
+
 	res.orderbook = p.orderbook.Clone()
 	return res
 }
@@ -533,7 +543,7 @@ func initPoolPairStates(stateDB *statedb.StateDB) (map[string]*PoolPairState, er
 	if err != nil {
 		return nil, err
 	}
-	poolPairs := make(map[string]*PoolPairState)
+	res := make(map[string]*PoolPairState)
 	for poolPairID, poolPairState := range poolPairsStates {
 		lpFeesPerShare, err := statedb.GetPdexv3PoolPairLpFeesPerShares(stateDB, poolPairID)
 		if err != nil {
@@ -565,7 +575,7 @@ func initPoolPairStates(stateDB *statedb.StateDB) (map[string]*PoolPairState, er
 			poolPairState.Value(), shares, *orderbook,
 			lpFeesPerShare, protocolFees, stakingPoolFees,
 		)
-		poolPairs[poolPairID] = poolPair
+		res[poolPairID] = poolPair
 	}
-	return nil, nil
+	return res, nil
 }

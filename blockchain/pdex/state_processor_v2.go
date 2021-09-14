@@ -185,6 +185,7 @@ func (sp *stateProcessorV2) matchContribution(
 	map[string]*PoolPairState,
 	*v2.ContributionStatus, error,
 ) {
+	Logger.log.Info("[pdex] matchContribution")
 	matchAddLiquidityInst := instruction.MatchAddLiquidity{}
 	err := matchAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {

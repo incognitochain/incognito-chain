@@ -202,17 +202,14 @@ func (pp *Pdexv3PoolPair) SetToken1VirtualAmount(amount *big.Int) {
 
 func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Token0ID            common.Hash              `json:"Token0ID"`
-		Token1ID            common.Hash              `json:"Token1ID"`
-		Token0RealAmount    uint64                   `json:"Token0RealAmount"`
-		Token1RealAmount    uint64                   `json:"Token1RealAmount"`
-		Token0VirtualAmount *big.Int                 `json:"Token0VirtualAmount"`
-		Token1VirtualAmount *big.Int                 `json:"Token1VirtualAmount"`
-		Amplifier           uint                     `json:"Amplifier"`
-		ShareAmount         uint64                   `json:"ShareAmount"`
-		LPFeesPerShare      map[common.Hash]*big.Int `json:"LPFeesPerShare"`
-		ProtocolFees        map[common.Hash]uint64   `json:"ProtocolFees"`
-		StakingPoolFees     map[common.Hash]uint64   `json:"StakingPoolFees"`
+		Token0ID            common.Hash `json:"Token0ID"`
+		Token1ID            common.Hash `json:"Token1ID"`
+		Token0RealAmount    uint64      `json:"Token0RealAmount"`
+		Token1RealAmount    uint64      `json:"Token1RealAmount"`
+		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
+		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
+		Amplifier           uint        `json:"Amplifier"`
+		ShareAmount         uint64      `json:"ShareAmount"`
 	}{
 		Token0ID:            pp.token0ID,
 		Token1ID:            pp.token1ID,
@@ -231,17 +228,14 @@ func (pp *Pdexv3PoolPair) MarshalJSON() ([]byte, error) {
 
 func (pp *Pdexv3PoolPair) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Token0ID            common.Hash              `json:"Token0ID"`
-		Token1ID            common.Hash              `json:"Token1ID"`
-		Token0RealAmount    uint64                   `json:"Token0RealAmount"`
-		Token1RealAmount    uint64                   `json:"Token1RealAmount"`
-		Token0VirtualAmount *big.Int                 `json:"Token0VirtualAmount"`
-		Token1VirtualAmount *big.Int                 `json:"Token1VirtualAmount"`
-		Amplifier           uint                     `json:"Amplifier"`
-		ShareAmount         uint64                   `json:"ShareAmount"`
-		LPFeesPerShare      map[common.Hash]*big.Int `json:"LPFeesPerShare"`
-		ProtocolFees        map[common.Hash]uint64   `json:"ProtocolFees"`
-		StakingPoolFees     map[common.Hash]uint64   `json:"StakingPoolFees"`
+		Token0ID            common.Hash `json:"Token0ID"`
+		Token1ID            common.Hash `json:"Token1ID"`
+		Token0RealAmount    uint64      `json:"Token0RealAmount"`
+		Token1RealAmount    uint64      `json:"Token1RealAmount"`
+		Token0VirtualAmount *big.Int    `json:"Token0VirtualAmount"`
+		Token1VirtualAmount *big.Int    `json:"Token1VirtualAmount"`
+		Amplifier           uint        `json:"Amplifier"`
+		ShareAmount         uint64      `json:"ShareAmount"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

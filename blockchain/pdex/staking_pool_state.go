@@ -303,6 +303,18 @@ func (s *StakingPoolState) updateToDB(
 		if !found || stakerChange == nil {
 			continue
 		}
+		nftHash, err := common.Hash{}.NewHashFromStr(nftID)
+		if err != nil {
+			return err
+		}
+		if stakerChange.IsChanged {
+			err := statedb.StorePdexv3Staker(env.StateDB(), stakingPoolID, nftID,
+				statedb.NewPdexv3StakerStateWithValue(*nftHash, staker.liquidity),
+			)
+			if err != nil {
+				return err
+			}
+		}
 		for tokenID, value := range staker.lastRewardsPerShare {
 			if stakerChange.LastRewardsPerShare[tokenID.String()] {
 				err := statedb.StorePdexv3StakerLastRewardPerShare(
