@@ -295,7 +295,7 @@ func (sp *stateProducerV2) mintReward(
 			continue
 		}
 
-		v2utils.NewTradingPairWithValue(
+		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
 			&pair.state,
 		).AddFee(
 			tokenID, pairReward.Uint64(), BaseLPFeesPerShare,

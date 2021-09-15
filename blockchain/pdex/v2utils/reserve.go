@@ -280,7 +280,7 @@ func TrackFee(
 			if i == len(reserves)-1 {
 				feePerReserve += fee % uint64(mutualLen)
 			}
-			NewTradingPairWithValue(
+			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
 				reserve,
 			).AddFee(
 				common.PRVCoinID, feePerReserve, baseLPPerShare,
@@ -301,7 +301,7 @@ func TrackFee(
 		if tradeDirections[i] == TradeDirectionSell1 {
 			rewardToken = reserves[i].Token1ID()
 		}
-		NewTradingPairWithValue(
+		lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
 			reserves[i],
 		).AddFee(
 			rewardToken, rewardAmount, baseLPPerShare,

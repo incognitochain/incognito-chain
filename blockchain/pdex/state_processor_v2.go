@@ -439,7 +439,7 @@ func (sp *stateProcessorV2) trade(
 			}
 
 			for tokenID, amount := range md.RewardEarned[index] {
-				reserveState.AddFee(
+				pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = reserveState.AddFee(
 					tokenID, amount, BaseLPFeesPerShare,
 					pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
 					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
@@ -921,7 +921,7 @@ func (sp *stateProcessorV2) mintBlockReward(
 
 	pairReward := actionData.Amount
 
-	v2utils.NewTradingPairWithValue(
+	pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
 		&pair.state,
 	).AddFee(
 		actionData.TokenID, pairReward, BaseLPFeesPerShare,
