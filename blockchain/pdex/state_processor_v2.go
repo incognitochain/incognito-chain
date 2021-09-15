@@ -965,7 +965,7 @@ func (sp *stateProcessorV2) userMintNft(
 		burntAmount = acceptInst.BurntAmount()
 		nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
 		txReqID = acceptInst.TxReqID()
-		status = common.Pdexv3RejectStatus
+		status = common.Pdexv3AcceptStatus
 	default:
 		return nftIDs, nil, errors.New("Can not recognize status")
 	}

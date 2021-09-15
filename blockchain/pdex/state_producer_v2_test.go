@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -1350,6 +1351,20 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				t.Errorf("stateProducerV2.withdrawLPFee() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
+				for k, v := range got1 {
+					for key, value := range v.shares {
+						if !reflect.DeepEqual(value, tt.want1[k].shares[key]) {
+							fmt.Println(value.tradingFees)
+							fmt.Println(tt.want1[k].shares[key].tradingFees)
+							fmt.Println(value.lastLPFeesPerShare)
+							fmt.Println(tt.want1[k].shares[key].lastLPFeesPerShare)
+							t.Errorf("got = %v, want %v", value, tt.want1[k].shares[key])
+						}
+					}
+					if !reflect.DeepEqual(v.shares, tt.want1[k].shares) {
+						t.Errorf("got = %v, want %v", v.shares, tt.want1[k].shares)
+					}
+				}
 				t.Errorf("stateProducerV2.withdrawLPFee() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
