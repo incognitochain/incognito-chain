@@ -132,6 +132,9 @@ func (s *stateV2) Process(env StateEnvironment) error {
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
 		poolPair.stakingPoolFees = map[common.Hash]uint64{}
+		poolPair.stakingPoolFees[common.PRVCoinID] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -290,7 +293,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
-		poolPair.stakingPoolFees = make(map[common.Hash]uint64)
+		poolPair.stakingPoolFees = map[common.Hash]uint64{}
+		poolPair.stakingPoolFees[common.PRVCoinID] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
 	mintNftInstructions := [][]string{}
