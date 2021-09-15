@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -231,10 +232,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 							200, 100, 400,
 							big.NewInt(200), big.NewInt(800),
 							20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{},
-							map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             200,
@@ -384,9 +385,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 							*token0ID, *token1ID, 300, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             300,
@@ -418,9 +420,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             200,
@@ -512,6 +515,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 
 	config.AbortParam()
 	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
+	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -712,10 +716,10 @@ func Test_stateV2_Process(t *testing.T) {
 							200, 100, 400,
 							big.NewInt(200), big.NewInt(800),
 							20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{},
-							map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             200,
@@ -1006,9 +1010,10 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID: &Share{
 								amount: 200,
@@ -1028,11 +1033,20 @@ func Test_stateV2_StoreToDB(t *testing.T) {
 					stateDB: sDB,
 				},
 				stateChange: &StateChange{
-					poolPairIDs: map[string]bool{
-						poolPairID: true,
-					},
-					shares: map[string]bool{
-						nftID: true,
+					PoolPairs: map[string]*v2utils.PoolPairChange{
+						poolPairID: &v2utils.PoolPairChange{
+							IsChanged: true,
+							Shares: map[string]*v2utils.ShareChange{
+								nftID: &v2utils.ShareChange{
+									IsChanged:          true,
+									TradingFees:        map[string]bool{},
+									LastLPFeesPerShare: map[string]bool{},
+								},
+							},
+							LpFeesPerShare:  map[string]bool{},
+							ProtocolFees:    map[string]bool{},
+							StakingPoolFees: map[string]bool{},
+						},
 					},
 				},
 			},
@@ -1100,9 +1114,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount: 200,
@@ -1164,10 +1179,9 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					processor: stateProcessorV2{},
 				},
 				stateChange: &StateChange{
-					poolPairIDs: map[string]bool{},
-					shares:      map[string]bool{},
-					orderIDs:    map[string]bool{},
-					stakers:     map[string]map[string]bool{},
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					OrderIDs:     map[string]bool{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
 			want: &stateV2{
@@ -1180,9 +1194,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount: 200,
@@ -1202,14 +1217,25 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				processor:         stateProcessorV2{},
 			},
 			want1: &StateChange{
-				poolPairIDs: map[string]bool{
-					poolPairID: true,
+				PoolPairs: map[string]*v2utils.PoolPairChange{
+					poolPairID: &v2utils.PoolPairChange{
+						IsChanged: true,
+						Shares: map[string]*v2utils.ShareChange{
+							nftID1: &v2utils.ShareChange{
+								IsChanged: true,
+								TradingFees: map[string]bool{
+									common.PRVIDStr: true,
+								},
+								LastLPFeesPerShare: map[string]bool{},
+							},
+						},
+						LpFeesPerShare:  map[string]bool{},
+						ProtocolFees:    map[string]bool{},
+						StakingPoolFees: map[string]bool{},
+					},
 				},
-				shares: map[string]bool{
-					nftID1: true,
-				},
-				orderIDs: map[string]bool{},
-				stakers:  map[string]map[string]bool{},
+				OrderIDs:     map[string]bool{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{},
 			},
 			wantErr: false,
 		},
@@ -1225,9 +1251,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount: 200,
@@ -1272,9 +1299,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 								*token0ID, *token1ID, 200, 100, 400,
 								big.NewInt(0).SetUint64(200),
 								big.NewInt(0).SetUint64(800), 20000,
-								map[common.Hash]*big.Int{},
-								map[common.Hash]uint64{}, map[common.Hash]uint64{},
 							),
+							lpFeesPerShare:  map[common.Hash]*big.Int{},
+							protocolFees:    map[common.Hash]uint64{},
+							stakingPoolFees: map[common.Hash]uint64{},
 							shares: map[string]*Share{
 								nftID1: &Share{
 									amount:             200,
@@ -1307,10 +1335,9 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					processor: stateProcessorV2{},
 				},
 				stateChange: &StateChange{
-					poolPairIDs: map[string]bool{},
-					shares:      map[string]bool{},
-					orderIDs:    map[string]bool{},
-					stakers:     map[string]map[string]bool{},
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					OrderIDs:     map[string]bool{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
 			want: &stateV2{
@@ -1323,9 +1350,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount: 200,
@@ -1345,12 +1373,25 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				processor:         stateProcessorV2{},
 			},
 			want1: &StateChange{
-				poolPairIDs: map[string]bool{},
-				shares: map[string]bool{
-					nftID1: true,
+				PoolPairs: map[string]*v2utils.PoolPairChange{
+					poolPairID: &v2utils.PoolPairChange{
+						IsChanged: false,
+						Shares: map[string]*v2utils.ShareChange{
+							nftID1: &v2utils.ShareChange{
+								IsChanged: false,
+								TradingFees: map[string]bool{
+									common.PRVIDStr: true,
+								},
+								LastLPFeesPerShare: map[string]bool{},
+							},
+						},
+						LpFeesPerShare:  map[string]bool{},
+						ProtocolFees:    map[string]bool{},
+						StakingPoolFees: map[string]bool{},
+					},
 				},
-				orderIDs: map[string]bool{},
-				stakers:  map[string]map[string]bool{},
+				OrderIDs:     map[string]bool{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{},
 			},
 			wantErr: false,
 		},
@@ -1366,9 +1407,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             200,
@@ -1428,10 +1470,9 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					processor: stateProcessorV2{},
 				},
 				stateChange: &StateChange{
-					poolPairIDs: map[string]bool{},
-					shares:      map[string]bool{},
-					orderIDs:    map[string]bool{},
-					stakers:     map[string]map[string]bool{},
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					OrderIDs:     map[string]bool{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
 			want: &stateV2{
@@ -1444,9 +1485,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							*token0ID, *token1ID, 200, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
-							map[common.Hash]*big.Int{},
-							map[common.Hash]uint64{}, map[common.Hash]uint64{},
 						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             200,
@@ -1464,14 +1506,23 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				processor:         stateProcessorV2{},
 			},
 			want1: &StateChange{
-				poolPairIDs: map[string]bool{
-					poolPairID: true,
+				PoolPairs: map[string]*v2utils.PoolPairChange{
+					poolPairID: &v2utils.PoolPairChange{
+						IsChanged: true,
+						Shares: map[string]*v2utils.ShareChange{
+							nftID1: &v2utils.ShareChange{
+								IsChanged:          true,
+								TradingFees:        map[string]bool{},
+								LastLPFeesPerShare: map[string]bool{},
+							},
+						},
+						LpFeesPerShare:  map[string]bool{},
+						ProtocolFees:    map[string]bool{},
+						StakingPoolFees: map[string]bool{},
+					},
 				},
-				shares: map[string]bool{
-					nftID1: true,
-				},
-				orderIDs: map[string]bool{},
-				stakers:  map[string]map[string]bool{},
+				OrderIDs:     map[string]bool{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{},
 			},
 			wantErr: false,
 		},
@@ -1541,11 +1592,9 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					processor: stateProcessorV2{},
 				},
 				stateChange: &StateChange{
-					poolPairIDs:  map[string]bool{},
-					shares:       map[string]bool{},
-					orderIDs:     map[string]bool{},
-					stakingPools: map[string]bool{},
-					stakers:      map[string]map[string]bool{},
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					OrderIDs:     map[string]bool{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
 			want: &stateV2{
@@ -1572,15 +1621,18 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				processor: stateProcessorV2{},
 			},
 			want1: &StateChange{
-				poolPairIDs: map[string]bool{},
-				shares:      map[string]bool{},
-				orderIDs:    map[string]bool{},
-				stakingPools: map[string]bool{
-					common.PRVIDStr: true,
-				},
-				stakers: map[string]map[string]bool{
-					common.PRVIDStr: map[string]bool{
-						nftID1: true,
+				PoolPairs: map[string]*v2utils.PoolPairChange{},
+				OrderIDs:  map[string]bool{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{
+					common.PRVIDStr: &v2utils.StakingPoolChange{
+						RewardsPerShare: map[string]bool{},
+						Stakers: map[string]*v2utils.StakerChange{
+							nftID1: &v2utils.StakerChange{
+								IsChanged:           true,
+								Rewards:             map[string]bool{},
+								LastRewardsPerShare: map[string]bool{},
+							},
+						},
 					},
 				},
 			},
@@ -1658,10 +1710,9 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					processor: stateProcessorV2{},
 				},
 				stateChange: &StateChange{
-					poolPairIDs: map[string]bool{},
-					shares:      map[string]bool{},
-					orderIDs:    map[string]bool{},
-					stakers:     map[string]map[string]bool{},
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					OrderIDs:     map[string]bool{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
 			want: &stateV2{
@@ -1688,12 +1739,18 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				processor: stateProcessorV2{},
 			},
 			want1: &StateChange{
-				poolPairIDs: map[string]bool{},
-				shares:      map[string]bool{},
-				orderIDs:    map[string]bool{},
-				stakers: map[string]map[string]bool{
-					common.PRVIDStr: map[string]bool{
-						nftID1: true,
+				PoolPairs: map[string]*v2utils.PoolPairChange{},
+				OrderIDs:  map[string]bool{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{
+					common.PRVIDStr: &v2utils.StakingPoolChange{
+						RewardsPerShare: map[string]bool{},
+						Stakers: map[string]*v2utils.StakerChange{
+							nftID1: &v2utils.StakerChange{
+								IsChanged:           false,
+								Rewards:             map[string]bool{},
+								LastRewardsPerShare: map[string]bool{},
+							},
+						},
 					},
 				},
 			},
@@ -1771,10 +1828,9 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					processor: stateProcessorV2{},
 				},
 				stateChange: &StateChange{
-					poolPairIDs: map[string]bool{},
-					shares:      map[string]bool{},
-					orderIDs:    map[string]bool{},
-					stakers:     map[string]map[string]bool{},
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					OrderIDs:     map[string]bool{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
 			want: &stateV2{
@@ -1801,12 +1857,18 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				processor: stateProcessorV2{},
 			},
 			want1: &StateChange{
-				poolPairIDs: map[string]bool{},
-				shares:      map[string]bool{},
-				orderIDs:    map[string]bool{},
-				stakers: map[string]map[string]bool{
-					common.PRVIDStr: map[string]bool{
-						nftID1: true,
+				PoolPairs: map[string]*v2utils.PoolPairChange{},
+				OrderIDs:  map[string]bool{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{
+					common.PRVIDStr: &v2utils.StakingPoolChange{
+						RewardsPerShare: map[string]bool{},
+						Stakers: map[string]*v2utils.StakerChange{
+							nftID1: &v2utils.StakerChange{
+								IsChanged:           false,
+								Rewards:             map[string]bool{},
+								LastRewardsPerShare: map[string]bool{},
+							},
+						},
 					},
 				},
 			},

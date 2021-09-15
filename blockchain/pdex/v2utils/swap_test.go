@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"strconv"
 	"testing"
 
@@ -40,18 +41,25 @@ func TestProduceAcceptedTrade(t *testing.T) {
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
-			// s, _ := json.Marshal(testdata)
-			// fmt.Println(string(s))
 
+			// fill trade path with blank data, except for reserves
 			orderbooks := make([]OrderBookIterator, len(testdata.Reserves))
 			dummyTradePath := make([]string, len(testdata.Reserves))
+			var lpFeesPerShares []map[common.Hash]*big.Int
+			var protocolFees, stakingPoolFees []map[common.Hash]uint64
 			for index, item := range testdata.Orderbooks {
 				orderbooks[index] = &item
 				dummyTradePath[index] = "pair" + strconv.Itoa(index)
+				lpFeesPerShares = append(lpFeesPerShares, nil)
+				protocolFees = append(protocolFees, nil)
+				stakingPoolFees = append(stakingPoolFees, nil)
 			}
 
 			// expected outputs will have RequestTxID, shardID zeroed. Those data are out of scope for this test
-			acceptedMd, changedReserves, err := MaybeAcceptTrade(testdata.AmountIn, 0, dummyTradePath, blankReceiver, testdata.Reserves, testdata.TradeDirections, common.PRVCoinID, 0, orderbooks)
+			acceptedMd, changedReserves, err := MaybeAcceptTrade(
+				testdata.AmountIn, 0, dummyTradePath, blankReceiver,
+				testdata.Reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
+				testdata.TradeDirections, common.PRVCoinID, 0, orderbooks)
 			acn := instruction.Action{Content: acceptedMd}
 			if testcase.ExpectSuccess {
 				encodedResult, _ := json.Marshal(TestResult{acn.StringSlice(), changedReserves})

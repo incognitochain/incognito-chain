@@ -95,7 +95,7 @@ func (sp *stateProcessorV2) waitingContribution(
 	contribStatus := v2.ContributionStatus{
 		Token0ID:                contributionValue.TokenID().String(),
 		Token0ContributedAmount: contributionValue.Amount(),
-		Status:                  common.PDEContributionWaitingChainStatus,
+		Status:                  common.PDEContributionWaitingStatus,
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -149,7 +149,7 @@ func (sp *stateProcessorV2) refundContribution(
 	refundContributionValue := refundContribution.Value()
 
 	contribStatus := v2.ContributionStatus{
-		Status: common.PDEContributionRefundChainStatus,
+		Status: common.PDEContributionRefundStatus,
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -178,6 +178,7 @@ func (sp *stateProcessorV2) matchContribution(
 	map[string]*PoolPairState,
 	*v2.ContributionStatus, error,
 ) {
+	Logger.log.Info("[pdex] matchContribution")
 	matchAddLiquidityInst := instruction.MatchAddLiquidity{}
 	err := matchAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {
@@ -217,7 +218,7 @@ func (sp *stateProcessorV2) matchContribution(
 	delete(waitingContributions, matchContribution.PairHash())
 
 	contribStatus := v2.ContributionStatus{
-		Status: common.PDEContributionMatchedChainStatus,
+		Status: common.PDEContributionAcceptedStatus,
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -298,7 +299,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	} else {
 		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
 			contribStatus = v2.ContributionStatus{
-				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
+				Status:                  common.PDEContributionMatchedNReturnedStatus,
 				Token0ID:                matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Token0ContributedAmount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				Token0ReturnedAmount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
@@ -308,7 +309,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			}
 		} else {
 			contribStatus = v2.ContributionStatus{
-				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
+				Status:                  common.PDEContributionMatchedNReturnedStatus,
 				Token1ID:                matchAndReturnAddLiquidity.ExistedTokenID().String(),
 				Token1ContributedAmount: matchAndReturnAddLiquidity.ExistedTokenActualAmount(),
 				Token1ReturnedAmount:    matchAndReturnAddLiquidity.ExistedTokenReturnAmount(),
@@ -417,15 +418,18 @@ func (sp *stateProcessorV2) trade(
 			if !exists {
 				return pairs, fmt.Errorf("Cannot find pair %s for trade", pairID)
 			}
-			reserveState := &v2.TradingPair{&pair.state}
+			reserveState := v2utils.NewTradingPairWithValue(
+				&pair.state,
+			)
 			err := reserveState.ApplyReserveChanges(md.PairChanges[index][0], md.PairChanges[index][1])
 			if err != nil {
 				return pairs, err
 			}
 
 			for tokenID, amount := range md.RewardEarned[index] {
-				reserveState.AddFee(
+				pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = reserveState.AddFee(
 					tokenID, amount, BaseLPFeesPerShare,
+					pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
 					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
 				)
 			}
@@ -507,7 +511,7 @@ func (sp *stateProcessorV2) rejectWithdrawLiquidity(
 		return nil, err
 	}
 	withdrawStatus := v2.WithdrawStatus{
-		Status: common.PDEWithdrawalRejectedChainStatus,
+		Status: common.Pdexv3RejectStatus,
 	}
 	contentBytes, _ := json.Marshal(withdrawStatus)
 	err = statedb.TrackPdexv3Status(
@@ -557,7 +561,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			return poolPairs, nil, err
 		}
 		withdrawStatus = &v2.WithdrawStatus{
-			Status:       common.PDEWithdrawalAcceptedChainStatus,
+			Status:       common.Pdexv3AcceptStatus,
 			Token0ID:     poolPair.state.Token0ID().String(),
 			Token0Amount: token0Amount,
 			Token1ID:     poolPair.state.Token1ID().String(),
@@ -770,10 +774,10 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			return pairs, errors.New(msg)
 		}
 
-		// update state after fee wirthdrawal
-		share.tradingFees = map[common.Hash]uint64{}
+		// update state after fee withdrawal
+		share.tradingFees = resetKeyValueToZero(share.tradingFees)
 		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.state.LPFeesPerShare() {
+		for tokenID, value := range poolPair.lpFeesPerShare {
 			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
 		}
 
@@ -841,7 +845,8 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 			return pairs, errors.New(msg)
 		}
 
-		poolPair.state.SetProtocolFees(map[common.Hash]uint64{})
+		// update state after fee withdrawal
+		poolPair.protocolFees = resetKeyValueToZero(poolPair.protocolFees)
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeSuccessStatus
 
 		_, found := sp.rewardCache[actionData.TxReqID.String()]
@@ -904,8 +909,11 @@ func (sp *stateProcessorV2) mintBlockReward(
 
 	pairReward := actionData.Amount
 
-	(&v2utils.TradingPair{&pair.state}).AddFee(
+	pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
+		&pair.state,
+	).AddFee(
 		actionData.TokenID, pairReward, BaseLPFeesPerShare,
+		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
 		0, 0, []common.Hash{},
 	)
 
@@ -918,7 +926,7 @@ func (sp *stateProcessorV2) userMintNft(
 	if len(inst) != 3 {
 		return nftIDs, nil, fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
 	}
-	status := utils.EmptyString
+	status := byte(0)
 	nftID := utils.EmptyString
 	txReqID := common.Hash{}
 	var burntAmount uint64
@@ -927,7 +935,6 @@ func (sp *stateProcessorV2) userMintNft(
 	}
 	switch inst[1] {
 	case common.Pdexv3RejectUserMintNftStatus:
-		status = common.Pdexv3RejectUserMintNftStatus
 		refundInst := instruction.NewRejectUserMintNft()
 		err := refundInst.FromStringSlice(inst)
 		if err != nil {
@@ -935,8 +942,8 @@ func (sp *stateProcessorV2) userMintNft(
 		}
 		burntAmount = refundInst.Amount()
 		txReqID = refundInst.TxReqID()
+		status = common.Pdexv3RejectStatus
 	case common.Pdexv3AcceptUserMintNftStatus:
-		status = common.Pdexv3AcceptUserMintNftStatus
 		acceptInst := instruction.NewAcceptUserMintNft()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
@@ -946,6 +953,7 @@ func (sp *stateProcessorV2) userMintNft(
 		burntAmount = acceptInst.BurntAmount()
 		nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
 		txReqID = acceptInst.TxReqID()
+		status = common.Pdexv3AcceptStatus
 	default:
 		return nftIDs, nil, errors.New("Can not recognize status")
 	}
@@ -977,7 +985,8 @@ func (sp *stateProcessorV2) staking(
 	if len(inst) < 2 {
 		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
 	}
-	var status, nftID, stakingPoolID string
+	var status byte
+	var nftID, stakingPoolID string
 	var txReqID common.Hash
 	var liquidity uint64
 	switch inst[1] {
@@ -988,7 +997,7 @@ func (sp *stateProcessorV2) staking(
 			return stakingPoolStates, nil, err
 		}
 		txReqID = acceptInst.TxReqID()
-		status = common.Pdexv3AcceptStakingStatus
+		status = common.Pdexv3AcceptStatus
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Liquidity()
 		nftID = acceptInst.NftID().String()
@@ -1004,7 +1013,7 @@ func (sp *stateProcessorV2) staking(
 			return stakingPoolStates, nil, err
 		}
 		txReqID = rejectInst.TxReqID()
-		status = common.Pdexv3RejectStakingStatus
+		status = common.Pdexv3RejectStatus
 		stakingPoolID = rejectInst.TokenID().String()
 		liquidity = rejectInst.Amount()
 	}
@@ -1035,7 +1044,8 @@ func (sp *stateProcessorV2) unstaking(
 	if len(inst) < 2 {
 		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
 	}
-	var status, nftID, stakingPoolID string
+	var status byte
+	var nftID, stakingPoolID string
 	var txReqID common.Hash
 	var liquidity uint64
 	switch inst[1] {
@@ -1046,7 +1056,7 @@ func (sp *stateProcessorV2) unstaking(
 			return stakingPoolStates, nil, err
 		}
 		txReqID = acceptInst.TxReqID()
-		status = common.Pdexv3AcceptStakingStatus
+		status = common.Pdexv3AcceptStatus
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Amount()
 		nftID = acceptInst.NftID().String()
@@ -1062,7 +1072,7 @@ func (sp *stateProcessorV2) unstaking(
 			return stakingPoolStates, nil, err
 		}
 		txReqID = rejectInst.TxReqID()
-		status = common.Pdexv3RejectStakingStatus
+		status = common.Pdexv3RejectStatus
 	}
 	unstakingStatus := v2.UnstakingStatus{
 		Status:        status,
@@ -1155,8 +1165,8 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 			return pools, errors.New(msg)
 		}
 
-		// update state after reward wirthdrawal
-		share.rewards = map[common.Hash]uint64{}
+		// update state after reward withdrawal
+		share.rewards = resetKeyValueToZero(share.rewards)
 		share.lastRewardsPerShare = pool.RewardsPerShare()
 
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardSuccessStatus

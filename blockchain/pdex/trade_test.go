@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -45,6 +46,12 @@ func init() {
 	d, _ := incdb.Open("leveldb", dbPath)
 	testWarper = statedb.NewDatabaseAccessWarper(d)
 	testDB, _ = statedb.NewWithPrefixTrie(emptyRoot, testWarper)
+}
+
+func setTestTradeConfig() {
+	config.AbortParam()
+	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
+	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
 }
 
 func TestSortOrder(t *testing.T) {
@@ -89,6 +96,7 @@ func TestSortOrder(t *testing.T) {
 }
 
 func TestProduceTrade(t *testing.T) {
+	setTestTradeConfig()
 	type TestData struct {
 		Metadata metadataPdexv3.TradeRequest `json:"metadata"`
 	}
@@ -121,6 +129,7 @@ func TestProduceTrade(t *testing.T) {
 }
 
 func TestProduceSameBlockTrades(t *testing.T) {
+	setTestTradeConfig()
 	type TestData struct {
 		Metadata []metadataPdexv3.TradeRequest `json:"metadata"`
 	}
@@ -158,6 +167,7 @@ func TestProduceSameBlockTrades(t *testing.T) {
 }
 
 func TestProcessTrade(t *testing.T) {
+	setTestTradeConfig()
 	type TestData struct {
 		Instructions [][]string `json:"instructions"`
 	}
@@ -185,6 +195,7 @@ func TestProcessTrade(t *testing.T) {
 }
 
 func TestBuildResponseTrade(t *testing.T) {
+	setTestTradeConfig()
 	type TestData struct {
 		Instructions [][]string `json:"instructions"`
 	}
@@ -271,9 +282,9 @@ type Testcase struct {
 	ExpectSuccess bool   `json:"expectSuccess"`
 }
 
+// format a pool, discarding data irrelevant to this test
 type PoolFormatter struct {
 	State     *rawdbv2.Pdexv3PoolPair `json:"state"`
-	Shares    map[string]*Share       `json:"shares"`
 	Orderbook Orderbook               `json:"orderbook"`
 }
 
@@ -285,7 +296,7 @@ func (sf *StateFormatter) State() *stateV2 {
 	s := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
 		&Params{}, nil, make(map[string]uint64))
 	for k, v := range sf.PoolPairs {
-		s.poolPairs[k] = &PoolPairState{state: *v.State, shares: v.Shares, orderbook: v.Orderbook}
+		s.poolPairs[k] = &PoolPairState{state: *v.State, orderbook: v.Orderbook}
 	}
 	return s
 }
@@ -293,7 +304,7 @@ func (sf *StateFormatter) State() *stateV2 {
 func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 	sf.PoolPairs = make(map[string]PoolFormatter)
 	for k, v := range s.poolPairs {
-		sf.PoolPairs[k] = PoolFormatter{State: &v.state, Shares: v.shares, Orderbook: v.orderbook}
+		sf.PoolPairs[k] = PoolFormatter{State: &v.state, Orderbook: v.orderbook}
 	}
 	return sf
 }

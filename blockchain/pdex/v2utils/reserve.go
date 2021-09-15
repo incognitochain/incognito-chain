@@ -20,6 +20,20 @@ type TradingPair struct {
 	*rawdbv2.Pdexv3PoolPair
 }
 
+func NewTradingPair() *TradingPair {
+	return &TradingPair{
+		Pdexv3PoolPair: rawdbv2.NewPdexv3PoolPair(),
+	}
+}
+
+func NewTradingPairWithValue(
+	reserve *rawdbv2.Pdexv3PoolPair,
+) *TradingPair {
+	return &TradingPair{
+		Pdexv3PoolPair: reserve,
+	}
+}
+
 func (tp *TradingPair) UnmarshalJSON(data []byte) error {
 	tp.Pdexv3PoolPair = &rawdbv2.Pdexv3PoolPair{}
 	return json.Unmarshal(data, tp.Pdexv3PoolPair)
@@ -164,7 +178,9 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 // MaybeAcceptTrade() performs a trade determined by input amount, path, directions & order book state. Upon success, state changes are applied in memory & collected in an instruction.
 // A returned error means the trade is refunded
 func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy.OTAReceiver,
-	reserves []*rawdbv2.Pdexv3PoolPair, tradeDirections []byte,
+	reserves []*rawdbv2.Pdexv3PoolPair, lpFeesPerShares []map[common.Hash]*big.Int,
+	protocolFees, stakingPoolFees []map[common.Hash]uint64,
+	tradeDirections []byte,
 	tokenToBuy common.Hash, minAmount uint64, orderbooks []OrderBookIterator,
 ) (*metadataPdexv3.AcceptedTrade, []*rawdbv2.Pdexv3PoolPair, error) {
 	mutualLen := len(reserves)
@@ -192,7 +208,9 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 		totalBuyAmount = uint64(0)
 
 		for order, ordID, err := orderbooks[i].NextOrder(tradeDirections[i]); err == nil; order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]) {
-			buyAmount, temp, token0Change, token1Change, err := (&TradingPair{reserves[i]}).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
+			buyAmount, temp, token0Change, token1Change, err := NewTradingPairWithValue(
+				reserves[i],
+			).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -240,6 +258,7 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 func TrackFee(
 	fee uint64, feeInPRV bool, baseLPPerShare *big.Int,
 	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
+	lpFeesPerShares []map[common.Hash]*big.Int, protocolFees, stakingPoolFees []map[common.Hash]uint64,
 	tradeDirections []byte, orderbooks []OrderBookIterator,
 	acceptedMeta *metadataPdexv3.AcceptedTrade,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
@@ -261,8 +280,11 @@ func TrackFee(
 			if i == len(reserves)-1 {
 				feePerReserve += fee % uint64(mutualLen)
 			}
-			(&TradingPair{reserve}).AddFee(
+			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
+				reserve,
+			).AddFee(
 				common.PRVCoinID, feePerReserve, baseLPPerShare,
+				lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 			)
 			acceptedMeta.RewardEarned[i][common.PRVCoinID] = feePerReserve
@@ -279,8 +301,11 @@ func TrackFee(
 		if tradeDirections[i] == TradeDirectionSell1 {
 			rewardToken = reserves[i].Token1ID()
 		}
-		(&TradingPair{reserves[i]}).AddFee(
+		lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
+			reserves[i],
+		).AddFee(
 			rewardToken, rewardAmount, baseLPPerShare,
+			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
 			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 		)
 		acceptedMeta.RewardEarned[i][rewardToken] = rewardAmount
@@ -295,7 +320,10 @@ func TrackFee(
 		totalBuyAmount = uint64(0)
 
 		for order, ordID, err := orderbooks[i].NextOrder(tradeDirections[i]); err == nil; order, ordID, err = orderbooks[i].NextOrder(tradeDirections[i]) {
-			buyAmount, temp, token0Change, token1Change, err := (&TradingPair{reserves[i]}).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
+			buyAmount, temp, token0Change, token1Change, err :=
+				NewTradingPairWithValue(
+					reserves[i],
+				).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
 				return nil, err
 			}
@@ -340,8 +368,10 @@ func TrackFee(
 
 func (tp *TradingPair) AddFee(
 	tokenID common.Hash, amount uint64, baseLPPerShare *big.Int,
+	rootLpFeesPerShare map[common.Hash]*big.Int, rootProtocolFees, rootStakingPoolFees map[common.Hash]uint64,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
-) {
+
+) (map[common.Hash]*big.Int, map[common.Hash]uint64, map[common.Hash]uint64) {
 	isStakingRewardToken := false
 	for _, stakingRewardToken := range stakingRewardTokens {
 		if tokenID == stakingRewardToken {
@@ -371,35 +401,35 @@ func (tp *TradingPair) AddFee(
 	protocolFees = new(big.Int).Div(protocolFees, new(big.Int).SetUint64(100))
 
 	if protocolFees.IsUint64() && protocolFees.Uint64() != 0 {
-		oldProtocolFees, isExisted := tp.ProtocolFees()[tokenID]
+		oldProtocolFees, isExisted := rootProtocolFees[tokenID]
 		if !isExisted {
 			oldProtocolFees = uint64(0)
 		}
-		tempProtocolFees := tp.ProtocolFees()
+		tempProtocolFees := rootProtocolFees
 		tempProtocolFees[tokenID] = oldProtocolFees + protocolFees.Uint64()
 
-		tp.SetProtocolFees(tempProtocolFees)
+		rootProtocolFees = tempProtocolFees
 	}
 
 	stakingRewards := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
 	stakingRewards = new(big.Int).Div(stakingRewards, new(big.Int).SetUint64(100))
 
 	if stakingRewards.IsUint64() && stakingRewards.Uint64() != 0 {
-		oldStakingRewards, isExisted := tp.StakingPoolFees()[tokenID]
+		oldStakingRewards, isExisted := rootStakingPoolFees[tokenID]
 		if !isExisted {
 			oldStakingRewards = uint64(0)
 		}
-		tempStakingRewards := tp.StakingPoolFees()
+		tempStakingRewards := rootStakingPoolFees
 		tempStakingRewards[tokenID] = oldStakingRewards + stakingRewards.Uint64()
 
-		tp.SetStakingPoolFees(tempStakingRewards)
+		rootStakingPoolFees = tempStakingRewards
 	}
 
 	if tp.ShareAmount() == 0 {
-		return
+		return rootLpFeesPerShare, rootProtocolFees, rootStakingPoolFees
 	}
 
-	oldLPFeesPerShare, isExisted := tp.LPFeesPerShare()[tokenID]
+	oldLPFeesPerShare, isExisted := rootLpFeesPerShare[tokenID]
 	if !isExisted {
 		oldLPFeesPerShare = big.NewInt(0)
 	}
@@ -413,10 +443,11 @@ func (tp *TradingPair) AddFee(
 
 	// update accumulated sum of (fee / LP share)
 	newLPFeesPerShare := new(big.Int).Add(oldLPFeesPerShare, deltaLPFeesPerShare)
-	tempLPFeesPerShare := tp.LPFeesPerShare()
+	tempLPFeesPerShare := rootLpFeesPerShare
 	tempLPFeesPerShare[tokenID] = newLPFeesPerShare
 
-	tp.SetLPFeesPerShare(tempLPFeesPerShare)
+	rootLpFeesPerShare = tempLPFeesPerShare
+	return rootLpFeesPerShare, rootProtocolFees, rootStakingPoolFees
 }
 
 func IsEmptyLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {

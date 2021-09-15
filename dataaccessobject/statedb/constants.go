@@ -70,15 +70,22 @@ const (
 	PortalProcessedUnshieldRequestBatchObjectType = 45
 
 	// pDex v3
-	Pdexv3StatusObjectType       = 46
-	Pdexv3ParamsObjectType       = 47
-	Pdexv3ContributionObjectType = 48
-	Pdexv3PoolPairObjectType     = 49
-	Pdexv3ShareObjectType        = 50
-	Pdexv3NftObjectType          = 51
-	Pdexv3OrderObjectType        = 52
-	Pdexv3StakingPoolObjectType  = 53
-	Pdexv3StakerObjectType       = 54
+	Pdexv3StatusObjectType                    = 46
+	Pdexv3ParamsObjectType                    = 47
+	Pdexv3ContributionObjectType              = 48
+	Pdexv3PoolPairObjectType                  = 49
+	Pdexv3ShareObjectType                     = 50
+	Pdexv3NftObjectType                       = 51
+	Pdexv3OrderObjectType                     = 52
+	Pdexv3StakerObjectType                    = 53
+	Pdexv3PoolPairLpFeePerShareObjectType     = 54
+	Pdexv3PoolPairProtocolFeeObjectType       = 55
+	Pdexv3PoolPairStakingPoolFeeObjectType    = 56
+	Pdexv3ShareTradingFeeObjectType           = 57
+	Pdexv3ShareLastLPFeesPerShareObjectType   = 58
+	Pdexv3StakingPoolRewardPerShareObjectType = 59
+	Pdexv3StakerRewardObjectType              = 60
+	Pdexv3StakerLastRewardPerShareObjectType  = 61
 )
 
 // Prefix length

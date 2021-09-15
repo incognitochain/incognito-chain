@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -306,7 +307,7 @@ func (s *stateV1) Upgrade(env StateEnvironment) State {
 	return state
 }
 
-func (s *stateV1) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
+func (s *stateV1) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChange) error {
 	var err error
 	statedb.DeleteWaitingPDEContributions(
 		env.StateDB(),
@@ -388,7 +389,7 @@ func (s *stateV1) ClearCache() {
 	s.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution)
 }
 
-func (s *stateV1) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
+func (s *stateV1) GetDiff(compareState State, stateChange *v2utils.StateChange) (State, *v2utils.StateChange, error) {
 	if compareState == nil {
 		return nil, stateChange, errors.New("compareState is nil")
 	}

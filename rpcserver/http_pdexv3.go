@@ -291,8 +291,11 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok || beaconHeight == 0 {
+		beaconHeight = float64(httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight)
+	}
 
-	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
 	}
@@ -1805,8 +1808,11 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params inter
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok || beaconHeight == 0 {
+		beaconHeight = float64(httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight)
+	}
 
-	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
 	}
