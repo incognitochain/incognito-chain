@@ -238,7 +238,7 @@ func (b *beaconCommitteeStateBase) reset() {
 	b.stakingTx = make(map[string]common.Hash)
 }
 
-func (b *beaconCommitteeStateBase) setHashes(hashes *BeaconCommitteeStateHash) {
+func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconCommitteeStateHash) {
 	b.hashes = hashes
 }
 

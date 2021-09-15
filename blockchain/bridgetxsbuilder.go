@@ -335,7 +335,6 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 	key, err := wallet.Base58CheckDeserialize(issuingEVMAcceptedInst.ReceiverAddrStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occurs while deserialize receiver address string: ", err)
 		Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
 		return nil, nil
 	}

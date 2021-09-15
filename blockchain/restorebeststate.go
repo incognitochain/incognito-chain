@@ -28,11 +28,13 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		}
 	}
 
-	if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV3Height {
-		if err := beaconBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
+	if beaconBestState.BeaconHeight > config.Param().ConsensusParam.BlockProducingV3Height {
+		if err := beaconBestState.checkBlockProducingV3Config(); err != nil {
+			return err
+		}
+		if err := beaconBestState.upgradeBlockProducingV3Config(); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }

@@ -459,14 +459,19 @@ func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironmentWithValue
 // Upgrade to v3 if and only if current version is 2 and beacon height == staking flow v3 height
 // @NOTICE: DO NOT UPDATE IN BLOCK WITH SWAP INSTRUCTION
 func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) error {
+
+	if shardBestState.BeaconHeight == config.Param().ConsensusParam.BlockProducingV3Height {
+		err := shardBestState.checkAndUpgradeStakingFlowV3Config()
+		if err != nil {
+			return err
+		}
+	}
+
 	if shardBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height &&
 		shardBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height {
 		return nil
 	}
 	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
-		if err := shardBestState.checkStakingFlowV3Config(); err != nil {
-			return err
-		}
 		if shardBestState.CommitteeStateVersion() != committeestate.STAKING_FLOW_V2 {
 			return nil
 		}
@@ -505,9 +510,6 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 	}
 
 	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
-		if err := shardBestState.upgradeStakingFlowV3Config(); err != nil {
-			return err
-		}
 		shardBestState.shardCommitteeState = committeestate.NewShardCommitteeStateV3WithValue(
 			committees,
 		)
@@ -519,18 +521,18 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 
 func (ShardBestState *ShardBestState) checkAndUpgradeStakingFlowV3Config() error {
 
-	if err := ShardBestState.checkStakingFlowV3Config(); err != nil {
+	if err := ShardBestState.checkBlockProducingV3Config(); err != nil {
 		return NewBlockChainError(UpgradeShardCommitteeStateError, err)
 	}
 
-	if err := ShardBestState.upgradeStakingFlowV3Config(); err != nil {
+	if err := ShardBestState.upgradeBlockProducingV3Config(); err != nil {
 		return NewBlockChainError(UpgradeShardCommitteeStateError, err)
 	}
 
 	return nil
 }
 
-func (shardBestState *ShardBestState) checkStakingFlowV3Config() error {
+func (shardBestState *ShardBestState) checkBlockProducingV3Config() error {
 
 	shardCommitteeSize := len(shardBestState.GetShardCommittee())
 	if shardCommitteeSize < SFV3_MinShardCommitteeSize {
@@ -541,7 +543,7 @@ func (shardBestState *ShardBestState) checkStakingFlowV3Config() error {
 	return nil
 }
 
-func (shardBestState *ShardBestState) upgradeStakingFlowV3Config() error {
+func (shardBestState *ShardBestState) upgradeBlockProducingV3Config() error {
 
 	if shardBestState.MinShardCommitteeSize < SFV3_MinShardCommitteeSize {
 		shardBestState.MinShardCommitteeSize = SFV3_MinShardCommitteeSize

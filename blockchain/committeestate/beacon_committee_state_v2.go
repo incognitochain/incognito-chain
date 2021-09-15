@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"reflect"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -103,7 +104,7 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 	}
 
 	b.addData(env)
-	b.setHashes(env.PreviousBlockHashes)
+	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -191,6 +192,9 @@ func (b *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		NewSwapRuleV3(),
 		NewAssignRuleV3(),
 	)
+
+	Logger.log.Infof("Upgrade Committee State V2 to V3, swap rule %+v, assign rule $+v",
+		reflect.TypeOf(*NewSwapRuleV3()), reflect.TypeOf(*NewAssignRuleV3()))
 	return committeeStateV3
 }
 
