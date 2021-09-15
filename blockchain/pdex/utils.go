@@ -938,3 +938,20 @@ func getRefundedAddOrderInstructions(md *metadataPdexv3.AddOrderRequest,
 	var refundInstructions [][]string = [][]string{sellingTokenRefundAction.StringSlice()}
 	return refundInstructions, nil
 }
+
+func resetKeyValueToZero(m map[common.Hash]uint64) map[common.Hash]uint64 {
+	for key := range m {
+		m[key] = 0
+	}
+	return m
+}
+
+func getMapWithoutZeroValue(m map[common.Hash]uint64) map[common.Hash]uint64 {
+	result := map[common.Hash]uint64{}
+	for key, value := range m {
+		if value != 0 {
+			result[key] = value
+		}
+	}
+	return result
+}
