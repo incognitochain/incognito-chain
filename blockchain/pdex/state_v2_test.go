@@ -1915,6 +1915,26 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				t.Errorf("stateV2.GetDiff() got = %+v, want %+v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
+				for k, v := range got1.PoolPairs {
+					if !reflect.DeepEqual(v, tt.want1.PoolPairs[k]) {
+						t.Errorf("got = %v, want %v", *v, tt.want1.PoolPairs[k])
+					}
+					for key, value := range v.Shares {
+						if !reflect.DeepEqual(value, tt.want1.PoolPairs[k].Shares[key]) {
+							t.Errorf("got = %v, want %v", *value, tt.want1.PoolPairs[k].Shares[key])
+						}
+					}
+				}
+				for k, v := range got1.StakingPools {
+					if !reflect.DeepEqual(v, tt.want1.StakingPools[k]) {
+						t.Errorf("got = %v, want %v", *v, tt.want1.StakingPools[k])
+					}
+					for key, value := range v.Stakers {
+						if !reflect.DeepEqual(value, tt.want1.StakingPools[k].Stakers[key]) {
+							t.Errorf("got = %v, want %v", *value, tt.want1.StakingPools[k].Stakers[key])
+						}
+					}
+				}
 				t.Errorf("stateV2.GetDiff() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
