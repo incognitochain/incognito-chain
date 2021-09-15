@@ -2091,24 +2091,6 @@ func (stateDB *StateDB) iterateWithPdexv3Nfts(prefix []byte) (map[string]uint64,
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3StakingPools(prefix []byte) (map[string]*Pdexv3StakingPoolState, error) {
-	res := map[string]*Pdexv3StakingPoolState{}
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		stakingPoolState := NewPdexv3StakingPoolState()
-		err := json.Unmarshal(newValue, stakingPoolState)
-		if err != nil {
-			return res, err
-		}
-		res[stakingPoolState.tokenID] = stakingPoolState
-	}
-	return res, nil
-}
-
 func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte) (
 	map[string]Pdexv3StakerState, error,
 ) {
@@ -2127,4 +2109,164 @@ func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte) (
 		stakers[stakerState.nftID.String()] = *stakerState
 	}
 	return stakers, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3PoolPairLpFeesPerShare(prefix []byte) (
+	map[common.Hash]*big.Int, error,
+) {
+	res := map[common.Hash]*big.Int{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		lpFeesPerShareState := NewPdexv3PoolPairLpFeePerShareState()
+		err := json.Unmarshal(newValue, lpFeesPerShareState)
+		if err != nil {
+			return res, err
+		}
+		res[lpFeesPerShareState.tokenID] = lpFeesPerShareState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3PoolPairProtocolFees(prefix []byte) (
+	map[common.Hash]uint64, error,
+) {
+	res := map[common.Hash]uint64{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		protocolFeesState := NewPdexv3PoolPairProtocolFeeState()
+		err := json.Unmarshal(newValue, protocolFeesState)
+		if err != nil {
+			return res, err
+		}
+		res[protocolFeesState.tokenID] = protocolFeesState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3PoolPairStakingPoolFees(prefix []byte) (
+	map[common.Hash]uint64, error,
+) {
+	res := map[common.Hash]uint64{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		stakingPoolFeesState := NewPdexv3PoolPairStakingPoolFeeState()
+		err := json.Unmarshal(newValue, stakingPoolFeesState)
+		if err != nil {
+			return res, err
+		}
+		res[stakingPoolFeesState.tokenID] = stakingPoolFeesState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3ShareTradingFees(prefix []byte) (
+	map[common.Hash]uint64, error,
+) {
+	res := map[common.Hash]uint64{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		tradingFeeState := NewPdexv3ShareTradingFeeState()
+		err := json.Unmarshal(newValue, tradingFeeState)
+		if err != nil {
+			return res, err
+		}
+		res[tradingFeeState.tokenID] = tradingFeeState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3ShareLastLpFeesPerShare(prefix []byte) (
+	map[common.Hash]*big.Int, error,
+) {
+	res := map[common.Hash]*big.Int{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		lastLpFeePerShareState := NewPdexv3ShareLastLpFeePerShareState()
+		err := json.Unmarshal(newValue, lastLpFeePerShareState)
+		if err != nil {
+			return res, err
+		}
+		res[lastLpFeePerShareState.tokenID] = lastLpFeePerShareState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3StakingPoolRewardsPerShare(prefix []byte) (
+	map[common.Hash]*big.Int, error,
+) {
+	res := map[common.Hash]*big.Int{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardsPerShareState := NewPdexv3StakingPoolRewardPerShareState()
+		err := json.Unmarshal(newValue, rewardsPerShareState)
+		if err != nil {
+			return res, err
+		}
+		res[rewardsPerShareState.tokenID] = rewardsPerShareState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3StakerLastRewardsPerShare(prefix []byte) (
+	map[common.Hash]*big.Int, error,
+) {
+	res := map[common.Hash]*big.Int{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		lastRewardPerShareState := NewPdexv3StakerLastRewardPerShareState()
+		err := json.Unmarshal(newValue, lastRewardPerShareState)
+		if err != nil {
+			return res, err
+		}
+		res[lastRewardPerShareState.tokenID] = lastRewardPerShareState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3StakerRewards(prefix []byte) (
+	map[common.Hash]uint64, error,
+) {
+	res := map[common.Hash]uint64{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		stakerRewardState := NewPdexv3StakerRewardState()
+		err := json.Unmarshal(newValue, stakerRewardState)
+		if err != nil {
+			return res, err
+		}
+		res[stakerRewardState.tokenID] = stakerRewardState.value
+	}
+	return res, nil
 }

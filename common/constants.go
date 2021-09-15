@@ -187,6 +187,9 @@ const (
 	Pdexv3AcceptStakingStatus     = "accept"
 	Pdexv3RejectUnstakingStatus   = "rejected"
 	Pdexv3AcceptUnstakingStatus   = "accept"
+
+	Pdexv3AcceptStatus = byte(1)
+	Pdexv3RejectStatus = byte(2)
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"

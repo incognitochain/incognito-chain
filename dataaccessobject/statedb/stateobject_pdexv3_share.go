@@ -10,10 +10,8 @@ import (
 )
 
 type Pdexv3ShareState struct {
-	nftID              common.Hash
-	amount             uint64
-	tradingFees        map[common.Hash]uint64
-	lastLPFeesPerShare map[common.Hash]*big.Int
+	nftID  common.Hash
+	amount uint64
 }
 
 func (ps *Pdexv3ShareState) NftID() common.Hash {
@@ -24,25 +22,13 @@ func (ps *Pdexv3ShareState) Amount() uint64 {
 	return ps.amount
 }
 
-func (ps *Pdexv3ShareState) TradingFees() map[common.Hash]uint64 {
-	return ps.tradingFees
-}
-
-func (ps *Pdexv3ShareState) LastLPFeesPerShare() map[common.Hash]*big.Int {
-	return ps.lastLPFeesPerShare
-}
-
 func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID              common.Hash              `json:"NftID"`
-		Amount             uint64                   `json:"Amount"`
-		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
-		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		NftID  common.Hash `json:"NftID"`
+		Amount uint64      `json:"Amount"`
 	}{
-		NftID:              ps.nftID,
-		Amount:             ps.amount,
-		TradingFees:        ps.tradingFees,
-		LastLPFeesPerShare: ps.lastLPFeesPerShare,
+		NftID:  ps.nftID,
+		Amount: ps.amount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -52,10 +38,8 @@ func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 
 func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID              common.Hash              `json:"NftID"`
-		Amount             uint64                   `json:"Amount"`
-		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
-		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		NftID  common.Hash `json:"NftID"`
+		Amount uint64      `json:"Amount"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -63,8 +47,6 @@ func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	}
 	ps.nftID = temp.NftID
 	ps.amount = temp.Amount
-	ps.tradingFees = temp.TradingFees
-	ps.lastLPFeesPerShare = temp.LastLPFeesPerShare
 	return nil
 }
 
@@ -78,19 +60,15 @@ func NewPdexv3ShareStateWithValue(
 	lastLPFeesPerShare map[common.Hash]*big.Int,
 ) *Pdexv3ShareState {
 	return &Pdexv3ShareState{
-		nftID:              nftID,
-		amount:             amount,
-		tradingFees:        tradingFees,
-		lastLPFeesPerShare: lastLPFeesPerShare,
+		nftID:  nftID,
+		amount: amount,
 	}
 }
 
 func (ps *Pdexv3ShareState) Clone() *Pdexv3ShareState {
 	return &Pdexv3ShareState{
-		nftID:              ps.nftID,
-		amount:             ps.amount,
-		tradingFees:        ps.tradingFees,
-		lastLPFeesPerShare: ps.lastLPFeesPerShare,
+		nftID:  ps.nftID,
+		amount: ps.amount,
 	}
 }
 

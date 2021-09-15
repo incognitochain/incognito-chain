@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -66,9 +67,8 @@ func newStateV2WithValue(
 	}
 }
 
-func initStateV2(
+func initStateV2FromDB(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 ) (*stateV2, error) {
 	paramsState, err := statedb.GetPdexv3Params(stateDB)
 	params := NewParamsWithValue(paramsState)
@@ -79,67 +79,18 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
-	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
+	poolPairs, err := initPoolPairStatesFromDB(stateDB)
 	if err != nil {
 		return nil, err
 	}
-	poolPairs := make(map[string]*PoolPairState)
-	for poolPairID, poolPairState := range poolPairsStates {
-		shares := make(map[string]*Share)
-		shareStates := make(map[string]statedb.Pdexv3ShareState)
-		shareStates, err = statedb.GetPdexv3Shares(stateDB, poolPairID)
-		if err != nil {
-			return nil, err
-		}
-		for nftID, shareState := range shareStates {
-			shares[nftID] = NewShareWithValue(
-				shareState.Amount(),
-				shareState.TradingFees(), shareState.LastLPFeesPerShare(),
-			)
-		}
-
-		orderbook := &Orderbook{[]*Order{}}
-		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairState.PoolPairID())
-		if err != nil {
-			return nil, err
-		}
-		for _, item := range orderMap {
-			v := item.Value()
-			orderbook.InsertOrder(&v)
-		}
-		poolPair := NewPoolPairStateWithValue(
-			poolPairState.Value(), shares, *orderbook,
-		)
-		poolPairs[poolPairID] = poolPair
-	}
-
 	nftIDs, err := statedb.GetPdexv3NftIDs(stateDB)
 	if err != nil {
 		return nil, err
 	}
-
-	stakingPoolStates, err := statedb.GetPdexv3StakingPools(stateDB)
+	stakingPools, err := initStakingPoolsFromDB(params.StakingPoolsShare, stateDB)
 	if err != nil {
 		return nil, err
 	}
-
-	stakingPools := map[string]*StakingPoolState{}
-	for stakingPoolID, stakingPoolState := range stakingPoolStates {
-		stakerStates, err := statedb.GetPdexv3Stakers(stateDB, stakingPoolID)
-		if err != nil {
-			return nil, err
-		}
-		stakers := make(map[string]*Staker)
-		for nftID, stakerState := range stakerStates {
-			stakers[nftID] = NewStakerWithValue(stakerState.Liquidity(), stakerState.Rewards(), stakerState.LastRewardsPerShare())
-		}
-		stakingPools[stakingPoolID] = NewStakingPoolStateWithValue(
-			stakingPoolState.TotalAmount(),
-			stakers,
-			stakingPoolState.RewardsPerShare(),
-		)
-	}
-
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs, params, stakingPools, nftIDs,
@@ -180,7 +131,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
-		poolPair.state.SetStakingPoolFees(map[common.Hash]uint64{})
+		poolPair.stakingPoolFees = map[common.Hash]uint64{}
+		poolPair.stakingPoolFees[common.PRVCoinID] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -339,7 +293,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
-		poolPair.state.SetStakingPoolFees(map[common.Hash]uint64{})
+		poolPair.stakingPoolFees = map[common.Hash]uint64{}
+		poolPair.stakingPoolFees[common.PRVCoinID] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
+		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
 	mintNftInstructions := [][]string{}
@@ -477,7 +434,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// Prepare staking reward for distributing
 	stakingRewards := map[common.Hash]uint64{}
 	for _, poolPair := range s.poolPairs {
-		for tokenID, reward := range poolPair.state.StakingPoolFees() {
+		for tokenID, reward := range poolPair.stakingPoolFees {
 			_, ok := stakingRewards[tokenID]
 			if !ok {
 				stakingRewards[tokenID] = 0
@@ -545,7 +502,7 @@ func (s *stateV2) Upgrade(env StateEnvironment) State {
 	return nil
 }
 
-func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) error {
+func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChange) error {
 	var err error
 
 	if !s.params.IsZeroValue() {
@@ -566,105 +523,28 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *StateChange) erro
 			return err
 		}
 	}
-	deletedWaitingContributionsKeys := []string{}
-	for k := range s.deletedWaitingContributions {
-		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
-	}
-	err = statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
+	err = s.updateWaitingContributionsToDB(env)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
+	err = s.updatePoolPairsToDB(env, stateChange)
 	if err != nil {
 		return err
-	}
-	for poolPairID, poolPairState := range s.poolPairs {
-		if stateChange.poolPairIDs[poolPairID] {
-			err := statedb.StorePdexv3PoolPair(env.StateDB(), poolPairID, poolPairState.state)
-			if err != nil {
-				return err
-			}
-		}
-		for nftID, share := range poolPairState.shares {
-			_, ok := stateChange.shares[nftID]
-			if !ok {
-				continue
-			}
-			if stateChange.shares[nftID] {
-				nftID, err := common.Hash{}.NewHashFromStr(nftID)
-				err = statedb.StorePdexv3Share(
-					env.StateDB(), poolPairID,
-					*nftID,
-					share.amount, share.tradingFees, share.lastLPFeesPerShare,
-				)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		// store / delete orders
-		ordersByID := make(map[string]*Order)
-		for _, ord := range poolPairState.orderbook.orders {
-			ordersByID[ord.Id()] = ord
-		}
-		for orderID, changed := range stateChange.orderIDs {
-			if changed {
-				if order, exists := ordersByID[orderID]; exists {
-					// update order in db
-					orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
-					err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
-					if err != nil {
-						return err
-					}
-				} else {
-					// delete order from db
-					err = statedb.DeletePdexv3Order(env.StateDB(), poolPairID, orderID)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
 	}
 	err = statedb.StorePdexv3NftIDs(env.StateDB(), s.nftIDs)
 	if err != nil {
 		return err
 	}
-	for k, v := range s.stakingPoolStates {
-		if stateChange.stakingPools[k] {
-			err := statedb.StorePdexv3StakingPool(env.StateDB(), k, v.Liquidity(), v.RewardsPerShare())
-			if err != nil {
-				return err
-			}
-		}
-		for nftID, staker := range v.stakers {
-			_, ok := stateChange.stakers[k][nftID]
-			if !ok {
-				continue
-			}
-			if stateChange.stakers[k][nftID] {
-				nftHash, _ := common.Hash{}.NewHashFromStr(nftID)
-				state := statedb.NewPdexv3StakerStateWithValue(
-					*nftHash,
-					staker.liquidity,
-					staker.rewards,
-					staker.lastRewardsPerShare,
-				)
-				err = statedb.StorePdexv3Staker(env.StateDB(), k, nftID, state)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
+	return s.updateStakingPoolToDB(env, stateChange)
 }
 
 func (s *stateV2) ClearCache() {
 	s.deletedWaitingContributions = make(map[string]rawdbv2.Pdexv3Contribution)
 }
 
-func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, *StateChange, error) {
+func (s *stateV2) GetDiff(
+	compareState State, stateChange *v2utils.StateChange,
+) (State, *v2utils.StateChange, error) {
 	newStateChange := stateChange
 	if compareState == nil {
 		return nil, newStateChange, errors.New("compareState is nil")
@@ -705,13 +585,17 @@ func (s *stateV2) GetDiff(compareState State, stateChange *StateChange) (State, 
 	}
 	for k, v := range s.poolPairs {
 		if m, ok := compareStateV2.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange = v.getDiff(k, m, newStateChange)
+			poolPairChange := v2utils.NewPoolPairChange()
+			poolPairChange, newStateChange = v.getDiff(k, m, poolPairChange, newStateChange)
+			newStateChange.PoolPairs[k] = poolPairChange
 			res.poolPairs[k] = v.Clone()
 		}
 	}
 	for k, v := range s.stakingPoolStates {
 		if m, ok := compareStateV2.stakingPoolStates[k]; !ok || !reflect.DeepEqual(m, v) {
-			newStateChange = v.getDiff(k, m, newStateChange)
+			stakingPoolChange := v2utils.NewStakingChange()
+			stakingPoolChange = v.getDiff(k, m, stakingPoolChange)
+			newStateChange.StakingPools[k] = stakingPoolChange
 			res.stakingPoolStates[k] = v.Clone()
 		}
 	}
@@ -784,4 +668,68 @@ func (s *stateV2) StakingPools() map[string]*StakingPoolState {
 		res[k] = v.Clone()
 	}
 	return res
+}
+
+func (s *stateV2) updateWaitingContributionsToDB(env StateEnvironment) error {
+	deletedWaitingContributionsKeys := []string{}
+	for k := range s.deletedWaitingContributions {
+		deletedWaitingContributionsKeys = append(deletedWaitingContributionsKeys, k)
+	}
+	err := statedb.DeletePdexv3WaitingContributions(env.StateDB(), deletedWaitingContributionsKeys)
+	if err != nil {
+		return err
+	}
+	return statedb.StorePdexv3WaitingContributions(env.StateDB(), s.waitingContributions)
+}
+
+func (s *stateV2) updatePoolPairsToDB(env StateEnvironment, stateChange *v2utils.StateChange) error {
+	var err error
+	for poolPairID, poolPairState := range s.poolPairs {
+		poolPairChange, found := stateChange.PoolPairs[poolPairID]
+		if !found || poolPairChange == nil {
+			return errors.New("Can not found poolPairChange")
+		}
+		err = poolPairState.updateToDB(env, poolPairID, poolPairChange)
+		if err != nil {
+			return err
+		}
+		// store / delete orders
+		ordersByID := make(map[string]*Order)
+		for _, ord := range poolPairState.orderbook.orders {
+			ordersByID[ord.Id()] = ord
+		}
+		for orderID, changed := range stateChange.OrderIDs {
+			if changed {
+				if order, exists := ordersByID[orderID]; exists {
+					// update order in db
+					orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
+					err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
+					if err != nil {
+						return err
+					}
+				} else {
+					// delete order from db
+					err = statedb.DeletePdexv3Order(env.StateDB(), poolPairID, orderID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *stateV2) updateStakingPoolToDB(env StateEnvironment, stateChange *StateChange) error {
+	for stakingPoolID, stakingPoolState := range s.stakingPoolStates {
+		stakingPoolChange, found := stateChange.StakingPools[stakingPoolID]
+		if !found || stakingPoolChange == nil {
+			continue
+		}
+		err := stakingPoolState.updateToDB(env, stakingPoolID, stakingPoolChange)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
