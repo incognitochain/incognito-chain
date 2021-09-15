@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -24,7 +26,7 @@ type BTCProof struct {
 	BlockHash    *chainhash.Hash
 }
 
-func ParseBTCProofFromB64EncodeStr(b64EncodedStr string) (*BTCProof, error) {
+func ParseAndValidateSanityBTCProofFromB64EncodeStr(b64EncodedStr string) (*BTCProof, error) {
 	jsonBytes, err := base64.StdEncoding.DecodeString(b64EncodedStr)
 	if err != nil {
 		return nil, err
@@ -34,7 +36,32 @@ func ParseBTCProofFromB64EncodeStr(b64EncodedStr string) (*BTCProof, error) {
 	if err != nil {
 		return nil, err
 	}
+	isValid, err := ValidateSanityBTCProof(&proof)
+	if !isValid && err != nil {
+		return nil, err
+	}
 	return &proof, nil
+}
+
+func ValidateSanityBTCProof(btcProof *BTCProof) (bool, error) {
+	if btcProof == nil {
+		return false, errors.New("ValidateSanityBTCProof btcProof is nil")
+	}
+	if len(btcProof.MerkleProofs) == 0 {
+		return false, errors.New("ValidateSanityBTCProof MerkleProofs is empty")
+	}
+	for _, mp := range btcProof.MerkleProofs {
+		if mp.ProofHash == nil {
+			return false, errors.New("ValidateSanityBTCProof ProofHash is nil")
+		}
+	}
+	if btcProof.BTCTx == nil {
+		return false, errors.New("ValidateSanityBTCProof BTCTx is nil")
+	}
+	if btcProof.BlockHash == nil {
+		return false, errors.New("ValidateSanityBTCProof BlockHash is nil")
+	}
+	return true, nil
 }
 
 func buildMerkleTreeStoreFromTxHashes(txHashes []*chainhash.Hash) []*chainhash.Hash {
@@ -165,11 +192,14 @@ func (btcChain *BlockChain) VerifyTxWithMerkleProofs(
 
 	bestState := btcChain.BestSnapshot()
 	if bestState == nil || btcBlock == nil {
-		Logger.log.Errorf("Both BTC best state and BTC block by hash (%s) should not be null, but best state: %+v; block: %+v\n", btcProof.BlockHash.String(), bestState, btcBlock)
+		Logger.log.Errorf("Both BTC best state and BTC block by hash (%s) should not be null, "+
+			"but best state: %+v; block: %+v\n", btcProof.BlockHash.String(), bestState, btcBlock)
 		return false, nil
 	}
-	if bestState.Height < btcBlock.Height()+BTCBlockConfirmations {
-		Logger.log.Errorf("Need to wait for %d btc block confirmations, best state height: %d, targeting block height: %d\n", BTCBlockConfirmations, bestState.Height, btcBlock.Height())
+	if bestState.Height < btcBlock.Height()+BTCBlockConfirmations-1 {
+		Logger.log.Errorf("Need to wait for %d btc block confirmations, best state height: %d, "+
+			"targeting block height: %d\n", BTCBlockConfirmations, bestState.Height,
+			btcBlock.Height()+BTCBlockConfirmations-1)
 		return false, nil
 	}
 	merkleRoot := btcBlock.MsgBlock().Header.MerkleRoot
@@ -184,18 +214,24 @@ func ExtractAttachedMsgFromTx(msgTx *wire.MsgTx) (string, error) {
 	opReturnPrefix := []byte{
 		txscript.OP_RETURN,
 	}
-	opReturnPkScript := []byte{}
 	for _, txOut := range msgTx.TxOut {
-		if txOut.Value == 0 && bytes.HasPrefix(txOut.PkScript, opReturnPrefix) {
-			opReturnPkScript = txOut.PkScript
-			break
+		if txOut.Value != 0 || !bytes.HasPrefix(txOut.PkScript, opReturnPrefix) {
+			continue
+		}
+		opReturnPkScript := txOut.PkScript
+		if len(opReturnPkScript) < 5 {
+			return "", fmt.Errorf("Memo is invalid")
+		}
+		first_byte := opReturnPkScript[1]
+		if first_byte <= 75 {
+			return string(opReturnPkScript[2:]), nil
+		} else if first_byte == 76 { //0x4c
+			return string(opReturnPkScript[3:]), nil
+		} else if first_byte == 77 { //0x4d
+			return string(opReturnPkScript[4:]), nil
 		}
 	}
-	if len(opReturnPkScript) <= 3 {
-		return "", nil
-	}
-	// the first byte is for opcode type (OP_RETURN) and the second byte is for message length
-	return string(opReturnPkScript[2:]), nil
+	return "", nil
 }
 
 // ExtractPaymentAddrStrFromPkScript extracts payment address string from pkscript

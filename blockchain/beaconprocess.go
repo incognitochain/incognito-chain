@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -561,9 +563,18 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
+	for shardID, shardStates := range beaconBlock.Body.ShardState {
+		beaconBestState.NumberOfShardBlock[shardID] = beaconBestState.NumberOfShardBlock[shardID] + uint(len(shardStates))
+	}
+
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
+		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
+		for i := 0; i < beaconBestState.ActiveShards; i++ {
+			shardID := byte(i)
+			beaconBestState.NumberOfShardBlock[shardID] = 0
+		}
 	}
 	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconBestState.missingSignatureCounter.CommitteeChange(beaconBestState.getUncommittedShardCommitteeFlattenList())
@@ -590,9 +601,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.BeaconProposerIndex = 0
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
 		beaconBestState.BestShardHeight[shardID] = 1
+		beaconBestState.NumberOfShardBlock[shardID] = 0
 	}
 	// Update new best new block hash
 	for shardID, shardStates := range genesisBeaconBlock.Body.ShardState {
@@ -817,6 +830,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if err != nil {
 			return err
 		}
+		Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
 	}
 	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
 	if err != nil {
@@ -866,12 +880,25 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	// execute, store Portal Instruction
 	// execute, store Ralaying Instruction
-	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
-	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
+	newBestState.portalStateV4, err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
-	//}
+	// optimize storing PortalV4 state
+	if newBestState.portalStateV4 != nil {
+		if !reflect.DeepEqual(curView.portalStateV4, newBestState.portalStateV4) {
+			// check updated field in portalStateV4 and store these field into statedb
+			diffState := getDiffPortalStateV4(curView.portalStateV4, newBestState.portalStateV4)
+			err = portalprocessv4.StorePortalV4StateToDB(
+				newBestState.featureStateDB,
+				diffState,
+				blockchain.GetPortalParamsV4(beaconBlock.Header.Height))
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {

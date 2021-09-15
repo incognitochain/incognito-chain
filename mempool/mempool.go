@@ -185,10 +185,8 @@ func (tp *TxPool) MonitorPool() {
 		}
 		Logger.log.Infof("MonitorPool: End to collect timeout ttl tx - Count of txsToBeRemoved=%+v", len(txsToBeRemoved))
 		for _, txDesc := range txsToBeRemoved {
-			txHash := *txDesc.Desc.Tx.Hash()
 			tp.removeTx(txDesc.Desc.Tx)
 			tp.TriggerCRemoveTxs(txDesc.Desc.Tx)
-			tp.removeCandidateByTxHash(txHash)
 			//tp.removeRequestStopStakingByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
@@ -214,6 +212,10 @@ func (tp *TxPool) MonitorPool() {
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+	_, blockHash, _, _, _, err := tp.config.BlockChain.GetTransactionByHash(*(tx.Hash()))
+	if err == nil {
+		return nil, nil, fmt.Errorf("tx %v found in block %v", tx.Hash().String(), blockHash.String())
+	}
 	//beaconView.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
@@ -913,6 +915,8 @@ func (tp *TxPool) RemoveStuckTx(txHash common.Hash, tx metadata.Transaction) {
 			delete(tp.poolSerialNumbersHashList, hash)
 		}
 	}
+
+	tp.removeCandidateByTxHash(txHash)
 	tp.removeRequestStopStakingByTxHash(txHash)
 	tp.TriggerCRemoveTxs(tx)
 }
@@ -950,6 +954,7 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 		}
 	}
 	tp.removeRequestStopStakingByTxHash(*tx.Hash())
+	tp.removeCandidateByTxHash(*tx.Hash())
 }
 
 func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
@@ -1224,10 +1229,13 @@ func (tp *TxPool) calPoolSize() uint64 {
 
 func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int, epoch uint64) (bool, bool) {
 	bc := tp.config.BlockChain
-	if metadata.IsPortalRelayingMetaType(metaType) {
-		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
-	} else if metadata.IsPortalMetaTypeV3(metaType) {
-		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
+	for featureFlag, metaTypes := range metadata.FeatureFlagWithMetaTypes {
+		for _, m := range metaTypes {
+			if metaType != m {
+				continue
+			}
+			return true, bc.IsEnableFeature(featureFlag, epoch)
+		}
 	}
 	return false, false
 }

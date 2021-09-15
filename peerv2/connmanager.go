@@ -116,7 +116,6 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 		}
 	}
 
-	Logger.Warn("Cannot publish message", msgType)
 	return errors.Errorf("Can not publish message, this msg type %v is not allow", msgType)
 }
 

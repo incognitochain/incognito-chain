@@ -329,7 +329,7 @@ func (tx Tx) validateInputPrivacy() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	cmInputSK := prf.GetCommitmentInputSecretKey()
 	if !cmInputSK.PointValid() {
 		return false, fmt.Errorf("validate sanity ComInputSK of proof failed")
@@ -385,7 +385,7 @@ func (tx Tx) validateInputNoPrivacy() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	inputCoins := prf.GetInputCoins()
 	sigPubKeyPoint, err := new(privacy.Point).FromBytesS(tx.GetSigPubKey())
 	if err != nil {
@@ -423,7 +423,7 @@ func (tx Tx) validateOutputPrivacy() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	cmOutputValue := prf.GetCommitmentOutputValue()
 	cmOutSNDs := prf.GetCommitmentOutputSND()
 	cmOutSIDs := prf.GetCommitmentOutputShardID()
@@ -463,7 +463,7 @@ func (tx Tx) validateOutputNoPrivacy() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	for _, oCoin := range prf.GetOutputCoins() {
 		if !oCoin.GetCommitment().PointValid() {
 			return false, fmt.Errorf("validate sanity CoinCommitment of output coin failed")
@@ -487,7 +487,7 @@ func (tx Tx) validatePrivacyZKPSanityWithInput() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	inputCoins := prf.GetInputCoins()
 	oomProofs := prf.GetOneOfManyProof()
 	snProofs := prf.GetSerialNumberProof()
@@ -531,7 +531,7 @@ func (tx Tx) validateNoPrivacyZKPSanityWithInput() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	inputCoins := prf.GetInputCoins()
 	snProofs := prf.GetSerialNumberNoPrivacyProof()
 	oomProofs := prf.GetOneOfManyProof()
@@ -565,7 +565,7 @@ func (tx Tx) validatePrivacyZKPSanityWithOutput() (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot cast payment proof v1")
 	}
-	
+
 	cmValueOfOutputCoins := prf.GetCommitmentOutputValue()
 	rangeProof := prf.GetAggregatedRangeProof()
 	if rangeProof == nil {
@@ -673,4 +673,3 @@ func (tx Tx) validateSanityDataOfProofV2() (bool, error) {
 	}
 	return false, nil
 }
-

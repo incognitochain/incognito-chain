@@ -5,16 +5,16 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -48,7 +48,7 @@ type BlockChain struct {
 	committeeByEpochCache *lru.Cache
 }
 
-// Config is a descriptor which specifies the blockchain instance configuration.
+// Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
 type Config struct {
 	BTCChain      *btcrelaying.BlockChain
 	BNBChainState *bnbrelaying.BNBChainState
@@ -396,7 +396,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	commitments := make([][]byte, 0)
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
-	var hasAssetTags bool = true
+	hasAssetTags := true
 	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
@@ -407,9 +407,15 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		if err := coinDB.SetBytes(coinBytes); err != nil {
 			return nil, nil, nil, nil, err
 		}
-		publicKey := coinDB.GetPublicKey()
-		commitment := coinDB.GetCommitment()
 
+		publicKey := coinDB.GetPublicKey()
+		// we do not use burned coins since they will reduce the privacy level of the transaction.
+		if wallet.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
+			i--
+			continue
+		}
+
+		commitment := coinDB.GetCommitment()
 		indices = append(indices, idx.Uint64())
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())
@@ -603,6 +609,13 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		if v.NumberOfShardBlock == nil || len(v.NumberOfShardBlock) == 0 {
+			v.NumberOfShardBlock = make(map[byte]uint)
+			for i := 0; i < v.ActiveShards; i++ {
+				shardID := byte(i)
+				v.NumberOfShardBlock[shardID] = 0
+			}
+		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
@@ -762,10 +775,6 @@ func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
 }
 
-func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight)
-}
-
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
 	return blockchain.config.DataBase[common.BeaconChainDataBaseID]
 }
@@ -799,6 +808,13 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
 	}
 
+	// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
+	// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
+	beaconView.NumberOfShardBlock = make(map[byte]uint)
+	for i := 0; i < beaconView.ActiveShards; i++ {
+		shardID := byte(i)
+		beaconView.NumberOfShardBlock[shardID] = 0
+	}
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)
@@ -1003,6 +1019,27 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 }
 
 func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
+	height := bc.GetLastBeaconHeightInEpoch(epoch)
+	var beaconConsensusRootHash common.Hash
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
+		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
+			return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, result), nil
+		}
+	}
+	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
+	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
+	return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, allCommitteeState), nil
+}
+
+func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][]*statedb.StakerInfoV2, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)

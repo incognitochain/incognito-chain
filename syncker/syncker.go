@@ -278,7 +278,11 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
 						//validate crossShardBlock before add to result
 						blkXShard := synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash)
-
+						isValid := types.VerifyCrossShardBlockUTXO(blkXShard.(*types.CrossShardBlock))
+						if !isValid {
+							Logger.Error("Validate Crossshard block body fail", blkXShard.GetHeight(), blkXShard.Hash())
+							return nil
+						}
 						// TODO: @committees
 						//For releasing beacon nodes and re verify cross shard blocks from beacon
 						//Use committeeFromBlock field for getting committees

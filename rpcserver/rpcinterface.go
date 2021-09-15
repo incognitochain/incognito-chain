@@ -135,6 +135,7 @@ var HttpHandler = map[string]httpHandler{
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
 	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
 	listUnspentOutputTokens:                    (*HttpServer).handleListUnspentOutputTokens,
+	getOTACoinLength:                           (*HttpServer).handleGetOTACoinLength,
 	getOTACoinsByIndices:                       (*HttpServer).handleGetOTACoinsByIndices,
 
 	// Bridge
@@ -295,6 +296,24 @@ var HttpHandler = map[string]httpHandler{
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
 
+	// portal v4
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
+	createAndSendTxWithPortalReplacementFee:    (*HttpServer).handleCreateAndSendTxWithPortalReplaceUnshieldFee,
+	getPortalReplacementFeeStatus:              (*HttpServer).handleGetPortalReplacementFeeRequestStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx: (*HttpServer).handleCreateAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx:                 (*HttpServer).handleGetPortalPortalSubmitConfirmedTxStatus,
+	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
+	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
+	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
+	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
+
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 
@@ -322,6 +341,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 	submitKey:                        (*HttpServer).handleSubmitKey,
 	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
+	getKeySubmissionInfo:             (*HttpServer).handleGetKeySubmissionInfo,
 }
 
 var WsHandler = map[string]wsHandler{
