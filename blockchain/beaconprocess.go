@@ -341,9 +341,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
-	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)
-	instructions = addFinishInstruction(instructions, finishSyncInstruction)
-
 	if len(incurredInstructions) != 0 {
 		instructions = append(instructions, incurredInstructions...)
 	}
@@ -658,8 +655,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		beaconCommitteeStateEnv)
 
-	if config.Param().ConsensusParam.StakingFlowV3Height == beaconBestState.BeaconHeight {
-		if err := beaconBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
+	if config.Param().ConsensusParam.BlockProducingV3Height == beaconBestState.BeaconHeight {
+		if err := beaconBestState.checkBlockProducingV3Config(); err != nil {
+			return err
+		}
+		if err := beaconBestState.upgradeBlockProducingV3Config(); err != nil {
 			return err
 		}
 	}

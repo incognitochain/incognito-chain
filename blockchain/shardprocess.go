@@ -834,7 +834,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		env)
 
-	if config.Param().ConsensusParam.StakingFlowV3Height == shardBestState.BeaconHeight {
+	if config.Param().ConsensusParam.BlockProducingV3Height == shardBestState.BeaconHeight {
 		if err := shardBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
 			return err
 		}

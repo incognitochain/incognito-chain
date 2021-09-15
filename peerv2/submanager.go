@@ -408,7 +408,6 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdMsgFinishSync,
 			}
 
 		case common.PendingRole:

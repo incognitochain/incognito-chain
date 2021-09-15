@@ -99,6 +99,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	}
 	msgType := msg.MessageType()
 	subs := cm.Subscriber.GetMsgToTopics()
+	Logger.Infof("Sync Mode %+v, Subscribe message types %+v", cm.syncMode, subs)
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess

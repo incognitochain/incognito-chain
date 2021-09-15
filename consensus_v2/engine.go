@@ -98,6 +98,7 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 	monitor.SetGlobalParam("Layer", layer)
 	monitor.SetGlobalParam("ShardID", chainID)
 	monitor.SetGlobalParam("MINING_PUBKEY", pubkey)
+	//Logger.Log.Infof("Validator Role %+v, Layer %+v, ChainID %+v", role, layer, chainID)
 	//fmt.Println("GetOneValidatorForEachConsensusProcess", chainValidator[1])
 	return chainValidator
 }
