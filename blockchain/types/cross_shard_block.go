@@ -155,6 +155,10 @@ func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (crossShardBlock *CrossShardBlock) SetFinalityHeight(height uint64) {
+	panic("don't call this function")
+}
+
 func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Bytes() []byte {
 	res := []byte{}
 	for _, item := range contentCrossShardTokenPrivacyData.OutputCoin {

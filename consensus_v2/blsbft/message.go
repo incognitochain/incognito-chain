@@ -18,6 +18,9 @@ type BFTPropose struct {
 	PeerID   string
 	Block    json.RawMessage
 	TimeSlot uint64
+
+	ReProposeHashSignature string
+	FinalityProof          FinalityProof
 }
 
 type BFTVote struct {

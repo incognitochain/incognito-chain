@@ -29,4 +29,5 @@ type BlockInterface interface {
 	Type() string
 	CommitteeFromBlock() common.Hash
 	BodyHash() common.Hash
+	SetFinalityHeight(height uint64)
 }

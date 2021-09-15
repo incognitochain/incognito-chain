@@ -705,7 +705,7 @@ func (a *actorV2) proposeBlock(
 	var proposeCtn = new(BFTPropose)
 	proposeCtn.Block = blockData
 	proposeCtn.PeerID = a.node.GetSelfPeerID().String()
-	msg, _ := a.makeBFTProposeMsg(proposeCtn, a.chainKey, a.currentTimeSlot, block.GetHeight())
+	msg, _ := a.makeBFTProposeMsg(proposeCtn, a.chainKey, a.currentTimeSlot)
 	go a.ProcessBFTMsg(msg.(*wire.MessageBFT))
 	go a.node.PushMessageToChain(msg, a.chain)
 
@@ -1261,7 +1261,11 @@ func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (
 	return
 }
 
-func (a *actorV2) makeBFTProposeMsg(proposeCtn *BFTPropose, chainKey string, ts int64, height uint64) (wire.Message, error) {
+func (a *actorV2) makeBFTProposeMsg(
+	proposeCtn *BFTPropose,
+	chainKey string,
+	ts int64,
+) (wire.Message, error) {
 	proposeCtnBytes, err := json.Marshal(proposeCtn)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)

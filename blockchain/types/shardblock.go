@@ -49,6 +49,9 @@ type ShardHeader struct {
 
 	//for version >= 3
 	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
+
+	//for version 6
+	FinalityHeight uint64 `json:"FinalityHeight"`
 }
 
 type ShardBody struct {
@@ -116,6 +119,10 @@ func (shardBlock *ShardBlock) GetShardID() int {
 
 func (shardBlock *ShardBlock) GetPrevHash() common.Hash {
 	return shardBlock.Header.PreviousBlockHash
+}
+
+func (shardBlock *ShardBlock) SetFinalityHeight(height uint64) {
+	shardBlock.Header.FinalityHeight = height
 }
 
 func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []metadata.Transaction) {
@@ -332,6 +339,10 @@ func (shardHeader *ShardHeader) String() string {
 
 	if shardHeader.Version >= 3 {
 		res += shardHeader.CommitteeFromBlock.String()
+	}
+
+	if shardHeader.Version == BLOCK_PRODUCINGV3_VERSION {
+		res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
 	}
 
 	return res

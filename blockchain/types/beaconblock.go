@@ -54,6 +54,9 @@ type BeaconHeader struct {
 	//for version 2
 	Proposer    string `json:"Proposer"`
 	ProposeTime int64  `json:"ProposeTime"`
+
+	//for version 6
+	FinalityHeight uint64 `json:"FinalityHeight"`
 }
 
 func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
@@ -174,6 +177,10 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (beaconBlock *BeaconBlock) SetFinalityHeight(height uint64) {
+	beaconBlock.Header.FinalityHeight = height
+}
+
 func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
 	beaconBlock.ValidationData = validationData
 	return
@@ -257,6 +264,10 @@ func (header *BeaconHeader) toString() string {
 	if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
+	}
+
+	if header.Version == BLOCK_PRODUCINGV3_VERSION {
+		res += fmt.Sprintf("%v", header.FinalityHeight)
 	}
 
 	return res

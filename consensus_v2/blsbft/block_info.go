@@ -1,6 +1,9 @@
 package blsbft
 
 import (
+	"encoding/json"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -24,6 +27,11 @@ type ProposeBlockInfo struct {
 	proposerSendVote        bool
 	proposerMiningKeyBase58 string
 	lastValidateTime        time.Time
+
+	reProposeHashSignature string
+	reProposeBlockInfo     ReProposeBlockInfo
+	finalityProof          FinalityProof
+	finalityData           []ReProposeBlockInfo
 }
 
 //NewProposeBlockInfoValue : new propose block info
@@ -64,4 +72,59 @@ func newBlockInfoForVoteMsg() *ProposeBlockInfo {
 		votes:      make(map[string]*BFTVote),
 		hasNewVote: true,
 	}
+}
+
+type FinalityProof struct {
+	ReProposeHashSignature []string
+}
+
+func NewFinalityProof(reproposeHashSignature []string) *FinalityProof {
+	return &FinalityProof{ReProposeHashSignature: reproposeHashSignature}
+}
+
+func (f *FinalityProof) AddProof(reproposeHash string) {
+	f.ReProposeHashSignature = append(f.ReProposeHashSignature, reproposeHash)
+}
+
+//previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
+type ReProposeBlockInfo struct {
+	PreviousBlockHash common.Hash
+	Producer          string
+	ProducerTimeSlot  int64
+	Proposer          string
+	ProposerTimeSlot  int64
+	RootHash          common.Hash
+}
+
+func NewReProposeBlockInfo(previousBlockHash common.Hash, producer string, producerTimeSlot int64, proposer string, proposerTimeSlot int64, rootHash common.Hash) *ReProposeBlockInfo {
+	return &ReProposeBlockInfo{PreviousBlockHash: previousBlockHash, Producer: producer, ProducerTimeSlot: producerTimeSlot, Proposer: proposer, ProposerTimeSlot: proposerTimeSlot, RootHash: rootHash}
+}
+
+func (r ReProposeBlockInfo) Hash() common.Hash {
+	data, _ := json.Marshal(r)
+	return common.HashH(data)
+}
+
+func (r ReProposeBlockInfo) Sign(bridgePrivateKey []byte) (string, error) {
+
+	hash := r.Hash()
+
+	sig, err := bridgesig.Sign(bridgePrivateKey, hash.Bytes())
+	if err != nil {
+		return "", err
+	}
+
+	return string(sig), nil
+}
+
+func (r ReProposeBlockInfo) VerifySignature(sig string, brigdePublicKey []byte) (bool, error) {
+
+	hash := r.Hash()
+
+	isValid, err := bridgesig.Verify(brigdePublicKey, hash.Bytes(), []byte(sig))
+	if err != nil {
+		return false, err
+	}
+
+	return isValid, nil
 }
