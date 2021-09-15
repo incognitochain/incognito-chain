@@ -90,9 +90,6 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
 
-	finishSyncInstructions := copiedCurView.generateFinishSyncInstruction()
-	instructions = addFinishInstruction(instructions, finishSyncInstructions)
-
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
 	// Process new block with new view
@@ -484,6 +481,9 @@ func (curView *BeaconBestState) GenerateInstruction(
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
 	}
+
+	finishSyncInstructions := curView.generateFinishSyncInstruction()
+	instructions = addFinishInstruction(instructions, finishSyncInstructions)
 
 	return instructions, nil
 }
