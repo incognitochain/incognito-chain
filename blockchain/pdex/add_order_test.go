@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/config"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	. "github.com/stretchr/testify/assert"
@@ -14,6 +13,7 @@ import (
 var _ = fmt.Print
 
 func TestProduceOrder(t *testing.T) {
+	setTestTradeConfig()
 	type TestData struct {
 		Metadata metadataPdexv3.AddOrderRequest `json:"metadata"`
 	}
@@ -25,10 +25,6 @@ func TestProduceOrder(t *testing.T) {
 	var testcases []Testcase = mustReadTestcases("produce_order.json")
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
-			config.AbortParam()
-			config.Param().PDexParams.Pdexv3BreakPointHeight = 1
-			config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
-
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
@@ -50,6 +46,7 @@ func TestProduceOrder(t *testing.T) {
 }
 
 func TestProcessOrder(t *testing.T) {
+	setTestTradeConfig()
 	type TestData struct {
 		Instructions [][]string `json:"instructions"`
 	}
