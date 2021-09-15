@@ -67,7 +67,7 @@ func newStateV2WithValue(
 	}
 }
 
-func initStateV2(
+func initStateV2FromDB(
 	stateDB *statedb.StateDB,
 ) (*stateV2, error) {
 	paramsState, err := statedb.GetPdexv3Params(stateDB)
@@ -79,7 +79,7 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
-	poolPairs, err := initPoolPairStates(stateDB)
+	poolPairs, err := initPoolPairStatesFromDB(stateDB)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func initStateV2(
 	if err != nil {
 		return nil, err
 	}
-	stakingPools, err := initStakingPools(params.StakingPoolsShare, stateDB)
+	stakingPools, err := initStakingPoolsFromDB(params.StakingPoolsShare, stateDB)
 	if err != nil {
 		return nil, err
 	}

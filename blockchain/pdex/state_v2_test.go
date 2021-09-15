@@ -1222,8 +1222,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						IsChanged: true,
 						Shares: map[string]*v2utils.ShareChange{
 							nftID1: &v2utils.ShareChange{
-								IsChanged:          true,
-								TradingFees:        map[string]bool{},
+								IsChanged: true,
+								TradingFees: map[string]bool{
+									common.PRVIDStr: true,
+								},
 								LastLPFeesPerShare: map[string]bool{},
 							},
 						},
@@ -1376,8 +1378,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						IsChanged: false,
 						Shares: map[string]*v2utils.ShareChange{
 							nftID1: &v2utils.ShareChange{
-								IsChanged:          true,
-								TradingFees:        map[string]bool{},
+								IsChanged: false,
+								TradingFees: map[string]bool{
+									common.PRVIDStr: true,
+								},
 								LastLPFeesPerShare: map[string]bool{},
 							},
 						},
@@ -1742,7 +1746,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						RewardsPerShare: map[string]bool{},
 						Stakers: map[string]*v2utils.StakerChange{
 							nftID1: &v2utils.StakerChange{
-								IsChanged:           true,
+								IsChanged:           false,
 								Rewards:             map[string]bool{},
 								LastRewardsPerShare: map[string]bool{},
 							},
@@ -1860,7 +1864,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						RewardsPerShare: map[string]bool{},
 						Stakers: map[string]*v2utils.StakerChange{
 							nftID1: &v2utils.StakerChange{
-								IsChanged:           true,
+								IsChanged:           false,
 								Rewards:             map[string]bool{},
 								LastRewardsPerShare: map[string]bool{},
 							},
@@ -1915,26 +1919,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				t.Errorf("stateV2.GetDiff() got = %+v, want %+v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				for k, v := range got1.PoolPairs {
-					if !reflect.DeepEqual(v, tt.want1.PoolPairs[k]) {
-						t.Errorf("got = %v, want %v", *v, tt.want1.PoolPairs[k])
-					}
-					for key, value := range v.Shares {
-						if !reflect.DeepEqual(value, tt.want1.PoolPairs[k].Shares[key]) {
-							t.Errorf("got = %v, want %v", *value, tt.want1.PoolPairs[k].Shares[key])
-						}
-					}
-				}
-				for k, v := range got1.StakingPools {
-					if !reflect.DeepEqual(v, tt.want1.StakingPools[k]) {
-						t.Errorf("got = %v, want %v", *v, tt.want1.StakingPools[k])
-					}
-					for key, value := range v.Stakers {
-						if !reflect.DeepEqual(value, tt.want1.StakingPools[k].Stakers[key]) {
-							t.Errorf("got = %v, want %v", *value, tt.want1.StakingPools[k].Stakers[key])
-						}
-					}
-				}
 				t.Errorf("stateV2.GetDiff() got1 = %v, want %v", got1, tt.want1)
 			}
 		})

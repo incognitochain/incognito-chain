@@ -584,7 +584,7 @@ func InitStatesFromDB(
 		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
 			res[AmplifierVersion] = newStateV2()
 		} else {
-			state, err := initStateV2(stateDB)
+			state, err := initStateV2FromDB(stateDB)
 			if err != nil {
 				return res, err
 			}
@@ -617,7 +617,7 @@ func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint
 		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
 			return newStateV2(), nil
 		} else {
-			return initStateV2(stateDB)
+			return initStateV2FromDB(stateDB)
 		}
 	default:
 		return nil, errors.New("Can not recognize version")

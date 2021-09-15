@@ -268,7 +268,7 @@ func (s *StakingPoolState) AddReward(
 	s.SetRewardsPerShare(tempRewardsPerShare)
 }
 
-func initStakingPools(stakingPoolsShare map[string]uint, stateDB *statedb.StateDB) (map[string]*StakingPoolState, error) {
+func initStakingPoolsFromDB(stakingPoolsShare map[string]uint, stateDB *statedb.StateDB) (map[string]*StakingPoolState, error) {
 	res := map[string]*StakingPoolState{}
 	for stakingPoolID := range stakingPoolsShare {
 		stakers, liquidity, err := initStakers(stakingPoolID, stateDB)

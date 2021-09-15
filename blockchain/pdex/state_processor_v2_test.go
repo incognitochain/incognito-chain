@@ -208,7 +208,7 @@ func Test_stateProcessorV2_waitingContribution(t *testing.T) {
 			want1: &v2utils.ContributionStatus{
 				Token0ID:                token0ID.String(),
 				Token0ContributedAmount: 100,
-				Status:                  common.PDEContributionWaitingChainStatus,
+				Status:                  common.PDEContributionWaitingStatus,
 			},
 			wantErr: false,
 		},
@@ -316,7 +316,7 @@ func Test_stateProcessorV2_refundContribution(t *testing.T) {
 				),
 			},
 			want2: &v2utils.ContributionStatus{
-				Status: common.PDEContributionRefundChainStatus,
+				Status: common.PDEContributionRefundStatus,
 			},
 		},
 	}
@@ -458,7 +458,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 				},
 			},
 			want3: &v2utils.ContributionStatus{
-				Status: common.PDEContributionMatchedChainStatus,
+				Status: common.PDEContributionAcceptedStatus,
 			},
 			wantErr: false,
 		},
@@ -708,7 +708,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 			want3: &v2utils.ContributionStatus{
 				Token0ID:                token0ID.String(),
 				Token0ContributedAmount: 50,
-				Status:                  common.PDEContributionMatchedNReturnedChainStatus,
+				Status:                  common.PDEContributionMatchedNReturnedStatus,
 				Token1ID:                token1ID.String(),
 				Token1ContributedAmount: 200,
 			},
@@ -1134,7 +1134,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				},
 			},
 			want1: &v2utils.WithdrawStatus{
-				Status:       common.PDEWithdrawalAcceptedChainStatus,
+				Status:       common.Pdexv3AcceptStatus,
 				Token0ID:     token0ID.String(),
 				Token0Amount: 50,
 				Token1ID:     token1ID.String(),
@@ -1200,7 +1200,7 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 				inst:    inst,
 			},
 			want: &v2utils.WithdrawStatus{
-				Status: common.PDEWithdrawalRejectedChainStatus,
+				Status: common.Pdexv3RejectStatus,
 			},
 			wantErr: false,
 		},
@@ -1269,7 +1269,7 @@ func Test_stateProcessorV2_userMintNft(t *testing.T) {
 			},
 			want: map[string]uint64{},
 			want1: &v2utils.MintNftStatus{
-				Status:      common.Pdexv3RejectUserMintNftStatus,
+				Status:      common.Pdexv3RejectStatus,
 				BurntAmount: 100,
 			},
 			wantErr: false,
@@ -1285,7 +1285,7 @@ func Test_stateProcessorV2_userMintNft(t *testing.T) {
 				nftID1: 100,
 			},
 			want1: &v2utils.MintNftStatus{
-				Status:      common.Pdexv3AcceptUserMintNftStatus,
+				Status:      common.Pdexv3AcceptStatus,
 				BurntAmount: 100,
 				NftID:       nftID1,
 			},
@@ -1374,7 +1374,7 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 				},
 			},
 			want1: &v2.StakingStatus{
-				Status:        common.Pdexv3RejectStakingStatus,
+				Status:        common.Pdexv3RejectStatus,
 				StakingPoolID: common.PRVIDStr,
 				Liquidity:     100,
 			},
@@ -1412,7 +1412,7 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 				},
 			},
 			want1: &v2.StakingStatus{
-				Status:        common.Pdexv3AcceptStakingStatus,
+				Status:        common.Pdexv3AcceptStatus,
 				StakingPoolID: common.PRVIDStr,
 				Liquidity:     100,
 				NftID:         nftID1,
@@ -1920,7 +1920,7 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 				},
 			},
 			want1: &v2.UnstakingStatus{
-				Status: common.Pdexv3RejectUnstakingStatus,
+				Status: common.Pdexv3RejectStatus,
 			},
 			wantErr: false,
 		},
@@ -1962,7 +1962,7 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 				},
 			},
 			want1: &v2.UnstakingStatus{
-				Status:        common.Pdexv3AcceptUnstakingStatus,
+				Status:        common.Pdexv3AcceptStatus,
 				NftID:         nftID1,
 				StakingPoolID: common.PRVIDStr,
 				Liquidity:     50,

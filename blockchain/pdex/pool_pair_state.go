@@ -538,7 +538,7 @@ func (p *PoolPairState) updateToDB(
 	return nil
 }
 
-func initPoolPairStates(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
+func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
 	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
 	if err != nil {
 		return nil, err
