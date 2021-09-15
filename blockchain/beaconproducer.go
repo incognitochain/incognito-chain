@@ -109,6 +109,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	for _, strs := range instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
+	Logger.log.Infof("Producer Instruction array", tempInstructionArr)
 	instructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionHashError, err)

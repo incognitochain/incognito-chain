@@ -349,6 +349,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	for _, strs := range instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
+	Logger.log.Infof("Process Instruction array", tempInstructionArr)
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionHashError, fmt.Errorf("Fail to generate hash for instruction %+v", tempInstructionArr))
