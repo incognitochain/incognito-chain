@@ -655,3 +655,13 @@ func (tx Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 }
 
 // Todo decoupling this function
+func (tx Tx) validateSanityDataOfProofV2() (bool, error) {
+	if tx.Proof != nil {
+		isPrivacy := tx.IsPrivacy()
+		if isPrivacy {
+			return tx.validateSanityDataPrivacyProof()
+		}
+		return tx.validateSanityDataNoPrivacyProof()
+	}
+	return false, nil
+}
