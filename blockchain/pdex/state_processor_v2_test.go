@@ -171,10 +171,9 @@ func Test_stateProcessorV2_waitingContribution(t *testing.T) {
 		stateProcessorBase stateProcessorBase
 	}
 	type args struct {
-		stateDB                     *statedb.StateDB
-		inst                        []string
-		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
-		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
+		stateDB              *statedb.StateDB
+		inst                 []string
+		waitingContributions map[string]rawdbv2.Pdexv3Contribution
 	}
 	tests := []struct {
 		name    string
@@ -196,8 +195,7 @@ func Test_stateProcessorV2_waitingContribution(t *testing.T) {
 					common.PDEContributionWaitingChainStatus,
 					string(waitingContributionInstBytes),
 				},
-				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
-				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
@@ -218,7 +216,7 @@ func Test_stateProcessorV2_waitingContribution(t *testing.T) {
 			sp := &stateProcessorV2{
 				stateProcessorBase: tt.fields.stateProcessorBase,
 			}
-			got, got1, err := sp.waitingContribution(tt.args.stateDB, tt.args.inst, tt.args.waitingContributions, tt.args.deletedWaitingContributions)
+			got, got1, err := sp.waitingContribution(tt.args.stateDB, tt.args.inst, tt.args.waitingContributions)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.waitingContribution() error = %v, wantErr %v", err, tt.wantErr)
 				return

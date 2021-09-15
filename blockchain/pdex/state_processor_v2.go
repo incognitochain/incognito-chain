@@ -47,7 +47,7 @@ func (sp *stateProcessorV2) addLiquidity(
 	var err error
 	switch inst[1] {
 	case common.PDEContributionWaitingChainStatus:
-		waitingContributions, _, err = sp.waitingContribution(stateDB, inst, waitingContributions, deletedWaitingContributions)
+		waitingContributions, _, err = sp.waitingContribution(stateDB, inst, waitingContributions)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
@@ -78,14 +78,13 @@ func (sp *stateProcessorV2) waitingContribution(
 	stateDB *statedb.StateDB,
 	inst []string,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) (map[string]rawdbv2.Pdexv3Contribution, *v2.ContributionStatus, error) {
 	waitingAddLiquidityInst := instruction.WaitingAddLiquidity{}
 	err := waitingAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {
 		return waitingContributions, nil, err
 	}
-	err = sp.verifyWaitingContribution(waitingAddLiquidityInst.Contribution(), waitingContributions, deletedWaitingContributions)
+	err = sp.verifyWaitingContribution(waitingAddLiquidityInst.Contribution(), waitingContributions)
 	if err != nil {
 		return waitingContributions, nil, err
 	}
@@ -116,16 +115,10 @@ func (sp *stateProcessorV2) waitingContribution(
 func (sp *stateProcessorV2) verifyWaitingContribution(
 	contribution statedb.Pdexv3ContributionState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
-	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 ) error {
 	_, found := waitingContributions[contribution.PairHash()]
 	if found {
 		err := fmt.Errorf("Pair Hash %v has been existed in list waitingContributions", contribution.PairHash())
-		return err
-	}
-	_, found = deletedWaitingContributions[contribution.PairHash()]
-	if found {
-		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", contribution.PairHash())
 		return err
 	}
 	return nil
@@ -194,11 +187,6 @@ func (sp *stateProcessorV2) matchContribution(
 	existedWaitingContribution, found := waitingContributions[matchContribution.PairHash()]
 	if !found {
 		err := fmt.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", matchContribution.PairHash())
-		return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
-	}
-	_, found = deletedWaitingContributions[matchContribution.PairHash()]
-	if found {
-		err := fmt.Errorf("Pair Hash %v has been existed in list deletedWaitingContributions", matchContribution.PairHash())
 		return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
 	}
 

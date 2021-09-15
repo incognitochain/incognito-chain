@@ -57,15 +57,14 @@ func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID    string      `json:"PoolPairID"`
-		OtaReceiver   string      `json:"OtaReceiver"`
-		RefundAddress string      `json:"RefundAddress"`
-		TokenID       common.Hash `json:"TokenID"`
-		Amount        uint64      `json:"Amount"`
-		Amplifier     uint        `json:"Amplifier"`
-		TxReqID       common.Hash `json:"TxReqID"`
-		NftID         common.Hash `json:"NftID"`
-		ShardID       byte        `json:"ShardID"`
+		PoolPairID  string      `json:"PoolPairID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TokenID     common.Hash `json:"TokenID"`
+		Amount      uint64      `json:"Amount"`
+		Amplifier   uint        `json:"Amplifier"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		NftID       common.Hash `json:"NftID"`
+		ShardID     byte        `json:"ShardID"`
 	}{
 		PoolPairID:  contribution.poolPairID,
 		OtaReceiver: contribution.otaReceiver,
