@@ -27,6 +27,7 @@ func TestProduceOrder(t *testing.T) {
 		t.Run(testcase.Name, func(t *testing.T) {
 			config.AbortParam()
 			config.Param().PDexParams.Pdexv3BreakPointHeight = 1
+			config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
 
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
