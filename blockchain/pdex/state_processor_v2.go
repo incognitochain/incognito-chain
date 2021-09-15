@@ -785,8 +785,8 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			return pairs, errors.New(msg)
 		}
 
-		// update state after fee wirthdrawal
-		share.tradingFees = map[common.Hash]uint64{}
+		// update state after fee withdrawal
+		share.tradingFees = resetKeyValueToZero(share.tradingFees)
 		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
 		for tokenID, value := range poolPair.lpFeesPerShare {
 			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
@@ -856,7 +856,8 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 			return pairs, errors.New(msg)
 		}
 
-		poolPair.protocolFees = map[common.Hash]uint64{}
+		// update state after fee withdrawal
+		poolPair.protocolFees = resetKeyValueToZero(poolPair.protocolFees)
 		reqTrackStatus = metadataPdexv3.WithdrawProtocolFeeSuccessStatus
 
 		_, found := sp.rewardCache[actionData.TxReqID.String()]
@@ -1172,8 +1173,8 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 			return pools, errors.New(msg)
 		}
 
-		// update state after reward wirthdrawal
-		share.rewards = map[common.Hash]uint64{}
+		// update state after reward withdrawal
+		share.rewards = resetKeyValueToZero(share.rewards)
 		share.lastRewardsPerShare = pool.RewardsPerShare()
 
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardSuccessStatus

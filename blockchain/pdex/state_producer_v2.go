@@ -686,6 +686,12 @@ func (sp *stateProducerV2) withdrawLPFee(
 			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 		}
 
+		if reward == nil || len(reward) == 0 {
+			Logger.log.Infof("No LP reward to withdraw")
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
 		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 		notEnoughOTA := false
 		for tokenID := range reward {
@@ -714,7 +720,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		)
 
 		// update state after fee withdrawal
-		share.tradingFees = map[common.Hash]uint64{}
+		share.tradingFees = resetKeyValueToZero(share.tradingFees)
 		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
 		for tokenID, value := range poolPair.lpFeesPerShare {
 			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
@@ -766,7 +772,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 			continue
 		}
 
-		rewardAmount := pair.protocolFees
+		rewardAmount := getMapWithoutZeroValue(pair.protocolFees)
 
 		if rewardAmount == nil || len(rewardAmount) == 0 {
 			instructions = append(instructions, rejectInst...)
@@ -783,7 +789,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 		)
 
 		// update state after fee withdrawal
-		pair.protocolFees = map[common.Hash]uint64{}
+		pair.protocolFees = resetKeyValueToZero(pair.protocolFees)
 
 		instructions = append(instructions, acceptedInst...)
 	}
@@ -1139,6 +1145,12 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			return instructions, pools, fmt.Errorf("Could not track staking reward: %v\n", err)
 		}
 
+		if reward == nil || len(reward) == 0 {
+			Logger.log.Infof("No staking reward to withdraw")
+			instructions = append(instructions, rejectInst...)
+			continue
+		}
+
 		receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 		notEnoughOTA := false
 		for tokenID := range reward {
@@ -1167,7 +1179,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		)
 
 		// update state after fee withdrawal
-		share.rewards = map[common.Hash]uint64{}
+		share.rewards = resetKeyValueToZero(share.rewards)
 		share.lastRewardsPerShare = pool.RewardsPerShare()
 
 		instructions = append(instructions, acceptedInst...)
