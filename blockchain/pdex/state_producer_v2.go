@@ -272,7 +272,19 @@ func (sp *stateProducerV2) mintReward(
 		totalRewardShare += uint64(shareAmount)
 	}
 
-	for pairID, shareRewardAmount := range params.PDEXRewardPoolPairsShare {
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(params.PDEXRewardPoolPairsShare))
+	i := 0
+	for k := range params.PDEXRewardPoolPairsShare {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	for _, pairID := range keys {
+		shareRewardAmount := params.PDEXRewardPoolPairsShare[pairID]
 		pair, isExisted := pairs[pairID]
 		if !isExisted {
 			return instructions, pairs, fmt.Errorf("Could not find pair %v for distributing PDEX reward", pairID)
@@ -1060,7 +1072,19 @@ func (sp *stateProducerV2) distributeStakingReward(
 		return instructions, stakingPools, nil
 	}
 
-	for stakingToken, shareRewardAmount := range params.StakingPoolsShare {
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(params.StakingPoolsShare))
+	i := 0
+	for k := range params.StakingPoolsShare {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	for _, stakingToken := range keys {
+		shareRewardAmount := params.StakingPoolsShare[stakingToken]
 		pool, isExisted := stakingPools[stakingToken]
 		if !isExisted {
 			return instructions, stakingPools, fmt.Errorf("Could not find pool %v for distributing staking reward", stakingToken)
