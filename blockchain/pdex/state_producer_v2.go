@@ -340,6 +340,26 @@ func (sp *stateProducerV2) trade(
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
+		// trading fee must be not less than the minimum trading fee
+		if len(currentTrade.TradePath) == 0 {
+			Logger.log.Infof("Trade path is empty")
+			result = append(result, refundInstructions...)
+			continue
+		}
+		feeRateBPS := params.DefaultFeeRateBPS
+		if _, ok := params.FeeRateBPS[currentTrade.TradePath[0]]; ok {
+			feeRateBPS = params.FeeRateBPS[currentTrade.TradePath[0]]
+		}
+
+		// compare the fee / sellAmount ratio with feeRateBPS by comparing products
+		feeAmountCompare := new(big.Int).Mul(new(big.Int).SetUint64(fees[tx.Hash().String()]), new(big.Int).SetUint64(BPS))
+		sellAmountCompare := new(big.Int).Mul(new(big.Int).SetUint64(sellAmounts[tx.Hash().String()]), new(big.Int).SetUint64(uint64(feeRateBPS)))
+		if feeAmountCompare.Cmp(sellAmountCompare) == -1 {
+			Logger.log.Infof("Trade fee is not enough")
+			result = append(result, refundInstructions...)
+			continue
+		}
+
 		// get relevant, cloned data from state for the trade path
 		reserves, lpFeesPerShares, protocolFees, stakingPoolFees, orderbookList, tradeDirections, tokenToBuy, err :=
 			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)

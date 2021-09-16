@@ -150,6 +150,7 @@ const (
 	GenerateOTAFailError
 	GetPdexv3ParamsModyfingStatusError
 	GetPdexv3LPFeeError
+	GetPdexv3StakingRewardError
 	GetPdexv3WithdrawalLPFeeStatusError
 	GetPdexv3WithdrawalProtocolFeeStatusError
 	GetPdexv3WithdrawalStakingRewardStatusError
