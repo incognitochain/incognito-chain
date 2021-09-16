@@ -367,7 +367,7 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 		result.TradingFee[tokenID.String()] = uncollectedTradingFees[tokenID]
 	}
 
-	return result, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	return result, nil
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPdexv3WithdrawLPFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1845,7 +1845,7 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params inter
 		result[tokenID.String()] = uncollectedStakingRewards[tokenID]
 	}
 
-	return result, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	return result, nil
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPdexv3WithdrawStakingReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
