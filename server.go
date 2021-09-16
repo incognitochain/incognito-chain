@@ -1966,8 +1966,8 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 
 	beaconFinalView := s.blockChain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 	//For Shard
-	shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
-	shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
+	shardPendingCommitteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
+	shardCommitteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
 	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
 	if beaconFinalView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
@@ -1976,7 +1976,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 
 	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {
-		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] {
+		for _, v := range shardCommitteeFromBeaconView[byte(chain.GetShardID())] {
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard committee in shard state
 				return common.CommitteeRole, chain.GetShardID()
 			}
@@ -1988,7 +1988,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 			}
 		}
 
-		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] {
+		for _, v := range shardPendingCommitteeFromBeaconView[byte(chain.GetShardID())] {
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending committee in shard state
 				return common.PendingRole, chain.GetShardID()
 			}
