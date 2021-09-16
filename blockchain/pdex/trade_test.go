@@ -115,7 +115,9 @@ func TestProduceTrade(t *testing.T) {
 
 			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
 			testState := mustReadState("test_state.json")
-			testState.params = &Params{}
+			testState.params = &Params{
+				DefaultFeeRateBPS: 30,
+			}
 			temp := &StateFormatter{}
 			temp.FromState(testState)
 
