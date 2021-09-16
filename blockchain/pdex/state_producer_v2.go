@@ -413,6 +413,9 @@ func (sp *stateProducerV2) trade(
 		for index, pairID := range currentTrade.TradePath {
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
+			changedPair.lpFeesPerShare = lpFeesPerShares[index]
+			changedPair.protocolFees = protocolFees[index]
+			changedPair.stakingPoolFees = stakingPoolFees[index]
 			orderbook, _ := orderbookList[index].(*Orderbook) // type is determined; see tradePathFromState()
 			changedPair.orderbook = *orderbook
 			pairs[pairID] = changedPair
