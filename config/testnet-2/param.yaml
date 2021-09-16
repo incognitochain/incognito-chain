@@ -73,3 +73,17 @@ bsc_param:
 pdex_param:
   pdex_v3_break_point_height: 1000000000000
   admin_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+pdex_param:
+  pdex_v3_break_point_height: 1000000000000
+  protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  params:
+    default_fee_rate_bps: 30
+    prv_discount_percent: 25
+    trading_protocol_fee_percent: 0
+    trading_staking_pool_reward_percent: 10
+    staking_pool_share: 
+      - "0000000000000000000000000000000000000000000000000000000000000004": 10
+      - "0000000000000000000000000000000000000000000000000000000000000006": 20
+    mint_nft_require_amount: 1000000000
+    max_orders_per_nft: 10

@@ -687,7 +687,7 @@ func (s *stateV2) updatePoolPairsToDB(env StateEnvironment, stateChange *v2utils
 	for poolPairID, poolPairState := range s.poolPairs {
 		poolPairChange, found := stateChange.PoolPairs[poolPairID]
 		if !found || poolPairChange == nil {
-			return errors.New("Can not found poolPairChange")
+			continue
 		}
 		err = poolPairState.updateToDB(env, poolPairID, poolPairChange)
 		if err != nil {

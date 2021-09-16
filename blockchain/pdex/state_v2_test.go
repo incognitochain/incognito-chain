@@ -421,9 +421,13 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
 						),
-						lpFeesPerShare:  map[common.Hash]*big.Int{},
-						protocolFees:    map[common.Hash]uint64{},
-						stakingPoolFees: map[common.Hash]uint64{},
+						lpFeesPerShare: map[common.Hash]*big.Int{},
+						protocolFees:   map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{
+							common.PRVCoinID: 0,
+							*token0ID:        0,
+							*token1ID:        0,
+						},
 						shares: map[string]*Share{
 							nftID1: &Share{
 								amount:             200,
@@ -544,7 +548,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(s.poolPairs, tt.fieldsAfterProcess.poolPairs) {
-				t.Errorf("waitingContributions = %v, want %v", s.waitingContributions, tt.fieldsAfterProcess.waitingContributions)
+				t.Errorf("poolPairs = %v, want %v", s.poolPairs, tt.fieldsAfterProcess.poolPairs)
 				return
 			}
 			if !reflect.DeepEqual(s.nftIDs, tt.fieldsAfterProcess.nftIDs) {
