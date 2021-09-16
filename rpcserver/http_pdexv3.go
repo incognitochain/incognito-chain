@@ -723,7 +723,7 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
@@ -909,7 +909,7 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
@@ -1584,7 +1584,7 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, false, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
@@ -1743,7 +1743,7 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
 	marshaledTx, err := json.Marshal(tx)
