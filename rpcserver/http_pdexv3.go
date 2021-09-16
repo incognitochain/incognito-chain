@@ -925,7 +925,7 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 
 func (httpServer *HttpServer) handlePdexv3MintNft(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var res interface{}
-	data, err := httpServer.createRawTxPdexv3MintNft(params)
+	data, err := httpServer.createPdexv3MintNftTransaction(params)
 	if err != nil {
 		return nil, err
 	}
@@ -940,7 +940,7 @@ func (httpServer *HttpServer) handlePdexv3MintNft(params interface{}, closeChan 
 	return res, nil
 }
 
-func (httpServer *HttpServer) createRawTxPdexv3MintNft(
+func (httpServer *HttpServer) createPdexv3MintNftTransaction(
 	params interface{},
 ) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -962,56 +962,67 @@ func (httpServer *HttpServer) createRawTxPdexv3MintNft(
 	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
 	}
-
 	if len(arrayParams) != 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 5, len(arrayParams)))
 	}
 
-	param, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
-	}
-
-	amountParam, ok := param["Amount"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("amount is invalid"))
-	}
-	amount, err := common.AssertAndConvertNumber(amountParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	otaReceive := privacy.OTAReceiver{}
-	err = otaReceive.FromAddress(keyWallet.KeySet.PaymentAddress)
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceiveStr, err := otaReceive.String()
+	otaReceiveStr, err := otaReceiver.String()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	metaData := metadataPdexv3.NewUserMintNftRequestWithValue(otaReceiveStr, amount)
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+	}{}
 
-	// create new param to build raw tx from param interface
-	rawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-	tx, rpcErr := httpServer.txService.BuildRawTransaction(rawTxParam, metaData)
-	if rpcErr != nil {
-		Logger.log.Error(rpcErr)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, rpcErr)
-	}
-	byteArrays, err := json.Marshal(tx)
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
-	txHashStr := tx.Hash().String()
+	paramSelect.SetTokenID(common.PRVCoinID)
 
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+	amount := bc.GetBeaconBestState().PdeState(pdex.AmplifierVersion).Reader().Params().MintNftRequireAmount
+
+	md := metadataPdexv3.NewUserMintNftRequestWithValue(otaReceiveStr, amount)
+	paramSelect.SetMetadata(md)
+
+	// burn selling amount for order, plus fee
+	burnPayments := []*privacy.PaymentInfo{
+		&privacy.PaymentInfo{
+			PaymentAddress: burnAddr,
+			Amount:         md.Amount(),
+		},
+	}
+	paramSelect.PRV.PaymentInfos = burnPayments
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
+	}
+
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
 	res := &jsonresult.CreateTransactionResult{
-		TxID:            txHashStr,
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
 	}
 	return res, nil
 }
