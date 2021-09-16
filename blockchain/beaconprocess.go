@@ -341,6 +341,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
+	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)
+	instructions = addFinishInstruction(instructions, finishSyncInstruction)
+
 	if len(incurredInstructions) != 0 {
 		instructions = append(instructions, incurredInstructions...)
 	}
@@ -355,8 +358,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	}
 	if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
 		return NewBlockChainError(InstructionHashError, fmt.Errorf(
-			"Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v",
-			beaconBlock.Header.InstructionHash, tempInstructionHash, instructions))
+			"Expect Instruction Hash in Beacon Header to be %+v, but get %+v"+
+				"\n validator instructions: %+v"+
+				"\n beacon block instruction %+v",
+			beaconBlock.Header.InstructionHash, tempInstructionHash, instructions, beaconBlock.Body.Instructions))
 	}
 
 	beaconVerifyPreprocesingForPreSignTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlockForSigning)
