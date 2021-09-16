@@ -54,12 +54,7 @@ type Chain interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
-	CreateNewBlockFromOldBlock(
-		oldBlock types.BlockInterface,
-		proposer string,
-		startTime int64,
-		committees []incognitokey.CommitteePublicKey,
-		hash common.Hash) (types.BlockInterface, error)
+	CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error)
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error

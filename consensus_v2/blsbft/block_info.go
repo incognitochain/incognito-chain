@@ -78,8 +78,8 @@ type FinalityProof struct {
 	ReProposeHashSignature []string
 }
 
-func NewFinalityProof(reproposeHashSignature []string) *FinalityProof {
-	return &FinalityProof{ReProposeHashSignature: reproposeHashSignature}
+func NewFinalityProof() *FinalityProof {
+	return &FinalityProof{}
 }
 
 func (f *FinalityProof) AddProof(reproposeHash string) {
@@ -96,7 +96,21 @@ type ReProposeBlockInfo struct {
 	RootHash          common.Hash
 }
 
-func NewReProposeBlockInfo(previousBlockHash common.Hash, producer string, producerTimeSlot int64, proposer string, proposerTimeSlot int64, rootHash common.Hash) *ReProposeBlockInfo {
+func createReProposeHashSignature(privateKey []byte, block types.BlockInterface) (string, error) {
+
+	reProposeBlockInfo := newReProposeBlockInfo(
+		block.GetPrevHash(),
+		block.GetProducer(),
+		block.GetProduceTime(),
+		block.GetProposer(),
+		block.GetProposeTime(),
+		block.GetRootHash(),
+	)
+
+	return reProposeBlockInfo.Sign(privateKey)
+}
+
+func newReProposeBlockInfo(previousBlockHash common.Hash, producer string, producerTimeSlot int64, proposer string, proposerTimeSlot int64, rootHash common.Hash) *ReProposeBlockInfo {
 	return &ReProposeBlockInfo{PreviousBlockHash: previousBlockHash, Producer: producer, ProducerTimeSlot: producerTimeSlot, Proposer: proposer, ProposerTimeSlot: proposerTimeSlot, RootHash: rootHash}
 }
 
@@ -105,11 +119,11 @@ func (r ReProposeBlockInfo) Hash() common.Hash {
 	return common.HashH(data)
 }
 
-func (r ReProposeBlockInfo) Sign(bridgePrivateKey []byte) (string, error) {
+func (r ReProposeBlockInfo) Sign(privateKey []byte) (string, error) {
 
 	hash := r.Hash()
 
-	sig, err := bridgesig.Sign(bridgePrivateKey, hash.Bytes())
+	sig, err := bridgesig.Sign(privateKey, hash.Bytes())
 	if err != nil {
 		return "", err
 	}
@@ -117,11 +131,11 @@ func (r ReProposeBlockInfo) Sign(bridgePrivateKey []byte) (string, error) {
 	return string(sig), nil
 }
 
-func (r ReProposeBlockInfo) VerifySignature(sig string, brigdePublicKey []byte) (bool, error) {
+func (r ReProposeBlockInfo) VerifySignature(sig string, publicKey []byte) (bool, error) {
 
 	hash := r.Hash()
 
-	isValid, err := bridgesig.Verify(brigdePublicKey, hash.Bytes(), []byte(sig))
+	isValid, err := bridgesig.Verify(publicKey, hash.Bytes(), []byte(sig))
 	if err != nil {
 		return false, err
 	}

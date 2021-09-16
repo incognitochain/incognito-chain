@@ -133,6 +133,10 @@ func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (crossShardBlock *CrossShardBlock) GetRootHash() common.Hash {
+	panic("do not call this function")
+}
+
 func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
 	type Alias CrossShardBlock
 	temp := &struct {
@@ -153,10 +157,6 @@ func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
 
 	crossShardBlock.CrossOutputCoin = outputCoinList
 	return nil
-}
-
-func (crossShardBlock *CrossShardBlock) SetFinalityHeight(height uint64) {
-	panic("don't call this function")
 }
 
 func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Bytes() []byte {

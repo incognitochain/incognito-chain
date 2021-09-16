@@ -174,6 +174,22 @@ func (_m *BlockInterface) GetProposer() string {
 	return r0
 }
 
+// GetRootHash provides a mock function with given fields:
+func (_m *BlockInterface) GetRootHash() common.Hash {
+	ret := _m.Called()
+
+	var r0 common.Hash
+	if rf, ok := ret.Get(0).(func() common.Hash); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(common.Hash)
+		}
+	}
+
+	return r0
+}
+
 // GetRound provides a mock function with given fields:
 func (_m *BlockInterface) GetRound() int {
 	ret := _m.Called()

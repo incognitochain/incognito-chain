@@ -313,7 +313,7 @@ func Test_actorV2_MultiSubset_proposeShardBlock(t *testing.T) {
 				currentTime:    tt.fields.currentTime,
 				blockVersion:   tt.fields.blockVersion,
 			}
-			got, err := a.proposeShardBlock(tt.args.b58Str, tt.args.block, tt.args.committees, tt.args.committeeViewHash)
+			got, err := a.proposeShardBlock(tt.args.b58Str, tt.args.block, tt.args.committees, tt.args.committeeViewHash, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("proposeShardBlock() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1058,4 +1058,16 @@ func Test_actorV2_validatePreSignBlock(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTimeSlot(t *testing.T) {
+	common.TIMESLOT = 40
+
+	ts1 := common.CalculateTimeSlot(1631735162)
+	ts2 := common.CalculateTimeSlot(1631735210)
+	ts3 := common.CalculateTimeSlot(1631735259)
+	t.Log(ts2 - ts1)
+	t.Log(ts3 - ts2)
+	t.Log(ts1, ts2, ts3)
+
 }

@@ -77,13 +77,13 @@ func (_m *Chain) CreateNewBlock(version int, proposer string, round int, startTi
 	return r0, r1
 }
 
-// CreateNewBlockFromOldBlock provides a mock function with given fields: oldBlock, proposer, startTime, committees, hash
-func (_m *Chain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, committees []incognitokey.CommitteePublicKey, hash common.Hash) (types.BlockInterface, error) {
-	ret := _m.Called(oldBlock, proposer, startTime, committees, hash)
+// CreateNewBlockFromOldBlock provides a mock function with given fields: oldBlock, proposer, startTime, isValidRePropose
+func (_m *Chain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error) {
+	ret := _m.Called(oldBlock, proposer, startTime, isValidRePropose)
 
 	var r0 types.BlockInterface
-	if rf, ok := ret.Get(0).(func(types.BlockInterface, string, int64, []incognitokey.CommitteePublicKey, common.Hash) types.BlockInterface); ok {
-		r0 = rf(oldBlock, proposer, startTime, committees, hash)
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, string, int64, bool) types.BlockInterface); ok {
+		r0 = rf(oldBlock, proposer, startTime, isValidRePropose)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.BlockInterface)
@@ -91,8 +91,8 @@ func (_m *Chain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, propo
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(types.BlockInterface, string, int64, []incognitokey.CommitteePublicKey, common.Hash) error); ok {
-		r1 = rf(oldBlock, proposer, startTime, committees, hash)
+	if rf, ok := ret.Get(1).(func(types.BlockInterface, string, int64, bool) error); ok {
+		r1 = rf(oldBlock, proposer, startTime, isValidRePropose)
 	} else {
 		r1 = ret.Error(1)
 	}

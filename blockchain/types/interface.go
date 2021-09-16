@@ -16,18 +16,18 @@ type BlockInterface interface {
 	Hash() *common.Hash
 	// AddValidationField(validateData string) error
 	GetProducer() string
+	GetProduceTime() int64
+	GetProposeTime() int64
+	GetProposer() string
 	GetValidationField() string
 	GetRound() int
 	GetRoundKey() string
 	GetInstructions() [][]string
 	GetConsensusType() string
 	GetCurrentEpoch() uint64
-	GetProduceTime() int64
-	GetProposeTime() int64
 	GetPrevHash() common.Hash
-	GetProposer() string
 	Type() string
 	CommitteeFromBlock() common.Hash
 	BodyHash() common.Hash
-	SetFinalityHeight(height uint64)
+	GetRootHash() common.Hash
 }

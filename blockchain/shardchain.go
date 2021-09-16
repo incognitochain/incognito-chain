@@ -231,18 +231,17 @@ func (chain *ShardChain) CreateNewBlock(
 	return newBlock, nil
 }
 
-func (chain *ShardChain) CreateNewBlockFromOldBlock(
-	oldBlock types.BlockInterface,
-	proposer string, startTime int64,
-	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash,
-) (types.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
+
+	if isValidRePropose {
+		newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+	}
 
 	return newBlock, nil
 }

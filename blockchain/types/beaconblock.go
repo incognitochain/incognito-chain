@@ -177,8 +177,20 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (beaconBlock *BeaconBlock) SetFinalityHeight(height uint64) {
-	beaconBlock.Header.FinalityHeight = height
+func (beaconBlock *BeaconBlock) GetRootHash() common.Hash {
+	res := []byte{}
+	res = append(res, byte(beaconBlock.Header.Version))
+	res = append(res, beaconBlock.Header.InstructionHash.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardStateHash.Bytes()...)
+	res = append(res, beaconBlock.Header.InstructionMerkleRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.BeaconCommitteeAndValidatorRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.BeaconCandidateRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardCandidateRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardCommitteeAndValidatorRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.AutoStakingRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardSyncValidatorRoot.Bytes()...)
+
+	return common.HashH(res)
 }
 
 func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {

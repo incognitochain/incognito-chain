@@ -121,10 +121,6 @@ func (shardBlock *ShardBlock) GetPrevHash() common.Hash {
 	return shardBlock.Header.PreviousBlockHash
 }
 
-func (shardBlock *ShardBlock) SetFinalityHeight(height uint64) {
-	shardBlock.Header.FinalityHeight = height
-}
-
 func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []metadata.Transaction) {
 	shardBlock.Body.Instructions = append(shardBlock.Body.Instructions, instructions...)
 	shardBlock.Body.CrossTransactions = crossTransaction
@@ -134,6 +130,24 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
+}
+
+func (shardBlock *ShardBlock) GetRootHash() common.Hash {
+
+	res := []byte{}
+	res = append(res, byte(shardBlock.Header.Version))
+	res = append(res, shardBlock.Header.BeaconHash.Bytes()...)
+	res = append(res, shardBlock.Header.TxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.ShardTxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CrossTransactionRoot.Bytes()...)
+	res = append(res, shardBlock.Header.InstructionsRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CommitteeRoot.Bytes()...)
+	res = append(res, shardBlock.Header.PendingValidatorRoot.Bytes()...)
+	res = append(res, shardBlock.Header.StakingTxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.InstructionMerkleRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CommitteeFromBlock.Bytes()...)
+
+	return common.HashH(res)
 }
 
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
