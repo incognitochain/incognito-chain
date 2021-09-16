@@ -134,6 +134,16 @@ const (
 	IssuingBSCResponseMeta = 251
 	BurningPBSCRequestMeta = 252
 	BurningBSCConfirmMeta  = 253
+
+	// erc20/bep20 for prv token
+	IssuingPRVERC20RequestMeta = 270
+	IssuingPRVERC20ResponseMeta = 271
+	IssuingPRVBEP20RequestMeta = 272
+	IssuingPRVBEP20ResponseMeta = 273
+	BurningPRVERC20RequestMeta = 274
+	BurningPRVERC20ConfirmMeta  = 150
+	BurningPRVBEP20RequestMeta = 275
+	BurningPRVBEP20ConfirmMeta  = 151
 )
 
 var minerCreatedMetaTypes = []int{

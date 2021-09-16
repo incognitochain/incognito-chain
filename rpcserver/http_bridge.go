@@ -147,6 +147,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		params,
 		closeChan,
 		httpServer,
+		false,
 	)
 }
 
@@ -326,6 +327,7 @@ func processBurningReq(
 	params interface{},
 	closeChan <-chan struct{},
 	httpServer *HttpServer,
+	isPRV bool,
 ) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 5 {
@@ -398,20 +400,38 @@ func processBurningReq(
 	if err != nil {
 		return nil, err
 	}
-
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
-	if rpcErr != nil {
-		Logger.log.Error(rpcErr)
-		return nil, rpcErr
+	var byteArrays []byte
+	var err2 error
+	var txHash string
+	if isPRV {
+		// create new param to build raw tx from param interface
+		createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+		if errNewParam != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+		}
+		rawTx, rpcErr := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+		if rpcErr != nil {
+			Logger.log.Error(rpcErr)
+			return nil, rpcErr
+		}
+		byteArrays, err2 = json.Marshal(rawTx)
+		txHash = rawTx.Hash().String()
+	} else {
+		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+		if rpcErr != nil {
+			Logger.log.Error(rpcErr)
+			return nil, rpcErr
+		}
+		byteArrays, err2 = json.Marshal(customTokenTx)
+		txHash = customTokenTx.Hash().String()
 	}
-
-	byteArrays, err2 := json.Marshal(customTokenTx)
+	
 	if err2 != nil {
 		Logger.log.Error(err2)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 	result := jsonresult.CreateTransactionResult{
-		TxID:            customTokenTx.Hash().String(),
+		TxID:            txHash,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -424,6 +444,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(para
 		params,
 		closeChan,
 		httpServer,
+		false,
 	)
 }
 
@@ -470,6 +491,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interfac
 		params,
 		closeChan,
 		httpServer,
+		false,
 	)
 }
 
@@ -484,6 +506,65 @@ func (httpServer *HttpServer) handleCreateAndSendBurningBSCRequest(params interf
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPRVERC20Req(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningPRVERC20RequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		true,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPRVERC20Request(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPRVERC20Req(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPRVBEP20Req(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningPRVBEP20RequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		true,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPRVBEP20Request(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPRVBEP20Req(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}

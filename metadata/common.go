@@ -71,6 +71,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &BurningRequest{}
 	case BurningPBSCRequestMeta:
 		md = &BurningRequest{}
+    case BurningPRVBEP20RequestMeta:
+        md = &BurningRequest{}
+    case BurningPRVERC20RequestMeta:
+        md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
@@ -214,6 +218,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmMetaV2),
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
 	strconv.Itoa(BurningBSCConfirmMeta),
+	strconv.Itoa(BurningPRVERC20ConfirmMeta),
+    strconv.Itoa(BurningPRVBEP20ConfirmMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {

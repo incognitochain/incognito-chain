@@ -154,19 +154,21 @@ var HttpHandler = map[string]httpHandler{
 	checkBSCHashIssued:                (*HttpServer).handleCheckBSCHashIssued,
 
 	// wallet
-	getPublicKeyFromPaymentAddress:     (*HttpServer).handleGetPublicKeyFromPaymentAddress,
-	defragmentAccount:                  (*HttpServer).handleDefragmentAccount,
-	defragmentAccountV2:                (*HttpServer).handleDefragmentAccountV2,
-	defragmentAccountToken:             (*HttpServer).handleDefragmentAccountToken,
-	defragmentAccountTokenV2:           (*HttpServer).handleDefragmentAccountTokenV2,
-	getStackingAmount:                  (*HttpServer).handleGetStakingAmount,
-	hashToIdenticon:                    (*HttpServer).handleHashToIdenticon,
-	createAndSendBurningRequest:        (*HttpServer).handleCreateAndSendBurningRequest,
-	createAndSendBurningRequestV2:      (*HttpServer).handleCreateAndSendBurningRequestV2,
-	createAndSendTxWithIssuingETHReq:   (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
-	createAndSendTxWithIssuingETHReqV2: (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
-	createAndSendTxWithIssuingBSCReq:   (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
-	createAndSendBurningBSCRequest:     (*HttpServer).handleCreateAndSendBurningBSCRequest,
+	getPublicKeyFromPaymentAddress:      (*HttpServer).handleGetPublicKeyFromPaymentAddress,
+	defragmentAccount:                   (*HttpServer).handleDefragmentAccount,
+	defragmentAccountV2:                 (*HttpServer).handleDefragmentAccountV2,
+	defragmentAccountToken:              (*HttpServer).handleDefragmentAccountToken,
+	defragmentAccountTokenV2:            (*HttpServer).handleDefragmentAccountTokenV2,
+	getStackingAmount:                   (*HttpServer).handleGetStakingAmount,
+	hashToIdenticon:                     (*HttpServer).handleHashToIdenticon,
+	createAndSendBurningRequest:         (*HttpServer).handleCreateAndSendBurningRequest,
+	createAndSendBurningRequestV2:       (*HttpServer).handleCreateAndSendBurningRequestV2,
+	createAndSendTxWithIssuingETHReq:    (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
+	createAndSendTxWithIssuingETHReqV2:  (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
+	createAndSendTxWithIssuingBSCReq:    (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
+	createAndSendBurningBSCRequest:      (*HttpServer).handleCreateAndSendBurningBSCRequest,
+	createAndSendBurningPRVERC20Request: (*HttpServer).handleCreateAndSendBurningPRVERC20Request,
+	createAndSendBurningPRVBEP20Request: (*HttpServer).handleCreateAndSendBurningPRVBEP20Request,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -175,6 +177,8 @@ var HttpHandler = map[string]httpHandler{
 	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
 	getBurnProof:             (*HttpServer).handleGetBurnProof,
 	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
+	getPRVERC20BurnProof:     (*HttpServer).handleGetPRVERC20BurnProof,
+	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,

@@ -55,6 +55,8 @@ type param struct {
 	GethParam                        gethParam          `mapstructure:"geth_param"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	IsBackup                         bool
+	PRVERC20ContractAddressStr       string             `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+    PRVBEP20ContractAddressStr       string             `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
 }
 
 type genesisParam struct {
