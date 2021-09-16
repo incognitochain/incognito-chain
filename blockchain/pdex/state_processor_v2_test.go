@@ -709,6 +709,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				Status:                  common.PDEContributionMatchedNReturnedStatus,
 				Token1ID:                token1ID.String(),
 				Token1ContributedAmount: 200,
+				PoolPairID:              poolPairID,
 			},
 			wantErr: false,
 		},
