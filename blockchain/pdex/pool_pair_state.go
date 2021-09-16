@@ -479,6 +479,18 @@ func (p *PoolPairState) withOrderBook(orderbook Orderbook) {
 	p.orderbook = orderbook
 }
 
+func (p *PoolPairState) withLpFeesPerShare(lpFeesPerShare map[common.Hash]*big.Int) {
+	p.lpFeesPerShare = lpFeesPerShare
+}
+
+func (p *PoolPairState) withProtocolFees(protocolFees map[common.Hash]uint64) {
+	p.protocolFees = protocolFees
+}
+
+func (p *PoolPairState) withStakingPoolFees(stakingPoolFees map[common.Hash]uint64) {
+	p.stakingPoolFees = stakingPoolFees
+}
+
 func (p *PoolPairState) cloneShare(nftID string) map[string]*Share {
 	res := make(map[string]*Share)
 	for k, v := range p.shares {
@@ -504,7 +516,7 @@ func (p *PoolPairState) updateToDB(
 	for nftID, share := range p.shares {
 		shareChange, found := poolPairChange.Shares[nftID]
 		if !found || shareChange == nil {
-			return errors.New("Can not found share change")
+			continue
 		}
 		err := share.updateToDB(env, poolPairID, nftID, shareChange)
 		if err != nil {

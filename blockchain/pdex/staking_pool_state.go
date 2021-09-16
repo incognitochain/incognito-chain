@@ -194,6 +194,10 @@ func (s *StakingPoolState) withStakers(stakers map[string]*Staker) {
 	s.stakers = stakers
 }
 
+func (s *StakingPoolState) withRewardsPerShare(rewardsPerShare map[common.Hash]*big.Int) {
+	s.rewardsPerShare = rewardsPerShare
+}
+
 func (s *StakingPoolState) cloneStaker(nftID string) map[string]*Staker {
 	res := make(map[string]*Staker)
 	for k, v := range s.stakers {
