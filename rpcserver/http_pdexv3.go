@@ -291,16 +291,24 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	beaconBestView := httpServer.config.BlockChain.GetBeaconBestState()
 	beaconHeight, ok := data["BeaconHeight"].(float64)
 	if !ok || beaconHeight == 0 {
-		beaconHeight = float64(httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight)
+		beaconHeight = float64(beaconBestView.BeaconHeight)
+	}
+
+	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(beaconBestView, uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 	}
 
 	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
 	}
-
-	beaconFeatureStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
 	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
 	if err != nil {
@@ -1819,16 +1827,24 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingReward(params inter
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	beaconBestView := httpServer.config.BlockChain.GetBeaconBestState()
 	beaconHeight, ok := data["BeaconHeight"].(float64)
 	if !ok || beaconHeight == 0 {
-		beaconHeight = float64(httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight)
+		beaconHeight = float64(beaconBestView.BeaconHeight)
+	}
+
+	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(beaconBestView, uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, err)
 	}
 
 	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, errors.New("pDEX v3 is not available"))
 	}
-
-	beaconFeatureStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
 	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
 	if err != nil {
