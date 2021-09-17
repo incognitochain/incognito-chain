@@ -14,6 +14,7 @@ type ContributionStatus struct {
 	Token1ID                string `json:"Token1ID"`
 	Token1ContributedAmount uint64 `json:"Token1ContributedAmount"`
 	Token1ReturnedAmount    uint64 `json:"Token1ReturnedAmount"`
+	PoolPairID              string `json:"PoolPairID"`
 }
 
 type WithdrawStatus struct {

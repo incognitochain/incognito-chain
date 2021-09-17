@@ -96,6 +96,7 @@ func (sp *stateProcessorV2) waitingContribution(
 		Token0ID:                contributionValue.TokenID().String(),
 		Token0ContributedAmount: contributionValue.Amount(),
 		Status:                  common.PDEContributionWaitingStatus,
+		PoolPairID:              contributionValue.PoolPairID(),
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -149,7 +150,8 @@ func (sp *stateProcessorV2) refundContribution(
 	refundContributionValue := refundContribution.Value()
 
 	contribStatus := v2.ContributionStatus{
-		Status: common.PDEContributionRefundStatus,
+		Status:     common.PDEContributionRefundStatus,
+		PoolPairID: refundContributionValue.PoolPairID(),
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -178,7 +180,6 @@ func (sp *stateProcessorV2) matchContribution(
 	map[string]*PoolPairState,
 	*v2.ContributionStatus, error,
 ) {
-	Logger.log.Info("[pdex] matchContribution")
 	matchAddLiquidityInst := instruction.MatchAddLiquidity{}
 	err := matchAddLiquidityInst.FromStringSlice(inst)
 	if err != nil {
@@ -218,7 +219,8 @@ func (sp *stateProcessorV2) matchContribution(
 	delete(waitingContributions, matchContribution.PairHash())
 
 	contribStatus := v2.ContributionStatus{
-		Status: common.PDEContributionAcceptedStatus,
+		Status:     common.PDEContributionAcceptedStatus,
+		PoolPairID: matchContributionValue.PoolPairID(),
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -306,6 +308,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 				Token1ID:                matchAndReturnContributionValue.TokenID().String(),
 				Token1ContributedAmount: matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount(),
 				Token1ReturnedAmount:    matchAndReturnAddLiquidity.ReturnAmount(),
+				PoolPairID:              matchAndReturnContributionValue.PoolPairID(),
 			}
 		} else {
 			contribStatus = v2.ContributionStatus{
@@ -316,6 +319,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 				Token0ID:                matchAndReturnContributionValue.TokenID().String(),
 				Token0ContributedAmount: matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount(),
 				Token0ReturnedAmount:    matchAndReturnAddLiquidity.ReturnAmount(),
+				PoolPairID:              matchAndReturnContributionValue.PoolPairID(),
 			}
 		}
 

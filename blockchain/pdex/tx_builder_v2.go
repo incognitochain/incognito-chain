@@ -67,8 +67,6 @@ func (txBuilder *TxBuilderV2) Build(
 		switch inst[1] {
 		case common.PDEWithdrawalAcceptedChainStatus:
 			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB)
-		default:
-			return tx, errors.New("Invalid withdraw liquidity status")
 		}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
