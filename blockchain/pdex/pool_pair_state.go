@@ -266,6 +266,15 @@ func (p *PoolPairState) getDiff(
 			shareChange = share.getDiff(nftID, nil, shareChange)
 			poolPairChange.Shares[nftID] = shareChange
 		}
+		for tokenID := range p.lpFeesPerShare {
+			newPoolPairChange.LpFeesPerShare[tokenID.String()] = true
+		}
+		for tokenID := range p.protocolFees {
+			newPoolPairChange.ProtocolFees[tokenID.String()] = true
+		}
+		for tokenID := range p.stakingPoolFees {
+			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
+		}
 	} else {
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 			newPoolPairChange.IsChanged = true
@@ -275,6 +284,21 @@ func (p *PoolPairState) getDiff(
 				shareChange := v2utils.NewShareChange()
 				shareChange = share.getDiff(nftID, m, shareChange)
 				poolPairChange.Shares[nftID] = shareChange
+			}
+		}
+		for tokenID, value := range p.lpFeesPerShare {
+			if m, ok := comparePoolPair.lpFeesPerShare[tokenID]; !ok || !reflect.DeepEqual(m, value) {
+				newPoolPairChange.LpFeesPerShare[tokenID.String()] = true
+			}
+		}
+		for tokenID, value := range p.protocolFees {
+			if m, ok := comparePoolPair.protocolFees[tokenID]; !ok || !reflect.DeepEqual(m, value) {
+				newPoolPairChange.ProtocolFees[tokenID.String()] = true
+			}
+		}
+		for tokenID, value := range p.stakingPoolFees {
+			if m, ok := comparePoolPair.stakingPoolFees[tokenID]; !ok || !reflect.DeepEqual(m, value) {
+				newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 			}
 		}
 		newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)

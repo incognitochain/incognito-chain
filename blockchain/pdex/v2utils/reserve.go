@@ -370,7 +370,6 @@ func (tp *TradingPair) AddFee(
 	tokenID common.Hash, amount uint64, baseLPPerShare *big.Int,
 	rootLpFeesPerShare map[common.Hash]*big.Int, rootProtocolFees, rootStakingPoolFees map[common.Hash]uint64,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
-
 ) (map[common.Hash]*big.Int, map[common.Hash]uint64, map[common.Hash]uint64) {
 	isStakingRewardToken := false
 	for _, stakingRewardToken := range stakingRewardTokens {

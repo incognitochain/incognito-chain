@@ -396,11 +396,8 @@ func (c *config) loadConfig() {
 		}
 	}
 
-	parser := flags.NewParser(c, flags.Default)
-	_, err := parser.Parse()
-	if err != nil {
-		panic(err)
-	}
+	parser := flags.NewParser(c, flags.IgnoreUnknown)
+	parser.Parse()
 	c.GethParam.GetFromEnv()
 }
 
