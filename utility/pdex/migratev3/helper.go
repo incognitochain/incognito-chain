@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -20,8 +20,7 @@ type Response struct {
 	Errror interface{} `json:"Error"`
 }
 
-func sendHttpRequest(url, method string, params []interface{}) error {
-
+func sendHttpRequest(url, method string, params []interface{}, isToConsole bool) (interface{}, error) {
 	payload := &JsonRpcFormat{
 		ID:      "1",
 		JsonRpc: "jsonrpc",
@@ -34,32 +33,27 @@ func sendHttpRequest(url, method string, params []interface{}) error {
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadData))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	if isToConsole {
+		log.Println(string(body))
 	}
 	response := Response{}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if response.Errror != nil {
-		data, err := json.Marshal(response.Errror)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf(string(data))
-	}
-
-	return nil
+	return response.Result, nil
 }
