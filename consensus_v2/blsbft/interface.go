@@ -81,6 +81,7 @@ type Chain interface {
 		blockVersion int,
 	) []incognitokey.CommitteePublicKey
 	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
+	GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error)
 }
 
 type CommitteeChainHandler interface {

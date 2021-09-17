@@ -29,6 +29,7 @@ type ProposeBlockInfo struct {
 	lastValidateTime        time.Time
 
 	reProposeHashSignature string
+	isValidLemma2Proof     bool
 	reProposeBlockInfo     ReProposeBlockInfo
 	finalityProof          FinalityProof
 	finalityData           []ReProposeBlockInfo

@@ -390,6 +390,29 @@ func (_m *Chain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
 	return r0
 }
 
+// GetPreviousBlockByHash provides a mock function with given fields: hash
+func (_m *Chain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+	ret := _m.Called(hash)
+
+	var r0 types.BlockInterface
+	if rf, ok := ret.Get(0).(func(common.Hash) types.BlockInterface); ok {
+		r0 = rf(hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.BlockInterface)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(hash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetProposerByTimeSlotFromCommitteeList provides a mock function with given fields: ts, committees
 func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
 	ret := _m.Called(ts, committees)

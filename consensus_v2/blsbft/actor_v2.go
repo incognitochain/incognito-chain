@@ -1010,29 +1010,27 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 }
 
 func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
+
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
 	if err != nil || blockInfo == nil {
 		a.logger.Debug(err)
 		return err
 	}
+
 	block := blockInfo.(types.BlockInterface)
+
 	blockHash := block.Hash().String()
-
-	if _, ok := a.nextBlockFinalityProof[block.GetPrevHash().String()]; !ok {
-		a.nextBlockFinalityProof[block.GetPrevHash().String()] = make(map[int64]string)
-	}
-
-	blkCPk := incognitokey.CommitteePublicKey{}
-	blkCPk.FromBase58(block.GetProducer())
-	proposerMiningKeyBase58 := blkCPk.GetMiningKeyBase58(a.GetConsensusName())
-
+	producerCommitteePublicKey := incognitokey.CommitteePublicKey{}
+	producerCommitteePublicKey.FromBase58(block.GetProducer())
+	producerMiningKeyBase58 := producerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
 	signingCommittees, committees, err := a.getCommitteeForBlock(block)
 	if err != nil {
 		a.logger.Error(err)
 		return err
 	}
-
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
+	previousBlock, err := a.chain.GetPreviousBlockByHash(*block.Hash())
+
 	if len(userKeySet) == 0 {
 		a.logger.Infof("HandleProposeMsg, Block Hash %+v, Block Height %+v, round %+v, NOT in round for voting",
 			*block.Hash(), block.GetHeight(), block.GetRound())
@@ -1052,11 +1050,19 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 
 	if v, ok := a.receiveBlockByHash[blockHash]; !ok {
-		proposeBlockInfo := newProposeBlockForProposeMsg(
-			block, committees, signingCommittees, userKeySet, proposerMiningKeyBase58)
-		a.receiveBlockByHash[blockHash] = proposeBlockInfo
-		a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
-		a.receiveBlockByHeight[block.GetHeight()] = append(a.receiveBlockByHeight[block.GetHeight()], a.receiveBlockByHash[blockHash])
+		err := a.handleNewProposeMsg(
+			proposeMsg,
+			block,
+			previousBlock,
+			committees,
+			signingCommittees,
+			userKeySet,
+			producerMiningKeyBase58,
+		)
+		if err != nil {
+			a.logger.Error(err)
+			return err
+		}
 	} else {
 		a.receiveBlockByHash[blockHash].addBlockInfo(
 			block, committees, signingCommittees, userKeySet, v.validVotes, v.errVotes)
@@ -1073,6 +1079,86 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
 	}
 	return nil
+}
+func (a *actorV2) handleNewProposeMsg(
+	proposeMsg BFTPropose,
+	block types.BlockInterface,
+	previousBlock types.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
+	signingCommittees []incognitokey.CommitteePublicKey,
+	userKeySet []signatureschemes2.MiningKey,
+	producerPublicBLSMiningKey string,
+) error {
+
+	blockHash := block.Hash().String()
+	proposeBlockInfo := newProposeBlockForProposeMsg(
+		block, committees, signingCommittees, userKeySet, producerPublicBLSMiningKey)
+	a.receiveBlockByHash[blockHash] = proposeBlockInfo
+	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+	a.receiveBlockByHeight[block.GetHeight()] = append(a.receiveBlockByHeight[block.GetHeight()], a.receiveBlockByHash[blockHash])
+
+	return nil
+}
+
+// canBlockApplyLemma2 check if block can be applied lemma 2 or not
+// Can be applied: first block of next height (compare to bestview) or re-propose from first block of next height
+// Can't be applied: not first block of next height and not re-proposed from first block of next height
+func (a *actorV2) canBlockApplyLemma2(
+	previousBlock types.BlockInterface, proposeMsg BFTPropose) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) isFirstBlockNextHeight(
+	proposeMsg BFTPropose,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) verifyLemma2FirstBlockNextHeight(
+	proposeMsg BFTPropose,
+	signingCommittees []incognitokey.CommitteePublicKey,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) verifyLemma2NextHeightReProposeBlock(
+	proposeMsg BFTPropose,
+	signingCommittees []incognitokey.CommitteePublicKey,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) verifyFinalityHeightEqualToZero(
+	previousBlockHeight uint64, block types.BlockInterface,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) verifyFinalityHeightEqualToPreviousHeight(
+	previousBlockHeight uint64, block types.BlockInterface,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) createValidLemma2BlockProposeInfo(
+	proposeMsg BFTPropose,
+	signingCommittees []incognitokey.CommitteePublicKey,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) createInvalidLemma2BlockProposeInfo(
+	proposeMsg BFTPropose,
+	signingCommittees []incognitokey.CommitteePublicKey,
+) (bool, error) {
+	panic("not implement")
+}
+
+func (a *actorV2) addFinalityProof(
+	proposeMsg BFTPropose,
+	signingCommittees []incognitokey.CommitteePublicKey,
+) (bool, error) {
+	panic("not implement")
 }
 
 func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
@@ -1105,7 +1191,6 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 					} else {
 						a.logger.Debug(err)
 					}
-					//TODO: @hung only send vote if userKey in proposeBlockInfo.UserKeySet list?
 					if err == nil {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview

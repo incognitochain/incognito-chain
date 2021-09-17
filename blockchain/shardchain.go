@@ -320,6 +320,11 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	return nil
 }
 
+func (chain *ShardChain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+	block, _, err := chain.Blockchain.GetShardBlockByHash(hash)
+	return block, err
+}
+
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)

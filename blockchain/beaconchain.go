@@ -242,6 +242,11 @@ func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.Bl
 	panic("this function is not supported on beacon chain")
 }
 
+func (chain *BeaconChain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+	block, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
+	return block, err
+}
+
 func (chain *BeaconChain) GetActiveShardNumber() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).ActiveShards
 }
