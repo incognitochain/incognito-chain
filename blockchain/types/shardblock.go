@@ -149,6 +149,9 @@ func (shardBlock *ShardBlock) GetRootHash() common.Hash {
 
 	return common.HashH(res)
 }
+func (shardBlock ShardBlock) GetFinalityHeight() uint64 {
+	return shardBlock.Header.FinalityHeight
+}
 
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header

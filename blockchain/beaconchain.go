@@ -358,12 +358,9 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
-func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(
-	ts int64,
-	committees []incognitokey.CommitteePublicKey,
-) (incognitokey.CommitteePublicKey, int, error) {
+func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
-	return committees[id], id, nil
+	return committees[id], id
 }
 
 func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {

@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"time"
@@ -30,9 +31,7 @@ type ProposeBlockInfo struct {
 
 	reProposeHashSignature string
 	isValidLemma2Proof     bool
-	reProposeBlockInfo     ReProposeBlockInfo
 	finalityProof          FinalityProof
-	finalityData           []ReProposeBlockInfo
 }
 
 //NewProposeBlockInfoValue : new propose block info
@@ -50,6 +49,28 @@ func newProposeBlockForProposeMsg(
 		signingCommittees:       incognitokey.DeepCopy(signingCommittes),
 		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
 		proposerMiningKeyBase58: proposerMiningKeyBase58,
+	}
+}
+
+func newProposeBlockForProposeMsgLemma2(
+	proposeMsg BFTPropose,
+	block types.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
+	signingCommittees []incognitokey.CommitteePublicKey,
+	userKeySet []signatureschemes2.MiningKey,
+	proposerMiningKeyBase58 string,
+	isValidLemma2 bool,
+) *ProposeBlockInfo {
+	return &ProposeBlockInfo{
+		block:                   block,
+		votes:                   make(map[string]*BFTVote),
+		committees:              incognitokey.DeepCopy(committees),
+		signingCommittees:       incognitokey.DeepCopy(signingCommittees),
+		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
+		proposerMiningKeyBase58: proposerMiningKeyBase58,
+		isValidLemma2Proof:      isValidLemma2,
+		reProposeHashSignature:  proposeMsg.ReProposeHashSignature,
+		finalityProof:           proposeMsg.FinalityProof,
 	}
 }
 
@@ -87,6 +108,45 @@ func (f *FinalityProof) AddProof(reproposeHash string) {
 	f.ReProposeHashSignature = append(f.ReProposeHashSignature, reproposeHash)
 }
 
+func (f *FinalityProof) GetProofByIndex(index int) string {
+	return f.ReProposeHashSignature[index]
+}
+
+func (f *FinalityProof) Verify(
+	previousBlockHash common.Hash,
+	producer string,
+	beginTimeSlot int64,
+	proposers []string,
+	rootHash common.Hash,
+) error {
+	for i := 0; i < len(f.ReProposeHashSignature); i++ {
+		reProposer := proposers[i]
+		reProposeTimeSlot := beginTimeSlot + int64(i)
+		sig := f.ReProposeHashSignature[i]
+
+		isValid, err := verifyReProposeHashSignature(
+			sig,
+			previousBlockHash,
+			producer,
+			beginTimeSlot,
+			reProposer,
+			reProposeTimeSlot,
+			rootHash,
+		)
+		if err != nil {
+			return fmt.Errorf("verification failed verifyFinalityProof "+
+				"Re-ProposeTimeSlot %+v, ReProposer %+v, error %+v",
+				reProposeTimeSlot, reProposer, err)
+		}
+		if !isValid {
+			return fmt.Errorf("invalid Signature verifyFinalityProof "+
+				"Re-ProposeTimeSlot %+v, ReProposer %+v", reProposeTimeSlot, reProposer)
+		}
+	}
+
+	return nil
+}
+
 //previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
 type ReProposeBlockInfo struct {
 	PreviousBlockHash common.Hash
@@ -109,6 +169,45 @@ func createReProposeHashSignature(privateKey []byte, block types.BlockInterface)
 	)
 
 	return reProposeBlockInfo.Sign(privateKey)
+}
+
+func verifyReProposeHashSignature(
+	sig string,
+	previousBlockHash common.Hash,
+	producerBase58 string,
+	producerTimeSlot int64,
+	proposerBase58 string,
+	proposerTimeSlot int64,
+	rootHash common.Hash,
+) (bool, error) {
+
+	proposer := incognitokey.CommitteePublicKey{}
+
+	_ = proposer.FromString(proposerBase58)
+	publicKey := proposer.MiningPubKey[common.BridgeConsensus]
+
+	reProposeBlockInfo := newReProposeBlockInfo(
+		previousBlockHash,
+		producerBase58,
+		producerTimeSlot,
+		proposerBase58,
+		proposerTimeSlot,
+		rootHash,
+	)
+
+	return reProposeBlockInfo.VerifySignature(sig, publicKey)
+}
+
+func verifyReProposeHashSignatureFromBlock(sig string, block types.BlockInterface) (bool, error) {
+	return verifyReProposeHashSignature(
+		sig,
+		block.GetPrevHash(),
+		block.GetProducer(),
+		common.CalculateTimeSlot(block.GetProduceTime()),
+		block.GetProposer(),
+		common.CalculateTimeSlot(block.GetProposeTime()),
+		block.GetRootHash(),
+	)
 }
 
 func newReProposeBlockInfo(previousBlockHash common.Hash, producer string, producerTimeSlot int64, proposer string, proposerTimeSlot int64, rootHash common.Hash) *ReProposeBlockInfo {

@@ -137,6 +137,10 @@ func (crossShardBlock *CrossShardBlock) GetRootHash() common.Hash {
 	panic("do not call this function")
 }
 
+func (crossShardBlock *CrossShardBlock) GetFinalityHeight() uint64 {
+	panic("do not call this function")
+}
+
 func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
 	type Alias CrossShardBlock
 	temp := &struct {

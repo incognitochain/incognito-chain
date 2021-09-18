@@ -902,13 +902,10 @@ func (a *actorV2) getCommitteeForBlock(
 		if err != nil {
 			return signingCommittees, committees, err
 		}
-		_, proposerIndex, err = a.chain.GetProposerByTimeSlotFromCommitteeList(
+		_, proposerIndex = a.chain.GetProposerByTimeSlotFromCommitteeList(
 			common.CalculateTimeSlot(v.GetProposeTime()),
 			committees,
 		)
-		if err != nil {
-			return signingCommittees, committees, err
-		}
 	}
 
 	signingCommittees = a.chain.GetSigningCommittees(
@@ -992,16 +989,10 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 		}
 	}
 
-	proposerPk, proposerIndex, err := a.chain.GetProposerByTimeSlotFromCommitteeList(
+	proposerPk, proposerIndex := a.chain.GetProposerByTimeSlotFromCommitteeList(
 		a.currentTimeSlot,
 		committees,
 	)
-	if err != nil {
-		return []incognitokey.CommitteePublicKey{},
-			[]incognitokey.CommitteePublicKey{},
-			incognitokey.CommitteePublicKey{},
-			committeeViewHash, err
-	}
 
 	signingCommittees = a.chain.GetSigningCommittees(
 		proposerIndex, committees, a.blockVersion)
@@ -1036,7 +1027,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 			*block.Hash(), block.GetHeight(), block.GetRound())
 		// Log only
 		if !a.chain.IsBeaconChain() {
-			_, proposerIndex, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(
+			_, proposerIndex := a.chain.GetProposerByTimeSlotFromCommitteeList(
 				common.CalculateTimeSlot(block.GetProposeTime()),
 				committees,
 			)
@@ -1080,6 +1071,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 	return nil
 }
+
 func (a *actorV2) handleNewProposeMsg(
 	proposeMsg BFTPropose,
 	block types.BlockInterface,
@@ -1091,8 +1083,30 @@ func (a *actorV2) handleNewProposeMsg(
 ) error {
 
 	blockHash := block.Hash().String()
-	proposeBlockInfo := newProposeBlockForProposeMsg(
-		block, committees, signingCommittees, userKeySet, producerPublicBLSMiningKey)
+	var proposeBlockInfo *ProposeBlockInfo
+	var err error
+
+	if a.blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+		proposeBlockInfo, err = a.handleNewProposeMsgLemma2(
+			proposeMsg,
+			previousBlock,
+			block,
+			committees,
+			signingCommittees,
+			userKeySet,
+			producerPublicBLSMiningKey,
+		)
+		if err != nil {
+			a.logger.Errorf("Fail to apply lemma 2, block %+v, %+v, "+
+				"error %+v", block.GetHeight(), block.Hash().String(), err)
+			return err
+		}
+
+	} else {
+		proposeBlockInfo = newProposeBlockForProposeMsg(
+			block, committees, signingCommittees, userKeySet, producerPublicBLSMiningKey)
+	}
+
 	a.receiveBlockByHash[blockHash] = proposeBlockInfo
 	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 	a.receiveBlockByHeight[block.GetHeight()] = append(a.receiveBlockByHeight[block.GetHeight()], a.receiveBlockByHash[blockHash])
@@ -1100,65 +1114,236 @@ func (a *actorV2) handleNewProposeMsg(
 	return nil
 }
 
-// canBlockApplyLemma2 check if block can be applied lemma 2 or not
+// block can apply lemma 2 when
 // Can be applied: first block of next height (compare to bestview) or re-propose from first block of next height
 // Can't be applied: not first block of next height and not re-proposed from first block of next height
-func (a *actorV2) canBlockApplyLemma2(
-	previousBlock types.BlockInterface, proposeMsg BFTPropose) (bool, error) {
-	panic("not implement")
+func (a *actorV2) handleNewProposeMsgLemma2(
+	proposeMsg BFTPropose,
+	previousBlock types.BlockInterface,
+	block types.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
+	signingCommittees []incognitokey.CommitteePublicKey,
+	userKeySet []signatureschemes2.MiningKey,
+	producerPublicBLSMiningKey string,
+) (*ProposeBlockInfo, error) {
+
+	isFirstBlockNextHeight := a.isFirstBlockNextHeight(previousBlock, block)
+
+	if isFirstBlockNextHeight {
+		err := a.verifyLemma2FirstBlockNextHeight(proposeMsg, block)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	isValidLemma2 := false
+	var err error
+	isReProposeFromFirstBlockNextHeight := a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
+	if isReProposeFromFirstBlockNextHeight {
+		isValidLemma2, err = a.verifyLemma2ReProposeBlockNextHeight(proposeMsg, block, committees)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	proposeBlockInfo := newProposeBlockForProposeMsgLemma2(
+		proposeMsg,
+		block,
+		committees,
+		signingCommittees,
+		userKeySet,
+		producerPublicBLSMiningKey,
+		isValidLemma2,
+	)
+
+	a.addFinalityProof(block, proposeMsg.FinalityProof)
+
+	return proposeBlockInfo, nil
 }
 
+// isFirstBlockNextHeight verify firstBlockNextHeight
+// producer timeslot is proposer timeslot
+// producer is proposer
+// producer timeslot = previous proposer timeslot + 1
 func (a *actorV2) isFirstBlockNextHeight(
-	proposeMsg BFTPropose,
-) (bool, error) {
-	panic("not implement")
+	previousBlock types.BlockInterface,
+	block types.BlockInterface,
+) bool {
+
+	if block.GetProposeTime() != block.GetProduceTime() {
+		return false
+	}
+
+	if block.GetProposer() != block.GetProducer() {
+		return false
+	}
+
+	previousProposerTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+	producerTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
+
+	if producerTimeSlot != previousProposerTimeSlot+1 {
+		return false
+	}
+
+	return true
+}
+
+// isReProposeFromFirstBlockNextHeight verify a block is re-propose from first block next height
+// producer timeslot is first block next height
+// proposer timeslot > producer timeslot
+// proposer is correct
+func (a *actorV2) isReProposeFromFirstBlockNextHeight(
+	previousBlock types.BlockInterface,
+	block types.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
+) bool {
+
+	previousProposerTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+	producerTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
+	proposerTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
+
+	if producerTimeSlot != previousProposerTimeSlot+1 {
+		return false
+	}
+
+	if proposerTimeSlot <= producerTimeSlot {
+		return false
+	}
+
+	wantProposer, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(proposerTimeSlot, committees)
+	wantProposerBase58, _ := wantProposer.ToBase58()
+	if block.GetProposer() != wantProposerBase58 {
+		return false
+	}
+
+	return true
 }
 
 func (a *actorV2) verifyLemma2FirstBlockNextHeight(
 	proposeMsg BFTPropose,
-	signingCommittees []incognitokey.CommitteePublicKey,
-) (bool, error) {
-	panic("not implement")
+	block types.BlockInterface,
+) error {
+
+	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
+	if err != nil {
+		return err
+	}
+	if !isValid {
+		return fmt.Errorf("Invalid FirstBlockNextHeight ReproposeHashSignature %+v, proposer %+v",
+			proposeMsg.ReProposeHashSignature, block.GetProposer())
+	}
+
+	finalityHeight := block.GetFinalityHeight()
+	previousBlockHeight := block.GetHeight() - 1
+	if finalityHeight != previousBlockHeight {
+		return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight expect %+v, but got %+v",
+			previousBlockHeight, finalityHeight)
+	}
+
+	return nil
 }
 
-func (a *actorV2) verifyLemma2NextHeightReProposeBlock(
+func (a *actorV2) verifyLemma2ReProposeBlockNextHeight(
 	proposeMsg BFTPropose,
-	signingCommittees []incognitokey.CommitteePublicKey,
+	block types.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
 ) (bool, error) {
-	panic("not implement")
+
+	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
+	if err != nil {
+		return false, err
+	}
+	if !isValid {
+		return false, fmt.Errorf("Invalid ReProposeBlockNextHeight ReproposeHashSignature %+v, proposer %+v",
+			proposeMsg.ReProposeHashSignature, block.GetProposer())
+	}
+
+	isValidProof, err := a.verifyFinalityProof(proposeMsg, block, committees)
+	if err != nil {
+		return false, err
+	}
+
+	finalityHeight := block.GetFinalityHeight()
+	if isValidProof {
+		previousBlockHeight := block.GetHeight() - 1
+		if finalityHeight != previousBlockHeight {
+			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+				previousBlockHeight, finalityHeight)
+		}
+	} else {
+		if finalityHeight != 0 {
+			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+				0, finalityHeight)
+		}
+	}
+
+	return isValidProof, nil
 }
 
-func (a *actorV2) verifyFinalityHeightEqualToZero(
-	previousBlockHeight uint64, block types.BlockInterface,
-) (bool, error) {
-	panic("not implement")
-}
-
-func (a *actorV2) verifyFinalityHeightEqualToPreviousHeight(
-	previousBlockHeight uint64, block types.BlockInterface,
-) (bool, error) {
-	panic("not implement")
-}
-
-func (a *actorV2) createValidLemma2BlockProposeInfo(
+func (a *actorV2) verifyFinalityProof(
 	proposeMsg BFTPropose,
-	signingCommittees []incognitokey.CommitteePublicKey,
+	block types.BlockInterface,
+	committees []incognitokey.CommitteePublicKey,
 ) (bool, error) {
-	panic("not implement")
-}
 
-func (a *actorV2) createInvalidLemma2BlockProposeInfo(
-	proposeMsg BFTPropose,
-	signingCommittees []incognitokey.CommitteePublicKey,
-) (bool, error) {
-	panic("not implement")
+	finalityProof := proposeMsg.FinalityProof
+
+	previousBlockHash := block.GetPrevHash()
+	producer := block.GetProducer()
+	rootHash := block.GetRootHash()
+	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
+	currentTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
+
+	if int(currentTimeSlot-beginTimeSlot) != len(finalityProof.ReProposeHashSignature) {
+		a.logger.Infof("Failed to verify finality proof, expect number of proof %+v, but got %+v",
+			int(currentTimeSlot-beginTimeSlot)+1, len(finalityProof.ReProposeHashSignature))
+		return false, nil
+	}
+
+	proposerBase58List := []string{}
+	for reProposeTimeSlot := beginTimeSlot; reProposeTimeSlot < currentTimeSlot; reProposeTimeSlot++ {
+		reProposer, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(reProposeTimeSlot, committees)
+		reProposerBase58, _ := reProposer.ToBase58()
+		proposerBase58List = append(proposerBase58List, reProposerBase58)
+	}
+
+	err := finalityProof.Verify(
+		previousBlockHash,
+		producer,
+		beginTimeSlot,
+		proposerBase58List,
+		rootHash,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (a *actorV2) addFinalityProof(
-	proposeMsg BFTPropose,
-	signingCommittees []incognitokey.CommitteePublicKey,
-) (bool, error) {
-	panic("not implement")
+	block types.BlockInterface,
+	proof FinalityProof,
+) {
+	previousHash := block.GetPrevHash()
+	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
+	currentTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
+
+	nextBlockFinalityProof, ok := a.nextBlockFinalityProof[previousHash.String()]
+	if !ok {
+		nextBlockFinalityProof = make(map[int64]string)
+	}
+
+	index := 0
+	for timeSlot := beginTimeSlot; timeSlot < currentTimeSlot; timeSlot++ {
+		_, ok := nextBlockFinalityProof[timeSlot]
+		if !ok {
+			nextBlockFinalityProof[timeSlot] = proof.GetProofByIndex(index)
+		}
+		index++
+	}
+
+	a.nextBlockFinalityProof[previousHash.String()] = nextBlockFinalityProof
 }
 
 func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {

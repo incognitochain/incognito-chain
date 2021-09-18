@@ -161,6 +161,10 @@ func (beaconBlock BeaconBlock) CommitteeFromBlock() common.Hash {
 	return common.Hash{}
 }
 
+func (beaconBlock BeaconBlock) GetFinalityHeight() uint64 {
+	return beaconBlock.Header.FinalityHeight
+}
+
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
 		ValidationData string `json:"ValidationData"`

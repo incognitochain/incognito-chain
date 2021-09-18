@@ -410,16 +410,13 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 }
 
 //ProposerByTimeSlot ...
-func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(
-	timeslot int64,
-	committees []incognitokey.CommitteePublicKey,
-) (incognitokey.CommitteePublicKey, int, error) {
+func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
-		timeslot,
+		ts,
 		committees,
 		GetProposerLength(),
 	)
-	return proposer, proposerIndex, nil
+	return proposer, proposerIndex
 }
 
 func (chain *ShardChain) GetSigningCommittees(

@@ -414,7 +414,7 @@ func (_m *Chain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface,
 }
 
 // GetProposerByTimeSlotFromCommitteeList provides a mock function with given fields: ts, committees
-func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
+func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	ret := _m.Called(ts, committees)
 
 	var r0 incognitokey.CommitteePublicKey
@@ -431,14 +431,7 @@ func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []i
 		r1 = ret.Get(1).(int)
 	}
 
-	var r2 error
-	if rf, ok := ret.Get(2).(func(int64, []incognitokey.CommitteePublicKey) error); ok {
-		r2 = rf(ts, committees)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
+	return r0, r1
 }
 
 // GetPubKeyCommitteeIndex provides a mock function with given fields: _a0
