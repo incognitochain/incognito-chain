@@ -165,6 +165,11 @@ func (multiView *MultiView) updateViewState(newView View) {
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			multiView.finalView = prev1View
 		}
+		if newView.GetBlock().GetVersion() >= types.BLOCK_PRODUCINGV3_VERSION {
+			if newView.GetBlock().GetHeight()-1 == newView.GetBlock().GetFinalityHeight() {
+				multiView.finalView = prev1View
+			}
+		}
 	} else {
 		fmt.Println("Block version is not correct")
 	}
