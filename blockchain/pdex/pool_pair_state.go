@@ -275,6 +275,9 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.stakingPoolFees {
 			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 		}
+		for _, ord := range p.orderbook.orders {
+			newPoolPairChange.OrderIDs[ord.Id()] = true
+		}
 	} else {
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 			newPoolPairChange.IsChanged = true
@@ -301,7 +304,7 @@ func (p *PoolPairState) getDiff(
 				newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 			}
 		}
-		newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
+		newPoolPairChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newPoolPairChange)
 	}
 	return newPoolPairChange, newStateChange
 }
