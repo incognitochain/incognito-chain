@@ -31,7 +31,7 @@ func main() {
 		panic(err)
 	}
 	log.Println("Finish convertCoin")
-	time.Sleep(2*NextShardBlock + NextBeaconBlock)
+	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
 
 	// Init pToken
 	err = initToken(fullNodeHost)
@@ -49,12 +49,11 @@ func main() {
 	log.Println("Finish mintNft")
 	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
 
-	// Read nftID
-	newNftID, err := readNftID(fullNodeHost)
+	// Read state
+	err = readState(fullNodeHost)
 	if err != nil {
 		panic(err)
 	}
-	nftID = newNftID
 
 	// Add pool
 	err = addLiquidity(fullNodeHost, true)
@@ -71,13 +70,13 @@ func main() {
 	time.Sleep(2 * NextShardBlock)
 
 	// Add staking pool liquidity
-	err = addStakingPoolLiquidity(fullNodeHost, common.PRVCoinID)
+	err = staking(fullNodeHost, common.PRVCoinID)
 	if err != nil {
 		panic(err)
 	}
 	log.Println("Finish add liquidity to prv staking pool")
 	time.Sleep(2 * NextShardBlock)
-	err = addStakingPoolLiquidity(fullNodeHost, common.PDEXCoinID)
+	err = staking(fullNodeHost, common.PDEXCoinID)
 	if err != nil {
 		panic(err)
 	}
@@ -89,13 +88,39 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(3*NextShardBlock + NextBeaconBlock)
+	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
 
 	// Trade
+	err = trade(fullNodeHost)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(2 * NextShardBlock)
 
 	// Add order
-
-	// Withdraw liquidity
+	err = addOrder(fullNodeHost)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(2 * NextShardBlock)
 
 	// Unstaking
+	err = unstaking(fullNodeHost, common.PRVIDStr)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
+	err = unstaking(fullNodeHost, common.PDEXIDStr)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
+
+	// Withdraw liquidity
+	err = withdrawLiquidity(fullNodeHost)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
+	log.Println("Done!!!")
 }

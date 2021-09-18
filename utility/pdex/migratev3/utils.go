@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
@@ -131,20 +130,22 @@ func getPdexBestState(url string) (*jsonresult.Pdexv3State, error) {
 	return pdexv3State, nil
 }
 
-func readNftID(url string) (common.Hash, error) {
-	var res common.Hash
+func readState(url string) error {
 	pdexv3State, err := getPdexBestState(url)
 	if err != nil {
-		return res, err
+		return err
 	}
 	for k := range pdexv3State.NftIDs {
 		nftHash, err := common.Hash{}.NewHashFromStr(k)
 		if err != nil {
-			return res, err
+			return err
 		}
-		res = *nftHash
+		nftID = *nftHash
 	}
-	return res, nil
+	for k := range pdexv3State.PoolPairs {
+		poolPairID = k
+	}
+	return nil
 }
 
 func addLiquidity(url string, isFirstTx bool) error {
@@ -182,7 +183,7 @@ func addLiquidity(url string, isFirstTx bool) error {
 	return err
 }
 
-func addStakingPoolLiquidity(url string, stakingPoolID common.Hash) error {
+func staking(url string, stakingPoolID common.Hash) error {
 	var params []interface{}
 	type Temp struct {
 		NftID         string `json:"NftID"`
@@ -206,11 +207,119 @@ func addStakingPoolLiquidity(url string, stakingPoolID common.Hash) error {
 
 func modifyParam(url string) error {
 	var params []interface{}
-	type Temp struct {
-		NewParams pdex.Params `json:"NewParams"`
+	type NewParams struct {
+		DefaultFeeRateBPS               string            `json:"DefaultFeeRateBPS"`
+		FeeRateBPS                      map[string]string `json:"FeeRateBPS"`
+		PRVDiscountPercent              string            `json:"PRVDiscountPercent"`
+		TradingProtocolFeePercent       string            `json:"TradingProtocolFeePercent"`
+		TradingStakingPoolRewardPercent string            `json:"TradingStakingPoolRewardPercent"`
+		PDEXRewardPoolPairsShare        map[string]string `json:"PDEXRewardPoolPairsShare"`
+		StakingPoolsShare               map[string]string `json:"StakingPoolsShare"`
+		StakingRewardTokens             []string          `json:"StakingRewardTokens"`
+		MintNftRequireAmount            string            `json:"MintNftRequireAmount"`
+		MaxOrdersPerNft                 string            `json:"MaxOrdersPerNft"`
 	}
+	type Temp struct {
+		NewParams NewParams `json:"NewParams"`
+	}
+
 	temp := Temp{
-		NewParams: pdex.Params{},
+		NewParams: NewParams{
+			DefaultFeeRateBPS: "30",
+			FeeRateBPS: map[string]string{
+				poolPairID: "30",
+			},
+			PRVDiscountPercent:              "25",
+			TradingProtocolFeePercent:       "5",
+			TradingStakingPoolRewardPercent: "10",
+			PDEXRewardPoolPairsShare: map[string]string{
+				poolPairID: "100",
+			},
+			StakingPoolsShare: map[string]string{
+				common.PDEXCoinID.String(): "100",
+				common.PRVIDStr:            "200",
+			},
+			StakingRewardTokens:  []string{common.PRVIDStr},
+			MintNftRequireAmount: "100",
+			MaxOrdersPerNft:      "10",
+		},
+	}
+
+	params = append(params, privateKey)
+	params = append(params, nil)
+	params = append(params, -1)
+	params = append(params, 1)
+	params = append(params, temp)
+	_, err := sendHttpRequest(url, "pdexv3_txModifyParams", params, true)
+	return err
+}
+
+func unstaking(url, stakingPoolID string) error {
+	var params []interface{}
+	type Temp struct {
+		StakingPoolID string `json:"StakingPoolID"`
+		NftID         string `json:"NftID"`
+		Amount        string `json:"Amount"`
+	}
+
+	temp := Temp{
+		StakingPoolID: stakingPoolID,
+		NftID:         nftID.String(),
+		Amount:        "300",
+	}
+
+	params = append(params, privateKey)
+	params = append(params, nil)
+	params = append(params, -1)
+	params = append(params, 1)
+	params = append(params, temp)
+	_, err := sendHttpRequest(url, "pdexv3_txUnstake", params, true)
+	return err
+}
+
+func withdrawLiquidity(url string) error {
+	var params []interface{}
+	type Temp struct {
+		PoolPairID  string `json:"PoolPairID"`
+		NftID       string `json:"NftID"`
+		ShareAmount string `json:"ShareAmount"`
+	}
+
+	temp := Temp{
+		PoolPairID:  poolPairID,
+		NftID:       nftID.String(),
+		ShareAmount: "1000",
+	}
+
+	params = append(params, privateKey)
+	params = append(params, nil)
+	params = append(params, -1)
+	params = append(params, 1)
+	params = append(params, temp)
+	_, err := sendHttpRequest(url, "pdexv3_txWithdrawLiquidity", params, true)
+	return err
+}
+
+func trade(url string) error {
+	var params []interface{}
+	type Temp struct {
+		TradePath           string `json:"TradePath"`
+		TokenToSell         string `json:"TokenToSell"`
+		TokenToBuy          string `json:"TokenToBuy"`
+		SellAmount          string `json:"SellAmount"`
+		MinAcceptableAmount string `json:"MinAcceptableAmount"`
+		TradingFee          uint64 `json:"TradingFee"`
+		FeeInPRV            bool   `json:"FeeInPRV"`
+	}
+
+	temp := Temp{
+		TradePath:           poolPairID,
+		TokenToSell:         customTokenID.String(),
+		TokenToBuy:          common.PRVIDStr,
+		SellAmount:          "600",
+		MinAcceptableAmount: "100",
+		TradingFee:          20,
+		FeeInPRV:            false,
 	}
 
 	params = append(params, privateKey)
@@ -218,6 +327,32 @@ func modifyParam(url string) error {
 	params = append(params, -1)
 	params = append(params, 1)
 	params = append(params, temp)
-	_, err := sendHttpRequest(url, "pdexv3_txModifyParams", params, true)
+	_, err := sendHttpRequest(url, "pdexv3_txTrade", params, true)
+	return err
+}
+
+func addOrder(url string) error {
+	var params []interface{}
+	type Temp struct {
+		PoolPairID          string `json:"PoolPairID"`
+		TokenToSell         string `json:"TokenToSell"`
+		NftID               string `json:"NftID"`
+		SellAmount          string `json:"SellAmount"`
+		MinAcceptableAmount string `json:"MinAcceptableAmount"`
+	}
+
+	temp := Temp{
+		PoolPairID:          poolPairID,
+		TokenToSell:         customTokenID.String(),
+		SellAmount:          "1000",
+		MinAcceptableAmount: "100",
+	}
+
+	params = append(params, privateKey)
+	params = append(params, nil)
+	params = append(params, -1)
+	params = append(params, 1)
+	params = append(params, temp)
+	_, err := sendHttpRequest(url, "pdexv3_txAddOrder", params, true)
 	return err
 }
