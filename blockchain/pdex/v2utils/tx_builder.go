@@ -116,9 +116,7 @@ func MintPDEXGenesis(
 ) (metadataCommon.Transaction, error) {
 
 	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
-		//TODO: @cuong check here again
-		metadataCommon.Logger.Log.Info("[pdex] Found a invalid mint pdex genesis instruction status %v", instStatus)
-		return nil, nil
+		return nil, fmt.Errorf("Pdex v3 mint PDEX token genesis: Not support status %v", instStatus)
 	}
 
 	contentBytes := []byte(contentStr)
@@ -167,8 +165,6 @@ func WithdrawLPFee(
 	transactionStateDB *statedb.StateDB,
 ) (metadataCommon.Transaction, error) {
 	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
-		//TODO: @cuong check here again
-		metadataCommon.Logger.Log.Debug("Found a invalid withdraw lp fee instruction status %v", instStatus)
 		return nil, nil
 	}
 
@@ -215,8 +211,6 @@ func WithdrawProtocolFee(
 	transactionStateDB *statedb.StateDB,
 ) (metadataCommon.Transaction, error) {
 	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
-		//TODO: @cuong check here again
-		metadataCommon.Logger.Log.Debug("Found a invalid withdraw protocol fee instruction status %v", instStatus)
 		return nil, nil
 	}
 
@@ -270,6 +264,10 @@ func WithdrawStakingReward(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadataCommon.Transaction, error) {
+	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
+		return nil, nil
+	}
+
 	contentBytes := []byte(contentStr)
 	var instContent metadataPdexv3.WithdrawalStakingRewardContent
 	err := json.Unmarshal(contentBytes, &instContent)
