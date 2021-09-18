@@ -306,35 +306,38 @@ func withdrawLiquidity(url string) error {
 func trade(url string, isfirstTrade bool) error {
 	var params []interface{}
 	type Temp struct {
-		TradePath           string `json:"TradePath"`
-		TokenToSell         string `json:"TokenToSell"`
-		TokenToBuy          string `json:"TokenToBuy"`
-		SellAmount          string `json:"SellAmount"`
-		MinAcceptableAmount string `json:"MinAcceptableAmount"`
-		TradingFee          uint64 `json:"TradingFee"`
-		FeeInPRV            bool   `json:"FeeInPRV"`
+		TradePath           []string `json:"TradePath"`
+		TokenToSell         string   `json:"TokenToSell"`
+		TokenToBuy          string   `json:"TokenToBuy"`
+		SellAmount          string   `json:"SellAmount"`
+		MinAcceptableAmount string   `json:"MinAcceptableAmount"`
+		TradingFee          uint64   `json:"TradingFee"`
+		FeeInPRV            bool     `json:"FeeInPRV"`
 	}
 
 	var tokenToBuy, tokenToSell string
-	amount := "800"
-
+	var feeInPRV bool
+	var amount string
 	if isfirstTrade {
 		tokenToSell = customTokenID.String()
 		tokenToBuy = common.PRVIDStr
+		feeInPRV = false
 		amount = "600"
 	} else {
 		tokenToSell = common.PRVIDStr
 		tokenToBuy = customTokenID.String()
+		feeInPRV = true
+		amount = "800"
 	}
 
 	temp := Temp{
-		TradePath:           poolPairID,
+		TradePath:           []string{poolPairID},
 		TokenToSell:         tokenToSell,
 		TokenToBuy:          tokenToBuy,
 		SellAmount:          amount,
 		MinAcceptableAmount: "100",
 		TradingFee:          20,
-		FeeInPRV:            false,
+		FeeInPRV:            feeInPRV,
 	}
 
 	params = append(params, privateKey)
