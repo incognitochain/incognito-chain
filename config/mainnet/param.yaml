@@ -59,11 +59,12 @@ enable_feature_flags:
   - PortalV4: 4079
 portal_v3_height: 10000000
 tx_pool_version: 0
+geth_param:
+  host: "https://eth-fullnode.incognito.org"
+  protocol: ""
+  port: ""
 bsc_param:
   host: "https://bsc-dataseed.binance.org"
-pdex_param:
-  pdex_v3_break_point_height: 1000000000000
-  admin_address: ""
 pdex_param:
   pdex_v3_break_point_height: 1000000000000
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
