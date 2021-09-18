@@ -574,6 +574,29 @@ func (p *PoolPairState) updateToDB(
 			)
 		}
 	}
+	// store / delete orders
+	ordersByID := make(map[string]*Order)
+	for _, ord := range p.orderbook.orders {
+		ordersByID[ord.Id()] = ord
+	}
+	for orderID, changed := range poolPairChange.OrderIDs {
+		if changed {
+			if order, exists := ordersByID[orderID]; exists {
+				// update order in db
+				orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
+				err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
+				if err != nil {
+					return err
+				}
+			} else {
+				// delete order from db
+				err = statedb.DeletePdexv3Order(env.StateDB(), poolPairID, orderID)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
 
