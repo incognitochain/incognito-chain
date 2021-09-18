@@ -192,6 +192,22 @@ func (chain *BeaconChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
+	if version >= types.BLOCK_PRODUCINGV3_VERSION {
+		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, err
+		}
+		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.Timestamp)
+
+		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
+			newBlock.Header.Producer == newBlock.Header.Proposer &&
+			previousProposeTimeSlot+1 == currentTimeSlot {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
+	}
 
 	return newBlock, nil
 }
@@ -203,8 +219,13 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-	if isValidRePropose {
-		newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+
+	if newBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION {
+		if isValidRePropose {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
 	}
 	return newBlock, nil
 }
@@ -242,7 +263,7 @@ func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.Bl
 	panic("this function is not supported on beacon chain")
 }
 
-func (chain *BeaconChain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+func (chain *BeaconChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
 	block, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
 	return block, err
 }

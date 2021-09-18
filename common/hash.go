@@ -112,6 +112,14 @@ func (hashObj Hash) NewHashFromStr(hash string) (*Hash, error) {
 	return &hashObj, nil
 }
 
+// NewHashFromStr2 creates a Hash from a hash string.  The string should be
+// the hexadecimal string of a byte-reversed hash, but any missing characters
+// result in zero padding at the end of the Hash.
+func (hashObj Hash) NewHashFromStr2(hash string) Hash {
+	_ = hashObj.Decode(&hashObj, hash)
+	return hashObj
+}
+
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
 func (hashObj *Hash) Decode(dst *Hash, src string) error {

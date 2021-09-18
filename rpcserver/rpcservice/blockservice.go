@@ -135,6 +135,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		for _, tx := range shardBlock.Body.Transactions {
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
+		result.FinalityHeight = shardBlock.Header.FinalityHeight
 	} else if verbosity == "2" {
 		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
@@ -213,6 +214,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			signingCommittees := blockchain.FilterSigningCommitteeV3StringValue(fullCommittees, subsetID)
 			result.SubsetID = subsetID
 			result.SigningCommittee = signingCommittees
+			result.FinalityHeight = shardBlock.Header.FinalityHeight
 		}
 	}
 	return &result, nil
@@ -278,6 +280,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 			for _, tx := range shardBlock.Body.Transactions {
 				res.TxHashes = append(res.TxHashes, tx.Hash().String())
 			}
+			res.FinalityHeight = shardBlock.Header.FinalityHeight
 		} else if verbosity == "2" {
 			best := blockService.BlockChain.GetBestStateShard(shardID).BestBlock
 			blockHeight := shardBlock.Header.Height
@@ -354,6 +357,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				signingCommittees := blockchain.FilterSigningCommitteeV3StringValue(fullCommittees, subsetID)
 				res.SubsetID = subsetID
 				res.SigningCommittee = signingCommittees
+				res.FinalityHeight = shardBlock.Header.FinalityHeight
 			}
 		}
 		result = append(result, &res)

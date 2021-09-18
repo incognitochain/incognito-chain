@@ -65,6 +65,10 @@ type actorV1 struct {
 	stopCh         chan struct{}
 }
 
+func (actorV1 actorV1) SetBlockVersion(int) {
+	panic("implement me")
+}
+
 func (actorV1 *actorV1) Stop() error {
 	if actorV1.isStarted {
 		actorV1.logger.Info("stop bls-bft consensus for chain", actorV1.chainKey)

@@ -23,6 +23,7 @@ type GetBeaconBlockResult struct {
 	ShardStates       interface{}            `json:"ShardStates"`
 	ProposeTime       int64                  `json:"ProposeTime"`
 	RootHash          map[string]interface{} `json:"RootHash"`
+	FinalityHeight    uint64                 `json:"FinalityHeight"`
 }
 
 type GetShardBlockResult struct {
@@ -55,6 +56,7 @@ type GetShardBlockResult struct {
 	ProposeTime        int64              `json:"ProposeTime"`
 	SubsetID           int                `json:"SubsetID"`
 	SigningCommittee   []string           `json:"SigningCommittee"`
+	FinalityHeight     uint64             `json:"FinalityHeight"`
 }
 
 type GetBlockTxResult struct {
@@ -87,6 +89,7 @@ func NewGetBlocksBeaconResult(block *types.BeaconBlock, size uint64, nextBlockHa
 	getBlockResult.RootHash["BeaconCandidateRoot"] = block.Header.BeaconCandidateRoot.String()
 	getBlockResult.RootHash["ShardCandidateRoot"] = block.Header.ShardCandidateRoot.String()
 	getBlockResult.RootHash["ShardCommitteeAndValidatorRoot"] = block.Header.ShardCommitteeAndValidatorRoot.String()
+	getBlockResult.FinalityHeight = block.Header.FinalityHeight
 	return getBlockResult
 }
 
@@ -131,7 +134,7 @@ func NewGetBlockResult(block *types.ShardBlock, size uint64, nextBlockHash strin
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.CommitteeFromBlock = block.Header.CommitteeFromBlock
 	getBlockResult.ProposeTime = block.Header.ProposeTime
-
+	getBlockResult.FinalityHeight = block.Header.FinalityHeight
 	return getBlockResult
 }
 

@@ -225,6 +225,24 @@ func (chain *ShardChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
+
+	if version > types.BLOCK_PRODUCINGV3_VERSION {
+		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, err
+		}
+		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.ProposeTime)
+
+		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
+			newBlock.Header.Producer == newBlock.Header.Proposer &&
+			previousProposeTimeSlot+1 == currentTimeSlot {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
+	}
+
 	Logger.log.Infof("[dcs] new block header proposer %v proposerTime %v", newBlock.Header.Proposer, newBlock.Header.ProposeTime)
 
 	Logger.log.Infof("Finish Create New Block")
@@ -238,9 +256,13 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
+	if newBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION {
 
-	if isValidRePropose {
-		newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		if isValidRePropose {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
 	}
 
 	return newBlock, nil
@@ -320,7 +342,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	return nil
 }
 
-func (chain *ShardChain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+func (chain *ShardChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
 	block, _, err := chain.Blockchain.GetShardBlockByHash(hash)
 	return block, err
 }

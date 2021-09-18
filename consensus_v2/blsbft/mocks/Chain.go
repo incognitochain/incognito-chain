@@ -391,7 +391,7 @@ func (_m *Chain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
 }
 
 // GetPreviousBlockByHash provides a mock function with given fields: hash
-func (_m *Chain) GetPreviousBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+func (_m *Chain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
 	ret := _m.Called(hash)
 
 	var r0 types.BlockInterface

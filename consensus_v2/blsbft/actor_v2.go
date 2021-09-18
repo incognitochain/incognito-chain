@@ -150,6 +150,10 @@ func (a actorV2) IsStarted() bool {
 	return a.isStarted
 }
 
+func (a actorV2) SetBlockVersion(version int) {
+	a.blockVersion = version
+}
+
 func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 	switch msgBFT.Type {
 	case MSG_PROPOSE:
@@ -301,7 +305,7 @@ func (a *actorV2) run() error {
 						return a.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < a.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
 					})
 
-					var proposeBlockInfo *ProposeBlockInfo
+					var proposeBlockInfo = NewProposeBlockInfo()
 					for _, v := range a.receiveBlockByHeight[bestView.GetHeight()+1] {
 						if v.isValid {
 							proposeBlockInfo = v
@@ -309,7 +313,11 @@ func (a *actorV2) run() error {
 						}
 					}
 
-					finalityProof, isValidRePropose := a.getValidFinalityProof(proposeBlockInfo.block)
+					var finalityProof = NewFinalityProof()
+					var isValidRePropose bool = false
+					if proposeBlockInfo.block != nil {
+						finalityProof, isValidRePropose = a.getValidFinalityProof(proposeBlockInfo.block)
+					}
 					if createdBlk, err := a.proposeBlock(
 						userProposeKey,
 						proposerPk,
@@ -320,12 +328,12 @@ func (a *actorV2) run() error {
 					); err != nil {
 						a.logger.Error(UnExpectedError, errors.New("can't propose block"), err)
 					} else {
-						reproposeHashSignature, err := createReProposeHashSignature(
+						reProposeHashSignature, err := createReProposeHashSignature(
 							userProposeKey.PriKey[common.BridgeConsensus], createdBlk)
 						if err != nil {
 							a.logger.Error("Send BFT Propose Message Failed", err)
 						}
-						err = a.sendBFTProposeMsg(finalityProof, reproposeHashSignature, isValidRePropose, createdBlk)
+						err = a.sendBFTProposeMsg(finalityProof, reProposeHashSignature, isValidRePropose, createdBlk)
 						if err != nil {
 							a.logger.Error("Send BFT Propose Message Failed", err)
 						}
@@ -853,7 +861,7 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 
 func (a *actorV2) sendBFTProposeMsg(
 	finalityProof *FinalityProof,
-	reproposeHashSignature string,
+	reProposeHashSignature string,
 	isValidRePropose bool,
 	block types.BlockInterface,
 ) error {
@@ -864,7 +872,7 @@ func (a *actorV2) sendBFTProposeMsg(
 		if isValidRePropose {
 			bftPropose.FinalityProof = *finalityProof
 		}
-		bftPropose.ReProposeHashSignature = reproposeHashSignature
+		bftPropose.ReProposeHashSignature = reProposeHashSignature
 	}
 	bftPropose.Block = blockData
 	bftPropose.PeerID = a.node.GetSelfPeerID().String()
@@ -1020,8 +1028,11 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		return err
 	}
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
-	previousBlock, err := a.chain.GetPreviousBlockByHash(*block.Hash())
-
+	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
+	if err != nil {
+		a.logger.Error(err)
+		return err
+	}
 	if len(userKeySet) == 0 {
 		a.logger.Infof("HandleProposeMsg, Block Hash %+v, Block Height %+v, round %+v, NOT in round for voting",
 			*block.Hash(), block.GetHeight(), block.GetRound())
@@ -1128,8 +1139,7 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 ) (*ProposeBlockInfo, error) {
 
 	isFirstBlockNextHeight := a.isFirstBlockNextHeight(previousBlock, block)
-
-	if isFirstBlockNextHeight {
+	if isFirstBlockNextHeight == true {
 		err := a.verifyLemma2FirstBlockNextHeight(proposeMsg, block)
 		if err != nil {
 			return nil, err
@@ -1138,8 +1148,8 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 
 	isValidLemma2 := false
 	var err error
-	isReProposeFromFirstBlockNextHeight := a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
-	if isReProposeFromFirstBlockNextHeight {
+	isReProposeFirstBlockNextHeight := a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
+	if isReProposeFirstBlockNextHeight == true {
 		isValidLemma2, err = a.verifyLemma2ReProposeBlockNextHeight(proposeMsg, block, committees)
 		if err != nil {
 			return nil, err
@@ -1421,6 +1431,15 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
+	for temp, _ := range a.nextBlockFinalityProof {
+		hash := common.Hash{}.NewHashFromStr2(temp)
+		block, err := a.chain.GetBlockByHash(hash)
+		if err == nil {
+			if block.GetHeight() < a.chain.GetFinalView().GetHeight() {
+				delete(a.nextBlockFinalityProof, temp)
+			}
+		}
+	}
 }
 
 // getValidProposeBlocks validate received proposed block and return valid proposed block
@@ -1476,6 +1495,24 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 		// check if producer time > proposer time
 		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > a.currentTimeSlot {
 			continue
+		}
+
+		// lemma 2
+		if proposeBlockInfo.isValidLemma2Proof {
+			if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
+				a.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
+					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
+					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
+				continue
+			}
+		}
+		if !proposeBlockInfo.isValidLemma2Proof {
+			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
+				a.logger.Errorf("Block %+v %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
+					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
+					0, proposeBlockInfo.block.GetFinalityHeight())
+				continue
+			}
 		}
 
 		//TODO @hung continue?

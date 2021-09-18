@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"time"
 
@@ -32,6 +33,10 @@ type ProposeBlockInfo struct {
 	reProposeHashSignature string
 	isValidLemma2Proof     bool
 	finalityProof          FinalityProof
+}
+
+func NewProposeBlockInfo() *ProposeBlockInfo {
+	return &ProposeBlockInfo{}
 }
 
 //NewProposeBlockInfoValue : new propose block info
@@ -162,9 +167,9 @@ func createReProposeHashSignature(privateKey []byte, block types.BlockInterface)
 	reProposeBlockInfo := newReProposeBlockInfo(
 		block.GetPrevHash(),
 		block.GetProducer(),
-		block.GetProduceTime(),
+		common.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
-		block.GetProposeTime(),
+		common.CalculateTimeSlot(block.GetProposeTime()),
 		block.GetRootHash(),
 	)
 
@@ -215,7 +220,7 @@ func newReProposeBlockInfo(previousBlockHash common.Hash, producer string, produ
 }
 
 func (r ReProposeBlockInfo) Hash() common.Hash {
-	data, _ := json.Marshal(r)
+	data, _ := json.Marshal(&r)
 	return common.HashH(data)
 }
 
@@ -228,14 +233,17 @@ func (r ReProposeBlockInfo) Sign(privateKey []byte) (string, error) {
 		return "", err
 	}
 
-	return string(sig), nil
+	sigBase58 := base58.Base58Check{}.Encode(sig, common.Base58Version)
+
+	return sigBase58, nil
 }
 
-func (r ReProposeBlockInfo) VerifySignature(sig string, publicKey []byte) (bool, error) {
+func (r ReProposeBlockInfo) VerifySignature(sigBase58 string, publicKey []byte) (bool, error) {
 
 	hash := r.Hash()
+	sig, _, _ := base58.Base58Check{}.Decode(sigBase58)
 
-	isValid, err := bridgesig.Verify(publicKey, hash.Bytes(), []byte(sig))
+	isValid, err := bridgesig.Verify(publicKey, hash.Bytes(), sig)
 	if err != nil {
 		return false, err
 	}
