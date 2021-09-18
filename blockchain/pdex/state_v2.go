@@ -698,7 +698,7 @@ func (s *stateV2) updatePoolPairsToDB(env StateEnvironment, stateChange *v2utils
 		for _, ord := range poolPairState.orderbook.orders {
 			ordersByID[ord.Id()] = ord
 		}
-		for orderID, changed := range stateChange.OrderIDs {
+		for orderID, changed := range poolPairChange.OrderIDs {
 			if changed {
 				if order, exists := ordersByID[orderID]; exists {
 					// update order in db

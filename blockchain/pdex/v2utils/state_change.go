@@ -2,14 +2,12 @@ package v2utils
 
 type StateChange struct {
 	PoolPairs    map[string]*PoolPairChange
-	OrderIDs     map[string]bool
 	StakingPools map[string]*StakingPoolChange
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
 		PoolPairs:    make(map[string]*PoolPairChange),
-		OrderIDs:     make(map[string]bool),
 		StakingPools: make(map[string]*StakingPoolChange),
 	}
 }
@@ -42,6 +40,7 @@ func NewStakerChange() *StakerChange {
 type PoolPairChange struct {
 	IsChanged       bool
 	Shares          map[string]*ShareChange
+	OrderIDs        map[string]bool
 	LpFeesPerShare  map[string]bool
 	ProtocolFees    map[string]bool
 	StakingPoolFees map[string]bool
@@ -50,6 +49,7 @@ type PoolPairChange struct {
 func NewPoolPairChange() *PoolPairChange {
 	return &PoolPairChange{
 		Shares:          make(map[string]*ShareChange),
+		OrderIDs:        make(map[string]bool),
 		LpFeesPerShare:  make(map[string]bool),
 		ProtocolFees:    make(map[string]bool),
 		StakingPoolFees: make(map[string]bool),

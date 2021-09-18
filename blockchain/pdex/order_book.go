@@ -99,8 +99,8 @@ func (ob *Orderbook) RemoveOrder(index int) error {
 }
 
 func (ob *Orderbook) getDiff(otherBook *Orderbook,
-	stateChange *v2.StateChange) *v2.StateChange {
-	newStateChange := stateChange
+	poolPairChange *v2.PoolPairChange) *v2.PoolPairChange {
+	newPoolPairChange := poolPairChange
 	theirOrdersByID := make(map[string]*Order)
 	for _, ord := range otherBook.orders {
 		theirOrdersByID[ord.Id()] = ord
@@ -114,17 +114,17 @@ func (ob *Orderbook) getDiff(otherBook *Orderbook,
 	for _, ord := range ob.orders {
 		if existingOrder, exists := theirOrdersByID[ord.Id()]; !exists ||
 			!reflect.DeepEqual(*ord, *existingOrder) {
-			newStateChange.OrderIDs[ord.Id()] = true
+			newPoolPairChange.OrderIDs[ord.Id()] = true
 		}
 	}
 
 	// mark deleted orders as changed
 	for _, ord := range otherBook.orders {
 		if _, exists := myOrdersByID[ord.Id()]; !exists {
-			newStateChange.OrderIDs[ord.Id()] = true
+			newPoolPairChange.OrderIDs[ord.Id()] = true
 		}
 	}
-	return newStateChange
+	return newPoolPairChange
 }
 
 func (ob *Orderbook) Clone() Orderbook {

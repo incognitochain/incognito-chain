@@ -1184,7 +1184,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 				stateChange: &StateChange{
 					PoolPairs:    map[string]*v2utils.PoolPairChange{},
-					OrderIDs:     map[string]bool{},
 					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
@@ -1233,12 +1232,12 @@ func Test_stateV2_GetDiff(t *testing.T) {
 								LastLPFeesPerShare: map[string]bool{},
 							},
 						},
+						OrderIDs:        map[string]bool{},
 						LpFeesPerShare:  map[string]bool{},
 						ProtocolFees:    map[string]bool{},
 						StakingPoolFees: map[string]bool{},
 					},
 				},
-				OrderIDs:     map[string]bool{},
 				StakingPools: map[string]*v2utils.StakingPoolChange{},
 			},
 			wantErr: false,
@@ -1340,7 +1339,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 				stateChange: &StateChange{
 					PoolPairs:    map[string]*v2utils.PoolPairChange{},
-					OrderIDs:     map[string]bool{},
 					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
@@ -1389,12 +1387,12 @@ func Test_stateV2_GetDiff(t *testing.T) {
 								LastLPFeesPerShare: map[string]bool{},
 							},
 						},
+						OrderIDs:        map[string]bool{},
 						LpFeesPerShare:  map[string]bool{},
 						ProtocolFees:    map[string]bool{},
 						StakingPoolFees: map[string]bool{},
 					},
 				},
-				OrderIDs:     map[string]bool{},
 				StakingPools: map[string]*v2utils.StakingPoolChange{},
 			},
 			wantErr: false,
@@ -1475,7 +1473,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 				stateChange: &StateChange{
 					PoolPairs:    map[string]*v2utils.PoolPairChange{},
-					OrderIDs:     map[string]bool{},
 					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
@@ -1520,12 +1517,12 @@ func Test_stateV2_GetDiff(t *testing.T) {
 								LastLPFeesPerShare: map[string]bool{},
 							},
 						},
+						OrderIDs:        map[string]bool{},
 						LpFeesPerShare:  map[string]bool{},
 						ProtocolFees:    map[string]bool{},
 						StakingPoolFees: map[string]bool{},
 					},
 				},
-				OrderIDs:     map[string]bool{},
 				StakingPools: map[string]*v2utils.StakingPoolChange{},
 			},
 			wantErr: false,
@@ -1597,7 +1594,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 				stateChange: &StateChange{
 					PoolPairs:    map[string]*v2utils.PoolPairChange{},
-					OrderIDs:     map[string]bool{},
 					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
@@ -1626,7 +1622,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			},
 			want1: &StateChange{
 				PoolPairs: map[string]*v2utils.PoolPairChange{},
-				OrderIDs:  map[string]bool{},
 				StakingPools: map[string]*v2utils.StakingPoolChange{
 					common.PRVIDStr: &v2utils.StakingPoolChange{
 						RewardsPerShare: map[string]bool{},
@@ -1715,7 +1710,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 				stateChange: &StateChange{
 					PoolPairs:    map[string]*v2utils.PoolPairChange{},
-					OrderIDs:     map[string]bool{},
 					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
@@ -1744,7 +1738,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			},
 			want1: &StateChange{
 				PoolPairs: map[string]*v2utils.PoolPairChange{},
-				OrderIDs:  map[string]bool{},
 				StakingPools: map[string]*v2utils.StakingPoolChange{
 					common.PRVIDStr: &v2utils.StakingPoolChange{
 						RewardsPerShare: map[string]bool{},
@@ -1833,7 +1826,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				},
 				stateChange: &StateChange{
 					PoolPairs:    map[string]*v2utils.PoolPairChange{},
-					OrderIDs:     map[string]bool{},
 					StakingPools: map[string]*v2utils.StakingPoolChange{},
 				},
 			},
@@ -1862,7 +1854,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			},
 			want1: &StateChange{
 				PoolPairs: map[string]*v2utils.PoolPairChange{},
-				OrderIDs:  map[string]bool{},
 				StakingPools: map[string]*v2utils.StakingPoolChange{
 					common.PRVIDStr: &v2utils.StakingPoolChange{
 						RewardsPerShare: map[string]bool{},

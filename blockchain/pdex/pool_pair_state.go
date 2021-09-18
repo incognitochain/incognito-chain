@@ -275,6 +275,9 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.stakingPoolFees {
 			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 		}
+		for _, ord := range p.orderbook.orders {
+			newPoolPairChange.OrderIDs[ord.Id()] = true
+		}
 	} else {
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 			newPoolPairChange.IsChanged = true
@@ -301,7 +304,7 @@ func (p *PoolPairState) getDiff(
 				newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 			}
 		}
-		newStateChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newStateChange)
+		newPoolPairChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newPoolPairChange)
 	}
 	return newPoolPairChange, newStateChange
 }
@@ -569,6 +572,29 @@ func (p *PoolPairState) updateToDB(
 				env.StateDB(), poolPairID,
 				statedb.NewPdexv3PoolPairStakingPoolFeeStateWithValue(tokenID, value),
 			)
+		}
+	}
+	// store / delete orders
+	ordersByID := make(map[string]*Order)
+	for _, ord := range p.orderbook.orders {
+		ordersByID[ord.Id()] = ord
+	}
+	for orderID, changed := range poolPairChange.OrderIDs {
+		if changed {
+			if order, exists := ordersByID[orderID]; exists {
+				// update order in db
+				orderState := statedb.NewPdexv3OrderStateWithValue(poolPairID, *order)
+				err = statedb.StorePdexv3Order(env.StateDB(), *orderState)
+				if err != nil {
+					return err
+				}
+			} else {
+				// delete order from db
+				err = statedb.DeletePdexv3Order(env.StateDB(), poolPairID, orderID)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
