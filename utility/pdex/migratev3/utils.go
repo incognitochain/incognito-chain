@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -141,9 +142,11 @@ func readState(url string) error {
 			return err
 		}
 		nftID = *nftHash
+		log.Println("nftID.String():", nftID.String())
 	}
 	for k := range pdexv3State.PoolPairs {
 		poolPairID = k
+		log.Println("poolPairID:", poolPairID)
 	}
 	return nil
 }
@@ -300,7 +303,7 @@ func withdrawLiquidity(url string) error {
 	return err
 }
 
-func trade(url string) error {
+func trade(url string, isfirstTrade bool) error {
 	var params []interface{}
 	type Temp struct {
 		TradePath           string `json:"TradePath"`
@@ -312,11 +315,23 @@ func trade(url string) error {
 		FeeInPRV            bool   `json:"FeeInPRV"`
 	}
 
+	var tokenToBuy, tokenToSell string
+	amount := "800"
+
+	if isfirstTrade {
+		tokenToSell = customTokenID.String()
+		tokenToBuy = common.PRVIDStr
+		amount = "600"
+	} else {
+		tokenToSell = common.PRVIDStr
+		tokenToBuy = customTokenID.String()
+	}
+
 	temp := Temp{
 		TradePath:           poolPairID,
-		TokenToSell:         customTokenID.String(),
-		TokenToBuy:          common.PRVIDStr,
-		SellAmount:          "600",
+		TokenToSell:         tokenToSell,
+		TokenToBuy:          tokenToBuy,
+		SellAmount:          amount,
 		MinAcceptableAmount: "100",
 		TradingFee:          20,
 		FeeInPRV:            false,
@@ -346,6 +361,7 @@ func addOrder(url string) error {
 		TokenToSell:         customTokenID.String(),
 		SellAmount:          "1000",
 		MinAcceptableAmount: "100",
+		NftID:               nftID.String(),
 	}
 
 	params = append(params, privateKey)

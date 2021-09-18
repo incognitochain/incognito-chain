@@ -114,9 +114,10 @@ func MintPDEXGenesis(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadataCommon.Transaction, error) {
+
 	if instStatus != metadataPdexv3.RequestAcceptedChainStatus {
 		//TODO: @cuong check here again
-		metadataCommon.Logger.Log.Debug("Found a invalid mint pdex genesis instruction status %v", instStatus)
+		metadataCommon.Logger.Log.Info("[pdex] Found a invalid mint pdex genesis instruction status %v", instStatus)
 		return nil, nil
 	}
 

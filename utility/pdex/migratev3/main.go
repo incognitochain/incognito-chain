@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,23 +14,18 @@ const (
 )
 
 func main() {
+	args := os.Args
+	fullNodeHost := args[1]
 	var err error
 	// Load config full node
-	fullNodeHost := "http://127.0.0.1:9334"
 
 	// Submit key
-	err = submitKey(fullNodeHost)
-	if err != nil {
-		panic(err)
-	}
+	submitKey(fullNodeHost)
 	log.Println("Finish submitKey")
 	time.Sleep(2 * NextShardBlock)
 
 	// Convert coin
-	err = convertCoin(fullNodeHost)
-	if err != nil {
-		panic(err)
-	}
+	convertCoin(fullNodeHost)
 	log.Println("Finish convertCoin")
 	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
 
@@ -83,6 +79,12 @@ func main() {
 	log.Println("Finish add liquidity to pdex staking pool")
 	time.Sleep(2 * NextShardBlock)
 
+	// Read state
+	err = readState(fullNodeHost)
+	if err != nil {
+		panic(err)
+	}
+
 	// Modify params
 	err = modifyParam(fullNodeHost)
 	if err != nil {
@@ -91,7 +93,14 @@ func main() {
 	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
 
 	// Trade
-	err = trade(fullNodeHost)
+	err = trade(fullNodeHost, true)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(2 * NextShardBlock)
+
+	// Trade
+	err = trade(fullNodeHost, false)
 	if err != nil {
 		panic(err)
 	}
@@ -109,12 +118,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
+	time.Sleep(4*NextShardBlock + 2*NextBeaconBlock)
 	err = unstaking(fullNodeHost, common.PDEXIDStr)
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(3*NextShardBlock + 2*NextBeaconBlock)
+	time.Sleep(4*NextShardBlock + 2*NextBeaconBlock)
 
 	// Withdraw liquidity
 	err = withdrawLiquidity(fullNodeHost)

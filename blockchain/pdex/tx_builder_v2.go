@@ -453,10 +453,8 @@ func buildUnstakingTx(
 		Logger.log.Debug("[pdex] err:", err)
 		return tx, nil
 	}
-	Logger.log.Info("[pdex] acceptInst:", acceptInst)
 
 	if acceptInst.ShardID() != shardID || acceptInst.StakingPoolID().IsZeroValue() {
-		Logger.log.Info("[pdex] 0")
 		return tx, nil
 	}
 	otaReceiver := privacy.OTAReceiver{}
