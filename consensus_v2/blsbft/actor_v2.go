@@ -150,7 +150,7 @@ func (a actorV2) IsStarted() bool {
 	return a.isStarted
 }
 
-func (a actorV2) SetBlockVersion(version int) {
+func (a *actorV2) SetBlockVersion(version int) {
 	a.blockVersion = version
 }
 
@@ -1138,21 +1138,23 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 	producerPublicBLSMiningKey string,
 ) (*ProposeBlockInfo, error) {
 
+	isValidLemma2 := false
+	var err error
+
 	isFirstBlockNextHeight := a.isFirstBlockNextHeight(previousBlock, block)
-	if isFirstBlockNextHeight == true {
+	if isFirstBlockNextHeight {
 		err := a.verifyLemma2FirstBlockNextHeight(proposeMsg, block)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	isValidLemma2 := false
-	var err error
-	isReProposeFirstBlockNextHeight := a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
-	if isReProposeFirstBlockNextHeight == true {
-		isValidLemma2, err = a.verifyLemma2ReProposeBlockNextHeight(proposeMsg, block, committees)
-		if err != nil {
-			return nil, err
+		isValidLemma2 = true
+	} else {
+		isReProposeFirstBlockNextHeight := a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
+		if isReProposeFirstBlockNextHeight {
+			isValidLemma2, err = a.verifyLemma2ReProposeBlockNextHeight(proposeMsg, block, committees)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -1166,7 +1168,7 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 		isValidLemma2,
 	)
 
-	a.addFinalityProof(block, proposeMsg.FinalityProof)
+	a.addFinalityProof(block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof)
 
 	return proposeBlockInfo, nil
 }
@@ -1306,7 +1308,7 @@ func (a *actorV2) verifyFinalityProof(
 
 	if int(currentTimeSlot-beginTimeSlot) != len(finalityProof.ReProposeHashSignature) {
 		a.logger.Infof("Failed to verify finality proof, expect number of proof %+v, but got %+v",
-			int(currentTimeSlot-beginTimeSlot)+1, len(finalityProof.ReProposeHashSignature))
+			int(currentTimeSlot-beginTimeSlot), len(finalityProof.ReProposeHashSignature))
 		return false, nil
 	}
 
@@ -1333,6 +1335,7 @@ func (a *actorV2) verifyFinalityProof(
 
 func (a *actorV2) addFinalityProof(
 	block types.BlockInterface,
+	reProposeHashSignature string,
 	proof FinalityProof,
 ) {
 	previousHash := block.GetPrevHash()
@@ -1343,6 +1346,8 @@ func (a *actorV2) addFinalityProof(
 	if !ok {
 		nextBlockFinalityProof = make(map[int64]string)
 	}
+
+	nextBlockFinalityProof[currentTimeSlot] = reProposeHashSignature
 
 	index := 0
 	for timeSlot := beginTimeSlot; timeSlot < currentTimeSlot; timeSlot++ {

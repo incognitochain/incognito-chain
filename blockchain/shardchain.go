@@ -226,7 +226,7 @@ func (chain *ShardChain) CreateNewBlock(
 		newBlock.Header.ProposeTime = startTime
 	}
 
-	if version > types.BLOCK_PRODUCINGV3_VERSION {
+	if version >= types.BLOCK_PRODUCINGV3_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
