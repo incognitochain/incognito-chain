@@ -193,7 +193,7 @@ func (b *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		NewAssignRuleV3(),
 	)
 
-	Logger.log.Infof("Upgrade Committee State V2 to V3, swap rule %+v, assign rule $+v",
+	Logger.log.Infof("Upgrade Committee State V2 to V3, swap rule %+v, assign rule %+v",
 		reflect.TypeOf(*NewSwapRuleV3()), reflect.TypeOf(*NewAssignRuleV3()))
 	return committeeStateV3
 }

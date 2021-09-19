@@ -155,6 +155,8 @@ func (engine *Engine) WatchCommitteeChange() {
 
 		if _, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
+		} else {
+			engine.bftProcess[chainID].SetBlockVersion(engine.version[chainID])
 		}
 
 		validatorMiningKey := []signatureschemes2.MiningKey{}
