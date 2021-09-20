@@ -452,3 +452,39 @@ func (chain *ShardChain) GetSigningCommittees(
 	}
 	return res
 }
+
+func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
+	err := rawdbv2.StoreShardFinalityProof(
+		chain.GetChainDatabase(),
+		byte(chain.shardID),
+		*block.Hash(),
+		block.GetPrevHash(),
+		finalityProof,
+		reProposeSig,
+		block.GetRootHash(),
+		block.GetProducer(),
+		common.CalculateTimeSlot(block.GetProduceTime()),
+		block.GetProposer(),
+		common.CalculateTimeSlot(block.GetProposeTime()),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, map[string]interface{}, error) {
+
+	shardBlock, err := chain.GetBlockByHash(hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	m, err := rawdbv2.GetShardFinalityProof(chain.GetDatabase(), byte(chain.shardID), hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return shardBlock.(*types.ShardBlock), m, nil
+}

@@ -442,3 +442,7 @@ func (chain *BeaconChain) CommitteeEngineVersion() int {
 func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 	return fmt.Sprintf("%s-%d", hash.String(), shardID)
 }
+
+func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
+	return nil
+}

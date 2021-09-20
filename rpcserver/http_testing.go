@@ -300,6 +300,28 @@ func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, c
 	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
+func (httpServer *HttpServer) handleGetFinalityProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	tempShardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+	tempHash, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"))
+	}
+	shardID := byte(tempShardID)
+	hash := common.Hash{}.NewHashFromStr2(tempHash)
+	shardBlock, m, err := httpServer.config.BlockChain.ShardChain[shardID].GetFinalityProof(hash)
+	return map[string]interface{}{
+		"Block": shardBlock,
+		"Data":  m,
+	}, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+}
+
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardIDParam := int(arrayParams[0].(float64))

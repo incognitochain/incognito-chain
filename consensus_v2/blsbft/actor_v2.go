@@ -333,6 +333,10 @@ func (a *actorV2) run() error {
 						if err != nil {
 							a.logger.Error("Send BFT Propose Message Failed", err)
 						}
+						if isValidRePropose {
+							a.logger.Infof("Get Finality Proof | New Block %+v, %+v, Finality Proof %+v",
+								createdBlk.GetHeight(), createdBlk.Hash().String(), finalityProof.ReProposeHashSignature)
+						}
 						err = a.sendBFTProposeMsg(finalityProof, reProposeHashSignature, isValidRePropose, createdBlk)
 						if err != nil {
 							a.logger.Error("Send BFT Propose Message Failed", err)
@@ -571,6 +575,10 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+
 		"Committee %+v", a.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
 
+	// @NOTICE: debug mode only, this data should only be used for debugging
+	if err := a.chain.StoreFinalityProof(v.block, v.finalityProof, v.reProposeHashSignature); err != nil {
+		a.logger.Errorf("Store Finality Proof error %+v", err)
+	}
 	return nil
 }
 
@@ -871,6 +879,8 @@ func (a *actorV2) sendBFTProposeMsg(
 	if block.GetVersion() >= types.BLOCK_PRODUCINGV3_VERSION {
 		if isValidRePropose {
 			bftPropose.FinalityProof = *finalityProof
+		} else {
+			bftPropose.FinalityProof = *NewFinalityProof()
 		}
 		bftPropose.ReProposeHashSignature = reProposeHashSignature
 	}
@@ -1140,8 +1150,10 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 
 	isValidLemma2 := false
 	var err error
+	var isReProposeFirstBlockNextHeight = false
+	var isFirstBlockNextHeight = false
 
-	isFirstBlockNextHeight := a.isFirstBlockNextHeight(previousBlock, block)
+	isFirstBlockNextHeight = a.isFirstBlockNextHeight(previousBlock, block)
 	if isFirstBlockNextHeight {
 		err := a.verifyLemma2FirstBlockNextHeight(proposeMsg, block)
 		if err != nil {
@@ -1149,7 +1161,7 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 		}
 		isValidLemma2 = true
 	} else {
-		isReProposeFirstBlockNextHeight := a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
+		isReProposeFirstBlockNextHeight = a.isReProposeFromFirstBlockNextHeight(previousBlock, block, committees)
 		if isReProposeFirstBlockNextHeight {
 			isValidLemma2, err = a.verifyLemma2ReProposeBlockNextHeight(proposeMsg, block, committees)
 			if err != nil {
@@ -1168,7 +1180,18 @@ func (a *actorV2) handleNewProposeMsgLemma2(
 		isValidLemma2,
 	)
 
-	a.addFinalityProof(block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof)
+	if !isValidLemma2 {
+		a.logger.Infof("Receive Invalid Block for lemma 2, block %+v, %+v",
+			block.GetHeight(), block.Hash().String())
+	}
+
+	if isValidLemma2 {
+		if err := a.addFinalityProof(block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof); err != nil {
+			return nil, err
+		}
+		a.logger.Infof("Receive Valid Block for lemma 2, block %+v, %+v",
+			block.GetHeight(), block.Hash().String())
+	}
 
 	return proposeBlockInfo, nil
 }
@@ -1337,7 +1360,7 @@ func (a *actorV2) addFinalityProof(
 	block types.BlockInterface,
 	reProposeHashSignature string,
 	proof FinalityProof,
-) {
+) error {
 	previousHash := block.GetPrevHash()
 	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
 	currentTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
@@ -1348,17 +1371,27 @@ func (a *actorV2) addFinalityProof(
 	}
 
 	nextBlockFinalityProof[currentTimeSlot] = reProposeHashSignature
+	a.logger.Infof("Add Finality Proof | Block %+v, %+v, Current Block Sig for Timeslot: %+v",
+		block.GetHeight(), block.Hash().String(), currentTimeSlot)
 
 	index := 0
+	var err error
 	for timeSlot := beginTimeSlot; timeSlot < currentTimeSlot; timeSlot++ {
 		_, ok := nextBlockFinalityProof[timeSlot]
 		if !ok {
-			nextBlockFinalityProof[timeSlot] = proof.GetProofByIndex(index)
+			nextBlockFinalityProof[timeSlot], err = proof.GetProofByIndex(index)
+			if err != nil {
+				return err
+			}
+			a.logger.Infof("Add Finality Proof | Block %+v, %+v, Previous Proof for Timeslot: %+v",
+				block.GetHeight(), block.Hash().String(), timeSlot)
 		}
 		index++
 	}
 
 	a.nextBlockFinalityProof[previousHash.String()] = nextBlockFinalityProof
+
+	return nil
 }
 
 func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
@@ -1513,8 +1546,8 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 		}
 		if !proposeBlockInfo.isValidLemma2Proof {
 			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
-				a.logger.Errorf("Block %+v %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
+				a.logger.Errorf("Block %+v %+v, root hash %+v, previous block hash %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
+					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetRootHash(), proposeBlockInfo.block.GetPrevHash().String(),
 					0, proposeBlockInfo.block.GetFinalityHeight())
 				continue
 			}

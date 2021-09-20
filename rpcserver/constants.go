@@ -136,6 +136,7 @@ const (
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
+	getFinalityProof           = "getfinalityproof"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"

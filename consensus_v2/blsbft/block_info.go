@@ -109,12 +109,19 @@ func NewFinalityProof() *FinalityProof {
 	return &FinalityProof{}
 }
 
-func (f *FinalityProof) AddProof(reproposeHash string) {
-	f.ReProposeHashSignature = append(f.ReProposeHashSignature, reproposeHash)
+func (f *FinalityProof) AddProof(reProposeHashSig string) {
+	f.ReProposeHashSignature = append(f.ReProposeHashSignature, reProposeHashSig)
 }
 
-func (f *FinalityProof) GetProofByIndex(index int) string {
-	return f.ReProposeHashSignature[index]
+func (f *FinalityProof) GetProofByIndex(index int) (string, error) {
+	if index < 0 || index >= len(f.ReProposeHashSignature) {
+		return "", fmt.Errorf("Proof index %+v, is not valid. Number of Proof %+v", index, len(f.ReProposeHashSignature))
+	}
+	proof := f.ReProposeHashSignature[index]
+	if proof == "" {
+		return "", fmt.Errorf("invalid proof zero length")
+	}
+	return f.ReProposeHashSignature[index], nil
 }
 
 func (f *FinalityProof) Verify(
@@ -124,6 +131,23 @@ func (f *FinalityProof) Verify(
 	proposers []string,
 	rootHash common.Hash,
 ) error {
+
+	// log only
+	for i := 0; i < len(f.ReProposeHashSignature); i++ {
+		reProposer := proposers[i]
+		reProposeTimeSlot := beginTimeSlot + int64(i)
+		sig := f.ReProposeHashSignature[i]
+		fmt.Printf("Finality Proof Verify, Sig %+v \n Previous Hash %+v \n Producer %+v \n Producer Timeslot %+v \n Reproposer %+v \n Repropose Timeslot %+v \n Root hash %+v \n",
+			sig,
+			previousBlockHash,
+			producer,
+			beginTimeSlot,
+			reProposer,
+			reProposeTimeSlot,
+			rootHash,
+		)
+	}
+
 	for i := 0; i < len(f.ReProposeHashSignature); i++ {
 		reProposer := proposers[i]
 		reProposeTimeSlot := beginTimeSlot + int64(i)

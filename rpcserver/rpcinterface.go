@@ -64,6 +64,7 @@ var HttpHandler = map[string]httpHandler{
 	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 	getBlocksFromHeight:         (*HttpServer).handleGetBlocksFromHeight,
+
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
 	listOutputCoinsFromCache:                (*HttpServer).handleListOutputCoinsFromCache,
@@ -110,6 +111,7 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
+	getFinalityProof:           (*HttpServer).handleGetFinalityProof,
 
 	//=================================
 
