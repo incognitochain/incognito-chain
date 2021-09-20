@@ -28,18 +28,21 @@ func (tx *TxToken) initEnv() metadata.ValidationEnviroment {
 	valEnv = tx_generic.WithType(valEnv, tx.GetType())
 	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	valEnv = tx_generic.WithShardID(valEnv, int(sID))
+	valEnv = tx_generic.WithTokenID(valEnv, common.PRVCoinID)
 	tx.SetValidationEnv(valEnv)
 	txNormalValEnv := valEnv.Clone()
-	if tx.GetTxTokenData().Type == utils.CustomTokenInit {
+	txTokenData := tx.GetTxTokenData()
+	if txTokenData.Type == utils.CustomTokenInit {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActInit)
 	} else {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
-	if tx.GetTxTokenData().TxNormal.IsPrivacy() {
+	if txTokenData.TxNormal.IsPrivacy() {
 		txNormalValEnv = tx_generic.WithPrivacy(txNormalValEnv)
 	} else {
 		txNormalValEnv = tx_generic.WithNoPrivacy(txNormalValEnv)
 	}
+	txNormalValEnv = tx_generic.WithTokenID(txNormalValEnv, txTokenData.PropertyID)
 	tx.GetTxTokenData().TxNormal.SetValidationEnv(txNormalValEnv)
 	return valEnv
 }
@@ -294,97 +297,97 @@ func (tx *TxToken) CheckData(
 }
 
 // LoadCommitment do something
-func (tx *TxToken) LoadCommitment(
-	db *statedb.StateDB,
-) error {
-	tmpEmbededTx := tx.Tx
-	tmpNormalTx := tx.GetTxNormal()
+// func (tx *TxToken) LoadCommitment(
+// 	db *statedb.StateDB,
+// ) error {
+// 	tmpEmbededTx := tx.Tx
+// 	tmpNormalTx := tx.GetTxNormal()
 
-	embededTx, ok := tmpEmbededTx.(*Tx)
-	if !ok {
-		return fmt.Errorf("cannot case txBase to txVer1")
-	}
+// 	embededTx, ok := tmpEmbededTx.(*Tx)
+// 	if !ok {
+// 		return fmt.Errorf("cannot case txBase to txVer1")
+// 	}
 
-	normalTx, ok := tmpNormalTx.(*Tx)
-	if !ok {
-		return fmt.Errorf("cannot case txNormal to txVer1")
-	}
+// 	normalTx, ok := tmpNormalTx.(*Tx)
+// 	if !ok {
+// 		return fmt.Errorf("cannot case txNormal to txVer1")
+// 	}
 
-	tmpProof := embededTx.GetProof()
-	prf, ok := tmpProof.(*privacy.ProofV1)
-	if !ok {
-		return fmt.Errorf("cannot cast payment proof v1")
-	}
+// 	tmpProof := embededTx.GetProof()
+// 	prf, ok := tmpProof.(*privacy.ProofV1)
+// 	if !ok {
+// 		return fmt.Errorf("cannot cast payment proof v1")
+// 	}
 
-	if prf != nil {
-		if embededTx.GetValidationEnv().IsPrivacy() {
-			// tokenID := embededTx.GetTokenID()
-			err := prf.LoadCommitmentFromStateDB(db, &common.PRVCoinID, byte(tx.GetValidationEnv().ShardID()))
-			if err != nil {
-				utils.Logger.Log.Error(err)
-				return err
-			}
-		} else {
-			for _, iCoin := range prf.GetInputCoins() {
-				ok, err := embededTx.CheckCMExistence(
-					iCoin.GetCommitment().ToBytesS(),
-					db,
-					byte(tx.GetValidationEnv().ShardID()),
-					&common.PRVCoinID,
-				)
-				if !ok || err != nil {
-					if err != nil {
-						utils.Logger.Log.Error(err)
-					}
-					return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
-				}
-			}
-		}
-	}
+// 	if prf != nil {
+// 		if embededTx.GetValidationEnv().IsPrivacy() {
+// 			// tokenID := embededTx.GetTokenID()
+// 			err := prf.LoadCommitmentFromStateDB(db, &common.PRVCoinID, byte(tx.GetValidationEnv().ShardID()))
+// 			if err != nil {
+// 				utils.Logger.Log.Error(err)
+// 				return err
+// 			}
+// 		} else {
+// 			for _, iCoin := range prf.GetInputCoins() {
+// 				ok, err := embededTx.CheckCMExistence(
+// 					iCoin.GetCommitment().ToBytesS(),
+// 					db,
+// 					byte(tx.GetValidationEnv().ShardID()),
+// 					&common.PRVCoinID,
+// 				)
+// 				if !ok || err != nil {
+// 					if err != nil {
+// 						utils.Logger.Log.Error(err)
+// 					}
+// 					return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
+// 				}
+// 			}
+// 		}
+// 	}
 
-	tokenID := tx.GetTokenID()
-	if tx.GetTxTokenData().Type == utils.CustomTokenInit {
-		if !tx.GetTxTokenData().Mintable {
-			// check exist token
-			if statedb.PrivacyTokenIDExisted(db, *tokenID) {
-				return errors.Errorf("Privacy Token ID is existed")
-			}
-		}
-	}
+// 	tokenID := tx.GetTokenID()
+// 	if tx.GetTxTokenData().Type == utils.CustomTokenInit {
+// 		if !tx.GetTxTokenData().Mintable {
+// 			// check exist token
+// 			if statedb.PrivacyTokenIDExisted(db, *tokenID) {
+// 				return errors.Errorf("Privacy Token ID is existed")
+// 			}
+// 		}
+// 	}
 
-	tmpProof = normalTx.GetProof()
-	prf, ok = tmpProof.(*privacy.ProofV1)
-	if !ok {
-		return fmt.Errorf("cannot cast payment proof v1")
-	}
+// 	tmpProof = normalTx.GetProof()
+// 	prf, ok = tmpProof.(*privacy.ProofV1)
+// 	if !ok {
+// 		return fmt.Errorf("cannot cast payment proof v1")
+// 	}
 
-	if prf != nil {
-		if normalTx.GetValidationEnv().IsPrivacy() {
-			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
-			if err != nil {
-				utils.Logger.Log.Error(err)
-				return err
-			}
-		} else {
-			for _, iCoin := range prf.GetInputCoins() {
-				ok, err := normalTx.CheckCMExistence(
-					iCoin.GetCommitment().ToBytesS(),
-					db,
-					byte(tx.GetValidationEnv().ShardID()),
-					tokenID,
-				)
-				if !ok || err != nil {
-					if err != nil {
-						utils.Logger.Log.Error(err)
-					}
-					return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
-				}
-			}
-		}
-	}
+// 	if prf != nil {
+// 		if normalTx.GetValidationEnv().IsPrivacy() {
+// 			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
+// 			if err != nil {
+// 				utils.Logger.Log.Error(err)
+// 				return err
+// 			}
+// 		} else {
+// 			for _, iCoin := range prf.GetInputCoins() {
+// 				ok, err := normalTx.CheckCMExistence(
+// 					iCoin.GetCommitment().ToBytesS(),
+// 					db,
+// 					byte(tx.GetValidationEnv().ShardID()),
+// 					tokenID,
+// 				)
+// 				if !ok || err != nil {
+// 					if err != nil {
+// 						utils.Logger.Log.Error(err)
+// 					}
+// 					return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
+// 				}
+// 			}
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (tx *TxToken) ValidateTxCorrectness(
 	transactionStateDB *statedb.StateDB,

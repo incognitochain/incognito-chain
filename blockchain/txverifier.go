@@ -59,7 +59,7 @@ func (v *TxsVerifier) LoadCommitment(
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
 	}
-	err := tx.LoadCommitment(sDB.Copy())
+	err := tx.LoadData(sDB.Copy())
 	if err != nil {
 		Logger.log.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
 		return false, err
@@ -67,16 +67,24 @@ func (v *TxsVerifier) LoadCommitment(
 	return true, nil
 }
 
-func (v *TxsVerifier) LoadCommitmentForTxs(
-	txs []metadata.Transaction,
+func (v *TxsVerifier) PrepareDataForTxs(
+	validTxs []metadata.Transaction,
+	newTxs []metadata.Transaction,
 	shardViewRetriever metadata.ShardViewRetriever,
 ) (bool, error) {
 	sDB := v.txDB
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
 	}
-	for _, tx := range txs {
-		err := tx.LoadCommitment(sDB.Copy())
+	for _, tx := range validTxs {
+		err := tx.CheckData(sDB.Copy())
+		if err != nil {
+			err = errors.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
+			return false, err
+		}
+	}
+	for _, tx := range newTxs {
+		err := tx.LoadData(sDB.Copy())
 		if err != nil {
 			err = errors.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
 			return false, err
@@ -239,14 +247,15 @@ func (v *TxsVerifier) FullValidateTransactions(
 	if len(txsTmp) != len(txs) {
 		return false, errors.Errorf("This list txs contain double stake/unstake/stop auto stake for the same key")
 	}
-	_, newTxs := v.txPool.CheckValidatedTxs(txs)
+	validTxs, newTxs := v.txPool.CheckValidatedTxs(txs)
 	errCh := make(chan error)
 	doneCh := make(chan interface{}, len(txs)+len(newTxs))
 	numOfValidGoroutine := 0
 	totalMsgDone := 0
 	timeout := time.After(config.Param().BlockTime.MinShardBlockInterval / 2)
-	ok, err := v.LoadCommitmentForTxs(
-		txs,
+	ok, err := v.PrepareDataForTxs(
+		validTxs,
+		newTxs,
 		shardViewRetriever,
 	)
 	if (!ok) || (err != nil) {
@@ -401,10 +410,14 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 			}
 		}
 		for _, oCoin := range oCoins {
-			if _, ok := mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()]; ok {
+			coinID := oCoin.GetSNDerivator().ToBytes()
+			if oCoin.GetVersion() > 1 {
+				coinID = oCoin.GetPublicKey().ToBytes()
+			}
+			if _, ok := mapForChkDbSpend[coinID]; ok {
 				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 			} else {
-				mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()] = nil
+				mapForChkDbSpend[coinID] = nil
 			}
 		}
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
@@ -423,10 +436,14 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 				}
 			}
 			for _, oCoin := range oCoins {
-				if _, ok := mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()]; ok {
+				coinID := oCoin.GetSNDerivator().ToBytes()
+				if oCoin.GetVersion() > 1 {
+					coinID = oCoin.GetPublicKey().ToBytes()
+				}
+				if _, ok := mapForChkDbSpend[coinID]; ok {
 					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 				} else {
-					mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()] = nil
+					mapForChkDbSpend[coinID] = nil
 				}
 			}
 		}

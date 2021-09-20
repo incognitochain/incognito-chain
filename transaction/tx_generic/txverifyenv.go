@@ -94,6 +94,12 @@ func WithType(vE metadata.ValidationEnviroment, t string) *ValidationEnv {
 	return vEnv
 }
 
+func WithVersion(vE metadata.ValidationEnviroment, ver int8) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.version = int(ver)
+	return vEnv
+}
+
 func WithAct(vE metadata.ValidationEnviroment, act int) *ValidationEnv {
 	vEnv := vE.(*ValidationEnv)
 	vEnv.txAction = act
@@ -103,6 +109,12 @@ func WithAct(vE metadata.ValidationEnviroment, act int) *ValidationEnv {
 func WithDBData(vE metadata.ValidationEnviroment, data [][]byte) *ValidationEnv {
 	vEnv := vE.(*ValidationEnv)
 	vEnv.dataFromDB = data
+	return vEnv
+}
+
+func WithTokenID(vE metadata.ValidationEnviroment, tokenID common.Hash) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.tokenID = tokenID
 	return vEnv
 }
 

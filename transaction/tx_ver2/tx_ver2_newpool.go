@@ -15,10 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
-func (tx *Tx) LoadCommitment(*statedb.StateDB) error {
-	return nil
-}
-
 func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if tx.Proof == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have proof")
@@ -136,6 +132,12 @@ func getRingFromSigPubKeyAndLastColumnCommitmentV2(txEnv metadata.ValidationEnvi
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
 func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 	txEnv := tx.GetValidationEnv()
+	switch tx.GetType() {
+	case common.TxRewardType, common.TxReturnStakingType:
+		return nil
+	case common.TxConversionType:
+		return checkInputInDB(tx, transactionStateDB)
+	}
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)

@@ -349,15 +349,15 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			Logger.Debugf("Caching tx %v at %v", tx.Hash().String(), time.Now())
 			tp.Cacher.Add(tx.Hash().String(), nil, tp.ttl)
 		}
-		// if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
-		// 	Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
-		// 	errChan <- validateResult{
-		// 		err:    err,
-		// 		result: false,
-		// 		cost:   time.Since(start),
-		// 	}
-		// 	return
-		// }
+		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
+			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
+			errChan <- validateResult{
+				err:    err,
+				result: false,
+				cost:   time.Since(start),
+			}
+			return
+		}
 		ok, err := tp.Verifier.ValidateWithoutChainstate(tx)
 		errChan <- validateResult{
 			err:    err,
@@ -387,6 +387,7 @@ func (tp *TxsPool) FilterWithNewView(
 	if !tp.IsRunning() {
 		return
 	}
+	sDB := sView.GetCopiedTransactionStateDB()
 	txsData := tp.snapshotPool()
 	txsToRemove := []string{}
 	txsValid := []metadata.Transaction{}
@@ -398,7 +399,7 @@ func (tp *TxsPool) FilterWithNewView(
 			Logger.Errorf("[txTracing] Tx %v is stake/unstake/stop auto stake twice with sView %v\n", txHash, sView.GetHeight())
 			continue
 		}
-		if ok, err := tp.Verifier.LoadCommitment(tx, sView); !ok || err != nil {
+		if err := tx.CheckData(sDB); err != nil {
 			Logger.Errorf("[txTracing] Validate tx %v return error %v with sView %v\n", txHash, err, sView.GetHeight())
 			txsToRemove = append(txsToRemove, txHash)
 			continue

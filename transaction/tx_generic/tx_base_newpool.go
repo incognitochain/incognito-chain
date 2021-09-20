@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/pkg/errors"
 )
@@ -23,6 +24,17 @@ func (tx *TxBase) initEnv() metadata.ValidationEnviroment {
 	valEnv = WithType(valEnv, tx.GetType())
 	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	valEnv = WithShardID(valEnv, int(sID))
+	valEnv = WithVersion(valEnv, tx.Version)
+	valEnv = WithCA(valEnv, false)
+	if tx.Version == utils.TxVersion2Number {
+		proofAsV2, ok := tx.GetProof().(*privacy.ProofV2)
+		if ok {
+			if hasCA, err := proofAsV2.IsConfidentialAsset(); err != nil {
+				valEnv = WithCA(valEnv, hasCA)
+			}
+		}
+	}
+	valEnv = WithTokenID(valEnv, common.PRVCoinID)
 	tx.SetValidationEnv(valEnv)
 	return valEnv
 }

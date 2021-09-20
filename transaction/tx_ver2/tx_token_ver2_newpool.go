@@ -12,8 +12,24 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
-func (txToken *TxToken) LoadCommitment(*statedb.StateDB) error {
-	return nil
+func (txToken *TxToken) LoadData(transactionStateDB *statedb.StateDB) error {
+	if (txToken.TokenData.Type == utils.CustomTokenTransfer) && (txToken.GetType() == common.TxTokenConversionType) {
+		txn := txToken.GetTxNormal()
+		if err := checkInputInDB(txn, transactionStateDB); err != nil {
+			return err
+		}
+	}
+	return txToken.Tx.LoadData(transactionStateDB)
+}
+
+func (txToken *TxToken) CheckData(transactionStateDB *statedb.StateDB) error {
+	if (txToken.TokenData.Type == utils.CustomTokenTransfer) && (txToken.GetType() == common.TxTokenConversionType) {
+		txn := txToken.GetTxNormal()
+		if err := checkInputInDB(txn, transactionStateDB); err != nil {
+			return err
+		}
+	}
+	return txToken.Tx.CheckData(transactionStateDB)
 }
 
 func (txToken *TxToken) ValidateSanityDataByItSelf() (bool, error) {
@@ -77,25 +93,29 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 	// validate for pToken
 	switch txToken.TokenData.Type {
 	case utils.CustomTokenTransfer:
+		var resTxToken bool
 		if txToken.GetType() == common.TxTokenConversionType {
-			valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, byte(shardID), &tokenID)
-			return valid, err
-		}
-
-		// This transaction might be a tx burn, we must check its tokenId and assetTag
-		if tokenID.String() != common.PRVIDStr || tokenID.String() != common.ConfidentialAssetID.String() {
-			isBurned, burnedToken, _, err := txToken.GetTxBurnData()
+			resTxToken, err = validateTxConvertCorrectness(txn, transactionStateDB)
 			if err != nil {
 				return false, err
 			}
-			if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenID[:])) {
-				return false, fmt.Errorf("invalid burned tokenId")
-			}
-		}
+		} else {
 
-		resTxTokenData, err := txn.ValidateTxCorrectness(transactionStateDB)
-		if err != nil {
-			return resTxTokenData, err
+			// This transaction might be a tx burn, we must check its tokenId and assetTag
+			if tokenID.String() != common.PRVIDStr || tokenID.String() != common.ConfidentialAssetID.String() {
+				isBurned, burnedToken, _, err := txToken.GetTxBurnData()
+				if err != nil {
+					return false, err
+				}
+				if isBurned && !operation.IsPointEqual(burnedToken.GetAssetTag(), operation.HashToPoint(tokenID[:])) {
+					return false, fmt.Errorf("invalid burned tokenId")
+				}
+			}
+
+			resTxToken, err = txn.ValidateTxCorrectness(transactionStateDB)
+			if err != nil {
+				return resTxToken, err
+			}
 		}
 		txFeeProof := txToken.Tx.GetProof()
 		if txFeeProof == nil {
@@ -104,7 +124,7 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 
 		bpValid, err := txFeeProof.VerifyV2(txn.GetValidationEnv(), 0)
 
-		return bpValid && resTxTokenData, err
+		return bpValid && resTxToken, err
 	default:
 		return false, errors.New("Cannot validate Tx Token. Unavailable type")
 	}
@@ -132,12 +152,14 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 	} else {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
-	if txToken.GetTxTokenData().TxNormal.IsPrivacy() {
+	txn := txToken.GetTxNormal()
+
+	if txn.IsPrivacy() {
 		txNormalValEnv = tx_generic.WithPrivacy(txNormalValEnv)
 	} else {
 		txNormalValEnv = tx_generic.WithNoPrivacy(txNormalValEnv)
 	}
-	txToken.GetTxTokenData().TxNormal.SetValidationEnv(txNormalValEnv)
+	txn.SetValidationEnv(txNormalValEnv)
 	return valEnv
 }
 
@@ -146,5 +168,16 @@ func (txToken *TxToken) GetValidationEnv() metadata.ValidationEnviroment {
 }
 
 func (txToken *TxToken) SetValidationEnv(valEnv metadata.ValidationEnviroment) {
-	txToken.Tx.SetValidationEnv(valEnv)
+	if vE, ok := valEnv.(*tx_generic.ValidationEnv); ok {
+		txToken.valEnv = vE
+	} else {
+		valEnv := tx_generic.DefaultValEnv()
+		if txToken.IsPrivacy() {
+			valEnv = tx_generic.WithPrivacy(valEnv)
+		} else {
+			valEnv = tx_generic.WithNoPrivacy(valEnv)
+		}
+		valEnv = tx_generic.WithType(valEnv, txToken.GetType())
+		txToken.valEnv = valEnv
+	}
 }

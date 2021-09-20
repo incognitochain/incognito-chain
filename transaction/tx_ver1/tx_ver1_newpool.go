@@ -194,54 +194,54 @@ func (tx *Tx) LoadData(
 	return nil
 }
 
-func (tx *Tx) LoadCommitment(
-	db *statedb.StateDB,
-) error {
-	prf := tx.Proof
-	if prf == nil {
-		meta := tx.GetMetadata()
-		if meta == nil {
-			return errors.Errorf("This tx has no proof and not a tx for pay fee or tx with metadata")
-		}
-		if meta != nil {
-			if metadata.NoInputNoOutput(meta.GetType()) || metadata.NoInputHasOutput(meta.GetType()) {
-				return nil
-			} else {
-				return errors.Errorf("Invalid tx")
-			}
-		}
-	}
-	txEnv := tx.GetValidationEnv()
-	tokenID := tx.GetTokenID()
-	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, txEnv)
-	if txEnv.IsPrivacy() {
-		proofV1, ok := prf.(*privacy.ProofV1)
-		if !ok {
-			return fmt.Errorf("cannot cast payment proofV1")
-		}
-		data, err := proofV1.LoadDataFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
-		if err != nil {
-			return err
-		}
-		tx.SetValidationEnv(tx_generic.WithDBData(txEnv, data))
-	} else {
-		for _, iCoin := range prf.GetInputCoins() {
-			ok, err := tx.CheckCMExistence(
-				iCoin.GetCommitment().ToBytesS(),
-				db,
-				byte(tx.GetValidationEnv().ShardID()),
-				tokenID,
-			)
-			if !ok || err != nil {
-				if err != nil {
-					utils.Logger.Log.Error(err)
-				}
-				return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
-			}
-		}
-	}
-	return nil
-}
+// func (tx *Tx) LoadCommitment(
+// 	db *statedb.StateDB,
+// ) error {
+// 	prf := tx.Proof
+// 	if prf == nil {
+// 		meta := tx.GetMetadata()
+// 		if meta == nil {
+// 			return errors.Errorf("This tx has no proof and not a tx for pay fee or tx with metadata")
+// 		}
+// 		if meta != nil {
+// 			if metadata.NoInputNoOutput(meta.GetType()) || metadata.NoInputHasOutput(meta.GetType()) {
+// 				return nil
+// 			} else {
+// 				return errors.Errorf("Invalid tx")
+// 			}
+// 		}
+// 	}
+// 	txEnv := tx.GetValidationEnv()
+// 	tokenID := tx.GetTokenID()
+// 	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, txEnv)
+// 	if txEnv.IsPrivacy() {
+// 		proofV1, ok := prf.(*privacy.ProofV1)
+// 		if !ok {
+// 			return fmt.Errorf("cannot cast payment proofV1")
+// 		}
+// 		data, err := proofV1.LoadDataFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		tx.SetValidationEnv(tx_generic.WithDBData(txEnv, data))
+// 	} else {
+// 		for _, iCoin := range prf.GetInputCoins() {
+// 			ok, err := tx.CheckCMExistence(
+// 				iCoin.GetCommitment().ToBytesS(),
+// 				db,
+// 				byte(tx.GetValidationEnv().ShardID()),
+// 				tokenID,
+// 			)
+// 			if !ok || err != nil {
+// 				if err != nil {
+// 					utils.Logger.Log.Error(err)
+// 				}
+// 				return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (tx *Tx) ValidateTxCorrectness(
 	transactionStateDB *statedb.StateDB,

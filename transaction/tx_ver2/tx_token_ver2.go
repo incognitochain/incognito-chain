@@ -114,6 +114,7 @@ type TxToken struct {
 	Tx             Tx                  `json:"Tx"`
 	TokenData      TxTokenDataVersion2 `json:"TxTokenPrivacyData"`
 	cachedTxNormal *Tx
+	valEnv         *tx_generic.ValidationEnv
 }
 
 // Hash returns the hash of this object.
@@ -181,7 +182,7 @@ func (txToken *TxToken) GetTxNormal() metadata.Transaction {
 		return txToken.cachedTxNormal
 	}
 	result := makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
-	// tx.cachedTxNormal = result
+	txToken.cachedTxNormal = result
 	return result
 }
 
@@ -605,7 +606,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 	// Reform Ring
 	sumOutputCoinsWithFee := tx_generic.CalculateSumOutputsWithFee(txFee.GetProof().GetOutputCoins(), txFee.GetTxFee())
-	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txToken.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
+	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txFee.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err

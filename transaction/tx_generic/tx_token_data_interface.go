@@ -89,7 +89,8 @@ type TransactionToken interface {
 	// VerifySigTx() (bool, error)
 	ValidateSanityDataByItSelf() (bool, error)
 	ValidateTxCorrectness(*statedb.StateDB) (bool, error)
-	LoadCommitment(db *statedb.StateDB) error
+	LoadData(db *statedb.StateDB) error
+	CheckData(db *statedb.StateDB) error
 	ValidateSanityDataWithBlockchain(
 		chainRetriever metadata.ChainRetriever,
 		shardViewRetriever metadata.ShardViewRetriever,
