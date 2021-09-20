@@ -29,6 +29,7 @@ func (tx *TxToken) initEnv() metadata.ValidationEnviroment {
 	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	valEnv = tx_generic.WithShardID(valEnv, int(sID))
 	valEnv = tx_generic.WithTokenID(valEnv, common.PRVCoinID)
+	valEnv = tx_generic.WithSigPubkey(valEnv, tx.GetSigPubKey())
 	tx.SetValidationEnv(valEnv)
 	txNormalValEnv := valEnv.Clone()
 	txTokenData := tx.GetTxTokenData()

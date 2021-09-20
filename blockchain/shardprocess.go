@@ -962,9 +962,9 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, isRelatedCommittee)
 	if err != nil {
 		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
-		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
 	}
-	return nil
+	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+	// return nil
 }
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {

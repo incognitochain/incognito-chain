@@ -118,6 +118,12 @@ func WithTokenID(vE metadata.ValidationEnviroment, tokenID common.Hash) *Validat
 	return vEnv
 }
 
+func WithSigPubkey(vE metadata.ValidationEnviroment, sigPubkey []byte) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.sigPubKey = sigPubkey
+	return vEnv
+}
+
 func (vE *ValidationEnv) IsPrivacy() bool {
 	return vE.isPrivacy
 }

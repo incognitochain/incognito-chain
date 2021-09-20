@@ -35,6 +35,7 @@ func (tx *TxBase) initEnv() metadata.ValidationEnviroment {
 		}
 	}
 	valEnv = WithTokenID(valEnv, common.PRVCoinID)
+	valEnv = WithSigPubkey(valEnv, tx.sigPrivKey)
 	tx.SetValidationEnv(valEnv)
 	return valEnv
 }
