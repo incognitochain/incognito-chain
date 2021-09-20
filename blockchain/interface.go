@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/multiview"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
@@ -40,15 +39,11 @@ type ConsensusEngine interface {
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
-	// GetCurrentValidators() []*consensus.Validator
-	// GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
-	// GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetAllMiningPublicKeys() []string
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
 	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
-	// CommitteeChange(chainName string)
 }
 
 type Server interface {
@@ -75,9 +70,4 @@ type TxsCrawler interface {
 
 type Pubsub interface {
 	PublishMessage(message *pubsub.Message)
-}
-
-type ChainInterface interface {
-	GetBestView() multiview.View
-	GetFinalView() multiview.View
 }
