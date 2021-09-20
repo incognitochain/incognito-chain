@@ -132,22 +132,6 @@ func (f *FinalityProof) Verify(
 	rootHash common.Hash,
 ) error {
 
-	// log only
-	for i := 0; i < len(f.ReProposeHashSignature); i++ {
-		reProposer := proposers[i]
-		reProposeTimeSlot := beginTimeSlot + int64(i)
-		sig := f.ReProposeHashSignature[i]
-		fmt.Printf("Finality Proof Verify, Sig %+v \n Previous Hash %+v \n Producer %+v \n Producer Timeslot %+v \n Reproposer %+v \n Repropose Timeslot %+v \n Root hash %+v \n",
-			sig,
-			previousBlockHash,
-			producer,
-			beginTimeSlot,
-			reProposer,
-			reProposeTimeSlot,
-			rootHash,
-		)
-	}
-
 	for i := 0; i < len(f.ReProposeHashSignature); i++ {
 		reProposer := proposers[i]
 		reProposeTimeSlot := beginTimeSlot + int64(i)
@@ -194,7 +178,7 @@ func createReProposeHashSignature(privateKey []byte, block types.BlockInterface)
 		common.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
 		common.CalculateTimeSlot(block.GetProposeTime()),
-		block.GetRootHash(),
+		block.GetAggregateRootHash(),
 	)
 
 	return reProposeBlockInfo.Sign(privateKey)
@@ -235,7 +219,7 @@ func verifyReProposeHashSignatureFromBlock(sig string, block types.BlockInterfac
 		common.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
 		common.CalculateTimeSlot(block.GetProposeTime()),
-		block.GetRootHash(),
+		block.GetAggregateRootHash(),
 	)
 }
 

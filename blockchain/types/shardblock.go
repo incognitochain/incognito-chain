@@ -132,7 +132,7 @@ func (shardBlock ShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (shardBlock *ShardBlock) GetRootHash() common.Hash {
+func (shardBlock *ShardBlock) GetAggregateRootHash() common.Hash {
 
 	res := []byte{}
 	res = append(res, byte(shardBlock.Header.Version))

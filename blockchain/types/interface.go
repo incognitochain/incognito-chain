@@ -29,6 +29,6 @@ type BlockInterface interface {
 	Type() string
 	CommitteeFromBlock() common.Hash
 	BodyHash() common.Hash
-	GetRootHash() common.Hash
+	GetAggregateRootHash() common.Hash
 	GetFinalityHeight() uint64
 }

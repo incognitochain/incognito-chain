@@ -461,7 +461,7 @@ func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finality
 		block.GetPrevHash(),
 		finalityProof,
 		reProposeSig,
-		block.GetRootHash(),
+		block.GetAggregateRootHash(),
 		block.GetProducer(),
 		common.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),

@@ -181,7 +181,7 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (beaconBlock *BeaconBlock) GetRootHash() common.Hash {
+func (beaconBlock *BeaconBlock) GetAggregateRootHash() common.Hash {
 	res := []byte{}
 	res = append(res, byte(beaconBlock.Header.Version))
 	res = append(res, beaconBlock.Header.InstructionHash.Bytes()...)

@@ -1325,7 +1325,7 @@ func (a *actorV2) verifyFinalityProof(
 
 	previousBlockHash := block.GetPrevHash()
 	producer := block.GetProducer()
-	rootHash := block.GetRootHash()
+	rootHash := block.GetAggregateRootHash()
 	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
 	currentTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
 
@@ -1547,7 +1547,7 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 		if !proposeBlockInfo.isValidLemma2Proof {
 			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
 				a.logger.Errorf("Block %+v %+v, root hash %+v, previous block hash %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetRootHash(), proposeBlockInfo.block.GetPrevHash().String(),
+					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetAggregateRootHash(), proposeBlockInfo.block.GetPrevHash().String(),
 					0, proposeBlockInfo.block.GetFinalityHeight())
 				continue
 			}

@@ -133,7 +133,7 @@ func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (crossShardBlock *CrossShardBlock) GetRootHash() common.Hash {
+func (crossShardBlock *CrossShardBlock) GetAggregateRootHash() common.Hash {
 	panic("do not call this function")
 }
 
