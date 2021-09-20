@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/pkg/errors"
 
@@ -942,11 +943,11 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	if len(txs) == 0 {
 		return nil
 	}
-	isEmpty := blockchain.config.TempTxPool.EmptyPool()
-	if !isEmpty {
-		panic("TempTxPool Is not Empty")
-	}
-	defer blockchain.config.TempTxPool.EmptyPool()
+	// isEmpty := blockchain.config.TempTxPool.EmptyPool()
+	// if !isEmpty {
+	// 	panic("TempTxPool Is not Empty")
+	// }
+	// defer blockchain.config.TempTxPool.EmptyPool()
 
 	isRelatedCommittee := false
 	for _, tx := range txs {
