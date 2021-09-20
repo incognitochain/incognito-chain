@@ -101,7 +101,7 @@ func (r PortalSubmitConfirmedTxRequest) ValidateSanityData(chainRetriever ChainR
 		return false, false, errors.New("TokenID is not supported currently on Portal v4")
 	}
 
-	_, err = btcrelaying.ParseBTCProofFromB64EncodeStr(r.UnshieldProof)
+	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(r.UnshieldProof)
 	if r.BatchID == "" || err != nil {
 		return false, false, errors.New("BatchID or UnshieldProof is invalid")
 	}

@@ -86,6 +86,8 @@ const (
 	Pdexv3StakingPoolRewardPerShareObjectType = 59
 	Pdexv3StakerRewardObjectType              = 60
 	Pdexv3StakerLastRewardPerShareObjectType  = 61
+
+	RewardRequestV3ObjectType = 62
 )
 
 // Prefix length
@@ -108,6 +110,7 @@ const (
 	ShardPool
 	BeaconCommittee
 	ShardCommittee
+	SyncingValidators
 )
 const (
 	BeaconChainID    = -1

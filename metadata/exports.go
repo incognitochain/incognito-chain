@@ -69,13 +69,11 @@ const (
 	IssuingETHRequestMeta        = metadataCommon.IssuingETHRequestMeta
 	IssuingETHResponseMeta       = metadataCommon.IssuingETHResponseMeta
 	ShardBlockReward             = metadataCommon.ShardBlockReward
-	AcceptedBlockRewardInfoMeta  = metadataCommon.AcceptedBlockRewardInfoMeta
 	ShardBlockSalaryResponseMeta = metadataCommon.ShardBlockSalaryResponseMeta
 	BeaconRewardRequestMeta      = metadataCommon.BeaconRewardRequestMeta
 	BeaconSalaryResponseMeta     = metadataCommon.BeaconSalaryResponseMeta
 	ReturnStakingMeta            = metadataCommon.ReturnStakingMeta
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
-	ShardBlockRewardRequestMeta  = metadataCommon.ShardBlockRewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
 	//staking

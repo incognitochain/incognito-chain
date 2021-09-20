@@ -194,6 +194,10 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 		if d.MessageListeners.OnPeerState != nil {
 			d.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
 		}
+	case reflect.TypeOf(&wire.MessageFinishSync{}):
+		if d.MessageListeners.OnFinishSync != nil {
+			d.MessageListeners.OnFinishSync(peerConn, message.(*wire.MessageFinishSync))
+		}
 
 	// case reflect.TypeOf(&wire.MessageMsgCheck{}):
 	// 	err1 := peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
@@ -226,6 +230,7 @@ type MessageListeners struct {
 	OnAddr           func(p *peer.PeerConn, msg *wire.MessageAddr)
 
 	//PBFT
-	OnBFTMsg    func(p *peer.PeerConn, msg wire.Message)
-	OnPeerState func(p *peer.PeerConn, msg *wire.MessagePeerState)
+	OnBFTMsg     func(p *peer.PeerConn, msg wire.Message)
+	OnPeerState  func(p *peer.PeerConn, msg *wire.MessagePeerState)
+	OnFinishSync func(p *peer.PeerConn, msg *wire.MessageFinishSync)
 }

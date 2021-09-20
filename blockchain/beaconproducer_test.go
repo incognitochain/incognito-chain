@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
+	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -127,8 +127,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 	paymentAddress0, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
 	assert.Nil(t, err)
 
-	beaconCommitteeEngineAutoStakeFalse2 := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineAutoStakeFalse2.
+	BeaconCommitteeStateAutoStakeFalse2 := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateAutoStakeFalse2.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
@@ -140,8 +140,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3, *incKey4})
 
-	beaconCommitteeEngineAutoStakeFalse1 := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineAutoStakeFalse1.
+	BeaconCommitteeStateAutoStakeFalse1 := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateAutoStakeFalse1.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
@@ -153,8 +153,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{*incKey0})
 
-	beaconCommitteeEngineAutoStakeFalse := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineAutoStakeFalse.
+	BeaconCommitteeStateAutoStakeFalse := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateAutoStakeFalse.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
@@ -166,8 +166,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{*incKey})
 
-	beaconCommitteeEngineAutoStakeTrue := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineAutoStakeTrue.
+	BeaconCommitteeStateAutoStakeTrue := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateAutoStakeTrue.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: true,
@@ -176,8 +176,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey})
 
-	beaconCommitteeEngineNotInCandidateAutoStakeFalse := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineNotInCandidateAutoStakeFalse.
+	BeaconCommitteeStateNotInCandidateAutoStakeFalse := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateNotInCandidateAutoStakeFalse.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
@@ -186,8 +186,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{})
 
-	beaconCommitteeEngineNotInCandidateAutoStakeTrue := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineNotInCandidateAutoStakeTrue.
+	BeaconCommitteeStateNotInCandidateAutoStakeTrue := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateNotInCandidateAutoStakeTrue.
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: true,
@@ -196,8 +196,8 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{})
 
-	beaconCommitteeEngineCandidate := &mocks.BeaconCommitteeEngine{}
-	beaconCommitteeEngineCandidate.
+	BeaconCommitteeStateCandidate := &mocks.BeaconCommitteeState{}
+	BeaconCommitteeStateCandidate.
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{})
 
@@ -221,7 +221,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		ActiveShards             int
 		ConsensusAlgorithm       string
 		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
+		BeaconCommitteeState     committeestate.BeaconCommitteeState
 		LastCrossShardState      map[byte]map[byte]uint64
 		ShardHandle              map[byte]bool
 		NumOfBlocksByProducers   map[string]uint64
@@ -249,7 +249,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "Stake Instruction",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineCandidate,
+				BeaconCommitteeState: BeaconCommitteeStateCandidate,
 			},
 			args: args{
 				instructions: [][]string{
@@ -288,7 +288,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "Swap Instruction",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineCandidate,
+				BeaconCommitteeState: BeaconCommitteeStateCandidate,
 			},
 			args: args{
 				instructions: [][]string{
@@ -325,7 +325,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "Stop AutoStake Instruction",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeTrue,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeTrue,
 			},
 			args: args{
 				instructions: [][]string{
@@ -344,7 +344,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "Unstake Instruction",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeTrue,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeTrue,
 			},
 			args: args{
 				instructions: [][]string{
@@ -366,7 +366,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "1 invalid stop auto stake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse,
 			},
 			args: args{
 				instructions: [][]string{
@@ -383,7 +383,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "1 valid and 1 invalid stop auto stake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse,
 			},
 			args: args{
 				instructions: [][]string{
@@ -405,7 +405,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "1 invalid unstake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineNotInCandidateAutoStakeFalse,
+				BeaconCommitteeState: BeaconCommitteeStateNotInCandidateAutoStakeFalse,
 			},
 			args: args{
 				instructions: [][]string{
@@ -422,7 +422,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "1 invalid and 1 valid unstake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse,
 			},
 			args: args{
 				instructions: [][]string{
@@ -444,7 +444,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "2 invalid and 4 valid unstake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse,
 			},
 			args: args{
 				instructions: [][]string{
@@ -468,7 +468,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "4 invalid and 2 valid unstake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse1,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse1,
 			},
 			args: args{
 				instructions: [][]string{
@@ -492,7 +492,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "1 invalid and 4 valid stop auto stake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse2,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse2,
 			},
 			args: args{
 				instructions: [][]string{
@@ -516,7 +516,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		{
 			name: "4 invalid and 1 valid stop auto stake",
 			fields: fields{
-				beaconCommitteeEngine: beaconCommitteeEngineAutoStakeFalse1,
+				BeaconCommitteeState: BeaconCommitteeStateAutoStakeFalse1,
 			},
 			args: args{
 				instructions: [][]string{
@@ -559,7 +559,6 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				ActiveShards:             tt.fields.ActiveShards,
 				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
 				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
 				BlockInterval:            tt.fields.BlockInterval,
@@ -570,6 +569,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				RewardStateDBRootHash:    tt.fields.RewardStateDBRootHash,
 				featureStateDB:           tt.fields.featureStateDB,
 				FeatureStateDBRootHash:   tt.fields.FeatureStateDBRootHash,
+				beaconCommitteeState:     tt.fields.BeaconCommitteeState,
 				slashStateDB:             tt.fields.slashStateDB,
 				SlashStateDBRootHash:     tt.fields.SlashStateDBRootHash,
 			}
@@ -594,107 +594,6 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			for i, v := range got.unstakeInstructions {
 				if !reflect.DeepEqual(v, tt.want.unstakeInstructions[i]) {
 					t.Errorf("got.unstakeInstructions = %v, want.unstakeInstructions %v", v, tt.want.unstakeInstructions[i])
-				}
-			}
-		})
-	}
-}
-
-func TestBeaconBestState_processStakeInstructionFromShardBlock(t *testing.T) {
-
-	initPublicKey()
-	initLog()
-
-	type fields struct {
-		BestBlockHash            common.Hash
-		PreviousBestBlockHash    common.Hash
-		BestBlock                types.BeaconBlock
-		BestShardHash            map[byte]common.Hash
-		BestShardHeight          map[byte]uint64
-		Epoch                    uint64
-		BeaconHeight             uint64
-		BeaconProposerIndex      int
-		CurrentRandomNumber      int64
-		CurrentRandomTimeStamp   int64
-		IsGetRandomNumber        bool
-		Params                   map[string]string
-		MaxBeaconCommitteeSize   int
-		MinBeaconCommitteeSize   int
-		MaxShardCommitteeSize    int
-		MinShardCommitteeSize    int
-		ActiveShards             int
-		ConsensusAlgorithm       string
-		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
-		LastCrossShardState      map[byte]map[byte]uint64
-		ShardHandle              map[byte]bool
-		NumOfBlocksByProducers   map[string]uint64
-		BlockInterval            time.Duration
-		BlockMaxCreateTime       time.Duration
-		consensusStateDB         *statedb.StateDB
-		ConsensusStateDBRootHash common.Hash
-		rewardStateDB            *statedb.StateDB
-		RewardStateDBRootHash    common.Hash
-		featureStateDB           *statedb.StateDB
-		FeatureStateDBRootHash   common.Hash
-		slashStateDB             *statedb.StateDB
-		SlashStateDBRootHash     common.Hash
-	}
-	type args struct {
-		shardInstructions    *shardInstruction
-		validStakePublicKeys []string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *shardInstruction
-		want1  *duplicateKeyStakeInstruction
-	}{}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			beaconBestState := &BeaconBestState{
-				BestBlockHash:            tt.fields.BestBlockHash,
-				PreviousBestBlockHash:    tt.fields.PreviousBestBlockHash,
-				BestBlock:                tt.fields.BestBlock,
-				BestShardHash:            tt.fields.BestShardHash,
-				BestShardHeight:          tt.fields.BestShardHeight,
-				Epoch:                    tt.fields.Epoch,
-				BeaconHeight:             tt.fields.BeaconHeight,
-				BeaconProposerIndex:      tt.fields.BeaconProposerIndex,
-				CurrentRandomNumber:      tt.fields.CurrentRandomNumber,
-				CurrentRandomTimeStamp:   tt.fields.CurrentRandomTimeStamp,
-				IsGetRandomNumber:        tt.fields.IsGetRandomNumber,
-				MaxBeaconCommitteeSize:   tt.fields.MaxBeaconCommitteeSize,
-				MinBeaconCommitteeSize:   tt.fields.MinBeaconCommitteeSize,
-				MaxShardCommitteeSize:    tt.fields.MaxShardCommitteeSize,
-				MinShardCommitteeSize:    tt.fields.MinShardCommitteeSize,
-				ActiveShards:             tt.fields.ActiveShards,
-				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
-				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
-				LastCrossShardState:      tt.fields.LastCrossShardState,
-				ShardHandle:              tt.fields.ShardHandle,
-				BlockInterval:            tt.fields.BlockInterval,
-				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
-				consensusStateDB:         tt.fields.consensusStateDB,
-				ConsensusStateDBRootHash: tt.fields.ConsensusStateDBRootHash,
-				rewardStateDB:            tt.fields.rewardStateDB,
-				RewardStateDBRootHash:    tt.fields.RewardStateDBRootHash,
-				featureStateDB:           tt.fields.featureStateDB,
-				FeatureStateDBRootHash:   tt.fields.FeatureStateDBRootHash,
-				slashStateDB:             tt.fields.slashStateDB,
-				SlashStateDBRootHash:     tt.fields.SlashStateDBRootHash,
-			}
-			got, got1 := beaconBestState.processStakeInstructionFromShardBlock(tt.args.shardInstructions, tt.args.validStakePublicKeys)
-			for i, v := range got.stakeInstructions {
-				if !reflect.DeepEqual(v, tt.want.stakeInstructions[i]) {
-					t.Errorf("v = %v, tt.want.stakeInstructions[i] %v", v, tt.want.stakeInstructions[i])
-				}
-			}
-			for i, v := range got1.instructions {
-				if !reflect.DeepEqual(got1, tt.want1.instructions[i]) {
-					t.Errorf("v = %v, tt.want1.instructions[i] %v", v, tt.want1.instructions[i])
 				}
 			}
 		})
@@ -726,7 +625,7 @@ func TestBeaconBestState_processStopAutoStakeInstructionFromShardBlock(t *testin
 		ActiveShards             int
 		ConsensusAlgorithm       string
 		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
+		BeaconCommitteeState     committeestate.BeaconCommitteeState
 		LastCrossShardState      map[byte]map[byte]uint64
 		ShardHandle              map[byte]bool
 		NumOfBlocksByProducers   map[string]uint64
@@ -790,7 +689,7 @@ func TestBeaconBestState_processStopAutoStakeInstructionFromShardBlock(t *testin
 				ActiveShards:             tt.fields.ActiveShards,
 				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
 				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
+				beaconCommitteeState:     tt.fields.BeaconCommitteeState,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
 				BlockInterval:            tt.fields.BlockInterval,
@@ -836,7 +735,7 @@ func TestBeaconBestState_processUnstakeInstructionFromShardBlock(t *testing.T) {
 		ActiveShards             int
 		ConsensusAlgorithm       string
 		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
+		BeaconCommitteeState     committeestate.BeaconCommitteeState
 		LastCrossShardState      map[byte]map[byte]uint64
 		ShardHandle              map[byte]bool
 		NumOfBlocksByProducers   map[string]uint64
@@ -910,7 +809,7 @@ func TestBeaconBestState_processUnstakeInstructionFromShardBlock(t *testing.T) {
 				ActiveShards:             tt.fields.ActiveShards,
 				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
 				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
+				beaconCommitteeState:     tt.fields.BeaconCommitteeState,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
 				BlockInterval:            tt.fields.BlockInterval,

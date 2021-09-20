@@ -4,11 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -109,6 +111,12 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, shieldingReq.TokenID, common.PortalVersion4)
 	if !isPortalToken || err != nil {
 		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("TokenID is not supported currently on Portal v4"))
+	}
+
+	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(shieldingReq.ShieldingProof)
+	if err != nil {
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError,
+			fmt.Errorf("ShieldingProof is invalid sanity %v", err))
 	}
 
 	return true, true, nil

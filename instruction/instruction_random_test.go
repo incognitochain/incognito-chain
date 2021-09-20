@@ -24,21 +24,21 @@ func TestValidateRandomInstructionSanity(t *testing.T) {
 		{
 			name: "instruction[0] != RANDOM_ACTION",
 			args: args{
-				instruction: []string{ASSIGN_ACTION, "3157440766", "637918", "3157440766", "3157440766"},
+				instruction: []string{ASSIGN_ACTION, "3157440766", "", "", ""},
 			},
 			wantErr: true,
 		},
 		{
 			name: "type(instruction[1]) != int",
 			args: args{
-				instruction: []string{RANDOM_ACTION, "abdcd", "637918", "3157440766", "3157440766"},
+				instruction: []string{RANDOM_ACTION, "abdcd", "", "", ""},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Valid Input",
 			args: args{
-				instruction: []string{RANDOM_ACTION, "3157440766", "637918", "3157440766", "3157440766"},
+				instruction: []string{RANDOM_ACTION, "3157440766", "", "", ""},
 			},
 			wantErr: false,
 		},
@@ -74,14 +74,14 @@ func TestValidateAndImportRandomInstructionFromString(t *testing.T) {
 		{
 			name: "instruction[0] != RANDOM_ACTION",
 			args: args{
-				instruction: []string{ASSIGN_ACTION, "3157440766", "637918", "3157440766", "3157440766"},
+				instruction: []string{ASSIGN_ACTION, "3157440766", "", "", ""},
 			},
 			wantErr: true,
 		},
 		{
 			name: "type(instruction[1]) != int",
 			args: args{
-				instruction: []string{RANDOM_ACTION, "abdcd", "637918", "3157440766", "3157440766"},
+				instruction: []string{RANDOM_ACTION, "abdcd", "", "", ""},
 			},
 			wantErr: true,
 		},
@@ -91,7 +91,7 @@ func TestValidateAndImportRandomInstructionFromString(t *testing.T) {
 				instruction: []string{RANDOM_ACTION, "3157440766", "", "", ""},
 			},
 			want: &RandomInstruction{
-				BtcNonce: 3157440766,
+				randomNumber: 3157440766,
 			},
 			wantErr: false,
 		},
@@ -122,13 +122,10 @@ func TestImportRandomInstructionFromString(t *testing.T) {
 		{
 			name: "Valid Input",
 			args: args{
-				instruction: []string{RANDOM_ACTION, "3157440766", "637918", "3157440766", "3157440766"},
+				instruction: []string{RANDOM_ACTION, "3157440766", "", "", ""},
 			},
 			want: &RandomInstruction{
-				BtcNonce:       3157440766,
-				BtcBlockHeight: 637918,
-				CheckPointTime: 3157440766,
-				BtcBlockTime:   3157440766,
+				randomNumber: 3157440766,
 			},
 		},
 	}
@@ -154,13 +151,10 @@ func TestRandomInstruction_ToString(t *testing.T) {
 			name: "Valid Input",
 			args: args{
 				instruction: &RandomInstruction{
-					BtcNonce:       3157440766,
-					BtcBlockHeight: 637918,
-					CheckPointTime: 3157440766,
-					BtcBlockTime:   3157440766,
+					randomNumber: 3157440766,
 				},
 			},
-			want: []string{RANDOM_ACTION, "3157440766", "637918", "3157440766", "3157440766"},
+			want: []string{RANDOM_ACTION, "3157440766", "", "", ""},
 		},
 	}
 	for _, tt := range tests {

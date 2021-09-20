@@ -150,3 +150,27 @@ fi
 if [ "$1" == "shard-candidate-12" ]; then
 INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnaLC8yRN5im7BgETP2y6nDbWrxfn2sfQaJvDqV7siRoLLaYnaehad7dY4L7n3dTd4XbYFfbr867vFq2uqCm36PmTq9usop6oH3MKQf"  --datadir "data/shard-stake-12" --listen "0.0.0.0:9466" --externaladdress "0.0.0.0:9466" --norpcauth --rpclisten "0.0.0.0:9366"
 fi
+#if [ "$1" == "shard-stake-9" ]; then
+#INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnaLC8yRN5im7BgETP2y6nDbWrxfn2sfQaJvDqV7siRoLLaYnaehad7dY4L7n3dTd4XbYFfbr867vFq2uqCm36PmTq9usop6oH3MKQf"  --datadir "data/shard-stake-9" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363"
+#fi
+####full node
+# INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "0.0.0.0:9330" --nodemode "relay" --relayshards "all" --datadir "data/fullnode" --listen "0.0.0.0:9459" --externaladdress "0.0.0.0:9459" --norpcauth --rpclisten "0.0.0.0:9359"
+
+###### SINGLE_MEMBER
+######
+## Shard: 0, Role: Proposer
+#if [ "$1" == "shard0-proposer" ]; then
+#INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy"  --datadir "data/shard-0" --listen "0.0.0.0:9460" --externaladdress "0.0.0.0:9460" --norpcauth --rpclisten "0.0.0.0:9360"
+#fi
+## Shard: 1, Role: Proposer
+#if [ "$1" == "shard1-proposer" ]; then
+#INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rrEEcDQBMnUM5J17qniHZZmckmr8LGCv9nBjP9x5wmGFGUryKTNvEAf1jh2wwW69rxwtANq4m8JmzowfKVPayUHPmAKdwQw5718GKuH"  --datadir "data/shard-1" --listen "0.0.0.0:9461" --externaladdress "0.0.0.0:9461" --norpcauth --rpclisten "0.0.0.0:9361"
+#fi
+## Beacon, Role: Proposer
+#if [ "$1" == "shard2-proposer" ]; then
+#INCOGNITO_NETWORK_KEY=local-dcs ./incognito --usecoindata --coindatapre="__coins__" --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rotpPVSeHrknwVUTLQgy2avatUWKh2oV9EjVMw6eEtwyJT1FsrHGzvBaLpHL4gPVfJjuSUWvTtiTKuWGNNwGuLo8SHCgfA36ttJ5J7u"  --datadir "data/beacon" --listen "0.0.0.0:9462" --externaladdress "0.0.0.0:9462" --norpcauth --rpclisten "0.0.0.0:9362"
+#fi
+## Relay node
+#if [ "$1" == "relaynode" ]; then
+#INCOGNITO_NETWORK_KEY=local-dcs ./incognito --relayshards "all" --datadir "data/relaynode" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
+#fi

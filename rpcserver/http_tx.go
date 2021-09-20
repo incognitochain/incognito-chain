@@ -478,7 +478,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
-	result, err := httpServer.txService.GetListPrivacyCustomTokenBalance(privateKey)
+	result, err := httpServer.txService.GetListPrivacyCustomTokenBalanceNew(privateKey)
 	if err != nil {
 		return nil, err
 	}
