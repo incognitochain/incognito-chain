@@ -3,9 +3,11 @@ package rpcserver
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 )
 
 /*
@@ -22,6 +24,14 @@ func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan
 	} else {
 		return jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool), nil
 	}
+}
+
+/*
+handleGetMempoolInfoDetails - RPC to return all txs along with their detailed info from mempool
+*/
+func (httpServer *HttpServer) handleGetMempoolInfoDetails(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	result := jsonresult.GetTxDetailsFromMempool(httpServer.config.TxMemPool)
+	return result, nil
 }
 
 /*
@@ -134,4 +144,22 @@ func (httpServer *HttpServer) handleHasSerialNumbersInMempool(params interface{}
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers must be an array of string"))
 	}
 	return httpServer.txMemPoolService.CheckListSerialNumbersExistedInMempool(serialNumbersStr)
+}
+
+// handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
+func (httpServer *HttpServer) handleGetSyncPoolValidator(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return finishsync.DefaultFinishSyncMsgPool.GetFinishedSyncValidators(), nil
+}
+
+// handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
+func (httpServer *HttpServer) handleGetSyncPoolValidatorDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	validators := finishsync.DefaultFinishSyncMsgPool.GetFinishedSyncValidators()
+
+	validatorsDetail := make(map[byte][]incognitokey.CommitteeKeyString)
+	for k, v := range validators {
+		temp, _ := incognitokey.CommitteeBase58KeyListToStruct(v)
+		validatorsDetail[k] = incognitokey.CommitteeKeyListToStringList(temp)
+	}
+
+	return validatorsDetail, nil
 }

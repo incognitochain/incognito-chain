@@ -44,7 +44,7 @@ func OpenMultipleDB(typ string, dbPath string) (map[int]Database, error) {
 	}
 	for i := -1; i < common.MaxShardNumber; i++ {
 		newPath := ""
-		if i == common.BeaconChainDataBaseID {
+		if i == common.BeaconChainID {
 			newPath = path.Join(dbPath, common.BeaconChainDatabaseDirectory)
 		} else {
 			newPath = path.Join(dbPath, common.ShardChainDatabaseDirectory+strconv.Itoa(i))
