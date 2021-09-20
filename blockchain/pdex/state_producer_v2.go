@@ -374,7 +374,7 @@ func (sp *stateProducerV2) trade(
 
 		// get relevant, cloned data from state for the trade path
 		reserves, lpFeesPerShares, protocolFees, stakingPoolFees, orderbookList, tradeDirections, tokenToBuy, err :=
-			tradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
+			TradePathFromState(currentTrade.TokenToSell, currentTrade.TradePath, pairs)
 		tradeOutputReceiver, exists := currentTrade.Receiver[tokenToBuy]
 		// anytime the trade handler fails, add a refund instruction
 		if err != nil || !exists {
@@ -416,7 +416,7 @@ func (sp *stateProducerV2) trade(
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
 			changedPair.protocolFees = protocolFees[index]
 			changedPair.stakingPoolFees = stakingPoolFees[index]
-			orderbook, _ := orderbookList[index].(*Orderbook) // type is determined; see tradePathFromState()
+			orderbook, _ := orderbookList[index].(*Orderbook) // type is determined; see TradePathFromState()
 			changedPair.orderbook = *orderbook
 			pairs[pairID] = changedPair
 		}

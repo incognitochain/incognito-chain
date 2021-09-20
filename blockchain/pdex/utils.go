@@ -658,9 +658,9 @@ func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, 
 	return vAmount0, vAmount1
 }
 
-// tradePathFromState() prepares a trade path with reserves, orderbooks & directions.
+// TradePathFromState() prepares a trade path with reserves, orderbooks & directions.
 // It returns cloned data only. State changes (if any) must be applied separately.
-func tradePathFromState(
+func TradePathFromState(
 	sellToken common.Hash,
 	tradePath []string,
 	pairs map[string]*PoolPairState,
