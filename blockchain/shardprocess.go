@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/pkg/errors"
 
@@ -960,10 +961,10 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	}
 	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, isRelatedCommittee)
 	if err != nil {
-		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
-		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
+		return err
 	}
-	return nil
+	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
 }
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {
