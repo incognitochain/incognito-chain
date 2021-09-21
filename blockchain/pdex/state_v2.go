@@ -319,40 +319,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, withdrawProtocolFeeInstructions...)
 
-	pdexBlockRewards := uint64(0)
-	// mint PDEX token at the pDex v3 checkpoint block
-	if env.BeaconHeight() == config.Param().PDexParams.Pdexv3BreakPointHeight {
-		mintPDEXGenesis, err := s.producer.mintPDEXGenesis()
-		if err != nil {
-			return instructions, err
-		}
-		instructions = append(instructions, mintPDEXGenesis...)
-	} else if env.BeaconHeight() > config.Param().PDexParams.Pdexv3BreakPointHeight {
-		intervalLength := uint64(MintingBlocks / DecayIntervals)
-		decayIntevalIdx := (env.BeaconHeight() - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength
-		if decayIntevalIdx < DecayIntervals {
-			curIntervalReward := PDEXRewardFirstInterval
-			for i := uint64(0); i < decayIntevalIdx; i++ {
-				curIntervalReward -= curIntervalReward * DecayRateBPS / BPS
-			}
-			pdexBlockRewards = curIntervalReward / intervalLength
-		}
-	}
-
-	if pdexBlockRewards > 0 {
-		var mintInstructions [][]string
-		mintInstructions, s.poolPairs, err = s.producer.mintReward(
-			common.PDEXCoinID,
-			pdexBlockRewards,
-			s.params,
-			s.poolPairs,
-		)
-		if err != nil {
-			return instructions, err
-		}
-		instructions = append(instructions, mintInstructions...)
-	}
-
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
 		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, env.BeaconHeight(),
@@ -457,6 +423,40 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, addOrderInstructions...)
+
+	pdexBlockRewards := uint64(0)
+	// mint PDEX token at the pDex v3 checkpoint block
+	if env.BeaconHeight() == config.Param().PDexParams.Pdexv3BreakPointHeight {
+		mintPDEXGenesis, err := s.producer.mintPDEXGenesis()
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, mintPDEXGenesis...)
+	} else if env.BeaconHeight() > config.Param().PDexParams.Pdexv3BreakPointHeight {
+		intervalLength := uint64(MintingBlocks / DecayIntervals)
+		decayIntevalIdx := (env.BeaconHeight() - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength
+		if decayIntevalIdx < DecayIntervals {
+			curIntervalReward := PDEXRewardFirstInterval
+			for i := uint64(0); i < decayIntevalIdx; i++ {
+				curIntervalReward -= curIntervalReward * DecayRateBPS / BPS
+			}
+			pdexBlockRewards = curIntervalReward / intervalLength
+		}
+	}
+
+	if pdexBlockRewards > 0 {
+		var mintInstructions [][]string
+		mintInstructions, s.poolPairs, err = s.producer.mintReward(
+			common.PDEXCoinID,
+			pdexBlockRewards,
+			s.params,
+			s.poolPairs,
+		)
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, mintInstructions...)
+	}
 
 	mintNftInstructions := [][]string{}
 	burningPRVAmount := uint64(0)
