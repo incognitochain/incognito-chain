@@ -338,18 +338,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, withdrawOrderInstructions...)
 
-	// Prepare staking reward for distributing
-	stakingRewards := map[common.Hash]uint64{}
-	for _, poolPair := range s.poolPairs {
-		for tokenID, reward := range poolPair.stakingPoolFees {
-			_, ok := stakingRewards[tokenID]
-			if !ok {
-				stakingRewards[tokenID] = 0
-			}
-			stakingRewards[tokenID] += reward
-		}
-	}
-
 	var unstakingInstructions [][]string
 	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
 		unstakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
@@ -382,7 +370,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	var distributingInstruction [][]string
 	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
-		stakingRewards,
+		s.poolPairs,
 		s.params,
 		s.stakingPoolStates,
 	)
