@@ -353,17 +353,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintInstructions...)
 	}
 
-	var tradeInstructions [][]string
-	tradeInstructions, s.poolPairs, err = s.producer.trade(
-		tradeTxs,
-		s.poolPairs,
-		s.params,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, tradeInstructions...)
-
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
 		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, env.BeaconHeight(),
@@ -373,18 +362,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, withdrawLiquidityInstructions...)
 
-	addLiquidityInstructions := [][]string{}
-	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
-		addLiquidityTxs,
-		env.BeaconHeight(),
+	var withdrawOrderInstructions [][]string
+	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
+		withdrawOrderTxs,
 		s.poolPairs,
-		s.waitingContributions,
-		s.nftIDs,
 	)
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, addLiquidityInstructions...)
+	instructions = append(instructions, withdrawOrderInstructions...)
 
 	// Prepare staking reward for distributing
 	stakingRewards := map[common.Hash]uint64{}
@@ -427,6 +413,30 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, withdrawStakingRewardInstructions...)
 
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
+
+	addLiquidityInstructions := [][]string{}
+	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
+		addLiquidityTxs,
+		env.BeaconHeight(),
+		s.poolPairs,
+		s.waitingContributions,
+		s.nftIDs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addLiquidityInstructions...)
+
 	var stakingInstructions [][]string
 	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(
 		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
@@ -435,16 +445,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, stakingInstructions...)
-
-	var withdrawOrderInstructions [][]string
-	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
-		withdrawOrderTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawOrderInstructions...)
 
 	var addOrderInstructions [][]string
 	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
