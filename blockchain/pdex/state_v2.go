@@ -353,28 +353,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintInstructions...)
 	}
 
-	// Prepare staking reward for distributing
-	stakingRewards := map[common.Hash]uint64{}
-	for _, poolPair := range s.poolPairs {
-		for tokenID, reward := range poolPair.stakingPoolFees {
-			_, ok := stakingRewards[tokenID]
-			if !ok {
-				stakingRewards[tokenID] = 0
-			}
-			stakingRewards[tokenID] += reward
-		}
-	}
-	var distributingInstruction [][]string
-	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
-		stakingRewards,
-		s.params,
-		s.stakingPoolStates,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, distributingInstruction...)
-
 	var tradeInstructions [][]string
 	tradeInstructions, s.poolPairs, err = s.producer.trade(
 		tradeTxs,
@@ -407,6 +385,28 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, addLiquidityInstructions...)
+
+	// Prepare staking reward for distributing
+	stakingRewards := map[common.Hash]uint64{}
+	for _, poolPair := range s.poolPairs {
+		for tokenID, reward := range poolPair.stakingPoolFees {
+			_, ok := stakingRewards[tokenID]
+			if !ok {
+				stakingRewards[tokenID] = 0
+			}
+			stakingRewards[tokenID] += reward
+		}
+	}
+	var distributingInstruction [][]string
+	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
+		stakingRewards,
+		s.params,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, distributingInstruction...)
 
 	var unstakingInstructions [][]string
 	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
