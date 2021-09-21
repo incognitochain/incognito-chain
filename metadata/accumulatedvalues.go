@@ -7,11 +7,12 @@ import (
 )
 
 type AccumulatedValues struct {
-	UniqETHTxsUsed   [][]byte
-	UniqBSCTxsUsed   [][]byte
-	DBridgeTokenPair map[string][]byte
-	CBridgeTokens    []*common.Hash
-	InitTokens       []*common.Hash
+	UniqETHTxsUsed    [][]byte
+	UniqBSCTxsUsed    [][]byte
+	UniqPRVEVMTxsUsed [][]byte
+	DBridgeTokenPair  map[string][]byte
+	CBridgeTokens     []*common.Hash
+	InitTokens        []*common.Hash
 }
 
 func (ac AccumulatedValues) CanProcessTokenPair(

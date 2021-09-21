@@ -59,9 +59,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &IssuingEVMRequest{}
 	case IssuingBSCRequestMeta:
 		md = &IssuingEVMRequest{}
+	case IssuingPRVERC20RequestMeta:
+		md = &IssuingEVMRequest{}
+	case IssuingPRVBEP20RequestMeta:
+		md = &IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
 		md = &IssuingEVMResponse{}
 	case IssuingBSCResponseMeta:
+		md = &IssuingEVMResponse{}
+	case IssuingPRVERC20ResponseMeta:
+		md = &IssuingEVMResponse{}
+	case IssuingPRVBEP20ResponseMeta:
 		md = &IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
@@ -277,6 +285,8 @@ func buildMetaInfo() {
 
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
+		IssuingPRVERC20ResponseMeta,
+		IssuingPRVBEP20ResponseMeta,
 		IssuingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -379,6 +389,8 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingETHRequestMeta,
 		IssuingBSCRequestMeta,
+		IssuingPRVERC20RequestMeta,
+		IssuingPRVBEP20RequestMeta,	
 		ContractingRequestMeta,
 
 		ShardStakingMeta,
@@ -468,9 +480,13 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingResponseMeta,
 		IssuingETHRequestMeta,
+		IssuingPRVBEP20RequestMeta,
+		IssuingPRVERC20RequestMeta,
 		IssuingBSCRequestMeta,
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
+		IssuingPRVERC20ResponseMeta,
+		IssuingPRVBEP20ResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,

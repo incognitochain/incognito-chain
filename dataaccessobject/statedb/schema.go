@@ -46,6 +46,7 @@ var (
 	pdeStatusPrefix                    = []byte("pdestatus-")
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeBSCTxPrefix                  = []byte("bri-bsc-tx-")
+	bridgePRVEVMPrefix                 = []byte("bri-prv-evm-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
@@ -281,6 +282,11 @@ func GetBridgeEthTxPrefix() []byte {
 
 func GetBridgeBSCTxPrefix() []byte {
 	h := common.HashH(bridgeBSCTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgePRVEVMPrefix() []byte {
+	h := common.HashH(bridgePRVEVMPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
