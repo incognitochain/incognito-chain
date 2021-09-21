@@ -299,28 +299,25 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
-	mintNftInstructions := [][]string{}
-	burningPRVAmount := uint64(0)
-	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
-		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
+	var withdrawLPFeeInstructions [][]string
+	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
+		withdrawLPFeeTxs,
+		s.poolPairs,
+	)
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, mintNftInstructions...)
+	instructions = append(instructions, withdrawLPFeeInstructions...)
 
-	if burningPRVAmount > 0 {
-		var mintInstructions [][]string
-		mintInstructions, s.poolPairs, err = s.producer.mintReward(
-			common.PRVCoinID,
-			burningPRVAmount,
-			s.params,
-			s.poolPairs,
-		)
-		if err != nil {
-			return instructions, err
-		}
-		instructions = append(instructions, mintInstructions...)
+	var withdrawProtocolFeeInstructions [][]string
+	withdrawProtocolFeeInstructions, s.poolPairs, err = s.producer.withdrawProtocolFee(
+		withdrawlProtocolFeeTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
 	}
+	instructions = append(instructions, withdrawProtocolFeeInstructions...)
 
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
@@ -330,6 +327,57 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, withdrawLiquidityInstructions...)
+
+	var withdrawOrderInstructions [][]string
+	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
+		withdrawOrderTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawOrderInstructions...)
+
+	var unstakingInstructions [][]string
+	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
+		unstakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, unstakingInstructions...)
+
+	var withdrawStakingRewardInstructions [][]string
+	withdrawStakingRewardInstructions, s.stakingPoolStates, err = s.producer.withdrawStakingReward(
+		withdrawStakingRewardTxs,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawStakingRewardInstructions...)
+
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
+
+	var distributingInstruction [][]string
+	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
+		s.poolPairs,
+		s.params,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, distributingInstruction...)
 
 	addLiquidityInstructions := [][]string{}
 	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
@@ -343,6 +391,27 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, addLiquidityInstructions...)
+
+	var stakingInstructions [][]string
+	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(
+		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, stakingInstructions...)
+
+	var addOrderInstructions [][]string
+	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
+		addOrderTxs,
+		s.poolPairs,
+		s.nftIDs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addOrderInstructions...)
 
 	pdexBlockRewards := uint64(0)
 	// mint PDEX token at the pDex v3 checkpoint block
@@ -378,108 +447,28 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintInstructions...)
 	}
 
-	var tradeInstructions [][]string
-	tradeInstructions, s.poolPairs, err = s.producer.trade(
-		tradeTxs,
-		s.poolPairs,
-		s.params,
-	)
+	mintNftInstructions := [][]string{}
+	burningPRVAmount := uint64(0)
+	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
+		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, tradeInstructions...)
+	instructions = append(instructions, mintNftInstructions...)
 
-	var withdrawLPFeeInstructions [][]string
-	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
-		withdrawLPFeeTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawLPFeeInstructions...)
-
-	var withdrawProtocolFeeInstructions [][]string
-	withdrawProtocolFeeInstructions, s.poolPairs, err = s.producer.withdrawProtocolFee(
-		withdrawlProtocolFeeTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawProtocolFeeInstructions...)
-
-	var addOrderInstructions [][]string
-	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
-		addOrderTxs,
-		s.poolPairs,
-		s.nftIDs,
-		s.params,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, addOrderInstructions...)
-
-	var withdrawOrderInstructions [][]string
-	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
-		withdrawOrderTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawOrderInstructions...)
-
-	// Prepare staking reward for distributing
-	stakingRewards := map[common.Hash]uint64{}
-	for _, poolPair := range s.poolPairs {
-		for tokenID, reward := range poolPair.stakingPoolFees {
-			_, ok := stakingRewards[tokenID]
-			if !ok {
-				stakingRewards[tokenID] = 0
-			}
-			stakingRewards[tokenID] += reward
+	if burningPRVAmount > 0 {
+		var mintInstructions [][]string
+		mintInstructions, s.poolPairs, err = s.producer.mintReward(
+			common.PRVCoinID,
+			burningPRVAmount,
+			s.params,
+			s.poolPairs,
+		)
+		if err != nil {
+			return instructions, err
 		}
+		instructions = append(instructions, mintInstructions...)
 	}
-	var distributingInstruction [][]string
-	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
-		stakingRewards,
-		s.params,
-		s.stakingPoolStates,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, distributingInstruction...)
-
-	var unstakingInstructions [][]string
-	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
-		unstakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, unstakingInstructions...)
-
-	var withdrawStakingRewardInstructions [][]string
-	withdrawStakingRewardInstructions, s.stakingPoolStates, err = s.producer.withdrawStakingReward(
-		withdrawStakingRewardTxs,
-		s.stakingPoolStates,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawStakingRewardInstructions...)
-
-	var stakingInstructions [][]string
-	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(
-		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, stakingInstructions...)
 
 	// handle modify params
 	var modifyParamsInstructions [][]string
