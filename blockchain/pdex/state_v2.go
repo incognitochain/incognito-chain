@@ -299,50 +299,25 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
-	mintNftInstructions := [][]string{}
-	burningPRVAmount := uint64(0)
-	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
-		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, mintNftInstructions...)
-
-	if burningPRVAmount > 0 {
-		var mintInstructions [][]string
-		mintInstructions, s.poolPairs, err = s.producer.mintReward(
-			common.PRVCoinID,
-			burningPRVAmount,
-			s.params,
-			s.poolPairs,
-		)
-		if err != nil {
-			return instructions, err
-		}
-		instructions = append(instructions, mintInstructions...)
-	}
-
-	withdrawLiquidityInstructions := [][]string{}
-	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
-		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, env.BeaconHeight(),
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawLiquidityInstructions...)
-
-	addLiquidityInstructions := [][]string{}
-	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
-		addLiquidityTxs,
-		env.BeaconHeight(),
+	var withdrawLPFeeInstructions [][]string
+	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
+		withdrawLPFeeTxs,
 		s.poolPairs,
-		s.waitingContributions,
-		s.nftIDs,
 	)
 	if err != nil {
 		return instructions, err
 	}
-	instructions = append(instructions, addLiquidityInstructions...)
+	instructions = append(instructions, withdrawLPFeeInstructions...)
+
+	var withdrawProtocolFeeInstructions [][]string
+	withdrawProtocolFeeInstructions, s.poolPairs, err = s.producer.withdrawProtocolFee(
+		withdrawlProtocolFeeTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawProtocolFeeInstructions...)
 
 	pdexBlockRewards := uint64(0)
 	// mint PDEX token at the pDex v3 checkpoint block
@@ -378,59 +353,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintInstructions...)
 	}
 
-	var tradeInstructions [][]string
-	tradeInstructions, s.poolPairs, err = s.producer.trade(
-		tradeTxs,
-		s.poolPairs,
-		s.params,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, tradeInstructions...)
-
-	var withdrawLPFeeInstructions [][]string
-	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
-		withdrawLPFeeTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawLPFeeInstructions...)
-
-	var withdrawProtocolFeeInstructions [][]string
-	withdrawProtocolFeeInstructions, s.poolPairs, err = s.producer.withdrawProtocolFee(
-		withdrawlProtocolFeeTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawProtocolFeeInstructions...)
-
-	var addOrderInstructions [][]string
-	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
-		addOrderTxs,
-		s.poolPairs,
-		s.nftIDs,
-		s.params,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, addOrderInstructions...)
-
-	var withdrawOrderInstructions [][]string
-	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
-		withdrawOrderTxs,
-		s.poolPairs,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, withdrawOrderInstructions...)
-
 	// Prepare staking reward for distributing
 	stakingRewards := map[common.Hash]uint64{}
 	for _, poolPair := range s.poolPairs {
@@ -452,6 +374,39 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, distributingInstruction...)
+
+	var tradeInstructions [][]string
+	tradeInstructions, s.poolPairs, err = s.producer.trade(
+		tradeTxs,
+		s.poolPairs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tradeInstructions...)
+
+	withdrawLiquidityInstructions := [][]string{}
+	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
+		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawLiquidityInstructions...)
+
+	addLiquidityInstructions := [][]string{}
+	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
+		addLiquidityTxs,
+		env.BeaconHeight(),
+		s.poolPairs,
+		s.waitingContributions,
+		s.nftIDs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addLiquidityInstructions...)
 
 	var unstakingInstructions [][]string
 	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
@@ -480,6 +435,51 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, stakingInstructions...)
+
+	var withdrawOrderInstructions [][]string
+	withdrawOrderInstructions, s.poolPairs, err = s.producer.withdrawOrder(
+		withdrawOrderTxs,
+		s.poolPairs,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, withdrawOrderInstructions...)
+
+	var addOrderInstructions [][]string
+	addOrderInstructions, s.poolPairs, err = s.producer.addOrder(
+		addOrderTxs,
+		s.poolPairs,
+		s.nftIDs,
+		s.params,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, addOrderInstructions...)
+
+	mintNftInstructions := [][]string{}
+	burningPRVAmount := uint64(0)
+	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
+		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, mintNftInstructions...)
+
+	if burningPRVAmount > 0 {
+		var mintInstructions [][]string
+		mintInstructions, s.poolPairs, err = s.producer.mintReward(
+			common.PRVCoinID,
+			burningPRVAmount,
+			s.params,
+			s.poolPairs,
+		)
+		if err != nil {
+			return instructions, err
+		}
+		instructions = append(instructions, mintInstructions...)
+	}
 
 	// handle modify params
 	var modifyParamsInstructions [][]string

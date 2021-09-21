@@ -72,7 +72,6 @@ func (p *Params) Clone() *Params {
 func isValidPdexv3Params(
 	params *Params,
 	pairs map[string]*PoolPairState,
-	stakingPools map[string]*StakingPoolState,
 ) (bool, string) {
 	if params.DefaultFeeRateBPS > MaxFeeRateBPS {
 		return false, "Default fee rate is too high"
@@ -99,9 +98,9 @@ func isValidPdexv3Params(
 		}
 	}
 	for stakingPoolID := range params.StakingPoolsShare {
-		_, isExisted := stakingPools[stakingPoolID]
-		if !isExisted {
-			return false, fmt.Sprintf("Staking pool %v is not existed", stakingPoolID)
+		_, err := common.Hash{}.NewHashFromStr(stakingPoolID)
+		if err != nil {
+			return false, fmt.Sprintf("%v", err)
 		}
 	}
 	return true, ""

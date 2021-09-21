@@ -176,7 +176,13 @@ func (p *PoolPairState) getContributionsByOrder(
 
 func (p *PoolPairState) computeActualContributedAmounts(
 	contribution0, contribution1 *rawdbv2.Pdexv3Contribution,
-) (uint64, uint64, uint64, uint64) {
+) (uint64, uint64, uint64, uint64, error) {
+	if (p.state.Token0RealAmount() == 0 || p.state.Token1RealAmount() == 0) && (p.state.Token0RealAmount() != p.state.Token1RealAmount()) {
+		return 0, 0, 0, 0, errors.New("Pool is invalid to contribute")
+	}
+	if p.state.Token0RealAmount() == 0 && p.state.Token1RealAmount() == 0 {
+		return contribution0.Amount(), 0, contribution1.Amount(), 0, nil
+	}
 	contribution0Amount := big.NewInt(0)
 	tempAmt := big.NewInt(0)
 	tempAmt.Mul(
@@ -203,7 +209,7 @@ func (p *PoolPairState) computeActualContributedAmounts(
 	)
 	actualContribution0Amt := contribution0Amount.Uint64()
 	actualContribution1Amt := contribution1Amount.Uint64()
-	return actualContribution0Amt, contribution0.Amount() - actualContribution0Amt, actualContribution1Amt, contribution1.Amount() - actualContribution1Amt
+	return actualContribution0Amt, contribution0.Amount() - actualContribution0Amt, actualContribution1Amt, contribution1.Amount() - actualContribution1Amt, nil
 }
 
 func (p *PoolPairState) addReserveDataAndCalculateShare(

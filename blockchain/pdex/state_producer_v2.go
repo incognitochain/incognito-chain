@@ -129,18 +129,27 @@ func (sp *stateProducerV2) addLiquidity(
 		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
-		actualToken0ContributionAmount,
-			returnedToken0ContributionAmount,
-			actualToken1ContributionAmount,
-			returnedToken1ContributionAmount := rootPoolPair.
-			computeActualContributedAmounts(&token0Contribution, &token1Contribution)
-
 		token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			token0Contribution, metaData.PairHash(),
 		)
 		token1ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			token1Contribution, metaData.PairHash(),
 		)
+		actualToken0ContributionAmount,
+			returnedToken0ContributionAmount,
+			actualToken1ContributionAmount,
+			returnedToken1ContributionAmount, err := rootPoolPair.
+			computeActualContributedAmounts(&token0Contribution, &token1Contribution)
+		if err != nil {
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			res = append(res, insts...)
+			continue
+		}
 		if actualToken0ContributionAmount == 0 || actualToken1ContributionAmount == 0 {
 			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
 				token0ContributionState, token1ContributionState,
@@ -235,7 +244,7 @@ func (sp *stateProducerV2) modifyParams(
 		// check conditions
 		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
-		isValidParams, errorMsg := isValidPdexv3Params(&newParams, pairs, stakingPools)
+		isValidParams, errorMsg := isValidPdexv3Params(&newParams, pairs)
 
 		status := ""
 		if isValidParams {
