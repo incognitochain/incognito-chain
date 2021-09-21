@@ -153,7 +153,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 			return
 		}
 		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
+	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION && newView.GetBlock().GetVersion() < types.BLOCK_PRODUCINGV3_VERSION {
 		////update finalView: consensus 2
 		prev1Hash := multiView.bestView.GetPreviousHash()
 		prev1View := multiView.viewByHash[*prev1Hash]
@@ -161,11 +161,11 @@ func (multiView *MultiView) updateViewState(newView View) {
 			return
 		}
 		//TODO: @hung comment to test only
-		//bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
-		//prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-		//if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
-		//	multiView.finalView = prev1View
-		//}
+		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
+			multiView.finalView = prev1View
+		}
 		if newView.GetBlock().GetVersion() >= types.BLOCK_PRODUCINGV3_VERSION {
 			// update final view lemma 2
 			if newView.GetBlock().GetHeight()-1 == newView.GetBlock().GetFinalityHeight() {
