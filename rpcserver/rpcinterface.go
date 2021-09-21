@@ -29,12 +29,14 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:           (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:              (*HttpServer).handleGetRawMempool,
+	getSyncPoolValidator:       (*HttpServer).handleGetSyncPoolValidator,
+	getSyncPoolValidatorDetail: (*HttpServer).handleGetSyncPoolValidatorDetail,
+	getNumberOfTxsInMempool:    (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:            (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:          (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:             (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen:    (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -103,6 +105,8 @@ var HttpHandler = map[string]httpHandler{
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
+	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
+	getDetailBlocksOfEpoch:     (*HttpServer).handleGetDetailBlocksOfEpoch,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,

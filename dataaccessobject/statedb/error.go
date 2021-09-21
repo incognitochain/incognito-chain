@@ -12,6 +12,7 @@ const (
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
+	ErrInvalidCommitteeTermType               = "invalid committee term type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
 	ErrInvalidCommitteeRewardStateType        = "invalid reward receiver state type "
@@ -47,7 +48,6 @@ const (
 	ErrInvalidPortalLockedCollateralStateType    = "invalid portal locked collateral state type"
 	ErrInvalidRewardFeatureStateType             = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
-	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
 	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
 	ErrInvalidPortalV4StatusStateType            = "invalid portal v4 status state type"
@@ -117,6 +117,7 @@ const (
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
+	StoreSyncingValidatorsError
 
 	DeleteBeaconCommitteeError
 	DeleteOneShardCommitteeError
@@ -303,6 +304,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreBlackListProducersError:           {-3013, "Store Black List Producers Error"},
 	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
+	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},

@@ -12,6 +12,22 @@ type BlockInterface struct {
 	mock.Mock
 }
 
+// BodyHash provides a mock function with given fields:
+func (_m *BlockInterface) BodyHash() common.Hash {
+	ret := _m.Called()
+
+	var r0 common.Hash
+	if rf, ok := ret.Get(0).(func() common.Hash); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(common.Hash)
+		}
+	}
+
+	return r0
+}
+
 // CommitteeFromBlock provides a mock function with given fields:
 func (_m *BlockInterface) CommitteeFromBlock() common.Hash {
 	ret := _m.Called()
@@ -225,6 +241,20 @@ func (_m *BlockInterface) Hash() *common.Hash {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common.Hash)
 		}
+	}
+
+	return r0
+}
+
+// Type provides a mock function with given fields:
+func (_m *BlockInterface) Type() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
 	}
 
 	return r0

@@ -69,8 +69,11 @@ const (
 	PortalWaitingUnshieldObjectType               = 44
 	PortalProcessedUnshieldRequestBatchObjectType = 45
 
+	RewardRequestV3ObjectType = 46
+
 	// PRV EVM bridge
-	BridgePRVEVMObjectType = 46
+	BridgePRVEVMObjectType = 47
+
 )
 
 // Prefix length
@@ -93,6 +96,7 @@ const (
 	ShardPool
 	BeaconCommittee
 	ShardCommittee
+	SyncingValidators
 )
 const (
 	BeaconChainID    = -1

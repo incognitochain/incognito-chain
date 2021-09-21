@@ -213,7 +213,7 @@ func TestCommonSliceExistsWithInvalidSlice(t *testing.T) {
 */
 
 func TestCommonGetShardIDFromLastByte(t *testing.T) {
-	data := []byte{
+	data := []int{
 		1,
 		2,
 		108,
@@ -222,7 +222,7 @@ func TestCommonGetShardIDFromLastByte(t *testing.T) {
 	}
 
 	for _, item := range data {
-		shardID := GetShardIDFromLastByte(item)
+		shardID := GetShardIDFromLastByte(byte(item))
 		assert.Equal(t, item%MaxShardNumber, shardID)
 	}
 }
