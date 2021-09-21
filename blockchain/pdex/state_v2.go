@@ -349,16 +349,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			stakingRewards[tokenID] += reward
 		}
 	}
-	var distributingInstruction [][]string
-	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
-		stakingRewards,
-		s.params,
-		s.stakingPoolStates,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, distributingInstruction...)
 
 	var unstakingInstructions [][]string
 	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
@@ -389,6 +379,17 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, tradeInstructions...)
+
+	var distributingInstruction [][]string
+	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
+		stakingRewards,
+		s.params,
+		s.stakingPoolStates,
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, distributingInstruction...)
 
 	addLiquidityInstructions := [][]string{}
 	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
