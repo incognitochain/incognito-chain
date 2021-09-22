@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -33,7 +34,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 		paymentAddStr,
 		1,
 		metadata.WithDrawRewardRequestMeta,
-		)
+	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
@@ -100,6 +101,27 @@ func (httpServer *HttpServer) handleGetRewardAmountByPublicKey(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
 	}
 	rewardAmount, err := httpServer.blockService.GetRewardAmountByPublicKey(paymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+	}
+	return rewardAmount, nil
+}
+
+func (httpServer *HttpServer) handleGetRewardOfPublicKeyAtBlkHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	publicKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
+	}
+	sblkHash, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
+	}
+	rewardAmount, err := httpServer.blockService.GetRewardOfPublicKeyAtBlkHash(publicKey, sblkHash)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
 	}

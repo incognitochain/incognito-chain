@@ -724,6 +724,52 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 	return rewardAmountResult, nil
 }
 
+func (blockService BlockService) GetRewardOfPublicKeyAtBlkHash(publicKey, blkhash string) (map[string]uint64, error) {
+	rewardAmountResult := make(map[string]uint64)
+	tempPK, _, err := base58.Base58Check{}.Decode(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	shardID := common.GetShardIDFromLastByte(publicKey[len(tempPK)-1])
+	allCoinIDs, err := blockService.BlockChain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
+	if err != nil {
+		return nil, err
+	}
+	blkHash, errH := common.Hash{}.NewHashFromStr(blkhash)
+	if errH != nil {
+		return nil, err
+	}
+	sDB := blockService.BlockChain.GetShardChainDatabase(shardID)
+	rootHash, err := rawdbv2.GetShardRootsHash(sDB, shardID, *blkHash)
+	if err != nil {
+		return nil, err
+	}
+	sRH := &blockchain.ShardRootHash{}
+	err = json.Unmarshal(rootHash, sRH)
+	if err != nil {
+		return nil, err
+	}
+	rewardStateDB, err := statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(sDB))
+	if err != nil {
+		return nil, err
+	}
+	// blockService.BlockChain.GetShardStateFromBlock(curView *blockchain.BeaconBestState, newBeaconHeight uint64, shardBlock *types.ShardBlock, shardID byte, validUnstakePublicKeys map[string]bool, validStakePublicKeys []string)
+	for _, coinID := range allCoinIDs {
+		amount, err := statedb.GetCommitteeReward(rewardStateDB, publicKey, coinID)
+		if err != nil {
+			return nil, err
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			if amount > 0 {
+				rewardAmountResult[coinID.String()] = amount
+			}
+		}
+	}
+	return rewardAmountResult, nil
+}
+
 func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (map[string]uint64, error) {
 	rewardAmountResult := make(map[string]uint64)
 	tempPK, _, err := base58.Base58Check{}.Decode(publicKey)
@@ -893,8 +939,6 @@ func (blockService BlockService) GetAllBridgeTokensByHeight(height uint64) ([]*r
 	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokensByHeight(height)
 	return bridgeTokenInfos, err
 }
-
-
 
 func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
 	blockHashParam, ok := data["BlockHash"].(string)

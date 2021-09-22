@@ -176,10 +176,11 @@ var HttpHandler = map[string]httpHandler{
 	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 
 	//reward
-	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
-	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
-	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
-	listRewardAmount:             (*HttpServer).handleListRewardAmount,
+	CreateRawWithDrawTransaction:  (*HttpServer).handleCreateAndSendWithDrawTransaction,
+	getRewardAmount:               (*HttpServer).handleGetRewardAmount,
+	getRewardAmountByPublicKey:    (*HttpServer).handleGetRewardAmountByPublicKey,
+	getRewardOfPublicKeyAtBlkHash: (*HttpServer).handleGetRewardOfPublicKeyAtBlkHash,
+	listRewardAmount:              (*HttpServer).handleListRewardAmount,
 
 	// mining info
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
