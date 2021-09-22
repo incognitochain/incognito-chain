@@ -730,7 +730,7 @@ func (blockService BlockService) GetRewardOfPublicKeyAtBlkHash(publicKey, blkhas
 	if err != nil {
 		return nil, err
 	}
-	shardID := common.GetShardIDFromLastByte(publicKey[len(tempPK)-1])
+	shardID := common.GetShardIDFromLastByte(tempPK[len(tempPK)-1])
 	allCoinIDs, err := blockService.BlockChain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
 	if err != nil {
 		return nil, err
