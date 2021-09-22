@@ -235,8 +235,6 @@ func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(
 func (b *beaconCommitteeStateSlashingBase) getCandidatesForRandomAssignment(
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, []string) {
-	fmt.Println(">>>>>>>>>>>>, ", b.numberOfAssignedCandidates)
-	fmt.Println(">>>>>>>>>>>>, ", b.shardCommonPool)
 	candidates := b.shardCommonPool[:b.numberOfAssignedCandidates]
 	committeeChange.AddNextEpochShardCandidateRemoved(candidates)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
