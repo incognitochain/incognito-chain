@@ -199,8 +199,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 			return err
 		}
 	}
+	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
+	Logger.log.Infof("Validate block %v shard %v with committee %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr)
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
 		return err
 	}

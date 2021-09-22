@@ -1029,24 +1029,24 @@ func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
 	hash common.Hash, shardID byte,
 ) ([]incognitokey.CommitteePublicKey, error) {
 	committees := []incognitokey.CommitteePublicKey{}
-	res, has := blockchain.BeaconChain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
-	if !has {
-		bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), hash)
-		if err != nil {
-			return committees, err
-		}
-
-		stateDB, err := statedb.NewWithPrefixTrie(
-			bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-		if err != nil {
-			return committees, err
-		}
-		committees = statedb.GetOneShardCommittee(stateDB, shardID)
-
-		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
-	} else {
-		committees = res.([]incognitokey.CommitteePublicKey)
+	//res, has := blockchain.BeaconChain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
+	//if !has {
+	bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), hash)
+	if err != nil {
+		return committees, err
 	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(
+		bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return committees, err
+	}
+	committees = statedb.GetOneShardCommittee(stateDB, shardID)
+
+	blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
+	//} else {
+	//	committees = res.([]incognitokey.CommitteePublicKey)
+	//}
 
 	return committees, nil
 }
