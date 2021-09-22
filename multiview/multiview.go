@@ -153,7 +153,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 			return
 		}
 		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION && newView.GetBlock().GetVersion() < types.BLOCK_PRODUCINGV3_VERSION {
+	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
 		////update finalView: consensus 2
 		prev1Hash := multiView.bestView.GetPreviousHash()
 		prev1View := multiView.viewByHash[*prev1Hash]

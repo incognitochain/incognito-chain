@@ -3,6 +3,7 @@ package blockchain
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/common/consensus"
@@ -102,13 +103,20 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 	type fields struct {
 		NumberOfShardBlock map[byte]uint
 	}
+	type args struct {
+		blockVersion int
+	}
 	tests := []struct {
 		name   string
 		fields fields
+		args   args
 		want   map[byte]uint
 	}{
 		{
 			name: "moderate different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 100,
@@ -134,6 +142,9 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "big different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -159,6 +170,9 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "only one shard big different compare to shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -184,6 +198,9 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "0 all shard",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 0,
@@ -213,7 +230,7 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 			b := &BeaconBestState{
 				NumberOfShardBlock: tt.fields.NumberOfShardBlock,
 			}
-			if got := b.CalculateExpectedTotalBlock(); !reflect.DeepEqual(got, tt.want) {
+			if got := b.CalculateExpectedTotalBlock(tt.args.blockVersion); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CalculateExpectedTotalBlock() = %v, want %v", got, tt.want)
 			}
 		})
@@ -224,6 +241,10 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 	type fields struct {
 		NumberOfShardBlock    map[byte]uint
 		beaconCommitteeEngine committeestate.BeaconCommitteeState
+	}
+
+	type args struct {
+		blockVersion int
 	}
 
 	mockCommittee := map[byte][]incognitokey.CommitteePublicKey{
@@ -243,10 +264,14 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
+		args   args
 		want   map[string]uint
 	}{
 		{
 			name: "moderate different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 100,
@@ -281,6 +306,9 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "big different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -315,6 +343,9 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "only one shard big different compare to shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -349,6 +380,9 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "0 all shard",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 0,
@@ -388,7 +422,7 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 				NumberOfShardBlock:   tt.fields.NumberOfShardBlock,
 				beaconCommitteeState: tt.fields.beaconCommitteeEngine,
 			}
-			if got := b.GetExpectedTotalBlock(); !reflect.DeepEqual(got, tt.want) {
+			if got := b.GetExpectedTotalBlock(tt.args.blockVersion); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetExpectedTotalBlock() = %v, want %v", got, tt.want)
 			}
 		})
