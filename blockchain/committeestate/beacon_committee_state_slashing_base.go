@@ -235,6 +235,8 @@ func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(
 func (b *beaconCommitteeStateSlashingBase) getCandidatesForRandomAssignment(
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, []string) {
+	fmt.Println(">>>>>>>>>>>>, ", b.numberOfAssignedCandidates)
+	fmt.Println(">>>>>>>>>>>>, ", b.shardCommonPool)
 	candidates := b.shardCommonPool[:b.numberOfAssignedCandidates]
 	committeeChange.AddNextEpochShardCandidateRemoved(candidates)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
@@ -248,7 +250,6 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
 	newCommitteeChange, candidates := b.getCandidatesForRandomAssignment(committeeChange)
-	fmt.Println(">>>>>>> candidates", candidates)
 	newCommitteeChange = b.assign(candidates, rand, numberOfValidator, newCommitteeChange)
 	return newCommitteeChange
 }
@@ -266,7 +267,6 @@ func (b *beaconCommitteeStateSlashingBase) assign(
 	candidates []string, rand int64, numberOfValidator []int, committeeChange *CommitteeChange,
 ) *CommitteeChange {
 	assignedCandidates := b.processRandomAssignment(candidates, rand, numberOfValidator)
-	fmt.Println("############### assign-candidates", assignedCandidates)
 	for shardID, tempCandidates := range assignedCandidates {
 		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
