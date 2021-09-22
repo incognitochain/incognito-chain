@@ -319,7 +319,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	shardView *ShardBestState,
 	featureStateDB *statedb.StateDB,
 	metatype int,
-	isPRVPegging bool,
+	isPeggedPRV bool,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -355,7 +355,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		metatype,
 	)
 	tokenID := issuingEVMAcceptedInst.IncTokenID
-	if !isPRVPegging && tokenID == common.PRVCoinID {
+	if !isPeggedPRV && tokenID == common.PRVCoinID {
 		Logger.log.Errorf("cannot issue prv in bridge")
 		return nil, errors.New("cannot issue prv in bridge")
 	}

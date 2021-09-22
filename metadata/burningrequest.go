@@ -95,9 +95,9 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	}
 
 	if (bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
-		return false, false, fmt.Errorf("1 metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
+		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	} else if (bReq.Type != BurningPRVERC20RequestMeta && bReq.Type != BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
-		return false, false, fmt.Errorf("2 metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
+		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	}
 
 	return true, true, nil
