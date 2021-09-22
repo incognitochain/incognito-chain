@@ -167,6 +167,13 @@ func (sp *stateProducerV2) addLiquidity(
 		)
 		if err != nil {
 			Logger.log.Debug("err:", err)
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			res = append(res, insts...)
 			continue
 		}
 		err = poolPair.addShare(
@@ -176,6 +183,13 @@ func (sp *stateProducerV2) addLiquidity(
 		)
 		if err != nil {
 			Logger.log.Debug("err:", err)
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			res = append(res, insts...)
 			continue
 		}
 		insts, err := v2utils.BuildMatchAndReturnAddLiquidityInstructions(
@@ -912,8 +926,7 @@ func (sp *stateProducerV2) userMintNft(
 				metaData.OtaReceiver(), metaData.Amount(), shardID, txReqID,
 			).StringSlice()
 			if err != nil {
-				Logger.log.Debugf("Can not reject mint nftID with txHash %s", txReqID.String())
-				continue
+				return res, nftIDs, burningPRVAmount, err
 			}
 		} else {
 			nftID := genNFT(uint64(len(nftIDs)), beaconHeight)
@@ -922,8 +935,7 @@ func (sp *stateProducerV2) userMintNft(
 				metaData.OtaReceiver(), metaData.Amount(), shardID, nftID, txReqID,
 			).StringSlice()
 			if err != nil {
-				Logger.log.Debugf("Can not mint nftID with txHash %s", txReqID.String())
-				continue
+				return res, nftIDs, burningPRVAmount, err
 			}
 			burningPRVAmount += metaData.Amount()
 		}
@@ -987,8 +999,7 @@ func (sp *stateProducerV2) staking(
 		}
 		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
-			Logger.log.Infof("tx hash %s error %v", txReqID, err)
-			continue
+			return res, stakingPoolStates, err
 		}
 		inst, err := instruction.NewAcceptStakingWtihValue(
 			*nftHash, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
