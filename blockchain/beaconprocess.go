@@ -473,14 +473,19 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	}
 	if !hashes.ShardCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.ShardCommitteeAndValidatorRoot) {
 		res := make(map[byte][]string)
+		res2 := make(map[byte][]string)
 		for k, v := range beaconBestState.GetShardCommittee() {
 			res[k], _ = incognitokey.CommitteeKeyListToString(v)
 		}
+		for k, v := range beaconBestState.GetShardPendingValidator() {
+			res2[k], _ = incognitokey.CommitteeKeyListToString(v)
+		}
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf(
-			"Expect %+v but get %+v \n Committees %+v",
+			"Expect %+v but get %+v \n Committees: %+v \n Pending Validator: %+v",
 			beaconBlock.Header.ShardCommitteeAndValidatorRoot,
 			hashes.ShardCommitteeAndValidatorHash,
 			res,
+			res2,
 		))
 	}
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
