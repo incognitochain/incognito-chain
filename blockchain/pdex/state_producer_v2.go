@@ -166,15 +166,7 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
 		if err != nil {
-			Logger.log.Debug("err:", err)
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
-			res = append(res, insts...)
-			continue
+			return res, poolPairs, waitingContributions, err
 		}
 		err = poolPair.addShare(
 			*nftHash,
@@ -182,15 +174,7 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.TxReqID().String(),
 		)
 		if err != nil {
-			Logger.log.Debug("err:", err)
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
-			res = append(res, insts...)
-			continue
+			return res, poolPairs, waitingContributions, err
 		}
 		insts, err := v2utils.BuildMatchAndReturnAddLiquidityInstructions(
 			token0ContributionState, token1ContributionState,
@@ -890,8 +874,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
 		)
 		if err != nil {
-			res = append(res, rejectInsts...)
-			continue
+			return res, poolPairs, err
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
@@ -957,8 +940,7 @@ func (sp *stateProducerV2) staking(
 		txReqID := *tx.Hash()
 		stakingTokenHash, err := common.Hash{}.NewHashFromStr(metaData.TokenID())
 		if err != nil {
-			Logger.log.Infof("tx hash %s error %v", txReqID, err)
-			continue
+			return res, stakingPoolStates, err
 		}
 		rootStakingPoolState, found := stakingPoolStates[metaData.TokenID()]
 		if !found || rootStakingPoolState == nil {
@@ -987,15 +969,7 @@ func (sp *stateProducerV2) staking(
 		stakingPoolState := rootStakingPoolState.Clone()
 		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
-			rejectInst, err := instruction.NewRejectStakingWithValue(
-				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-			).StringSlice()
-			if err != nil {
-				Logger.log.Infof("tx hash %s error %v", txReqID, err)
-				return res, stakingPoolStates, err
-			}
-			res = append(res, rejectInst)
-			continue
+			return res, stakingPoolStates, err
 		}
 		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
@@ -1055,12 +1029,7 @@ func (sp *stateProducerV2) unstaking(
 		stakingPoolState := rootStakingPoolState.Clone()
 		err := stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
-			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
-			res = append(res, insts...)
-			continue
+			return res, stakingPoolStates, err
 		}
 		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 		insts, err := v2.BuildAcceptUnstakingInstructions(
