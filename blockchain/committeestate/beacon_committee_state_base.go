@@ -570,6 +570,13 @@ func SnapshotShardCommonPoolV2(
 			minCommitteeSize,
 		)
 		numberOfAssignedCandidates += assignPerShard
+		fmt.Printf("######## \n",
+			"len %+v \n(shardSubstitute[k])", len(shardSubstitute[k]),
+			"len %+v \n(v)", len(v),
+			"numberOfFixedValidator %+v \n", numberOfFixedValidator,
+			"minCommitteeSize %+v \n", minCommitteeSize,
+			"numberOfAssignedCandidates %+v \n", numberOfAssignedCandidates,
+		)
 	}
 
 	if numberOfAssignedCandidates > len(shardCommonPool) {
