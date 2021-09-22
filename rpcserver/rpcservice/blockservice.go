@@ -742,7 +742,7 @@ func (blockService BlockService) GetRewardOfPublicKeyAtBlkHash(publicKey, blkhas
 	sDB := blockService.BlockChain.GetShardChainDatabase(shardID)
 	rootHash, err := rawdbv2.GetShardRootsHash(sDB, shardID, *blkHash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Can not get shard root hash from blk %v shard %v, err %v", blkHash.String(), shardID, err)
 	}
 	sRH := &blockchain.ShardRootHash{}
 	err = json.Unmarshal(rootHash, sRH)
