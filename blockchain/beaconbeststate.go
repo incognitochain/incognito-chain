@@ -897,14 +897,6 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 				config.Param().CommitteeSize.MinShardCommitteeSize,
 				swapRule,
 			)
-			fmt.Println(">>>>>>>>>>>",
-				snapshotShardCommonPool,
-				snapshotShardCommittee,
-				snapshotShardSubstitute,
-				config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-				config.Param().CommitteeSize.MinShardCommitteeSize,
-				swapRule,
-				numberOfAssignedCandidates)
 		}
 	}
 
