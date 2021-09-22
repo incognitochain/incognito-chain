@@ -142,6 +142,10 @@ func (actorV1 *actorV1) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	return nil
 }
 
+func (a *actorV1) SetBlockVersion(version int) {
+	panic("not implement")
+}
+
 func (actorV1 *actorV1) SignData(data []byte) (string, error) {
 	result, err := actorV1.userKeySet[0].BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
 	if err != nil {

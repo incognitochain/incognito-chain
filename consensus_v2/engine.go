@@ -3,6 +3,7 @@ package consensus_v2
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"strings"
 	"time"
 
@@ -119,8 +120,11 @@ func (engine *Engine) WatchCommitteeChange() {
 		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
-		logKey, _ := validator.MiningKey.GetPublicKey().ToBase58()
+
+		keyBytes := validator.MiningKey.PubKey[common.BlsConsensus]
+		logKey := base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
 		Logger.Log.Infof("validator key %+v, shardID %+v, role %+v", logKey, chainID, role)
+
 		if chainID == common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
 		} else if chainID > common.BeaconChainID {

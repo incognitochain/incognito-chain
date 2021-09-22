@@ -568,3 +568,36 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 		})
 	}
 }
+
+func Test_swapRuleV2_getSwapOutOffset(t *testing.T) {
+	type args struct {
+		numberOfSubstitutes    int
+		numberOfCommittees     int
+		numberOfFixedValidator int
+		minCommitteeSize       int
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "test 1",
+			args: args{
+				numberOfCommittees:     6,
+				numberOfSubstitutes:    0,
+				numberOfFixedValidator: 4,
+				minCommitteeSize:       4,
+			},
+			want: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &swapRuleV2{}
+			if got := s.getSwapOutOffset(tt.args.numberOfSubstitutes, tt.args.numberOfCommittees, tt.args.numberOfFixedValidator, tt.args.minCommitteeSize); got != tt.want {
+				t.Errorf("getSwapOutOffset() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
