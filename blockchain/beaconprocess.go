@@ -481,7 +481,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 			res2[k], _ = incognitokey.CommitteeKeyListToString(v)
 		}
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf(
-			"Expect %+v but get %+v \n Committees: %+v \n Pending Validator: %+v",
+			"Expect %+v but get %+v \n Committees: %+v \n Pending Validator: %+v ",
 			beaconBlock.Header.ShardCommitteeAndValidatorRoot,
 			hashes.ShardCommitteeAndValidatorHash,
 			res,
