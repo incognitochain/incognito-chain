@@ -55,9 +55,9 @@ type actorV2 struct {
 
 	nextBlockFinalityProof map[string]map[int64]string
 
-	proposeRule        ProposeRule
-	consensusValidator ConsensusValidator
-	VoteRule           VoteRule
+	proposeRule        IProposeRule
+	consensusValidator IConsensusValidator
+	VoteRule           IVoteRule
 	blockVersion       int
 }
 
@@ -116,6 +116,10 @@ func newActorV2WithValue(
 		make(map[string]map[int64]string),
 		chain,
 	)
+	a.consensusValidator = NewConsensusValidator(
+		logger,
+		chain,
+	)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -172,7 +176,7 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 		var msgPropose BFTPropose
 		err := json.Unmarshal(msgBFT.Content, &msgPropose)
 		if err != nil {
-			fmt.Println(err)
+			a.logger.Error(err)
 			return
 		}
 		msgPropose.PeerID = msgBFT.PeerID
@@ -181,7 +185,7 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 		var msgVote BFTVote
 		err := json.Unmarshal(msgBFT.Content, &msgVote)
 		if err != nil {
-			fmt.Println(err)
+			a.logger.Error(err)
 			return
 		}
 		a.voteMessageCh <- msgVote
@@ -364,9 +368,9 @@ func (a *actorV2) run() error {
 					}
 				}
 
-				validProposeBlocks := a.getValidProposeBlocks(bestView)
+				validProposeBlocks := a.getValidProposeBlocks2(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock(bestView, v); err == nil {
+					if err := a.validateBlock2(bestView, v); err == nil {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -1133,7 +1137,6 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	voteMsg.IsValid = 0
 	if b, ok := a.receiveBlockByHash[voteMsg.BlockHash]; ok { //if received block is already initiated
 		if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
-			//TODO: @hung only store vote from known validator?
 			b.votes[voteMsg.Validator] = &voteMsg // store it
 			vid, v := a.getValidatorIndex(b.signingCommittees, voteMsg.Validator)
 			if v != nil {
@@ -1150,7 +1153,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if b.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock(a.chain.GetBestView(), b); err != nil {
+					if err = a.validateBlock2(a.chain.GetBestView(), b); err != nil {
 						err = a.voteValidBlock(b)
 						if err != nil {
 							a.logger.Debug(err)
@@ -1213,6 +1216,33 @@ func (a *actorV2) handleCleanMem() {
 // 2. just validate recently
 // 3. not in current time slot
 // 4. not connect to best view
+func (a *actorV2) getValidProposeBlocks2(bestView multiview.View) []*ProposeBlockInfo {
+	//Check for valid block to vote
+	bestViewHeight := bestView.GetHeight()
+
+	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.consensusValidator.FilterValidProposeBlockInfo(
+		bestViewHeight,
+		a.chain.GetFinalView().GetHeight(),
+		a.currentTimeSlot,
+		a.receiveBlockByHash,
+	)
+
+	for _, invalidProposeBlock := range invalidProposeBlocks {
+		delete(a.receiveBlockByHash, invalidProposeBlock)
+	}
+
+	for _, tryVoteInsertedBlock := range tryVoteInsertedBlocks {
+		if !tryVoteInsertedBlock.isValid {
+			if err := a.validatePreSignBlock(tryVoteInsertedBlock); err != nil {
+				continue
+			}
+		}
+		a.voteValidBlock(tryVoteInsertedBlock)
+	}
+
+	return validProposeBlock
+}
+
 func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	validProposeBlock := []*ProposeBlockInfo{}
@@ -1295,6 +1325,28 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 	return validProposeBlock
 }
 
+func (a *actorV2) validateBlock2(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
+
+	bestViewHeight := bestView.GetHeight()
+	lastVotedBlock, isVoted := a.voteHistory[bestViewHeight+1]
+	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+
+	isValid, err := a.consensusValidator.ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
+	if err != nil {
+		return err
+	}
+
+	if !isValid {
+		a.logger.Debugf("can't vote for this block %v height %v timeslot %v",
+			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blockProduceTimeSlot)
+		return errors.New("can't vote for this block")
+	}
+
+	proposeBlockInfo.isValid = true
+
+	return nil
+}
+
 func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
 
 	proposeBlockInfo.lastValidateTime = time.Now()
@@ -1316,22 +1368,11 @@ func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *Propo
 
 	//already validate and vote for this proposed block
 	if !proposeBlockInfo.isValid {
-		//if _, ok := a.bodyHashes[proposeBlockInfo.block.GetHeight()][proposeBlockInfo.block.BodyHash().String()]; !ok {
-		//	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		//	defer cancel()
-		//
 		a.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
 		if err := a.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittees, proposeBlockInfo.committees); err != nil {
 			a.logger.Error(err)
 			return err
 		}
-
-		// Block is valid for commit
-		//if len(a.bodyHashes[proposeBlockInfo.block.GetHeight()]) == 0 {
-		//	a.bodyHashes[proposeBlockInfo.block.GetHeight()] = make(map[string]bool)
-		//}
-		//a.bodyHashes[proposeBlockInfo.block.GetHeight()][proposeBlockInfo.block.BodyHash().String()] = true
-		//}
 	}
 
 	proposeBlockInfo.isValid = true

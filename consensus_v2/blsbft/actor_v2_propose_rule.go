@@ -8,8 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
 type ProposeMessageEnvironment struct {
@@ -36,29 +34,11 @@ func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropo
 	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID}
 }
 
-type VoteMessageEnvironment struct {
-	userKey           *signatureschemes2.MiningKey
-	signingCommittees []incognitokey.CommitteePublicKey
-	portalParamV4     portalv4.PortalParams
-}
-
-type ProposeRule interface {
-	HandleBFTProposeMessage(*ProposeMessageEnvironment, *BFTPropose) (*ProposeBlockInfo, error)
-	CreateProposeBFTMessage(*SendProposeBlockEnvironment, types.BlockInterface) (*BFTPropose, error)
+type IProposeRule interface {
+	HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error)
+	CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error)
 	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool)
 	HandleCleanMem(finalView uint64)
-}
-
-type ConsensusValidator interface {
-	FilterValidProposeBlockInfo(bestView multiview.MultiView, proposeBlockInfos map[string]*ProposeBlockInfo) []*ProposeBlockInfo
-	ValidateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error
-	ValidateConsensusRules(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) bool
-}
-
-type VoteRule interface {
-	HandleBFTVoteMsg(*BFTVote) error
-	ValidateVote(v *ProposeBlockInfo) *ProposeBlockInfo
-	SendVote(*VoteMessageEnvironment, types.BlockInterface) error
 }
 
 type ProposeRuleLemma1 struct {
