@@ -1413,7 +1413,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					Logger.log.Infof("store init token %v succeeded\n", acceptedContent.TokenID.String())
 				}
 
-			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta:
+			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
+				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {
