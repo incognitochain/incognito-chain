@@ -66,7 +66,7 @@ type ProposeRuleLemma1 struct {
 }
 
 func (p ProposeRuleLemma1) HandleCleanMem(finalView uint64) {
-	panic("implement me")
+	return
 }
 
 func (p ProposeRuleLemma1) HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error) {
@@ -80,13 +80,21 @@ func (p ProposeRuleLemma1) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	}, nil
 }
 
-func (p ProposeRuleLemma1) CreateProposeBFTMessage(environment *SendProposeBlockEnvironment, blockInterface types.BlockInterface) (*BFTPropose, error) {
-	panic("implement me")
-	return nil, nil
+func (p ProposeRuleLemma1) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
+
+	var bftPropose = new(BFTPropose)
+	blockData, _ := json.Marshal(block)
+
+	bftPropose.FinalityProof = *NewFinalityProof()
+	bftPropose.ReProposeHashSignature = ""
+	bftPropose.Block = blockData
+	bftPropose.PeerID = env.peerID
+
+	return bftPropose, nil
 }
 
 func (p ProposeRuleLemma1) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool) {
-	panic("implement me")
+	return NewFinalityProof(), false
 }
 
 type ProposeRuleLemma2 struct {
