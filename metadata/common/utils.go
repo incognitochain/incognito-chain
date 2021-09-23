@@ -76,6 +76,8 @@ func buildMetaInfo() {
 
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
+		IssuingPRVERC20ResponseMeta,
+		IssuingPRVBEP20ResponseMeta,
 		IssuingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -178,6 +180,8 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingETHRequestMeta,
 		IssuingBSCRequestMeta,
+		IssuingPRVERC20RequestMeta,
+		IssuingPRVBEP20RequestMeta,
 		ContractingRequestMeta,
 
 		ShardStakingMeta,
@@ -267,9 +271,13 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingResponseMeta,
 		IssuingETHRequestMeta,
+		IssuingPRVBEP20RequestMeta,
+		IssuingPRVERC20RequestMeta,
 		IssuingBSCRequestMeta,
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
+		IssuingPRVERC20ResponseMeta,
+		IssuingPRVBEP20ResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,

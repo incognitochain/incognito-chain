@@ -45,9 +45,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &IssuingEVMRequest{}
 	case IssuingBSCRequestMeta:
 		md = &IssuingEVMRequest{}
+	case metadataCommon.IssuingPRVERC20RequestMeta:
+		md = &IssuingEVMRequest{}
+	case metadataCommon.IssuingPRVBEP20RequestMeta:
+		md = &IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
 		md = &IssuingEVMResponse{}
 	case IssuingBSCResponseMeta:
+		md = &IssuingEVMResponse{}
+	case metadataCommon.IssuingPRVERC20ResponseMeta:
+		md = &IssuingEVMResponse{}
+	case metadataCommon.IssuingPRVBEP20ResponseMeta:
 		md = &IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
@@ -56,6 +64,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BurningRequestMetaV2:
 		md = &BurningRequest{}
 	case BurningPBSCRequestMeta:
+		md = &BurningRequest{}
+	case metadataCommon.BurningPRVBEP20RequestMeta:
+		md = &BurningRequest{}
+	case metadataCommon.BurningPRVERC20RequestMeta:
 		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}

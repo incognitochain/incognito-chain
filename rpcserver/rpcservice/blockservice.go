@@ -988,6 +988,24 @@ func (blockService BlockService) CheckBSCHashIssued(data map[string]interface{})
 	return issued, err
 }
 
+func (blockService BlockService) CheckPRVPeggingHashIssued(data map[string]interface{}) (bool, error) {
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
+	uniqPRVEVMTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	issued, err := statedb.IsPRVEVMTxHashIssued(bridgeStateDB, uniqPRVEVMTx)
+	return issued, err
+}
+
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
 	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(pdexStateDB, pdePrefix, pdeSuffix)

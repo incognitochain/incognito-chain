@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -87,14 +88,26 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if shardViewRetriever.GetEpoch() >= config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is deprecated", bReq.Type)
 	}
-	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta) {
+	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch &&
+		(bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 ||
+			bReq.Type == BurningPBSCRequestMeta || bReq.Type == metadataCommon.BurningPRVERC20RequestMeta ||
+			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
+
+	if (bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
+		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
+	} else if (bReq.Type != metadataCommon.BurningPRVERC20RequestMeta && bReq.Type != metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
+		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
+	}
+
 	return true, true, nil
 }
 
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta
+	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 ||
+		bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

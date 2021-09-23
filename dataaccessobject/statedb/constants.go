@@ -69,25 +69,28 @@ const (
 	PortalWaitingUnshieldObjectType               = 44
 	PortalProcessedUnshieldRequestBatchObjectType = 45
 
-	// pDex v3
-	Pdexv3StatusObjectType                    = 46
-	Pdexv3ParamsObjectType                    = 47
-	Pdexv3ContributionObjectType              = 48
-	Pdexv3PoolPairObjectType                  = 49
-	Pdexv3ShareObjectType                     = 50
-	Pdexv3NftObjectType                       = 51
-	Pdexv3OrderObjectType                     = 52
-	Pdexv3StakerObjectType                    = 53
-	Pdexv3PoolPairLpFeePerShareObjectType     = 54
-	Pdexv3PoolPairProtocolFeeObjectType       = 55
-	Pdexv3PoolPairStakingPoolFeeObjectType    = 56
-	Pdexv3ShareTradingFeeObjectType           = 57
-	Pdexv3ShareLastLPFeesPerShareObjectType   = 58
-	Pdexv3StakingPoolRewardPerShareObjectType = 59
-	Pdexv3StakerRewardObjectType              = 60
-	Pdexv3StakerLastRewardPerShareObjectType  = 61
+	RewardRequestV3ObjectType = 46
 
-	RewardRequestV3ObjectType = 62
+	// PRV EVM bridge
+	BridgePRVEVMObjectType = 47
+
+	// pDex v3
+	Pdexv3StatusObjectType                    = 48
+	Pdexv3ParamsObjectType                    = 49
+	Pdexv3ContributionObjectType              = 50
+	Pdexv3PoolPairObjectType                  = 51
+	Pdexv3ShareObjectType                     = 52
+	Pdexv3NftObjectType                       = 53
+	Pdexv3OrderObjectType                     = 54
+	Pdexv3StakerObjectType                    = 55
+	Pdexv3PoolPairLpFeePerShareObjectType     = 56
+	Pdexv3PoolPairProtocolFeeObjectType       = 57
+	Pdexv3PoolPairStakingPoolFeeObjectType    = 58
+	Pdexv3ShareTradingFeeObjectType           = 59
+	Pdexv3ShareLastLPFeesPerShareObjectType   = 60
+	Pdexv3StakingPoolRewardPerShareObjectType = 61
+	Pdexv3StakerRewardObjectType              = 62
+	Pdexv3StakerLastRewardPerShareObjectType  = 63
 )
 
 // Prefix length

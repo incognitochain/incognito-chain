@@ -3,12 +3,14 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -39,6 +41,32 @@ func (httpServer *HttpServer) handleGetBSCBurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	confirmMeta := metadata.BurningBSCConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetPRVERC20BurnProof returns a proof of a tx burning prv erc20
+func (httpServer *HttpServer) handleGetPRVERC20BurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadataCommon.BurningPRVERC20ConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetPRVBEP20BurnProof returns a proof of a tx burning prv bep20
+func (httpServer *HttpServer) handleGetPRVBEP20BurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadataCommon.BurningPRVBEP20ConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 

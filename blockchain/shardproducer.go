@@ -445,15 +445,23 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				}
 			case metadata.IssuingETHRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta, false)
 				}
 			case metadata.IssuingBSCRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta, false)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
+				}
+			case metadataCommon.IssuingPRVERC20RequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingPRVERC20ResponseMeta, true)
+				}
+			case metadataCommon.IssuingPRVBEP20RequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingPRVBEP20ResponseMeta, true)
 				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:

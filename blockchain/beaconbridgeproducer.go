@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -62,6 +65,16 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 		case metadata.BurningForDepositToSCRequestMetaV2:
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight, "")
+			newInst = [][]string{burningConfirm}
+
+		case metadataCommon.BurningPRVERC20RequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPRVERC20ConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
+			newInst = [][]string{burningConfirm}
+
+		case metadataCommon.BurningPRVBEP20RequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -128,6 +141,47 @@ func buildBurningConfirmInst(
 		strconv.Itoa(burningMetaType),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(tokenID, 0x00),
+		md.RemoteAddress,
+		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+		txID.String(),
+		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
+		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
+	}, nil
+}
+
+// buildBurningPRVEVMConfirmInst builds on beacon an instruction confirming a tx burning PRV-EVM-token
+func buildBurningPRVEVMConfirmInst(
+	burningMetaType int,
+	inst []string,
+	height uint64,
+	tokenIDStr string,
+) ([]string, error) {
+	BLogger.log.Infof("PRV EVM: Build BurningConfirmInst: %s", inst)
+	// Parse action and get metadata
+	var burningReqAction BurningReqAction
+	err := decodeContent(inst[1], &burningReqAction)
+	if err != nil {
+		return nil, errors.Wrap(err, "PRV EVM: invalid BurningRequest")
+	}
+
+	md := burningReqAction.Meta
+	if md.TokenID.String() != common.PRVIDStr {
+		return nil, errors.New("PRV EVM: invalid PRV token ID")
+	}
+
+	tokenID := rCommon.HexToAddress(tokenIDStr)
+	txID := burningReqAction.RequestedTxID // to prevent double-release token
+	shardID := byte(common.BridgeShardID)
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(md.BurningAmount)
+	// Convert height to big.Int to get bytes later
+	h := big.NewInt(0).SetUint64(height)
+
+	return []string{
+		strconv.Itoa(burningMetaType),
+		strconv.Itoa(int(shardID)),
+		base58.Base58Check{}.Encode(tokenID[:], 0x00),
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),

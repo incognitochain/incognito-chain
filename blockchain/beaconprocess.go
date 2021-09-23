@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -966,6 +967,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningConfirmMetaV2),
 		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
 		strconv.Itoa(metadata.BurningBSCConfirmMeta),
+		strconv.Itoa(metadataCommon.BurningPRVERC20ConfirmMeta),
+		strconv.Itoa(metadataCommon.BurningPRVBEP20ConfirmMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)

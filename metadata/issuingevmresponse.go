@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -18,7 +19,7 @@ type IssuingEVMResponse struct {
 	RequestedTxID   common.Hash `json:"RequestedTxID"`
 	UniqTx          []byte      `json:"UniqETHTx"`
 	ExternalTokenID []byte      `json:"ExternalTokenID"`
-	SharedRandom    []byte `json:"SharedRandom,omitempty"`
+	SharedRandom    []byte      `json:"SharedRandom,omitempty"`
 }
 
 type IssuingEVMResAction struct {
@@ -85,7 +86,8 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		}
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
-			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta)) {
+			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta) &&
+				instMetaType != strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta)) {
 			continue
 		}
 
@@ -94,21 +96,21 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
-		var issuingETHAcceptedInst IssuingEVMAcceptedInst
-		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+		var issuingEVMAcceptedInst IssuingEVMAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 		if err != nil {
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
-		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHAcceptedInst.TxReqID[:]) ||
-			!bytes.Equal(iRes.UniqTx, issuingETHAcceptedInst.UniqTx) ||
-			!bytes.Equal(iRes.ExternalTokenID, issuingETHAcceptedInst.ExternalTokenID) ||
-			shardID != issuingETHAcceptedInst.ShardID {
+		if !bytes.Equal(iRes.RequestedTxID[:], issuingEVMAcceptedInst.TxReqID[:]) ||
+			!bytes.Equal(iRes.UniqTx, issuingEVMAcceptedInst.UniqTx) ||
+			!bytes.Equal(iRes.ExternalTokenID, issuingEVMAcceptedInst.ExternalTokenID) ||
+			shardID != issuingEVMAcceptedInst.ShardID {
 			continue
 		}
 
-		addressStr := issuingETHAcceptedInst.ReceiverAddrStr
+		addressStr := issuingEVMAcceptedInst.ReceiverAddrStr
 		key, err := wallet.Base58CheckDeserialize(addressStr)
 		if err != nil {
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
@@ -116,10 +118,10 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted || coinID.String() != issuingETHAcceptedInst.IncTokenID.String() {
+		if err != nil || !isMinted || coinID.String() != issuingEVMAcceptedInst.IncTokenID.String() {
 			continue
 		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingETHAcceptedInst.IssuingAmount); !ok {
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingEVMAcceptedInst.IssuingAmount); !ok {
 			continue
 		}
 		idx = i
