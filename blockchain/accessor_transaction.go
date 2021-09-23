@@ -614,7 +614,8 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 	// create a map from Hash(TokenID) => TokenID
 	rawAssetTags := make(map[string]*common.Hash)
 	for _, tokenID := range allTokens {
-		rawAssetTags[privacy.HashToPoint(tokenID[:]).String()] = &tokenID
+		clonedTokenID, _ := new(common.Hash).NewHash(tokenID.Bytes())
+		rawAssetTags[privacy.HashToPoint(clonedTokenID[:]).String()] = clonedTokenID
 	}
 
 	res := make(map[string]uint64)
@@ -638,7 +639,7 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("[LALALALA] v2 outCoin %v, %v\n", tokenId, outCoin.GetValue())
+		fmt.Printf("[LALALALA] v2 outCoin %v, %v\n", tokenId.String(), outCoin.GetValue())
 
 		res[tokenId.String()] += outCoin.GetValue()
 	}
