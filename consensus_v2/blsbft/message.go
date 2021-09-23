@@ -15,10 +15,8 @@ const (
 )
 
 type BFTPropose struct {
-	PeerID   string
-	Block    json.RawMessage
-	TimeSlot uint64
-
+	PeerID                 string
+	Block                  json.RawMessage
 	ReProposeHashSignature string
 	FinalityProof          FinalityProof
 }
