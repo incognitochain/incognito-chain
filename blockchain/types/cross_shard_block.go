@@ -404,3 +404,11 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock) bool {
 	finalHash := common.HashH(tmpByte)
 	return Merkle{}.VerifyMerkleRootFromMerklePath(finalHash, block.MerklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }
+
+func (block CrossShardBlock) Type() string {
+	return common.ShardChainKey
+}
+
+func (block CrossShardBlock) BodyHash() common.Hash {
+	return common.Hash{}
+}

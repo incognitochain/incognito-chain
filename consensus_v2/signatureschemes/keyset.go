@@ -2,6 +2,7 @@ package signatureschemes
 
 import (
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
@@ -57,4 +58,11 @@ func (miningKey *MiningKey) BriSignData(
 		return nil, err
 	}
 	return sig, nil
+}
+
+//DeepCopyMiningKeyArray deep coy for an array of mining keys
+func DeepCopyMiningKeyArray(src []MiningKey) []MiningKey {
+	res := make([]MiningKey, len(src))
+	copy(res, src)
+	return res
 }

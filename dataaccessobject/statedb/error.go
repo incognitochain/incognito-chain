@@ -12,6 +12,7 @@ const (
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
+	ErrInvalidCommitteeTermType               = "invalid committee term type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
 	ErrInvalidCommitteeRewardStateType        = "invalid reward receiver state type "
@@ -34,6 +35,7 @@ const (
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
+	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -46,7 +48,6 @@ const (
 	ErrInvalidPortalLockedCollateralStateType    = "invalid portal locked collateral state type"
 	ErrInvalidRewardFeatureStateType             = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
-	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
 	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
 	ErrInvalidPortalV4StatusStateType            = "invalid portal v4 status state type"
@@ -116,6 +117,7 @@ const (
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
+	StoreSyncingValidatorsError
 
 	DeleteBeaconCommitteeError
 	DeleteOneShardCommitteeError
@@ -242,6 +244,10 @@ const (
 	// bsc bridge
 	BridgeInsertBSCTxHashIssuedError
 	IsBSCTxHashIssuedError
+
+	// prv pegging erc20/bep20
+	BridgeInsertPRVEVMTxHashIssuedError
+	IsPRVEVMTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -298,6 +304,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreBlackListProducersError:           {-3013, "Store Black List Producers Error"},
 	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
+	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},
@@ -408,6 +415,10 @@ var ErrCodeMessage = map[int]struct {
 	// bsc bridge
 	BridgeInsertBSCTxHashIssuedError: {-15100, "Bridge Insert BSC Tx Hash Issued Error"},
 	IsBSCTxHashIssuedError:           {-15101, "Is BSC Tx Hash Issued Error"},
+
+	// prv pegging erc20/bep20
+	BridgeInsertPRVEVMTxHashIssuedError: {-15102, "Bridge Insert PRV pegging evm Tx Hash Issued Error"},
+	IsPRVEVMTxHashIssuedError:     {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
