@@ -11,27 +11,29 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
-
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/config"
-
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	configpkg "github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
 
@@ -100,6 +102,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
+
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -134,10 +137,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 func (blockchain *BlockChain) InitChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
+
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
-	blockchain.BeaconChain.committeeCache, err = lru.New(1000)
 	if err != nil {
 		return err
 	}
@@ -150,6 +153,10 @@ func (blockchain *BlockChain) InitChainState() error {
 		}
 	}
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
+
+	finishsync.NewDefaultFinishSyncMsgPool()
+	bestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView.GetSyncingValidatorsString())
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())
@@ -234,15 +241,9 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlock = *genesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
-	var committeeEngine committeestate.ShardCommitteeEngine
+	var shardCommitteeState committeestate.ShardCommitteeState
 
-	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
-		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
-	} else {
-		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
-	}
-
-	initShardState := NewBestStateShardWithConfig(shardID, committeeEngine)
+	initShardState := NewBestStateShardWithConfig(shardID, shardCommitteeState)
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -266,23 +267,9 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 
 func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := genesisBeaconBlock
-	var committeeEngine committeestate.BeaconCommitteeEngine
+	var committeeState committeestate.BeaconCommitteeState
 
-	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
-		assignRule := committeestate.SFV2VersionAssignRule(
-			1,
-			config.Param().ConsensusParam.StakingFlowV2Height,
-			config.Param().ConsensusParam.AssignRuleV3Height)
-		committeeEngine = committeestate.
-			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
-				committeestate.NewBeaconCommitteeStateV2(assignRule))
-	} else {
-		committeeEngine = committeestate.
-			NewBeaconCommitteeEngineV1(
-				1, initBlock.Header.Hash(),
-				committeestate.NewBeaconCommitteeStateV1())
-	}
-	initBeaconBestState := NewBeaconBestStateWithConfig(committeeEngine)
+	initBeaconBestState := NewBeaconBestStateWithConfig(committeeState)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -609,8 +596,12 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
-		if v.NumberOfShardBlock == nil {
+		if v.NumberOfShardBlock == nil || len(v.NumberOfShardBlock) == 0 {
 			v.NumberOfShardBlock = make(map[byte]uint)
+			for i := 0; i < v.ActiveShards; i++ {
+				shardID := byte(i)
+				v.NumberOfShardBlock[shardID] = 0
+			}
 		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
@@ -620,7 +611,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	for _, beaconState := range allViews {
 		if beaconState.missingSignatureCounter == nil {
 			block := beaconState.BestBlock
-			err = initMissingSignatureCounter(blockchain, beaconState, &block)
+			err = beaconState.initMissingSignatureCounter(blockchain, &block)
 			if err != nil {
 				return err
 			}
@@ -666,26 +657,26 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		v.BestBlock = block
-
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
 			panic(err)
 		}
-		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
-			shardCommitteeEngine = InitShardCommitteeEngineV2(
-				v.consensusStateDB,
-				v.ShardHeight, v.ShardID, v.BestBlockHash,
-				block.Header.CommitteeFromBlock, blockchain)
-		} else {
-			shardCommitteeEngine = InitShardCommitteeEngineV1(
-				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+
+		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
+			config.Param().ConsensusParam.StakingFlowV2Height,
+			config.Param().ConsensusParam.StakingFlowV3Height,
+		)
+		v.shardCommitteeState = InitShardCommitteeState(version,
+			v.consensusStateDB,
+			v.ShardHeight, v.ShardID,
+			block, blockchain)
+		err = v.tryUpgradeCommitteeState(blockchain)
+		if err != nil {
+			panic(err)
 		}
-		v.shardCommitteeEngine = shardCommitteeEngine
-		if v.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
-			err := v.upgradeCommitteeEngineV2(blockchain)
-			if err != nil {
-				panic(err)
+		if v.BeaconHeight > config.Param().ConsensusParam.BlockProducingV3Height {
+			if err := v.checkAndUpgradeStakingFlowV3Config(); err != nil {
+				return err
 			}
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
@@ -772,7 +763,7 @@ func (blockchain *BlockChain) GetConfig() *Config {
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
-	return blockchain.config.DataBase[common.BeaconChainDataBaseID]
+	return blockchain.config.DataBase[common.BeaconChainID]
 }
 
 func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database {
@@ -806,8 +797,11 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 
 	// @NOTICE: beaconBestState.NumberOfShardBlock this field is initialized with zero value only
 	// DO NOT use data beaconBestState.NumberOfShardBlock when init from this process
-	beaconView.NumberOfShardBlock = make(map[byte]uint, beaconView.ActiveShards)
-
+	beaconView.NumberOfShardBlock = make(map[byte]uint)
+	for i := 0; i < beaconView.ActiveShards; i++ {
+		shardID := byte(i)
+		beaconView.NumberOfShardBlock[shardID] = 0
+	}
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
 	if err != nil {
 		Logger.log.Error(err)
@@ -1011,7 +1005,77 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 	}
 }
 
-func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
+func (blockchain *BlockChain) getShardCommitteeFromBeaconHash(
+	hash common.Hash, shardID byte,
+) (
+	[]incognitokey.CommitteePublicKey, error,
+) {
+	committees, err := blockchain.getShardCommitteeForBlockProducing(hash, shardID)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, err
+	}
+	return committees, nil
+}
+
+func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
+	hash common.Hash, shardID byte,
+) ([]incognitokey.CommitteePublicKey, error) {
+	committees := []incognitokey.CommitteePublicKey{}
+	res, has := blockchain.BeaconChain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
+	if !has {
+		bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), hash)
+		if err != nil {
+			return committees, err
+		}
+
+		stateDB, err := statedb.NewWithPrefixTrie(
+			bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+		if err != nil {
+			return committees, err
+		}
+		committees = statedb.GetOneShardCommittee(stateDB, shardID)
+
+		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
+	} else {
+		committees = res.([]incognitokey.CommitteePublicKey)
+	}
+
+	return committees, nil
+}
+
+// AddFinishedSyncValidators add finishedSyncValidators from message to all current beacon views
+func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []string, signatures [][]byte, shardID byte) {
+	validCommitteePublicKeys := verifyFinishedSyncValidatorsSign(committeePublicKeys, signatures)
+	bestView := blockchain.BeaconChain.multiView.GetBestView().(*BeaconBestState)
+	syncPool, _ := incognitokey.CommitteeKeyListToString(bestView.beaconCommitteeState.GetSyncingValidators()[shardID])
+	finishsync.DefaultFinishSyncMsgPool.AddFinishedSyncValidators(
+		validCommitteePublicKeys,
+		syncPool,
+		shardID,
+	)
+
+}
+
+func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [][]byte) []string {
+	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	validFinishedSyncValidators := []string{}
+	for i, key := range committeePublicKeyStructs {
+		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], []byte(wire.CmdMsgFinishSync), signatures[i])
+		if err != nil {
+			Logger.log.Errorf("Verify finish Sync Validator Sign failed, err", committeePublicKeys[i], signatures[i], err)
+			continue
+		}
+		if !isValid {
+			Logger.log.Errorf("Verify finish Sync Validator Sign failed", committeePublicKeys[i], signatures[i])
+			continue
+		}
+		validFinishedSyncValidators = append(validFinishedSyncValidators, committeePublicKeys[i])
+	}
+
+	return validFinishedSyncValidators
+}
+
+func (bc *BlockChain) GetAllCommitteeStakeInfo(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
@@ -1032,7 +1096,7 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*
 	return statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, allCommitteeState), nil
 }
 
-func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][]*statedb.StakerInfoV2, error) {
+func (bc *BlockChain) GetAllCommitteeStakeInfoSlashingVersion(epoch uint64) (map[int][]*statedb.StakerInfoSlashingVersion, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
@@ -1045,12 +1109,12 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpochV2(epoch uint64) (map[int][
 	}
 	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
 		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
-			return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, result), nil
+			return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, result), nil
 		}
 	}
 	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
 	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
-	return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, allCommitteeState), nil
+	return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, allCommitteeState), nil
 }
 
 func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {

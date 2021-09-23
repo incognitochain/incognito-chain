@@ -319,4 +319,3 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 
 	return true, nil
 }
-

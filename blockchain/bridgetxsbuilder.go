@@ -132,6 +132,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	contractAddress string,
 	prefix string,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
+	isPRV bool,
 ) ([][]string, []byte, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
@@ -189,28 +190,31 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return append(instructions, rejectedInst), nil, nil
 	}
 	token := append([]byte(prefix), tokenAddr.Bytes()...)
-	canProcess, err := ac.CanProcessTokenPair(token, md.IncTokenID)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)
-		return append(instructions, rejectedInst), nil, nil
-	}
-	if !canProcess {
-		Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
-		return append(instructions, rejectedInst), nil, nil
-	}
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
-	if err != nil {
-		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
-		return append(instructions, rejectedInst), nil, nil
-	}
-	isValid, err := statedb.CanProcessTokenPair(stateDB, token, md.IncTokenID, privacyTokenExisted)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
-		return append(instructions, rejectedInst), nil, nil
-	}
-	if !isValid {
-		Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
-		return append(instructions, rejectedInst), nil, nil
+	// handle case not native token.
+	if !isPRV {
+		canProcess, err := ac.CanProcessTokenPair(token, md.IncTokenID)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		if !canProcess {
+			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
+			return append(instructions, rejectedInst), nil, nil
+		}
+		privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
+		if err != nil {
+			Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		isValid, err := statedb.CanProcessTokenPair(stateDB, token, md.IncTokenID, privacyTokenExisted)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		if !isValid {
+			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
+			return append(instructions, rejectedInst), nil, nil
+		}
 	}
 
 	addressStr, ok := logMap["incognitoAddress"].(string)
@@ -299,8 +303,8 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 		return nil, errors.New("cannot issue prv in bridge")
 	}
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
-	makeMD := func (c privacy.Coin) metadata.Metadata{
-		if c!=nil && c.GetSharedRandom()!=nil{
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
 			issuingRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
 		return issuingRes
@@ -315,6 +319,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	shardView *ShardBestState,
 	featureStateDB *statedb.StateDB,
 	metatype int,
+	isPeggedPRV bool,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -335,7 +340,6 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 	key, err := wallet.Base58CheckDeserialize(issuingEVMAcceptedInst.ReceiverAddrStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occurs while deserialize receiver address string: ", err)
 		Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
 		return nil, nil
 	}
@@ -351,13 +355,13 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		metatype,
 	)
 	tokenID := issuingEVMAcceptedInst.IncTokenID
-	if tokenID == common.PRVCoinID {
+	if !isPeggedPRV && tokenID == common.PRVCoinID {
 		Logger.log.Errorf("cannot issue prv in bridge")
 		return nil, errors.New("cannot issue prv in bridge")
 	}
 
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
-	makeMD := func (c privacy.Coin) metadata.Metadata {
+	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {
 			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}

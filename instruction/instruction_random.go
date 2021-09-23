@@ -7,14 +7,15 @@ import (
 
 //Random Instruction which get nonce from bitcoin block
 type RandomInstruction struct {
-	BtcNonce       int64
-	BtcBlockHeight int
-	CheckPointTime int64
-	BtcBlockTime   int64
+	randomNumber int64
 }
 
-func NewRandomInstructionWithValue(btcNonce int64, btcBlockHeight int, checkPointTime int64, btcBlockTime int64) *RandomInstruction {
-	return &RandomInstruction{BtcNonce: btcNonce, BtcBlockHeight: btcBlockHeight, CheckPointTime: checkPointTime, BtcBlockTime: btcBlockTime}
+func (s *RandomInstruction) RandomNumber() int64 {
+	return s.randomNumber
+}
+
+func NewRandomInstructionWithValue(btcNonce int64) *RandomInstruction {
+	return &RandomInstruction{randomNumber: btcNonce}
 }
 
 func NewRandomInstruction() *RandomInstruction {
@@ -26,33 +27,13 @@ func (s *RandomInstruction) GetType() string {
 	return RANDOM_ACTION
 }
 
-func (s *RandomInstruction) SetNonce(n int64) *RandomInstruction {
-	s.BtcNonce = n
-	return s
-}
-
-func (s *RandomInstruction) SetBtcBlockHeight(n int) *RandomInstruction {
-	s.BtcBlockHeight = n
-	return s
-}
-
-func (s *RandomInstruction) SetBtcBlockTime(n int64) *RandomInstruction {
-	s.BtcBlockTime = n
-	return s
-}
-
-func (s *RandomInstruction) SetCheckPointTime(n int64) *RandomInstruction {
-	s.CheckPointTime = n
-	return s
-}
-
 func (s *RandomInstruction) ToString() []string {
 	strs := []string{}
 	strs = append(strs, RANDOM_ACTION)
-	strs = append(strs, strconv.FormatInt(s.BtcNonce, 10))
-	strs = append(strs, strconv.Itoa(s.BtcBlockHeight))
-	strs = append(strs, strconv.FormatInt(s.CheckPointTime, 10))
-	strs = append(strs, strconv.FormatInt(s.BtcBlockTime, 10))
+	strs = append(strs, strconv.FormatInt(s.randomNumber, 10))
+	strs = append(strs, "")
+	strs = append(strs, "")
+	strs = append(strs, "")
 	return strs
 }
 
@@ -66,10 +47,7 @@ func ValidateAndImportRandomInstructionFromString(instruction []string) (*Random
 // ImportRandomInstructionFromString is unsafe method
 func ImportRandomInstructionFromString(instruction []string) *RandomInstruction {
 	btcNonce, _ := strconv.ParseInt(instruction[1], 10, 64)
-	btcBlockHeight, _ := strconv.ParseInt(instruction[2], 10, 64)
-	checkPointTime, _ := strconv.ParseInt(instruction[3], 10, 64)
-	btcTimeStamp, _ := strconv.ParseInt(instruction[4], 10, 64)
-	r := NewRandomInstructionWithValue(btcNonce, int(btcBlockHeight), checkPointTime, btcTimeStamp)
+	r := NewRandomInstructionWithValue(btcNonce)
 	return r
 }
 

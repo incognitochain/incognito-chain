@@ -57,6 +57,10 @@ var MainnetParam = &param{
 		ConsensusV2Epoch:          3071,
 		StakingFlowV2Height:       1207793,
 		EnableSlashingHeight:      1000000000000,
+		AssignRuleV3Height:        1410217,
+		EnableSlashingHeightV2:    1498517,
+		StakingFlowV3Height:       1e9,
+		BlockProducingV3Height:    1e9,
 		Timeslot:                  40,
 		EpochBreakPointSwapNewKey: []uint64{1917},
 	},
@@ -67,7 +71,7 @@ var MainnetParam = &param{
 	EnableFeatureFlags: map[string]uint64{
 		"PortalRelaying": 1,
 		"PortalV3":       0,
-		"PortalV4":       0,
+		"PortalV4":       4079,
 	},
 	BCHeightBreakPointPortalV3: 10000000,
 	TxPoolVersion:              0,
@@ -135,6 +139,10 @@ var Testnet1Param = &param{
 		ConsensusV2Epoch:          15290,
 		StakingFlowV2Height:       2051863,
 		EnableSlashingHeight:      2087789,
+		AssignRuleV3Height:        3026651,
+		EnableSlashingHeightV2:    3071502,
+		StakingFlowV3Height:       1e9,
+		BlockProducingV3Height:    1e9,
 		Timeslot:                  10,
 		EpochBreakPointSwapNewKey: []uint64{1280},
 	},
@@ -145,7 +153,7 @@ var Testnet1Param = &param{
 	EnableFeatureFlags: map[string]uint64{
 		"PortalRelaying": 1,
 		"PortalV3":       0,
-		"PortalV4":       0,
+		"PortalV4":       1,
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
@@ -213,6 +221,10 @@ var Tesnet2Param = &param{
 		ConsensusV2Epoch:          15290,
 		StakingFlowV2Height:       2051863,
 		EnableSlashingHeight:      2087789,
+		AssignRuleV3Height:        3023215,
+		EnableSlashingHeightV2:    3068072,
+		StakingFlowV3Height:       1e9,
+		BlockProducingV3Height:    1e9,
 		Timeslot:                  10,
 		EpochBreakPointSwapNewKey: []uint64{1280},
 	},
@@ -223,7 +235,7 @@ var Tesnet2Param = &param{
 	EnableFeatureFlags: map[string]uint64{
 		"PortalRelaying": 1,
 		"PortalV3":       0,
-		"PortalV4":       0,
+		"PortalV4":       30225,
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
@@ -292,6 +304,9 @@ var LocalParam = &param{
 		StakingFlowV2Height:       2051863,
 		EnableSlashingHeight:      2087789,
 		EnableSlashingHeightV2:    1e9,
+		AssignRuleV3Height:        1e9,
+		StakingFlowV3Height:       1e9,
+		BlockProducingV3Height:    1e9,
 		Timeslot:                  10,
 		EpochBreakPointSwapNewKey: []uint64{1280},
 	},
@@ -370,7 +385,10 @@ var LocalDCSParam = &param{
 		ConsensusV2Epoch:          1,
 		StakingFlowV2Height:       1,
 		EnableSlashingHeight:      1,
-		EnableSlashingHeightV2:    210,
+		EnableSlashingHeightV2:    1,
+		AssignRuleV3Height:        1,
+		StakingFlowV3Height:       1,
+		BlockProducingV3Height:    1,
 		Timeslot:                  10,
 		EpochBreakPointSwapNewKey: []uint64{1280},
 	},
@@ -381,7 +399,7 @@ var LocalDCSParam = &param{
 	EnableFeatureFlags: map[string]uint64{
 		"PortalRelaying": 1,
 		"PortalV3":       0,
-		"PortalV4":       0,
+		"PortalV4":       30225,
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
@@ -396,35 +414,41 @@ var LocalDCSParam = &param{
 	IsBackup: false,
 }
 
-func NewDefaultParam(network string) *param {
-	var p *param
+func (p *param) LoadKeyByNetwork(network string) {
 	initTx := new(initTx)
 	switch network {
 	case "mainnet":
-		p = MainnetParam
 		p.LoadKey(MainnetKeylist, Mainnetv2Keylist) //if there is keylist file in config folder, this default keylist will be not used
 		initTx.load(MainnetInitTx)                  //if there is init_tx file in config folder, this default init_tx  will be not used
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 	case "testnet-1":
-		p = Testnet1Param
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet1InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-	case "testnet-2":
-		p = Tesnet2Param
+	case "testnet-2", "local":
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet2InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-	case "local":
-		p = LocalParam
-		p.LoadKey(LocalKeylist, Localv2Keylist)
-		initTx.load(LocalInitTx)
-		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 	case "local-dcs":
-		p = LocalDCSParam
-		p.LoadKey(LocalKeylist, Localv2Keylist)
+		p.LoadKey(LocalDCSKeyList, LocalDCSV2Keylist)
 		initTx.load(LocalDCSInitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+	default:
+		panic("Cannot recognize network")
+	}
+}
+
+func NewDefaultParam(network string) *param {
+	var p *param
+	switch network {
+	case "mainnet":
+		p = MainnetParam
+	case "testnet-1":
+		p = Testnet1Param
+	case "testnet-2", "local":
+		p = Tesnet2Param
+	case "local-dcs":
+		p = LocalDCSParam
 	default:
 		panic("Cannot recognize network")
 	}
