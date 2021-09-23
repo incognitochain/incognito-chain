@@ -583,7 +583,6 @@ func (blockchain *BlockChain) GetAllTokenBalancesV1(keySet *incognitokey.KeySet)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("[LALALALA] v1 %v, %v\n", tokenID, balance)
 		res[tokenID.String()] = balance
 	}
 
@@ -626,6 +625,8 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 		return nil, err
 	}
 
+	fmt.Printf("[LALALALA] numOutCoins %v\n", len(decryptedOutCoins))
+
 	// try to get the tokenId of each output coin from its assetTag.
 	for _, outCoin := range decryptedOutCoins {
 		outCoinV2, ok := outCoin.(*privacy.CoinV2)
@@ -637,6 +638,7 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("[LALALALA] v2 outCoin %v, %v\n", tokenId, outCoin.GetValue())
 
 		res[tokenId.String()] += outCoin.GetValue()
 	}

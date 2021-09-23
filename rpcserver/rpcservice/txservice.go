@@ -1805,8 +1805,6 @@ func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string
 	if err != nil {
 		return res, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 	}
-	fmt.Printf("[LALALALA] balanceV1 %v\n", v1Balances)
-	fmt.Printf("[LALALALA] balanceV2 %v\n", v2Balances)
 
 	// add up the balances
 	for tokenID, balance := range v1Balances {
