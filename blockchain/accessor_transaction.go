@@ -583,6 +583,7 @@ func (blockchain *BlockChain) GetAllTokenBalancesV1(keySet *incognitokey.KeySet)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("[LALALALA] v1 %v, %v\n", tokenID, balance)
 		res[tokenID.String()] = balance
 	}
 
