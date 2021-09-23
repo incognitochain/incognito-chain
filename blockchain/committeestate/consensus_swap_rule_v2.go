@@ -149,8 +149,10 @@ func (s *swapRuleV2) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 		minCommitteeSize,
 	)
 
-	if assignPerShard == 0 && lenCommittees-numberOfFixedValidators == 0 {
-		assignPerShard = 1
+	if assignPerShard == 0 {
+		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT_V2 || lenCommittees-numberOfFixedValidators == 0 {
+			assignPerShard = 1
+		}
 	}
 	return assignPerShard
 }
