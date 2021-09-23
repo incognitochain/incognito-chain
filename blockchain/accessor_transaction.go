@@ -614,7 +614,11 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 	// create a map from Hash(TokenID) => TokenID
 	rawAssetTags := make(map[string]*common.Hash)
 	for _, tokenID := range allTokens {
-		rawAssetTags[privacy.HashToPoint(tokenID[:]).String()] = &tokenID
+		clonedTokenID, err := new(common.Hash).NewHash(tokenID[:])
+		if err != nil {
+			return nil, err
+		}
+		rawAssetTags[privacy.HashToPoint(clonedTokenID[:]).String()] = clonedTokenID
 	}
 
 	res := make(map[string]uint64)
