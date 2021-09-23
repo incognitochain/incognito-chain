@@ -1818,10 +1818,11 @@ func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string
 		balances[tokenID] = balanceInfo
 	}
 
-	for _, v := range balances {
+	for tokenID, v := range balances {
 		if v.Amount == 0 {
 			continue
 		}
+		fmt.Printf("[LALALALA] %v, %v\n", tokenID, v)
 		res.ListCustomTokenBalance = append(res.ListCustomTokenBalance, v)
 	}
 	return res, nil
