@@ -1,11 +1,11 @@
 package metadata
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type WithDrawRewardResponse struct {
@@ -64,7 +64,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	unique, requesterRes, amountRes, coinID := tx.GetTransferData()
+	unique, _, _, coinID := tx.GetTransferData()
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
@@ -74,14 +74,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 			return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
 		}
 	}
-	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
-	if (err != nil) || (value == 0) {
-		return false, errors.New("Not enough reward")
-	}
-	if value != amountRes {
-		return false, errors.New("Wrong amounts")
-	}
+
 	return true, nil
 }
 

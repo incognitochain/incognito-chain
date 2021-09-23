@@ -168,10 +168,12 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 			if _, ok = withdrawReqTable[tx.Hash().String()]; !ok {
 				withdrawReqTable[tx.Hash().String()] = md
+			} else {
+				return errors.Errorf("Double withdraw request, tx double %v", tx.Hash().String())
 			}
 		}
 	}
-
+	rewardDB := blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB()
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
@@ -204,8 +206,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 
 			//check amount & receiver
-			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
-				base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), *coinID)
+			receiver := base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version)
+			if len(metaRequest.PaymentAddress.OTAPublic) != 0 {
+				receiver = base58.Base58Check{}.Encode(metaRequest.PaymentAddress.OTAPublic, common.Base58Version)
+			}
+			rewardAmount, err := statedb.GetCommitteeReward(rewardDB, receiver, *coinID)
 			if err != nil {
 				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount")
 			}
