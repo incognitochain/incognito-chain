@@ -58,7 +58,7 @@ func newProposeBlockForProposeMsg(
 }
 
 func newProposeBlockForProposeMsgLemma2(
-	proposeMsg BFTPropose,
+	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittees []incognitokey.CommitteePublicKey,

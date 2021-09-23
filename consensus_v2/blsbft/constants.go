@@ -18,4 +18,5 @@ const (
 const (
 	timeout             = 40 * time.Second       // must be at least twice the time of block interval
 	maxNetworkDelayTime = 150 * time.Millisecond // in ms
+	MAX_FINALITY_PROOF  = 64
 )
