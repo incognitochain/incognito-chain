@@ -21,7 +21,6 @@ import (
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -119,6 +118,9 @@ func newActorV2WithValue(
 	a.consensusValidator = NewConsensusValidator(
 		logger,
 		chain,
+	)
+	a.VoteRule = NewVoteRule(
+		logger,
 	)
 	if err != nil {
 		panic(err) //must not error
@@ -368,9 +370,9 @@ func (a *actorV2) run() error {
 					}
 				}
 
-				validProposeBlocks := a.getValidProposeBlocks2(bestView)
+				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock2(bestView, v); err == nil {
+					if err := a.validateBlock(bestView, v); err == nil {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -427,113 +429,54 @@ func (a *actorV2) getValidatorIndex(committees []incognitokey.CommitteePublicKey
 }
 
 func (a *actorV2) processIfBlockGetEnoughVote(
-	blockHash string, v *ProposeBlockInfo,
+	blockHash string, proposeBlockInfo *ProposeBlockInfo,
 ) {
 	//no vote
-	if v.hasNewVote == false {
+	if proposeBlockInfo.hasNewVote == false {
 		return
 	}
 
 	//no block
-	if v.block == nil {
+	if proposeBlockInfo.block == nil {
 		return
 	}
-	a.logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
 	//already in chain
 	bestView := a.chain.GetBestView()
-	view := a.chain.GetViewByHash(*v.block.Hash())
+	view := a.chain.GetViewByHash(*proposeBlockInfo.block.Hash())
 	if view != nil && bestView.GetHash().String() != view.GetHash().String() {
 		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
 	//not connected previous block
-	view = a.chain.GetViewByHash(v.block.GetPrevHash())
+	view = a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
 	if view == nil {
 		//e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
 
-	v = a.validateVotes(v)
+	proposeBlockInfo = a.VoteRule.ValidateVote(proposeBlockInfo)
 
-	if !v.isCommitted {
-		if v.validVotes > 2*len(v.signingCommittees)/3 {
-			a.logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
+	if !proposeBlockInfo.isCommitted {
+		if proposeBlockInfo.validVotes > 2*len(proposeBlockInfo.signingCommittees)/3 {
+			a.logger.Infof("Commit block %v , height: %v", blockHash, proposeBlockInfo.block.GetHeight())
 			var err error
 			if a.chain.IsBeaconChain() {
-				err = a.processWithEnoughVotesBeaconChain(v)
+				err = a.processWithEnoughVotesBeaconChain(proposeBlockInfo)
 
 			} else {
-				err = a.processWithEnoughVotesShardChain(v)
+				err = a.processWithEnoughVotesShardChain(proposeBlockInfo)
 			}
 			if err != nil {
 				a.logger.Error(err)
 				return
 			}
-			v.isCommitted = true
+			proposeBlockInfo.isCommitted = true
 		}
 	}
 }
 
-func (a *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
-	validVote := 0
-	errVote := 0
-
-	committees := make(map[string]int)
-	if len(v.votes) != 0 {
-		for i, v := range v.signingCommittees {
-			committees[v.GetMiningKeyBase58(common.BlsConsensus)] = i
-		}
-	}
-
-	for id, vote := range v.votes {
-		dsaKey := []byte{}
-		if vote.IsValid == 0 {
-			if value, ok := committees[vote.Validator]; ok {
-				dsaKey = v.signingCommittees[value].MiningPubKey[common.BridgeConsensus]
-			} else {
-				a.logger.Error("Receive vote from nonCommittee member")
-				continue
-			}
-			if len(dsaKey) == 0 {
-				a.logger.Error("canot find dsa key")
-				continue
-			}
-
-			err := vote.validateVoteOwner(dsaKey)
-			if err != nil {
-				a.logger.Error(dsaKey)
-				a.logger.Error(err)
-				v.votes[id].IsValid = -1
-				errVote++
-			} else {
-				v.votes[id].IsValid = 1
-				validVote++
-			}
-		} else {
-			validVote++
-		}
-	}
-
-	a.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
-	v.hasNewVote = false
-	for key, value := range v.votes {
-		if value.IsValid == -1 {
-			delete(v.votes, key)
-		}
-	}
-
-	v.addBlockInfo(
-		v.block,
-		v.committees,
-		v.signingCommittees,
-		v.userKeySet,
-		validVote,
-		errVote,
-	)
-
-	return v
-}
 func (a *actorV2) processWithEnoughVotesBeaconChain(
 	v *ProposeBlockInfo,
 ) error {
@@ -566,7 +509,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 	if previousProposeBlockInfo, ok := a.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
-		previousProposeBlockInfo = a.validateVotes(previousProposeBlockInfo)
+		previousProposeBlockInfo = a.VoteRule.ValidateVote(previousProposeBlockInfo)
 
 		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
 			previousProposeBlockInfo.signingCommittees,
@@ -660,54 +603,6 @@ func (a *actorV2) voteValidBlock(
 	}
 
 	return nil
-}
-
-func createVote(
-	userKey *signatureschemes2.MiningKey,
-	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey,
-	portalParamsV4 portalv4.PortalParams,
-) (*BFTVote, error) {
-	var vote = new(BFTVote)
-	bytelist := []blsmultisig.PublicKey{}
-	selfIdx := 0
-	userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-	for i, v := range committees {
-		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
-			selfIdx = i
-		}
-		bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
-	}
-
-	blsSig, err := userKey.BLSSignData(block.Hash().GetBytes(), selfIdx, bytelist)
-	if err != nil {
-		return nil, NewConsensusError(UnExpectedError, err)
-	}
-	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(block.GetInstructions()) {
-		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes())
-		if err != nil {
-			return nil, NewConsensusError(UnExpectedError, err)
-		}
-	}
-
-	// check and sign on unshielding external tx for Portal v4
-	portalSigs, err := portalprocessv4.CheckAndSignPortalUnshieldExternalTx(userKey.PriKey[common.BridgeConsensus], block.GetInstructions(), portalParamsV4)
-	if err != nil {
-		return nil, NewConsensusError(UnExpectedError, err)
-	}
-
-	vote.BLS = blsSig
-	vote.BRI = bridgeSig
-	vote.PortalSigs = portalSigs
-	vote.BlockHash = block.Hash().String()
-	vote.Validator = userBLSPk
-	vote.PrevBlockHash = block.GetPrevHash().String()
-	err = vote.signVote(userKey)
-	if err != nil {
-		return nil, NewConsensusError(UnExpectedError, err)
-	}
-	return vote, nil
 }
 
 func (a *actorV2) proposeBlock(
@@ -873,32 +768,6 @@ func (a *actorV2) sendBFTProposeMsg(
 	return nil
 }
 
-//func (a *actorV2) sendBFTProposeMsg(
-//	finalityProof *FinalityProof,
-//	reProposeHashSignature string,
-//	isValidRePropose bool,
-//	block types.BlockInterface,
-//) error {
-//
-//	blockData, _ := json.Marshal(block)
-//	var bftPropose = new(BFTPropose)
-//	if block.GetVersion() >= types.BLOCK_PRODUCINGV3_VERSION {
-//		if isValidRePropose {
-//			bftPropose.FinalityProof = *finalityProof
-//		} else {
-//			bftPropose.FinalityProof = *NewFinalityProof()
-//		}
-//		bftPropose.ReProposeHashSignature = reProposeHashSignature
-//	}
-//	bftPropose.Block = blockData
-//	bftPropose.PeerID = a.node.GetSelfPeerID().String()
-//	msg, _ := a.makeBFTProposeMsg(bftPropose, a.chainKey, a.currentTimeSlot)
-//	go a.ProcessBFTMsg(msg.(*wire.MessageBFT))
-//	go a.node.PushMessageToChain(msg, a.chain)
-//
-//	return nil
-//}
-
 func (a *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candidate []byte) error {
 	data := []byte{}
 	data = append(data, blockHash...)
@@ -945,7 +814,12 @@ func (a *actorV2) sendVote(
 	portalParamV4 portalv4.PortalParams,
 ) error {
 
-	Vote, err := createVote(userKey, block, signingCommittees, portalParamV4)
+	env := NewVoteMessageEnvironment(
+		userKey,
+		signingCommittees,
+		portalParamV4,
+	)
+	Vote, err := a.VoteRule.CreateVote(env, block)
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -958,7 +832,6 @@ func (a *actorV2) sendVote(
 	}
 
 	a.voteHistory[block.GetHeight()] = block
-	//a.votedTimeslot[common.CalculateTimeSlot(block.GetProposeTime())] = true
 
 	a.logger.Info(a.chainKey, "sending vote...")
 
@@ -1153,7 +1026,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if b.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock2(a.chain.GetBestView(), b); err != nil {
+					if err = a.validateBlock(a.chain.GetBestView(), b); err != nil {
 						err = a.voteValidBlock(b)
 						if err != nil {
 							a.logger.Debug(err)
@@ -1216,7 +1089,7 @@ func (a *actorV2) handleCleanMem() {
 // 2. just validate recently
 // 3. not in current time slot
 // 4. not connect to best view
-func (a *actorV2) getValidProposeBlocks2(bestView multiview.View) []*ProposeBlockInfo {
+func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	bestViewHeight := bestView.GetHeight()
 
@@ -1243,89 +1116,7 @@ func (a *actorV2) getValidProposeBlocks2(bestView multiview.View) []*ProposeBloc
 	return validProposeBlock
 }
 
-func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
-	//Check for valid block to vote
-	validProposeBlock := []*ProposeBlockInfo{}
-	//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
-	bestViewHeight := bestView.GetHeight()
-	for h, proposeBlockInfo := range a.receiveBlockByHash {
-		if proposeBlockInfo.block == nil {
-			continue
-		}
-
-		//// check if this time slot has been voted
-		//if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
-		//	continue
-		//}
-
-		//special case: if we insert block too quick, before voting
-		//=> vote for this block (within TS,but block is inserted into bestview)
-		//this special case by pass validate with consensus rules
-		if proposeBlockInfo.block.GetHeight() == bestViewHeight && !proposeBlockInfo.isVoted {
-			//already validate and vote for this proposed block
-			if !proposeBlockInfo.isValid {
-				if err := a.validatePreSignBlock(proposeBlockInfo); err != nil {
-					continue
-				}
-			}
-			a.voteValidBlock(proposeBlockInfo)
-			continue
-		}
-
-		//not validate if we do it recently
-		if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
-			continue
-		}
-
-		// check if propose block in within TS
-		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != a.currentTimeSlot {
-			continue
-		}
-
-		//if the block height is not next height or current height
-		if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
-			continue
-		}
-
-		// check if producer time > proposer time
-		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > a.currentTimeSlot {
-			continue
-		}
-
-		// lemma 2
-		if proposeBlockInfo.isValidLemma2Proof {
-			if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
-				a.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
-				continue
-			}
-		}
-		if !proposeBlockInfo.isValidLemma2Proof {
-			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
-				a.logger.Errorf("Block %+v %+v, root hash %+v, previous block hash %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetAggregateRootHash(), proposeBlockInfo.block.GetPrevHash().String(),
-					0, proposeBlockInfo.block.GetFinalityHeight())
-				continue
-			}
-		}
-
-		//TODO @hung continue?
-		if proposeBlockInfo.block.GetHeight() < a.chain.GetFinalView().GetHeight() {
-			//delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
-			delete(a.receiveBlockByHash, h)
-		}
-
-		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
-	}
-	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
-	sort.Slice(validProposeBlock, func(i, j int) bool {
-		return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
-	})
-	return validProposeBlock
-}
-
-func (a *actorV2) validateBlock2(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
+func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
 
 	bestViewHeight := bestView.GetHeight()
 	lastVotedBlock, isVoted := a.voteHistory[bestViewHeight+1]
@@ -1345,61 +1136,6 @@ func (a *actorV2) validateBlock2(bestView multiview.View, proposeBlockInfo *Prop
 	proposeBlockInfo.isValid = true
 
 	return nil
-}
-
-func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
-
-	proposeBlockInfo.lastValidateTime = time.Now()
-
-	bestViewHeight := bestView.GetHeight()
-	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
-
-	shouldVote := a.validateConsensusRules(bestViewHeight, proposeBlockInfo)
-
-	if !shouldVote {
-		a.logger.Debugf("Can't vote for this block %v height %v timeslot %v",
-			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
-		return errors.New("Can't vote for this block")
-	}
-
-	if proposeBlockInfo.isVoted {
-		return nil
-	}
-
-	//already validate and vote for this proposed block
-	if !proposeBlockInfo.isValid {
-		a.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
-		if err := a.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittees, proposeBlockInfo.committees); err != nil {
-			a.logger.Error(err)
-			return err
-		}
-	}
-
-	proposeBlockInfo.isValid = true
-
-	return nil
-}
-
-//validateConsensusRules validate block, block is valid when one of these conditions hold
-// 1. block connect to best view (== bestViewHeight + 1) and first time receive this height
-// 2. blockHeight = lastVoteBlockHeight && blockCreationTime < lastVoteBlockCreationTime
-// 3. blockCreationTime = lastVoteBlockCreationTime && blockProposeTime > lastVoteBlockProposeTime
-// 4. block has new committees (assign from beacon) than lastVoteBlock
-func (a *actorV2) validateConsensusRules(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) bool {
-	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
-	if lastVotedBlk, ok := a.voteHistory[bestViewHeight+1]; ok {
-		if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
-			return true
-		} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
-			return true
-		} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
-			return true
-		} // if not swap committees => do nothing
-	} else { //there is no vote for this height yet
-		return true
-	}
-
-	return false
 }
 
 func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error {
@@ -1509,6 +1245,228 @@ func ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocess
 	return valData.PortalSig, nil
 }
 
+//func (a *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
+//	validVote := 0
+//	errVote := 0
+//
+//	committees := make(map[string]int)
+//	if len(v.votes) != 0 {
+//		for i, v := range v.signingCommittees {
+//			committees[v.GetMiningKeyBase58(common.BlsConsensus)] = i
+//		}
+//	}
+//
+//	for id, vote := range v.votes {
+//		dsaKey := []byte{}
+//		if vote.IsValid == 0 {
+//			if value, ok := committees[vote.Validator]; ok {
+//				dsaKey = v.signingCommittees[value].MiningPubKey[common.BridgeConsensus]
+//			} else {
+//				a.logger.Error("Receive vote from nonCommittee member")
+//				continue
+//			}
+//			if len(dsaKey) == 0 {
+//				a.logger.Error("canot find dsa key")
+//				continue
+//			}
+//
+//			err := vote.validateVoteOwner(dsaKey)
+//			if err != nil {
+//				a.logger.Error(dsaKey)
+//				a.logger.Error(err)
+//				v.votes[id].IsValid = -1
+//				errVote++
+//			} else {
+//				v.votes[id].IsValid = 1
+//				validVote++
+//			}
+//		} else {
+//			validVote++
+//		}
+//	}
+//
+//	a.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
+//	v.hasNewVote = false
+//	for key, value := range v.votes {
+//		if value.IsValid == -1 {
+//			delete(v.votes, key)
+//		}
+//	}
+//
+//	v.addBlockInfo(
+//		v.block,
+//		v.committees,
+//		v.signingCommittees,
+//		v.userKeySet,
+//		validVote,
+//		errVote,
+//	)
+//
+//	return v
+//}
+//
+//func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
+//	//Check for valid block to vote
+//	validProposeBlock := []*ProposeBlockInfo{}
+//	//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
+//	bestViewHeight := bestView.GetHeight()
+//	for h, proposeBlockInfo := range a.receiveBlockByHash {
+//		if proposeBlockInfo.block == nil {
+//			continue
+//		}
+//
+//		//// check if this time slot has been voted
+//		//if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
+//		//	continue
+//		//}
+//
+//		//special case: if we insert block too quick, before voting
+//		//=> vote for this block (within TS,but block is inserted into bestview)
+//		//this special case by pass validate with consensus rules
+//		if proposeBlockInfo.block.GetHeight() == bestViewHeight && !proposeBlockInfo.isVoted {
+//			//already validate and vote for this proposed block
+//			if !proposeBlockInfo.isValid {
+//				if err := a.validatePreSignBlock(proposeBlockInfo); err != nil {
+//					continue
+//				}
+//			}
+//			a.voteValidBlock(proposeBlockInfo)
+//			continue
+//		}
+//
+//		//not validate if we do it recently
+//		if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
+//			continue
+//		}
+//
+//		// check if propose block in within TS
+//		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != a.currentTimeSlot {
+//			continue
+//		}
+//
+//		//if the block height is not next height or current height
+//		if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
+//			continue
+//		}
+//
+//		// check if producer time > proposer time
+//		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > a.currentTimeSlot {
+//			continue
+//		}
+//
+//		// lemma 2
+//		if proposeBlockInfo.isValidLemma2Proof {
+//			if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
+//				a.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
+//					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
+//					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
+//				continue
+//			}
+//		}
+//		if !proposeBlockInfo.isValidLemma2Proof {
+//			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
+//				a.logger.Errorf("Block %+v %+v, root hash %+v, previous block hash %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
+//					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetAggregateRootHash(), proposeBlockInfo.block.GetPrevHash().String(),
+//					0, proposeBlockInfo.block.GetFinalityHeight())
+//				continue
+//			}
+//		}
+//
+//		//TODO @hung continue?
+//		if proposeBlockInfo.block.GetHeight() < a.chain.GetFinalView().GetHeight() {
+//			//delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
+//			delete(a.receiveBlockByHash, h)
+//		}
+//
+//		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+//	}
+//	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
+//	sort.Slice(validProposeBlock, func(i, j int) bool {
+//		return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
+//	})
+//	return validProposeBlock
+//}
+//
+//func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
+//
+//	proposeBlockInfo.lastValidateTime = time.Now()
+//
+//	bestViewHeight := bestView.GetHeight()
+//	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+//
+//	shouldVote := a.validateConsensusRules(bestViewHeight, proposeBlockInfo)
+//
+//	if !shouldVote {
+//		a.logger.Debugf("Can't vote for this block %v height %v timeslot %v",
+//			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
+//		return errors.New("Can't vote for this block")
+//	}
+//
+//	if proposeBlockInfo.isVoted {
+//		return nil
+//	}
+//
+//	//already validate and vote for this proposed block
+//	if !proposeBlockInfo.isValid {
+//		a.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
+//		if err := a.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittees, proposeBlockInfo.committees); err != nil {
+//			a.logger.Error(err)
+//			return err
+//		}
+//	}
+//
+//	proposeBlockInfo.isValid = true
+//
+//	return nil
+//}
+
+////validateConsensusRules validate block, block is valid when one of these conditions hold
+//// 1. block connect to best view (== bestViewHeight + 1) and first time receive this height
+//// 2. blockHeight = lastVoteBlockHeight && blockCreationTime < lastVoteBlockCreationTime
+//// 3. blockCreationTime = lastVoteBlockCreationTime && blockProposeTime > lastVoteBlockProposeTime
+//// 4. block has new committees (assign from beacon) than lastVoteBlock
+//func (a *actorV2) validateConsensusRules(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) bool {
+//	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+//	if lastVotedBlk, ok := a.voteHistory[bestViewHeight+1]; ok {
+//		if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
+//			return true
+//		} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
+//			return true
+//		} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
+//			return true
+//		} // if not swap committees => do nothing
+//	} else { //there is no vote for this height yet
+//		return true
+//	}
+//
+//	return false
+//}
+
+//func (a *actorV2) sendBFTProposeMsg(
+//	finalityProof *FinalityProof,
+//	reProposeHashSignature string,
+//	isValidRePropose bool,
+//	block types.BlockInterface,
+//) error {
+//
+//	blockData, _ := json.Marshal(block)
+//	var bftPropose = new(BFTPropose)
+//	if block.GetVersion() >= types.BLOCK_PRODUCINGV3_VERSION {
+//		if isValidRePropose {
+//			bftPropose.FinalityProof = *finalityProof
+//		} else {
+//			bftPropose.FinalityProof = *NewFinalityProof()
+//		}
+//		bftPropose.ReProposeHashSignature = reProposeHashSignature
+//	}
+//	bftPropose.Block = blockData
+//	bftPropose.PeerID = a.node.GetSelfPeerID().String()
+//	msg, _ := a.makeBFTProposeMsg(bftPropose, a.chainKey, a.currentTimeSlot)
+//	go a.ProcessBFTMsg(msg.(*wire.MessageBFT))
+//	go a.node.PushMessageToChain(msg, a.chain)
+//
+//	return nil
+//}
 //func (a *actorV2) getValidFinalityProof(block types.BlockInterface) (*FinalityProof, bool) {
 //
 //	if block == nil {
