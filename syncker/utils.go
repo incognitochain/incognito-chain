@@ -4,11 +4,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 const RUNNING_SYNC = "running_sync"
@@ -20,44 +19,36 @@ func isNil(v interface{}) bool {
 func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
 
-	containSwap := func(inst [][]string) bool {
-		for _, inst := range inst {
-			if inst[0] == instruction.SWAP_ACTION {
+	validatorRootHashChange := func(blk interface{}) bool {
+		switch blk.(type) {
+		case *types.BeaconBlock:
+			header := blk.(*types.BeaconBlock).Header
+			bestHeader := chain.GetBestView().GetBlock().(*types.BeaconBlock).Header
+			if header.ShardCandidateRoot != bestHeader.ShardCandidateRoot || header.ShardCommitteeAndValidatorRoot != header.ShardCommitteeAndValidatorRoot ||
+				header.BeaconCommitteeAndValidatorRoot != bestHeader.BeaconCommitteeAndValidatorRoot || header.BeaconCandidateRoot != bestHeader.BeaconCandidateRoot {
+				return true
+			}
+		case *types.ShardBlock:
+			header := blk.(*types.ShardBlock).Header
+			bestHeader := chain.GetBestView().GetBlock().(*types.ShardBlock).Header
+			if header.CommitteeRoot != bestHeader.CommitteeRoot || header.PendingValidatorRoot != header.PendingValidatorRoot {
 				return true
 			}
 		}
 		return false
 	}
 
+	//if validator root hash change -> break into chunks
 	for i, v := range blocks {
-		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-			shouldBreak := false
-			switch v.(type) {
-			case *types.BeaconBlock:
-				// do nothing, beacon committee assume not change
-				//if v.GetCurrentEpoch() == curEpoch+1 {
-				//	sameCommitteeBlock = blocks[:i+1]
-				//	break
-				//}
-			case *types.ShardBlock:
-				//if block contain swap inst,
-				if containSwap(v.(*types.ShardBlock).Body.Instructions) {
-					sameCommitteeBlock = blocks[:i+1]
-					shouldBreak = true
-				}
+		if validatorRootHashChange(v) {
+			if i == 0 {
+				sameCommitteeBlock = blocks[:1]
+			} else {
+				sameCommitteeBlock = blocks[:i]
 			}
-			if shouldBreak {
-				break
-			}
-		} else {
-			//TODO: Checking committees for beacon when release beacon
-			if i != len(blocks)-1 {
-				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
-					sameCommitteeBlock = blocks[:i+1]
-					break
-				}
-			}
+			break
 		}
+
 	}
 
 	//check block height is sequential
