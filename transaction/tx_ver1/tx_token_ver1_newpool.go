@@ -44,6 +44,7 @@ func (tx *TxToken) initEnv() metadata.ValidationEnviroment {
 		txNormalValEnv = tx_generic.WithNoPrivacy(txNormalValEnv)
 	}
 	txNormalValEnv = tx_generic.WithTokenID(txNormalValEnv, txTokenData.PropertyID)
+	txNormalValEnv = tx_generic.WithSigPubkey(txNormalValEnv, txTokenData.TxNormal.GetSigPubKey())
 	tx.GetTxTokenData().TxNormal.SetValidationEnv(txNormalValEnv)
 	return valEnv
 }
