@@ -55,10 +55,11 @@ func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("%v not found in %v", "shardID", paramList))
 	}
-	shardID, ok := shardIDInterface.(byte)
+	shardIDTmp, ok := shardIDInterface.(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse shardID, %v is not a byte", shardIDInterface))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse shardID, %v is not a fload64", shardIDInterface))
 	}
+	shardID := byte(shardIDTmp)
 	if shardID >= byte(common.MaxShardNumber) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid shardID %v", shardID))
 	}
