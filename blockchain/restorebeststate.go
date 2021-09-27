@@ -38,6 +38,19 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 				return err
 			}
 		}
+
+		if beaconBestState.BeaconHeight == 1498700 {
+			beaconBestState.NumberOfShardBlock = map[byte]uint{
+				0: 346,
+				1: 346,
+				2: 346,
+				3: 346,
+				4: 346,
+				5: 346,
+				6: 346,
+				7: 346,
+			}
+		}
 	}
 
 	return nil
