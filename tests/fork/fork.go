@@ -14,12 +14,26 @@ type forkAction struct {
 var forkMap = make(map[string]*forkAction)
 
 /*/
-Example fork beacon: at the end of creating new beacon block, insert :
-if fork.ForkBeaconWithInstruction("forkBSC", blockchain.BeaconChain.multiView, "250", curView.BestBlock, *newBeaconBlock, 4) {
-	return nil, errors.New("simulate forkBSC")
-}
+Example fork beacon: when handle propose block, add these block of code :
+if a.chain.IsBeaconChain() {
+		stateRes := fork.ForkBeaconWithInstruction("forkBSC", a.chain.GetMultiView(), "250", a.chain.GetBestView().GetBlock().(*types.BeaconBlock), blockInfo.(*types.BeaconBlock), 4)
+		//within fork TS
+		if stateRes == 0 {
+			return errors.New("simulate forkBSC")
+		}
+		//end fork TS -. reset bft + multiview
+		if stateRes == 1 {
+			a.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
+			a.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
+			a.voteHistory = make(map[uint64]types.BlockInterface)
+			a.proposeHistory, err = lru.New(1000)
+			a.chain.GetMultiView().ClearBranch()
+			return errors.New("simulate forkBSC")
+		}
+
+	}
 */
-func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType string, blk types.BeaconBlock, newBlock types.BeaconBlock, delayTS uint64) bool {
+func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType string, blk *types.BeaconBlock, newBlock *types.BeaconBlock, delayTS uint64) int {
 	instruction := blk.GetInstructions()
 	for _, v := range instruction {
 		if v[0] == instType {
@@ -33,15 +47,15 @@ func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType stri
 
 			currentDelayTs := (uint64(newBlock.GetProposeTime()) - uint64(blk.GetProposeTime())) / common.TIMESLOT
 			if currentDelayTs < fa.delayTS {
-				return true
+				return 0
 			}
 			if currentDelayTs == fa.delayTS {
 				fa.multiView.ClearBranch()
-				return true
+				return 1
 			}
 			// > delayTS, donothing
-			return false
+			return -1
 		}
 	}
-	return false
+	return -1
 }

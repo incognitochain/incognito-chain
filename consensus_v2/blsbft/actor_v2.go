@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+	"github.com/incognitochain/incognito-chain/tests/fork"
 	"reflect"
 	"sort"
 	"time"
@@ -938,6 +939,29 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 
 func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
+	if a.chain.IsBeaconChain() {
+		stateRes := fork.ForkBeaconWithInstruction("forkBSC", a.chain.GetMultiView(), "250", a.chain.GetBestView().GetBlock().(*types.BeaconBlock), blockInfo.(*types.BeaconBlock), 4)
+
+		//within fork TS
+		if stateRes == 0 {
+			fmt.Println("debugfork: simulate forkBSC", stateRes)
+			return errors.New("simulate forkBSC")
+		}
+
+		//end fork TS -. reset bft + multiview
+		if stateRes == 1 {
+			fmt.Println("debugfork: simulate forkBSC", stateRes)
+			a.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
+			a.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
+			a.voteHistory = make(map[uint64]types.BlockInterface)
+			a.proposeHistory, err = lru.New(1000)
+			a.chain.GetMultiView().ClearBranch()
+			return errors.New("simulate forkBSC")
+		}
+
+		fmt.Println("debugfork: no fork")
+	}
+
 	if err != nil || blockInfo == nil {
 		a.logger.Debug(err)
 		return err
