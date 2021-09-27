@@ -124,12 +124,12 @@ func (tx *TxToken) LoadData(
 	}
 
 	tmpProof := embededTx.GetProof()
-	prf, ok := tmpProof.(*privacy.ProofV1)
-	if !ok {
-		return fmt.Errorf("cannot cast payment proof v1")
-	}
 
-	if prf != nil {
+	if tmpProof != nil {
+		prf, ok := tmpProof.(*privacy.ProofV1)
+		if !ok {
+			return fmt.Errorf("cannot cast payment proof v1")
+		}
 		if embededTx.GetValidationEnv().IsPrivacy() {
 			txEnv := embededTx.GetValidationEnv()
 			// tokenID := embededTx.GetTokenID()
@@ -168,12 +168,12 @@ func (tx *TxToken) LoadData(
 	}
 
 	tmpProof = normalTx.GetProof()
-	prf, ok = tmpProof.(*privacy.ProofV1)
-	if !ok {
-		return fmt.Errorf("cannot cast payment proof v1")
-	}
 
-	if prf != nil {
+	if tmpProof != nil {
+		prf, ok := tmpProof.(*privacy.ProofV1)
+		if !ok {
+			return fmt.Errorf("cannot cast payment proof v1")
+		}
 		if normalTx.GetValidationEnv().IsPrivacy() {
 			txEnv := normalTx.GetValidationEnv()
 			data, err := prf.LoadDataFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
