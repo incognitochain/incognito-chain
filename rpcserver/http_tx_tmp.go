@@ -26,14 +26,14 @@ func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{
 	}
 	decoyInterface, ok := paramList[decoyKey].([]interface{})
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse public keys, not a []interface{}: %v", paramList[decoyKey]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse decoys, not a []interface{}: %v", paramList[decoyKey]))
 	}
 	decoys := make([]uint64, 0)
 	for _, pk := range decoyInterface {
-		if tmp, ok := pk.(uint64); !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse public keys, %v is not a string", pk))
+		if tmp, ok := pk.(float64); !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse decoys, %v is not a float64", pk))
 		} else {
-			decoys = append(decoys, tmp)
+			decoys = append(decoys, uint64(tmp))
 		}
 	}
 
