@@ -842,6 +842,18 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
 
+	// @NOTICE: only try to init number of shard block if they are empty
+	tryInitNumberOfShardBlock := true
+	if tempBeaconHeight > firstBeaconHeightOfEpoch {
+		for _, numberOfShardBlock := range beaconBestState.NumberOfShardBlock {
+			if numberOfShardBlock > 0 {
+				tryInitNumberOfShardBlock = false
+			}
+		}
+	} else {
+		tryInitNumberOfShardBlock = false
+	}
+
 	for tempBeaconHeight >= firstBeaconHeightOfEpoch {
 		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
 			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
@@ -852,6 +864,12 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 		previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return err
+		}
+		if tryInitNumberOfShardBlock && tempBeaconHeight > firstBeaconHeightOfEpoch {
+			for shardID, shardStates := range beaconBlock.Body.ShardState {
+				beaconBestState.NumberOfShardBlock[shardID] = beaconBestState.NumberOfShardBlock[shardID] + uint(len(shardStates))
+			}
+
 		}
 		tempBeaconBlock = previousBeaconBlock
 		tempBeaconHeight--
