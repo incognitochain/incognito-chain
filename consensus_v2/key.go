@@ -2,24 +2,21 @@ package consensus_v2
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 func GetMiningKeyFromPrivateSeed(privateSeed string) (*signatureschemes2.MiningKey, error) {
@@ -122,8 +119,12 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	return engine.currentMiningProcess.ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
 
-func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
-
+func (engine *Engine) ValidateProducerPosition(
+	blk types.BlockInterface,
+	lastProposerIdx int,
+	committee []incognitokey.CommitteePublicKey,
+	lenProposers int,
+) error {
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == types.BFT_VERSION {
@@ -138,7 +139,7 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		//validate producer
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
-		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), minCommitteeSize)
+		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), lenProposers)
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
@@ -148,7 +149,7 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		//validate proposer
 		proposer := blk.GetProposer()
 		proposeTime := blk.GetProposeTime()
-		tempProducerID = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), minCommitteeSize)
+		tempProducerID = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), lenProposers)
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, proposer) != 0 {
@@ -161,20 +162,14 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 
 func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
 	if block.GetVersion() == types.BFT_VERSION {
-		return blsbft.ValidateProducerSig(block)
-	} else if block.GetVersion() >= types.MULTI_VIEW_VERSION {
-		return blsbftv2.ValidateProducerSig(block)
+		return blsbft.ValidateProducerSigV1(block)
+	} else {
+		return blsbft.ValidateProducerSigV2(block)
 	}
-	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	if block.GetVersion() == types.BFT_VERSION {
-		return blsbft.ValidateCommitteeSig(block, committee)
-	} else if block.GetVersion() >= types.MULTI_VIEW_VERSION {
-		return blsbftv2.ValidateCommitteeSig(block, committee)
-	}
-	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
+func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+	return blsbft.ValidateCommitteeSig(block, committees)
 }
 
 func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
@@ -186,19 +181,12 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 }
 
 func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
-	if block.GetVersion() == types.BFT_VERSION {
-		return blsbft.ExtractBridgeValidationData(block)
-	} else if block.GetVersion() >= types.MULTI_VIEW_VERSION {
-		return blsbftv2.ExtractBridgeValidationData(block)
-	}
-	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
+	return blsbft.ExtractBridgeValidationData(block)
 }
 
 func (engine *Engine) ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
-	if block.GetVersion() == 2 {
-		return blsbftv2.ExtractPortalV4ValidationData(block)
-	} else if block.GetVersion() == 3 {
-		return blsbftv3.ExtractPortalV4ValidationData(block)
+	if block.GetVersion() >= 2 {
+		return blsbft.ExtractPortalV4ValidationData(block)
 	}
 	return nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
