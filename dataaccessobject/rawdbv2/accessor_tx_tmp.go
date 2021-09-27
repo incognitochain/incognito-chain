@@ -14,7 +14,9 @@ func GetStoreTxDecoyPrefix(tokenId common.Hash, otaIdx uint64) []byte {
 	temp = append(temp, tokenId.Bytes()...)
 
 	idxBig := new(big.Int).SetUint64(otaIdx)
-	return append(temp, idxBig.Bytes()...)
+	temp = append(temp, idxBig.Bytes()...)
+	hash := common.HashH(temp)
+	return hash[:]
 }
 
 func GetStoreTxDecoyKey(tokenId common.Hash, otaIdx uint64, txHash common.Hash, count uint64) []byte {
@@ -42,7 +44,7 @@ func GetTxByDecoyIndex(db incdb.Database, tokenId common.Hash, otaIdx uint64) (m
 		tokenId = common.ConfidentialAssetID
 	}
 	prefix := GetStoreTxDecoyPrefix(tokenId, otaIdx)
-	iterator := db.NewIteratorWithPrefix(GetStoreTxDecoyPrefix(tokenId, otaIdx))
+	iterator := db.NewIteratorWithPrefix(prefix)
 	result := make(map[string]uint64)
 	for iterator.Next() {
 		key := iterator.Key()
