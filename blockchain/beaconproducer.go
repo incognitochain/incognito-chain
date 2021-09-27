@@ -1,8 +1,10 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
+	"github.com/incognitochain/incognito-chain/tests/fork"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -137,7 +139,9 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		hashes.AutoStakeHash,
 		hashes.ShardSyncValidatorsHash,
 	)
-
+	if fork.ForkBeaconWithInstruction("forkBSC", blockchain.BeaconChain.multiView, "250", curView.BestBlock, *newBeaconBlock, 4) {
+		return nil, errors.New("simulate forkBSC")
+	}
 	return newBeaconBlock, nil
 }
 
