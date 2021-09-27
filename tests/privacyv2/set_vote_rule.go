@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func setNoVoteRule(url string) {
@@ -83,4 +85,47 @@ func setVoteRule(url string) {
 		return
 	}
 	fmt.Println(string(body))
+}
+
+func setNoVoteRuleShard0() {
+	for i, url := range shard0UrlList {
+		if i == 0 {
+			continue
+		}
+		setNoVoteRule(url)
+	}
+}
+
+func setVoteRuleShard0() {
+	for i, url := range shard0UrlList {
+		if i == 0 {
+			continue
+		}
+		setVoteRule(url)
+	}
+}
+
+func setIntervalVoteRule() {
+
+	common.TIMESLOT = 10
+	flag := false
+	ticker := time.Tick(1 * time.Second)
+	interval := int64(32)
+	for _ = range ticker {
+
+		currentTimeSlot := common.CalculateTimeSlot(time.Now().Unix())
+		if currentTimeSlot%interval == 0 {
+			if flag {
+				fmt.Println(currentTimeSlot, flag, "Set No Vote")
+				setNoVoteRuleShard0()
+				flag = !flag
+			}
+			if !flag {
+				fmt.Println(currentTimeSlot, flag, "Set Allow Vote")
+				setVoteRuleShard0()
+				flag = !flag
+
+			}
+		}
+	}
 }

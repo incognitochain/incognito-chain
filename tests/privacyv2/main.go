@@ -150,20 +150,13 @@ func main() {
 	}
 
 	if os.Args[1] == "set_no_vote" {
-		for i, url := range shard0UrlList {
-			if i == 0 {
-				continue
-			}
-			setNoVoteRule(url)
-		}
+		setNoVoteRuleShard0()
 	}
 	if os.Args[1] == "set_vote" {
-		for i, url := range shard0UrlList {
-			if i == 0 {
-				continue
-			}
-			setVoteRule(url)
-		}
+		setVoteRuleShard0()
+	}
+	if os.Args[1] == "interval_vote" {
+		setIntervalVoteRule()
 	}
 }
 
