@@ -51,34 +51,6 @@ func newStateV1WithValue(
 	}
 }
 
-func initStateV1(
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
-) (*stateV1, error) {
-	waitingContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	poolPairs, err := statedb.GetPDEPoolPair(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	shares, err := statedb.GetPDEShares(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	tradingFees, err := statedb.GetPDETradingFees(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	return newStateV1WithValue(
-		waitingContributions,
-		poolPairs,
-		shares,
-		tradingFees,
-	), nil
-}
-
 func (s *stateV1) Version() uint {
 	return BasicVersion
 }

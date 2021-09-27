@@ -107,6 +107,7 @@ func getBeaconBestState(url string) (*jsonresult.GetBeaconBestState, error) {
 func getPdexBestState(url string) (*jsonresult.Pdexv3State, error) {
 	type Temp struct {
 		BeaconHeight uint64 `json:"BeaconHeight"`
+		Filter       empty  `json:"Filter"`
 	}
 	beaconBestState, err := getBeaconBestState(url)
 	if err != nil {

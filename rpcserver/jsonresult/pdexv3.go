@@ -6,12 +6,12 @@ import (
 )
 
 type Pdexv3State struct {
-	BeaconTimeStamp      int64                                  `json:"BeaconTimeStamp"`
-	Params               pdex.Params                            `json:"Params"`
-	PoolPairs            map[string]*pdex.PoolPairState         `json:"PoolPairs"`
-	WaitingContributions map[string]*rawdbv2.Pdexv3Contribution `json:"WaitingContributions"`
-	NftIDs               map[string]uint64                      `json:"NftIDs"`
-	StakingPools         map[string]*pdex.StakingPoolState      `json:"StakingPools"`
+	BeaconTimeStamp      int64                                   `json:"BeaconTimeStamp"`
+	Params               *pdex.Params                            `json:"Params,omitempty"`
+	PoolPairs            *map[string]*pdex.PoolPairState         `json:"PoolPairs,omitempty"`
+	WaitingContributions *map[string]*rawdbv2.Pdexv3Contribution `json:"WaitingContributions,omitempty"`
+	NftIDs               *map[string]uint64                      `json:"NftIDs,omitempty"`
+	StakingPools         *map[string]*pdex.StakingPoolState      `json:"StakingPools,omitempty"`
 }
 
 type Pdexv3LPValue struct {

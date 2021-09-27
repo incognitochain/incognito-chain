@@ -92,8 +92,8 @@ func (poolPairState *PoolPairState) Shares() map[string]*Share {
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
-		Shares          map[string]*Share        `json:"Shares"`
-		Orderbook       Orderbook                `json:"Orderbook"`
+		Shares          map[string]*Share        `json:"Shares,omitempty"`
+		Orderbook       Orderbook                `json:"Orderbook,omitempty"`
 		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
 		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
 		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
@@ -604,46 +604,4 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 	return nil
-}
-
-func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
-	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
-	if err != nil {
-		return nil, err
-	}
-	res := make(map[string]*PoolPairState)
-	for poolPairID, poolPairState := range poolPairsStates {
-		lpFeesPerShare, err := statedb.GetPdexv3PoolPairLpFeesPerShares(stateDB, poolPairID)
-		if err != nil {
-			return nil, err
-		}
-		protocolFees, err := statedb.GetPdexv3PoolPairProtocolFees(stateDB, poolPairID)
-		if err != nil {
-			return nil, err
-		}
-		stakingPoolFees, err := statedb.GetPdexv3PoolPairStakingPoolFees(stateDB, poolPairID)
-		if err != nil {
-			return nil, err
-		}
-		shares, err := initShares(poolPairID, stateDB)
-		if err != nil {
-			return nil, err
-		}
-
-		orderbook := &Orderbook{[]*Order{}}
-		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairState.PoolPairID())
-		if err != nil {
-			return nil, err
-		}
-		for _, item := range orderMap {
-			v := item.Value()
-			orderbook.InsertOrder(&v)
-		}
-		poolPair := NewPoolPairStateWithValue(
-			poolPairState.Value(), shares, *orderbook,
-			lpFeesPerShare, protocolFees, stakingPoolFees,
-		)
-		res[poolPairID] = poolPair
-	}
-	return res, nil
 }

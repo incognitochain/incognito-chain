@@ -64,7 +64,7 @@ func (stakingPoolState *StakingPoolState) SetRewardsPerShare(rewardsPerShare map
 func (stakingPoolState *StakingPoolState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Liquidity       uint64                   `json:"Liquidity"`
-		Stakers         map[string]*Staker       `json:"Stakers"`
+		Stakers         map[string]*Staker       `json:"Stakers,omitempty"`
 		RewardsPerShare map[common.Hash]*big.Int `json:"RewardsPerShare"`
 	}{
 		Liquidity:       stakingPoolState.liquidity,
@@ -270,22 +270,6 @@ func (s *StakingPoolState) AddReward(
 	tempRewardsPerShare[tokenID] = newLPFeesPerShare
 
 	s.SetRewardsPerShare(tempRewardsPerShare)
-}
-
-func initStakingPoolsFromDB(stakingPoolsShare map[string]uint, stateDB *statedb.StateDB) (map[string]*StakingPoolState, error) {
-	res := map[string]*StakingPoolState{}
-	for stakingPoolID := range stakingPoolsShare {
-		stakers, liquidity, err := initStakers(stakingPoolID, stateDB)
-		if err != nil {
-			return nil, err
-		}
-		rewardsPerShare, err := statedb.GetPdexv3StakingPoolRewardsPerShare(stateDB, stakingPoolID)
-		if err != nil {
-			return nil, err
-		}
-		res[stakingPoolID] = NewStakingPoolStateWithValue(liquidity, stakers, rewardsPerShare)
-	}
-	return res, nil
 }
 
 func (s *StakingPoolState) updateToDB(

@@ -225,6 +225,18 @@ func GetPdexv3PoolPairs(stateDB *StateDB) (map[string]Pdexv3PoolPairState, error
 	return stateDB.iterateWithPdexv3PoolPairs(prefixHash)
 }
 
+func GetPdexv3PoolPair(stateDB *StateDB, poolPairID string) (*Pdexv3PoolPairState, error) {
+	key := GeneratePdexv3PoolPairObjectKey(poolPairID)
+	s, has, err := stateDB.getPdexv3PoolPairState(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPdexv3PoolPairError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPdexv3PoolPairError, fmt.Errorf("could not found pDex v3 params in statedb"))
+	}
+	return s, nil
+}
+
 func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (
 	map[string]Pdexv3ShareState, error,
 ) {
