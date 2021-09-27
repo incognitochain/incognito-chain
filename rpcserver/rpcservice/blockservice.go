@@ -214,8 +214,9 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			signingCommittees := blockchain.FilterSigningCommitteeV3StringValue(fullCommittees, subsetID)
 			result.SubsetID = subsetID
 			result.SigningCommittee = signingCommittees
-			result.FinalityHeight = shardBlock.Header.FinalityHeight
 		}
+		result.FinalityHeight = shardBlock.Header.FinalityHeight
+
 	}
 	return &result, nil
 }
@@ -357,8 +358,9 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				signingCommittees := blockchain.FilterSigningCommitteeV3StringValue(fullCommittees, subsetID)
 				res.SubsetID = subsetID
 				res.SigningCommittee = signingCommittees
-				res.FinalityHeight = shardBlock.Header.FinalityHeight
 			}
+			res.FinalityHeight = shardBlock.Header.FinalityHeight
+
 		}
 		result = append(result, &res)
 	}

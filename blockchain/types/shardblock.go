@@ -349,16 +349,16 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version >= 2 {
+	if shardHeader.Version >= MULTI_VIEW_VERSION {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version >= 3 {
+	if shardHeader.Version >= SHARD_SFV2_VERSION {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
 
-	if shardHeader.Version == BLOCK_PRODUCINGV3_VERSION {
+	if shardHeader.Version >= LEMMA2_VERSION {
 		res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
 	}
 

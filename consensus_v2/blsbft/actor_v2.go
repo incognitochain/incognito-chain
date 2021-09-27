@@ -54,10 +54,8 @@ type actorV2 struct {
 
 	nextBlockFinalityProof map[string]map[int64]string
 
-	proposeRule        IProposeRule
-	consensusValidator IConsensusValidator
-	VoteRule           IVoteRule
-	blockVersion       int
+	ruleBuilder  *ActorV2RuleStrategy
+	blockVersion int
 }
 
 func NewActorV2() *actorV2 {
@@ -110,18 +108,7 @@ func newActorV2WithValue(
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 	a.proposeHistory, err = lru.New(1000)
-	a.proposeRule = NewProposeRuleLemma2(
-		logger,
-		make(map[string]map[int64]string),
-		chain,
-	)
-	a.consensusValidator = NewConsensusValidator(
-		logger,
-		chain,
-	)
-	a.VoteRule = NewVoteRule(
-		logger,
-	)
+	a.ruleBuilder = NewMultiviewActorRule(logger, chain, a.chain.GetBestViewHeight())
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -248,6 +235,8 @@ func (a *actorV2) run() error {
 				continue
 			}
 
+			a.ruleBuilder.SetStrategy(a.chain.GetBestView().GetHeight())
+
 			select {
 			case <-a.destroyCh:
 				a.logger.Infof("exit bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
@@ -334,7 +323,7 @@ func (a *actorV2) run() error {
 					var finalityProof = NewFinalityProof()
 					var isValidRePropose bool = false
 					if proposeBlockInfo.block != nil {
-						finalityProof, isValidRePropose = a.proposeRule.GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
+						finalityProof, isValidRePropose = a.ruleBuilder.proposeRule.GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
 					}
 					if createdBlk, err := a.proposeBlock(
 						userProposeKey,
@@ -357,7 +346,7 @@ func (a *actorV2) run() error {
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
 						)
-						bftProposeMessage, err := a.proposeRule.CreateProposeBFTMessage(env, createdBlk)
+						bftProposeMessage, err := a.ruleBuilder.proposeRule.CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
 							a.logger.Error("Create BFT Propose Message Failed", err)
 						} else {
@@ -456,7 +445,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 		return
 	}
 
-	proposeBlockInfo = a.VoteRule.ValidateVote(proposeBlockInfo)
+	proposeBlockInfo = a.ruleBuilder.voteRule.ValidateVote(proposeBlockInfo)
 
 	if !proposeBlockInfo.isCommitted {
 		if proposeBlockInfo.validVotes > 2*len(proposeBlockInfo.signingCommittees)/3 {
@@ -509,7 +498,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 	if previousProposeBlockInfo, ok := a.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
-		previousProposeBlockInfo = a.VoteRule.ValidateVote(previousProposeBlockInfo)
+		previousProposeBlockInfo = a.ruleBuilder.voteRule.ValidateVote(previousProposeBlockInfo)
 
 		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
 			previousProposeBlockInfo.signingCommittees,
@@ -819,13 +808,13 @@ func (a *actorV2) sendVote(
 		signingCommittees,
 		portalParamV4,
 	)
-	Vote, err := a.VoteRule.CreateVote(env, block)
+	vote, err := a.ruleBuilder.voteRule.CreateVote(env, block)
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
 	}
 
-	msg, err := a.makeBFTVoteMsg(Vote, a.chainKey, a.currentTimeSlot, block.GetHeight())
+	msg, err := a.makeBFTVoteMsg(vote, a.chainKey, a.currentTimeSlot, block.GetHeight())
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -991,7 +980,7 @@ func (a *actorV2) handleNewProposeMsg(
 		userKeySet,
 		producerPublicBLSMiningKey,
 	)
-	proposeBlockInfo, err := a.proposeRule.HandleBFTProposeMessage(env, &proposeMsg)
+	proposeBlockInfo, err := a.ruleBuilder.proposeRule.HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
 		a.logger.Errorf("Fail to apply lemma 2, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
@@ -1006,6 +995,11 @@ func (a *actorV2) handleNewProposeMsg(
 }
 
 func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
+
+	if voteMsg.BlockHeight <= a.chain.GetFinalView().GetHeight() {
+		a.logger.Infof("%v Receive old vote height %+vd but chain final height %+v", a.chainKey, voteMsg.BlockHeight, a.chain.GetFinalView().GetHeight())
+		return nil
+	}
 
 	voteMsg.IsValid = 0
 	if b, ok := a.receiveBlockByHash[voteMsg.BlockHash]; ok { //if received block is already initiated
@@ -1079,7 +1073,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	a.proposeRule.HandleCleanMem(a.chain.GetFinalView().GetHeight())
+	a.ruleBuilder.proposeRule.HandleCleanMem(a.chain.GetFinalView().GetHeight())
 
 }
 
@@ -1092,8 +1086,9 @@ func (a *actorV2) handleCleanMem() {
 func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	bestViewHeight := bestView.GetHeight()
-
-	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.consensusValidator.FilterValidProposeBlockInfo(
+	bestViewHash := *bestView.GetHash()
+	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.ruleBuilder.validatorRule.FilterValidProposeBlockInfo(
+		bestViewHash,
 		bestViewHeight,
 		a.chain.GetFinalView().GetHeight(),
 		a.currentTimeSlot,
@@ -1104,12 +1099,9 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 		delete(a.receiveBlockByHash, invalidProposeBlock)
 	}
 
+	// HACK CASE, block already insert but still vote
+	// if block is inserted => no need to validate again
 	for _, tryVoteInsertedBlock := range tryVoteInsertedBlocks {
-		if !tryVoteInsertedBlock.isValid {
-			if err := a.validatePreSignBlock(tryVoteInsertedBlock); err != nil {
-				continue
-			}
-		}
 		a.voteValidBlock(tryVoteInsertedBlock)
 	}
 
@@ -1122,7 +1114,7 @@ func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *Propo
 	lastVotedBlock, isVoted := a.voteHistory[bestViewHeight+1]
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
-	isValid, err := a.consensusValidator.ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
+	isValid, err := a.ruleBuilder.validatorRule.ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
 		return err
 	}

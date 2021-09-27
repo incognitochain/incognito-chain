@@ -282,7 +282,7 @@ func (header *BeaconHeader) toString() string {
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
 
-	if header.Version == BLOCK_PRODUCINGV3_VERSION {
+	if header.Version == LEMMA2_VERSION {
 		res += fmt.Sprintf("%v", header.FinalityHeight)
 	}
 

@@ -318,6 +318,10 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		return types.BLOCK_PRODUCINGV3_VERSION
 	}
 
+	if chainHeight >= config.Param().ConsensusParam.Lemma2Height {
+		return types.LEMMA2_VERSION
+	}
+
 	if chainHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 		return types.SHARD_SFV3_VERSION
 	}

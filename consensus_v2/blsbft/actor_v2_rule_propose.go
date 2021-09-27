@@ -45,6 +45,10 @@ type ProposeRuleLemma1 struct {
 	logger common.Logger
 }
 
+func NewProposeRuleLemma1(logger common.Logger) *ProposeRuleLemma1 {
+	return &ProposeRuleLemma1{logger: logger}
+}
+
 func (p ProposeRuleLemma1) HandleCleanMem(finalView uint64) {
 	return
 }

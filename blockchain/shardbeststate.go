@@ -602,7 +602,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	switch shardBlock.Header.Version {
 	case types.BFT_VERSION, types.MULTI_VIEW_VERSION:
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
-	case types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION:
+	case types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION:
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err

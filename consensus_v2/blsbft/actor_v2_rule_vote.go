@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -146,9 +147,82 @@ func createVote(
 	vote.BlockHash = block.Hash().String()
 	vote.Validator = userBLSPk
 	vote.PrevBlockHash = block.GetPrevHash().String()
+	vote.BlockHeight = block.GetHeight()
 	err = vote.signVote(userKey)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	return vote, nil
+}
+
+type NoVoteRule struct {
+	logger common.Logger
+}
+
+func NewNoVoteRule(logger common.Logger) *NoVoteRule {
+	return &NoVoteRule{logger: logger}
+}
+
+func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlockInfo {
+	validVote := 0
+	errVote := 0
+
+	committees := make(map[string]int)
+	if len(proposeBlockInfo.votes) != 0 {
+		for i, v := range proposeBlockInfo.signingCommittees {
+			committees[v.GetMiningKeyBase58(common.BlsConsensus)] = i
+		}
+	}
+
+	for id, vote := range proposeBlockInfo.votes {
+		dsaKey := []byte{}
+		if vote.IsValid == 0 {
+			if value, ok := committees[vote.Validator]; ok {
+				dsaKey = proposeBlockInfo.signingCommittees[value].MiningPubKey[common.BridgeConsensus]
+			} else {
+				v.logger.Error("Receive vote from nonCommittee member")
+				continue
+			}
+			if len(dsaKey) == 0 {
+				v.logger.Error("canot find dsa key")
+				continue
+			}
+
+			err := vote.validateVoteOwner(dsaKey)
+			if err != nil {
+				v.logger.Error(dsaKey)
+				v.logger.Error(err)
+				proposeBlockInfo.votes[id].IsValid = -1
+				errVote++
+			} else {
+				proposeBlockInfo.votes[id].IsValid = 1
+				validVote++
+			}
+		} else {
+			validVote++
+		}
+	}
+
+	v.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
+	proposeBlockInfo.hasNewVote = false
+	for key, value := range proposeBlockInfo.votes {
+		if value.IsValid == -1 {
+			delete(proposeBlockInfo.votes, key)
+		}
+	}
+
+	proposeBlockInfo.addBlockInfo(
+		proposeBlockInfo.block,
+		proposeBlockInfo.committees,
+		proposeBlockInfo.signingCommittees,
+		proposeBlockInfo.userKeySet,
+		validVote,
+		errVote,
+	)
+
+	return proposeBlockInfo
+}
+
+func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
+	return nil, fmt.Errorf("No vote for block %+v, %+v", block.GetHeight(), block.Hash().String())
 }

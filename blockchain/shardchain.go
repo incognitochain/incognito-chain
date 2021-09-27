@@ -226,7 +226,7 @@ func (chain *ShardChain) CreateNewBlock(
 		newBlock.Header.ProposeTime = startTime
 	}
 
-	if version >= types.BLOCK_PRODUCINGV3_VERSION {
+	if version >= types.LEMMA2_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
@@ -256,7 +256,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-	if newBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION {
+	if newBlock.Header.Version >= types.LEMMA2_VERSION {
 
 		if isValidRePropose {
 			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
@@ -445,7 +445,7 @@ func (chain *ShardChain) GetSigningCommittees(
 	proposerIndex int, committees []incognitokey.CommitteePublicKey, blockVersion int,
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
+	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		res = FilterSigningCommitteeV3(committees, proposerIndex)
 	} else {
 		res = committees

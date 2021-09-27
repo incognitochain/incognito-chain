@@ -192,7 +192,7 @@ func (chain *BeaconChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
-	if version >= types.BLOCK_PRODUCINGV3_VERSION {
+	if version >= types.LEMMA2_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
@@ -220,7 +220,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 
-	if newBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION {
+	if newBlock.Header.Version >= types.LEMMA2_VERSION {
 		if isValidRePropose {
 			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
 		} else {
