@@ -84,10 +84,6 @@ func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shard
 		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("sender address is incorrect"))
 	}
 
-	// check tx version and type
-	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("tx push header relaying must be version 2"))
-	}
 	if tx.GetType() != common.TxNormalType {
 		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("tx push header relaying must be TxNormalType"))
 	}

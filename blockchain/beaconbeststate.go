@@ -546,15 +546,19 @@ func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
 }
 
 func (beaconBestState *BeaconBestState) GetNumberOfMissingSignature() map[string]signaturecounter.MissingSignature {
+	if beaconBestState.missingSignatureCounter == nil {
+		return map[string]signaturecounter.MissingSignature{}
+	}
 	return beaconBestState.missingSignatureCounter.MissingSignature()
 }
 
 func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]signaturecounter.Penalty {
-
+	if beaconBestState.missingSignatureCounter == nil {
+		return map[string]signaturecounter.Penalty{}
+	}
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 
 	if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
-
 		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 		Logger.log.Debug("Get Missing Signature with Slashing V2")
