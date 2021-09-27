@@ -3,6 +3,7 @@ package blsbft
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"reflect"
 )
 
 var (
@@ -28,32 +29,44 @@ func NewMultiviewActorRule(logger common.Logger, chain Chain, bestViewHeight uin
 func (r *ActorV2RuleStrategy) SetStrategy(bestViewHeight uint64) {
 
 	if bestViewHeight >= lemma2Height {
-		r.proposeRule = NewProposeRuleLemma2(
-			r.logger,
-			make(map[string]map[int64]string),
-			r.chain,
-		)
-		r.validatorRule = NewConsensusValidatorV2(
-			r.logger,
-			r.chain,
-		)
+		if reflect.TypeOf(r.proposeRule) != reflect.TypeOf(new(ProposeRuleLemma2)) {
+			r.proposeRule = NewProposeRuleLemma2(
+				r.logger,
+				make(map[string]map[int64]string),
+				r.chain,
+			)
+		}
+		if reflect.TypeOf(r.validatorRule) != reflect.TypeOf(new(ConsensusValidatorLemma2)) {
+			r.validatorRule = NewConsensusValidatorV2(
+				r.logger,
+				r.chain,
+			)
+		}
 	} else {
-		r.proposeRule = NewProposeRuleLemma1(
-			r.logger,
-		)
-		r.validatorRule = NewConsensusValidatorV1(
-			r.logger,
-			r.chain,
-		)
+		if reflect.TypeOf(r.proposeRule) != reflect.TypeOf(new(ProposeRuleLemma1)) {
+			r.proposeRule = NewProposeRuleLemma1(
+				r.logger,
+			)
+		}
+		if reflect.TypeOf(r.validatorRule) != reflect.TypeOf(new(ConsensusValidatorLemma1)) {
+			r.validatorRule = NewConsensusValidatorV1(
+				r.logger,
+				r.chain,
+			)
+		}
 	}
 
 	if !IsNoVoteRule {
-		r.voteRule = NewVoteRule(
-			r.logger,
-		)
+		if reflect.TypeOf(r.voteRule) != reflect.TypeOf(new(VoteRule)) {
+			r.voteRule = NewVoteRule(
+				r.logger,
+			)
+		}
 	} else {
-		r.voteRule = NewNoVoteRule(
-			r.logger,
-		)
+		if reflect.TypeOf(r.voteRule) != reflect.TypeOf(new(NoVoteRule)) {
+			r.voteRule = NewNoVoteRule(
+				r.logger,
+			)
+		}
 	}
 }

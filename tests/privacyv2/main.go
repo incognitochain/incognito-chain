@@ -148,6 +148,23 @@ func main() {
 			stopAutoStake(numberOfStopAutoStake)
 		}
 	}
+
+	if os.Args[1] == "set_no_vote" {
+		for i, url := range shard0UrlList {
+			if i == 0 {
+				continue
+			}
+			setNoVoteRule(url)
+		}
+	}
+	if os.Args[1] == "set_vote" {
+		for i, url := range shard0UrlList {
+			if i == 0 {
+				continue
+			}
+			setVoteRule(url)
+		}
+	}
 }
 
 func flushTx() {
