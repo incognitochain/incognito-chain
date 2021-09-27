@@ -13,6 +13,10 @@ import (
 func (blockchain *BlockChain) UpdateTxsByDecoys(shardID byte) {
 	fromHeight := 1100000
 	bestShardHeight := blockchain.GetBestStateShard(shardID).ShardHeight
+	if bestShardHeight <= uint64(fromHeight) {
+		Logger.log.Infof("[AHIHI] shard %v: no decoy data to update\n", shardID)
+		return
+	}
 	for blkHeight := uint64(fromHeight); blkHeight < bestShardHeight; blkHeight++ {
 		Logger.log.Errorf("[AHIHI] UpdateTxsByDecoys for shard %v, block %v\n", shardID, blkHeight)
 		shardBlocks, err := blockchain.GetShardBlockByHeight(blkHeight, shardID)
