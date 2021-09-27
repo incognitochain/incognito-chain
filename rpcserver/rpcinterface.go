@@ -327,6 +327,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
+
+	getTxsByDecoys: (*HttpServer).handleGetTransactionHashByDecoys,
 }
 
 // Commands that are available to a limited user

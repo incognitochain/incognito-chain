@@ -351,6 +351,8 @@ const (
 
 	// stake
 	unstake = "createunstaketransaction"
+
+	getTxsByDecoys = "gettxsbydecoys"
 )
 
 const (
