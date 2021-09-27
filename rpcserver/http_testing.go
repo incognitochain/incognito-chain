@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"io/ioutil"
 	"reflect"
 	"time"
@@ -320,6 +321,23 @@ func (httpServer *HttpServer) handleGetFinalityProof(params interface{}, closeCh
 		"Block": shardBlock,
 		"Data":  m,
 	}, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+}
+
+func (httpServer *HttpServer) handleSetNoVoteRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
+	}
+
+	flag, ok := arrayParams[0].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid flag Value"))
+	}
+
+	blsbft.IsNoVoteRule = flag
+
+	return "successfully set flag", nil
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
