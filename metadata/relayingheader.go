@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -82,18 +81,6 @@ func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shard
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if _, err := AssertPaymentAddressAndTxVersion(incogAddr, tx.GetVersion()); err != nil {
 		return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("sender address is incorrect"))
-	}
-
-	// check tx version and type
-	epoch := common.GetEpochFromBeaconHeight(beaconHeight, config.Param().EpochParam.NumberOfBlockInEpoch)
-	if chainRetriever.IsEnableFeature(common.PortalV4Flag, epoch) {
-		if tx.GetVersion() != 2 {
-			return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("tx push header relaying must be version 2 after portal v4 checkpoint"))
-		}
-	} else {
-		if tx.GetVersion() != 1 {
-			return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("tx push header relaying must be version 1 before portal v4 checkpoint"))
-		}
 	}
 
 	if tx.GetType() != common.TxNormalType {
