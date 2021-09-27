@@ -776,11 +776,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		return err
 	}
 
-	err = blockchain.StoreTxByDecoy(shardBlock.Body.Transactions, shardBlock.Header.ShardID)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

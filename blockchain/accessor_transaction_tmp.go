@@ -10,6 +10,27 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
+func (blockchain *BlockChain) UpdateTxsByDecoys(shardID byte) {
+	fromHeight := 1100000
+	bestShardHeight := blockchain.GetBestStateShard(shardID).ShardHeight
+	for blkHeight := uint64(fromHeight); blkHeight < bestShardHeight; blkHeight++ {
+		Logger.log.Errorf("[AHIHI] UpdateTxsByDecoys for shard %v, block %v\n", shardID, blkHeight)
+		shardBlocks, err := blockchain.GetShardBlockByHeight(blkHeight, shardID)
+		if err != nil {
+			Logger.log.Errorf("[AHIHI] GetShardBlockByHeight shard %, height %v error: %v\n", shardID, blkHeight, err)
+			continue
+		}
+		for _, shardBlock := range shardBlocks {
+			err = blockchain.StoreTxByDecoy(shardBlock.Body.Transactions, shardID)
+			if err != nil {
+				Logger.log.Errorf("[AHIHI] StoreTxByDecoy shard %v, height %v error: %v\n", shardBlocks, blkHeight, err)
+				continue
+			}
+		}
+	}
+	Logger.log.Infof("[AHIHI] Finished update tx with blkHeight for shard %v, heights %v to %v\n", shardID, fromHeight, bestShardHeight)
+}
+
 func (blockchain *BlockChain) StoreTxByDecoy(txList []metadata.Transaction, shardID byte) error {
 	var err error
 	db := blockchain.GetShardChainDatabase(shardID)

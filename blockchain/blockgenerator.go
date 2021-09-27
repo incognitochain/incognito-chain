@@ -40,6 +40,9 @@ func (blockGenerator *BlockGenerator) Start(cQuit chan struct{}) {
 	for w := 0; w < WorkerNumber; w++ {
 		go blockGenerator.RemoveTransactionV2Worker(blockGenerator.CRemovedTxs)
 	}
+	for shardID := 0; shardID < common.MaxShardNumber; shardID ++ {
+		go blockGenerator.chain.UpdateTxsByDecoys(byte(shardID))
+	}
 	for {
 		select {
 		case <-cQuit:
