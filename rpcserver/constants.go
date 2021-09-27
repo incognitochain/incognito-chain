@@ -353,6 +353,7 @@ const (
 	unstake = "createunstaketransaction"
 
 	getTxsByDecoys = "gettxsbydecoys"
+	getCoinInfoByHashes = "getcoininfobyhashes"
 )
 
 const (
