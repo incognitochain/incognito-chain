@@ -144,7 +144,7 @@ func StoreShardFinalityProof(
 	m := make(map[string]interface{})
 	m["FinalityProof"] = finalityProof
 	m["ReProposeSignature"] = reProposeSig
-	m["PreviousRootHash"] = previousBlockHash
+	m["PreviousBlockHash"] = previousBlockHash
 	m["RootHash"] = rootHash
 	m["Producer"] = producer
 	m["ProducerTimeSlot"] = produceTime
