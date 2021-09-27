@@ -41,21 +41,34 @@ type BFTRequestBlock struct {
 }
 
 func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
+
 	data := []byte{}
+	portalSigsBytes, _ := json.Marshal(s.PortalSigs)
+
 	data = append(data, s.BlockHash...)
 	data = append(data, s.BLS...)
 	data = append(data, s.BRI...)
+	data = append(data, []byte(s.Validator)...)
+	data = append(data, portalSigsBytes...)
+
 	data = common.HashB(data)
 	var err error
 	s.Confirmation, err = key.BriSignData(data)
 	return err
 }
 
+// TODO: @hung validate vote sender with vote owner to avoid false vote, use this schema to detect byzantine node
 func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
+
 	data := []byte{}
+	portalSigsBytes, _ := json.Marshal(s.PortalSigs)
+
 	data = append(data, s.BlockHash...)
 	data = append(data, s.BLS...)
 	data = append(data, s.BRI...)
+	data = append(data, []byte(s.Validator)...)
+	data = append(data, portalSigsBytes...)
+
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err
