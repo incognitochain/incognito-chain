@@ -67,36 +67,6 @@ func newStateV2WithValue(
 	}
 }
 
-func initStateV2FromDB(
-	stateDB *statedb.StateDB,
-) (*stateV2, error) {
-	paramsState, err := statedb.GetPdexv3Params(stateDB)
-	params := NewParamsWithValue(paramsState)
-	if err != nil {
-		return nil, err
-	}
-	waitingContributions, err := statedb.GetPdexv3WaitingContributions(stateDB)
-	if err != nil {
-		return nil, err
-	}
-	poolPairs, err := initPoolPairStatesFromDB(stateDB)
-	if err != nil {
-		return nil, err
-	}
-	nftIDs, err := statedb.GetPdexv3NftIDs(stateDB)
-	if err != nil {
-		return nil, err
-	}
-	stakingPools, err := initStakingPoolsFromDB(params.StakingPoolsShare, stateDB)
-	if err != nil {
-		return nil, err
-	}
-	return newStateV2WithValue(
-		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs, params, stakingPools, nftIDs,
-	), nil
-}
-
 func (s *stateV2) Version() uint {
 	return AmplifierVersion
 }

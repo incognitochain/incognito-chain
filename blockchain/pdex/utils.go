@@ -11,9 +11,7 @@ import (
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instructionPdexv3 "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -573,55 +571,6 @@ func storePoolForPair(
 		Token2PoolValue: token2PoolValue,
 	}
 	poolPairs[pdePoolForPairKey] = poolForPair
-}
-
-func InitStatesFromDB(
-	stateDB *statedb.StateDB,
-	beaconHeight uint64,
-) (map[uint]State, error) {
-	res := make(map[uint]State)
-	if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
-		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-			res[AmplifierVersion] = newStateV2()
-		} else {
-			state, err := initStateV2FromDB(stateDB)
-			if err != nil {
-				return res, err
-			}
-			res[AmplifierVersion] = state
-		}
-	}
-	if beaconHeight == 0 || beaconHeight == 1 {
-		res[BasicVersion] = newStateV1()
-	} else {
-		state, err := initStateV1(stateDB, beaconHeight)
-		if err != nil {
-			return res, err
-		}
-		res[BasicVersion] = state
-	}
-	return res, nil
-}
-
-func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint) (State, error) {
-	switch version {
-	case BasicVersion:
-		if beaconHeight == 0 || beaconHeight == 1 {
-			return newStateV1(), nil
-		}
-		return initStateV1(stateDB, beaconHeight)
-	case AmplifierVersion:
-		if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
-			return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
-		}
-		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-			return newStateV2(), nil
-		} else {
-			return initStateV2FromDB(stateDB)
-		}
-	default:
-		return nil, errors.New("Can not recognize version")
-	}
 }
 
 func generatePoolPairKey(token0Name, token1Name, txReqID string) string {

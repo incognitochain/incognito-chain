@@ -277,6 +277,7 @@ const (
 	StorePdexv3ShareError
 	StorePdexv3TradingFeesError
 	StorePdexv3NftsError
+	GetPdexv3PoolPairError
 )
 
 var ErrCodeMessage = map[int]struct {

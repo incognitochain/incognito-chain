@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -34,51 +33,13 @@ func (httpServer *HttpServer) handleGetPdexv3State(params interface{}, closeChan
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
-	beaconBestView := httpServer.config.BlockChain.GetBeaconBestState()
-	if uint64(beaconHeight) == 0 {
-		beaconHeight = float64(beaconBestView.BeaconHeight)
+	filter, ok := data["Filter"].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Filter is invalid"))
 	}
-
-	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(beaconBestView, uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
-	}
-	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
+	result, err := httpServer.blockService.GetPdexv3State(filter, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-
-	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, fmt.Errorf("pDEX v3 is not available"))
-	}
-	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-
-	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-	poolPairs := make(map[string]*pdex.PoolPairState)
-	waitingContributions := make(map[string]*rawdbv2.Pdexv3Contribution)
-	err = json.Unmarshal(pDexv3State.Reader().WaitingContributions(), &waitingContributions)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-
-	beaconBlock := beaconBlocks[0]
-	result := jsonresult.Pdexv3State{
-		BeaconTimeStamp:      beaconBlock.Header.Timestamp,
-		Params:               *pDexv3State.Reader().Params(),
-		PoolPairs:            poolPairs,
-		WaitingContributions: waitingContributions,
-		NftIDs:               pDexv3State.Reader().NftIDs(),
-		StakingPools:         pDexv3State.Reader().StakingPools(),
 	}
 	return result, nil
 }
@@ -692,6 +653,7 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+
 	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		mdReader.PoolPairID, mdReader.PairHash, otaReceiverStr, mdReader.TokenID, mdReader.NftID,
 		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier))

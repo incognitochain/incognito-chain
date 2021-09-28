@@ -2075,6 +2075,17 @@ func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bo
 	return NewPdexv3Params(), false, nil
 }
 
+func (stateDB *StateDB) getPdexv3PoolPairState(key common.Hash) (*Pdexv3PoolPairState, bool, error) {
+	obj, err := stateDB.getStateObject(Pdexv3PoolPairObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*Pdexv3PoolPairState), true, nil
+	}
+	return NewPdexv3PoolPairState(), false, nil
+}
+
 func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	res := map[string]rawdbv2.Pdexv3Contribution{}
 	temp := stateDB.trie.NodeIterator(prefix)

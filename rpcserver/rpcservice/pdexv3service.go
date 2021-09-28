@@ -2,14 +2,20 @@ package rpcservice
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -90,7 +96,7 @@ func (svc PdexTxService) BuildTransaction(
 func (svc PdexTxService) GenerateOTAReceivers(
 	tokens []common.Hash, addr privacy.PaymentAddress,
 ) (map[common.Hash]privacy.OTAReceiver, error) {
-	result := make(map[common.Hash]privacy.OTAReceiver)
+	result := map[common.Hash]privacy.OTAReceiver{}
 	var err error
 	for _, tokenID := range tokens {
 		temp := privacy.OTAReceiver{}
@@ -230,4 +236,317 @@ func (blockService BlockService) GetPdexv3WithdrawalStakingRewardStatus(reqTxID 
 	}
 
 	return &status, nil
+}
+
+func (blockService BlockService) GetPdexv3State(
+	filterParam map[string]interface{},
+	beaconHeight uint64,
+) (interface{}, error) {
+	beaconBestView := blockService.BlockChain.GetBeaconBestState()
+	if beaconHeight == 0 {
+		beaconHeight = beaconBestView.BeaconHeight
+	}
+	if uint64(beaconHeight) < config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return nil, NewRPCError(GetPdexv3StateError, fmt.Errorf("pDEX v3 is not available"))
+	}
+
+	beaconFeatureStateRootHash, err := blockService.BlockChain.GetBeaconFeatureRootHash(beaconBestView, uint64(beaconHeight))
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+
+	beaconBlocks, err := blockService.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	beaconBlock := beaconBlocks[0]
+	beaconTimeStamp := beaconBlock.Header.Timestamp
+
+	var res interface{}
+	type FilterParam struct {
+		Key       string `json:"Key"`
+		Verbosity uint   `json:"Verbosity"`
+		ID        string `json:"ID"`
+	}
+	param := FilterParam{}
+	data, err := json.Marshal(filterParam)
+	if err != nil {
+		return res, NewRPCError(GetPdexv3StateError, err)
+	}
+	err = json.Unmarshal(data, &param)
+	if err != nil {
+		return res, NewRPCError(GetPdexv3StateError, err)
+	}
+
+	if !reflect.DeepEqual(param, FilterParam{}) {
+		switch param.Key {
+		case WaitingContributions:
+			res, err = getPdexv3WaitingContributions(beaconTimeStamp, beaconFeatureStateDB)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case PoolPairs:
+			res, err = getPdexv3PoolPairs(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case PoolPair:
+			res, err = getPdexv3PoolPair(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case PoolPairShares:
+			res, err = getPdexv3PoolPairShares(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case PoolPairOrders:
+			res, err = getPdexv3PoolPairOrders(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case Params:
+			res, err = getPdexv3Param(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case StakingPools:
+			res, err = getPdexv3StakingPools(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case StakingPool:
+			res, err = getPdexv3StakingPool(
+				beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID,
+			)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case NftIDs:
+			res, err = getPdexv3NftIDs(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		case All:
+			res, err = getPdexv3State(beaconHeight, beaconTimeStamp, beaconFeatureStateDB)
+			if err != nil {
+				return nil, NewRPCError(GetPdexv3StateError, err)
+			}
+
+		default:
+			return res, NewRPCError(GetPdexv3StateError, errors.New("Can't recognize filter key"))
+		}
+
+	} else {
+		res, err = getPdexv3State(beaconHeight, beaconTimeStamp, beaconFeatureStateDB)
+		if err != nil {
+			return nil, NewRPCError(GetPdexv3StateError, err)
+		}
+	}
+	return res, nil
+}
+
+func getPdexv3WaitingContributions(beaconTimeStamp int64, stateDB *statedb.StateDB) (interface{}, error) {
+	waitingContributions, err := pdex.InitWaitingContributionsFromDB(stateDB)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	resWaitingContributions := map[string]*rawdbv2.Pdexv3Contribution{}
+	for k, v := range waitingContributions {
+		temp := new(rawdbv2.Pdexv3Contribution)
+		*temp = v
+		resWaitingContributions[k] = temp
+	}
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp:      beaconTimeStamp,
+		WaitingContributions: &resWaitingContributions,
+	}
+	return res, nil
+}
+
+func getPdexv3State(
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB,
+) (interface{}, error) {
+	pDexv3State, err := pdex.InitStateFromDB(stateDB, beaconHeight, pdex.AmplifierVersion)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+
+	poolPairs := map[string]*pdex.PoolPairState{}
+	waitingContributions := map[string]*rawdbv2.Pdexv3Contribution{}
+	err = json.Unmarshal(pDexv3State.Reader().WaitingContributions(), &waitingContributions)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	cloneParam := pdex.NewParams()
+	*cloneParam = *pDexv3State.Reader().Params()
+	nftIDs := pDexv3State.Reader().NftIDs()
+	stakingPools := pDexv3State.Reader().StakingPools()
+
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp:      beaconTimeStamp,
+		Params:               cloneParam,
+		PoolPairs:            &poolPairs,
+		WaitingContributions: &waitingContributions,
+		NftIDs:               &nftIDs,
+		StakingPools:         &stakingPools,
+	}
+	return res, nil
+}
+
+func getPdexv3PoolPairs(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+) (interface{}, error) {
+	switch verbosity {
+	case SimpleVerbosity:
+		poolPairIDs, err := pdex.InitPoolPairIDsFromDB(stateDB)
+		if err != nil {
+			return nil, NewRPCError(GetPdexv3StateError, err)
+		}
+		return poolPairIDs, nil
+	case FullVerbosity:
+		poolPairStates, err := pdex.InitFullPoolPairStatesFromDB(stateDB)
+		if err != nil {
+			return nil, NewRPCError(GetPdexv3StateError, err)
+		}
+		res := &jsonresult.Pdexv3State{
+			BeaconTimeStamp: beaconTimeStamp,
+			PoolPairs:       &poolPairStates,
+		}
+		return res, nil
+	default:
+		return nil, NewRPCError(GetPdexv3StateError, errors.New("Can't recognize verbosity"))
+	}
+}
+
+func getPdexv3Param(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+) (interface{}, error) {
+	param, err := pdex.InitParamFromDB(stateDB)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		Params:          param,
+	}
+	return res, nil
+}
+
+func getPdexv3StakingPools(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+) (interface{}, error) {
+	stakingPools, err := pdex.InitStakingPoolsFromDB(stateDB)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		StakingPools:    &stakingPools,
+	}
+	return res, nil
+}
+
+func getPdexv3NftIDs(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+) (interface{}, error) {
+	nftIDs, err := pdex.InitNftIDsFromDB(stateDB)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		NftIDs:          &nftIDs,
+	}
+	return res, nil
+}
+
+func getPdexv3StakingPool(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, stakingPoolID string,
+) (interface{}, error) {
+	stakingPoolState, err := pdex.InitStakingPoolFromDB(stateDB, stakingPoolID)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	temp := map[string]*pdex.StakingPoolState{}
+	if !reflect.DeepEqual(stakingPoolState, pdex.NewStakingPoolState()) {
+		temp[stakingPoolID] = stakingPoolState
+	}
+
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		StakingPools:    &temp,
+	}
+	return res, nil
+}
+
+func getPdexv3PoolPair(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+) (interface{}, error) {
+	poolPairState, err := pdex.InitPoolPair(stateDB, poolPairID)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		PoolPairs: &map[string]*pdex.PoolPairState{
+			poolPairID: poolPairState,
+		},
+	}
+	return res, nil
+}
+
+func getPdexv3PoolPairShares(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+) (interface{}, error) {
+	shares, err := pdex.InitPoolPairShares(stateDB, poolPairID)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	temp := map[string]*pdex.PoolPairState{}
+	if len(shares) != 0 {
+		temp[poolPairID] = pdex.NewPoolPairStateWithValue(
+			rawdbv2.Pdexv3PoolPair{}, shares, pdex.Orderbook{}, nil, nil, nil)
+	}
+
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		PoolPairs:       &temp,
+	}
+	return res, nil
+}
+
+func getPdexv3PoolPairOrders(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+) (interface{}, error) {
+	orderBook, err := pdex.InitPoolPairOrders(stateDB, poolPairID)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		PoolPairs: &map[string]*pdex.PoolPairState{
+			poolPairID: pdex.NewPoolPairStateWithValue(
+				rawdbv2.Pdexv3PoolPair{}, nil, *orderBook, nil, nil, nil),
+		},
+	}
+	return res, nil
 }

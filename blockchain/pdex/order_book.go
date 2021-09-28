@@ -19,7 +19,7 @@ type Orderbook struct {
 
 func (ob Orderbook) MarshalJSON() ([]byte, error) {
 	temp := struct {
-		Orders []*Order `json:"orders"`
+		Orders []*Order `json:"orders,omitempty"`
 	}{ob.orders}
 	return json.Marshal(temp)
 }
