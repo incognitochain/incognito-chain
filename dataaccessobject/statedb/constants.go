@@ -70,6 +70,10 @@ const (
 	PortalProcessedUnshieldRequestBatchObjectType = 45
 
 	RewardRequestV3ObjectType = 46
+
+	// PRV EVM bridge
+	BridgePRVEVMObjectType = 47
+
 )
 
 // Prefix length
