@@ -950,12 +950,11 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 		//end fork TS -. reset bft + multiview
 		if stateRes == 1 {
+			a.chain.GetMultiView().ClearBranch()
 			fmt.Println("debugfork: simulate forkBSC", stateRes)
 			a.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
 			a.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
 			a.voteHistory = make(map[uint64]types.BlockInterface)
-			a.proposeHistory, err = lru.New(1000)
-			a.chain.GetMultiView().ClearBranch()
 			return errors.New("simulate forkBSC")
 		}
 
