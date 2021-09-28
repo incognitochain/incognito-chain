@@ -1,6 +1,7 @@
 package fork
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -46,6 +47,7 @@ func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType stri
 			}
 
 			currentDelayTs := (uint64(newBlock.GetProposeTime()) - uint64(blk.GetProposeTime())) / common.TIMESLOT
+			fmt.Println("debugfork:", currentDelayTs, fa.delayTS)
 			if currentDelayTs < fa.delayTS {
 				return 0
 			}

@@ -959,7 +959,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 			return errors.New("simulate forkBSC")
 		}
 
-		fmt.Println("debugfork: no fork")
+		fmt.Println("debugfork: no fork", blockInfo.(*types.BeaconBlock).GetProposeTime())
 	}
 
 	if err != nil || blockInfo == nil {
