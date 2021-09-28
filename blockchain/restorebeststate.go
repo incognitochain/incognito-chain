@@ -1,12 +1,13 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/config"
 )
 
 //RestoreBeaconViewStateFromHash ...
-func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
+func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
+	blockchain *BlockChain, includeCommittee bool,
+) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
 	if err != nil {
 		return err
@@ -29,11 +30,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		}
 	}
 
-	//TODO: @tin optimize here later by includePdex bool
-	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
-	if err != nil {
-		return err
-	}
 	if beaconBestState.BeaconHeight > config.Param().ConsensusParam.BlockProducingV3Height {
 		if err := beaconBestState.checkBlockProducingV3Config(); err != nil {
 			return err

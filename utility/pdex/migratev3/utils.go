@@ -137,7 +137,7 @@ func readState(url string) error {
 	if err != nil {
 		return err
 	}
-	for k := range pdexv3State.NftIDs {
+	for k := range *pdexv3State.NftIDs {
 		nftHash, err := common.Hash{}.NewHashFromStr(k)
 		if err != nil {
 			return err
@@ -145,7 +145,7 @@ func readState(url string) error {
 		nftID = *nftHash
 		log.Println("nftID.String():", nftID.String())
 	}
-	for k := range pdexv3State.PoolPairs {
+	for k := range *pdexv3State.PoolPairs {
 		poolPairID = k
 		log.Println("poolPairID:", poolPairID)
 	}
