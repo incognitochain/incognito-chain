@@ -310,7 +310,7 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 }
 
 func getSingleBeaconBlockByHeight(bc *blockchain.BlockChain, height uint64) (*types.BeaconBlock, error) {
-	beaconBlock, err := bc.GetBeaconBlockByView(bc.BeaconChain.GetFinalView(), height)
+	beaconBlock, err := bc.GetBeaconBlockByView(bc.BeaconChain.GetBestView(), height)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find beacon block with height %d %w", height, err)
 	}
