@@ -127,5 +127,19 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("support at most 100 txs, got %v", len(txHashList)))
 	}
 
-	return httpServer.txService.GetCoinInfoByHashes(txHashList, tokenID.String())
+	type TmpRes struct {
+		InputCoins [][]uint64 `json:"input_coins"`
+		OutputCoins []uint64  `json:"output_coins"`
+	}
+	res := make(map[string]TmpRes)
+	mapInputs, err1 := httpServer.outputCoinService.GetInputCoinInfoByHashes(txHashList, tokenID.String())
+	if err != nil {
+		return nil, err1
+	}
+	mapOutputs, err1 := httpServer.outputCoinService.GetOutputCoinInfoByHashes(txHashList, tokenID.String())
+	for txHashStr, inputs := range mapInputs {
+		res[txHashStr] = TmpRes{InputCoins: inputs, OutputCoins: mapOutputs[txHashStr]}
+	}
+
+	return res, nil
 }
