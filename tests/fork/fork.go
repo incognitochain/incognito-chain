@@ -34,7 +34,10 @@ if a.chain.IsBeaconChain() {
 
 	}
 */
-func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType string, blk *types.BeaconBlock, newBlock *types.BeaconBlock, delayTS uint64) int {
+func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType string, newBlock *types.BeaconBlock, delayTS uint64) int {
+	blk := mv.GetBestView().GetBlock()
+	finalBllk := mv.GetFinalView().GetBlock()
+
 	instruction := blk.GetInstructions()
 	for _, v := range instruction {
 		if v[0] == instType {
@@ -46,7 +49,7 @@ func ForkBeaconWithInstruction(id string, mv *multiview.MultiView, instType stri
 				}
 			}
 
-			currentDelayTs := (uint64(newBlock.GetProposeTime()) - uint64(blk.GetProposeTime())) / common.TIMESLOT
+			currentDelayTs := (uint64(newBlock.GetProposeTime()) - uint64(finalBllk.GetProposeTime())) / common.TIMESLOT
 			fmt.Println("debugfork:", currentDelayTs, fa.delayTS)
 			if currentDelayTs < fa.delayTS {
 				return 0
