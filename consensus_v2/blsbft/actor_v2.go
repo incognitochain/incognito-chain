@@ -940,7 +940,7 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
 	if a.chain.IsBeaconChain() {
-		stateRes := fork.ForkBeaconWithInstruction("forkBSC", a.chain.GetMultiView(), "250", a.chain.GetBestView().GetBlock().(*types.BeaconBlock), blockInfo.(*types.BeaconBlock), 4)
+		stateRes := fork.ForkBeaconWithInstruction("forkBSC", a.chain.GetMultiView(), "275", a.chain.GetBestView().GetBlock().(*types.BeaconBlock), blockInfo.(*types.BeaconBlock), 4)
 
 		//within fork TS
 		if stateRes == 0 {
