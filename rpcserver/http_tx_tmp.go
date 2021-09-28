@@ -140,6 +140,9 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 	for txHashStr, inputs := range mapInputs {
 		res[txHashStr] = TmpRes{InputCoins: inputs, OutputCoins: mapOutputs[txHashStr]}
 	}
+	fmt.Println("IIII", mapInputs)
+	fmt.Println("IIII", mapOutputs)
+	fmt.Println("IIII", res)
 
 	return res, nil
 }
