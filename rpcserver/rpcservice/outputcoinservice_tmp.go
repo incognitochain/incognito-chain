@@ -30,6 +30,7 @@ func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tok
 		if err != nil {
 			return nil, NewRPCError(RPCInternalError, fmt.Errorf("tx hash %v has not been found or has not been confirmed", txHashStr))
 		}
+		fmt.Println("IIII", tx.String())
 		if tx.GetVersion() == 1 ||
 			tx.GetType() == common.TxRewardType ||
 			tx.GetType() == common.TxReturnStakingType ||

@@ -127,6 +127,8 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("support at most 100 txs, got %v", len(txHashList)))
 	}
 
+	fmt.Println("IIII", txHashList)
+
 	type TmpRes struct {
 		InputCoins [][]uint64 `json:"input_coins"`
 		OutputCoins []uint64  `json:"output_coins"`
