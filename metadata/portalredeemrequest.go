@@ -123,17 +123,27 @@ func (redeemReq PortalRedeemRequestV3) ValidateTxWithBlockChain(
 }
 
 func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
+	// check tx type
+	if txr.GetType() != common.TxCustomTokenPrivacyType {
+		return false, false, fmt.Errorf("tx redeem request must be of type `tp`")
 	}
-	// validate value transfer of tx for redeem fee in prv
-	if redeemReq.RedeemFee != txr.CalculateTxValue() {
-		return false, false, errors.New("redeem fee amount should be equal to the tx value")
+
+	// check burned coins
+	isBurned, burnedPRVCoin, burnedTokenCoin, burnedTokenID, err := txr.GetTxFullBurnData()
+	if err != nil || !isBurned {
+		return false, false, fmt.Errorf("this is not tx burn")
 	}
-	// 	return true, true, nil
-	// }
+
+	// check redeem fee
+	if redeemReq.RedeemFee == 0 {
+		return false, false, fmt.Errorf("redeem fee should be greater than 0")
+	}
+	if burnedPRVCoin == nil {
+		return false, false, fmt.Errorf("must have a burned PRV output")
+	}
+	if redeemReq.RedeemFee != burnedPRVCoin.GetValue() {
+		return false, false, fmt.Errorf("expect redeemFee to be %v, got %v", redeemReq.RedeemFee, burnedPRVCoin.GetValue())
+	}
 
 	// validate RedeemerIncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)
@@ -145,17 +155,6 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Requester incognito address is invalid"))
 	}
 
-	// check burning tx
-	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
-	if err != nil || !isBurned {
-		return false, false, errors.New("Error This is not Tx Burn")
-	}
-
-	// check tx type
-	if txr.GetType() != common.TxCustomTokenPrivacyType {
-		return false, false, errors.New("tx redeem request must be TxCustomTokenPrivacyType")
-	}
-
 	// validate redeem amount
 	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight, common.PortalVersion3)
 	if err != nil {
@@ -164,15 +163,9 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 	if redeemReq.RedeemAmount < minAmount {
 		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}
-
-	// validate redeem fee
-	if redeemReq.RedeemFee <= 0 {
-		return false, false, errors.New("redeem fee should be larger than 0")
-	}
-
 	// validate value transfer of tx for redeem amount in ptoken
-	if redeemReq.RedeemAmount != burnCoin.GetValue() {
-		return false, false, errors.New("redeem amount should be equal to the tx value")
+	if redeemReq.RedeemAmount != burnedTokenCoin.GetValue() {
+		return false, false, fmt.Errorf("redeem amount should be equal to the tx value")
 	}
 
 	// validate tokenID
@@ -182,7 +175,7 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 	// check tokenId is portal token or not
 	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID, common.PortalVersion3)
 	if !isPortalToken || err != nil {
-		return false, false, errors.New("TokenID is not in portal tokens list")
+		return false, false, fmt.Errorf("TokenID is not in portal tokens list")
 	}
 
 	//validate RemoteAddress
