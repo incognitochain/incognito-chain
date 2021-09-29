@@ -66,7 +66,7 @@ type actorV1 struct {
 }
 
 func (actorV1 actorV1) SetBlockVersion(int) {
-	panic("implement me")
+	return
 }
 
 func (actorV1 *actorV1) Stop() error {

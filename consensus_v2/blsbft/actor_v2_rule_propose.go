@@ -41,6 +41,9 @@ type IProposeRule interface {
 	HandleCleanMem(finalView uint64)
 }
 
+type ICreateNewBlockRule interface {
+}
+
 type ProposeRuleLemma1 struct {
 	logger common.Logger
 }
