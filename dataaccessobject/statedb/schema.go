@@ -46,10 +46,12 @@ var (
 	pdeStatusPrefix                    = []byte("pdestatus-")
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeBSCTxPrefix                  = []byte("bri-bsc-tx-")
+	bridgePRVEVMPrefix                 = []byte("bri-prv-evm-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
+	syncingValidatorsPrefix            = []byte("syncing-validators-")
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// portal
@@ -141,14 +143,29 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		temp := []byte(string(committeePrefix) + strconv.Itoa(shardID))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
+	case SyncingValidators:
+		temp := []byte(string(syncingValidatorsPrefix) + strconv.Itoa(shardID))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
 	default:
 		panic("role not exist: " + strconv.Itoa(role))
 	}
+	return []byte{}
 }
 
 func GetStakerInfoPrefix() []byte {
 	h := common.HashH(stakerInfoPrefix)
 	return h[:][:prefixHashKeyLength]
+}
+
+func GetCommitteeTermKey(stakerPublicKey []byte) common.Hash {
+	h := common.HashH(stakerInfoPrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
 }
 
 func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
@@ -281,6 +298,11 @@ func GetBridgeEthTxPrefix() []byte {
 
 func GetBridgeBSCTxPrefix() []byte {
 	h := common.HashH(bridgeBSCTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgePRVEVMPrefix() []byte {
+	h := common.HashH(bridgePRVEVMPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"os"
 	"strconv"
-	"testing"
 	"time"
 
 	eCommon "github.com/ethereum/go-ethereum/common"
@@ -5098,8 +5097,4 @@ func (s *PortalTestSuiteV3) TestUnlockOverRateCollaterals() {
 	s.Equal(expectedResult.liquidationPool, s.currentPortalStateForProducer.LiquidationPool)
 
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
-}
-
-func TestPortalSuiteV3(t *testing.T) {
-	suite.Run(t, new(PortalTestSuiteV3))
 }

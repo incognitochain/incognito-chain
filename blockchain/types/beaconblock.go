@@ -46,6 +46,7 @@ type BeaconHeader struct {
 	ShardCandidateRoot              common.Hash `json:"ShardCandidateRoot"`              // CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
 	ShardCommitteeAndValidatorRoot  common.Hash `json:"ShardCommitteeAndValidatorRoot"`
 	AutoStakingRoot                 common.Hash `json:"AutoStakingRoot"`
+	ShardSyncValidatorRoot          common.Hash `json:"ShardSyncValidatorRoot"`
 	ConsensusType                   string      `json:"ConsensusType"`
 	Producer                        string      `json:"Producer"`
 	ProducerPubKeyStr               string      `json:"ProducerPubKeyStr"`
@@ -59,7 +60,16 @@ func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timest
 	return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr}
 }
 
-func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(instructionHash common.Hash, shardStateHash common.Hash, instructionMerkleRoot []byte, beaconCommitteeAndValidatorRoot common.Hash, beaconCandidateRoot common.Hash, shardCandidateRoot common.Hash, shardCommitteeAndValidatorRoot common.Hash, autoStakingRoot common.Hash) {
+func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(
+	instructionHash common.Hash,
+	shardStateHash common.Hash,
+	instructionMerkleRoot []byte,
+	beaconCommitteeAndValidatorRoot common.Hash,
+	beaconCandidateRoot common.Hash,
+	shardCandidateRoot common.Hash,
+	shardCommitteeAndValidatorRoot common.Hash,
+	autoStakingRoot common.Hash,
+	shardSyncValidatorRoot common.Hash) {
 	beaconHeader.InstructionHash = instructionHash
 	beaconHeader.ShardStateHash = shardStateHash
 	copy(beaconHeader.InstructionMerkleRoot[:], instructionMerkleRoot)
@@ -68,6 +78,7 @@ func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(instructionHash common.Has
 	beaconHeader.ShardCandidateRoot = shardCandidateRoot
 	beaconHeader.ShardCommitteeAndValidatorRoot = shardCommitteeAndValidatorRoot
 	beaconHeader.AutoStakingRoot = autoStakingRoot
+	beaconHeader.ShardSyncValidatorRoot = shardSyncValidatorRoot
 
 }
 
@@ -77,6 +88,8 @@ type ShardState struct {
 	Height             uint64
 	Hash               common.Hash
 	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
+	ProposerTime       int64
+	Version            int
 }
 
 func NewShardState(validationData string,
@@ -84,10 +97,20 @@ func NewShardState(validationData string,
 	height uint64,
 	hash common.Hash,
 	crossShard []byte,
+	proposerTime int64,
+	version int,
 ) ShardState {
 	newCrossShard := make([]byte, len(crossShard))
 	copy(newCrossShard, crossShard)
-	return ShardState{ValidationData: validationData, CommitteeFromBlock: committeeFromBlock, Height: height, Hash: hash, CrossShard: newCrossShard}
+	return ShardState{
+		ValidationData:     validationData,
+		CommitteeFromBlock: committeeFromBlock,
+		Height:             height,
+		Hash:               hash,
+		CrossShard:         newCrossShard,
+		ProposerTime:       proposerTime,
+		Version:            version,
+	}
 }
 
 func (beaconBlock *BeaconBlock) GetVersion() int {
@@ -180,6 +203,14 @@ func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
 
 func (beaconBlock BeaconBlock) GetConsensusType() string {
 	return beaconBlock.Header.ConsensusType
+}
+
+func (beaconBlock BeaconBlock) Type() string {
+	return common.BeaconChainKey
+}
+
+func (beaconBlock BeaconBlock) BodyHash() common.Hash {
+	return beaconBlock.Body.Hash()
 }
 
 func (beaconBlock *BeaconBody) toString() string {

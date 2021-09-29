@@ -60,6 +60,31 @@ func IsBSCTxHashIssued(stateDB *StateDB, uniqueBSCTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) error {
+	key := GenerateBrigePRVEVMObjectKey(uniquePRVEVMTx)
+	value := NewBrigePRVEVMStateWithValue(uniquePRVEVMTx)
+	err := stateDB.SetStateObject(BridgePRVEVMObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertPRVEVMTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) (bool, error) {
+	key := GenerateBrigePRVEVMObjectKey(uniquePRVEVMTx)
+	prvEVMTxState, has, err := stateDB.getBridgePRVEVMState(key)
+	if err != nil {
+		return false, NewStatedbError(BridgeInsertPRVEVMTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(prvEVMTxState.UniquePRVEVMTx(), uniquePRVEVMTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {
