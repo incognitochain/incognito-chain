@@ -15,8 +15,11 @@ func setNoVoteRule(url string) {
 
 	payload := strings.NewReader(`{
 	"jsonrpc": "1.0",
-    "method": "setnovoteruleflag",
-    "params": [true],
+    "method": "setconsensusrule",
+    "params": [{
+        "vote_rule": "no-vote",
+        "create_rule": "create-repropose"
+    }],
     "id": 1
 }`)
 
@@ -54,8 +57,11 @@ func setVoteRule(url string) {
 
 	payload := strings.NewReader(`{
 	"jsonrpc": "1.0",
-    "method": "setnovoteruleflag",
-    "params": [false],
+    "method": "setconsensusrule",
+    "params": [{
+        "vote_rule": "vote",
+        "create_rule": "create-repropose"
+    }],
     "id": 1
 }`)
 

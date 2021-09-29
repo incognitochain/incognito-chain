@@ -39,13 +39,15 @@ type IProposeRule interface {
 	CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error)
 	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool)
 	HandleCleanMem(finalView uint64)
-}
-
-type ICreateNewBlockRule interface {
+	FinalityProof() map[string]map[int64]string
 }
 
 type ProposeRuleLemma1 struct {
 	logger common.Logger
+}
+
+func (p ProposeRuleLemma1) FinalityProof() map[string]map[int64]string {
+	return make(map[string]map[int64]string)
 }
 
 func NewProposeRuleLemma1(logger common.Logger) *ProposeRuleLemma1 {
@@ -88,6 +90,10 @@ type ProposeRuleLemma2 struct {
 	logger                 common.Logger
 	nextBlockFinalityProof map[string]map[int64]string
 	chain                  Chain
+}
+
+func (p ProposeRuleLemma2) FinalityProof() map[string]map[int64]string {
+	return p.nextBlockFinalityProof
 }
 
 func NewProposeRuleLemma2(logger common.Logger, nextBlockFinalityProof map[string]map[int64]string, chain Chain) *ProposeRuleLemma2 {

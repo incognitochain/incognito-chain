@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
@@ -54,7 +55,7 @@ type actorV2 struct {
 
 	nextBlockFinalityProof map[string]map[int64]string
 
-	ruleBuilder  *ActorV2RuleStrategy
+	ruleDirector *ActorV2RuleDirector
 	blockVersion int
 }
 
@@ -103,12 +104,12 @@ func newActorV2WithValue(
 	a.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
 	a.voteHistory = make(map[uint64]types.BlockInterface)
 	a.nextBlockFinalityProof = make(map[string]map[int64]string)
-	//a.bodyHashes = make(map[uint64]map[string]bool)
-	//a.votedTimeslot = make(map[int64]bool)
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 	a.proposeHistory, err = lru.New(1000)
-	a.ruleBuilder = NewMultiviewActorRule(logger, chain, a.chain.GetBestViewHeight())
+	a.ruleDirector = NewActorV2RuleDirector()
+	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestViewHeight(), chain, logger)
+	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -235,7 +236,13 @@ func (a *actorV2) run() error {
 				continue
 			}
 
-			a.ruleBuilder.SetStrategy(a.chain.GetBestView().GetHeight())
+			a.ruleDirector.updateRule(
+				ActorV2BuilderContext,
+				a.ruleDirector.builder,
+				a.chain.GetBestView().GetHeight(),
+				a.chain,
+				a.logger,
+			)
 
 			select {
 			case <-a.destroyCh:
@@ -323,7 +330,8 @@ func (a *actorV2) run() error {
 					var finalityProof = NewFinalityProof()
 					var isValidRePropose bool = false
 					if proposeBlockInfo.block != nil {
-						finalityProof, isValidRePropose = a.ruleBuilder.proposeRule.GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
+						finalityProof, isValidRePropose = a.ruleDirector.builder.ProposeRule().
+							GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
 					}
 					if createdBlk, err := a.proposeBlock(
 						userProposeKey,
@@ -346,7 +354,7 @@ func (a *actorV2) run() error {
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
 						)
-						bftProposeMessage, err := a.ruleBuilder.proposeRule.CreateProposeBFTMessage(env, createdBlk)
+						bftProposeMessage, err := a.ruleDirector.builder.ProposeRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
 							a.logger.Error("Create BFT Propose Message Failed", err)
 						} else {
@@ -445,7 +453,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 		return
 	}
 
-	proposeBlockInfo = a.ruleBuilder.voteRule.ValidateVote(proposeBlockInfo)
+	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
 
 	if !proposeBlockInfo.isCommitted {
 		if proposeBlockInfo.validVotes > 2*len(proposeBlockInfo.signingCommittees)/3 {
@@ -498,7 +506,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 	if previousProposeBlockInfo, ok := a.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
-		previousProposeBlockInfo = a.ruleBuilder.voteRule.ValidateVote(previousProposeBlockInfo)
+		previousProposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(previousProposeBlockInfo)
 
 		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
 			previousProposeBlockInfo.signingCommittees,
@@ -688,44 +696,22 @@ func (a *actorV2) proposeShardBlock(
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	}
-	// propose new block when
-	// no previous proposed block
-	// or previous proposed block has different committee with new committees
-	if block == nil ||
-		(block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees)) {
-		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-		defer cancel()
-
-		//debug only
-		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
-		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(a.GetConsensusName())
-		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, a.GetConsensusName())
-		newBlock, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
-		if err != nil {
-			return nil, NewConsensusError(BlockCreationError, err)
-		}
-		a.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(),
-			proposerKeySetIndex, proposerKeySetSubsetID)
-	} else {
-		//debug only
-		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
-		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(a.GetConsensusName())
-		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, a.GetConsensusName())
-		producerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{block.GetProducer()})
-		producerKeySet := producerCommitteePK[0].GetMiningKeyBase58(a.GetConsensusName())
-		producerKeySetIndex, producerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, producerKeySet, a.GetConsensusName())
-
-		a.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v | "+
-			"Producer Index %+v, Producer SubsetID %+v | "+
-			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.Hash().String(),
-			producerKeySetIndex, producerKeySetSubsetID, proposerKeySetIndex, proposerKeySetSubsetID)
-		newBlock, err = a.chain.CreateNewBlockFromOldBlock(block, b58Str, a.currentTime, isValidRePropose)
-		if err != nil {
-			return nil, NewConsensusError(BlockCreationError, err)
-		}
+	isRePropose := true
+	if block == nil || (block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees)) {
+		isRePropose = false
 	}
+
+	newBlock, err = a.ruleDirector.builder.CreateRule().CreateBlock(
+		b58Str,
+		block,
+		committees,
+		committeeViewHash,
+		isValidRePropose,
+		a.GetConsensusName(),
+		a.blockVersion,
+		a.currentTime,
+		isRePropose,
+	)
 
 	return newBlock, err
 }
@@ -808,7 +794,7 @@ func (a *actorV2) sendVote(
 		signingCommittees,
 		portalParamV4,
 	)
-	vote, err := a.ruleBuilder.voteRule.CreateVote(env, block)
+	vote, err := a.ruleDirector.builder.VoteRule().CreateVote(env, block)
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -980,7 +966,7 @@ func (a *actorV2) handleNewProposeMsg(
 		userKeySet,
 		producerPublicBLSMiningKey,
 	)
-	proposeBlockInfo, err := a.ruleBuilder.proposeRule.HandleBFTProposeMessage(env, &proposeMsg)
+	proposeBlockInfo, err := a.ruleDirector.builder.ProposeRule().HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
 		a.logger.Errorf("Fail to apply lemma 2, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
@@ -1073,7 +1059,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	a.ruleBuilder.proposeRule.HandleCleanMem(a.chain.GetFinalView().GetHeight())
+	a.ruleDirector.builder.ProposeRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
 
 }
 
@@ -1087,7 +1073,7 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 	//Check for valid block to vote
 	bestViewHeight := bestView.GetHeight()
 	bestViewHash := *bestView.GetHash()
-	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.ruleBuilder.validatorRule.FilterValidProposeBlockInfo(
+	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.ruleDirector.builder.ValidatorRule().FilterValidProposeBlockInfo(
 		bestViewHash,
 		bestViewHeight,
 		a.chain.GetFinalView().GetHeight(),
@@ -1114,7 +1100,7 @@ func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *Propo
 	lastVotedBlock, isVoted := a.voteHistory[bestViewHeight+1]
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
-	isValid, err := a.ruleBuilder.validatorRule.ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
+	isValid, err := a.ruleDirector.builder.ValidatorRule().ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
 		return err
 	}

@@ -137,7 +137,7 @@ const (
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
 	getFinalityProof           = "getfinalityproof"
-	setNoVoteRuleFlag          = "setnovoteruleflag"
+	setConsensusRule           = "setconsensusrule"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"

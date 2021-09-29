@@ -323,21 +323,28 @@ func (httpServer *HttpServer) handleGetFinalityProof(params interface{}, closeCh
 	}, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
-func (httpServer *HttpServer) handleSetNoVoteRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
 	}
 
-	flag, ok := arrayParams[0].(bool)
+	param, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid flag Value"))
 	}
 
-	blsbft.IsNoVoteRule = flag
+	voteRule := param["vote_rule"]
+	createRule := param["create_rule"]
 
-	return "successfully set flag", nil
+	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+	return map[string]interface{}{
+		"vote_rule":     blsbft.ActorV2BuilderContext.VoteRule,
+		"create_rule":   blsbft.ActorV2BuilderContext.CreateRule,
+		"lemma2_height": blsbft.ActorV2BuilderContext.Lemma2Height,
+	}, nil
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

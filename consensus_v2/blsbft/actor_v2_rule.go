@@ -2,71 +2,195 @@ package blsbft
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 )
 
 var (
-	lemma2Height = uint64(1e9)
-	IsNoVoteRule = false
+	VOTERULE_VOTE          = "vote"
+	VOTERULE_NO_VOTE       = "no-vote"
+	CREATERULE_CREATE_ONLY = "create"
+	CREATERULE_NORMAL      = "create-repropose"
 )
 
-type ActorV2RuleStrategy struct {
-	proposeRule   IProposeRule
-	voteRule      IVoteRule
-	validatorRule IConsensusValidator
-	logger        common.Logger
-	chain         Chain
+type builderContext struct {
+	Lemma2Height uint64
+	VoteRule     string
+	CreateRule   string
 }
 
-func NewMultiviewActorRule(logger common.Logger, chain Chain, bestViewHeight uint64) *ActorV2RuleStrategy {
-	lemma2Height = config.Param().ConsensusParam.Lemma2Height
-	r := &ActorV2RuleStrategy{logger: logger, chain: chain}
-	r.SetStrategy(bestViewHeight)
-	return r
+var ActorV2BuilderContext = &builderContext{
+	VoteRule:   VOTERULE_VOTE,
+	CreateRule: CREATERULE_NORMAL,
 }
 
-func (r *ActorV2RuleStrategy) SetStrategy(bestViewHeight uint64) {
+func SetBuilderContext(lemma2Height uint64) {
+	ActorV2BuilderContext.Lemma2Height = lemma2Height
+}
 
-	if bestViewHeight >= lemma2Height {
-		if reflect.TypeOf(r.proposeRule) != reflect.TypeOf(new(ProposeRuleLemma2)) {
-			r.proposeRule = NewProposeRuleLemma2(
-				r.logger,
-				make(map[string]map[int64]string),
-				r.chain,
-			)
+type IActorV2RuleBuilder interface {
+	SetProposeRule(IProposeRule)
+	SetVoteRule(IVoteRule)
+	SetCreateRule(ICreateNewBlockRule)
+	SetValidatorRule(IConsensusValidator)
+	ProposeRule() IProposeRule
+	VoteRule() IVoteRule
+	CreateRule() ICreateNewBlockRule
+	ValidatorRule() IConsensusValidator
+}
+
+type ActorV2RuleBuilder struct {
+	proposeRule     IProposeRule
+	voteRule        IVoteRule
+	createBlockRule ICreateNewBlockRule
+	validatorRule   IConsensusValidator
+	logger          common.Logger
+	chain           Chain
+}
+
+func NewActorV2RuleBuilder() *ActorV2RuleBuilder {
+	return &ActorV2RuleBuilder{}
+}
+
+func (r *ActorV2RuleBuilder) SetProposeRule(rule IProposeRule) {
+	r.proposeRule = rule
+}
+
+func (r *ActorV2RuleBuilder) SetVoteRule(rule IVoteRule) {
+	r.voteRule = rule
+}
+
+func (r *ActorV2RuleBuilder) SetCreateRule(rule ICreateNewBlockRule) {
+	r.createBlockRule = rule
+}
+
+func (r *ActorV2RuleBuilder) SetValidatorRule(validator IConsensusValidator) {
+	r.validatorRule = validator
+}
+
+func (r *ActorV2RuleBuilder) ProposeRule() IProposeRule {
+	return r.proposeRule
+}
+
+func (r *ActorV2RuleBuilder) VoteRule() IVoteRule {
+	return r.voteRule
+}
+
+func (r *ActorV2RuleBuilder) CreateRule() ICreateNewBlockRule {
+	return r.createBlockRule
+}
+
+func (r *ActorV2RuleBuilder) ValidatorRule() IConsensusValidator {
+	return r.validatorRule
+}
+
+type ActorV2RuleDirector struct {
+	builder IActorV2RuleBuilder
+}
+
+func NewActorV2RuleDirector() *ActorV2RuleDirector {
+	return &ActorV2RuleDirector{}
+}
+
+func (d *ActorV2RuleDirector) initRule(ctx *builderContext,
+	bestViewHeight uint64,
+	chain Chain,
+	logger common.Logger,
+) {
+
+	builder := NewActorV2RuleBuilder()
+	if bestViewHeight >= ctx.Lemma2Height {
+		d.builder = d.makeLemma2Rule(builder, logger, chain)
+	} else {
+		d.builder = d.makeLemma1Rule(builder, logger, chain)
+	}
+}
+
+func (d *ActorV2RuleDirector) updateRule(
+	ctx *builderContext,
+	builder IActorV2RuleBuilder,
+	bestViewHeight uint64,
+	chain Chain,
+	logger common.Logger,
+) {
+	if bestViewHeight >= ctx.Lemma2Height {
+		builder = d.makeLemma2Rule(builder, logger, chain)
+		if ctx.VoteRule == VOTERULE_VOTE {
+			builder.SetVoteRule(NewVoteRule(
+				logger,
+			))
 		}
-		if reflect.TypeOf(r.validatorRule) != reflect.TypeOf(new(ConsensusValidatorLemma2)) {
-			r.validatorRule = NewConsensusValidatorV2(
-				r.logger,
-				r.chain,
-			)
+
+		if ctx.VoteRule == VOTERULE_NO_VOTE {
+			builder.SetVoteRule(NewNoVoteRule(
+				logger,
+			))
+		}
+
+		if ctx.CreateRule == CREATERULE_CREATE_ONLY {
+			builder.SetCreateRule(NewOnlyCreateBlockRule(
+				logger,
+				chain,
+			))
+		}
+
+		if ctx.CreateRule == CREATERULE_NORMAL {
+			builder.SetCreateRule(NewNormalCreateBlockRule(
+				logger,
+				chain,
+			))
 		}
 	} else {
-		if reflect.TypeOf(r.proposeRule) != reflect.TypeOf(new(ProposeRuleLemma1)) {
-			r.proposeRule = NewProposeRuleLemma1(
-				r.logger,
-			)
-		}
-		if reflect.TypeOf(r.validatorRule) != reflect.TypeOf(new(ConsensusValidatorLemma1)) {
-			r.validatorRule = NewConsensusValidatorV1(
-				r.logger,
-				r.chain,
-			)
-		}
+		builder = d.makeLemma1Rule(builder, logger, chain)
 	}
 
-	if !IsNoVoteRule {
-		if reflect.TypeOf(r.voteRule) != reflect.TypeOf(new(VoteRule)) {
-			r.voteRule = NewVoteRule(
-				r.logger,
-			)
-		}
-	} else {
-		if reflect.TypeOf(r.voteRule) != reflect.TypeOf(new(NoVoteRule)) {
-			r.voteRule = NewNoVoteRule(
-				r.logger,
-			)
-		}
+}
+
+func (d *ActorV2RuleDirector) makeLemma1Rule(builder IActorV2RuleBuilder, logger common.Logger, chain Chain) IActorV2RuleBuilder {
+
+	builder.SetProposeRule(NewProposeRuleLemma1(
+		logger,
+	))
+
+	builder.SetCreateRule(NewNormalCreateBlockRule(
+		logger,
+		chain,
+	))
+
+	builder.SetVoteRule(NewVoteRule(
+		logger,
+	))
+
+	builder.SetValidatorRule(NewConsensusValidatorV1(
+		logger,
+		chain,
+	))
+
+	return builder
+}
+
+func (d *ActorV2RuleDirector) makeLemma2Rule(builder IActorV2RuleBuilder, logger common.Logger, chain Chain) IActorV2RuleBuilder {
+
+	if builder.ProposeRule() == nil ||
+		reflect.TypeOf(builder.ProposeRule()) != reflect.TypeOf(new(ProposeRuleLemma2)) {
+		builder.SetProposeRule(NewProposeRuleLemma2(
+			logger,
+			make(map[string]map[int64]string),
+			chain,
+		))
 	}
+	builder.SetCreateRule(NewNormalCreateBlockRule(
+		logger,
+		chain,
+	))
+
+	builder.SetVoteRule(NewVoteRule(
+		logger,
+	))
+
+	builder.SetValidatorRule(NewConsensusValidatorV2(
+		logger,
+		chain,
+	))
+
+	return builder
 }
