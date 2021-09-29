@@ -95,8 +95,8 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewHash commo
 		}
 
 		if proposeBlockInfo.block.GetHeight() < finalViewHeight {
-			//delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
 			invalidProposeBlock = append(invalidProposeBlock, h)
+			continue
 		}
 
 		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
@@ -211,8 +211,8 @@ func (c ConsensusValidatorLemma1) FilterValidProposeBlockInfo(bestViewHash commo
 		}
 
 		if proposeBlockInfo.block.GetHeight() < finalViewHeight {
-			//delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
 			invalidProposeBlock = append(invalidProposeBlock, h)
+			continue
 		}
 
 		validProposeBlock = append(validProposeBlock, proposeBlockInfo)

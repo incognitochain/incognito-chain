@@ -155,6 +155,12 @@ func main() {
 	if os.Args[1] == "set_vote" {
 		setVoteRuleShard0()
 	}
+	if os.Args[1] == "only_create" {
+		setCreateOnlyShard0()
+	}
+	if os.Args[1] == "normal_create" {
+		setNormalCreateShard0()
+	}
 	if os.Args[1] == "interval_vote" {
 		setIntervalVoteRule()
 	}
