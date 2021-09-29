@@ -434,15 +434,23 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 			case metadata.IssuingETHRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta, false)
 				}
 			case metadata.IssuingBSCRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta, false)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
+				}
+			case metadata.IssuingPRVERC20RequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPRVERC20ResponseMeta, true)
+				}
+			case metadata.IssuingPRVBEP20RequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPRVBEP20ResponseMeta, true)
 				}
 			case metadata.PDETradeRequestMeta:
 				if len(inst) >= 4 {

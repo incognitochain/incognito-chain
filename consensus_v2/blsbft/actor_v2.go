@@ -131,6 +131,14 @@ func (a actorV2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	return nil
 }
 
+func (a actorV2) BlockVersion() int {
+	return a.blockVersion
+}
+
+func (a *actorV2) SetBlockVersion(version int) {
+	a.blockVersion = version
+}
+
 func (a *actorV2) Stop() error {
 	if a.isStarted {
 		a.logger.Infof("stop bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
@@ -1225,10 +1233,6 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	}
 
 	return nil
-}
-
-func (a *actorV2) BlockVersion() int {
-	return a.blockVersion
 }
 
 func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {

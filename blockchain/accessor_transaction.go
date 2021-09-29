@@ -5,7 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"sort"
@@ -168,10 +168,12 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 			if _, ok = withdrawReqTable[tx.Hash().String()]; !ok {
 				withdrawReqTable[tx.Hash().String()] = md
+			} else {
+				return errors.Errorf("Double withdraw request, tx double %v", tx.Hash().String())
 			}
 		}
 	}
-
+	rewardDB := blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB()
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
@@ -204,14 +206,15 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 
 			//check amount & receiver
-			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
-				base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), *coinID)
+			receiver := base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version)
+			rewardAmount, err := statedb.GetCommitteeReward(rewardDB, receiver, *coinID)
 			if err != nil {
-				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount")
+				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount for receiver %v, token %v, err %v", receiver, coinID.String(), err)
 			}
 			if ok := mintCoin.CheckCoinValid(rewardPaymentAddress, metaResponse.SharedRandom, rewardAmount); !ok {
-				Logger.log.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), rewardAmount, mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().String())
-				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
+				err = errors.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), rewardAmount, mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().String())
+				Logger.log.Error(err)
+				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount, err %v", err)
 			}
 		}
 	}
@@ -614,7 +617,11 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 	// create a map from Hash(TokenID) => TokenID
 	rawAssetTags := make(map[string]*common.Hash)
 	for _, tokenID := range allTokens {
-		rawAssetTags[privacy.HashToPoint(tokenID[:]).String()] = &tokenID
+		clonedTokenID, err := new(common.Hash).NewHash(tokenID[:])
+		if err != nil {
+			return nil, err
+		}
+		rawAssetTags[privacy.HashToPoint(clonedTokenID[:]).String()] = clonedTokenID
 	}
 
 	res := make(map[string]uint64)

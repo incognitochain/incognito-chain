@@ -32,6 +32,7 @@ type Actor interface {
 	// SignData - sign data with this consensus signature scheme
 	SignData(data []byte) (string, error)
 	BlockVersion() int
+	SetBlockVersion(version int)
 }
 
 func NewActorWithValue(
