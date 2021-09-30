@@ -277,10 +277,10 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		var amount0, amount1 uint64
 		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
 			amount0 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
-			amount1 = matchAndReturnContributionValue.Amount()
+			amount1 = matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount()
 		} else {
 			amount1 = matchAndReturnAddLiquidity.ExistedTokenActualAmount()
-			amount0 = matchAndReturnContributionValue.Amount()
+			amount0 = matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount()
 		}
 		err = poolPair.updateReserveData(amount0, amount1, matchAndReturnAddLiquidity.ShareAmount(), addOperator)
 		if err != nil {
