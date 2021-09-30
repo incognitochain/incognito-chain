@@ -54,6 +54,7 @@ type GetShardBlockResult struct {
 	Instruction        [][]string         `json:"Instruction"`
 	CrossShardBitMap   []int              `json:"CrossShardBitMap"`
 	ProposeTime        int64              `json:"ProposeTime"`
+	Proposer           string             `json:"Proposer"`
 	SubsetID           int                `json:"SubsetID"`
 	SigningCommittee   []string           `json:"SigningCommittee"`
 	FinalityHeight     uint64             `json:"FinalityHeight"`

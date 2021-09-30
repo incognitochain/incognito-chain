@@ -158,6 +158,9 @@ func main() {
 	if os.Args[1] == "only_create" {
 		setCreateOnlyShard0()
 	}
+	if os.Args[1] == "only_create_no_vote" {
+		setCreateOnlyNoVoteShard0()
+	}
 	if os.Args[1] == "normal_create" {
 		setNormalCreateShard0()
 	}

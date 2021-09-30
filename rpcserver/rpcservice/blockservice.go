@@ -136,6 +136,9 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
 		result.FinalityHeight = shardBlock.Header.FinalityHeight
+		result.ProposeTime = shardBlock.Header.ProposeTime
+		result.Proposer = shardBlock.Header.Proposer
+		result.BlockProducer = shardBlock.Header.Producer
 	} else if verbosity == "2" {
 		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
@@ -216,7 +219,9 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			result.SigningCommittee = signingCommittees
 		}
 		result.FinalityHeight = shardBlock.Header.FinalityHeight
-
+		result.ProposeTime = shardBlock.Header.ProposeTime
+		result.Proposer = shardBlock.Header.Proposer
+		result.BlockProducer = shardBlock.Header.Producer
 	}
 	return &result, nil
 }
@@ -282,6 +287,9 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				res.TxHashes = append(res.TxHashes, tx.Hash().String())
 			}
 			res.FinalityHeight = shardBlock.Header.FinalityHeight
+			res.ProposeTime = shardBlock.Header.ProposeTime
+			res.Proposer = shardBlock.Header.Proposer
+			res.BlockProducer = shardBlock.Header.Producer
 		} else if verbosity == "2" {
 			best := blockService.BlockChain.GetBestStateShard(shardID).BestBlock
 			blockHeight := shardBlock.Header.Height
@@ -360,7 +368,9 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				res.SigningCommittee = signingCommittees
 			}
 			res.FinalityHeight = shardBlock.Header.FinalityHeight
-
+			res.ProposeTime = shardBlock.Header.ProposeTime
+			res.Proposer = shardBlock.Header.Proposer
+			res.BlockProducer = shardBlock.Header.Producer
 		}
 		result = append(result, &res)
 	}
