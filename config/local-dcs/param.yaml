@@ -21,13 +21,13 @@ block_time:
   min_shard_block_interval: 10s
   max_shard_block_creation: 6s
 staking_amount_shard: 1750000000000
-active_shards: 2
+active_shards: 1
 basic_reward: 400000000
 epoch_param:
-  number_of_block_in_epoch: 50
+  number_of_block_in_epoch: 10
   number_of_block_in_epoch_v2: 1000000000000
   epoch_v2_break_point: 1000000000000
-  random_time: 25
+  random_time: 5
   random_time_v2: 1000000000000
 eth_contract_address: "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -40,9 +40,10 @@ consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
-  assign_rule_v3_height: 1000000000000
   enable_slashing_height_v2: 1
-  staking_flow_v3_height: 1000000000000
+  assign_rule_v3_height: 1
+  staking_flow_v3_height: 1
+  block_producing_v3_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: 
     - 1000000000
@@ -59,6 +60,6 @@ geth_param:
   host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
   protocol: "https"
   port: ""
-is_enable_bpv3_stats: true
 bsc_param:
-  host: "https://data-seed-prebsc-2-s1.binance.org:8545"
+  host: "https://data-seed-prebsc-1-s1.binance.org:8545"
+is_enable_bpv3_stats: true

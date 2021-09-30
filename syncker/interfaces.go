@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/wire"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -20,6 +21,7 @@ type Network interface {
 	RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
+	PublishMessageToShard(msg wire.Message, shardID byte) error
 }
 
 type BeaconChainInterface interface {
@@ -44,7 +46,7 @@ type Chain interface {
 	GetBestViewHash() string
 	GetFinalViewHash() string
 	GetEpoch() uint64
-	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
@@ -53,7 +55,7 @@ type Chain interface {
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
 	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
-	CommitteeStateVersion() uint
+	CommitteeStateVersion() int
 }
 
 const (

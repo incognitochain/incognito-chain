@@ -32,7 +32,7 @@ func (_m *BeaconViewRetriever) CandidateWaitingForNextRandom() []incognitokey.Co
 }
 
 // GetAllCommitteeValidatorCandidate provides a mock function with given fields:
-func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	ret := _m.Called()
 
 	var r0 map[byte][]incognitokey.CommitteePublicKey
@@ -53,12 +53,12 @@ func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]i
 		}
 	}
 
-	var r2 []incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(2).(func() []incognitokey.CommitteePublicKey); ok {
+	var r2 map[byte][]incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(2).(func() map[byte][]incognitokey.CommitteePublicKey); ok {
 		r2 = rf()
 	} else {
 		if ret.Get(2) != nil {
-			r2 = ret.Get(2).([]incognitokey.CommitteePublicKey)
+			r2 = ret.Get(2).(map[byte][]incognitokey.CommitteePublicKey)
 		}
 	}
 
@@ -107,14 +107,23 @@ func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]i
 		}
 	}
 
-	var r8 error
-	if rf, ok := ret.Get(8).(func() error); ok {
+	var r8 []incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(8).(func() []incognitokey.CommitteePublicKey); ok {
 		r8 = rf()
 	} else {
-		r8 = ret.Error(8)
+		if ret.Get(8) != nil {
+			r8 = ret.Get(8).([]incognitokey.CommitteePublicKey)
+		}
 	}
 
-	return r0, r1, r2, r3, r4, r5, r6, r7, r8
+	var r9 error
+	if rf, ok := ret.Get(9).(func() error); ok {
+		r9 = rf()
+	} else {
+		r9 = ret.Error(9)
+	}
+
+	return r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
 }
 
 // GetAllCommitteeValidatorCandidateFlattenListFromDatabase provides a mock function with given fields:

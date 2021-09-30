@@ -4,15 +4,17 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-
-	"github.com/incognitochain/incognito-chain/utils"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -37,10 +39,19 @@ type ShardSyncProcess struct {
 	beaconChain           Chain
 	shardPool             *BlkPool
 	actionCh              chan func()
+	consensus             peerv2.ConsensusData
+	lock                  *sync.RWMutex
 	lastInsert            string
 }
 
-func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+func NewShardSyncProcess(
+	shardID int,
+	network Network,
+	bc *blockchain.BlockChain,
+	beaconChain BeaconChainInterface,
+	chain ShardChainInterface,
+	consensus peerv2.ConsensusData,
+) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
@@ -58,6 +69,7 @@ func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain
 		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
+		consensus:        consensus,
 
 		actionCh: make(chan func()),
 	}
@@ -65,6 +77,7 @@ func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
+	go s.syncFinishSyncMessage()
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
@@ -208,13 +221,58 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 		if requestCnt > 0 {
 			s.isCatchUp = false
-			// s.syncShardProcess()
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
 			}
 			time.Sleep(time.Second * 5)
 		}
+	}
+}
+
+func (s *ShardSyncProcess) trySendFinishSyncMessage() {
+	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+	validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
+		s.consensus.GetSyncingValidators(), byte(s.shardID))
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	for i, v := range validatorFromUserKeys {
+		signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+		if err != nil {
+			continue
+		}
+		finishedSyncSignatures = append(finishedSyncSignatures, signature)
+		finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
+	}
+	if len(finishedSyncValidators) == 0 {
+		return
+	}
+	Logger.Infof("Send Finish Sync Message, shard %+v, key %+v \n signature %+v", byte(s.shardID), finishedSyncValidators, finishedSyncSignatures)
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(s.shardID))
+	if err := s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+		Logger.Errorf("trySendFinishSyncMessage Public Message to Chain %+v, error %+v", common.BeaconChainSyncID, err)
+	}
+}
+
+//TODO: @hung review sync finish sync message when node in SYNC_MODE only???
+func (s *ShardSyncProcess) syncFinishSyncMessage() {
+
+	sleepTime := time.Duration(common.TIMESLOT/2) * time.Second
+	for {
+		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+		if committeeView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
+			convertedTimeslot := time.Duration(common.TIMESLOT) * time.Second
+			now := time.Now().Unix()
+			ceiling := now + 5*convertedTimeslot.Milliseconds()
+			floor := now - 5*convertedTimeslot.Milliseconds()
+			if floor <= shardView.BestBlock.Header.Timestamp &&
+				shardView.BestBlock.Header.Timestamp <= ceiling {
+				s.trySendFinishSyncMessage()
+			}
+		}
+
+		time.Sleep(sleepTime)
 	}
 
 }
