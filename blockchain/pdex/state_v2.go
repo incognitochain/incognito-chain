@@ -338,6 +338,13 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, tradeInstructions...)
 
+	var matchedWithdrawInstructions [][]string
+	matchedWithdrawInstructions, s.poolPairs, err = s.producer.withdrawAllMatchedOrders(s.poolPairs)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, matchedWithdrawInstructions...)
+
 	var distributingInstruction [][]string
 	distributingInstruction, s.stakingPoolStates, err = s.producer.distributeStakingReward(
 		s.poolPairs,

@@ -609,7 +609,7 @@ func (sp *stateProcessorV2) addOrder(
 		// fee for this request is deducted right away, while the fee stored in the order itself
 		// starts from 0 and will accumulate over time
 		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, md.NftID, md.Token0Rate, md.Token1Rate,
-			md.Token0Balance, md.Token1Balance, md.TradeDirection, 0)
+			md.Token0Balance, md.Token1Balance, md.TradeDirection, md.Receiver)
 		pair.orderbook.InsertOrder(newOrder)
 		// write changes to state
 		pairs[md.PoolPairID] = pair
