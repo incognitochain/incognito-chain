@@ -965,7 +965,11 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 		}
 		defer blockchain.config.TempTxPool.EmptyPool()
 		listTxs := []metadata.Transaction{}
+		whiteListTxs := blockchain.WhiteListTx()
 		for _, tx := range txs {
+			if ok := whiteListTxs[tx.Hash().String()]; ok {
+				return nil
+			}
 			if tx.IsSalaryTx() {
 				_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, int64(bView.BeaconHeight), curView)
 				if err != nil {
