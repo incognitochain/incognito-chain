@@ -705,12 +705,12 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			if matchedToken0 {
 				currentBalance := ord.Token1Balance()
 				ord.SetToken0Balance(0)
-				withdrawResults[pair.state.Token0ID()] = currentBalance
+				withdrawResults[pair.state.Token1ID()] = currentBalance
 			}
 			if matchedToken1 {
 				currentBalance := ord.Token0Balance()
 				ord.SetToken1Balance(0)
-				withdrawResults[pair.state.Token1ID()] = currentBalance
+				withdrawResults[pair.state.Token0ID()] = currentBalance
 			}
 
 			// apply orderbook changes for withdraw consistency in the same block
