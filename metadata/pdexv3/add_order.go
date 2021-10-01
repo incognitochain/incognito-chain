@@ -45,6 +45,10 @@ func NewAddOrderRequest(
 }
 
 func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

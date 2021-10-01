@@ -41,6 +41,10 @@ func NewWithdrawOrderRequest(
 }
 
 func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -48,7 +52,7 @@ func (req WithdrawOrderRequest) ValidateSanityData(chainRetriever metadataCommon
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
 	}
-	
+
 	// OTAReceiver check
 	for _, item := range req.Receiver {
 		if !item.IsValid() {

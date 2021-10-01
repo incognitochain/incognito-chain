@@ -57,6 +57,10 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
+	err := beaconViewRetriever.IsValidPdexv3StakingPool(withdrawal.StakingPoolID)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

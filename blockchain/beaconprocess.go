@@ -902,13 +902,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 
 	// execute, store PDE instruction
-
-	// transfrom beacon height for pdex process
-
-	pdeVersions := []uint{}
-	for version := range newBestState.pdeStates {
-		pdeVersions = append(pdeVersions, version)
-	}
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconInstructions(beaconBlock.Body.Instructions).
@@ -916,19 +909,21 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		BuildBeaconHeight(beaconBlock.Header.Height - 1).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
+		BuildAutoWithdrawOrderLimitAmount(config.Param().PDexParams.AutoWithdrawOrderLimitAmount).
+		BuildMaxShardAmount(uint(config.Param().ActiveShards)).
 		Build()
 
-	for _, version := range pdeVersions {
-		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
+	for version, pdeState := range newBestState.pdeStates {
+		pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
-		err = newBestState.pdeStates[version].Process(pdeStateEnv)
+		err = pdeState.Process(pdeStateEnv)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
 
 		pdexStateChange := pdex.NewStateChange()
-		diffState, pdexStateChange, err := newBestState.pdeStates[version].GetDiff(curView.pdeStates[version], pdexStateChange)
+		diffState, pdexStateChange, err := pdeState.GetDiff(curView.pdeStates[version], pdexStateChange)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -942,11 +937,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 
 		//clear DeletedWaitingPDEContributions
-		newBestState.pdeStates[version].ClearCache()
+		pdeState.ClearCache()
 		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
 
 		// transfrom beacon height for pdex process
-		newBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+		pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
 
 		if err != nil {
 			return NewBlockChainError(ProcessPDEInstructionError, err)

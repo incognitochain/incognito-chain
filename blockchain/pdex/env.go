@@ -18,6 +18,8 @@ type StateEnvBuilder interface {
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
 	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
 	BuildPdexv3BreakPoint(uint64) StateEnvBuilder
+	BuildAutoWithdrawOrderLimitAmount(uint) StateEnvBuilder
+	BuildMaxShardAmount(uint) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -37,7 +39,19 @@ type stateEnvironment struct {
 	listTxs                        map[byte][]metadata.Transaction
 	stateDB                        *statedb.StateDB
 	bcHeightBreakPointPrivacyV2    uint64
+	autoWithdrawOrderLimitAmount   uint
+	maxShardAmount                 uint
 	pdexv3BreakPoint               uint64
+}
+
+func (env *stateEnvironment) BuildAutoWithdrawOrderLimitAmount(limitAmount uint) StateEnvBuilder {
+	env.autoWithdrawOrderLimitAmount = limitAmount
+	return env
+}
+
+func (env *stateEnvironment) BuildMaxShardAmount(maxShardAmount uint) StateEnvBuilder {
+	env.maxShardAmount = maxShardAmount
+	return env
 }
 
 func (env *stateEnvironment) BuildPdexv3BreakPoint(beaconHeight uint64) StateEnvBuilder {
@@ -116,6 +130,8 @@ type StateEnvironment interface {
 	ListTxs() map[byte][]metadata.Transaction
 	StateDB() *statedb.StateDB
 	BCHeightBreakPointPrivacyV2() uint64
+	AutoWithdrawOrderLimitAmount() uint
+	MaxShardAmount() uint
 	Pdexv3BreakPoint() uint64
 }
 
@@ -165,4 +181,12 @@ func (env *stateEnvironment) BCHeightBreakPointPrivacyV2() uint64 {
 
 func (env *stateEnvironment) Pdexv3BreakPoint() uint64 {
 	return env.pdexv3BreakPoint
+}
+
+func (env *stateEnvironment) AutoWithdrawOrderLimitAmount() uint {
+	return env.autoWithdrawOrderLimitAmount
+}
+
+func (env *stateEnvironment) MaxShardAmount() uint {
+	return env.maxShardAmount
 }
