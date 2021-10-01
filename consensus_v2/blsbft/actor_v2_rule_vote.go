@@ -224,5 +224,32 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 }
 
 func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
+	i.logger.Criticalf("NO VOTE")
 	return nil, fmt.Errorf("No vote for block %+v, %+v", block.GetHeight(), block.Hash().String())
+}
+
+type IHandleVoteMessageRule interface {
+	IsHandler() bool
+}
+
+type HandleVoteMessage struct {
+}
+
+func NewHandleVoteMessage() *HandleVoteMessage {
+	return &HandleVoteMessage{}
+}
+
+func (h HandleVoteMessage) IsHandler() bool {
+	return true
+}
+
+type NoHandleVoteMessage struct {
+}
+
+func NewNoHandleVoteMessage() *NoHandleVoteMessage {
+	return &NoHandleVoteMessage{}
+}
+
+func (h NoHandleVoteMessage) IsHandler() bool {
+	return false
 }

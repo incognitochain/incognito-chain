@@ -6,21 +6,25 @@ import (
 )
 
 var (
-	VOTERULE_VOTE          = "vote"
-	VOTERULE_NO_VOTE       = "no-vote"
-	CREATERULE_CREATE_ONLY = "create"
-	CREATERULE_NORMAL      = "create-repropose"
+	VOTERULE_VOTE                = "vote"
+	VOTERULE_NO_VOTE             = "no-vote"
+	HANDLEVOTEMESSAGE_COLLECT    = "collect-vote"
+	HANDLEVOTEMESSAGE_NO_COLLECT = "no-collect-vote"
+	CREATERULE_CREATE_ONLY       = "create"
+	CREATERULE_NORMAL            = "create-repropose"
 )
 
 type builderContext struct {
-	Lemma2Height uint64
-	VoteRule     string
-	CreateRule   string
+	Lemma2Height   uint64
+	VoteRule       string
+	CreateRule     string
+	HandleVoteRule string
 }
 
 var ActorV2BuilderContext = &builderContext{
-	VoteRule:   VOTERULE_VOTE,
-	CreateRule: CREATERULE_NORMAL,
+	VoteRule:       VOTERULE_VOTE,
+	CreateRule:     CREATERULE_NORMAL,
+	HandleVoteRule: HANDLEVOTEMESSAGE_COLLECT,
 }
 
 func SetBuilderContext(lemma2Height uint64) {
@@ -32,10 +36,12 @@ type IActorV2RuleBuilder interface {
 	SetVoteRule(IVoteRule)
 	SetCreateRule(ICreateNewBlockRule)
 	SetValidatorRule(IConsensusValidator)
+	SetHandleVoteMessageRule(IHandleVoteMessageRule)
 	ProposeRule() IProposeRule
 	VoteRule() IVoteRule
 	CreateRule() ICreateNewBlockRule
 	ValidatorRule() IConsensusValidator
+	HandleVoteMessageRule() IHandleVoteMessageRule
 }
 
 type ActorV2RuleBuilder struct {
@@ -43,6 +49,7 @@ type ActorV2RuleBuilder struct {
 	voteRule        IVoteRule
 	createBlockRule ICreateNewBlockRule
 	validatorRule   IConsensusValidator
+	handleVoteRule  IHandleVoteMessageRule
 	logger          common.Logger
 	chain           Chain
 }
@@ -67,6 +74,10 @@ func (r *ActorV2RuleBuilder) SetValidatorRule(validator IConsensusValidator) {
 	r.validatorRule = validator
 }
 
+func (r *ActorV2RuleBuilder) SetHandleVoteMessageRule(rule IHandleVoteMessageRule) {
+	r.handleVoteRule = rule
+}
+
 func (r *ActorV2RuleBuilder) ProposeRule() IProposeRule {
 	return r.proposeRule
 }
@@ -81,6 +92,10 @@ func (r *ActorV2RuleBuilder) CreateRule() ICreateNewBlockRule {
 
 func (r *ActorV2RuleBuilder) ValidatorRule() IConsensusValidator {
 	return r.validatorRule
+}
+
+func (r *ActorV2RuleBuilder) HandleVoteMessageRule() IHandleVoteMessageRule {
+	return r.handleVoteRule
 }
 
 type ActorV2RuleDirector struct {
@@ -139,6 +154,14 @@ func (d *ActorV2RuleDirector) updateRule(
 				chain,
 			))
 		}
+
+		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_COLLECT {
+			builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
+		}
+
+		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_NO_COLLECT {
+			builder.SetHandleVoteMessageRule(NewNoHandleVoteMessage())
+		}
 	} else {
 		builder = d.makeLemma1Rule(builder, logger, chain)
 	}
@@ -164,6 +187,8 @@ func (d *ActorV2RuleDirector) makeLemma1Rule(builder IActorV2RuleBuilder, logger
 		logger,
 		chain,
 	))
+
+	builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
 
 	return builder
 }
@@ -191,6 +216,8 @@ func (d *ActorV2RuleDirector) makeLemma2Rule(builder IActorV2RuleBuilder, logger
 		logger,
 		chain,
 	))
+
+	builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
 
 	return builder
 }

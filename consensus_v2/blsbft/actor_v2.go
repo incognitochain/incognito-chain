@@ -796,7 +796,6 @@ func (a *actorV2) sendVote(
 	)
 	vote, err := a.ruleDirector.builder.VoteRule().CreateVote(env, block)
 	if err != nil {
-		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
 	}
 
@@ -984,6 +983,11 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 
 	if voteMsg.BlockHeight <= a.chain.GetFinalView().GetHeight() {
 		a.logger.Infof("%v Receive old vote height %+vd but chain final height %+v", a.chainKey, voteMsg.BlockHeight, a.chain.GetFinalView().GetHeight())
+		return nil
+	}
+
+	if !a.ruleDirector.builder.HandleVoteMessageRule().IsHandler() {
+		a.logger.Criticalf("NO COLLECT VOTE")
 		return nil
 	}
 
