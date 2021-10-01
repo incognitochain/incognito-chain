@@ -290,7 +290,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildListTxs(allPdexv3Txs).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
-		BuildAutoWithdrawOrderLimitAmount(config.Param().PDexParams.AutoWithdrawOrderLimitAmount).
 		BuildMaxShardAmount(uint(config.Param().ActiveShards)).
 		Build()
 

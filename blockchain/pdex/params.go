@@ -20,6 +20,8 @@ type Params struct {
 	StakingRewardTokens             []common.Hash   // list of staking reward tokens
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 	MaxOrdersPerNft                 uint            // max orders per nft
+	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
+
 }
 
 func NewParams() *Params {
@@ -119,6 +121,7 @@ func (params *Params) readConfig() *Params {
 		StakingPoolsShare:               config.Param().PDexParams.Params.StakingPoolsShare,
 		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
 		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
+		AutoWithdrawOrderLimitAmount:    config.Param().PDexParams.Params.AutoWithdrawOrderLimitAmount,
 	}
 	if res.FeeRateBPS == nil {
 		res.FeeRateBPS = make(map[string]uint)

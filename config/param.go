@@ -253,8 +253,8 @@ type pdexParam struct {
 		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
 		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
 		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
+		AutoWithdrawOrderLimitAmount    uint            `mapstructure:"auto_withdraw_order_limit_amount"`
 	} `mapstructure:"params"`
-	AutoWithdrawOrderLimitAmount uint `mapstructure:"auto_withdraw_order_limit_amount"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {

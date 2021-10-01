@@ -909,7 +909,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		BuildBeaconHeight(beaconBlock.Header.Height - 1).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
-		BuildAutoWithdrawOrderLimitAmount(config.Param().PDexParams.AutoWithdrawOrderLimitAmount).
 		BuildMaxShardAmount(uint(config.Param().ActiveShards)).
 		Build()
 

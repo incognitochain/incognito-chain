@@ -42,6 +42,7 @@ func StorePdexv3Params(
 	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
 	maxOrdersPerNft uint,
+	autoWithdrawOrderLimitAmount uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
@@ -55,6 +56,7 @@ func StorePdexv3Params(
 		stakingRewardTokens,
 		mintNftRequireAmount,
 		maxOrdersPerNft,
+		autoWithdrawOrderLimitAmount,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {

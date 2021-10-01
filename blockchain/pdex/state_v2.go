@@ -341,7 +341,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	var matchedWithdrawInstructions [][]string
 	matchedWithdrawInstructions, s.poolPairs, err = s.producer.withdrawAllMatchedOrders(
-		s.poolPairs, env.AutoWithdrawOrderLimitAmount(), env.MaxShardAmount(),
+		s.poolPairs, s.params.AutoWithdrawOrderLimitAmount, env.MaxShardAmount(),
 	)
 	if err != nil {
 		return instructions, err
@@ -483,6 +483,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.StakingRewardTokens,
 			s.params.MintNftRequireAmount,
 			s.params.MaxOrdersPerNft,
+			s.params.AutoWithdrawOrderLimitAmount,
 		)
 		if err != nil {
 			return err
