@@ -35,6 +35,7 @@ type AcceptedAddOrder struct {
 	Token0Balance  uint64      `json:"Token0Balance"`
 	Token1Balance  uint64      `json:"Token1Balance"`
 	TradeDirection byte        `json:"TradeDirection"`
+	Receiver       string      `json:"Receiver"`
 }
 
 func (md AcceptedAddOrder) GetType() int {

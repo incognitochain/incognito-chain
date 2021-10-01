@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -486,7 +487,7 @@ TransactionLoop:
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
-		if v2.IsEmptyLiquidity(pair.state) {
+		if v2.HasInsufficientLiquidity(pair.state) {
 			Logger.log.Warnf("No liquidity in pair %s", currentOrderReq.PoolPairID)
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
@@ -509,6 +510,7 @@ TransactionLoop:
 		var tradeDirection byte
 		var token0Rate, token1Rate uint64
 		var token0Balance, token1Balance uint64
+		var tokenToBuy common.Hash
 		if currentOrderReq.TokenToSell == pair.state.Token0ID() {
 			tradeDirection = v2.TradeDirectionSell0
 			// set order's rates according to request, then set selling token's balance to sellAmount
@@ -517,13 +519,24 @@ TransactionLoop:
 			token1Rate = currentOrderReq.MinAcceptableAmount
 			token0Balance = sellAmountAfterFee
 			token1Balance = 0
+			tokenToBuy = pair.state.Token1ID()
 		} else {
 			tradeDirection = v2.TradeDirectionSell1
 			token1Rate = sellAmountAfterFee
 			token0Rate = currentOrderReq.MinAcceptableAmount
 			token1Balance = sellAmountAfterFee
 			token0Balance = 0
+			tokenToBuy = pair.state.Token0ID()
 		}
+
+		// set receiver on order to withdraw to after fully matched
+		recv, exists := currentOrderReq.Receiver[tokenToBuy]
+		if !exists {
+			Logger.log.Warnf("Receiver for buying token %v not found for new order", tokenToBuy)
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
+		recvStr, _ := recv.String()
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
@@ -534,6 +547,7 @@ TransactionLoop:
 			Token0Balance:  token0Balance,
 			Token1Balance:  token1Balance,
 			TradeDirection: tradeDirection,
+			Receiver:       recvStr,
 		}
 
 		acceptedAction := instruction.NewAction(
@@ -597,10 +611,21 @@ TransactionLoop:
 			if ord.Id() == orderID {
 				if ord.NftID() == currentOrderReq.NftID {
 					withdrawResults := make(map[common.Hash]uint64)
+					_, withdrawToken0 := currentOrderReq.Receiver[pair.state.Token0ID()]
+					_, withdrawToken1 := currentOrderReq.Receiver[pair.state.Token1ID()]
 					accepted := false
 
+					if withdrawToken0 && withdrawToken1 {
+						if currentOrderReq.Amount != 0 {
+							Logger.log.Warnf("Invalid amount %v withdrawing both tokens from order %s (expect %d)",
+								currentOrderReq.Amount, orderID, 0)
+							result = append(result, refundAction.StringSlice())
+							continue TransactionLoop
+						}
+					}
+
 					// for each token in pool that will be withdrawn, cap withdrawAmount & set new balance in state
-					if _, exists := currentOrderReq.Receiver[pair.state.Token0ID()]; exists {
+					if withdrawToken0 {
 						currentBalance := ord.Token0Balance()
 						amt := currentOrderReq.Amount
 						if currentBalance < amt || amt == 0 {
@@ -612,7 +637,7 @@ TransactionLoop:
 							accepted = true
 						}
 					}
-					if _, exists := currentOrderReq.Receiver[pair.state.Token1ID()]; exists {
+					if withdrawToken1 {
 						currentBalance := ord.Token1Balance()
 						amt := currentOrderReq.Amount
 						if currentBalance < amt || amt == 0 {
@@ -663,6 +688,59 @@ TransactionLoop:
 	}
 
 	Logger.log.Warnf("WithdrawOrder instructions: %v", result)
+	return result, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawAllMatchedOrders(
+	pairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	result := [][]string{}
+	for pairID, pair := range pairs {
+		for _, ord := range pair.orderbook.orders {
+			withdrawResults := make(map[common.Hash]uint64)
+			matchedToken0 := ord.TradeDirection() == byte(v2utils.TradeDirectionSell0) &&
+				ord.Token0Balance() == 0 && ord.Token1Balance() > 0
+			matchedToken1 := ord.TradeDirection() == byte(v2utils.TradeDirectionSell1) &&
+				ord.Token1Balance() == 0 && ord.Token0Balance() > 0
+			if matchedToken0 {
+				// order has sold all token0 for token1. Withdraw token
+				currentBalance := ord.Token1Balance()
+				withdrawResults[pair.state.Token1ID()] = currentBalance
+				ord.SetToken1Balance(0)
+			}
+			if matchedToken1 {
+				// order has sold all token1 for token0. Withdraw token0
+				currentBalance := ord.Token0Balance()
+				withdrawResults[pair.state.Token0ID()] = currentBalance
+				ord.SetToken0Balance(0)
+			}
+
+			// apply orderbook changes for withdraw consistency in the same block
+			pairs[pairID] = pair
+
+			// in execution, produce at most 1 "accepted" metadata
+			for tokenID, withdrawAmount := range withdrawResults {
+				txHash, _ := common.Hash{}.NewHashFromStr(ord.Id()) // order ID is a valid hash
+				recv := privacy.OTAReceiver{}
+				recv.FromString(ord.Receiver()) // error was handled when adding this order
+				shardID := recv.GetShardID()
+				acceptedAction := instruction.NewAction(
+					&metadataPdexv3.AcceptedWithdrawOrder{
+						PoolPairID: pairID,
+						OrderID:    ord.Id(),
+						Receiver:   recv,
+						TokenID:    tokenID,
+						Amount:     withdrawAmount,
+					},
+					*txHash,
+					shardID,
+				)
+				result = append(result, acceptedAction.StringSlice())
+			}
+		}
+	}
+
+	Logger.log.Warnf("WithdrawAllMatchedOrder instructions: %v", result)
 	return result, pairs, nil
 }
 
