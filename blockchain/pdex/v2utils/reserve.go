@@ -65,7 +65,7 @@ func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 	token1Change := big.NewInt(0)
 	maxDeltaX := big.NewInt(0).SetUint64(maxSellAmountAfterFee)
 
-	if IsEmptyLiquidity(*tp.Pdexv3PoolPair) {
+	if HasInsufficientLiquidity(*tp.Pdexv3PoolPair) {
 		return 0, 0, nil, nil, fmt.Errorf("No liquidity in pool for swap")
 	}
 
@@ -449,7 +449,6 @@ func (tp *TradingPair) AddFee(
 	return rootLpFeesPerShare, rootProtocolFees, rootStakingPoolFees
 }
 
-func IsEmptyLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {
-	return poolPair.Token0VirtualAmount().Cmp(big.NewInt(0)) <= 0 &&
-		poolPair.Token1VirtualAmount().Cmp(big.NewInt(0)) <= 0
+func HasInsufficientLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {
+	return poolPair.Token0RealAmount() <= 0 || poolPair.Token1RealAmount() <= 0
 }

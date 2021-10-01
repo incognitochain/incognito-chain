@@ -487,7 +487,7 @@ TransactionLoop:
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
-		if v2.IsEmptyLiquidity(pair.state) {
+		if v2.HasInsufficientLiquidity(pair.state) {
 			Logger.log.Warnf("No liquidity in pair %s", currentOrderReq.PoolPairID)
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
@@ -703,14 +703,16 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			matchedToken1 := ord.TradeDirection() == byte(v2utils.TradeDirectionSell1) &&
 				ord.Token1Balance() == 0 && ord.Token0Balance() > 0
 			if matchedToken0 {
+				// order has sold all token0 for token1. Withdraw token
 				currentBalance := ord.Token1Balance()
-				ord.SetToken0Balance(0)
 				withdrawResults[pair.state.Token1ID()] = currentBalance
+				ord.SetToken1Balance(0)
 			}
 			if matchedToken1 {
+				// order has sold all token1 for token0. Withdraw token0
 				currentBalance := ord.Token0Balance()
-				ord.SetToken1Balance(0)
 				withdrawResults[pair.state.Token0ID()] = currentBalance
+				ord.SetToken0Balance(0)
 			}
 
 			// apply orderbook changes for withdraw consistency in the same block
