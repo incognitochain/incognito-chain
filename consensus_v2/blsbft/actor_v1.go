@@ -139,7 +139,7 @@ func (actorV1 *actorV1) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 }
 
 func (a *actorV1) SetBlockVersion(version int) {
-	panic("not implement")
+	return
 }
 
 func (actorV1 *actorV1) SignData(data []byte) (string, error) {
