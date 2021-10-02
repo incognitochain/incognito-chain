@@ -49,6 +49,10 @@ func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transactio
 	if err != nil {
 		return false, err
 	}
+	err = beaconViewRetriever.IsValidNftID(req.NftID.String())
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
