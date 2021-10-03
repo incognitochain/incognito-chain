@@ -23,40 +23,42 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 	pool.validationDataByHash = make(map[string]string)
 	go pool.Start()
 
-	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
-	// go func() {
-	// 	ticker := time.NewTicker(15 * time.Second)
-	// 	for {
-	// 		<-ticker.C
-	// 		//remove block from blkPoolByHash
-	// 		if pool.GetPoolSize() > 100 {
-	// 			blkList := pool.GetBlockList()
-	// 			for _, blk := range blkList {
-	// 				if IsOutdatedBlk(blk) {
-	// 					pool.RemoveBlock(blk)
-	// 				}
-	// 			}
-	// 		}
+	// remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		for {
+			<-ticker.C
+			//remove block from blkPoolByHash
+			outdate := []types.BlockPoolInterface{}
+			if pool.GetPoolSize() > 500 {
+				blkList := pool.GetBlockList()
+				for _, blk := range blkList {
+					if IsOutdatedBlk(blk) {
+						outdate = append(outdate, blk)
+					}
+				}
+				pool.RemoveBlocks(outdate)
+			}
 
-	// 		//remove prehash block pointer if it point to nothing
-	// 		if len(pool.blkPoolByPrevHash) > 100 {
-	// 			blkList := pool.GetPrevHashPool()
-	// 			for prevhash, hashes := range blkList {
-	// 				stillPointToABlock := false
-	// 				for _, hash := range hashes {
-	// 					h, _ := common.Hash{}.NewHashFromStr(hash)
-	// 					if pool.HasHash(*h) {
-	// 						stillPointToABlock = true
-	// 					}
-	// 				}
-	// 				if !stillPointToABlock {
-	// 					pool.RemovePrevHash(prevhash)
-	// 				}
+			//remove prehash block pointer if it point to nothing
+			// if len(pool.blkPoolByPrevHash) > 100 {
+			// 	blkList := pool.GetPrevHashPool()
+			// 	for prevhash, hashes := range blkList {
+			// 		stillPointToABlock := false
+			// 		for _, hash := range hashes {
+			// 			h, _ := common.Hash{}.NewHashFromStr(hash)
+			// 			if pool.HasHash(*h) {
+			// 				stillPointToABlock = true
+			// 			}
+			// 		}
+			// 		if !stillPointToABlock {
+			// 			pool.RemovePrevHash(prevhash)
+			// 		}
 
-	// 			}
-	// 		}
-	// 	}
-	// }()
+			// 	}
+			// }
+		}
+	}()
 	return pool
 }
 
@@ -138,6 +140,15 @@ func (pool *BlkPool) HasHash(hash common.Hash) bool {
 		res <- ok
 	}
 	return <-res
+}
+
+func (pool *BlkPool) RemoveBlocks(blocks []types.BlockPoolInterface) {
+	pool.action <- func() {
+		for _, blk := range blocks {
+			delete(pool.blkPoolByHash, blk.Hash().String())
+			delete(pool.validationDataByHash, blk.GetPrevHash().String())
+		}
+	}
 }
 
 func (pool *BlkPool) RemoveBlock(block types.BlockPoolInterface) {
