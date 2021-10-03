@@ -1,8 +1,9 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -23,39 +24,39 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 	go pool.Start()
 
 	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
-	go func() {
-		ticker := time.NewTicker(15 * time.Second)
-		for {
-			<-ticker.C
-			//remove block from blkPoolByHash
-			if pool.GetPoolSize() > 100 {
-				blkList := pool.GetBlockList()
-				for _, blk := range blkList {
-					if IsOutdatedBlk(blk) {
-						pool.RemoveBlock(blk)
-					}
-				}
-			}
+	// go func() {
+	// 	ticker := time.NewTicker(15 * time.Second)
+	// 	for {
+	// 		<-ticker.C
+	// 		//remove block from blkPoolByHash
+	// 		if pool.GetPoolSize() > 100 {
+	// 			blkList := pool.GetBlockList()
+	// 			for _, blk := range blkList {
+	// 				if IsOutdatedBlk(blk) {
+	// 					pool.RemoveBlock(blk)
+	// 				}
+	// 			}
+	// 		}
 
-			//remove prehash block pointer if it point to nothing
-			if len(pool.blkPoolByPrevHash) > 100 {
-				blkList := pool.GetPrevHashPool()
-				for prevhash, hashes := range blkList {
-					stillPointToABlock := false
-					for _, hash := range hashes {
-						h, _ := common.Hash{}.NewHashFromStr(hash)
-						if pool.HasHash(*h) {
-							stillPointToABlock = true
-						}
-					}
-					if !stillPointToABlock {
-						pool.RemovePrevHash(prevhash)
-					}
+	// 		//remove prehash block pointer if it point to nothing
+	// 		if len(pool.blkPoolByPrevHash) > 100 {
+	// 			blkList := pool.GetPrevHashPool()
+	// 			for prevhash, hashes := range blkList {
+	// 				stillPointToABlock := false
+	// 				for _, hash := range hashes {
+	// 					h, _ := common.Hash{}.NewHashFromStr(hash)
+	// 					if pool.HasHash(*h) {
+	// 						stillPointToABlock = true
+	// 					}
+	// 				}
+	// 				if !stillPointToABlock {
+	// 					pool.RemovePrevHash(prevhash)
+	// 				}
 
-				}
-			}
-		}
-	}()
+	// 			}
+	// 		}
+	// 	}
+	// }()
 	return pool
 }
 
