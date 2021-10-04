@@ -57,6 +57,14 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
+	err := beaconViewRetriever.IsValidNftID(withdrawal.NftID.String())
+	if err != nil {
+		return false, err
+	}
+	err = beaconViewRetriever.IsValidPoolPairID(withdrawal.PoolPairID)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

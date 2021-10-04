@@ -19,6 +19,7 @@ type Pdexv3Params struct {
 	stakingRewardTokens             []common.Hash
 	mintNftRequireAmount            uint64
 	maxOrdersPerNft                 uint
+	autoWithdrawOrderLimitAmount    uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -51,6 +52,9 @@ func (pp Pdexv3Params) MintNftRequireAmount() uint64 {
 func (pp Pdexv3Params) MaxOrdersPerNft() uint {
 	return pp.maxOrdersPerNft
 }
+func (pp Pdexv3Params) AutoWithdrawOrderLimitAmount() uint {
+	return pp.autoWithdrawOrderLimitAmount
+}
 
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
@@ -64,6 +68,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
 		MaxOrdersPerNft                 uint
+		AutoWithdrawOrderLimitAmount    uint
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
@@ -75,6 +80,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		StakingRewardTokens:             pp.stakingRewardTokens,
 		MintNftRequireAmount:            pp.mintNftRequireAmount,
 		MaxOrdersPerNft:                 pp.maxOrdersPerNft,
+		AutoWithdrawOrderLimitAmount:    pp.autoWithdrawOrderLimitAmount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -94,6 +100,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
 		MaxOrdersPerNft                 uint
+		AutoWithdrawOrderLimitAmount    uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -109,6 +116,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.stakingRewardTokens = temp.StakingRewardTokens
 	pp.mintNftRequireAmount = temp.MintNftRequireAmount
 	pp.maxOrdersPerNft = temp.MaxOrdersPerNft
+	pp.autoWithdrawOrderLimitAmount = temp.AutoWithdrawOrderLimitAmount
 	return nil
 }
 
@@ -127,6 +135,7 @@ func NewPdexv3ParamsWithValue(
 	stakingRewardTokens []common.Hash,
 	mintNftRequireAmount uint64,
 	maxOrdersPerNft uint,
+	autoWithdrawOrderLimitAmount uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
@@ -139,6 +148,7 @@ func NewPdexv3ParamsWithValue(
 		stakingRewardTokens:             stakingRewardTokens,
 		mintNftRequireAmount:            mintNftRequireAmount,
 		maxOrdersPerNft:                 maxOrdersPerNft,
+		autoWithdrawOrderLimitAmount:    autoWithdrawOrderLimitAmount,
 	}
 }
 

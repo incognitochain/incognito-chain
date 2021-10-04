@@ -56,8 +56,8 @@ type param struct {
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
-	PRVERC20ContractAddressStr       string             `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
-    PRVBEP20ContractAddressStr       string             `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
 }
 
 type genesisParam struct {
@@ -253,6 +253,7 @@ type pdexParam struct {
 		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
 		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
 		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
+		AutoWithdrawOrderLimitAmount    uint            `mapstructure:"auto_withdraw_order_limit_amount"`
 	} `mapstructure:"params"`
 }
 

@@ -103,13 +103,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	allPdexv3Txs map[byte][]metadata.Transaction,
 ) ([][]string, error) {
 	// transfrom beacon height for pdex process
-	pdeVersions := []uint{}
+	pdeVersions := []int{}
 	for version := range beaconBestState.pdeStates {
-		pdeVersions = append(pdeVersions, version)
+		pdeVersions = append(pdeVersions, int(version))
 	}
+	sort.Ints(pdeVersions)
 
 	for _, version := range pdeVersions {
-		beaconBestState.pdeStates[version].TransformKeyWithNewBeaconHeight(beaconHeight - 1)
+		beaconBestState.pdeStates[uint(version)].TransformKeyWithNewBeaconHeight(beaconHeight - 1)
 	}
 
 	pm := portal.NewPortalManager()
@@ -292,7 +293,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Build()
 
 	for _, version := range pdeVersions {
-		pdeInstructions, err := beaconBestState.pdeStates[version].BuildInstructions(pdeStateEnv)
+		pdeInstructions, err := beaconBestState.pdeStates[uint(version)].BuildInstructions(pdeStateEnv)
 		if err != nil {
 			Logger.log.Error(err)
 			return utils.EmptyStringMatrix, err

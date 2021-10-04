@@ -23,6 +23,7 @@ type Pdexv3Params struct {
 	StakingRewardTokens             []common.Hash   `json:"StakingRewardTokens"`
 	MintNftRequireAmount            uint64          `json:"MintNftRequireAmount"`
 	MaxOrdersPerNft                 uint            `json:"MaxOrdersPerNft"`
+	AutoWithdrawOrderLimitAmount    uint            `json:"AutoWithdrawOrderLimitAmount"`
 }
 
 type ParamsModifyingRequest struct {

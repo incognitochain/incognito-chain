@@ -3,6 +3,7 @@ package pdex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -274,11 +275,6 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	return instructions, nil
 }
 
-func (s *stateV1) Upgrade(env StateEnvironment) State {
-	var state State
-	return state
-}
-
 func (s *stateV1) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChange) error {
 	var err error
 	statedb.DeleteWaitingPDEContributions(
@@ -438,4 +434,16 @@ func (s *stateV1) TradingFees() map[string]uint64 {
 
 func (s *stateV1) Reader() StateReader {
 	return s
+}
+
+func (s *stateV1) Validator() StateValidator {
+	return s
+}
+
+func (s *stateV1) IsValidPoolPairID(poolPairID string) error {
+	poolPair, found := s.poolPairs[poolPairID]
+	if !found || poolPair == nil {
+		return fmt.Errorf("%v pool pair ID can not be found", poolPairID)
+	}
+	return nil
 }

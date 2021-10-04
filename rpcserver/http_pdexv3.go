@@ -164,6 +164,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MaxOrdersPerNft is invalid"))
 	}
+	autoWithdrawOrderLimitAmount, err := common.AssertAndConvertStrToNumber(newParams["AutoWithdrawOrderLimitAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("AutoWithdrawOrderLimitAmount is invalid"))
+	}
 
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
@@ -178,6 +182,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			StakingRewardTokens:             stakingRewardTokens,
 			MintNftRequireAmount:            mintNftRequireAmount,
 			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
+			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
 		},
 	)
 	if err != nil {
@@ -1303,6 +1308,7 @@ func createPdexv3AddOrderRequestTransaction(
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		TokenToSell         common.Hash
+		TokenToBuy          common.Hash
 		PoolPairID          string
 		SellAmount          Uint64Reader
 		MinAcceptableAmount Uint64Reader
@@ -1323,7 +1329,7 @@ func createPdexv3AddOrderRequestTransaction(
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 	paramSelect.SetTokenID(md.TokenToSell)
 	isPRV := md.TokenToSell == common.PRVCoinID
-	tokenList := []common.Hash{md.TokenToSell}
+	tokenList := []common.Hash{md.TokenToSell, mdReader.TokenToBuy}
 	md.Receiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {

@@ -37,10 +37,6 @@ func (s *stateBase) BuildInstructions(env StateEnvironment) ([][]string, error) 
 	panic("Implement this function")
 }
 
-func (s *stateBase) Upgrade(StateEnvironment) State {
-	panic("Implement this fucntion")
-}
-
 func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
 	panic("Implement this fucntion")
 }
@@ -83,4 +79,32 @@ func (s *stateBase) Reader() StateReader {
 
 func (s *stateBase) StakingPools() map[string]*StakingPoolState {
 	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidNftID(nftID string) error {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidPoolPairID(poolPairID string) error {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidMintNftRequireAmount(amount uint64) error {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidStakingPool(tokenID string) error {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) Validator() StateValidator {
+	panic("Implement this function")
 }
