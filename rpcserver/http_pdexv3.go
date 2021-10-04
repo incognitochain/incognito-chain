@@ -164,6 +164,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MaxOrdersPerNft is invalid"))
 	}
+	autoWithdrawOrderLimitAmount, err := common.AssertAndConvertStrToNumber(newParams["AutoWithdrawOrderLimitAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("AutoWithdrawOrderLimitAmount is invalid"))
+	}
 
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
@@ -178,6 +182,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			StakingRewardTokens:             stakingRewardTokens,
 			MintNftRequireAmount:            mintNftRequireAmount,
 			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
+			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
 		},
 	)
 	if err != nil {

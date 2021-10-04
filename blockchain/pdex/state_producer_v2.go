@@ -732,9 +732,6 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 				for _, numberTxs := range numberTxsPerShard {
 					numberTxsAllShard += numberTxs
 				}
-				if numberTxsAllShard >= maxShardAmount*limitTxsPerShard {
-					return result, pairs, nil
-				}
 				if numberTxsPerShard[shardID] >= limitTxsPerShard {
 					continue
 				}
