@@ -133,12 +133,14 @@ func (d *ActorV2RuleDirector) updateRule(
 			builder.SetVoteRule(NewVoteRule(
 				logger,
 			))
+			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTERULE_VOTE)
 		}
 
 		if ctx.VoteRule == VOTERULE_NO_VOTE {
 			builder.SetVoteRule(NewNoVoteRule(
 				logger,
 			))
+			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTERULE_NO_VOTE)
 		}
 
 		if ctx.CreateRule == CREATERULE_CREATE_ONLY {
@@ -146,6 +148,7 @@ func (d *ActorV2RuleDirector) updateRule(
 				logger,
 				chain,
 			))
+			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_CREATE_ONLY)
 		}
 
 		if ctx.CreateRule == CREATERULE_NORMAL {
@@ -153,14 +156,17 @@ func (d *ActorV2RuleDirector) updateRule(
 				logger,
 				chain,
 			))
+			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_NORMAL)
 		}
 
 		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_COLLECT {
 			builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
+			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_COLLECT)
 		}
 
 		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_NO_COLLECT {
 			builder.SetHandleVoteMessageRule(NewNoHandleVoteMessage())
+			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_NO_COLLECT)
 		}
 	} else {
 		builder = d.makeLemma1Rule(builder, logger, chain)
