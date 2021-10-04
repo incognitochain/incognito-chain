@@ -692,7 +692,7 @@ TransactionLoop:
 }
 
 func (sp *stateProducerV2) withdrawAllMatchedOrders(
-	pairs map[string]*PoolPairState, limitTxsPerShard uint, maxShardAmount uint,
+	pairs map[string]*PoolPairState, limitTxsPerShard uint,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
@@ -703,6 +703,16 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 				ord.Token0Balance() == 0 && ord.Token1Balance() > 0
 			matchedToken1 := ord.TradeDirection() == byte(v2utils.TradeDirectionSell1) &&
 				ord.Token1Balance() == 0 && ord.Token0Balance() > 0
+
+			recv := privacy.OTAReceiver{}
+			recv.FromString(ord.Receiver()) // error was handled when adding this order
+			shardID := recv.GetShardID()
+			if matchedToken0 || matchedToken1 {
+				if numberTxsPerShard[shardID] >= limitTxsPerShard {
+					continue
+				}
+				numberTxsPerShard[shardID]++
+			}
 			if matchedToken0 {
 				// order has sold all token0 for token1. Withdraw token
 				currentBalance := ord.Token1Balance()
@@ -722,21 +732,6 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			// in execution, produce at most 1 "accepted" metadata
 			for tokenID, withdrawAmount := range withdrawResults {
 				txHash, _ := common.Hash{}.NewHashFromStr(ord.Id()) // order ID is a valid hash
-
-				recv := privacy.OTAReceiver{}
-				recv.FromString(ord.Receiver()) // error was handled when adding this order
-				shardID := recv.GetShardID()
-
-				// check for number of withdraw order txs has reached to limit
-				var numberTxsAllShard uint
-				for _, numberTxs := range numberTxsPerShard {
-					numberTxsAllShard += numberTxs
-				}
-				if numberTxsPerShard[shardID] >= limitTxsPerShard {
-					continue
-				}
-				numberTxsPerShard[shardID]++
-				//
 
 				acceptedAction := instruction.NewAction(
 					&metadataPdexv3.AcceptedWithdrawOrder{

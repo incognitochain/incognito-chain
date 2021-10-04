@@ -341,7 +341,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	var matchedWithdrawInstructions [][]string
 	matchedWithdrawInstructions, s.poolPairs, err = s.producer.withdrawAllMatchedOrders(
-		s.poolPairs, s.params.AutoWithdrawOrderLimitAmount, env.MaxShardAmount(),
+		s.poolPairs, s.params.AutoWithdrawOrderLimitAmount,
 	)
 	if err != nil {
 		return instructions, err

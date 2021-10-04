@@ -909,7 +909,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		BuildBeaconHeight(beaconBlock.Header.Height - 1).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
-		BuildMaxShardAmount(uint(config.Param().ActiveShards)).
 		Build()
 
 	for version, pdeState := range newBestState.pdeStates {
