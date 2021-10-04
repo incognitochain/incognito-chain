@@ -350,6 +350,10 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	}, nil
 }
 
+func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return blsbft.ActorV2BuilderContext, nil
+}
+
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardIDParam := int(arrayParams[0].(float64))

@@ -113,6 +113,7 @@ var HttpHandler = map[string]httpHandler{
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
 	getFinalityProof:           (*HttpServer).handleGetFinalityProof,
 	setConsensusRule:           (*HttpServer).handleSetConsensusRule,
+	getConsensusRule:           (*HttpServer).handleGetConsensusRule,
 	//=================================
 
 	// Beststate

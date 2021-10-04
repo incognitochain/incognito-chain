@@ -138,6 +138,7 @@ const (
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
 	getFinalityProof           = "getfinalityproof"
 	setConsensusRule           = "setconsensusrule"
+	getConsensusRule           = "getconsensusrule"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
