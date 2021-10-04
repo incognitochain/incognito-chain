@@ -705,9 +705,10 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 				ord.Token1Balance() == 0 && ord.Token0Balance() > 0
 
 			recv := privacy.OTAReceiver{}
-			recv.FromString(ord.Receiver()) // error was handled when adding this order
-			shardID := recv.GetShardID()
+			var shardID byte
 			if matchedToken0 || matchedToken1 {
+				recv.FromString(ord.Receiver()) // error was handled when adding this order
+				shardID = recv.GetShardID()
 				if numberTxsPerShard[shardID] >= limitTxsPerShard {
 					continue
 				}
