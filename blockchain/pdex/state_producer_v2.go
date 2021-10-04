@@ -692,10 +692,10 @@ TransactionLoop:
 }
 
 func (sp *stateProducerV2) withdrawAllMatchedOrders(
-	pairs map[string]*PoolPairState, limitTxPerShards uint, maxShardAmount uint,
+	pairs map[string]*PoolPairState, limitTxsPerShard uint, maxShardAmount uint,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
-	numberTxPerShards := make(map[byte]uint)
+	numberTxsPerShard := make(map[byte]uint)
 	for pairID, pair := range pairs {
 		for _, ord := range pair.orderbook.orders {
 			withdrawResults := make(map[common.Hash]uint64)
@@ -728,17 +728,17 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 				shardID := recv.GetShardID()
 
 				// check for number of withdraw order txs has reached to limit
-				var allNumberTxs uint
-				for _, numberTxs := range numberTxPerShards {
-					allNumberTxs += numberTxs
+				var numberTxsAllShard uint
+				for _, numberTxs := range numberTxsPerShard {
+					numberTxsAllShard += numberTxs
 				}
-				if allNumberTxs >= maxShardAmount*limitTxPerShards {
+				if numberTxsAllShard >= maxShardAmount*limitTxsPerShard {
 					return result, pairs, nil
 				}
-				if numberTxPerShards[shardID] >= limitTxPerShards {
+				if numberTxsPerShard[shardID] >= limitTxsPerShard {
 					continue
 				}
-				numberTxPerShards[shardID]++
+				numberTxsPerShard[shardID]++
 				//
 
 				acceptedAction := instruction.NewAction(
