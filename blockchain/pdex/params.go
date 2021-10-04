@@ -45,6 +45,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		StakingRewardTokens:             paramsState.StakingRewardTokens(),
 		MintNftRequireAmount:            paramsState.MintNftRequireAmount(),
 		MaxOrdersPerNft:                 paramsState.MaxOrdersPerNft(),
+		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
 	}
 }
 
