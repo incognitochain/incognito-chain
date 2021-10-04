@@ -1,8 +1,15 @@
 package portalprocess
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/big"
+	"sort"
+	"strconv"
+
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -10,10 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/pkg/errors"
-	"math"
-	"math/big"
-	"sort"
-	"strconv"
 )
 
 type CurrentPortalState struct {
@@ -34,9 +37,29 @@ type CustodianStateSlice struct {
 	Value *statedb.CustodianState
 }
 
+func (s *CurrentPortalState) Copy() *CurrentPortalState {
+	v := new(CurrentPortalState)
+	b := new(bytes.Buffer)
+	err := gob.NewEncoder(b).Encode(s)
+	if err != nil {
+		return nil
+	}
+	err = gob.NewDecoder(bytes.NewBuffer(b.Bytes())).Decode(v)
+	if err != nil {
+		return nil
+	}
+	return v
+}
+
 func InitCurrentPortalStateFromDB(
 	stateDB *statedb.StateDB,
+	lastState *CurrentPortalState,
 ) (*CurrentPortalState, error) {
+	if lastState != nil {
+		// reset temporary states: ExchangeRatesRequests
+		lastState.ExchangeRatesRequests = map[string]*metadata.ExchangeRatesRequestStatus{}
+		return lastState, nil
+	}
 	custodianPoolState, err := statedb.GetCustodianPoolState(stateDB)
 	if err != nil {
 		return nil, err
@@ -1208,8 +1231,8 @@ func updateCurrentPortalStateAfterLiquidationByRatesV3(
 	currentPortalState.LiquidationPool[liquidationPoolKey.String()] = liquidationPool
 }
 
-func GetTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, error) {
-	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB)
+func GetTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB, lastState *CurrentPortalState) (uint64, error) {
+	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB, lastState)
 	if err != nil {
 		return 0, nil
 	}

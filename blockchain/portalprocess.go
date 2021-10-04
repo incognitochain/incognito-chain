@@ -3,6 +3,8 @@ package blockchain
 import (
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/metadata"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -40,7 +42,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 // Beacon process for portal protocol
 func (blockchain *BlockChain) processPortalInstructions(
 	portalStateDB *statedb.StateDB, block *types.BeaconBlock,
-) (*portalprocessv4.CurrentPortalStateV4, error) {
+) (*portalprocessv3.CurrentPortalState, *portalprocessv4.CurrentPortalStateV4, error) {
 	// Note: should comment this code if you need to create local chain.
 	isSkipPortalV3Ints := false
 	if (config.Param().Net == config.LocalNet || config.Param().Net == config.TestnetNet) && block.Header.Height < 1580600 {
@@ -50,27 +52,84 @@ func (blockchain *BlockChain) processPortalInstructions(
 	clonedBeaconBestState, err := blockchain.GetClonedBeaconBestState()
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, nil
+		return nil, nil, nil
 	}
 	lastPortalV4State := clonedBeaconBestState.portalStateV4
+	lastPortalV3State := clonedBeaconBestState.portalStateV3
 	beaconHeight := block.Header.Height - 1
 	relayingState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
 	if err != nil {
 		Logger.log.Error(err)
-		return lastPortalV4State, nil
+		return lastPortalV3State, lastPortalV4State, nil
 	}
 	portalParams := portal.GetPortalParams()
 	pm := portal.NewPortalManager()
 	epoch := config.Param().EpochParam.NumberOfBlockInEpoch
 
-	newPortalV4State, err := portal.ProcessPortalInsts(
-		blockchain, lastPortalV4State, portalStateDB, relayingState, *portalParams, beaconHeight,
+	newPortalV3State, newPortalV4State, err := portal.ProcessPortalInsts(
+		blockchain, lastPortalV3State, lastPortalV4State, portalStateDB, relayingState, *portalParams, beaconHeight,
 		block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 
-	return newPortalV4State, nil
+	return newPortalV3State, newPortalV4State, nil
+}
+
+func getDiffPortalStateV3(
+	previous *portalprocessv3.CurrentPortalState, current *portalprocessv3.CurrentPortalState,
+) (diffState *portalprocessv3.CurrentPortalState) {
+	if current == nil {
+		return nil
+	}
+	if previous == nil {
+		return current
+	}
+
+	diffState = &portalprocessv3.CurrentPortalState{
+		CustodianPoolState:         map[string]*statedb.CustodianState{},
+		WaitingPortingRequests:     map[string]*statedb.WaitingPortingRequest{},
+		WaitingRedeemRequests:      map[string]*statedb.RedeemRequest{},
+		MatchedRedeemRequests:      map[string]*statedb.RedeemRequest{},
+		FinalExchangeRatesState:    new(statedb.FinalExchangeRatesState), //todo:
+		LiquidationPool:            map[string]*statedb.LiquidationPool{},
+		LockedCollateralForRewards: new(statedb.LockedCollateralState), //todo:
+		ExchangeRatesRequests:      map[string]*metadata.ExchangeRatesRequestStatus{},
+	}
+
+	for k, v := range current.CustodianPoolState {
+		if _v, ok := previous.CustodianPoolState[k]; !ok || !reflect.DeepEqual(_v, v) {
+			diffState.CustodianPoolState[k] = _v
+		}
+	}
+	for k, v := range current.WaitingPortingRequests {
+		if _v, ok := previous.WaitingPortingRequests[k]; !ok || !reflect.DeepEqual(_v, v) {
+			diffState.WaitingPortingRequests[k] = _v
+		}
+	}
+	for k, v := range current.WaitingRedeemRequests {
+		if _v, ok := previous.WaitingRedeemRequests[k]; !ok || !reflect.DeepEqual(_v, v) {
+			diffState.WaitingRedeemRequests[k] = _v
+		}
+	}
+	for k, v := range current.MatchedRedeemRequests {
+		if _v, ok := previous.MatchedRedeemRequests[k]; !ok || !reflect.DeepEqual(_v, v) {
+			diffState.MatchedRedeemRequests[k] = _v
+		}
+	}
+	for k, v := range current.LiquidationPool {
+		if _v, ok := previous.LiquidationPool[k]; !ok || !reflect.DeepEqual(_v, v) {
+			diffState.LiquidationPool[k] = _v
+		}
+	}
+	if !reflect.DeepEqual(current.FinalExchangeRatesState, previous.FinalExchangeRatesState) {
+		diffState.FinalExchangeRatesState = current.FinalExchangeRatesState
+	}
+	if !reflect.DeepEqual(current.LockedCollateralForRewards, previous.LockedCollateralForRewards) {
+		diffState.LockedCollateralForRewards = current.LockedCollateralForRewards
+	}
+
+	return diffState
 }
 
 func getDiffPortalStateV4(

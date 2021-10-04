@@ -222,15 +222,17 @@ func HandlePortalInstsV3(
 
 func ProcessPortalInstsV3(
 	portalStateDB *statedb.StateDB,
+	lastState *CurrentPortalState,
 	portalParams portalv3.PortalParams,
 	beaconHeight uint64,
 	instructions [][]string,
 	pv3 map[int]PortalInstructionProcessorV3,
-	epoch uint64) error {
-	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
+	epoch uint64,
+) (*CurrentPortalState, error) {
+	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB, lastState)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil
+		return lastState, nil
 	}
 
 	// re-use update info of bridge
@@ -298,17 +300,11 @@ func ProcessPortalInstsV3(
 			updatingType,
 		)
 		if err != nil {
-			return err
+			return lastState, err
 		}
 	}
 
-	// store updated currentPortalState to leveldb with new beacon height
-	err = StorePortalStateToDB(portalStateDB, currentPortalState)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-
-	return nil
+	return currentPortalState, nil
 }
 
 func calcMedian(ratesList []uint64) uint64 {
