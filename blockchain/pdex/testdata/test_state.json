@@ -27,7 +27,8 @@
                     "Token1Rate": 100,
                     "Token0Balance": 0,
                     "Token1Balance": 2000,
-                    "TradeDirection": 0
+                    "TradeDirection": 0,
+                    "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
                 },
                 {
                     "Id": "Order 2",
@@ -35,7 +36,8 @@
                     "Token1Rate": 2000,
                     "Token0Balance": 0,
                     "Token1Balance": 2000,
-                    "TradeDirection": 1
+                    "TradeDirection": 1,
+                    "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
                 }]
             }
         }
