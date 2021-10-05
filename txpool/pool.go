@@ -207,17 +207,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range prf.GetOutputCoins() {
-			var oCoinID string
-			switch oCoin.GetVersion() {
-			case 1:
-				oCoinID = string(oCoin.GetSNDerivator().ToBytesS())
-			case 2:
-				oCoinID = string(oCoin.GetSNDerivator().ToBytesS())
-			default:
-				isDoubleSpend = true
-				neededToReplace = false
-				return isDoubleSpend, neededToReplace, txHash, listkey
-			}
+			oCoinID := oCoin.GetCoinID()
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), oCoinID)
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
@@ -237,7 +227,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		tokenID := target.(transaction.TransactionToken).GetTxTokenData().PropertyID
 		normalPrf := txNormal.GetProof()
 		for _, iCoin := range normalPrf.GetInputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.GetKeyImage().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), iCoin.GetKeyImage().ToBytes())
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -251,7 +241,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range normalPrf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), oCoin.GetCoinID())
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -642,7 +632,7 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 		}
 	}
 	for _, oCoin := range oCoins {
-		if info, ok := dataHelper[oCoin.GetSNDerivator().ToBytes()]; ok {
+		if info, ok := dataHelper[oCoin.GetCoinID()]; ok {
 			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
 				continue
@@ -706,7 +696,7 @@ func insertPrfForCheck(
 		}
 	}
 	for _, oCoin := range oCoins {
-		dataHelper[oCoin.GetSNDerivator().ToBytes()] = struct {
+		dataHelper[oCoin.GetCoinID()] = struct {
 			Index  uint
 			Detail TxInfoDetail
 		}{

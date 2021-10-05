@@ -963,7 +963,7 @@ func (proof PaymentProof) ValidateSanity(vEnv env.ValidationEnviroment) (bool, e
 
 	sigPubKeyPoint, err := new(operation.Point).FromBytesS(vEnv.SigPubKey())
 	if err != nil {
-		return false, errors.New("SigPubKey is invalid")
+		return false, errors.Errorf("SigPubKey is invalid")
 	}
 
 	if isPrivacy {

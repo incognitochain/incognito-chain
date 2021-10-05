@@ -421,6 +421,13 @@ func (c CoinV1) GetCoinDetailEncrypted() []byte {
 	return nil
 }
 
+func (c *CoinV1) GetCoinID() [operation.Ed25519KeySize]byte {
+	if c.CoinDetails.snDerivator != nil {
+		return c.CoinDetails.snDerivator.ToBytes()
+	}
+	return [operation.Ed25519KeySize]byte{}
+}
+
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {
 	c.CoinDetails = new(PlainCoinV1).Init()

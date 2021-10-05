@@ -302,6 +302,13 @@ func (c CoinV2) GetCoinDetailEncrypted() []byte {
 	return c.GetAmount().ToBytesS()
 }
 
+func (c *CoinV2) GetCoinID() [operation.Ed25519KeySize]byte {
+	if c.publicKey != nil {
+		return c.publicKey.ToBytes()
+	}
+	return [operation.Ed25519KeySize]byte{}
+}
+
 func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)           { c.mask = mask }
 func (c *CoinV2) SetAmount(amount *operation.Scalar)             { c.amount = amount }

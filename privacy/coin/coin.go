@@ -24,6 +24,7 @@ type Coin interface {
 	GetSharedRandom() *operation.Scalar
 	GetSharedConcealRandom() *operation.Scalar
 	GetAssetTag() *operation.Point
+	GetCoinID() [operation.Ed25519KeySize]byte
 
 	// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
 	// Param keyset: (private key, payment address, read only key)

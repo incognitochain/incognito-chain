@@ -410,10 +410,7 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 			}
 		}
 		for _, oCoin := range oCoins {
-			coinID := oCoin.GetSNDerivator().ToBytes()
-			if oCoin.GetVersion() > 1 {
-				coinID = oCoin.GetPublicKey().ToBytes()
-			}
+			coinID := oCoin.GetCoinID()
 			if _, ok := mapForChkDbSpend[coinID]; ok {
 				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 			} else {
@@ -436,10 +433,7 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 				}
 			}
 			for _, oCoin := range oCoins {
-				coinID := oCoin.GetSNDerivator().ToBytes()
-				if oCoin.GetVersion() > 1 {
-					coinID = oCoin.GetPublicKey().ToBytes()
-				}
+				coinID := oCoin.GetCoinID()
 				if _, ok := mapForChkDbSpend[coinID]; ok {
 					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 				} else {
