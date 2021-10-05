@@ -234,6 +234,7 @@ func ProcessPortalInstsV3(
 		Logger.log.Error(err)
 		return lastState, nil
 	}
+	Logger.log.Errorf("lastPortalV3State after initing for processing: %+v\n", currentPortalState)
 
 	// re-use update info of bridge
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}

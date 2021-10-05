@@ -56,6 +56,7 @@ func (blockchain *BlockChain) processPortalInstructions(
 	}
 	lastPortalV4State := clonedBeaconBestState.portalStateV4
 	lastPortalV3State := clonedBeaconBestState.portalStateV3
+	Logger.log.Errorf("lastPortalV3State before processing: %+v\n", lastPortalV3State)
 	beaconHeight := block.Header.Height - 1
 	relayingState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
 	if err != nil {
