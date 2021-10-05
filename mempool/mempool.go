@@ -14,7 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -714,20 +713,9 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	// find replace tx in pool
-	Logger.log.Info("[pdex] tx:", tx)
-	Logger.log.Info("[pdex] tx.GetMetadata():", tx.GetMetadata())
-	temp := tx_generic.TxBase{}
-	data, err := json.Marshal(tx)
-	if err != nil {
-		return err, false
-	}
-	err = json.Unmarshal(data, &temp)
-	if err != nil {
-		return err, false
-	}
-	Logger.log.Info("[pdex] temp:", temp)
-
-	Logger.log.Info("[pdex] tx.GetMetadata():", tx.GetMetadata())
+	Logger.log.Info("[pdex] replace by key:", hash)
+	jsb, _ := json.Marshal(tx)
+	Logger.log.Info("[pdex] tx to replace with:", string(jsb))
 	if txHashToBeReplaced, ok := tp.poolSerialNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
 			Logger.log.Info("[pdex] txHashToBeReplaced:", txHashToBeReplaced)
