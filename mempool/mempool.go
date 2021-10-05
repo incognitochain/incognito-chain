@@ -712,8 +712,11 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	// find replace tx in pool
+	Logger.log.Info("[pdex] tx:", tx)
 	if txHashToBeReplaced, ok := tp.poolSerialNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
+			Logger.log.Info("[pdex] txHashToBeReplaced:", txHashToBeReplaced)
+			Logger.log.Info("[pdex] txDescToBeReplaced:", txDescToBeReplaced)
 			var baseReplaceFee float64
 			var baseReplaceFeeToken float64
 			var replaceFee float64

@@ -315,6 +315,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := types.GetKeccak256MerkleRoot(insts)
+	Logger.log.Info("[pdex] newShardBlock.Body.Transactions:", newShardBlock.Body.Transactions)
 	// shard tx root
 	_, shardTxMerkleData := types.CreateShardTxRoot(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
