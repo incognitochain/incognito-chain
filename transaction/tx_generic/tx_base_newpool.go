@@ -61,7 +61,7 @@ func (tx *TxBase) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
 
 func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
 	switch tx.Type {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType, common.TxTokenConversionType: //is valid
 	default:
 		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.Type))
 	}
