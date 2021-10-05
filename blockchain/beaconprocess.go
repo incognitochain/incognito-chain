@@ -929,6 +929,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
+	Logger.log.Errorf("HHH newBestState.portalStateV3: %+v\n", newBestState.portalStateV3)
+
 	// optimize storing PortalV3 state
 	if newBestState.portalStateV3 != nil {
 		if !reflect.DeepEqual(curView.portalStateV3, newBestState.portalStateV3) {
