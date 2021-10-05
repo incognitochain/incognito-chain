@@ -56,7 +56,7 @@ func (blockchain *BlockChain) processPortalInstructions(
 	}
 	lastPortalV4State := clonedBeaconBestState.portalStateV4
 	lastPortalV3State := clonedBeaconBestState.portalStateV3
-	Logger.log.Errorf("lastPortalV3State before processing: %+v\n", lastPortalV3State)
+	Logger.log.Errorf("HHH lastPortalV3State before processing: %+v\n", lastPortalV3State)
 	beaconHeight := block.Header.Height - 1
 	relayingState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
 	if err != nil {
@@ -86,6 +86,8 @@ func getDiffPortalStateV3(
 	if previous == nil {
 		return current
 	}
+	Logger.log.Errorf("HHH previous state: %v\n", previous)
+	Logger.log.Errorf("HHH current state: %v\n", current)
 
 	diffState = &portalprocessv3.CurrentPortalState{
 		CustodianPoolState:         map[string]*statedb.CustodianState{},
@@ -129,6 +131,7 @@ func getDiffPortalStateV3(
 	if !reflect.DeepEqual(current.LockedCollateralForRewards, previous.LockedCollateralForRewards) {
 		diffState.LockedCollateralForRewards = current.LockedCollateralForRewards
 	}
+	Logger.log.Errorf("HHH diffState: %+v\n", diffState)
 
 	return diffState
 }
