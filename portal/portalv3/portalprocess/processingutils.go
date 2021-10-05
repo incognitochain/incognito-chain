@@ -232,7 +232,7 @@ func ProcessPortalInstsV3(
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB, lastState)
 	if err != nil {
 		Logger.log.Error(err)
-		return lastState, nil
+		return currentPortalState, nil
 	}
 	Logger.log.Errorf("HHH lastPortalV3State after initing for processing: %+v\n", currentPortalState)
 
@@ -301,7 +301,7 @@ func ProcessPortalInstsV3(
 			updatingType,
 		)
 		if err != nil {
-			return lastState, err
+			return currentPortalState, err
 		}
 	}
 

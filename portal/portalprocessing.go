@@ -90,9 +90,10 @@ func ProcessPortalInsts(
 	pm *PortalManager,
 	epoch uint64,
 	isSkipPortalV3Ints bool) (*portalprocessv3.CurrentPortalState, *portalprocessv4.CurrentPortalStateV4, error) {
+	var err error
 	// process portal instructions v3
 	if !isSkipPortalV3Ints {
-		portalLastStateV3, err := portalprocessv3.ProcessPortalInstsV3(
+		portalLastStateV3, err = portalprocessv3.ProcessPortalInstsV3(
 			portalStateDB, portalLastStateV3, portalParams.GetPortalParamsV3(beaconHeight),
 			beaconHeight, instructions, pm.PortalInstProcessorsV3, epoch)
 		if err != nil {
@@ -102,7 +103,7 @@ func ProcessPortalInsts(
 	}
 
 	// process relaying instructions
-	err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
+	err = portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
 	if err != nil {
 		Logger.log.Error(err)
 		return portalLastStateV3, portalLastStateV4, err
