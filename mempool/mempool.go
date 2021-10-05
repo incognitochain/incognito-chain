@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -13,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -713,6 +715,19 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	// find replace tx in pool
 	Logger.log.Info("[pdex] tx:", tx)
+	Logger.log.Info("[pdex] tx.GetMetadata():", tx.GetMetadata())
+	temp := tx_generic.TxBase{}
+	data, err := json.Marshal(tx)
+	if err != nil {
+		return err, false
+	}
+	err = json.Unmarshal(data, &temp)
+	if err != nil {
+		return err, false
+	}
+	Logger.log.Info("[pdex] temp:", temp)
+
+	Logger.log.Info("[pdex] tx.GetMetadata():", tx.GetMetadata())
 	if txHashToBeReplaced, ok := tp.poolSerialNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
 			Logger.log.Info("[pdex] txHashToBeReplaced:", txHashToBeReplaced)
