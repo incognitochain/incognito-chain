@@ -66,7 +66,6 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 	role := ""
 	layer := ""
 	chainID := -2
-	pubkey := ""
 	if len(engine.validators) > 0 {
 		for _, validator := range engine.validators {
 			if validator.State.ChainID != -2 {
@@ -74,14 +73,12 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 				if ok {
 					if validator.State.Role == common.CommitteeRole {
 						chainValidator[validator.State.ChainID] = validator
-						pubkey = validator.MiningKey.GetPublicKeyBase58()
 						role = validator.State.Role
 						chainID = validator.State.ChainID
 						layer = validator.State.Layer
 					}
 				} else {
 					chainValidator[validator.State.ChainID] = validator
-					pubkey = validator.MiningKey.GetPublicKeyBase58()
 					role = validator.State.Role
 					chainID = validator.State.ChainID
 					layer = validator.State.Layer
@@ -98,7 +95,6 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 	monitor.SetGlobalParam("Role", role)
 	monitor.SetGlobalParam("Layer", layer)
 	monitor.SetGlobalParam("ShardID", chainID)
-	monitor.SetGlobalParam("MINING_PUBKEY", pubkey)
 	//Logger.Log.Infof("Validator Role %+v, Layer %+v, ChainID %+v", role, layer, chainID)
 	//fmt.Println("GetOneValidatorForEachConsensusProcess", chainValidator[1])
 	return chainValidator
