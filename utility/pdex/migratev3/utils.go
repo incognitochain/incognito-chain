@@ -222,6 +222,7 @@ func modifyParam(url string) error {
 		StakingRewardTokens             []string          `json:"StakingRewardTokens"`
 		MintNftRequireAmount            string            `json:"MintNftRequireAmount"`
 		MaxOrdersPerNft                 string            `json:"MaxOrdersPerNft"`
+		AutoWithdrawOrderLimitAmount    string            `json:"AutoWithdrawOrderLimitAmount"`
 	}
 	type Temp struct {
 		NewParams NewParams `json:"NewParams"`
@@ -243,9 +244,10 @@ func modifyParam(url string) error {
 				common.PDEXCoinID.String(): "100",
 				common.PRVIDStr:            "200",
 			},
-			StakingRewardTokens:  []string{common.PRVIDStr},
-			MintNftRequireAmount: "100",
-			MaxOrdersPerNft:      "10",
+			StakingRewardTokens:          []string{common.PRVIDStr},
+			MintNftRequireAmount:         "100",
+			MaxOrdersPerNft:              "10",
+			AutoWithdrawOrderLimitAmount: "10",
 		},
 	}
 
