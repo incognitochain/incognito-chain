@@ -102,27 +102,27 @@ func getDiffPortalStateV3(
 
 	for k, v := range current.CustodianPoolState {
 		if _v, ok := previous.CustodianPoolState[k]; !ok || !reflect.DeepEqual(_v, v) {
-			diffState.CustodianPoolState[k] = _v
+			diffState.CustodianPoolState[k] = v
 		}
 	}
 	for k, v := range current.WaitingPortingRequests {
 		if _v, ok := previous.WaitingPortingRequests[k]; !ok || !reflect.DeepEqual(_v, v) {
-			diffState.WaitingPortingRequests[k] = _v
+			diffState.WaitingPortingRequests[k] = v
 		}
 	}
 	for k, v := range current.WaitingRedeemRequests {
 		if _v, ok := previous.WaitingRedeemRequests[k]; !ok || !reflect.DeepEqual(_v, v) {
-			diffState.WaitingRedeemRequests[k] = _v
+			diffState.WaitingRedeemRequests[k] = v
 		}
 	}
 	for k, v := range current.MatchedRedeemRequests {
 		if _v, ok := previous.MatchedRedeemRequests[k]; !ok || !reflect.DeepEqual(_v, v) {
-			diffState.MatchedRedeemRequests[k] = _v
+			diffState.MatchedRedeemRequests[k] = v
 		}
 	}
 	for k, v := range current.LiquidationPool {
 		if _v, ok := previous.LiquidationPool[k]; !ok || !reflect.DeepEqual(_v, v) {
-			diffState.LiquidationPool[k] = _v
+			diffState.LiquidationPool[k] = v
 		}
 	}
 	if !reflect.DeepEqual(current.FinalExchangeRatesState, previous.FinalExchangeRatesState) {
