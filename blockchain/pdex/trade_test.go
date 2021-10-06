@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"strconv"
 	"testing"
@@ -52,47 +51,6 @@ func setTestTradeConfig() {
 	config.AbortParam()
 	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
 	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
-}
-
-func TestSortOrder(t *testing.T) {
-	type TestData struct {
-		Orders []*Order `json:"orders"`
-	}
-
-	type TestResult struct {
-		Orders []*Order `json:"orders"`
-	}
-
-	var testcases []Testcase
-	testcases = append(testcases, sortOrderTestcases...)
-
-	testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		&Params{}, nil, map[string]uint64{})
-	blankPairID := "pair0"
-	testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
-	for _, testcase := range testcases {
-		t.Run(testcase.Name, func(t *testing.T) {
-			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
-			NoError(t, err)
-			// get a random permutation of orders in test data for inserting
-			// since this test inserts items at random order, it is not compatible for testing equality-breaking of orders
-			perm := rand.Perm(len(testdata.Orders))
-			var orderbookPerm []*Order
-			for _, newInd := range perm {
-				orderbookPerm = append(orderbookPerm, testdata.Orders[newInd])
-			}
-			testdata.Orders = orderbookPerm
-
-			for _, item := range testdata.Orders {
-				pair := testState.poolPairs[blankPairID]
-				pair.orderbook.InsertOrder(item)
-				testState.poolPairs[blankPairID] = pair
-			}
-			encodedResult, _ := json.Marshal(TestResult{testState.poolPairs[blankPairID].orderbook.orders})
-			Equal(t, testcase.Expected, string(encodedResult))
-		})
-	}
 }
 
 func TestProduceTrade(t *testing.T) {

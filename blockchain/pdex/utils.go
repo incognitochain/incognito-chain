@@ -846,7 +846,7 @@ func getRefundedTradeInstructions(md *metadataPdexv3.TradeRequest, feeInPRV bool
 	var refundInstructions [][]string = [][]string{sellingTokenRefundAction.StringSlice()}
 	if feeInPRV {
 		// prepare PRV refund if trading fee was paid in PRV; not applicable to requests that sell PRV.
-		prvReceiver, exists := md.Receiver[md.TokenToSell]
+		prvReceiver, exists := md.Receiver[common.PRVCoinID]
 		if !exists {
 			return nil, fmt.Errorf("Fee (PRV) Refund receiver not found in Trade Request")
 		}
