@@ -95,9 +95,9 @@ func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
 		return false, utils.NewTransactionErr(utils.RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.LockTime))
 	}
 
-	if len(tx.SigPubKey) != common.SigPubKeySize {
-		return false, utils.NewTransactionErr(utils.RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
-	}
+	// if len(tx.SigPubKey) != common.SigPubKeySize {
+	// 	return false, utils.NewTransactionErr(utils.RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
+	// }
 
 	metaData := tx.GetMetadata()
 	proof := tx.GetProof()
