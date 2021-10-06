@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type RedeemRequest struct {
@@ -125,7 +126,7 @@ func (rq *RedeemRequest) SetRedeemerExternalAddress(redeemerAddress string) {
 	rq.redeemerExternalAddress = redeemerAddress
 }
 
-func (rq RedeemRequest) MarshalJSON() ([]byte, error) {
+func (rq *RedeemRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueRedeemID          string
 		TokenID                 string
