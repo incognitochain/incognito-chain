@@ -138,6 +138,9 @@ func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 	case common.TxConversionType:
 		return checkInputInDB(tx, transactionStateDB)
 	}
+	if txEnv.TxAction() == common.TxActInit {
+		return nil
+	}
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
@@ -176,6 +179,15 @@ func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
 func (tx *Tx) CheckData(transactionStateDB *statedb.StateDB) error {
 	txEnv := tx.GetValidationEnv()
+	switch tx.GetType() {
+	case common.TxRewardType, common.TxReturnStakingType:
+		return nil
+	case common.TxConversionType:
+		return checkInputInDB(tx, transactionStateDB)
+	}
+	if txEnv.TxAction() == common.TxActInit {
+		return nil
+	}
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
