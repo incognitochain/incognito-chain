@@ -148,7 +148,7 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 	sID := common.GetShardIDFromLastByte(txToken.GetSenderAddrLastByte())
 	valEnv = tx_generic.WithShardID(valEnv, int(sID))
 	txNormalValEnv := valEnv.Clone()
-	if txToken.GetTxTokenData().Type == utils.CustomTokenInit {
+	if txToken.TokenData.Type == utils.CustomTokenInit {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActInit)
 		valEnv = tx_generic.WithAct(valEnv, common.TxActInit)
 	} else {
