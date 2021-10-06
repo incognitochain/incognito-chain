@@ -80,14 +80,14 @@ func (blockchain *BlockChain) processPortalInstructions(
 func getDiffPortalStateV3(
 	previous *portalprocessv3.CurrentPortalState, current *portalprocessv3.CurrentPortalState,
 ) (diffState *portalprocessv3.CurrentPortalState) {
+	Logger.log.Errorf("HHH previous state: %v\n", previous)
+	Logger.log.Errorf("HHH current state: %v\n", current)
 	if current == nil {
 		return nil
 	}
 	if previous == nil {
 		return current
 	}
-	Logger.log.Errorf("HHH previous state: %v\n", previous)
-	Logger.log.Errorf("HHH current state: %v\n", current)
 
 	diffState = &portalprocessv3.CurrentPortalState{
 		CustodianPoolState:         map[string]*statedb.CustodianState{},

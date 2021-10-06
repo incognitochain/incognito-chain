@@ -240,6 +240,7 @@ func ProcessPortalInstsV3(
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 
 	for _, inst := range instructions {
+		Logger.log.Errorf("HHH Process portal v3 instruction: %+v\n", inst)
 		if len(inst) < 4 {
 			continue // Not error, just not Portal instruction
 		}
@@ -274,6 +275,7 @@ func ProcessPortalInstsV3(
 		if err != nil {
 			Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
 		}
+		Logger.log.Errorf("HHH currentPortalState after processing the instruction: %+v\n", currentPortalState)
 
 	}
 
