@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"reflect"
 	"sort"
+	"strings"
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -51,14 +52,26 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 		ordRate.Mul(ordRate, big.NewInt(0).SetUint64(ord.Token1Rate()))
 		myRate := big.NewInt(0).SetUint64(ob.orders[i].Token1Rate())
 		myRate.Mul(myRate, big.NewInt(0).SetUint64(ord.Token0Rate()))
+
 		// compare Token1Rate / Token0Rate of current order in the list to ord
-		if ord.TradeDirection() == v2.TradeDirectionSell0 {
-			// orders selling token0 are iterated from start of list (buy the least token1), so we resolve equality of rate by putting the new one last
-			return ordRate.Cmp(myRate) < 0
-		} else {
-			// orders selling token1 are iterated from end of list (buy the least token0), so we resolve equality of rate by putting the new one first
-			return ordRate.Cmp(myRate) <= 0
+		rateCmp := ordRate.Cmp(myRate)
+		// break equality of rate by comparing ID
+		if rateCmp == 0 {
+			// sell0 orders must precede sell1 orders of the same rate
+			if ord.TradeDirection() != ob.orders[i].TradeDirection(){
+			 	return ord.TradeDirection() == v2.TradeDirectionSell0
+			}
+			// no equality for ID since duplicate ID was handled in addOrder flow
+			idCmp := strings.Compare(ord.Id(), ob.orders[i].Id())
+			// best rate for sell0 is at start of list, so we put smaller ID first to match. The opposite is true for sell1
+			if ord.TradeDirection() == v2.TradeDirectionSell0 {
+				return idCmp < 0
+			} else {
+				return idCmp > 0
+			}
 		}
+
+		return ordRate.Cmp(myRate) < 0
 	})
 	ob.orders = insertAt(ob.orders, index, ord)
 }
