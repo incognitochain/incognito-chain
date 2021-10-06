@@ -147,14 +147,15 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 	valEnv = tx_generic.WithSigPubkey(valEnv, txToken.Tx.GetSigPubKey())
 	sID := common.GetShardIDFromLastByte(txToken.GetSenderAddrLastByte())
 	valEnv = tx_generic.WithShardID(valEnv, int(sID))
-	txToken.SetValidationEnv(valEnv)
 	txNormalValEnv := valEnv.Clone()
 	if txToken.GetTxTokenData().Type == utils.CustomTokenInit {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActInit)
+		valEnv = tx_generic.WithAct(valEnv, common.TxActInit)
 	} else {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
 	txn := txToken.GetTxNormal()
+	txToken.SetValidationEnv(valEnv)
 
 	if txn.IsPrivacy() {
 		txNormalValEnv = tx_generic.WithPrivacy(txNormalValEnv)

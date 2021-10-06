@@ -918,6 +918,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	if len(txs) == 0 {
 		return nil
 	}
+	st := time.Now()
 	// isEmpty := blockchain.config.TempTxPool.EmptyPool()
 	// if !isEmpty {
 	// 	panic("TempTxPool Is not Empty")
@@ -939,7 +940,11 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 		return err
 	}
-	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+	Logger.log.Infof("[validatetxs] Get beacon view for new block cost %v", time.Since(st))
+	st = time.Now()
+	err = blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+	Logger.log.Infof("[validatetxs] verifyTransactionIndividuallyFromNewBlock cost %v", time.Since(st))
+	return err
 }
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {

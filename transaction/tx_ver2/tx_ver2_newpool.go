@@ -161,7 +161,7 @@ func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
 				return err
 			}
-			data = append(data, randomCoinBytes)
+			data[i*m+j] = randomCoinBytes
 			randomCoin := new(privacy.CoinV2)
 			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
 				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)

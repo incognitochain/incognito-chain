@@ -172,7 +172,7 @@ func (v *TxsVerifier) ValidateWithoutChainstate(tx metadata.Transaction) (bool, 
 	if !ok || err != nil {
 		return ok, err
 	}
-	return tx.ValidateTxCorrectness(v.txDB)
+	return tx.ValidateTxCorrectness(v.txDB.Copy())
 }
 
 func (v *TxsVerifier) ValidateWithChainState(
