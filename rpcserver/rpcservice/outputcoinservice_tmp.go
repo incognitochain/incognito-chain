@@ -81,7 +81,7 @@ func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tok
 		for i := range sig.Indexes {
 			tmpRes2 := make([]uint64, 0)
 			for j := range sig.Indexes[i] {
-				tmpRes2 = append(tmpRes2, sig.Indexes[i][j].Uint64())
+				tmpRes2 = append(tmpRes2, sig.Indexes[j][i].Uint64())
 			}
 			tmpRes = append(tmpRes, tmpRes2)
 		}
