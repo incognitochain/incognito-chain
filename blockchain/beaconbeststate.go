@@ -462,9 +462,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	if target.pdeState != nil {
 		beaconBestState.pdeState = target.pdeState.Copy()
 	}
-	Logger.log.Errorf("HHH Clone portal v3 from target: target.portalStateV3 %v\n", target.portalStateV3)
 	if target.portalStateV3 != nil {
-		Logger.log.Errorf("HHH Clone portal v3 from target\n")
 		beaconBestState.portalStateV3 = target.portalStateV3.Copy()
 	}
 	if target.portalStateV4 != nil {

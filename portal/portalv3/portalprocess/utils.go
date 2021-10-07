@@ -42,12 +42,10 @@ func (s *CurrentPortalState) Copy() *CurrentPortalState {
 	b := new(bytes.Buffer)
 	err := gob.NewEncoder(b).Encode(s)
 	if err != nil {
-		Logger.log.Errorf("HHH Copy portal state error 1 %v - s %v\n", err, s)
 		return nil
 	}
 	err = gob.NewDecoder(bytes.NewBuffer(b.Bytes())).Decode(v)
 	if err != nil {
-		Logger.log.Errorf("HHH Copy portal state error 2: %v - s %v\n", err, s)
 		return nil
 	}
 	return v

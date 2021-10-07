@@ -122,7 +122,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(
 		featureStateDB, beaconBestState.portalStateV3)
-	Logger.log.Errorf("HHH currentPortalStateV3 before handle portal v3 instruction: %+v\n", currentPortalStateV3)
 	if err != nil {
 		Logger.log.Error(err)
 	}
