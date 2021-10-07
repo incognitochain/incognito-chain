@@ -354,6 +354,27 @@ func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeCh
 	return blsbft.ActorV2BuilderContext, nil
 }
 
+func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	tempShardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee())
+	committee, _ := tempCommittee.ToBase58()
+
+	return map[string]interface{}{
+		"Proposer":      committee,
+		"ProposerIndex": committeIndex,
+	}, nil
+}
+
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardIDParam := int(arrayParams[0].(float64))

@@ -139,6 +139,7 @@ const (
 	getFinalityProof           = "getfinalityproof"
 	setConsensusRule           = "setconsensusrule"
 	getConsensusRule           = "getconsensusrule"
+	getProposerIndex           = "getproposerindex"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
