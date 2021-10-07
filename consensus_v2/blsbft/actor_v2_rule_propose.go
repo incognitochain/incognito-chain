@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,7 +35,7 @@ func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropo
 	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID}
 }
 
-type IProposeRule interface {
+type IProposeMessageRule interface {
 	HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error)
 	CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error)
 	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool)
@@ -442,4 +443,31 @@ func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, cur
 	}
 
 	return finalityProof, true
+}
+
+type NoHandleProposeMessageRule struct {
+}
+
+func NewNoHandleProposeMessageRule() *NoHandleProposeMessageRule {
+	return &NoHandleProposeMessageRule{}
+}
+
+func (n NoHandleProposeMessageRule) HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error) {
+	return new(ProposeBlockInfo), errors.New("using no handle propose message rule")
+}
+
+func (n NoHandleProposeMessageRule) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
+	return new(BFTPropose), errors.New("using no handle propose message rule")
+}
+
+func (n NoHandleProposeMessageRule) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool) {
+	return NewFinalityProof(), false
+}
+
+func (n NoHandleProposeMessageRule) HandleCleanMem(finalView uint64) {
+	return
+}
+
+func (n NoHandleProposeMessageRule) FinalityProof() map[string]map[int64]string {
+	return make(map[string]map[int64]string)
 }

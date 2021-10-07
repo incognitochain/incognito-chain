@@ -338,15 +338,18 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	voteRule := param["vote_rule"]
 	createRule := param["create_rule"]
 	handleVoteRule := param["handle_vote_rule"]
+	handleProposeRule := param["handle_propose_rule"]
 
 	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
 	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
 	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
 	return map[string]interface{}{
-		"vote_rule":        blsbft.ActorV2BuilderContext.VoteRule,
-		"create_rule":      blsbft.ActorV2BuilderContext.CreateRule,
-		"handle_vote_rule": blsbft.ActorV2BuilderContext.HandleVoteRule,
-		"lemma2_height":    blsbft.ActorV2BuilderContext.Lemma2Height,
+		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
+		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
+		"handle_vote_rule":    blsbft.ActorV2BuilderContext.HandleVoteRule,
+		"handle_propose_rule": blsbft.ActorV2BuilderContext.HandleProposeRule,
+		"lemma2_height":       blsbft.ActorV2BuilderContext.Lemma2Height,
 	}, nil
 }
 
