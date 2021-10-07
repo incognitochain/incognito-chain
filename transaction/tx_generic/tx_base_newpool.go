@@ -59,54 +59,19 @@ func (tx *TxBase) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
 	}
 }
 
-func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
-	switch tx.Type {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType, common.TxTokenConversionType: //is valid
-	default:
-		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.Type))
-	}
-
-	// check info field
-	if len(tx.Info) > 512 {
-		return false, utils.NewTransactionErr(utils.RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
-	}
-
+func (tx *TxBase) ValidateSanityDataWithMetadata() (bool, error) {
 	if tx.Metadata != nil {
 		metaType := tx.Metadata.GetType()
 		txType := tx.GetValidationEnv().TxType()
 		if !metadata.IsAvailableMetaInTxType(metaType, txType) {
 			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
 		}
-	}
-
-	// check tx size
-	actualTxSize := tx.GetTxActualSize()
-	if actualTxSize > common.MaxTxSize {
-		//fmt.Print(actualTxSize, common.MaxTxSize)
-		return false, utils.NewTransactionErr(utils.RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
-	}
-
-	//check version
-	if tx.Version > utils.TxVersion2Number {
-		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, utils.CurrentTxVersion))
-	}
-	// check LockTime before now
-	if int64(tx.LockTime) > time.Now().Unix() {
-		return false, utils.NewTransactionErr(utils.RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.LockTime))
-	}
-
-	// if len(tx.SigPubKey) != common.SigPubKeySize {
-	// 	return false, utils.NewTransactionErr(utils.RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
-	// }
-
-	metaData := tx.GetMetadata()
-	proof := tx.GetProof()
-	if metaData != nil {
-		if !metaData.ValidateMetadataByItself() {
+		if !tx.Metadata.ValidateMetadataByItself() {
 			return false, errors.Errorf("Metadata is not valid")
 		}
 	}
-
+	metaData := tx.GetMetadata()
+	proof := tx.GetProof()
 	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
 		if metaData == nil {
 			utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", tx.Hash().String())
@@ -129,21 +94,47 @@ func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
 				}
 			}
 		}
-		// if len(proof.GetOutputCoins()) == 0 {
-		// 	if metaData != nil {
-		// 		metaType := metaData.GetType()
-		// 		if !metadata.HasInputNoOutput(metaType) {
-		// 			return false, utils.NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
-		// 		}
-		// 	}
-		// }
+	}
+	return true, nil
+}
+
+func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
+	switch tx.Type {
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType, common.TxTokenConversionType: //is valid
+	default:
+		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.Type))
+	}
+
+	// check info field
+	if len(tx.Info) > 512 {
+		return false, utils.NewTransactionErr(utils.RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
+	}
+
+	// check tx size
+	actualTxSize := tx.GetTxActualSize()
+	if actualTxSize > common.MaxTxSize {
+		//fmt.Print(actualTxSize, common.MaxTxSize)
+		return false, utils.NewTransactionErr(utils.RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
+	}
+
+	//check version
+	if tx.Version > utils.TxVersion2Number {
+		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, utils.CurrentTxVersion))
+	}
+	// check LockTime before now
+	if int64(tx.LockTime) > time.Now().Unix() {
+		return false, utils.NewTransactionErr(utils.RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.LockTime))
+	}
+
+	proof := tx.GetProof()
+	if proof != nil {
 		// check sanity of Proof
 		validateSanityOfProof, err := tx.validateSanityDataOfProof()
 		if err != nil || !validateSanityOfProof {
 			return false, err
 		}
-	}
 
+	}
 	return true, nil
 }
 

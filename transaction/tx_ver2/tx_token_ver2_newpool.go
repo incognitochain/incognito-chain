@@ -1,8 +1,9 @@
 package tx_ver2
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -32,6 +33,55 @@ func (txToken *TxToken) CheckData(transactionStateDB *statedb.StateDB) error {
 	return txToken.Tx.CheckData(transactionStateDB)
 }
 
+func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
+	metaData := txToken.GetMetadata()
+	if metaData != nil {
+		metaType := metaData.GetType()
+		txType := txToken.GetValidationEnv().TxType()
+		if !metadata.IsAvailableMetaInTxType(metaType, txType) {
+			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
+		}
+		if !metaData.ValidateMetadataByItself() {
+			return false, errors.Errorf("Metadata is not valid")
+		}
+	}
+	txn := txToken.GetTxNormal()
+	if txn == nil {
+		return false, errors.Errorf("Can not get tx normal for tx %v", txToken.Hash().String())
+	}
+	proof := txn.GetProof()
+	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
+		if metaData == nil {
+			utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", txToken.Hash().String())
+		} else {
+			metaType := metaData.GetType()
+			if !metadata.NoInputNoOutput(metaType) {
+				utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is invalid, metadata type %v", txToken.Hash().String(), metaType)
+			}
+		}
+	} else {
+		if len(proof.GetInputCoins()) == 0 {
+			if (metaData == nil) && (txToken.GetValidationEnv().TxAction() != common.TxActInit) {
+				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", txToken.Hash().String()))
+			}
+			if metaData != nil {
+				metaType := metaData.GetType()
+				if !metadata.NoInputHasOutput(metaType) {
+					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", txToken.Hash().String(), metaType))
+				}
+			}
+
+		}
+	}
+	proof = txToken.Tx.GetProof()
+	if proof != nil {
+		if len(proof.GetInputCoins()) == 0 {
+			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v for pay fee for tx %v, can not be mint tx", txToken.Tx.Hash().String(), txToken.Hash().String()))
+		}
+	}
+	return true, nil
+}
+
 func (txToken *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 	if txToken.GetType() != common.TxCustomTokenPrivacyType && txToken.GetType() != common.TxTokenConversionType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
@@ -40,7 +90,13 @@ func (txToken *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 	if !ok || txn == nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("TX token must have token component"))
 	}
-	if txToken.GetTxBase().GetProof() == nil && txn.GetProof() == nil {
+	if txToken.GetTxBase().GetProof() != nil {
+		check, err := txToken.Tx.TxBase.ValidateSanityDataByItSelf()
+		if !check || err != nil {
+			return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
+		}
+	}
+	if txn.GetProof() == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have a proof")
 	}
 	if txToken.GetTokenID().String() == common.PRVCoinID.String() {
@@ -50,11 +106,7 @@ func (txToken *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
-	check, err = txToken.Tx.TxBase.ValidateSanityDataByItSelf()
-	if !check || err != nil {
-		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
-	}
-	return true, nil
+	return txToken.ValidateSanityDataWithMetadata()
 }
 
 func (txToken *TxToken) ValidateSanityDataWithBlockchain(

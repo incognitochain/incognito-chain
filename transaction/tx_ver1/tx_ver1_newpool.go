@@ -67,12 +67,14 @@ func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte,
 }
 
 func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
-	ok, err := tx.TxBase.ValidateSanityDataByItSelf()
+	if len(tx.SigPubKey) != common.SigPubKeySize {
+		return false, utils.NewTransactionErr(utils.RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
+	}
+	ok, err := tx.TxBase.ValidateSanityDataWithMetadata()
 	if (!ok) || (err != nil) {
 		return false, err
 	}
-
-	return true, nil
+	return tx.TxBase.ValidateSanityDataByItSelf()
 }
 
 func (tx *Tx) ValidateSanityDataWithBlockchain(

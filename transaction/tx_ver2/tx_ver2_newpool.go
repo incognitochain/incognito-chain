@@ -19,6 +19,10 @@ func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if tx.Proof == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have proof")
 	}
+	ok, err := tx.TxBase.ValidateSanityDataWithMetadata()
+	if (!ok) || (err != nil) {
+		return false, err
+	}
 	if check, err := tx.TxBase.ValidateSanityDataByItSelf(); !check || err != nil {
 		utils.Logger.Log.Errorf("Cannot check sanity of version, size, proof, type and info: err %v", err)
 		return false, err
@@ -142,6 +146,7 @@ func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 		return nil
 	}
 	txSigPubKey := new(SigPubKey)
+	utils.Logger.Log.Infof("tx val env %v %v %v %v", tx.Hash().String(), txEnv.IsPrivacy(), tx.GetType(), txEnv.TxAction())
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))

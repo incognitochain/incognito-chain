@@ -56,14 +56,6 @@ func (tx *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 	if tx.GetTxNormal().GetType() != common.TxNormalType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
-	meta := tx.GetMetadata()
-	if meta != nil {
-		if !metadata.IsAvailableMetaInTxType(meta.GetType(), tx.GetType()) {
-			err := errors.Errorf("Not mismatch type, txtype %v, metadatatype %v", tx.GetType(), meta.GetType())
-			utils.Logger.Log.Errorf("Validate tx %v return %v, error %v", tx.Hash().String(), err)
-			return false, err
-		}
-	}
 
 	if tx.GetTxNormal().GetMetadata() != nil {
 		return false, errors.Errorf("This tx field is just used for send token, can not have metadata")
@@ -78,8 +70,11 @@ func (tx *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 			return ok, err
 		}
 	}
-
-	ok, err := tx.GetTxNormal().ValidateSanityDataByItSelf()
+	ok, err := tx.ValidateSanityDataWithMetadata()
+	if (!ok) || (err != nil) {
+		return false, err
+	}
+	ok, err = tx.GetTxNormal().ValidateSanityDataByItSelf()
 	if !ok || err != nil {
 		return ok, err
 	}
