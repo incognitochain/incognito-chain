@@ -31,8 +31,12 @@ type BFTVote struct {
 	BRI           []byte
 	Confirmation  []byte
 	IsValid       int // 0 not process, 1 valid, -1 not valid
-	TimeSlot      uint64
-
+	// TODO: @hung how to validate timeslot with block height anhd hash
+	TimeSlot int64
+	//TODO: @hung add committee from block
+	CommitteeFromBlock common.Hash
+	//TODO: @hung  add ChainID
+	ChainID int
 	// Portal v4
 	PortalSigs []*portalprocessv4.PortalSig
 }
@@ -48,6 +52,9 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 	data = append(data, s.BLS...)
 	data = append(data, s.BRI...)
 	data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
+	data = append(data, common.Int64ToBytes(s.TimeSlot)...)
+	data = append(data, []byte(s.Validator)...)
+	data = append(data, []byte(s.PrevBlockHash)...)
 	data = common.HashB(data)
 	var err error
 	s.Confirmation, err = key.BriSignData(data)
@@ -60,6 +67,9 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	data = append(data, s.BLS...)
 	data = append(data, s.BRI...)
 	data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
+	data = append(data, common.Int64ToBytes(s.TimeSlot)...)
+	data = append(data, []byte(s.Validator)...)
+	data = append(data, []byte(s.PrevBlockHash)...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err

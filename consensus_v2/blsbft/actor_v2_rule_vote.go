@@ -146,6 +146,7 @@ func createVote(
 	vote.PortalSigs = portalSigs
 	vote.BlockHash = block.Hash().String()
 	vote.Validator = userBLSPk
+	vote.TimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
 	vote.PrevBlockHash = block.GetPrevHash().String()
 	vote.BlockHeight = block.GetHeight()
 	err = vote.signVote(userKey)
