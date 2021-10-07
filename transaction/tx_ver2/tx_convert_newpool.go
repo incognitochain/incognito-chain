@@ -66,49 +66,6 @@ func validateTxConvertCorrectness(
 		return false, errors.New("Error casting ConversionProofVer1ToVer2")
 	}
 
-	// Verify that input coins have been created and have not been spent
-	// inputCoins := proofConversion.GetInputCoins()
-	// for i := 0; i < len(inputCoins); i++ {
-	// 	// Check if commitment has existed
-	// 	if ok, err := statedb.HasCommitment(db, tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID); !ok || err != nil {
-	// 		if err != nil {
-	// 			errStr := fmt.Sprintf("TxConversion database inputCommitment got error: %v", err)
-	// 			return false, errors.New(errStr)
-	// 		}
-	// 		return false, errors.New("TxConversion not found existing inputCommitment in database error")
-	// 	}
-
-	// 	// Check if input coin has not been spent
-	// 	if ok, err := statedb.HasSerialNumber(db, tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
-	// 		if err != nil {
-	// 			errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)
-	// 			return false, errors.New(errStr)
-	// 		}
-	// 		return false, errors.New("TxConversion found existing serialNumber in database error")
-	// 	}
-	// }
-
-	// Verify that output coins' one-time-address has not been obtained + not duplicate OTAs
-	// outputCoins := proofConversion.GetOutputCoins()
-	// mapOutputCoins := make(map[string]int)
-	// for i := 0; i < len(outputCoins); i++ {
-	// 	if ok, _, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
-	// 		if err != nil {
-	// 			errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
-	// 			return false, errors.New(errStr)
-	// 		}
-	// 		return false, errors.New("TxConversion found existing one-time-address in database error")
-	// 	}
-	// 	dst := make([]byte, hex.EncodedLen(len(outputCoins[i].GetPublicKey().ToBytesS())))
-	// 	hex.Encode(dst, outputCoins[i].GetPublicKey().ToBytesS())
-	// 	mapOutputCoins[string(dst)] = i
-	// }
-	// if len(mapOutputCoins) != len(outputCoins) {
-	// 	return false, errors.New("TxConversion found duplicate one-time-address error")
-	// }
-
-	// Verify the conversion proof
-	// valid, err := proofConversion.Verify(boolParams, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, nil)
 	valid, err := proofConversion.VerifyV2(vEnv, tx.GetTxFee())
 	if !valid {
 		if err != nil {

@@ -142,6 +142,10 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
 
+	if txToken.IsSalaryTx() {
+		valid, err := txToken.ValidateTxSalary(transactionStateDB)
+		return valid, err
+	}
 	// validate for pToken
 	switch txToken.TokenData.Type {
 	case utils.CustomTokenTransfer:
