@@ -73,7 +73,8 @@ func (svc PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interfac
 
 	arrayParams := common.InterfaceSlice(raw)
 	if len(arrayParams) >= 5 {
-		rawMd, err := json.Marshal(arrayParams[4])
+		var rawMd []byte
+		rawMd, err = json.Marshal(arrayParams[4])
 		if err != nil {
 			return nil, fmt.Errorf("Cannot parse metadata - %v", err)
 		}

@@ -45,6 +45,12 @@ func NewTradeRequest(
 }
 
 func (req TradeRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	for _, poolPairID := range req.TradePath {
+		err := beaconViewRetriever.IsValidPoolPairID(poolPairID)
+		if err != nil {
+			return false, err
+		}
+	}
 	return true, nil
 }
 
@@ -150,6 +156,10 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 		}
 	default:
 		return false, false, fmt.Errorf("Invalid transaction type %v for trade request", tx.GetType())
+	}
+
+	if len(req.TradePath) == 0 {
+		return false, false, fmt.Errorf("Invalid trade request - path empty")
 	}
 
 	// trade path length check
