@@ -11,7 +11,7 @@ type TxStatsInfo struct {
 	ShardID     byte       `json:"shard_id"`
 	BlockHeight uint64     `json:"block_height"`
 	LockTime    int64      `json:"lock_time"`
-	InputCoins  []uint64 `json:"input_coins"`
+	InputCoins  [][]uint64 `json:"input_coins"`
 	OutputCoins []uint64   `json:"output_coins"`
 }
 
