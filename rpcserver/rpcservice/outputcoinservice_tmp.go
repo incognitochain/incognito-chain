@@ -15,8 +15,8 @@ import (
 )
 
 // GetInputCoinInfoByHashes returns a list of input coin information for a list of hashes.
-func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tokenID string) (map[string][][]uint64, *RPCError) {
-	res := make(map[string][][]uint64)
+func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tokenID string) (map[string][]uint64, *RPCError) {
+	res := make(map[string][]uint64)
 	for _, txHashStr := range txHashList {
 		if _, ok := res[txHashStr]; ok {
 			continue
@@ -35,13 +35,13 @@ func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tok
 			tx.GetType() == common.TxRewardType ||
 			tx.GetType() == common.TxReturnStakingType ||
 			tx.GetType() == common.TxConversionType {
-			res[txHashStr] = make([][]uint64, 0)
+			res[txHashStr] = make([]uint64, 0)
 			continue
 		}
 		var sig *tx_ver2.SigPubKey
 		if tx.GetTokenID().String() == common.PRVIDStr {
 			if tokenID != common.PRVIDStr {
-				res[txHashStr] = make([][]uint64, 0)
+				res[txHashStr] = make([]uint64, 0)
 				continue
 			}
 			sig = new(tx_ver2.SigPubKey)
@@ -65,7 +65,7 @@ func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tok
 				}
 			} else {
 				if txToken.GetTxTokenData().GetType() == utils.CustomTokenInit || txToken.GetType() == common.TxTokenConversionType{
-					res[txHashStr] = make([][]uint64, 0)
+					res[txHashStr] = make([]uint64, 0)
 					continue
 				}
 				sig = new(tx_ver2.SigPubKey)
@@ -77,13 +77,12 @@ func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tok
 			}
 		}
 
-		tmpRes := make([][]uint64, 0)
+		tmpRes := make([]uint64, 0)
 		for i := range sig.Indexes {
 			tmpRes2 := make([]uint64, 0)
 			for j := range sig.Indexes[i] {
-				tmpRes2 = append(tmpRes2, sig.Indexes[j][i].Uint64())
+				tmpRes = append(tmpRes2, sig.Indexes[i][j].Uint64())
 			}
-			tmpRes = append(tmpRes, tmpRes2)
 		}
 		res[txHashStr] = tmpRes
 	}
