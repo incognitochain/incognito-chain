@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -712,8 +713,13 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	// find replace tx in pool
+	Logger.log.Info("[pdex] replace by key:", hash)
+	jsb, _ := json.Marshal(tx)
+	Logger.log.Info("[pdex] tx to replace with:", string(jsb))
 	if txHashToBeReplaced, ok := tp.poolSerialNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
+			Logger.log.Info("[pdex] txHashToBeReplaced:", txHashToBeReplaced)
+			Logger.log.Info("[pdex] txDescToBeReplaced:", txDescToBeReplaced)
 			var baseReplaceFee float64
 			var baseReplaceFeeToken float64
 			var replaceFee float64
