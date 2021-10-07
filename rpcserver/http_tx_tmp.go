@@ -7,6 +7,14 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
+type TxStatsInfo struct {
+	ShardID     byte       `json:"shard_id"`
+	BlockHeight uint64     `json:"block_height"`
+	LockTime    int64      `json:"lock_time"`
+	InputCoins  [][]uint64 `json:"input_coins"`
+	OutputCoins []uint64   `json:"output_coins"`
+}
+
 func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
@@ -16,7 +24,7 @@ func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{
 
 	paramList, ok := arrayParams[0].(map[string]interface{})
 	if !ok || len(paramList) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,fmt.Errorf("paramList %v is not a map[string]interface{}", arrayParams[0]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("paramList %v is not a map[string]interface{}", arrayParams[0]))
 	}
 
 	//Get decoyKey list
@@ -129,22 +137,39 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 
 	fmt.Println("IIII", txHashList)
 
-	type TmpRes struct {
-		InputCoins [][]uint64 `json:"input_coins"`
-		OutputCoins []uint64  `json:"output_coins"`
+	res := make(map[string]TxStatsInfo)
+	for _, txHashStr := range txHashList {
+		txHash, err := new(common.Hash).NewHashFromStr(txHashStr)
+		if err != nil {
+			Logger.log.Errorf("invalid tx %v\n", txHashStr)
+			continue
+		}
+		shardID, _, blockHeight, _, tx, err := httpServer.GetBlockchain().GetTransactionByHash(*txHash)
+		if err != nil {
+			Logger.log.Errorf("tx %v not found\n", txHashStr)
+			continue
+		}
+		res[txHashStr] = TxStatsInfo{
+			ShardID:     shardID,
+			BlockHeight: blockHeight,
+			LockTime:    tx.GetLockTime(),
+		}
 	}
-	res := make(map[string]TmpRes)
+
 	mapInputs, err1 := httpServer.outputCoinService.GetInputCoinInfoByHashes(txHashList, tokenID.String())
 	if err != nil {
 		return nil, err1
 	}
 	mapOutputs, err1 := httpServer.outputCoinService.GetOutputCoinInfoByHashes(txHashList, tokenID.String())
 	for txHashStr, inputs := range mapInputs {
-		res[txHashStr] = TmpRes{InputCoins: inputs, OutputCoins: mapOutputs[txHashStr]}
+		tmpRes, ok := res[txHashStr]
+		if !ok {
+			continue
+		}
+		tmpRes.InputCoins = inputs
+		tmpRes.OutputCoins = mapOutputs[txHashStr]
+		res[txHashStr] = tmpRes
 	}
-	fmt.Println("IIII", mapInputs)
-	fmt.Println("IIII", mapOutputs)
-	fmt.Println("IIII", res)
 
 	return res, nil
 }
