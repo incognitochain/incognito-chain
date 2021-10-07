@@ -183,7 +183,10 @@ func (u *Uint64Reader) UnmarshalJSON(raw []byte) error {
 	err := json.Unmarshal(raw, &theNum)
 	if err != nil {
 		var theStr string
-		json.Unmarshal(raw, &theStr)
+		err := json.Unmarshal(raw, &theStr)
+		if err != nil {
+			return fmt.Errorf("Error unmarshalling number %s - must be uint64 or string", string(raw))
+		}
 		temp, err := strconv.ParseUint(theStr, 10, 64)
 		*u = Uint64Reader(temp)
 		return err
