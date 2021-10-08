@@ -132,48 +132,59 @@ func (d *ActorV2RuleDirector) updateRule(
 	logger common.Logger,
 ) {
 	if bestViewHeight >= ctx.Lemma2Height {
-		builder = d.makeLemma2Rule(builder, logger, chain)
 		if ctx.VoteRule == VOTERULE_VOTE {
-			builder.SetVoteRule(NewVoteRule(
-				logger,
-			))
+			if reflect.TypeOf(builder.VoteRule()) != reflect.TypeOf(new(VoteRule)) {
+				builder.SetVoteRule(NewVoteRule(
+					logger,
+				))
+			}
 			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTERULE_VOTE)
 		}
 
 		if ctx.VoteRule == VOTERULE_NO_VOTE {
-			builder.SetVoteRule(NewNoVoteRule(
-				logger,
-			))
+			if reflect.TypeOf(builder.VoteRule()) != reflect.TypeOf(new(NoVoteRule)) {
+				builder.SetVoteRule(NewNoVoteRule(
+					logger,
+				))
+			}
 			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTERULE_NO_VOTE)
 		}
 
-		if ctx.CreateRule == CREATERULE_CREATE_ONLY {
-			builder.SetCreateRule(NewOnlyCreateBlockRule(
-				logger,
-				chain,
-			))
-			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_CREATE_ONLY)
-		}
-
 		if ctx.CreateRule == CREATERULE_NORMAL {
-			builder.SetCreateRule(NewNormalCreateBlockRule(
-				logger,
-				chain,
-			))
+			if reflect.TypeOf(builder.CreateRule()) != reflect.TypeOf(new(NormalCreateBlockRule)) {
+				builder.SetCreateRule(NewNormalCreateBlockRule(
+					logger,
+					chain,
+				))
+			}
 			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_NORMAL)
 		}
 
+		if ctx.CreateRule == CREATERULE_CREATE_ONLY {
+			if reflect.TypeOf(builder.CreateRule()) != reflect.TypeOf(new(OnlyCreateBlockRule)) {
+				builder.SetCreateRule(NewOnlyCreateBlockRule(
+					logger,
+					chain,
+				))
+			}
+			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_CREATE_ONLY)
+		}
+
 		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_COLLECT {
-			builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
+			if reflect.TypeOf(builder.HandleVoteMessageRule()) != reflect.TypeOf(new(HandleVoteMessage)) {
+				builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
+			}
 			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_COLLECT)
 		}
 
 		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_NO_COLLECT {
-			builder.SetHandleVoteMessageRule(NewNoHandleVoteMessage())
+			if reflect.TypeOf(builder.HandleVoteMessageRule()) != reflect.TypeOf(new(NoHandleVoteMessage)) {
+				builder.SetHandleVoteMessageRule(NewNoHandleVoteMessage())
+			}
 			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_NO_COLLECT)
 		}
 
-		if ctx.HandleVoteRule == HANDLEPROPOSEMESSAGE_NORMAL {
+		if ctx.HandleProposeRule == HANDLEPROPOSEMESSAGE_NORMAL {
 			if reflect.TypeOf(builder.ProposeMessageRule()) != reflect.TypeOf(new(ProposeRuleLemma2)) {
 				builder.SetProposeMessageRule(NewProposeRuleLemma2(
 					logger,
@@ -184,14 +195,13 @@ func (d *ActorV2RuleDirector) updateRule(
 			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLEPROPOSEMESSAGE_NORMAL)
 		}
 
-		if ctx.HandleVoteRule == HANDLEPROPOSEMESSAGE_NO {
-			builder.SetProposeMessageRule(NewNoHandleProposeMessageRule())
+		if ctx.HandleProposeRule == HANDLEPROPOSEMESSAGE_NO {
+			if reflect.TypeOf(builder.ProposeMessageRule()) != reflect.TypeOf(new(NoHandleProposeMessageRule)) {
+				builder.SetProposeMessageRule(NewNoHandleProposeMessageRule())
+			}
 			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLEPROPOSEMESSAGE_NO)
 		}
-	} else {
-		builder = d.makeLemma1Rule(builder, logger, chain)
 	}
-
 }
 
 func (d *ActorV2RuleDirector) makeLemma1Rule(builder IActorV2RuleBuilder, logger common.Logger, chain Chain) IActorV2RuleBuilder {
