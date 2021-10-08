@@ -173,7 +173,8 @@ func (d *ActorV2RuleDirector) updateRule(
 			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_NO_COLLECT)
 		}
 
-		if ctx.HandleVoteRule == HANDLEPROPOSEMESSAGE_NORMAL {
+		if ctx.HandleVoteRule == HANDLEPROPOSEMESSAGE_NORMAL &&
+			reflect.TypeOf(builder.ProposeMessageRule()) != reflect.TypeOf(new(ProposeRuleLemma2)) {
 			builder.SetProposeMessageRule(NewProposeRuleLemma2(
 				logger,
 				make(map[string]map[int64]string),
