@@ -260,6 +260,7 @@ func TrackFee(
 	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
 	lpFeesPerShares []map[common.Hash]*big.Int, protocolFees, stakingPoolFees []map[common.Hash]uint64,
 	tradeDirections []byte, orderbooks []OrderBookIterator,
+	poolFees []uint, feeRateBPS uint,
 	acceptedMeta *metadataPdexv3.AcceptedTrade,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
 ) (*metadataPdexv3.AcceptedTrade, error) {
@@ -274,29 +275,39 @@ func TrackFee(
 	}
 
 	if feeInPRV {
-		// uniformly split fee into reserves
-		feePerReserve := fee / uint64(mutualLen)
-		for i, reserve := range reserves {
-			if i == len(reserves)-1 {
-				feePerReserve += fee % uint64(mutualLen)
-			}
+		// weighted divide fee into reserves
+		sumPoolFees := feeRateBPS
+		feeRemain := fee
+		for i := 0; i < mutualLen; i++ {
+			// reward for this pool = feeRemain * feeRate / sumPoolFeesRemain
+			reward := new(big.Int).Mul(new(big.Int).SetUint64(feeRemain), new(big.Int).SetUint64(uint64(poolFees[i])))
+			reward.Div(reward, new(big.Int).SetUint64(uint64(sumPoolFees)))
+
 			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
-				reserve,
+				reserves[i],
 			).AddFee(
-				common.PRVCoinID, feePerReserve, baseLPPerShare,
+				common.PRVCoinID, reward.Uint64(), baseLPPerShare,
 				lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 			)
-			acceptedMeta.RewardEarned[i][common.PRVCoinID] = feePerReserve
+			acceptedMeta.RewardEarned[i][common.PRVCoinID] = reward.Uint64()
+
+			sumPoolFees -= poolFees[sumPoolFees]
+			feeRemain -= reward.Uint64()
 		}
 		return acceptedMeta, nil
 	}
 
+	sumPoolFees := feeRateBPS
 	sellAmountRemain := fee
 
 	var totalBuyAmount uint64
 	for i := 0; i < mutualLen; i++ {
-		rewardAmount := sellAmountRemain / uint64(mutualLen-i)
+		// reward for this pool = feeRemain * feeRate / sumPoolFeesRemain
+		reward := new(big.Int).Mul(new(big.Int).SetUint64(sellAmountRemain), new(big.Int).SetUint64(uint64(poolFees[i])))
+		reward.Div(reward, new(big.Int).SetUint64(uint64(sumPoolFees)))
+		rewardAmount := reward.Uint64()
+
 		rewardToken := reserves[i].Token0ID()
 		if tradeDirections[i] == TradeDirectionSell1 {
 			rewardToken = reserves[i].Token1ID()
@@ -310,6 +321,7 @@ func TrackFee(
 		)
 		acceptedMeta.RewardEarned[i][rewardToken] = rewardAmount
 
+		sumPoolFees -= poolFees[i]
 		sellAmountRemain -= rewardAmount
 		if i == mutualLen-1 {
 			break

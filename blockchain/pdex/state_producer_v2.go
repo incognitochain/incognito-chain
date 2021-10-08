@@ -366,9 +366,16 @@ func (sp *stateProducerV2) trade(
 			result = append(result, refundInstructions...)
 			continue
 		}
-		feeRateBPS := params.DefaultFeeRateBPS
-		if _, ok := params.FeeRateBPS[currentTrade.TradePath[0]]; ok {
-			feeRateBPS = params.FeeRateBPS[currentTrade.TradePath[0]]
+
+		poolFees := []uint{}
+		feeRateBPS := uint(0)
+		for _, pair := range currentTrade.TradePath {
+			thisPoolFee := params.DefaultFeeRateBPS
+			if customizedFee, ok := params.FeeRateBPS[pair]; ok {
+				thisPoolFee = customizedFee
+			}
+			poolFees = append(poolFees, thisPoolFee)
+			feeRateBPS += thisPoolFee
 		}
 
 		// compare the fee / sellAmount ratio with feeRateBPS by comparing products
@@ -408,6 +415,7 @@ func (sp *stateProducerV2) trade(
 			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], BaseLPFeesPerShare,
 			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 			tradeDirections, orderbookList,
+			poolFees, feeRateBPS,
 			acceptedTradeMd,
 			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
 		)

@@ -79,6 +79,9 @@ func isValidPdexv3Params(
 	if params.DefaultFeeRateBPS > MaxFeeRateBPS {
 		return false, "Default fee rate is too high"
 	}
+	if params.DefaultFeeRateBPS == 0 {
+		return false, "Default fee rate is 0"
+	}
 	for pairID, feeRate := range params.FeeRateBPS {
 		_, isExisted := pairs[pairID]
 		if !isExisted {
@@ -86,6 +89,9 @@ func isValidPdexv3Params(
 		}
 		if feeRate > MaxFeeRateBPS {
 			return false, fmt.Sprintf("Fee rate of pair %v is too high", pairID)
+		}
+		if feeRate == 0 {
+			return false, fmt.Sprintf("Fee rate of pair %v is 0", pairID)
 		}
 	}
 	if params.PRVDiscountPercent > MaxPRVDiscountPercent {
