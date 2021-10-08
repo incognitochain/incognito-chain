@@ -446,17 +446,20 @@ func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, cur
 }
 
 type NoHandleProposeMessageRule struct {
+	logger common.Logger
 }
 
-func NewNoHandleProposeMessageRule() *NoHandleProposeMessageRule {
-	return &NoHandleProposeMessageRule{}
+func NewNoHandleProposeMessageRule(logger common.Logger) *NoHandleProposeMessageRule {
+	return &NoHandleProposeMessageRule{logger: logger}
 }
 
 func (n NoHandleProposeMessageRule) HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error) {
+	n.logger.Debug("using no-handle-propose-message rule, HandleBFTProposeMessage don't work ")
 	return new(ProposeBlockInfo), errors.New("using no handle propose message rule")
 }
 
 func (n NoHandleProposeMessageRule) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
+	n.logger.Debug("using no-handle-propose-message rule, CreateProposeBFTMessage don't work ")
 	return new(BFTPropose), errors.New("using no handle propose message rule")
 }
 

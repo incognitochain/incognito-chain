@@ -197,7 +197,9 @@ func (d *ActorV2RuleDirector) updateRule(
 
 		if ctx.HandleProposeRule == HANDLEPROPOSEMESSAGE_NO {
 			if reflect.TypeOf(builder.ProposeMessageRule()) != reflect.TypeOf(new(NoHandleProposeMessageRule)) {
-				builder.SetProposeMessageRule(NewNoHandleProposeMessageRule())
+				builder.SetProposeMessageRule(NewNoHandleProposeMessageRule(
+					logger,
+				))
 			}
 			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLEPROPOSEMESSAGE_NO)
 		}
