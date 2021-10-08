@@ -393,25 +393,20 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, addOrderInstructions...)
 
-	pdexBlockRewards := uint64(0)
 	// mint PDEX token at the pDex v3 checkpoint block
 	if env.BeaconHeight() == config.Param().PDexParams.Pdexv3BreakPointHeight {
-		mintPDEXGenesis, err := s.producer.mintPDEXGenesis()
+		mintPDEXGenesisInstructions, err := s.producer.mintPDEXGenesis()
 		if err != nil {
 			return instructions, err
 		}
-		instructions = append(instructions, mintPDEXGenesis...)
-	} else if env.BeaconHeight() > config.Param().PDexParams.Pdexv3BreakPointHeight {
-		intervalLength := uint64(MintingBlocks / DecayIntervals)
-		decayIntevalIdx := (env.BeaconHeight() - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength
-		if decayIntevalIdx < DecayIntervals {
-			curIntervalReward := PDEXRewardFirstInterval
-			for i := uint64(0); i < decayIntevalIdx; i++ {
-				curIntervalReward -= curIntervalReward * DecayRateBPS / BPS
-			}
-			pdexBlockRewards = curIntervalReward / intervalLength
-		}
+		instructions = append(instructions, mintPDEXGenesisInstructions...)
 	}
+
+	pdexBlockRewards := v2utils.GetPDEXRewardsForBlock(
+		env.BeaconHeight(),
+		MintingSeconds, DecayIntervals, PDEXRewardFirstInterval,
+		DecayRateBPS, BPS,
+	)
 
 	if pdexBlockRewards > 0 {
 		var mintInstructions [][]string
