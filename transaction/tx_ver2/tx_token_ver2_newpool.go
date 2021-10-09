@@ -14,20 +14,34 @@ import (
 )
 
 func (txToken *TxToken) LoadData(transactionStateDB *statedb.StateDB) error {
-	if (txToken.TokenData.Type == utils.CustomTokenTransfer) && (txToken.GetType() == common.TxTokenConversionType) {
+	if txToken.TokenData.Type == utils.CustomTokenTransfer {
 		txn := txToken.GetTxNormal()
-		if err := checkInputInDB(txn, transactionStateDB); err != nil {
-			return err
+		if txToken.GetType() == common.TxTokenConversionType {
+			if err := checkInputInDB(txn, transactionStateDB); err != nil {
+				return err
+			}
+		} else {
+			err := txn.LoadData(transactionStateDB)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return txToken.Tx.LoadData(transactionStateDB)
 }
 
 func (txToken *TxToken) CheckData(transactionStateDB *statedb.StateDB) error {
-	if (txToken.TokenData.Type == utils.CustomTokenTransfer) && (txToken.GetType() == common.TxTokenConversionType) {
+	if txToken.TokenData.Type == utils.CustomTokenTransfer {
 		txn := txToken.GetTxNormal()
-		if err := checkInputInDB(txn, transactionStateDB); err != nil {
-			return err
+		if txToken.GetType() == common.TxTokenConversionType {
+			if err := checkInputInDB(txn, transactionStateDB); err != nil {
+				return err
+			}
+		} else {
+			err := txn.CheckData(transactionStateDB)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return txToken.Tx.CheckData(transactionStateDB)
