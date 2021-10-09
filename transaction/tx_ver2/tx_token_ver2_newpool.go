@@ -225,14 +225,14 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 	} else {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
+	txToken.SetValidationEnv(valEnv)
 	txn := txToken.GetTxNormal()
 	proofAsV2, ok := txn.GetProof().(*privacy.ProofV2)
 	if (proofAsV2 != nil) && (ok) {
 		if hasCA, err := proofAsV2.IsConfidentialAsset(); err != nil {
-			valEnv = tx_generic.WithCA(valEnv, hasCA)
+			txNormalValEnv = tx_generic.WithCA(txNormalValEnv, hasCA)
 		}
 	}
-	txToken.SetValidationEnv(valEnv)
 
 	if txn.IsPrivacy() {
 		txNormalValEnv = tx_generic.WithPrivacy(txNormalValEnv)
