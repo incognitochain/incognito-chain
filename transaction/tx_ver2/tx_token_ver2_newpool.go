@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
@@ -225,6 +226,12 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
 	txn := txToken.GetTxNormal()
+	proofAsV2, ok := txn.GetProof().(*privacy.ProofV2)
+	if (proofAsV2 != nil) && (ok) {
+		if hasCA, err := proofAsV2.IsConfidentialAsset(); err != nil {
+			valEnv = tx_generic.WithCA(valEnv, hasCA)
+		}
+	}
 	txToken.SetValidationEnv(valEnv)
 
 	if txn.IsPrivacy() {

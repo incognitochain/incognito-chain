@@ -28,7 +28,7 @@ func (tx *TxBase) initEnv() metadata.ValidationEnviroment {
 	valEnv = WithCA(valEnv, false)
 	if tx.Version == utils.TxVersion2Number {
 		proofAsV2, ok := tx.GetProof().(*privacy.ProofV2)
-		if ok {
+		if (proofAsV2 != nil) && (ok) {
 			if hasCA, err := proofAsV2.IsConfidentialAsset(); err != nil {
 				valEnv = WithCA(valEnv, hasCA)
 			}
