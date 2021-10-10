@@ -210,6 +210,9 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			oCoinID := oCoin.GetCoinID()
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), oCoinID)
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+					continue
+				}
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
 					txHash = tx.Hash().String()
@@ -243,6 +246,9 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		for _, oCoin := range normalPrf.GetOutputCoins() {
 			key := fmt.Sprintf("%v-%v", tokenID.String(), oCoin.GetCoinID())
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+					continue
+				}
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
 					txHash = tx.Hash().String()
@@ -633,6 +639,9 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 	}
 	for _, oCoin := range oCoins {
 		if info, ok := dataHelper[oCoin.GetCoinID()]; ok {
+			if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+				continue
+			}
 			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
 				continue

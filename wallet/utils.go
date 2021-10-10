@@ -3,8 +3,9 @@ package wallet
 import (
 	"bytes"
 	"crypto/sha256"
-	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
+
+	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
@@ -99,6 +100,22 @@ func IsPublicKeyBurningAddress(publicKey []byte) bool {
 
 	return false
 }
+
+func InitPublicKeyBurningAddressByte() error {
+	keyWalletBurningAdd1, err := Base58CheckDeserialize(common.BurningAddress)
+	if err != nil {
+		return err
+	}
+	common.BurningAddressByte = keyWalletBurningAdd1.KeySet.PaymentAddress.Pk
+
+	keyWalletBurningAdd2, err := Base58CheckDeserialize(common.BurningAddress2)
+	if err != nil {
+		return err
+	}
+	common.BurningAddressByte = keyWalletBurningAdd2.KeySet.PaymentAddress.Pk
+	return nil
+}
+
 func GetPublicKeysFromPaymentAddresses(payments []string) []string {
 	res := []string{}
 	for _, paymentAddressStr := range payments {

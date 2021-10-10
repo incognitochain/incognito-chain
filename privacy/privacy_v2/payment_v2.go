@@ -15,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PaymentProofV2 contains the input & output coins, along with the Bulletproofs for output coin range.
@@ -394,7 +393,7 @@ func (proof PaymentProofV2) ValidateSanity(vEnv env.ValidationEnviroment) (bool,
 		// re-compute the commitment if the output coin's address is the burning address
 		// burn TX cannot use confidential asset]
 		// BOOKMARK
-		if wallet.IsPublicKeyBurningAddress(outputCoins[i].GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(outputCoins[i].GetPublicKey().ToBytesS()) {
 			value := outputCoin.GetValue()
 			rand := outputCoin.GetRandomness()
 			commitment := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(value), rand, coin.PedersenValueIndex)
@@ -494,7 +493,7 @@ func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecret
 
 	// After Prove, we should hide all information in coin details.
 	for i, outputCoin := range proof.outputCoins {
-		if !wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+		if !common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			if err = outputCoin.ConcealOutputCoin(paymentInfo[i].PaymentAddress.GetPublicView()); err != nil {
 				return nil, err
 			}
@@ -526,7 +525,7 @@ func (proof PaymentProofV2) verifyHasConfidentialAsset(isBatch bool) (bool, erro
 	for i := 0; i < len(proof.outputCoins); i++ {
 
 		if !proof.outputCoins[i].IsEncrypted() {
-			if wallet.IsPublicKeyBurningAddress(proof.outputCoins[i].GetPublicKey().ToBytesS()) {
+			if common.IsPublicKeyBurningAddress(proof.outputCoins[i].GetPublicKey().ToBytesS()) {
 				continue
 			}
 			return false, errors.New("Verify has privacy should have every coin encrypted")
@@ -558,7 +557,7 @@ func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 	for i := 0; i < len(proof.outputCoins); i++ {
 
 		if !proof.outputCoins[i].IsEncrypted() {
-			if wallet.IsPublicKeyBurningAddress(proof.outputCoins[i].GetPublicKey().ToBytesS()) {
+			if common.IsPublicKeyBurningAddress(proof.outputCoins[i].GetPublicKey().ToBytesS()) {
 				continue
 			}
 			return false, errors.New("Verify has privacy should have every coin encrypted")

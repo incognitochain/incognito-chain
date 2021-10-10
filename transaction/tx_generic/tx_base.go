@@ -567,7 +567,7 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 	}
 	for _, outCoin := range tx.GetProof().GetOutputCoins() {
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
-		if wallet.IsPublicKeyBurningAddress(otaPublicKey) {
+		if common.IsPublicKeyBurningAddress(otaPublicKey) {
 			continue
 		}
 

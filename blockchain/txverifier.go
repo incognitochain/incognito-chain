@@ -412,6 +412,9 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 		for _, oCoin := range oCoins {
 			coinID := oCoin.GetCoinID()
 			if _, ok := mapForChkDbSpend[coinID]; ok {
+				if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+					continue
+				}
 				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 			} else {
 				mapForChkDbSpend[coinID] = nil
@@ -435,6 +438,9 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 			for _, oCoin := range oCoins {
 				coinID := oCoin.GetCoinID()
 				if _, ok := mapForChkDbSpend[coinID]; ok {
+					if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+						continue
+					}
 					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 				} else {
 					mapForChkDbSpend[coinID] = nil

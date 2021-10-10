@@ -85,6 +85,11 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	config.LoadParam()
 	portal.SetupParam()
+	err := wallet.InitPublicKeyBurningAddressByte()
+	if err != nil {
+		Logger.log.Error(err)
+		panic(err)
+	}
 
 	//create genesis block
 	blockchain.CreateGenesisBlocks()

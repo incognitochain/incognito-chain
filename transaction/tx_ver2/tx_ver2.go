@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/wallet"
-
 	"math"
 	"math/big"
 	"strconv"
@@ -352,7 +350,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 				}
 
 				// we do not use burned coins since they will reduce the privacy level of the transaction.
-				if wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+				if common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
 					j--
 					continue
 				}
@@ -740,7 +738,7 @@ func (tx Tx) ListOTAHashH() []common.Hash {
 	if tx.Proof != nil {
 		for _, outputCoin := range tx.Proof.GetOutputCoins() {
 			// Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+			if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -761,7 +759,7 @@ func (tx Tx) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Has
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range tx.Proof.GetOutputCoins() {
 		// Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
