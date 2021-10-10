@@ -149,8 +149,8 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 	var err error
 	vEnv := txToken.GetValidationEnv()
 	shardID := vEnv.ShardID()
-	tokenID := vEnv.TokenID()
 	txn := txToken.GetTxNormal()
+	tokenID := txn.GetValidationEnv().TokenID()
 	ok, err := txToken.verifySig(transactionStateDB, byte(shardID), &common.PRVCoinID)
 	if !ok {
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v \n", txToken.Hash().String(), err)
@@ -193,7 +193,7 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 			return false, errors.New("Missing proof for PRV")
 		}
 
-		bpValid, err := txFeeProof.VerifyV2(txn.GetValidationEnv(), 0)
+		bpValid, err := txFeeProof.VerifyV2(txToken.Tx.GetValidationEnv(), 0)
 
 		return bpValid && resTxToken, err
 	default:
@@ -226,10 +226,11 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
 	txToken.SetValidationEnv(valEnv)
+	txToken.Tx.SetValidationEnv(valEnv)
 	txn := txToken.GetTxNormal()
 	proofAsV2, ok := txn.GetProof().(*privacy.ProofV2)
 	if (proofAsV2 != nil) && (ok) {
-		if hasCA, err := proofAsV2.IsConfidentialAsset(); err != nil {
+		if hasCA, err := proofAsV2.IsConfidentialAsset(); err == nil {
 			txNormalValEnv = tx_generic.WithCA(txNormalValEnv, hasCA)
 		}
 	}
@@ -246,7 +247,7 @@ func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
 }
 
 func (txToken *TxToken) GetValidationEnv() metadata.ValidationEnviroment {
-	return txToken.Tx.GetValidationEnv()
+	return txToken.valEnv
 }
 
 func (txToken *TxToken) SetValidationEnv(valEnv metadata.ValidationEnviroment) {
