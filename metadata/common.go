@@ -588,6 +588,8 @@ func HasInputNoOutput(metaType int) bool {
 }
 
 func NoInputHasOutput(metaType int) bool {
+	//Temporarily disable this function
+	return true
 	if info, ok := metaInfoMap[metaType]; ok {
 		return !info.HasInput && info.HasOutput
 	}
