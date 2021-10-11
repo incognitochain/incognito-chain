@@ -91,9 +91,9 @@ func getDiffPortalStateV3(
 		WaitingPortingRequests:     map[string]*statedb.WaitingPortingRequest{},
 		WaitingRedeemRequests:      map[string]*statedb.RedeemRequest{},
 		MatchedRedeemRequests:      map[string]*statedb.RedeemRequest{},
-		FinalExchangeRatesState:    new(statedb.FinalExchangeRatesState), //todo:
+		FinalExchangeRatesState:    nil,
 		LiquidationPool:            map[string]*statedb.LiquidationPool{},
-		LockedCollateralForRewards: new(statedb.LockedCollateralState), //todo:
+		LockedCollateralForRewards: nil,
 		ExchangeRatesRequests:      map[string]*metadata.ExchangeRatesRequestStatus{},
 	}
 

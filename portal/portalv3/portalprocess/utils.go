@@ -121,19 +121,22 @@ func StorePortalStateToDB(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBulkFinalExchangeRatesState(stateDB, currentPortalState.FinalExchangeRatesState)
-	if err != nil {
-		return err
+	if currentPortalState.FinalExchangeRatesState != nil {
+		err = statedb.StoreBulkFinalExchangeRatesState(stateDB, currentPortalState.FinalExchangeRatesState)
+		if err != nil {
+			return err
+		}
 	}
 	err = statedb.StoreBulkLiquidateExchangeRatesPool(stateDB, currentPortalState.LiquidationPool)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralForRewards)
-	if err != nil {
-		return err
+	if currentPortalState.LockedCollateralForRewards != nil {
+		err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralForRewards)
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
