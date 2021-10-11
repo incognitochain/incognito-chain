@@ -41,22 +41,22 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 			}
 
 			//remove prehash block pointer if it point to nothing
-			// if len(pool.blkPoolByPrevHash) > 100 {
-			// 	blkList := pool.GetPrevHashPool()
-			// 	for prevhash, hashes := range blkList {
-			// 		stillPointToABlock := false
-			// 		for _, hash := range hashes {
-			// 			h, _ := common.Hash{}.NewHashFromStr(hash)
-			// 			if pool.HasHash(*h) {
-			// 				stillPointToABlock = true
-			// 			}
-			// 		}
-			// 		if !stillPointToABlock {
-			// 			pool.RemovePrevHash(prevhash)
-			// 		}
+			if len(pool.blkPoolByPrevHash) > 100 {
+				blkList := pool.GetPrevHashPool()
+				for prevhash, hashes := range blkList {
+					stillPointToABlock := false
+					for _, hash := range hashes {
+						h, _ := common.Hash{}.NewHashFromStr(hash)
+						if pool.HasHash(*h) {
+							stillPointToABlock = true
+						}
+					}
+					if !stillPointToABlock {
+						pool.RemovePrevHash(prevhash)
+					}
 
-			// 	}
-			// }
+				}
+			}
 		}
 	}()
 	return pool
