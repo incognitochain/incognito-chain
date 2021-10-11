@@ -24,7 +24,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		case *types.BeaconBlock:
 			header := blk.(*types.BeaconBlock).Header
 			bestHeader := chain.GetBestView().GetBlock().(*types.BeaconBlock).Header
-			if header.ShardCandidateRoot != bestHeader.ShardCandidateRoot || header.ShardCommitteeAndValidatorRoot != header.ShardCommitteeAndValidatorRoot ||
+			if header.ShardCandidateRoot != bestHeader.ShardCandidateRoot || header.ShardCommitteeAndValidatorRoot != bestHeader.ShardCommitteeAndValidatorRoot ||
 				header.BeaconCommitteeAndValidatorRoot != bestHeader.BeaconCommitteeAndValidatorRoot || header.BeaconCandidateRoot != bestHeader.BeaconCandidateRoot {
 				return true
 			}
