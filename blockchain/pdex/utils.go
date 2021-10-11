@@ -739,7 +739,30 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 		normalizedLiquidity.Mul(normalizedLiquidity, big.NewInt(metadataPdexv3.BaseAmplifier))
 		normalizedLiquidity.Div(normalizedLiquidity, big.NewInt(0).SetUint64(uint64(pair.state.Amplifier())))
 
-		if item, exists := resultMap[tokenID]; !exists || normalizedLiquidity.Cmp(item[2]) == 1 {
+		isChosenPool := false
+		if item, exists := resultMap[tokenID]; !exists {
+			isChosenPool = true
+		} else  {
+			liqCmp := normalizedLiquidity.Cmp(item[2])
+			if liqCmp == 1 {
+				// for each pair of token/PRV, choose pool to maximize normalized liquidity
+				isChosenPool = true
+			} else if liqCmp == 0 {
+				// handle equalities explicitly to keep result deterministic regardless of map traversing order
+				// break equality with direct rate comparison (token / PRV)
+				temp := resultMap[tokenID]
+				theirVirtualTokenReserve := temp[0]
+				theirVirtualPRVReserve := temp[1]
+				rateCmp := big.NewInt(0).Mul(virtualTokenReserve, theirVirtualPRVReserve).
+					Cmp(big.NewInt(0).Mul(theirVirtualTokenReserve, virtualPRVReserve))
+				if rateCmp == 1 {
+					// when token/PRV pools tie in liquidity, maximize token/PRV rate to the benefit of current user
+					isChosenPool = true
+				}
+			}
+		}
+		
+		if isChosenPool {
 			resultMap[tokenID] = [3]*big.Int{virtualTokenReserve, virtualPRVReserve, normalizedLiquidity}
 		}
 	}

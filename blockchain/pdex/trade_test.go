@@ -209,6 +209,28 @@ func TestBuildResponseTrade(t *testing.T) {
 	}
 }
 
+func TestGetPRVRate(t *testing.T) {
+	setTestTradeConfig()
+	type TestData map[string]*PoolPairState
+
+	var testcases []Testcase
+	testcases = append(testcases, prvRateTestcases...)
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+
+			chosenPoolMap := getTokenPricesAgainstPRV(testdata)
+			Equal(t, len(chosenPoolMap), 1) // testcases must be 1-pair only
+			for _, result := range chosenPoolMap {
+				encodedResult, _ := json.Marshal(result)
+				Equal(t, testcase.Expected, string(encodedResult))
+			}
+		})
+	}
+}
+
 func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment {
 	var txLst []metadataCommon.Transaction
 	for _, md := range mds {
@@ -301,3 +323,4 @@ var produceTradeTestcases = mustReadTestcases("produce_trade.json")
 var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trades.json")
 var processTradeTestcases = mustReadTestcases("process_trade.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")
+var prvRateTestcases = mustReadTestcases("prv_rate.json")
