@@ -332,7 +332,7 @@ func (a *actorV2) run() error {
 					var finalityProof = NewFinalityProof()
 					var isValidRePropose bool = false
 					if proposeBlockInfo.block != nil {
-						finalityProof, isValidRePropose = a.ruleDirector.builder.ProposeRule().
+						finalityProof, isValidRePropose = a.ruleDirector.builder.ProposeMessageRule().
 							GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
 					}
 					if createdBlk, err := a.proposeBlock(
@@ -356,7 +356,7 @@ func (a *actorV2) run() error {
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
 						)
-						bftProposeMessage, err := a.ruleDirector.builder.ProposeRule().CreateProposeBFTMessage(env, createdBlk)
+						bftProposeMessage, err := a.ruleDirector.builder.ProposeMessageRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
 							a.logger.Error("Create BFT Propose Message Failed", err)
 						} else {
@@ -967,7 +967,7 @@ func (a *actorV2) handleNewProposeMsg(
 		userKeySet,
 		producerPublicBLSMiningKey,
 	)
-	proposeBlockInfo, err := a.ruleDirector.builder.ProposeRule().HandleBFTProposeMessage(env, &proposeMsg)
+	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
 		a.logger.Errorf("Fail to apply lemma 2, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
@@ -1081,7 +1081,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	a.ruleDirector.builder.ProposeRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
+	a.ruleDirector.builder.ProposeMessageRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
 	a.byzantineDetector.updateState(a.chain.GetFinalView().GetHeight(),
 		common.CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetProposeTime()))
 

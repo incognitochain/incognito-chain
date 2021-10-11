@@ -139,12 +139,16 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 	}
 
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
-
-	if blockProduceTimeSlot < common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) {
+	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
+	if blockProduceTimeSlot < lastBlockProduceTimeSlot {
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
+		c.logger.Debug("Block Produce Time %+v, < Last Block Produce Time %+v", blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		return true
-	} else if blockProduceTimeSlot == common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) &&
+	} else if blockProduceTimeSlot == lastBlockProduceTimeSlot &&
 		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
+		c.logger.Debug("Block Propose Time %+v, < Last Block Propose Time %+v",
+			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {

@@ -114,6 +114,7 @@ var HttpHandler = map[string]httpHandler{
 	getFinalityProof:           (*HttpServer).handleGetFinalityProof,
 	setConsensusRule:           (*HttpServer).handleSetConsensusRule,
 	getConsensusRule:           (*HttpServer).handleGetConsensusRule,
+	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
 	//=================================
 
 	// Beststate

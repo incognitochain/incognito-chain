@@ -338,20 +338,44 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	voteRule := param["vote_rule"]
 	createRule := param["create_rule"]
 	handleVoteRule := param["handle_vote_rule"]
+	handleProposeRule := param["handle_propose_rule"]
 
 	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
 	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
 	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
 	return map[string]interface{}{
-		"vote_rule":        blsbft.ActorV2BuilderContext.VoteRule,
-		"create_rule":      blsbft.ActorV2BuilderContext.CreateRule,
-		"handle_vote_rule": blsbft.ActorV2BuilderContext.HandleVoteRule,
-		"lemma2_height":    blsbft.ActorV2BuilderContext.Lemma2Height,
+		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
+		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
+		"handle_vote_rule":    blsbft.ActorV2BuilderContext.HandleVoteRule,
+		"handle_propose_rule": blsbft.ActorV2BuilderContext.HandleProposeRule,
+		"lemma2_height":       blsbft.ActorV2BuilderContext.Lemma2Height,
 	}, nil
 }
 
 func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return blsbft.ActorV2BuilderContext, nil
+}
+
+func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	tempShardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee())
+	committee, _ := tempCommittee.ToBase58()
+
+	return map[string]interface{}{
+		"Proposer":      committee,
+		"ProposerIndex": committeIndex,
+	}, nil
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

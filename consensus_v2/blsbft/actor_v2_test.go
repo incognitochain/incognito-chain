@@ -108,6 +108,7 @@ var _ = func() (_ struct{}) {
 	logger = common.NewBackend(nil).Logger("test", true)
 
 	common.TIMESLOT = 10
+	MAX_FINALITY_PROOF = 64
 	return
 }()
 
