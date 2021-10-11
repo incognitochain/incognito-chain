@@ -404,7 +404,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	pdexBlockRewards := v2utils.GetPDEXRewardsForBlock(
 		env.BeaconHeight(),
-		MintingSeconds, DecayIntervals, PDEXRewardFirstInterval,
+		MintingBlocks, DecayIntervals, PDEXRewardFirstInterval,
 		DecayRateBPS, BPS,
 	)
 

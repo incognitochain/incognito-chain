@@ -13,7 +13,7 @@ import (
 
 func GetPDEXRewardsForBlock(
 	beaconHeight uint64,
-	mintingSeconds int, decayIntervals int, pdexRewardFirstInterval uint64,
+	mintingBlocks int, decayIntervals int, pdexRewardFirstInterval uint64,
 	decayRateBPS int, bps int,
 ) uint64 {
 	if beaconHeight <= config.Param().PDexParams.Pdexv3BreakPointHeight {
@@ -24,11 +24,12 @@ func GetPDEXRewardsForBlock(
 		return 0
 	}
 
-	mintingEpochs := mintingSeconds / int(config.Param().EpochParam.NumberOfBlockInEpoch) / int(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds())
-	pdexBlockRewards := uint64(0)
+	epochSize := config.Param().EpochParam.NumberOfBlockInEpoch
+	mintingEpochs := mintingBlocks / int(epochSize)
 
+	pdexBlockRewards := uint64(0)
 	intervalLength := uint64(mintingEpochs / decayIntervals)
-	decayIntevalIdx := (beaconHeight - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength / config.Param().EpochParam.NumberOfBlockInEpoch
+	decayIntevalIdx := (beaconHeight - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength / epochSize
 	if decayIntevalIdx < uint64(decayIntervals) {
 		curIntervalReward := pdexRewardFirstInterval
 		for i := uint64(0); i < decayIntevalIdx; i++ {
