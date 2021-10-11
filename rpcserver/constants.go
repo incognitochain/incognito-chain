@@ -382,6 +382,8 @@ const (
 
 	// stake
 	unstake = "createunstaketransaction"
+
+	connectionStatus = "getconnectionstatus"
 )
 
 const (
