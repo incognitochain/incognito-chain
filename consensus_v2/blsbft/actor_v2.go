@@ -994,12 +994,11 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	}
 
 	if a.chainID != common.BeaconChainID {
-		if err := a.byzantineDetector.validate(
+		if err := a.byzantineDetector.Validate(
 			&voteMsg,
 			a.byzantineDetector.voteOwnerSignature,
 			a.byzantineDetector.voteMoreThanOneTimesInATimeSlot,
-			a.byzantineDetector.voteForSmallerTimeSlotSameHeight,
-			a.byzantineDetector.voteForSmallerBlockHeight,
+			a.byzantineDetector.voteForHigherTimeSlotSameHeight,
 		); err != nil {
 			a.logger.Errorf("Found byzantine validator %+v, err %+v", voteMsg.Validator, err)
 			return err
@@ -1083,7 +1082,8 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	a.ruleDirector.builder.ProposeRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
-	a.byzantineDetector.cleanMem(a.chain.GetFinalView().GetHeight())
+	a.byzantineDetector.updateState(a.chain.GetFinalView().GetHeight(),
+		common.CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetProposeTime()))
 
 }
 

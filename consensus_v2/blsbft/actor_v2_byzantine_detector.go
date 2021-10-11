@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
 )
 
 var (
@@ -16,15 +17,18 @@ var (
 
 type VoteMessageHandler func(bftVote *BFTVote) error
 
-type ByzantineDetector struct {
-	blackList         map[string]error              // validator => reason for blacklist
-	voteInTimeSlot    map[string]map[int64]*BFTVote // validator => timeslot => vote
-	smallestTimeSlot  map[string]map[uint64]int64   // validator => height => timeslot
-	latestBlockHeight map[string]uint64
-	committeeHandler  CommitteeChainHandler
+type IByzantineDetector interface {
+	Validate(vote *BFTVote, handler ...VoteMessageHandler) error
 }
 
-func (b ByzantineDetector) validate(vote *BFTVote, handlers ...VoteMessageHandler) error {
+type ByzantineDetector struct {
+	blackList        map[string]error              // validator => reason for blacklist
+	voteInTimeSlot   map[string]map[int64]*BFTVote // validator => timeslot => vote
+	smallestTimeSlot map[string]map[uint64]int64   // validator => height => timeslot
+	committeeHandler CommitteeChainHandler
+}
+
+func (b ByzantineDetector) Validate(vote *BFTVote, handlers ...VoteMessageHandler) error {
 
 	var err error
 
@@ -39,12 +43,28 @@ func (b ByzantineDetector) validate(vote *BFTVote, handlers ...VoteMessageHandle
 		}
 	}
 
-	b.addNewVote(vote)
+	b.addNewVote(vote, err)
 
 	return err
 }
 
-func (b *ByzantineDetector) cleanMem(finalHeight uint64, finalTimeSlot int64) {
+func (b *ByzantineDetector) updateState(finalHeight uint64, finalTimeSlot int64) {
+
+	for _, voteInTimeSlot := range b.voteInTimeSlot {
+		for timeSlot, _ := range voteInTimeSlot {
+			if timeSlot < finalTimeSlot {
+				delete(voteInTimeSlot, timeSlot)
+			}
+		}
+	}
+
+	for _, smallestTimeSlot := range b.smallestTimeSlot {
+		for height, _ := range smallestTimeSlot {
+			if height < finalHeight {
+				delete(smallestTimeSlot, height)
+			}
+		}
+	}
 
 }
 
@@ -89,14 +109,17 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(bftVote *BFTVote) err
 		return nil
 	}
 
-	if _, ok := voteInTimeSlot[bftVote.TimeSlot]; ok {
-		return ErrDuplicateVoteInOneTimeSlot
+	if vote, ok := voteInTimeSlot[bftVote.TimeSlot]; ok {
+		// allow receiving same vote multiple times
+		if !reflect.DeepEqual(vote, bftVote) {
+			return ErrDuplicateVoteInOneTimeSlot
+		}
 	}
 
 	return nil
 }
 
-func (b ByzantineDetector) voteForSmallerTimeSlotSameHeight(bftVote *BFTVote) error {
+func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) error {
 
 	smallestTimeSlotBlock, ok := b.smallestTimeSlot[bftVote.Validator]
 	if !ok {
@@ -108,27 +131,30 @@ func (b ByzantineDetector) voteForSmallerTimeSlotSameHeight(bftVote *BFTVote) er
 		return nil
 	}
 
-	if blockTimeSlot < bftVote.TimeSlot {
+	if bftVote.TimeSlot > blockTimeSlot {
 		return ErrVoteForHigherTimeSlot
 	}
 
 	return nil
 }
 
-func (b ByzantineDetector) voteForSmallerBlockHeight(bftVote *BFTVote) error {
+func (b *ByzantineDetector) addNewVote(bftVote *BFTVote, validatorErr error) {
 
-	latestHeight, ok := b.latestBlockHeight[bftVote.Validator]
+	_, ok := b.voteInTimeSlot[bftVote.Validator]
 	if !ok {
-		return nil
+		b.voteInTimeSlot[bftVote.Validator] = make(map[int64]*BFTVote)
+	}
+	b.voteInTimeSlot[bftVote.Validator][bftVote.TimeSlot] = bftVote
+
+	_, ok2 := b.smallestTimeSlot[bftVote.Validator]
+	if !ok2 {
+		b.smallestTimeSlot[bftVote.Validator] = make(map[uint64]int64)
+	}
+	if res, ok := b.smallestTimeSlot[bftVote.Validator][bftVote.BlockHeight]; !ok || (ok && bftVote.TimeSlot < res) {
+		b.smallestTimeSlot[bftVote.Validator][bftVote.BlockHeight] = bftVote.TimeSlot
 	}
 
-	if latestHeight < bftVote.BlockHeight {
-		return ErrVoteForSmallerHeight
+	if validatorErr != nil {
+		b.blackList[bftVote.Validator] = validatorErr
 	}
-
-	return nil
-}
-
-func (b *ByzantineDetector) addNewVote(bftVote *BFTVote) {
-
 }
