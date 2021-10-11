@@ -112,7 +112,7 @@ func (s *stateV1) Process(env StateEnvironment) error {
 				s.shares,
 				err = s.processor.contribution(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.waitingContributions,
 				s.deletedWaitingContributions,
@@ -126,7 +126,7 @@ func (s *stateV1) Process(env StateEnvironment) error {
 				s.shares,
 				err = s.processor.contribution(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.waitingContributions,
 				s.deletedWaitingContributions,
@@ -136,21 +136,21 @@ func (s *stateV1) Process(env StateEnvironment) error {
 		case metadata.PDETradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.poolPairs,
 			)
 		case metadata.PDECrossPoolTradeRequestMeta:
 			s.poolPairs, err = s.processor.crossPoolTrade(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.poolPairs,
 			)
 		case metadata.PDEWithdrawalRequestMeta:
 			s.poolPairs, s.shares, err = s.processor.withdrawal(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.poolPairs,
 				s.shares,
@@ -158,14 +158,14 @@ func (s *stateV1) Process(env StateEnvironment) error {
 		case metadata.PDEFeeWithdrawalRequestMeta:
 			s.tradingFees, err = s.processor.feeWithdrawal(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.tradingFees,
 			)
 		case metadata.PDETradingFeesDistributionMeta:
 			s.tradingFees, err = s.processor.tradingFeesDistribution(
 				env.StateDB(),
-				env.BeaconHeight(),
+				env.PrevBeaconHeight(),
 				inst,
 				s.tradingFees,
 			)
@@ -192,7 +192,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle fee withdrawal
 	feeWithdrawalInstructions, s.tradingFees, err = s.producer.feeWithdrawal(
 		env.FeeWithdrawalActions(),
-		env.BeaconHeight(),
+		env.PrevBeaconHeight(),
 		s.tradingFees,
 	)
 	if err != nil {
@@ -203,7 +203,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle trade
 	tradeInstructions, s.poolPairs, err = s.producer.trade(
 		env.TradeActions(),
-		env.BeaconHeight(),
+		env.PrevBeaconHeight(),
 		s.poolPairs,
 		env.BCHeightBreakPointPrivacyV2(),
 		env.Pdexv3BreakPoint(),
@@ -216,7 +216,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle cross pool trade
 	crossPoolTradeInstructions, s.poolPairs, s.shares, err = s.producer.crossPoolTrade(
 		env.CrossPoolTradeActions(),
-		env.BeaconHeight(),
+		env.PrevBeaconHeight(),
 		s.poolPairs,
 		s.shares,
 		env.Pdexv3BreakPoint(),
@@ -229,7 +229,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle withdrawal
 	withdrawalInstructions, s.poolPairs, s.shares, err = s.producer.withdrawal(
 		env.WithdrawalActions(),
-		env.BeaconHeight(),
+		env.PrevBeaconHeight(),
 		s.poolPairs,
 		s.shares,
 	)
@@ -241,7 +241,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle contribution
 	contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
 		env.ContributionActions(),
-		env.BeaconHeight(),
+		env.PrevBeaconHeight(),
 		false,
 		metadata.PDEContributionMeta,
 		s.waitingContributions,
@@ -258,7 +258,7 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	// handle prv required contribution
 	contributionInstructions, s.waitingContributions, s.poolPairs, s.shares, err = s.producer.contribution(
 		env.PRVRequiredContributionActions(),
-		env.BeaconHeight(),
+		env.PrevBeaconHeight(),
 		true,
 		metadata.PDEPRVRequiredContributionRequestMeta,
 		s.waitingContributions,

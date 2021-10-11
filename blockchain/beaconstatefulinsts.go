@@ -280,7 +280,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
-		BuildBeaconHeight(beaconHeight - 1).
+		BuildPrevBeaconHeight(beaconHeight - 1).
 		BuildContributionActions(pdeContributionActions).
 		BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
 		BuildTradeActions(pdeTradeActions).
