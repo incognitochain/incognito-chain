@@ -51,6 +51,7 @@ func setTestTradeConfig() {
 	config.AbortParam()
 	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
 	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+	config.Param().EpochParam.NumberOfBlockInEpoch = 50
 }
 
 func TestProduceTrade(t *testing.T) {
@@ -114,6 +115,9 @@ func TestProduceSameBlockTrades(t *testing.T) {
 
 			env := skipToProduce(mds, 0)
 			testState := mustReadState("test_state.json")
+			testState.params = &Params{
+				DefaultFeeRateBPS: 30,
+			}
 			temp := &StateFormatter{}
 			temp.FromState(testState)
 
