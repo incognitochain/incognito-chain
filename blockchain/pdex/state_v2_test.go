@@ -30,6 +30,8 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	assert.Nil(t, err)
 	secondTxHash, err := common.Hash{}.NewHashFromStr("111111")
 	assert.Nil(t, err)
+	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
+	assert.Nil(t, err)
 	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
 	assert.Nil(t, err)
 	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
@@ -85,7 +87,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 
 	// user mint nft
 	acceptInst, err := instruction.NewAcceptUserMintNftWithValue(
-		validOTAReceiver0, 100, 1, *nftHash1, *txReqID,
+		validOTAReceiver0, 100, 1, *nftHash, *txReqID,
 	).StringSlice()
 	assert.Nil(t, err)
 
@@ -268,7 +270,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight: 10,
+					prevBeaconHeight: 10,
 					listTxs: map[byte][]metadataCommon.Transaction{
 						1: []metadataCommon.Transaction{
 							contributionTx0, contributionTx1,
@@ -308,12 +310,12 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
 				nftIDs: map[string]uint64{
-					nftID1: 100,
+					nftID: 100,
 				},
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight: 10,
+					prevBeaconHeight: 10,
 					listTxs: map[byte][]metadataCommon.Transaction{
 						1: []metadataCommon.Transaction{userMintNftTx},
 					},
@@ -363,7 +365,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight: 10,
+					prevBeaconHeight: 10,
 					listTxs: map[byte][]metadataCommon.Transaction{
 						1: []metadataCommon.Transaction{stakingTx},
 					},
@@ -449,7 +451,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight: 20,
+					prevBeaconHeight: 20,
 					listTxs: map[byte][]metadataCommon.Transaction{
 						1: []metadataCommon.Transaction{withdrawTx},
 					},
@@ -506,7 +508,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight: 20,
+					prevBeaconHeight: 20,
 					listTxs: map[byte][]metadataCommon.Transaction{
 						1: []metadataCommon.Transaction{unstakingTx},
 					},
@@ -693,8 +695,8 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight: 10,
-					stateDB:      sDB,
+					prevBeaconHeight: 10,
+					stateDB:          sDB,
 					beaconInstructions: [][]string{
 						[]string{
 							strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
@@ -752,7 +754,7 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight:       10,
+					prevBeaconHeight:   10,
 					stateDB:            sDB,
 					beaconInstructions: [][]string{acceptInst},
 				},
@@ -783,7 +785,7 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight:       10,
+					prevBeaconHeight:   10,
 					stateDB:            sDB,
 					beaconInstructions: [][]string{acceptInst},
 				},
@@ -821,7 +823,7 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight:       10,
+					prevBeaconHeight:   10,
 					stateDB:            sDB,
 					beaconInstructions: [][]string{stakingInst},
 				},
@@ -878,7 +880,7 @@ func Test_stateV2_Process(t *testing.T) {
 			},
 			args: args{
 				env: &stateEnvironment{
-					beaconHeight:       20,
+					prevBeaconHeight:   20,
 					stateDB:            sDB,
 					beaconInstructions: [][]string{unstakingInst},
 				},

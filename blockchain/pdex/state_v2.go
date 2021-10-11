@@ -99,6 +99,7 @@ func (s *stateV2) Clone() State {
 
 func (s *stateV2) Process(env StateEnvironment) error {
 	s.processor.clearCache()
+	beaconHeight := env.PrevBeaconHeight() + 1
 
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
@@ -144,13 +145,13 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.deletedWaitingContributions, err = s.processor.addLiquidity(
 				env.StateDB(),
 				inst,
-				env.BeaconHeight(),
+				beaconHeight,
 				s.poolPairs,
 				s.waitingContributions, s.deletedWaitingContributions,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
 			s.poolPairs, err = s.processor.withdrawLiquidity(
-				env.StateDB(), inst, s.poolPairs, env.BeaconHeight(),
+				env.StateDB(), inst, s.poolPairs, beaconHeight,
 			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
@@ -182,11 +183,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			)
 		case metadataCommon.Pdexv3StakingRequestMeta:
 			s.stakingPoolStates, _, err = s.processor.staking(
-				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, beaconHeight,
 			)
 		case metadataCommon.Pdexv3UnstakingRequestMeta:
 			s.stakingPoolStates, _, err = s.processor.unstaking(
-				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, beaconHeight,
 			)
 
 		case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
@@ -222,6 +223,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	stakingTxs := []metadata.Transaction{}
 	unstakingTxs := []metadata.Transaction{}
 	withdrawStakingRewardTxs := []metadata.Transaction{}
+
+	beaconHeight := env.PrevBeaconHeight() + 1
 
 	var err error
 	pdexv3Txs := env.ListTxs()
@@ -292,7 +295,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
-		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, env.BeaconHeight(),
+		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, beaconHeight,
 	)
 	if err != nil {
 		return instructions, err
@@ -311,7 +314,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	var unstakingInstructions [][]string
 	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
-		unstakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+		unstakingTxs, s.nftIDs, s.stakingPoolStates, beaconHeight,
 	)
 	if err != nil {
 		return instructions, err
@@ -362,7 +365,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addLiquidityInstructions := [][]string{}
 	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
 		addLiquidityTxs,
-		env.BeaconHeight(),
+		beaconHeight,
 		s.poolPairs,
 		s.waitingContributions,
 		s.nftIDs,
@@ -374,7 +377,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	var stakingInstructions [][]string
 	stakingInstructions, s.stakingPoolStates, err = s.producer.staking(
-		stakingTxs, s.nftIDs, s.stakingPoolStates, env.BeaconHeight(),
+		stakingTxs, s.nftIDs, s.stakingPoolStates, beaconHeight,
 	)
 	if err != nil {
 		return instructions, err
@@ -395,15 +398,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	pdexBlockRewards := uint64(0)
 	// mint PDEX token at the pDex v3 checkpoint block
-	if env.BeaconHeight() == config.Param().PDexParams.Pdexv3BreakPointHeight {
+	if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
 		mintPDEXGenesis, err := s.producer.mintPDEXGenesis()
 		if err != nil {
 			return instructions, err
 		}
 		instructions = append(instructions, mintPDEXGenesis...)
-	} else if env.BeaconHeight() > config.Param().PDexParams.Pdexv3BreakPointHeight {
+	} else if beaconHeight > config.Param().PDexParams.Pdexv3BreakPointHeight {
 		intervalLength := uint64(MintingBlocks / DecayIntervals)
-		decayIntevalIdx := (env.BeaconHeight() - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength
+		decayIntevalIdx := (beaconHeight - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength
 		if decayIntevalIdx < DecayIntervals {
 			curIntervalReward := PDEXRewardFirstInterval
 			for i := uint64(0); i < decayIntevalIdx; i++ {
@@ -430,7 +433,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	mintNftInstructions := [][]string{}
 	burningPRVAmount := uint64(0)
 	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
-		mintNftTxs, s.nftIDs, env.BeaconHeight(), s.params.MintNftRequireAmount)
+		mintNftTxs, s.nftIDs, beaconHeight, s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
@@ -454,7 +457,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	var modifyParamsInstructions [][]string
 	modifyParamsInstructions, s.params, s.stakingPoolStates, err = s.producer.modifyParams(
 		modifyParamsTxs,
-		env.BeaconHeight(),
+		beaconHeight,
 		s.params,
 		s.poolPairs,
 		s.stakingPoolStates,
