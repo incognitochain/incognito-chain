@@ -412,7 +412,7 @@ func (sp *stateProducerV2) trade(
 		}
 
 		acceptedTradeMd, err = v2.TrackFee(
-			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], BaseLPFeesPerShare,
+			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare,
 			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 			tradeDirections, orderbookList,
 			poolFees, feeRateBPS,

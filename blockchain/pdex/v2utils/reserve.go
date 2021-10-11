@@ -256,7 +256,7 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 }
 
 func TrackFee(
-	fee uint64, feeInPRV bool, baseLPPerShare *big.Int,
+	fee uint64, feeInPRV bool, sellingTokenID common.Hash, baseLPPerShare *big.Int,
 	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
 	lpFeesPerShares []map[common.Hash]*big.Int, protocolFees, stakingPoolFees []map[common.Hash]uint64,
 	tradeDirections []byte, orderbooks []OrderBookIterator,
@@ -274,7 +274,7 @@ func TrackFee(
 		acceptedMeta.RewardEarned[i] = make(map[common.Hash]uint64)
 	}
 
-	if feeInPRV {
+	if feeInPRV || sellingTokenID == common.PRVCoinID {
 		// weighted divide fee into reserves
 		sumPoolFees := feeRateBPS
 		feeRemain := fee
