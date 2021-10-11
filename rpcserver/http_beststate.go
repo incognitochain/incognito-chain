@@ -186,3 +186,7 @@ func (httpServer *HttpServer) handleGetTotalStaker(params interface{}, closeChan
 	result := jsonresult.NewGetTotalStaker(total)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetConnectionStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.blockService.BlockChain.GetConfig().Highway.GetConnectionStatus(), nil
+}

@@ -12,7 +12,7 @@ type StateEnvBuilder interface {
 	BuildCrossPoolTradeActions([][]string) StateEnvBuilder
 	BuildWithdrawalActions([][]string) StateEnvBuilder
 	BuildFeeWithdrawalActions([][]string) StateEnvBuilder
-	BuildBeaconHeight(uint64) StateEnvBuilder
+	BuildPrevBeaconHeight(uint64) StateEnvBuilder
 	BuildListTxs(map[byte][]metadata.Transaction) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
@@ -32,7 +32,7 @@ type stateEnvironment struct {
 	crossPoolTradeActions          [][]string
 	withdrawalActions              [][]string
 	feeWithdrawalActions           [][]string
-	beaconHeight                   uint64
+	prevBeaconHeight               uint64
 	beaconInstructions             [][]string
 	listTxs                        map[byte][]metadata.Transaction
 	stateDB                        *statedb.StateDB
@@ -80,8 +80,8 @@ func (env *stateEnvironment) BuildFeeWithdrawalActions(actions [][]string) State
 	return env
 }
 
-func (env *stateEnvironment) BuildBeaconHeight(beaconHeight uint64) StateEnvBuilder {
-	env.beaconHeight = beaconHeight
+func (env *stateEnvironment) BuildPrevBeaconHeight(beaconHeight uint64) StateEnvBuilder {
+	env.prevBeaconHeight = beaconHeight
 	return env
 }
 
@@ -111,7 +111,7 @@ type StateEnvironment interface {
 	CrossPoolTradeActions() [][]string
 	WithdrawalActions() [][]string
 	FeeWithdrawalActions() [][]string
-	BeaconHeight() uint64
+	PrevBeaconHeight() uint64
 	BeaconInstructions() [][]string
 	ListTxs() map[byte][]metadata.Transaction
 	StateDB() *statedb.StateDB
@@ -143,8 +143,8 @@ func (env *stateEnvironment) FeeWithdrawalActions() [][]string {
 	return env.feeWithdrawalActions
 }
 
-func (env *stateEnvironment) BeaconHeight() uint64 {
-	return env.beaconHeight
+func (env *stateEnvironment) PrevBeaconHeight() uint64 {
+	return env.prevBeaconHeight
 }
 
 func (env *stateEnvironment) ListTxs() map[byte][]metadata.Transaction {

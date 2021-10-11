@@ -243,7 +243,7 @@ func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment
 	}
 
 	return NewStateEnvBuilder().
-		BuildBeaconHeight(10).
+		BuildPrevBeaconHeight(10).
 		BuildListTxs(map[byte][]metadataCommon.Transaction{shardID: txLst}).
 		BuildBCHeightBreakPointPrivacyV2(0).
 		BuildStateDB(testDB).
