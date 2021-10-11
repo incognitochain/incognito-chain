@@ -144,7 +144,7 @@ func (coinService CoinService) GetOutputCoinInfoByHashes(txHashList []string, to
 		for _, outCoin := range proof.GetOutputCoins() {
 			pk := outCoin.GetPublicKey().ToBytesS()
 			if bytes.Equal(pk, burningPK) {
-				tmpRes = append(tmpRes, math.MaxUint64)
+				tmpRes = append(tmpRes, math.MaxInt64)
 				continue
 			}
 			shardID := common.GetShardIDFromLastByte(pk[len(pk)-1])
