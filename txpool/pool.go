@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
@@ -584,7 +585,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	}
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txNormal := tx.(transaction.TransactionToken).GetTxTokenData().TxNormal
+		txNormal := tx.(transaction.TransactionToken).GetTxNormal()
 		normalPrf := txNormal.GetProof()
 		if normalPrf != nil {
 			isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
@@ -727,10 +728,24 @@ func (tp *TxsPool) CheckValidatedTxs(
 	poolData := tp.snapshotPool()
 	for _, tx := range txs {
 		if _, ok := poolData.TxInfos[tx.Hash().String()]; ok {
-			valid = append(valid, tx)
-		} else {
-			needValidate = append(needValidate, tx)
+			if validtx, ok := poolData.TxByHash[tx.Hash().String()]; ok {
+				if validtx.Hash().String() == tx.Hash().String() {
+					txValEnv := tx.GetValidationEnv()
+					txValEnv = tx_generic.WithDBData(txValEnv, validtx.GetValidationEnv().DBData())
+					tx.SetValidationEnv(txValEnv)
+					if tx.GetType() == common.TxCustomTokenPrivacyType {
+						txNormal := tx.(transaction.TransactionToken).GetTxNormal()
+						txNormalEnv := txNormal.GetValidationEnv()
+						validTxNormal := validtx.(transaction.TransactionToken).GetTxNormal()
+						txNormalEnv = tx_generic.WithDBData(txNormalEnv, validTxNormal.GetValidationEnv().DBData())
+						txNormal.SetValidationEnv(txNormalEnv)
+					}
+					valid = append(valid, validtx)
+					continue
+				}
+			}
 		}
+		needValidate = append(needValidate, tx)
 	}
 	return valid, needValidate
 }

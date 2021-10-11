@@ -253,6 +253,7 @@ func (txToken *TxToken) GetValidationEnv() metadata.ValidationEnviroment {
 func (txToken *TxToken) SetValidationEnv(valEnv metadata.ValidationEnviroment) {
 	if vE, ok := valEnv.(*tx_generic.ValidationEnv); ok {
 		txToken.valEnv = vE
+		txToken.Tx.SetValidationEnv(valEnv)
 	} else {
 		valEnv := tx_generic.DefaultValEnv()
 		if txToken.IsPrivacy() {
