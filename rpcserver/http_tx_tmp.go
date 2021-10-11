@@ -131,8 +131,8 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 		}
 	}
 
-	if len(txHashList) > 1000 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("support at most 100 txs, got %v", len(txHashList)))
+	if len(txHashList) > 10000 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("support at most 10000 txs, got %v", len(txHashList)))
 	}
 
 	fmt.Println("IIII", txHashList)
