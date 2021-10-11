@@ -292,7 +292,7 @@ func TrackFee(
 			)
 			acceptedMeta.RewardEarned[i][common.PRVCoinID] = reward.Uint64()
 
-			sumPoolFees -= poolFees[sumPoolFees]
+			sumPoolFees -= poolFees[i]
 			feeRemain -= reward.Uint64()
 		}
 		return acceptedMeta, nil
