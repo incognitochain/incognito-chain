@@ -21,7 +21,7 @@ type Params struct {
 	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
 	MaxOrdersPerNft                 uint            // max orders per nft
 	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
-
+	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
 }
 
 func NewParams() *Params {
@@ -46,6 +46,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		MintNftRequireAmount:            paramsState.MintNftRequireAmount(),
 		MaxOrdersPerNft:                 paramsState.MaxOrdersPerNft(),
 		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
+		MinPRVReserveTradingRate:        paramsState.MinPRVReserveTradingRate(),
 	}
 }
 
@@ -129,6 +130,7 @@ func (params *Params) readConfig() *Params {
 		MintNftRequireAmount:            config.Param().PDexParams.Params.MintNftRequireAmount,
 		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
 		AutoWithdrawOrderLimitAmount:    config.Param().PDexParams.Params.AutoWithdrawOrderLimitAmount,
+		MinPRVReserveTradingRate:        config.Param().PDexParams.Params.MinPRVReserveTradingRate,
 	}
 	if res.FeeRateBPS == nil {
 		res.FeeRateBPS = make(map[string]uint)

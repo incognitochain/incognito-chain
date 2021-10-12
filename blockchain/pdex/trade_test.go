@@ -225,12 +225,22 @@ func TestGetPRVRate(t *testing.T) {
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
 
-			chosenPoolMap := getTokenPricesAgainstPRV(testdata)
+			chosenPoolMap := getTokenPricesAgainstPRV(testdata, 0)
 			Equal(t, len(chosenPoolMap), 1) // testcases must be 1-pair only
 			for _, result := range chosenPoolMap {
 				encodedResult, _ := json.Marshal(result)
 				Equal(t, testcase.Expected, string(encodedResult))
 			}
+		})
+	}
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+
+			chosenPoolMap := getTokenPricesAgainstPRV(testdata, 2000)
+			Equal(t, len(chosenPoolMap), 0) // testcases must be 0-pair only
 		})
 	}
 }

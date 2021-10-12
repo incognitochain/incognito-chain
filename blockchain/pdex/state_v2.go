@@ -482,6 +482,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.MintNftRequireAmount,
 			s.params.MaxOrdersPerNft,
 			s.params.AutoWithdrawOrderLimitAmount,
+			s.params.MinPRVReserveTradingRate,
 		)
 		if err != nil {
 			return err

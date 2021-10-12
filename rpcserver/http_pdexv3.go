@@ -169,6 +169,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("AutoWithdrawOrderLimitAmount is invalid"))
 	}
 
+	minPRVReserveTradingRate, err := common.AssertAndConvertStrToNumber(newParams["MinPRVReserveTradingRate"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MinPRVReserveTradingRate is invalid"))
+	}
+
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
@@ -183,6 +188,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			MintNftRequireAmount:            mintNftRequireAmount,
 			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
 			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
+			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
 		},
 	)
 	if err != nil {
