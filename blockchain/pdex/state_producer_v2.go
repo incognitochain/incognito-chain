@@ -370,12 +370,12 @@ func (sp *stateProducerV2) trade(
 		poolFees := []uint{}
 		feeRateBPS := uint(0)
 		for _, pair := range currentTrade.TradePath {
-			thisPoolFee := params.DefaultFeeRateBPS
+			poolFee := params.DefaultFeeRateBPS
 			if customizedFee, ok := params.FeeRateBPS[pair]; ok {
-				thisPoolFee = customizedFee
+				poolFee = customizedFee
 			}
-			poolFees = append(poolFees, thisPoolFee)
-			feeRateBPS += thisPoolFee
+			poolFees = append(poolFees, poolFee)
+			feeRateBPS += poolFee
 		}
 
 		// compare the fee / sellAmount ratio with feeRateBPS by comparing products
