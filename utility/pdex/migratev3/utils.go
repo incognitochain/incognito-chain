@@ -223,6 +223,7 @@ func modifyParam(url string) error {
 		MintNftRequireAmount            string            `json:"MintNftRequireAmount"`
 		MaxOrdersPerNft                 string            `json:"MaxOrdersPerNft"`
 		AutoWithdrawOrderLimitAmount    string            `json:"AutoWithdrawOrderLimitAmount"`
+		MinPRVReserveTradingRate        string            `json:"MinPRVReserveTradingRate"`
 	}
 	type Temp struct {
 		NewParams NewParams `json:"NewParams"`
@@ -248,6 +249,7 @@ func modifyParam(url string) error {
 			MintNftRequireAmount:         "100",
 			MaxOrdersPerNft:              "10",
 			AutoWithdrawOrderLimitAmount: "10",
+			MinPRVReserveTradingRate:     "1000",
 		},
 	}
 
