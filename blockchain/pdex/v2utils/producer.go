@@ -2,6 +2,7 @@ package v2utils
 
 import (
 	"encoding/json"
+	"math/big"
 	"sort"
 	"strconv"
 
@@ -33,7 +34,9 @@ func GetPDEXRewardsForBlock(
 	if decayIntevalIdx < uint64(decayIntervals) {
 		curIntervalReward := pdexRewardFirstInterval
 		for i := uint64(0); i < decayIntevalIdx; i++ {
-			curIntervalReward -= curIntervalReward * uint64(decayRateBPS) / uint64(bps)
+			decayAmount := new(big.Int).Mul(new(big.Int).SetUint64(curIntervalReward), big.NewInt(int64(decayRateBPS)))
+			decayAmount = new(big.Int).Div(decayAmount, big.NewInt(int64(bps)))
+			curIntervalReward -= decayAmount.Uint64()
 		}
 		pdexBlockRewards = curIntervalReward / intervalLength
 	}
