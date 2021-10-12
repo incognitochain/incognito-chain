@@ -144,15 +144,27 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 			Logger.log.Errorf("invalid tx %v\n", txHashStr)
 			continue
 		}
-		shardID, _, blockHeight, _, tx, err := httpServer.GetBlockchain().GetTransactionByHash(*txHash)
+		shardID, _, blockHeight, _, _, err := httpServer.GetBlockchain().GetTransactionByHash(*txHash)
 		if err != nil {
 			Logger.log.Errorf("tx %v not found\n", txHashStr)
 			continue
 		}
+		blocks, err := httpServer.GetBlockchain().GetShardBlockByHeight(blockHeight, shardID)
+		if err != nil {
+			Logger.log.Errorf("blkHeight %v, shard %v not found: %v\n", blockHeight, shardID, err)
+			continue
+		}
+		lockTime := int64(0)
+		for _, blk := range blocks {
+			if blk.GetProduceTime() > lockTime {
+				lockTime = blk.GetProduceTime()
+			}
+		}
+
 		res[txHashStr] = TxStatsInfo{
 			ShardID:     shardID,
 			BlockHeight: blockHeight,
-			LockTime:    tx.GetLockTime(),
+			LockTime:    lockTime,
 		}
 	}
 
