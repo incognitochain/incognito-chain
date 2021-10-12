@@ -12,7 +12,7 @@ type TxStatsInfo struct {
 	BlockHeight uint64     `json:"block_height"`
 	LockTime    int64      `json:"lock_time"`
 	InputCoins  [][]uint64 `json:"input_coins"`
-	OutputCoins []uint64   `json:"output_coins"`
+	OutputCoins []string   `json:"output_coins"`
 }
 
 func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

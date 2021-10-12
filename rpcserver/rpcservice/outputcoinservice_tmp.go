@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -91,8 +92,8 @@ func (coinService CoinService) GetInputCoinInfoByHashes(txHashList []string, tok
 }
 
 // GetOutputCoinInfoByHashes returns a list of output coin information for a list of hashes.
-func (coinService CoinService) GetOutputCoinInfoByHashes(txHashList []string, tokenID string) (map[string][]uint64, *RPCError) {
-	res := make(map[string][]uint64)
+func (coinService CoinService) GetOutputCoinInfoByHashes(txHashList []string, tokenID string) (map[string][]string, *RPCError) {
+	res := make(map[string][]string)
 	for _, txHashStr := range txHashList {
 		if _, ok := res[txHashStr]; ok {
 			continue
@@ -107,13 +108,13 @@ func (coinService CoinService) GetOutputCoinInfoByHashes(txHashList []string, to
 			return nil, NewRPCError(RPCInternalError, fmt.Errorf("tx hash %v has not been found or has not been confirmed", txHashStr))
 		}
 		if tx.GetVersion() == 1 {
-			res[txHashStr] = make([]uint64, 0)
+			res[txHashStr] = make([]string, 0)
 			continue
 		}
 		var proof privacy.Proof
 		if tx.GetTokenID().String() == common.PRVIDStr {
 			if tokenID != common.PRVIDStr {
-				res[txHashStr] = make([]uint64, 0)
+				res[txHashStr] = make([]string, 0)
 				continue
 			}
 			proof = tx.GetProof()
@@ -131,28 +132,29 @@ func (coinService CoinService) GetOutputCoinInfoByHashes(txHashList []string, to
 		}
 
 		if proof == nil || proof.GetOutputCoins() == nil {
-			res[txHashStr] = make([]uint64, 0)
+			res[txHashStr] = make([]string, 0)
 			continue
 		}
 
-		tmpRes := make([]uint64, 0)
-		burningPK := wallet.GetBurningPublicKey()
-		tokenIDHash, err := new(common.Hash).NewHashFromStr(tokenID)
+		tmpRes := make([]string, 0)
+		//burningPK := wallet.GetBurningPublicKey()
+		//tokenIDHash, err := new(common.Hash).NewHashFromStr(tokenID)
 		if err != nil {
 			return nil, NewRPCError(RPCInvalidParamsError, err)
 		}
 		for _, outCoin := range proof.GetOutputCoins() {
 			pk := outCoin.GetPublicKey().ToBytesS()
-			if bytes.Equal(pk, burningPK) {
-				tmpRes = append(tmpRes, math.MaxInt64)
-				continue
-			}
-			shardID := common.GetShardIDFromLastByte(pk[len(pk)-1])
-			idx, err := coinService.GetOTAIdxByPublicKey(shardID, *tokenIDHash, pk)
-			if err != nil {
-				return nil, NewRPCError(RPCInternalError, err)
-			}
-			tmpRes = append(tmpRes, idx)
+			pkStr := base58.Base58Check{}.Encode(pk, 0)
+			//if bytes.Equal(pk, burningPK) {
+			//	tmpRes = append(tmpRes, math.MaxInt64)
+			//	continue
+			//}
+			//shardID := common.GetShardIDFromLastByte(pk[len(pk)-1])
+			//idx, err := coinService.GetOTAIdxByPublicKey(shardID, *tokenIDHash, pk)
+			//if err != nil {
+			//	return nil, NewRPCError(RPCInternalError, err)
+			//}
+			tmpRes = append(tmpRes, pkStr)
 		}
 		res[txHashStr] = tmpRes
 	}
