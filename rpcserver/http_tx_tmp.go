@@ -179,7 +179,14 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 			continue
 		}
 		tmpRes.InputCoins = inputs
-		tmpRes.OutputCoins = mapOutputs[txHashStr]
+		res[txHashStr] = tmpRes
+	}
+	for txHashStr, outputs := range mapOutputs {
+		tmpRes, ok := res[txHashStr]
+		if !ok {
+			continue
+		}
+		tmpRes.OutputCoins = outputs
 		res[txHashStr] = tmpRes
 	}
 
