@@ -173,6 +173,9 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 		return nil, err1
 	}
 	mapOutputs, err1 := httpServer.outputCoinService.GetOutputCoinInfoByHashes(txHashList, tokenID.String())
+	if err1 != nil {
+		return nil, err1
+	}
 	for txHashStr, inputs := range mapInputs {
 		tmpRes, ok := res[txHashStr]
 		if !ok {
