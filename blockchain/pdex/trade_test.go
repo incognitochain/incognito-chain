@@ -233,14 +233,33 @@ func TestGetPRVRate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIgnoreSmallPRVPool(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		MinPRVReserve uint64
+		Pools         map[string]*PoolPairState
+	}
+
+	var testcases []Testcase
+	testcases = append(testcases, minPRVReserveTestcases...)
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
 
-			chosenPoolMap := getTokenPricesAgainstPRV(testdata, 2000)
-			Equal(t, len(chosenPoolMap), 0) // testcases must be 0-pair only
+			chosenPoolMap := getTokenPricesAgainstPRV(testdata.Pools, testdata.MinPRVReserve)
+			if len(chosenPoolMap) == 0 {
+				Equal(t, testcase.Expected, "")
+			} else {
+				Equal(t, len(chosenPoolMap), 1) // testcases must be 1-pair only
+				for _, result := range chosenPoolMap {
+					encodedResult, _ := json.Marshal(result)
+					Equal(t, testcase.Expected, string(encodedResult))
+				}
+			}
 		})
 	}
 }
@@ -338,3 +357,4 @@ var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trad
 var processTradeTestcases = mustReadTestcases("process_trade.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")
 var prvRateTestcases = mustReadTestcases("prv_rate.json")
+var minPRVReserveTestcases = mustReadTestcases("min_prv_reserve.json")
