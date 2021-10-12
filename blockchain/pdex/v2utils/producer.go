@@ -6,9 +6,39 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
+
+func GetPDEXRewardsForBlock(
+	beaconHeight uint64,
+	mintingBlocks int, decayIntervals int, pdexRewardFirstInterval uint64,
+	decayRateBPS int, bps int,
+) uint64 {
+	if beaconHeight <= config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return 0
+	}
+	// mint PDEX reward at the end of each epoch
+	if beaconHeight%config.Param().EpochParam.NumberOfBlockInEpoch != 0 {
+		return 0
+	}
+
+	epochSize := config.Param().EpochParam.NumberOfBlockInEpoch
+	mintingEpochs := mintingBlocks / int(epochSize)
+
+	pdexBlockRewards := uint64(0)
+	intervalLength := uint64(mintingEpochs / decayIntervals)
+	decayIntevalIdx := (beaconHeight - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength / epochSize
+	if decayIntevalIdx < uint64(decayIntervals) {
+		curIntervalReward := pdexRewardFirstInterval
+		for i := uint64(0); i < decayIntevalIdx; i++ {
+			curIntervalReward -= curIntervalReward * uint64(decayRateBPS) / uint64(bps)
+		}
+		pdexBlockRewards = curIntervalReward / intervalLength
+	}
+	return pdexBlockRewards
+}
 
 func BuildModifyParamsInst(
 	params metadataPdexv3.Pdexv3Params,

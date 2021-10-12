@@ -51,6 +51,7 @@ func setTestTradeConfig() {
 	config.AbortParam()
 	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
 	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+	config.Param().EpochParam.NumberOfBlockInEpoch = 50
 }
 
 func TestProduceTrade(t *testing.T) {
@@ -114,6 +115,9 @@ func TestProduceSameBlockTrades(t *testing.T) {
 
 			env := skipToProduce(mds, 0)
 			testState := mustReadState("test_state.json")
+			testState.params = &Params{
+				DefaultFeeRateBPS: 30,
+			}
 			temp := &StateFormatter{}
 			temp.FromState(testState)
 
@@ -205,6 +209,28 @@ func TestBuildResponseTrade(t *testing.T) {
 			True(t, bytes.Equal(expectedMintedCoin.GetPublicKey().ToBytesS(),
 				mintedCoin.GetPublicKey().ToBytesS()))
 			Equal(t, expectedMintedCoin.GetValue(), mintedCoin.GetValue())
+		})
+	}
+}
+
+func TestGetPRVRate(t *testing.T) {
+	setTestTradeConfig()
+	type TestData map[string]*PoolPairState
+
+	var testcases []Testcase
+	testcases = append(testcases, prvRateTestcases...)
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+
+			chosenPoolMap := getTokenPricesAgainstPRV(testdata)
+			Equal(t, len(chosenPoolMap), 1) // testcases must be 1-pair only
+			for _, result := range chosenPoolMap {
+				encodedResult, _ := json.Marshal(result)
+				Equal(t, testcase.Expected, string(encodedResult))
+			}
 		})
 	}
 }
@@ -301,3 +327,4 @@ var produceTradeTestcases = mustReadTestcases("produce_trade.json")
 var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trades.json")
 var processTradeTestcases = mustReadTestcases("process_trade.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")
+var prvRateTestcases = mustReadTestcases("prv_rate.json")
