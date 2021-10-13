@@ -12,7 +12,6 @@ var (
 	ErrInvalidVoteOwner           = errors.New("vote owner is not in committee list")
 	ErrDuplicateVoteInOneTimeSlot = errors.New("duplicate vote in one timeslot")
 	ErrVoteForHigherTimeSlot      = errors.New("vote for block with same height but higher timeslot")
-	ErrVoteForSmallerHeight       = errors.New("vote for block with smaller height")
 )
 
 type VoteMessageHandler func(bftVote *BFTVote) error
@@ -22,10 +21,14 @@ type IByzantineDetector interface {
 }
 
 type ByzantineDetector struct {
-	blackList        map[string]error              // validator => reason for blacklist
-	voteInTimeSlot   map[string]map[int64]*BFTVote // validator => timeslot => vote
-	smallestTimeSlot map[string]map[uint64]int64   // validator => height => timeslot
-	committeeHandler CommitteeChainHandler
+	blackList               map[string]error              // validator => reason for blacklist
+	voteInTimeSlot          map[string]map[int64]*BFTVote // validator => timeslot => vote
+	smallestProduceTimeSlot map[string]map[uint64]int64   // validator => height => timeslot
+	committeeHandler        CommitteeChainHandler
+}
+
+func NewByzantineDetector(committeeHandler CommitteeChainHandler) *ByzantineDetector {
+	return &ByzantineDetector{committeeHandler: committeeHandler}
 }
 
 func (b ByzantineDetector) Validate(vote *BFTVote, handlers ...VoteMessageHandler) error {
@@ -58,7 +61,7 @@ func (b *ByzantineDetector) updateState(finalHeight uint64, finalTimeSlot int64)
 		}
 	}
 
-	for _, smallestTimeSlot := range b.smallestTimeSlot {
+	for _, smallestTimeSlot := range b.smallestProduceTimeSlot {
 		for height, _ := range smallestTimeSlot {
 			if height < finalHeight {
 				delete(smallestTimeSlot, height)
@@ -109,7 +112,7 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(bftVote *BFTVote) err
 		return nil
 	}
 
-	if vote, ok := voteInTimeSlot[bftVote.TimeSlot]; ok {
+	if vote, ok := voteInTimeSlot[bftVote.ProposeTimeSlot]; ok {
 		// allow receiving same vote multiple times
 		if !reflect.DeepEqual(vote, bftVote) {
 			return ErrDuplicateVoteInOneTimeSlot
@@ -121,7 +124,7 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(bftVote *BFTVote) err
 
 func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) error {
 
-	smallestTimeSlotBlock, ok := b.smallestTimeSlot[bftVote.Validator]
+	smallestTimeSlotBlock, ok := b.smallestProduceTimeSlot[bftVote.Validator]
 	if !ok {
 		return nil
 	}
@@ -131,7 +134,7 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) err
 		return nil
 	}
 
-	if bftVote.TimeSlot > blockTimeSlot {
+	if bftVote.ProduceTimeSlot > blockTimeSlot {
 		return ErrVoteForHigherTimeSlot
 	}
 
@@ -140,21 +143,31 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) err
 
 func (b *ByzantineDetector) addNewVote(bftVote *BFTVote, validatorErr error) {
 
+	if b.blackList == nil {
+		b.blackList = make(map[string]error)
+	}
+	if validatorErr != nil {
+		b.blackList[bftVote.Validator] = validatorErr
+		return
+	}
+
+	if b.voteInTimeSlot == nil {
+		b.voteInTimeSlot = make(map[string]map[int64]*BFTVote)
+	}
 	_, ok := b.voteInTimeSlot[bftVote.Validator]
 	if !ok {
 		b.voteInTimeSlot[bftVote.Validator] = make(map[int64]*BFTVote)
 	}
-	b.voteInTimeSlot[bftVote.Validator][bftVote.TimeSlot] = bftVote
+	b.voteInTimeSlot[bftVote.Validator][bftVote.ProposeTimeSlot] = bftVote
 
-	_, ok2 := b.smallestTimeSlot[bftVote.Validator]
+	if b.smallestProduceTimeSlot == nil {
+		b.smallestProduceTimeSlot = make(map[string]map[uint64]int64)
+	}
+	_, ok2 := b.smallestProduceTimeSlot[bftVote.Validator]
 	if !ok2 {
-		b.smallestTimeSlot[bftVote.Validator] = make(map[uint64]int64)
+		b.smallestProduceTimeSlot[bftVote.Validator] = make(map[uint64]int64)
 	}
-	if res, ok := b.smallestTimeSlot[bftVote.Validator][bftVote.BlockHeight]; !ok || (ok && bftVote.TimeSlot < res) {
-		b.smallestTimeSlot[bftVote.Validator][bftVote.BlockHeight] = bftVote.TimeSlot
-	}
-
-	if validatorErr != nil {
-		b.blackList[bftVote.Validator] = validatorErr
+	if res, ok := b.smallestProduceTimeSlot[bftVote.Validator][bftVote.BlockHeight]; !ok || (ok && bftVote.ProduceTimeSlot < res) {
+		b.smallestProduceTimeSlot[bftVote.Validator][bftVote.BlockHeight] = bftVote.ProduceTimeSlot
 	}
 }
