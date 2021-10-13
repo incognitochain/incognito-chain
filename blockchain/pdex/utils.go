@@ -718,7 +718,7 @@ func CalculateShareAmount(token0Amount, token1Amount, amount0, amount1, poolPair
 // getTokenPricesAgainstPRV() returns the price of all available tokens in pools compared to PRV
 // (price is represented in 2 big.Int). Each token's price is computed using
 // its largest-normalized-liquidity pool with PRV
-func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][3]*big.Int {
+func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState, minPRVReserve uint64) map[common.Hash][3]*big.Int {
 	resultMap := make(map[common.Hash][3]*big.Int)
 	for _, pair := range pairs {
 		var tokenID common.Hash
@@ -733,6 +733,14 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 			virtualTokenReserve.Set(pair.state.Token0VirtualAmount())
 			virtualPRVReserve.Set(pair.state.Token1VirtualAmount())
 		}
+
+		// compare normalized PRV reserve against minPRVReserve -> compare PRV vReserve * baseAmplifer against minPRVReserve * amplifier rate
+		temp1 := big.NewInt(0).Mul(virtualPRVReserve, big.NewInt(metadataPdexv3.BaseAmplifier))
+		temp2 := big.NewInt(0).Mul(big.NewInt(0).SetUint64(minPRVReserve), big.NewInt(0).SetUint64(uint64(pair.state.Amplifier())))
+		if temp1.Cmp(temp2) < 0 {
+			continue
+		}
+
 		normalizedLiquidity := big.NewInt(0).Mul(virtualTokenReserve, virtualPRVReserve)
 		normalizedLiquidity.Mul(normalizedLiquidity, big.NewInt(metadataPdexv3.BaseAmplifier))
 		normalizedLiquidity.Div(normalizedLiquidity, big.NewInt(0).SetUint64(uint64(pair.state.Amplifier())))
@@ -742,7 +750,7 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 		isChosenPool := false
 		if item, exists := resultMap[tokenID]; !exists {
 			isChosenPool = true
-		} else  {
+		} else {
 			liqCmp := normalizedLiquidity.Cmp(item[2])
 			if liqCmp == 1 {
 				// for each pair of token/PRV, choose pool to maximize normalized liquidity
@@ -761,7 +769,7 @@ func getTokenPricesAgainstPRV(pairs map[string]*PoolPairState) map[common.Hash][
 				}
 			}
 		}
-		
+
 		if isChosenPool {
 			resultMap[tokenID] = [3]*big.Int{virtualTokenReserve, virtualPRVReserve, normalizedLiquidity}
 		}
@@ -778,7 +786,7 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 		return nil, nil, nil, nil, nil, fmt.Errorf("PRV Discount percent invalid")
 	}
 	discountPercent := big.NewInt(0).SetUint64(temp)
-	rateMap := getTokenPricesAgainstPRV(pairs)
+	rateMap := getTokenPricesAgainstPRV(pairs, params.MinPRVReserveTradingRate)
 	var resultTransactions, invalidTransactions []metadata.Transaction
 	fees := make(map[string]uint64)
 	sellAmounts := make(map[string]uint64)

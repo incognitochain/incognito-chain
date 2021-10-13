@@ -20,6 +20,7 @@ type Pdexv3Params struct {
 	mintNftRequireAmount            uint64
 	maxOrdersPerNft                 uint
 	autoWithdrawOrderLimitAmount    uint
+	minPRVReserveTradingRate        uint64
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -56,6 +57,10 @@ func (pp Pdexv3Params) AutoWithdrawOrderLimitAmount() uint {
 	return pp.autoWithdrawOrderLimitAmount
 }
 
+func (pp Pdexv3Params) MinPRVReserveTradingRate() uint64 {
+	return pp.minPRVReserveTradingRate
+}
+
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		DefaultFeeRateBPS               uint
@@ -69,6 +74,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		MintNftRequireAmount            uint64
 		MaxOrdersPerNft                 uint
 		AutoWithdrawOrderLimitAmount    uint
+		MinPRVReserveTradingRate        uint64
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
@@ -81,6 +87,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		MintNftRequireAmount:            pp.mintNftRequireAmount,
 		MaxOrdersPerNft:                 pp.maxOrdersPerNft,
 		AutoWithdrawOrderLimitAmount:    pp.autoWithdrawOrderLimitAmount,
+		MinPRVReserveTradingRate:        pp.minPRVReserveTradingRate,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -101,6 +108,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		MintNftRequireAmount            uint64
 		MaxOrdersPerNft                 uint
 		AutoWithdrawOrderLimitAmount    uint
+		MinPRVReserveTradingRate        uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -117,6 +125,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.mintNftRequireAmount = temp.MintNftRequireAmount
 	pp.maxOrdersPerNft = temp.MaxOrdersPerNft
 	pp.autoWithdrawOrderLimitAmount = temp.AutoWithdrawOrderLimitAmount
+	pp.minPRVReserveTradingRate = temp.MinPRVReserveTradingRate
 	return nil
 }
 
@@ -136,6 +145,7 @@ func NewPdexv3ParamsWithValue(
 	mintNftRequireAmount uint64,
 	maxOrdersPerNft uint,
 	autoWithdrawOrderLimitAmount uint,
+	minPRVReserveTradingRate uint64,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
@@ -149,6 +159,7 @@ func NewPdexv3ParamsWithValue(
 		mintNftRequireAmount:            mintNftRequireAmount,
 		maxOrdersPerNft:                 maxOrdersPerNft,
 		autoWithdrawOrderLimitAmount:    autoWithdrawOrderLimitAmount,
+		minPRVReserveTradingRate:        minPRVReserveTradingRate,
 	}
 }
 

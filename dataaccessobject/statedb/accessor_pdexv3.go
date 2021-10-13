@@ -43,6 +43,7 @@ func StorePdexv3Params(
 	mintNftRequireAmount uint64,
 	maxOrdersPerNft uint,
 	autoWithdrawOrderLimitAmount uint,
+	minPRVReserveTradingRate uint64,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
@@ -57,6 +58,7 @@ func StorePdexv3Params(
 		mintNftRequireAmount,
 		maxOrdersPerNft,
 		autoWithdrawOrderLimitAmount,
+		minPRVReserveTradingRate,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {

@@ -100,23 +100,33 @@ func (tp *TradingPair) SwapToReachOrderRate(maxSellAmountAfterFee uint64, tradeD
 		targetDeltaX.Sub(targetDeltaX, xV)
 	}
 
-	var finalSellAmount, sellAmountRemain uint64
+	var finalSellAmount, sellAmountRemain, buyAmount uint64
+	var err error
 	if ord == nil || targetDeltaX.Cmp(maxDeltaX) >= 0 {
 		// able to trade fully in pool before reaching order rate
 		finalSellAmount = maxSellAmountAfterFee
 		sellAmountRemain = 0
-	} else if targetDeltaX.Cmp(big.NewInt(0)) <= 0 {
-		// pool price already reached (or surpassed) order rate -> exit
-		return 0, maxSellAmountAfterFee, token0Change, token1Change, nil
+		buyAmount, err = tp.BuyAmount(finalSellAmount, tradeDirection)
+		if err != nil {
+			return 0, 0, nil, nil, err
+		}
 	} else {
+		if targetDeltaX.Cmp(big.NewInt(0)) <= 0 {
+			// pool price already surpassed order rate -> exit
+			return 0, maxSellAmountAfterFee, big.NewInt(0), big.NewInt(0), nil
+		}
 		// only swap the target delta x
 		// maxDeltaX is valid uint64, while 0 < targetDeltaX < maxDeltaX
 		finalSellAmount = targetDeltaX.Uint64()
 		sellAmountRemain = big.NewInt(0).Sub(maxDeltaX, targetDeltaX).Uint64()
-	}
-	buyAmount, err := tp.BuyAmount(finalSellAmount, tradeDirection)
-	if err != nil {
-		return 0, 0, nil, nil, err
+		buyAmount, err = tp.BuyAmount(finalSellAmount, tradeDirection)
+		if err != nil {
+			return 0, 0, nil, nil, err
+		}
+		if buyAmount == 0 {
+			// pool price close enough to order rate -> exit
+			return 0, maxSellAmountAfterFee, big.NewInt(0), big.NewInt(0), nil
+		}
 	}
 
 	if tradeDirection == TradeDirectionSell0 {
