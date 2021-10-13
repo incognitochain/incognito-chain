@@ -119,3 +119,33 @@ func (n OnlyCreateBlockRule) CreateBlock(
 
 	return newBlock, nil
 }
+
+type IInsertBlockRule interface {
+	InsertBlock(block types.BlockInterface) error
+}
+
+type InsertOnlyRule struct {
+	chain  Chain
+	logger common.Logger
+}
+
+func NewInsertOnlyRule(chain Chain, logger common.Logger) *InsertOnlyRule {
+	return &InsertOnlyRule{chain: chain, logger: logger}
+}
+
+func (i InsertOnlyRule) InsertBlock(block types.BlockInterface) error {
+	return i.chain.InsertBlock(block, false)
+}
+
+type InsertAndBroadcastRule struct {
+	chain  Chain
+	logger common.Logger
+}
+
+func NewInsertAndBroadcastRule(chain Chain, logger common.Logger) *InsertAndBroadcastRule {
+	return &InsertAndBroadcastRule{chain: chain, logger: logger}
+}
+
+func (i InsertAndBroadcastRule) InsertBlock(block types.BlockInterface) error {
+	return i.chain.InsertAndBroadcastBlock(block)
+}

@@ -484,7 +484,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 	}
 	v.block.(blockValidation).AddValidationField(validationData)
 
-	if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
+	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
 	}
 
@@ -529,7 +529,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		delete(a.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	} else {
 
-		if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
+		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 			return err
 		}
 	}

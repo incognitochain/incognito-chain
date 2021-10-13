@@ -6,14 +6,16 @@ import (
 )
 
 var (
-	VOTERULE_VOTE                = "vote"
-	VOTERULE_NO_VOTE             = "no-vote"
-	HANDLEVOTEMESSAGE_COLLECT    = "collect-vote"
-	HANDLEVOTEMESSAGE_NO_COLLECT = "no-collect-vote"
-	CREATERULE_CREATE_ONLY       = "create"
-	CREATERULE_NORMAL            = "create-repropose"
-	HANDLEPROPOSEMESSAGE_NORMAL  = "handle-propose-message"
-	HANDLEPROPOSEMESSAGE_NO      = "no-handle-propose-message"
+	VOTE_RULE_VOTE                 = "vote"
+	VOTE_RULE_NO_VOTE              = "no-vote"
+	HANDLE_VOTE_MESSAGE_COLLECT    = "collect-vote"
+	HANDLE_VOTE_MESSAGE_NO_COLLECT = "no-collect-vote"
+	CREATE_RULE_CREATE_ONLY        = "create"
+	CREATE_RULE_NORMAL             = "create-repropose"
+	HANDLE_PROPOSE_MESSAGE_NORMAL  = "handle-propose-message"
+	HANDLE_PROPOSEMESSAGE_NO       = "no-handle-propose-message"
+	INSERT_ONLY                    = "insert-only"
+	INSERT_AND_BROADCAST           = "insert-and-broadcast"
 )
 
 type builderContext struct {
@@ -22,13 +24,15 @@ type builderContext struct {
 	CreateRule        string
 	HandleVoteRule    string
 	HandleProposeRule string
+	InsertRule        string
 }
 
 var ActorV2BuilderContext = &builderContext{
-	VoteRule:          VOTERULE_VOTE,
-	CreateRule:        CREATERULE_NORMAL,
-	HandleVoteRule:    HANDLEVOTEMESSAGE_COLLECT,
-	HandleProposeRule: HANDLEPROPOSEMESSAGE_NORMAL,
+	VoteRule:          VOTE_RULE_VOTE,
+	CreateRule:        CREATE_RULE_NORMAL,
+	HandleVoteRule:    HANDLE_VOTE_MESSAGE_COLLECT,
+	HandleProposeRule: HANDLE_PROPOSE_MESSAGE_NORMAL,
+	InsertRule:        INSERT_AND_BROADCAST,
 }
 
 func SetBuilderContext(lemma2Height uint64) {
@@ -41,11 +45,13 @@ type IActorV2RuleBuilder interface {
 	SetCreateRule(ICreateNewBlockRule)
 	SetValidatorRule(IConsensusValidator)
 	SetHandleVoteMessageRule(IHandleVoteMessageRule)
+	SetInsertBlockRule(IInsertBlockRule)
 	ProposeMessageRule() IProposeMessageRule
 	VoteRule() IVoteRule
 	CreateRule() ICreateNewBlockRule
 	ValidatorRule() IConsensusValidator
 	HandleVoteMessageRule() IHandleVoteMessageRule
+	InsertBlockRule() IInsertBlockRule
 }
 
 type ActorV2RuleBuilder struct {
@@ -54,6 +60,7 @@ type ActorV2RuleBuilder struct {
 	createBlockRule ICreateNewBlockRule
 	validatorRule   IConsensusValidator
 	handleVoteRule  IHandleVoteMessageRule
+	insertRule      IInsertBlockRule
 	logger          common.Logger
 	chain           Chain
 }
@@ -82,6 +89,10 @@ func (r *ActorV2RuleBuilder) SetHandleVoteMessageRule(rule IHandleVoteMessageRul
 	r.handleVoteRule = rule
 }
 
+func (r *ActorV2RuleBuilder) SetInsertBlockRule(rule IInsertBlockRule) {
+	r.insertRule = rule
+}
+
 func (r *ActorV2RuleBuilder) ProposeMessageRule() IProposeMessageRule {
 	return r.proposeRule
 }
@@ -100,6 +111,10 @@ func (r *ActorV2RuleBuilder) ValidatorRule() IConsensusValidator {
 
 func (r *ActorV2RuleBuilder) HandleVoteMessageRule() IHandleVoteMessageRule {
 	return r.handleVoteRule
+}
+
+func (r *ActorV2RuleBuilder) InsertBlockRule() IInsertBlockRule {
+	return r.insertRule
 }
 
 type ActorV2RuleDirector struct {
@@ -132,59 +147,59 @@ func (d *ActorV2RuleDirector) updateRule(
 	logger common.Logger,
 ) {
 	if bestViewHeight >= ctx.Lemma2Height {
-		if ctx.VoteRule == VOTERULE_VOTE {
+		if ctx.VoteRule == VOTE_RULE_VOTE {
 			if reflect.TypeOf(builder.VoteRule()) != reflect.TypeOf(new(VoteRule)) {
 				builder.SetVoteRule(NewVoteRule(
 					logger,
 				))
 			}
-			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTERULE_VOTE)
+			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTE_RULE_VOTE)
 		}
 
-		if ctx.VoteRule == VOTERULE_NO_VOTE {
+		if ctx.VoteRule == VOTE_RULE_NO_VOTE {
 			if reflect.TypeOf(builder.VoteRule()) != reflect.TypeOf(new(NoVoteRule)) {
 				builder.SetVoteRule(NewNoVoteRule(
 					logger,
 				))
 			}
-			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTERULE_NO_VOTE)
+			logger.Debug("BLS BFT RULE", ctx.VoteRule, VOTE_RULE_NO_VOTE)
 		}
 
-		if ctx.CreateRule == CREATERULE_NORMAL {
+		if ctx.CreateRule == CREATE_RULE_NORMAL {
 			if reflect.TypeOf(builder.CreateRule()) != reflect.TypeOf(new(NormalCreateBlockRule)) {
 				builder.SetCreateRule(NewNormalCreateBlockRule(
 					logger,
 					chain,
 				))
 			}
-			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_NORMAL)
+			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATE_RULE_NORMAL)
 		}
 
-		if ctx.CreateRule == CREATERULE_CREATE_ONLY {
+		if ctx.CreateRule == CREATE_RULE_CREATE_ONLY {
 			if reflect.TypeOf(builder.CreateRule()) != reflect.TypeOf(new(OnlyCreateBlockRule)) {
 				builder.SetCreateRule(NewOnlyCreateBlockRule(
 					logger,
 					chain,
 				))
 			}
-			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATERULE_CREATE_ONLY)
+			logger.Debug("BLS BFT RULE", ctx.CreateRule, CREATE_RULE_CREATE_ONLY)
 		}
 
-		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_COLLECT {
+		if ctx.HandleVoteRule == HANDLE_VOTE_MESSAGE_COLLECT {
 			if reflect.TypeOf(builder.HandleVoteMessageRule()) != reflect.TypeOf(new(HandleVoteMessage)) {
 				builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
 			}
-			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_COLLECT)
+			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLE_VOTE_MESSAGE_COLLECT)
 		}
 
-		if ctx.HandleVoteRule == HANDLEVOTEMESSAGE_NO_COLLECT {
+		if ctx.HandleVoteRule == HANDLE_VOTE_MESSAGE_NO_COLLECT {
 			if reflect.TypeOf(builder.HandleVoteMessageRule()) != reflect.TypeOf(new(NoHandleVoteMessage)) {
 				builder.SetHandleVoteMessageRule(NewNoHandleVoteMessage())
 			}
-			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLEVOTEMESSAGE_NO_COLLECT)
+			logger.Debug("BLS BFT RULE", ctx.HandleVoteRule, HANDLE_VOTE_MESSAGE_NO_COLLECT)
 		}
 
-		if ctx.HandleProposeRule == HANDLEPROPOSEMESSAGE_NORMAL {
+		if ctx.HandleProposeRule == HANDLE_PROPOSE_MESSAGE_NORMAL {
 			if reflect.TypeOf(builder.ProposeMessageRule()) != reflect.TypeOf(new(ProposeRuleLemma2)) {
 				builder.SetProposeMessageRule(NewProposeRuleLemma2(
 					logger,
@@ -192,16 +207,26 @@ func (d *ActorV2RuleDirector) updateRule(
 					chain,
 				))
 			}
-			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLEPROPOSEMESSAGE_NORMAL)
+			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLE_PROPOSE_MESSAGE_NORMAL)
 		}
 
-		if ctx.HandleProposeRule == HANDLEPROPOSEMESSAGE_NO {
+		if ctx.HandleProposeRule == HANDLE_PROPOSEMESSAGE_NO {
 			if reflect.TypeOf(builder.ProposeMessageRule()) != reflect.TypeOf(new(NoHandleProposeMessageRule)) {
 				builder.SetProposeMessageRule(NewNoHandleProposeMessageRule(
 					logger,
 				))
 			}
-			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLEPROPOSEMESSAGE_NO)
+			logger.Debug("BLS BFT RULE", ctx.HandleProposeRule, HANDLE_PROPOSEMESSAGE_NO)
+		}
+
+		if ctx.InsertRule == INSERT_ONLY {
+			if reflect.TypeOf(builder.InsertBlockRule()) != reflect.TypeOf(new(InsertOnlyRule)) {
+				builder.SetInsertBlockRule(NewInsertOnlyRule(
+					chain,
+					logger,
+				))
+			}
+			logger.Debug("BLS BFT RULE", ctx.InsertRule, INSERT_ONLY)
 		}
 	}
 }
@@ -256,6 +281,8 @@ func (d *ActorV2RuleDirector) makeLemma2Rule(builder IActorV2RuleBuilder, logger
 	))
 
 	builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
+
+	builder.SetInsertBlockRule(NewInsertAndBroadcastRule(chain, logger))
 
 	return builder
 }
