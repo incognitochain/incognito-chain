@@ -51,11 +51,11 @@ func (coinService CoinService) GetCoinsInfoFromTx(tx metadata.Transaction) (*Coi
 		}
 	}
 	if tokenTx != nil {
-		res.TokenDecoys, err = getDecoysFromTx(tokenTx, common.ConfidentialAssetID.String())
+		res.TokenDecoys, err = getDecoysFromTx(tx, common.ConfidentialAssetID.String())
 		if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
 			return nil, NewRPCError(RPCInternalError, err)
 		}
-		res.TokenOutputs, err = getOutputCoinsFromTx(prvTx, common.ConfidentialAssetID.String())
+		res.TokenOutputs, err = getOutputCoinsFromTx(tx, common.ConfidentialAssetID.String())
 		if err != nil {
 			return nil, NewRPCError(RPCInternalError, err)
 		}

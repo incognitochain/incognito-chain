@@ -13,8 +13,8 @@ type TxStatsInfo struct {
 	LockTime     int64      `json:"lock_time"`
 	PrvDecoys    [][]uint64 `json:"prv_decoys"`
 	PrvOutputs   []string   `json:"prv_outputs"`
-	TokenDecoys  [][]uint64 `json:"token_decoys,omitempty"`
-	TokenOutputs []string   `json:"token_outputs,omitempty"`
+	TokenDecoys  [][]uint64 `json:"token_decoys"`
+	TokenOutputs []string   `json:"token_outputs"`
 }
 
 func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
