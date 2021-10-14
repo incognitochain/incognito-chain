@@ -84,6 +84,16 @@ func (svc PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interfac
 	return &sel, err
 }
 
+func (svc PdexTxService) ValidateTokenIDs(tokenToSell, tokenToBuy *common.Hash) error {
+	if tokenToSell == nil || tokenToSell.IsZeroValue() {
+		return fmt.Errorf("Invalid TokenToSell %v", tokenToSell)
+	}
+	if tokenToBuy == nil || tokenToBuy.IsZeroValue() {
+		return fmt.Errorf("Invalid TokenToBuy %v", tokenToBuy)
+	}
+	return nil
+}
+
 func (svc PdexTxService) BuildTransaction(
 	sel *paramSelector, md metadataCommon.Metadata,
 ) (metadataCommon.Transaction, *RPCError) {
