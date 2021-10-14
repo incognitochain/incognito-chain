@@ -24,15 +24,14 @@ type CoinInfo struct {
 	TokenOutputs []string   `json:"token_outputs,omitempty"`
 }
 
-func (coinService CoinService) GetCoinsInfoFromTx(tx metadata.Transaction) (*CoinInfo, error) {
+func (coinService CoinService) GetCoinsInfoFromTx(tx metadata.Transaction) (*CoinInfo, *RPCError) {
 	if tx.GetVersion() != 2 {
-		return nil, fmt.Errorf("must be a tx ver 2")
+		return nil, NewRPCError(RPCInternalError, fmt.Errorf("must be a tx ver 2"))
 	}
 
 	res := new(CoinInfo)
 	var prvTx, tokenTx metadata.Transaction
-	var err error
-
+	var err *RPCError
 	if tx.GetTokenID().String() == common.PRVIDStr {
 		prvTx = tx
 	} else {
@@ -44,21 +43,21 @@ func (coinService CoinService) GetCoinsInfoFromTx(tx metadata.Transaction) (*Coi
 	if prvTx != nil {
 		res.PrvDecoys, err = getDecoysFromTx(prvTx, common.PRVIDStr)
 		if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
-			return nil, err
+			return nil, NewRPCError(RPCInternalError, err)
 		}
 		res.PrvOutputs, err = getOutputCoinsFromTx(prvTx, common.PRVIDStr)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(RPCInternalError, err)
 		}
 	}
 	if tokenTx != nil {
 		res.TokenDecoys, err = getDecoysFromTx(tokenTx, common.ConfidentialAssetID.String())
 		if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
-			return nil, err
+			return nil, NewRPCError(RPCInternalError, err)
 		}
 		res.TokenOutputs, err = getOutputCoinsFromTx(prvTx, common.ConfidentialAssetID.String())
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(RPCInternalError, err)
 		}
 	}
 

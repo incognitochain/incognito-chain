@@ -124,9 +124,9 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 	//}
 
 	txHashList := make([]string, 0)
-	for _, sn := range txHashListInterface {
-		if tmp, ok := sn.(string); !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, %v is not a string", sn))
+	for _, tmpTx := range txHashListInterface {
+		if tmp, ok := tmpTx.(string); !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, %v is not a string", tmpTx))
 		} else {
 			txHashList = append(txHashList, tmp)
 		}
@@ -177,6 +177,8 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 			TokenOutputs: coinInfo.TokenOutputs,
 		}
 	}
+
+	fmt.Println("IIIII", "Hello")
 
 	//mapInputs, err1 := httpServer.outputCoinService.GetInputCoinInfoByHashes(txHashList, tokenID.String())
 	//if err != nil {
