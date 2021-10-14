@@ -8,11 +8,13 @@ import (
 )
 
 type TxStatsInfo struct {
-	ShardID     byte       `json:"shard_id"`
-	BlockHeight uint64     `json:"block_height"`
-	LockTime    int64      `json:"lock_time"`
-	InputCoins  [][]uint64 `json:"input_coins"`
-	OutputCoins []string   `json:"output_coins"`
+	ShardID      byte       `json:"shard_id"`
+	BlockHeight  uint64     `json:"block_height"`
+	LockTime     int64      `json:"lock_time"`
+	PrvDecoys    [][]uint64 `json:"prv_decoys"`
+	PrvOutputs   []string   `json:"prv_outputs"`
+	TokenDecoys  [][]uint64 `json:"token_decoys,omitempty"`
+	TokenOutputs []string   `json:"token_outputs,omitempty"`
 }
 
 func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -87,7 +89,6 @@ func (httpServer *HttpServer) handleGetTransactionHashByDecoys(params interface{
 
 // handleGetCoinInfoByHashes handles the request for get input/output coin information by the transaction hashes.
 func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var err error
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("there is no param to proceed"))
@@ -108,19 +109,19 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse txHashes, not a []interface{}: %v", paramList[txListKey]))
 	}
 
-	tokenKey := "TokenID"
-	tokenID := &common.PRVCoinID
-	if tokenParam, ok := paramList[tokenKey]; ok {
-		tokenIDStr, ok := tokenParam.(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse tokenID: %v", tokenParam))
-		}
-
-		tokenID, err = new(common.Hash).NewHashFromStr(tokenIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode tokenID %v", tokenIDStr))
-		}
-	}
+	//tokenKey := "TokenID"
+	//tokenID := &common.PRVCoinID
+	//if tokenParam, ok := paramList[tokenKey]; ok {
+	//	tokenIDStr, ok := tokenParam.(string)
+	//	if !ok {
+	//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse tokenID: %v", tokenParam))
+	//	}
+	//
+	//	tokenID, err = new(common.Hash).NewHashFromStr(tokenIDStr)
+	//	if err != nil {
+	//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode tokenID %v", tokenIDStr))
+	//	}
+	//}
 
 	txHashList := make([]string, 0)
 	for _, sn := range txHashListInterface {
@@ -144,7 +145,7 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 			Logger.log.Errorf("invalid tx %v\n", txHashStr)
 			continue
 		}
-		shardID, _, blockHeight, _, _, err := httpServer.GetBlockchain().GetTransactionByHash(*txHash)
+		shardID, _, blockHeight, _, tx, err := httpServer.GetBlockchain().GetTransactionByHash(*txHash)
 		if err != nil {
 			Logger.log.Errorf("tx %v not found\n", txHashStr)
 			continue
@@ -160,38 +161,47 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 				lockTime = blk.GetProduceTime()
 			}
 		}
+		coinInfo, err := httpServer.outputCoinService.GetCoinsInfoFromTx(tx)
+		if err != nil {
+			Logger.log.Errorf("coinInfo not found for tx %v: %v\n", txHashStr, err)
+			continue
+		}
 
 		res[txHashStr] = TxStatsInfo{
-			ShardID:     shardID,
-			BlockHeight: blockHeight,
-			LockTime:    lockTime,
+			ShardID:      shardID,
+			BlockHeight:  blockHeight,
+			LockTime:     lockTime,
+			PrvDecoys:    coinInfo.PrvDecoys,
+			PrvOutputs:   coinInfo.PrvOutputs,
+			TokenDecoys:  coinInfo.TokenDecoys,
+			TokenOutputs: coinInfo.TokenOutputs,
 		}
 	}
 
-	mapInputs, err1 := httpServer.outputCoinService.GetInputCoinInfoByHashes(txHashList, tokenID.String())
-	if err != nil {
-		return nil, err1
-	}
-	mapOutputs, err1 := httpServer.outputCoinService.GetOutputCoinInfoByHashes(txHashList, tokenID.String())
-	if err1 != nil {
-		return nil, err1
-	}
-	for txHashStr, inputs := range mapInputs {
-		tmpRes, ok := res[txHashStr]
-		if !ok {
-			continue
-		}
-		tmpRes.InputCoins = inputs
-		res[txHashStr] = tmpRes
-	}
-	for txHashStr, outputs := range mapOutputs {
-		tmpRes, ok := res[txHashStr]
-		if !ok {
-			continue
-		}
-		tmpRes.OutputCoins = outputs
-		res[txHashStr] = tmpRes
-	}
+	//mapInputs, err1 := httpServer.outputCoinService.GetInputCoinInfoByHashes(txHashList, tokenID.String())
+	//if err != nil {
+	//	return nil, err1
+	//}
+	//mapOutputs, err1 := httpServer.outputCoinService.GetOutputCoinInfoByHashes(txHashList, tokenID.String())
+	//if err1 != nil {
+	//	return nil, err1
+	//}
+	//for txHashStr, inputs := range mapInputs {
+	//	tmpRes, ok := res[txHashStr]
+	//	if !ok {
+	//		continue
+	//	}
+	//	tmpRes.PrvDecoys = inputs
+	//	res[txHashStr] = tmpRes
+	//}
+	//for txHashStr, outputs := range mapOutputs {
+	//	tmpRes, ok := res[txHashStr]
+	//	if !ok {
+	//		continue
+	//	}
+	//	tmpRes.OutputCoins = outputs
+	//	res[txHashStr] = tmpRes
+	//}
 
 	return res, nil
 }
