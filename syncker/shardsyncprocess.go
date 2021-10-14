@@ -68,7 +68,7 @@ func NewShardSyncProcess(
 		beaconChain:      beaconChain,
 		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
-		shardPeerStateCh: make(chan *wire.MessagePeerState),
+		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
 
 		actionCh: make(chan func()),
@@ -106,7 +106,7 @@ func NewShardSyncProcess(
 				}
 			case <-ticker.C:
 				for sender, ps := range s.shardPeerState {
-					if ps.Timestamp < time.Now().Unix()-10 {
+					if ps.Timestamp < time.Now().Unix()-20 {
 						delete(s.shardPeerState, sender)
 					}
 				}

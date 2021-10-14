@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -19,6 +20,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +28,7 @@ var HighwayBeaconID = byte(255)
 
 func NewConnManager(
 	host *Host,
-	dpa string,
+	dpa []string,
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
@@ -34,7 +36,7 @@ func NewConnManager(
 	relayShard []byte,
 ) *ConnManager {
 	pubkey, _ := ikey.ToBase58()
-	return &ConnManager{
+	cm := &ConnManager{
 		info: info{
 			consensusData: cd,
 			pubkey:        pubkey,
@@ -50,7 +52,18 @@ func NewConnManager(
 		IsMasterNode:         false,
 		registerRequests:     make(chan peer.ID, 100),
 		stop:                 make(chan int),
+
+		currentHW:  nil,
+		hwLocker:   &sync.RWMutex{},
+		newHighway: make(chan *rpcclient.HighwayAddr, 100),
+		reqPickHW:  make(chan interface{}, 100),
+		notifiee:   &network.NotifyBundle{},
+		rttService: nil,
 	}
+	cm.notifiee.DisconnectedF = cm.disconnectAction
+	cm.LocalHost.Host.Network().Notify(cm.notifiee)
+	cm.rttService = ping.NewPingService(cm.LocalHost.Host)
+	return cm
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
@@ -186,7 +199,7 @@ type ConnManager struct {
 	disconnected int
 	registered   bool
 
-	DiscoverPeersAddress string
+	DiscoverPeersAddress []string
 	IsMasterNode         bool
 
 	ps               *pubsub.PubSub
@@ -198,6 +211,13 @@ type ConnManager struct {
 	disp       *Dispatcher
 	Requester  *BlockRequester
 	Provider   *BlockProvider
+
+	rttService *ping.PingService
+	notifiee   *network.NotifyBundle
+	currentHW  *rpcclient.HighwayAddr
+	hwLocker   *sync.RWMutex
+	newHighway chan *rpcclient.HighwayAddr
+	reqPickHW  chan interface{}
 
 	stop chan int
 }
@@ -222,12 +242,14 @@ func (cm *ConnManager) process() {
 // and try to connect if it's not available.
 func (cm *ConnManager) keepHighwayConnection() {
 	// Init list of highways
-	cm.keeper.Add(
-		rpcclient.HighwayAddr{
-			Libp2pAddr: "",
-			RPCUrl:     cm.DiscoverPeersAddress,
-		},
-	)
+	for _, dpa := range cm.DiscoverPeersAddress {
+		cm.keeper.Add(
+			rpcclient.HighwayAddr{
+				Libp2pAddr: "",
+				RPCUrl:     dpa,
+			},
+		)
+	}
 	var currentHighway *rpcclient.HighwayAddr
 
 	watchTimestep := time.NewTicker(ReconnectHighwayTimestep)
@@ -394,7 +416,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	//Logger.Infof("Publishing to topic %s", topic)
+	Logger.Infof("Publishing to topic %s, data %v", topic, common.HashH([]byte(messageHex)).String())
 	return ps.Publish(topic, []byte(messageHex))
 }
 
