@@ -40,24 +40,32 @@ func (coinService CoinService) GetCoinsInfoFromTx(tx metadata.Transaction) (*Coi
 		tokenTx = tmpTxToken.GetTxNormal()
 	}
 
-	if prvTx != nil {
-		res.PrvDecoys, err = getDecoysFromTx(prvTx, common.PRVIDStr)
-		if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
-			return nil, NewRPCError(RPCInternalError, err)
+	if prvTx != nil && prvTx.GetProof() != nil {
+		if len(prvTx.GetProof().GetInputCoins()) > 0 {
+			res.PrvDecoys, err = getDecoysFromTx(tx, common.PRVIDStr)
+			if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
+				return nil, NewRPCError(RPCInternalError, err)
+			}
 		}
-		res.PrvOutputs, err = getOutputCoinsFromTx(prvTx, common.PRVIDStr)
-		if err != nil {
-			return nil, NewRPCError(RPCInternalError, err)
+		if len(prvTx.GetProof().GetOutputCoins()) > 0 {
+			res.PrvOutputs, err = getOutputCoinsFromTx(tx, common.PRVIDStr)
+			if err != nil {
+				return nil, NewRPCError(RPCInternalError, err)
+			}
 		}
 	}
-	if tokenTx != nil {
-		res.TokenDecoys, err = getDecoysFromTx(tx, common.ConfidentialAssetID.String())
-		if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
-			return nil, NewRPCError(RPCInternalError, err)
+	if tokenTx != nil && tokenTx.GetProof() != nil {
+		if len(tokenTx.GetProof().GetInputCoins()) > 0 {
+			res.TokenDecoys, err = getDecoysFromTx(tx, common.ConfidentialAssetID.String())
+			if err != nil && !strings.Contains(err.Error(), "parse SigPubKey for"){
+				return nil, NewRPCError(RPCInternalError, err)
+			}
 		}
-		res.TokenOutputs, err = getOutputCoinsFromTx(tx, common.ConfidentialAssetID.String())
-		if err != nil {
-			return nil, NewRPCError(RPCInternalError, err)
+		if len(tokenTx.GetProof().GetOutputCoins()) > 0 {
+			res.TokenOutputs, err = getOutputCoinsFromTx(tx, common.ConfidentialAssetID.String())
+			if err != nil {
+				return nil, NewRPCError(RPCInternalError, err)
+			}
 		}
 	}
 
