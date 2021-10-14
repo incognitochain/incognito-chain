@@ -161,9 +161,9 @@ func (httpServer *HttpServer) handleGetCoinInfoByHashes(params interface{}, clos
 				lockTime = blk.GetProduceTime()
 			}
 		}
-		coinInfo, err := httpServer.outputCoinService.GetCoinsInfoFromTx(tx)
-		if err != nil {
-			Logger.log.Errorf("coinInfo not found for tx %v: %v\n", txHashStr, err)
+		coinInfo, err1 := httpServer.outputCoinService.GetCoinsInfoFromTx(tx)
+		if err1 != nil {
+			Logger.log.Errorf("coinInfo not found for tx %v: %v\n", txHashStr, err1)
 			continue
 		}
 
