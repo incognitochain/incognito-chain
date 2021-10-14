@@ -518,7 +518,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		}
 
 		previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
-		if err := a.chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
+		if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
 			return err
 		}
 

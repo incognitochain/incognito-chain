@@ -318,9 +318,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	return nil
 }
 
-func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
-
-	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
 
 	if err := chain.InsertBlock(block, false); err != nil {
 		return err
@@ -331,6 +329,13 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	}
 
 	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	return chain.InsertWithPrevValidationData(block, newValidationData)
 }
 
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {

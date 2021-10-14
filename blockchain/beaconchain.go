@@ -262,6 +262,9 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")
 }
+func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {
+	panic("this function is not supported on beacon chain")
+}
 
 func (chain *BeaconChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
 	block, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
