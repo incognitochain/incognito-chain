@@ -149,12 +149,12 @@ func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight
 		case subOperator:
 			tempLiquidity = staker.liquidity - liquidity
 			if tempLiquidity >= s.liquidity {
-				return errors.New("Staker liquidity is out of range")
+				return errors.New("Remove staker liquidity amount is out of range")
 			}
 		case addOperator:
 			tempLiquidity = staker.liquidity + liquidity
 			if tempLiquidity < s.liquidity {
-				return errors.New("Staker liquidity is out of range")
+				return errors.New("Add staker liquidity amount is out of range")
 			}
 		}
 
