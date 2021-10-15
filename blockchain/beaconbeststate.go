@@ -461,7 +461,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
 	for version, state := range target.pdeStates {
-		beaconBestState.pdeStates[version] = state.Clone()
+		if state != nil {
+			beaconBestState.pdeStates[version] = state.Clone()
+		}
 	}
 	if target.portalStateV4 != nil {
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()

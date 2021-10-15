@@ -243,6 +243,7 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3MintNftStatus:                         (*HttpServer).handleGetPdexv3MintNftStatus,
 	pdexv3Staking:                                  (*HttpServer).handlePdexv3Staking,
 	getPdexv3EstimatedLPValue:                      (*HttpServer).handleGetPdexv3EstimatedLPValue,
+	getPdexv3EstimatedLPPoolReward:                 (*HttpServer).handleGetPdexv3EstimatedLPPoolReward,
 	createAndSendTxWithPdexv3WithdrawLPFee:         (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawLPFee,
 	getPdexv3WithdrawalLPFeeStatus:                 (*HttpServer).handleGetPdexv3WithdrawalLPFeeStatus,
 	createAndSendTxWithPdexv3WithdrawProtocolFee:   (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawProtocolFee,
@@ -251,6 +252,7 @@ var HttpHandler = map[string]httpHandler{
 	pdexv3Unstaking:                                (*HttpServer).handlePdexv3Unstaking,
 	pdexv3GetUnstakingStatus:                       (*HttpServer).handleGetPdexv3UnstakingStatus,
 	getPdexv3EstimatedStakingReward:                (*HttpServer).handleGetPdexv3EstimatedStakingReward,
+	getPdexv3EstimatedStakingPoolReward:            (*HttpServer).handleGetPdexv3EstimatedStakingPoolReward,
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
 

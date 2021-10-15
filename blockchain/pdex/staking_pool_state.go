@@ -144,20 +144,10 @@ func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight
 		}
 		s.stakers[nftID] = NewStakerWithValue(liquidity, make(map[common.Hash]uint64), s.RewardsPerShare())
 	} else {
-		var tempLiquidity uint64
-		switch operator {
-		case subOperator:
-			tempLiquidity = staker.liquidity - liquidity
-			if tempLiquidity >= s.liquidity {
-				return errors.New("Staker liquidity is out of range")
-			}
-		case addOperator:
-			tempLiquidity = staker.liquidity + liquidity
-			if tempLiquidity < s.liquidity {
-				return errors.New("Staker liquidity is out of range")
-			}
+		tempLiquidity, err := executeOperationUint64(staker.liquidity, liquidity, operator)
+		if err != nil {
+			return err
 		}
-
 		nftIDHash, err := new(common.Hash).NewHashFromStr(nftID)
 		if err != nil {
 			return fmt.Errorf("Invalid nftID: %v", nftID)
