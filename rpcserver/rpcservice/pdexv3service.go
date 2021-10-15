@@ -372,7 +372,7 @@ func (blockService BlockService) GetPdexv3State(
 }
 
 func (blockService BlockService) GetPdexv3BlockLPReward(
-	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
+	pairID string, beaconHeight uint64, stateDB, prevStateDB *statedb.StateDB,
 ) (map[string]uint64, error) {
 	// get accumulated reward to the beacon height
 	curLPFeesPerShare, shareAmount, err := getLPFeesPerShare(pairID, beaconHeight, stateDB)
@@ -380,7 +380,7 @@ func (blockService BlockService) GetPdexv3BlockLPReward(
 		return nil, err
 	}
 	// get accumulated reward to the previous block of querying beacon height
-	oldLPFeesPerShare, _, err := getLPFeesPerShare(pairID, beaconHeight-1, stateDB)
+	oldLPFeesPerShare, _, err := getLPFeesPerShare(pairID, beaconHeight-1, prevStateDB)
 	if err != nil {
 		oldLPFeesPerShare = map[common.Hash]*big.Int{}
 	}
@@ -409,7 +409,7 @@ func (blockService BlockService) GetPdexv3BlockLPReward(
 }
 
 func (blockService BlockService) GetPdexv3BlockStakingReward(
-	stakingPoolID string, beaconHeight uint64, stateDB *statedb.StateDB,
+	stakingPoolID string, beaconHeight uint64, stateDB, prevStateDB *statedb.StateDB,
 ) (map[string]uint64, error) {
 	// get accumulated reward to the beacon height
 	curRewardsPerShare, shareAmount, err := getStakingRewardsPerShare(stakingPoolID, beaconHeight, stateDB)
@@ -417,7 +417,7 @@ func (blockService BlockService) GetPdexv3BlockStakingReward(
 		return nil, err
 	}
 	// get accumulated reward to the previous block of querying beacon height
-	oldRewardsPerShare, _, err := getStakingRewardsPerShare(stakingPoolID, beaconHeight-1, stateDB)
+	oldRewardsPerShare, _, err := getStakingRewardsPerShare(stakingPoolID, beaconHeight-1, prevStateDB)
 	if err != nil {
 		oldRewardsPerShare = map[common.Hash]*big.Int{}
 	}
