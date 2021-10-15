@@ -273,11 +273,13 @@ const (
 	pdexv3GetStakingStatus                         = "pdexv3_getStakingStatus"
 	pdexv3GetUnstakingStatus                       = "pdexv3_getUnstakingStatus"
 	getPdexv3EstimatedLPValue                      = "pdexv3_getEstimatedLPValue"
+	getPdexv3EstimatedLPPoolReward                 = "pdexv3_getEstimatedLPPoolReward"
 	createAndSendTxWithPdexv3WithdrawLPFee         = "pdexv3_txWithdrawLPFee"
 	getPdexv3WithdrawalLPFeeStatus                 = "pdexv3_getWithdrawalLPFeeStatus"
 	createAndSendTxWithPdexv3WithdrawProtocolFee   = "pdexv3_txWithdrawProtocolFee"
 	getPdexv3WithdrawalProtocolFeeStatus           = "pdexv3_getWithdrawalProtocolFeeStatus"
 	getPdexv3EstimatedStakingReward                = "pdexv3_getEstimatedStakingReward"
+	getPdexv3EstimatedStakingPoolReward            = "pdexv3_getEstimatedStakingPoolReward"
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
