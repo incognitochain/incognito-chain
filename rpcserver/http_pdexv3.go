@@ -1229,6 +1229,11 @@ func createPdexv3TradeRequestTransaction(
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+	err = httpServer.pdexTxService.ValidateTokenIDs(&mdReader.TokenToSell, &mdReader.TokenToBuy)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
 	md, _ := metadataPdexv3.NewTradeRequest(
 		mdReader.TradePath, mdReader.TokenToSell, uint64(mdReader.SellAmount),
 		uint64(mdReader.MinAcceptableAmount), uint64(mdReader.TradingFee), nil,
@@ -1326,6 +1331,11 @@ func createPdexv3AddOrderRequestTransaction(
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
+	err = httpServer.pdexTxService.ValidateTokenIDs(&mdReader.TokenToSell, &mdReader.TokenToBuy)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
 	md, _ := metadataPdexv3.NewAddOrderRequest(
 		mdReader.TokenToSell, mdReader.PoolPairID, uint64(mdReader.SellAmount),
 		uint64(mdReader.MinAcceptableAmount), nil,
