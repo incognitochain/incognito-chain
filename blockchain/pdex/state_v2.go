@@ -265,12 +265,19 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
+	orderCountByNftID := make(map[string]uint)
 	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
 		poolPair.stakingPoolFees = map[common.Hash]uint64{}
 		poolPair.stakingPoolFees[common.PRVCoinID] = 0
 		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
 		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
+
+		// get order count per NftID
+		for _, ord := range poolPair.orderbook.orders {
+			// increment counter by NftID (orderCountByNftID[ord.NftID()] is 0 if no entry)
+			orderCountByNftID[ord.NftID().String()] = orderCountByNftID[ord.NftID().String()] + 1
+		}
 	}
 
 	var withdrawLPFeeInstructions [][]string
@@ -390,6 +397,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		s.poolPairs,
 		s.nftIDs,
 		s.params,
+		orderCountByNftID,
 	)
 	if err != nil {
 		return instructions, err
