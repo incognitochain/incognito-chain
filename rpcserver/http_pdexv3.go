@@ -382,40 +382,12 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPPoolReward(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("pDEX v3 is not available"))
 	}
 
-	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	result, err := httpServer.blockService.GetPdexv3BlockLPReward(
+		pairID, uint64(beaconHeight), beaconFeatureStateDB,
+	)
+
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
-	}
-
-	poolPairs := make(map[string]*pdex.PoolPairState)
-	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-
-	if _, ok := poolPairs[pairID]; !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("PairID is not existed"))
-	}
-
-	pair := poolPairs[pairID]
-
-	result := map[string]uint64{}
-
-	for nftIDStr := range pair.Shares() {
-		nftID, err := common.Hash{}.NewHashFromStr(nftIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, fmt.Errorf("NftID %v is invalid", nftIDStr))
-		}
-		uncollectedTradingFees, err := pair.RecomputeLPFee(*nftID)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
-		}
-		for tokenID := range uncollectedTradingFees {
-			if _, ok := result[tokenID.String()]; !ok {
-				result[tokenID.String()] = 0
-			}
-			result[tokenID.String()] += uncollectedTradingFees[tokenID]
-		}
 	}
 
 	return result, nil
@@ -1963,36 +1935,12 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedStakingPoolReward(params i
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, errors.New("pDEX v3 is not available"))
 	}
 
-	pDexv3State, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	result, err := httpServer.blockService.GetPdexv3BlockStakingReward(
+		stakingPoolID, uint64(beaconHeight), beaconFeatureStateDB,
+	)
+
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, err)
-	}
-
-	stakingPools := pDexv3State.Reader().StakingPools()
-
-	if _, ok := stakingPools[stakingPoolID]; !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, errors.New("TokenID is not existed"))
-	}
-
-	pool := stakingPools[stakingPoolID].Clone()
-
-	result := map[string]uint64{}
-
-	for nftIDStr := range pool.Stakers() {
-		nftID, err := common.Hash{}.NewHashFromStr(nftIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, fmt.Errorf("NftID %v is invalid", nftIDStr))
-		}
-		uncollectedStakingRewards, err := pool.RecomputeStakingRewards(*nftID)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StakingRewardError, err)
-		}
-		for tokenID := range uncollectedStakingRewards {
-			if _, ok := result[tokenID.String()]; !ok {
-				result[tokenID.String()] = 0
-			}
-			result[tokenID.String()] += uncollectedStakingRewards[tokenID]
-		}
 	}
 
 	return result, nil

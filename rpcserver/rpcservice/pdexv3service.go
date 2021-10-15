@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
@@ -370,6 +371,80 @@ func (blockService BlockService) GetPdexv3State(
 	return res, nil
 }
 
+func (blockService BlockService) GetPdexv3BlockLPReward(
+	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
+) (map[string]uint64, error) {
+	// get accumulated reward to the beacon height
+	curLPFeesPerShare, shareAmount, err := getLPFeesPerShare(pairID, beaconHeight, stateDB)
+	if err != nil {
+		return nil, err
+	}
+	// get accumulated reward to the previous block of querying beacon height
+	oldLPFeesPerShare, _, err := getLPFeesPerShare(pairID, beaconHeight-1, stateDB)
+	if err != nil {
+		oldLPFeesPerShare = map[common.Hash]*big.Int{}
+	}
+
+	result := map[string]uint64{}
+
+	for tokenID := range curLPFeesPerShare {
+		oldFees, isExisted := oldLPFeesPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees := curLPFeesPerShare[tokenID]
+
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
+		reward = new(big.Int).Div(reward, pdex.BaseLPFeesPerShare)
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		if reward.Uint64() > 0 {
+			result[tokenID.String()] = reward.Uint64()
+		}
+	}
+
+	return result, nil
+}
+
+func (blockService BlockService) GetPdexv3BlockStakingReward(
+	stakingPoolID string, beaconHeight uint64, stateDB *statedb.StateDB,
+) (map[string]uint64, error) {
+	// get accumulated reward to the beacon height
+	curRewardsPerShare, shareAmount, err := getStakingRewardsPerShare(stakingPoolID, beaconHeight, stateDB)
+	if err != nil {
+		return nil, err
+	}
+	// get accumulated reward to the previous block of querying beacon height
+	oldRewardsPerShare, _, err := getStakingRewardsPerShare(stakingPoolID, beaconHeight-1, stateDB)
+	if err != nil {
+		oldRewardsPerShare = map[common.Hash]*big.Int{}
+	}
+
+	result := map[string]uint64{}
+
+	for tokenID := range curRewardsPerShare {
+		oldFees, isExisted := oldRewardsPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees := curRewardsPerShare[tokenID]
+
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
+		reward = new(big.Int).Div(reward, pdex.BaseLPFeesPerShare)
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		if reward.Uint64() > 0 {
+			result[tokenID.String()] = reward.Uint64()
+		}
+	}
+
+	return result, nil
+}
+
 func getPdexv3WaitingContributions(beaconTimeStamp int64, stateDB *statedb.StateDB) (interface{}, error) {
 	waitingContributions, err := pdex.InitWaitingContributionsFromDB(stateDB)
 	if err != nil {
@@ -560,4 +635,48 @@ func getPdexv3PoolPairOrders(
 		},
 	}
 	return res, nil
+}
+
+func getLPFeesPerShare(
+	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
+) (map[common.Hash]*big.Int, uint64, error) {
+	// get accumulated reward to the beacon height
+	pDexv3State, err := pdex.InitStateFromDB(stateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if _, ok := poolPairs[pairID]; !ok {
+		return nil, 0, fmt.Errorf("Pool pair %s not found", pairID)
+	}
+	pair := poolPairs[pairID]
+	pairState := pair.State()
+
+	return pair.LpFeesPerShare(), pairState.ShareAmount(), nil
+}
+
+func getStakingRewardsPerShare(
+	stakingPoolID string, beaconHeight uint64, stateDB *statedb.StateDB,
+) (map[common.Hash]*big.Int, uint64, error) {
+	// get accumulated reward to the beacon height
+	pDexv3State, err := pdex.InitStateFromDB(stateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	stakingPools := pDexv3State.Reader().StakingPools()
+
+	if _, ok := stakingPools[stakingPoolID]; !ok {
+		return nil, 0, fmt.Errorf("Staking pool %s not found", stakingPoolID)
+	}
+
+	pool := stakingPools[stakingPoolID].Clone()
+
+	return pool.RewardsPerShare(), pool.Liquidity(), nil
 }
