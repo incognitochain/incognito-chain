@@ -75,8 +75,48 @@ func TestProduceOrder(t *testing.T) {
 			testState := mustReadState("test_state.json")
 			// manually add nftID
 			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
-			temp := &StateFormatter{}
-			temp.FromState(testState)
+
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+
+			encodedResult, _ := json.Marshal(TestResult{instructions})
+			Equal(t, testcase.Expected, string(encodedResult))
+		})
+	}
+}
+
+func TestOrderOverNftIDLimit(t *testing.T) {
+	setTestTradeConfig()
+
+	type TestData struct {
+		Metadata metadataPdexv3.AddOrderRequest `json:"metadata"`
+		Repeat   uint                           `json:"repeat"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("produce_order_over_limit.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+
+			// repeat the same metadata to simulate producing multiple orders of the same NftID in 1 block
+			var mds []metadataCommon.Metadata
+			for i := 0; i < int(testdata.Repeat); i++ {
+				var temp metadataPdexv3.AddOrderRequest = testdata.Metadata
+				mds = append(mds, &temp)
+			}
+
+			env := skipToProduce(mds, 0)
+			testState := mustReadState("test_state.json")
+			// manually add nftID
+			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			// set order count per NFT to 2 for this test
+			testState.params.MaxOrdersPerNft = 2
 
 			instructions, err := testState.BuildInstructions(env)
 			NoError(t, err)
