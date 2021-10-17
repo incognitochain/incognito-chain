@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
+//TODO: any difference with v1 function?
 func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if tx.Proof == nil {
 		return false, errors.New("Tx Privacy Ver 2 must have proof")

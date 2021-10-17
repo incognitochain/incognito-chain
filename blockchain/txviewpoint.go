@@ -95,6 +95,7 @@ fetchTxViewPointFromBlock get list serialnumber and commitments, output coins fr
 return a tx view point which contains list new serialNumbers and new commitments from block
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 */
+//TODO: remove check hash serial number???
 func (view *TxViewPoint) processFetchTxViewPointFromProof(stateDB *statedb.StateDB, shardID byte, proof privacy.Proof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]coin.Coin, map[string][]*privacy.Scalar, error) {
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)

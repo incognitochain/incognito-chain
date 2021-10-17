@@ -438,6 +438,7 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 			for _, oCoin := range oCoins {
 				coinID := oCoin.GetCoinID()
 				if _, ok := mapForChkDbSpend[coinID]; ok {
+					//TODO: changekey from SND to PublicKey
 					if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
 						continue
 					}

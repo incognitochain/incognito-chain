@@ -587,6 +587,7 @@ func HasInputNoOutput(metaType int) bool {
 	return false
 }
 
+//TODO: disable?
 func NoInputHasOutput(metaType int) bool {
 	//Temporarily disable this function
 	return true

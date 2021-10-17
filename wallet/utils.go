@@ -101,6 +101,7 @@ func IsPublicKeyBurningAddress(publicKey []byte) bool {
 	return false
 }
 
+//TODO: duplicate set BurningAddressByte???
 func InitPublicKeyBurningAddressByte() error {
 	keyWalletBurningAdd1, err := Base58CheckDeserialize(common.BurningAddress)
 	if err != nil {

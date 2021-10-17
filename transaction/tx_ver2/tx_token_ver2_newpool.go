@@ -14,6 +14,8 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
+//TODO: any difference with v1 function?
+
 func (txToken *TxToken) LoadData(transactionStateDB *statedb.StateDB) error {
 	if txToken.TokenData.Type == utils.CustomTokenTransfer {
 		txn := txToken.GetTxNormal()

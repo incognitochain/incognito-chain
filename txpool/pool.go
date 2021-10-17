@@ -207,6 +207,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			}
 			listkey = append(listkey, key)
 		}
+		//TODO: remove check coin version?
 		for _, oCoin := range prf.GetOutputCoins() {
 			oCoinID := oCoin.GetCoinID()
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), oCoinID)
