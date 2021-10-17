@@ -389,7 +389,7 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
 
 	// fmt.Printf("Token id is %v\n",tokenID)
-	ring, err := reconstructRingCA(tx.SigPubKey, sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB, shardID, tokenID)
+	ring, err := reconstructRingCAV2(tx.GetValidationEnv(), sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err

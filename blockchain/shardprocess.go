@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
@@ -918,28 +918,33 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	if len(txs) == 0 {
 		return nil
 	}
-	isEmpty := blockchain.config.TempTxPool.EmptyPool()
-	if !isEmpty {
-		panic("TempTxPool Is not Empty")
-	}
-	defer blockchain.config.TempTxPool.EmptyPool()
+	st := time.Now()
+	// isEmpty := blockchain.config.TempTxPool.EmptyPool()
+	// if !isEmpty {
+	// 	panic("TempTxPool Is not Empty")
+	// }
+	// defer blockchain.config.TempTxPool.EmptyPool()
 
-	//isRelatedCommittee := false
-	//for _, tx := range txs {
-	//	if tx.GetMetadata() != nil {
-	//		switch tx.GetMetadata().GetType() {
-	//		case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
-	//			isRelatedCommittee = true
-	//			break
-	//		}
-	//	}
-	//}
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, true)
+	isRelatedCommittee := false
+	for _, tx := range txs {
+		if tx.GetMetadata() != nil {
+			switch tx.GetMetadata().GetType() {
+			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+				isRelatedCommittee = true
+				break
+			}
+		}
+	}
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, isRelatedCommittee)
 	if err != nil {
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 		return err
 	}
-	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+	Logger.log.Infof("[validatetxs] Get beacon view for new block cost %v", time.Since(st))
+	st = time.Now()
+	err = blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+	Logger.log.Infof("[validatetxs] verifyTransactionIndividuallyFromNewBlock cost %v", time.Since(st))
+	return err
 }
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {

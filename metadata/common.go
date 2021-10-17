@@ -79,10 +79,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &BurningRequest{}
 	case BurningPBSCRequestMeta:
 		md = &BurningRequest{}
-    case BurningPRVBEP20RequestMeta:
-        md = &BurningRequest{}
-    case BurningPRVERC20RequestMeta:
-        md = &BurningRequest{}
+	case BurningPRVBEP20RequestMeta:
+		md = &BurningRequest{}
+	case BurningPRVERC20RequestMeta:
+		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
@@ -227,7 +227,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningConfirmForDepositToSCMetaV2),
 	strconv.Itoa(BurningBSCConfirmMeta),
 	strconv.Itoa(BurningPRVERC20ConfirmMeta),
-    strconv.Itoa(BurningPRVBEP20ConfirmMeta),
+	strconv.Itoa(BurningPRVBEP20ConfirmMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {
@@ -390,7 +390,7 @@ func buildMetaInfo() {
 		IssuingETHRequestMeta,
 		IssuingBSCRequestMeta,
 		IssuingPRVERC20RequestMeta,
-		IssuingPRVBEP20RequestMeta,	
+		IssuingPRVBEP20RequestMeta,
 		ContractingRequestMeta,
 
 		ShardStakingMeta,
@@ -588,6 +588,8 @@ func HasInputNoOutput(metaType int) bool {
 }
 
 func NoInputHasOutput(metaType int) bool {
+	//Temporarily disable this function
+	return true
 	if info, ok := metaInfoMap[metaType]; ok {
 		return !info.HasInput && info.HasOutput
 	}
@@ -595,6 +597,8 @@ func NoInputHasOutput(metaType int) bool {
 }
 
 func IsAvailableMetaInTxType(metaType int, txType string) bool {
+	//Temporarily disable this function
+	return true
 	if info, ok := metaInfoMap[metaType]; ok {
 		_, ok := info.TxType[txType]
 		return ok

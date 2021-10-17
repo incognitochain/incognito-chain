@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
@@ -207,19 +208,12 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range prf.GetOutputCoins() {
-			var oCoinID string
-			switch oCoin.GetVersion() {
-			case 1:
-				oCoinID = string(oCoin.GetSNDerivator().ToBytesS())
-			case 2:
-				oCoinID = string(oCoin.GetSNDerivator().ToBytesS())
-			default:
-				isDoubleSpend = true
-				neededToReplace = false
-				return isDoubleSpend, neededToReplace, txHash, listkey
-			}
+			oCoinID := oCoin.GetCoinID()
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), oCoinID)
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+					continue
+				}
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
 					txHash = tx.Hash().String()
@@ -237,7 +231,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		tokenID := target.(transaction.TransactionToken).GetTxTokenData().PropertyID
 		normalPrf := txNormal.GetProof()
 		for _, iCoin := range normalPrf.GetInputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.GetKeyImage().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), iCoin.GetKeyImage().ToBytes())
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -251,8 +245,11 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range normalPrf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), oCoin.GetCoinID())
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+					continue
+				}
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
 					txHash = tx.Hash().String()
@@ -387,6 +384,7 @@ func (tp *TxsPool) FilterWithNewView(
 	if !tp.IsRunning() {
 		return
 	}
+	sDB := sView.GetCopiedTransactionStateDB()
 	txsData := tp.snapshotPool()
 	txsToRemove := []string{}
 	txsValid := []metadata.Transaction{}
@@ -398,7 +396,7 @@ func (tp *TxsPool) FilterWithNewView(
 			Logger.Errorf("[txTracing] Tx %v is stake/unstake/stop auto stake twice with sView %v\n", txHash, sView.GetHeight())
 			continue
 		}
-		if ok, err := tp.Verifier.LoadCommitment(tx, sView); !ok || err != nil {
+		if err := tx.CheckData(sDB); err != nil {
 			Logger.Errorf("[txTracing] Validate tx %v return error %v with sView %v\n", txHash, err, sView.GetHeight())
 			txsToRemove = append(txsToRemove, txHash)
 			continue
@@ -587,7 +585,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	}
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txNormal := tx.(transaction.TransactionToken).GetTxTokenData().TxNormal
+		txNormal := tx.(transaction.TransactionToken).GetTxNormal()
 		normalPrf := txNormal.GetProof()
 		if normalPrf != nil {
 			isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
@@ -641,7 +639,10 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 		}
 	}
 	for _, oCoin := range oCoins {
-		if info, ok := dataHelper[oCoin.GetSNDerivator().ToBytes()]; ok {
+		if info, ok := dataHelper[oCoin.GetCoinID()]; ok {
+			if common.IsPublicKeyBurningAddress(oCoin.GetPublicKey().ToBytesS()) {
+				continue
+			}
 			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
 				continue
@@ -705,7 +706,7 @@ func insertPrfForCheck(
 		}
 	}
 	for _, oCoin := range oCoins {
-		dataHelper[oCoin.GetSNDerivator().ToBytes()] = struct {
+		dataHelper[oCoin.GetCoinID()] = struct {
 			Index  uint
 			Detail TxInfoDetail
 		}{
@@ -727,10 +728,24 @@ func (tp *TxsPool) CheckValidatedTxs(
 	poolData := tp.snapshotPool()
 	for _, tx := range txs {
 		if _, ok := poolData.TxInfos[tx.Hash().String()]; ok {
-			valid = append(valid, tx)
-		} else {
-			needValidate = append(needValidate, tx)
+			if validtx, ok := poolData.TxByHash[tx.Hash().String()]; ok {
+				if validtx.Hash().String() == tx.Hash().String() {
+					txValEnv := tx.GetValidationEnv()
+					txValEnv = tx_generic.WithDBData(txValEnv, validtx.GetValidationEnv().DBData())
+					tx.SetValidationEnv(txValEnv)
+					if tx.GetType() == common.TxCustomTokenPrivacyType {
+						txNormal := tx.(transaction.TransactionToken).GetTxNormal()
+						txNormalEnv := txNormal.GetValidationEnv()
+						validTxNormal := validtx.(transaction.TransactionToken).GetTxNormal()
+						txNormalEnv = tx_generic.WithDBData(txNormalEnv, validTxNormal.GetValidationEnv().DBData())
+						txNormal.SetValidationEnv(txNormalEnv)
+					}
+					valid = append(valid, validtx)
+					continue
+				}
+			}
 		}
+		needValidate = append(needValidate, tx)
 	}
 	return valid, needValidate
 }

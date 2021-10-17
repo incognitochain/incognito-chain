@@ -1,11 +1,11 @@
 package common
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"log"
 	"math/big"
 	"net"
@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
@@ -583,6 +585,7 @@ func TokenHashToString(h *Hash) string {
 func TokenStringToHash(s string) (*Hash, error) {
 	return Hash{}.NewHashFromStr(s)
 }
+
 // DecodeETHAddr converts address string (not contain 0x prefix) to 32 bytes slice
 func DecodeETHAddr(addr string) ([]byte, error) {
 	remoteAddr, err := hex.DecodeString(addr)
@@ -606,4 +609,14 @@ func FileExists(name string) bool {
 		}
 	}
 	return true
+}
+
+func IsPublicKeyBurningAddress(publicKey []byte) bool {
+	if bytes.Equal(publicKey, BurningAddressByte) {
+		return true
+	}
+	if bytes.Equal(publicKey, BurningAddressByte2) {
+		return true
+	}
+	return false
 }
