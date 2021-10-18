@@ -47,11 +47,7 @@ func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint
 		if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
 			return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
 		}
-		if beaconHeight == config.Param().PDexParams.Pdexv3BreakPointHeight {
-			return newStateV2(), nil
-		} else {
-			return initStateV2FromDB(stateDB)
-		}
+		return initStateV2FromDB(stateDB)
 	default:
 		return nil, errors.New("Can not recognize version")
 	}
