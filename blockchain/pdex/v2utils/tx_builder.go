@@ -135,6 +135,7 @@ func MintPDEXGenesis(
 		instContent.MintingPaymentAddress,
 		instContent.MintingAmount,
 	)
+	fmt.Println("[pdex] meta:", meta)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(instContent.MintingPaymentAddress)
 	if err != nil {

@@ -947,12 +947,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight-1 {
-		newBestState.pdeStates[pdex.AmplifierVersion], err = pdex.InitStateFromDB(
-			newBestState.featureStateDB, beaconBlock.Header.Height+1, pdex.AmplifierVersion,
-		)
-		if err != nil {
-			return NewBlockChainError(ProcessPDEInstructionError, err)
-		}
+		newBestState.pdeStates[pdex.AmplifierVersion] = pdex.NewStatev2()
 	}
 
 	// Save result of BurningConfirm instruction to get proof later
