@@ -471,6 +471,7 @@ func (sp *stateProducerV2) addOrder(
 	pairs map[string]*PoolPairState,
 	nftIDs map[string]uint64,
 	params *Params,
+	orderCountByNftID map[string]uint,
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 
@@ -487,8 +488,16 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
+		// check that the nftID exists 
 		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
 			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
+		// check that the nftID has not exceeded its order count limit
+		if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
+			Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
+				currentOrderReq.NftID.String(), params.MaxOrdersPerNft)
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
@@ -549,6 +558,9 @@ TransactionLoop:
 			continue TransactionLoop
 		}
 		recvStr, _ := recv.String()
+
+		// increment order count to keep same-block requests from exceeding limit
+		orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,

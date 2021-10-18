@@ -1464,6 +1464,24 @@ func createPdexv3WithdrawOrderRequestTransaction(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
+	// sanity check for withdrawing token IDs
+	for _, tokenID := range mdReader.WithdrawTokenIDs {
+		if tokenID.IsZeroValue() {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("Invalid WithdrawTokenID %v", tokenID))
+		}
+	}
+	switch len(mdReader.WithdrawTokenIDs) {
+	case 1:
+		// withdraw single token: proceed
+	case 2:
+		// withdraw both tokens from order: set withdraw amount to 0
+		mdReader.Amount = 0
+	default:
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("Invalid WithdrawTokenIDs count %d, expect 1 or 2", len(mdReader.WithdrawTokenIDs)))
+	}
+
 	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
 		mdReader.PoolPairID, mdReader.OrderID, uint64(mdReader.Amount),
 		nil, mdReader.NftID, metadataCommon.Pdexv3WithdrawOrderRequestMeta)

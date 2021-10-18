@@ -104,6 +104,10 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError,
 			fmt.Errorf("MinAcceptableAmount cannot be 0"))
 	}
+	if req.SellAmount == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError,
+			fmt.Errorf("SellAmount cannot be 0"))
+	}
 
 	// Type vs burned token id + amount check
 	switch tx.GetType() {

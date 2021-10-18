@@ -73,6 +73,11 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 		}
 	}
 
+	if req.SellAmount == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError,
+			fmt.Errorf("SellAmount cannot be 0"))
+	}
+
 	// Burned coin check
 	isBurn, burnedPRVCoin, burnedCoin, burnedTokenID, err := tx.GetTxFullBurnData()
 	if err != nil || !isBurn {

@@ -23,11 +23,12 @@ import (
 )
 
 var (
-	_          = fmt.Print
-	testWarper statedb.DatabaseAccessWarper
-	emptyRoot  = common.HexToHash(common.HexEmptyRoot)
-	testDB     *statedb.StateDB
-	logger     common.Logger
+	_                          = fmt.Print
+	testWarper                 statedb.DatabaseAccessWarper
+	emptyRoot                  = common.HexToHash(common.HexEmptyRoot)
+	testDB                     *statedb.StateDB
+	logger                     common.Logger
+	DefaultTestMaxOrdersPerNft uint = 20
 )
 
 func init() {
@@ -308,10 +309,16 @@ type StateFormatter struct {
 }
 
 func (sf *StateFormatter) State() *stateV2 {
-	s := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		&Params{}, nil, make(map[string]uint64))
+	s := newStateV2WithValue(
+		nil, nil, make(map[string]*PoolPairState),
+		&Params{MaxOrdersPerNft: DefaultTestMaxOrdersPerNft},
+		nil, make(map[string]uint64),
+	)
 	for k, v := range sf.PoolPairs {
-		s.poolPairs[k] = &PoolPairState{state: *v.State, orderbook: v.Orderbook}
+		s.poolPairs[k] = &PoolPairState{
+			state:     *v.State,
+			orderbook: v.Orderbook,
+		}
 	}
 	return s
 }
