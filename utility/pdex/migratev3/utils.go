@@ -359,6 +359,7 @@ func addOrder(url string) error {
 	type Temp struct {
 		PoolPairID          string `json:"PoolPairID"`
 		TokenToSell         string `json:"TokenToSell"`
+		TokenToBuy          string `json:"TokenToBuy"`
 		NftID               string `json:"NftID"`
 		SellAmount          string `json:"SellAmount"`
 		MinAcceptableAmount string `json:"MinAcceptableAmount"`
@@ -367,6 +368,7 @@ func addOrder(url string) error {
 	temp := Temp{
 		PoolPairID:          poolPairID,
 		TokenToSell:         customTokenID.String(),
+		TokenToBuy:          common.PRVIDStr,
 		SellAmount:          "1000",
 		MinAcceptableAmount: "100",
 		NftID:               nftID.String(),

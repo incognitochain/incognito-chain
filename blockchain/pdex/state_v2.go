@@ -39,6 +39,8 @@ func (s *stateV2) readConfig() {
 	}
 }
 
+func NewStatev2() *stateV2 { return newStateV2() }
+
 func newStateV2() *stateV2 {
 	return &stateV2{
 		params:                      NewParams(),

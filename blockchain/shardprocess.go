@@ -967,7 +967,7 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 		listTxs := []metadata.Transaction{}
 		whiteListTxs := blockchain.WhiteListTx()
 		jsb, _ := json.Marshal(txs)
-		Logger.log.Info("[pdex] all transactions from block:", string(jsb))
+		Logger.log.Info("all transactions from block:", string(jsb))
 		for _, tx := range txs {
 			if ok := whiteListTxs[tx.Hash().String()]; ok {
 				return nil
