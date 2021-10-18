@@ -225,28 +225,49 @@ func (chain *ShardChain) CreateNewBlock(
 		Logger.log.Error(err)
 		return nil, err
 	}
-	if version >= 2 {
+	if version >= types.MULTI_VIEW_VERSION {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
+
+	if version >= types.LEMMA2_VERSION {
+		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, err
+		}
+		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.ProposeTime)
+
+		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
+			newBlock.Header.Producer == newBlock.Header.Proposer &&
+			previousProposeTimeSlot+1 == currentTimeSlot {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
+	}
+
 	Logger.log.Infof("[dcs] new block header proposer %v proposerTime %v", newBlock.Header.Proposer, newBlock.Header.ProposeTime)
 
 	Logger.log.Infof("Finish Create New Block")
 	return newBlock, nil
 }
 
-func (chain *ShardChain) CreateNewBlockFromOldBlock(
-	oldBlock types.BlockInterface,
-	proposer string, startTime int64,
-	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash,
-) (types.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
+	if newBlock.Header.Version >= types.LEMMA2_VERSION {
+
+		if isValidRePropose {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
+	}
 
 	return newBlock, nil
 }
@@ -301,9 +322,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	return nil
 }
 
-func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
-
-	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
 
 	if err := chain.InsertBlock(block, false); err != nil {
 		return err
@@ -316,6 +335,13 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	return nil
 }
 
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	return chain.InsertWithPrevValidationData(block, newValidationData)
+}
+
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
 	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
 		Logger.log.Error(err)
@@ -323,6 +349,11 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	}
 
 	return nil
+}
+
+func (chain *ShardChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+	block, _, err := chain.Blockchain.GetShardBlockByHash(hash)
+	return block, err
 }
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
@@ -410,26 +441,59 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 }
 
 //ProposerByTimeSlot ...
-func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(
-	timeslot int64,
-	committees []incognitokey.CommitteePublicKey,
-) (incognitokey.CommitteePublicKey, int, error) {
+func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
-		timeslot,
+		ts,
 		committees,
 		GetProposerLength(),
 	)
-	return proposer, proposerIndex, nil
+	return proposer, proposerIndex
 }
 
 func (chain *ShardChain) GetSigningCommittees(
 	proposerIndex int, committees []incognitokey.CommitteePublicKey, blockVersion int,
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
+	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		res = FilterSigningCommitteeV3(committees, proposerIndex)
 	} else {
 		res = committees
 	}
 	return res
+}
+
+func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
+	err := rawdbv2.StoreShardFinalityProof(
+		chain.GetChainDatabase(),
+		byte(chain.shardID),
+		*block.Hash(),
+		block.GetPrevHash(),
+		finalityProof,
+		reProposeSig,
+		block.GetAggregateRootHash(),
+		block.GetProducer(),
+		common.CalculateTimeSlot(block.GetProduceTime()),
+		block.GetProposer(),
+		common.CalculateTimeSlot(block.GetProposeTime()),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, map[string]interface{}, error) {
+
+	shardBlock, err := chain.GetBlockByHash(hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	m, err := rawdbv2.GetShardFinalityProof(chain.GetDatabase(), byte(chain.shardID), hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return shardBlock.(*types.ShardBlock), m, nil
 }

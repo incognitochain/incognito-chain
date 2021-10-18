@@ -77,13 +77,13 @@ func (_m *Chain) CreateNewBlock(version int, proposer string, round int, startTi
 	return r0, r1
 }
 
-// CreateNewBlockFromOldBlock provides a mock function with given fields: oldBlock, proposer, startTime, committees, hash
-func (_m *Chain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, committees []incognitokey.CommitteePublicKey, hash common.Hash) (types.BlockInterface, error) {
-	ret := _m.Called(oldBlock, proposer, startTime, committees, hash)
+// CreateNewBlockFromOldBlock provides a mock function with given fields: oldBlock, proposer, startTime, isValidRePropose
+func (_m *Chain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error) {
+	ret := _m.Called(oldBlock, proposer, startTime, isValidRePropose)
 
 	var r0 types.BlockInterface
-	if rf, ok := ret.Get(0).(func(types.BlockInterface, string, int64, []incognitokey.CommitteePublicKey, common.Hash) types.BlockInterface); ok {
-		r0 = rf(oldBlock, proposer, startTime, committees, hash)
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, string, int64, bool) types.BlockInterface); ok {
+		r0 = rf(oldBlock, proposer, startTime, isValidRePropose)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.BlockInterface)
@@ -91,8 +91,8 @@ func (_m *Chain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, propo
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(types.BlockInterface, string, int64, []incognitokey.CommitteePublicKey, common.Hash) error); ok {
-		r1 = rf(oldBlock, proposer, startTime, committees, hash)
+	if rf, ok := ret.Get(1).(func(types.BlockInterface, string, int64, bool) error); ok {
+		r1 = rf(oldBlock, proposer, startTime, isValidRePropose)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -170,6 +170,29 @@ func (_m *Chain) GetBestViewHeight() uint64 {
 	}
 
 	return r0
+}
+
+// GetBlockByHash provides a mock function with given fields: hash
+func (_m *Chain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+	ret := _m.Called(hash)
+
+	var r0 types.BlockInterface
+	if rf, ok := ret.Get(0).(func(common.Hash) types.BlockInterface); ok {
+		r0 = rf(hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.BlockInterface)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(hash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetChainDatabase provides a mock function with given fields:
@@ -391,7 +414,7 @@ func (_m *Chain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
 }
 
 // GetProposerByTimeSlotFromCommitteeList provides a mock function with given fields: ts, committees
-func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
+func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	ret := _m.Called(ts, committees)
 
 	var r0 incognitokey.CommitteePublicKey
@@ -408,14 +431,7 @@ func (_m *Chain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []i
 		r1 = ret.Get(1).(int)
 	}
 
-	var r2 error
-	if rf, ok := ret.Get(2).(func(int64, []incognitokey.CommitteePublicKey) error); ok {
-		r2 = rf(ts, committees)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
+	return r0, r1
 }
 
 // GetPubKeyCommitteeIndex provides a mock function with given fields: _a0
@@ -551,6 +567,20 @@ func (_m *Chain) ReplacePreviousValidationData(previousBlockHash common.Hash, ne
 // SetReady provides a mock function with given fields: _a0
 func (_m *Chain) SetReady(_a0 bool) {
 	_m.Called(_a0)
+}
+
+// StoreFinalityProof provides a mock function with given fields: block, finalityProof, reProposeSig
+func (_m *Chain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
+	ret := _m.Called(block, finalityProof, reProposeSig)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, interface{}, interface{}) error); ok {
+		r0 = rf(block, finalityProof, reProposeSig)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // UnmarshalBlock provides a mock function with given fields: blockString

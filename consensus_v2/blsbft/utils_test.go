@@ -274,6 +274,7 @@ func getMiningKeyFromPrivateSeed(privateSeed string) (*signatureschemes2.MiningK
 
 //initTestParams init incognito public key for testing by base 58 string
 var _ = func() (_ struct{}) {
+
 	testUserKey, _ = getMiningKeyFromPrivateSeed("112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f")
 	testPaymentAddress := "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX"
 	testPrivteSeed := "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"

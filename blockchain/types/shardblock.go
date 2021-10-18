@@ -49,6 +49,9 @@ type ShardHeader struct {
 
 	//for version >= 3
 	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
+
+	//for version 6
+	FinalityHeight uint64 `json:"FinalityHeight"`
 }
 
 type ShardBody struct {
@@ -127,6 +130,27 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
+}
+
+func (shardBlock *ShardBlock) GetAggregateRootHash() common.Hash {
+
+	res := []byte{}
+	res = append(res, byte(shardBlock.Header.Version))
+	res = append(res, shardBlock.Header.BeaconHash.Bytes()...)
+	res = append(res, shardBlock.Header.TxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.ShardTxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CrossTransactionRoot.Bytes()...)
+	res = append(res, shardBlock.Header.InstructionsRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CommitteeRoot.Bytes()...)
+	res = append(res, shardBlock.Header.PendingValidatorRoot.Bytes()...)
+	res = append(res, shardBlock.Header.StakingTxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.InstructionMerkleRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CommitteeFromBlock.Bytes()...)
+
+	return common.HashH(res)
+}
+func (shardBlock ShardBlock) GetFinalityHeight() uint64 {
+	return shardBlock.Header.FinalityHeight
 }
 
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
@@ -325,13 +349,17 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version >= 2 {
+	if shardHeader.Version >= MULTI_VIEW_VERSION {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version >= 3 {
+	if shardHeader.Version >= SHARD_SFV2_VERSION {
 		res += shardHeader.CommitteeFromBlock.String()
+	}
+
+	if shardHeader.Version >= LEMMA2_VERSION {
+		res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
 	}
 
 	return res

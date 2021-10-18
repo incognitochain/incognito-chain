@@ -148,6 +148,34 @@ func main() {
 			stopAutoStake(numberOfStopAutoStake)
 		}
 	}
+
+	if os.Args[1] == "set_no_vote" {
+		setNoVoteRuleShard0()
+	}
+	if os.Args[1] == "set_vote" {
+		setVoteRuleShard0()
+	}
+	if os.Args[1] == "only_create" {
+		setCreateOnlyShard0()
+	}
+	if os.Args[1] == "only_create_no_vote" {
+		setCreateOnlyNoVoteShard0()
+	}
+	if os.Args[1] == "normal_create" {
+		setNormalCreateShard0()
+	}
+	if os.Args[1] == "no_handle_vote_only" {
+		setNoHandleVoteShard0()
+	}
+	if os.Args[1] == "no_handle_vote_no_vote" {
+		setNoHandleVoteNoVoteShard0()
+	}
+	if os.Args[1] == "handle_vote_only" {
+		setHandleVoteShard0()
+	}
+	if os.Args[1] == "interval_vote" {
+		setIntervalVoteRule()
+	}
 }
 
 func flushTx() {
