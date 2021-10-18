@@ -134,7 +134,12 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := currentPortalStateV4.UTXOs[tokenID]
 		dustAmount := portalTokenProcessor.ConvertIncToExternalAmount(portalParams.DustValueThreshold[tokenID])
-		batchTxs := portalTokenProcessor.MatchUTXOsAndUnshieldIDs(utxos, wReqForProcess, dustAmount)
+		batchTxs, err := portalTokenProcessor.MatchUTXOsAndUnshieldIDsNew(utxos, wReqForProcess, dustAmount)
+		if err != nil {
+			Logger.log.Errorf("[BatchUnshieldRequest]: Error when matching UTXOs with unshieldIDs: %v - TokenID %v\n",
+				err, tokenID)
+			continue
+		}
 
 		// create raw external txs
 		for _, bcTx := range batchTxs {
