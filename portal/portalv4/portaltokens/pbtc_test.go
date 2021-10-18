@@ -3,6 +3,7 @@ package portaltokens
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -298,4 +299,41 @@ func TestGenerateOTMultisigAddressFromMasterPubKeys(t *testing.T) {
 	}
 	t.Logf("P2WSH Bech32 address: %v\n", address)
 	t.Logf("P2WSH Bech32 hex encode: %v\n", hex.EncodeToString(script))
+}
+
+func TestMatchUTXOsAndUnshieldIDsNew(t *testing.T) {
+	p := PortalBTCTokenProcessor{
+		PortalToken: &PortalToken{
+			ChainID:             "Bitcoin-Mainnet",
+			MinTokenAmount:      10,
+			MultipleTokenAmount: 10,
+			ExternalInputSize:   192,
+			ExternalOutputSize:  43,
+			ExternalTxMaxSize:   5120,
+		},
+		ChainParam:    &chaincfg.MainNetParams,
+		PortalTokenID: "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696",
+	}
+
+	utxoAmts := []uint64{1, 8, 4, 5, 2, 7, 12, 15, 3, 2, 1}
+	unshieldAmts := []uint64{30, 60, 50, 90}
+	utxos := map[string]*statedb.UTXO{}
+	for i, value := range utxoAmts {
+		key := "UTXO " + strconv.Itoa(i)
+		utxos[key] = statedb.NewUTXOWithValue("", "", 0, value, "")
+	}
+	waitingUnshieldReqs := map[string]*statedb.WaitingUnshieldRequest{}
+	for i, value := range unshieldAmts {
+		key := "Unshield " + strconv.Itoa(i)
+		waitingUnshieldReqs[key] = statedb.NewWaitingUnshieldRequestStateWithValue("", value, key, 100)
+	}
+	thresholdTinyValue := uint64(4)
+
+	batchTxs, err := p.MatchUTXOsAndUnshieldIDsNew(utxos, waitingUnshieldReqs, thresholdTinyValue)
+	fmt.Printf("err: %v\n", err)
+	for i, batch := range batchTxs {
+		fmt.Printf("========== Batch %v ==========\n", i)
+		fmt.Printf("Batch utxos %+v\n", batch.UTXOs)
+		fmt.Printf("Batch unshieldIDs %+v\n", batch.UnshieldIDs)
+	}
 }
