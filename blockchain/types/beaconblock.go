@@ -281,7 +281,7 @@ func (header *BeaconHeader) toString() string {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
-
+	//TODO: >= LEMMA2_VERSION
 	if header.Version == LEMMA2_VERSION {
 		res += fmt.Sprintf("%v", header.FinalityHeight)
 	}

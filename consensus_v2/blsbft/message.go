@@ -14,6 +14,7 @@ const (
 	MsgRequestBlk = "getblk"
 )
 
+//TODO: change bft propose/vote message will invalidate outdated node immediateky => need to transfer gracefully
 type BFTPropose struct {
 	PeerID                 string
 	Block                  json.RawMessage

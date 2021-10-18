@@ -323,6 +323,7 @@ func (httpServer *HttpServer) handleGetFinalityProof(params interface{}, closeCh
 	}, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
+//TODO: this rpc expose risk to mainnet node
 func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
 	arrayParams := common.InterfaceSlice(params)
