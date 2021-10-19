@@ -2004,25 +2004,59 @@ type UnshieldRequest struct {
 	testcases []map[string]*statedb.WaitingUnshieldRequest
 }
 
+func slotIndex(value float64) int {
+	if value > 5 {
+		return 0
+	} else if value < 0.01 {
+		return 3
+	} else if value > 1 {
+		return 2
+	} else {
+		return 1
+	}
+}
+
 func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() (TestCaseUTXOProcess, UnshieldRequest, map[string]*statedb.WaitingUnshieldRequest) {
 	// prepare waiting unshielding requests
-	testLength := 10
+	testSize := 40
+	adverageInit := 5
+	testLength := testSize / adverageInit
+	m := map[int]int{}
+	m[0] = testSize * 10 / 100
+	m[1] = testSize * 60 / 100
+	m[2] = testSize * 10 / 100
+	m[3] = testSize - m[0] - m[1] - m[3]
+
 	requestUnshieldData := UnshieldRequest{}
 	count := 0
 	listUnshields := map[string]*statedb.WaitingUnshieldRequest{}
+	totalOccupied := 0
 	for i := 0; i < testLength; i++ {
+		testDepth := 0
 		// todo: update range here
-		max := 3
-		min := 1
-		testDepth := rand.Intn(max-min) + min
+		if i == testLength-1 {
+			testDepth = testSize - totalOccupied
+		} else {
+			max := testSize - totalOccupied - (testLength - i + 1)
+			min := 1
+			testDepth = rand.Intn(max-min) + min
+		}
+		totalOccupied += testDepth
 		temp := map[string]*statedb.WaitingUnshieldRequest{}
 		for j := 0; j < testDepth; j++ {
 			unshieldID := common.HashH([]byte(strconv.Itoa(count))).String()
 			key := statedb.GenerateWaitingUnshieldRequestObjectKey(portal.TestnetPortalV4BTCID, unshieldID).String()
 			// todo: update range here
-			minAmt := 0.002
-			maxAmt := 5.1
-			r := minAmt + rand.Float64()*(maxAmt-minAmt)
+			minAmt := 0.001
+			maxAmt := float64(10)
+			r := float64(0)
+			for true {
+				r = minAmt + rand.Float64()*(maxAmt-minAmt)
+				if m[slotIndex(r)] > 0 {
+					m[slotIndex(r)]--
+					break
+				}
+			}
 			value := statedb.NewWaitingUnshieldRequestStateWithValue(USER_BTC_ADDRESS_1, uint64(r*1e9), unshieldID, uint64(1))
 			temp[key] = value
 			listUnshields[unshieldID] = value
