@@ -170,7 +170,7 @@ func (p PortalBTCTokenProcessor) MergeBatches(batchTxs []*BroadcastTx) ([]*Broad
 		for isValid && j < len(batchTxs) {
 			nextBatch := batchTxs[j]
 			isValid = p.IsAcceptableTxSize(len(tmpBatchUTXOs)+len(nextBatch.UTXOs),
-				len(tmpBatchUnshieldIDs)+len(nextBatch.UnshieldIDs))
+				len(tmpBatchUnshieldIDs)+len(nextBatch.UnshieldIDs)+1) // 1 for output change
 			if isValid {
 				tmpBatchUTXOs = append(tmpBatchUTXOs, nextBatch.UTXOs...)
 				tmpBatchUnshieldIDs = append(tmpBatchUnshieldIDs, nextBatch.UnshieldIDs...)
@@ -191,7 +191,7 @@ func (p PortalBTCTokenProcessor) EstimateTxSize(numInputs int, numOutputs int) u
 }
 
 func (p PortalBTCTokenProcessor) CalculateTinyUTXONumber(batchTx *BroadcastTx) int {
-	estimatedTxSize := p.EstimateTxSize(len(batchTx.UTXOs), len(batchTx.UnshieldIDs))
+	estimatedTxSize := p.EstimateTxSize(len(batchTx.UTXOs), len(batchTx.UnshieldIDs)+1)
 	remainTxSize := p.ExternalTxMaxSize - estimatedTxSize
 	maxTinyUTXOs := int(remainTxSize / p.ExternalInputSize)
 

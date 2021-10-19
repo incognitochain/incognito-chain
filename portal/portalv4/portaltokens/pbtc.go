@@ -495,7 +495,11 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 		// remove chosen utxos in sortedUTXOs (for next unshielding requests)
 		offsetIndex := 0
 		for _, index := range chosenIndices {
-			sortedUTXOs = append(sortedUTXOs[:index-offsetIndex], sortedUTXOs[index-offsetIndex+1:]...)
+			if index == 0 {
+				sortedUTXOs = sortedUTXOs[1:]
+			} else {
+				sortedUTXOs = append(sortedUTXOs[:index-offsetIndex], sortedUTXOs[index-offsetIndex+1:]...)
+			}
 			offsetIndex++
 		}
 	}
