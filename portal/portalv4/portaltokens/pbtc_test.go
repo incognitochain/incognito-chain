@@ -309,14 +309,14 @@ func TestMatchUTXOsAndUnshieldIDsNew(t *testing.T) {
 			MultipleTokenAmount: 10,
 			ExternalInputSize:   192,
 			ExternalOutputSize:  43,
-			ExternalTxMaxSize:   5120,
+			ExternalTxMaxSize:   700,
 		},
 		ChainParam:    &chaincfg.MainNetParams,
 		PortalTokenID: "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696",
 	}
 
 	utxoAmts := []uint64{1, 8, 4, 5, 2, 7, 12, 15, 3, 2, 1}
-	unshieldAmts := []uint64{30, 60, 50, 90}
+	unshieldAmts := []uint64{30, 60, 50, 90, 200}
 	utxos := map[string]*statedb.UTXO{}
 	for i, value := range utxoAmts {
 		key := "UTXO " + strconv.Itoa(i)
