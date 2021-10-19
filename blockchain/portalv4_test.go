@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strconv"
 	"testing"
@@ -1990,13 +1991,6 @@ type TestCaseUTXOProcess struct {
 	utxos               map[string]map[string]*statedb.UTXO
 }
 
-type ExpectedResultUTXOProcess struct {
-	waitingUnshieldReqs    map[string]map[string]*statedb.WaitingUnshieldRequest
-	batchUnshieldProcesses map[string]map[string]*statedb.ProcessedUnshieldRequestBatch
-	utxos                  map[string]map[string]*statedb.UTXO
-	numBeaconInsts         uint
-}
-
 func (s *PortalTestSuiteV4) SetupTestUTXOProcess() {
 	// do nothing
 }
@@ -2006,32 +2000,36 @@ type UTXOResponse struct {
 	Result interface{} `json:"Result"`
 }
 
-func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() ([]TestCaseUTXOProcess, []ExpectedResultUTXOProcess) {
-	// prepare waiting unshielding requests
-	unshieldReqsData := []struct {
-		tokenID       string
-		unshieldID    string
-		unshieldAmt   uint64
-		remoteAddress string
-		beaconHeight  uint64
-	}{
-		{portal.TestnetPortalV4BTCID, common.HashH([]byte{1}).String(), uint64(0.6 * 1e9), USER_BTC_ADDRESS_1, uint64(1)},
-		{portal.TestnetPortalV4BTCID, common.HashH([]byte{2}).String(), uint64(0.5 * 1e9), USER_BTC_ADDRESS_2, uint64(2)},
-		{portal.TestnetPortalV4BTCID, common.HashH([]byte{3}).String(), uint64(0.7 * 1e9), USER_BTC_ADDRESS_2, uint64(3)},
-		{portal.TestnetPortalV4BTCID, common.HashH([]byte{4}).String(), uint64(0.4 * 1e9), USER_BTC_ADDRESS_2, uint64(4)},
-		{portal.TestnetPortalV4BTCID, common.HashH([]byte{5}).String(), uint64(2.4 * 1e9), USER_BTC_ADDRESS_2, uint64(1)},
-		{portal.TestnetPortalV4BTCID, common.HashH([]byte{6}).String(), uint64(0.1 * 1e9), USER_BTC_ADDRESS_2, uint64(43)},
-	}
-	type wUnshieldReqTmp struct {
-		key   string
-		value *statedb.WaitingUnshieldRequest
-	}
-	wUnshieldReqs := []wUnshieldReqTmp{}
+type UnshieldRequest struct {
+	testcases []map[string]*statedb.WaitingUnshieldRequest
+}
 
-	for _, u := range unshieldReqsData {
-		key := statedb.GenerateWaitingUnshieldRequestObjectKey(u.tokenID, u.unshieldID).String()
-		value := statedb.NewWaitingUnshieldRequestStateWithValue(u.remoteAddress, u.unshieldAmt, u.unshieldID, u.beaconHeight)
-		wUnshieldReqs = append(wUnshieldReqs, wUnshieldReqTmp{key: key, value: value})
+func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() (TestCaseUTXOProcess, UnshieldRequest, map[string]*statedb.WaitingUnshieldRequest) {
+	// prepare waiting unshielding requests
+	testLength := 10
+	requestUnshieldData := UnshieldRequest{}
+	count := 0
+	listUnshields := map[string]*statedb.WaitingUnshieldRequest{}
+	for i := 0; i < testLength; i++ {
+		// todo: update range here
+		max := 3
+		min := 1
+		testDepth := rand.Intn(max-min) + min
+		temp := map[string]*statedb.WaitingUnshieldRequest{}
+		for j := 0; j < testDepth; j++ {
+			unshieldID := common.HashH([]byte(strconv.Itoa(count))).String()
+			key := statedb.GenerateWaitingUnshieldRequestObjectKey(portal.TestnetPortalV4BTCID, unshieldID).String()
+			// todo: update range here
+			minAmt := 0.002
+			maxAmt := 5.1
+			r := minAmt + rand.Float64()*(maxAmt-minAmt)
+			value := statedb.NewWaitingUnshieldRequestStateWithValue(USER_BTC_ADDRESS_1, uint64(r*1e9), unshieldID, uint64(1))
+			temp[key] = value
+			listUnshields[unshieldID] = value
+			count++
+		}
+		requestUnshieldData.testcases = append(requestUnshieldData.testcases, temp)
+
 	}
 
 	// utxos
@@ -2062,7 +2060,7 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() ([]TestC
 		&res,
 	)
 	if err != nil {
-		return nil, nil
+		return TestCaseUTXOProcess{}, UnshieldRequest{}, nil
 	}
 	utxosRps := res.Result.(map[string]interface{})
 	utxosMap := utxosRps["UTXOs"].(map[string]interface{})[portal.MainnetPortalV4BTCID].(map[string]interface{})
@@ -2096,35 +2094,13 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() ([]TestC
 	}
 
 	// build test cases
-	testcases := []TestCaseUTXOProcess{
-		{
-			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
-				portal.TestnetPortalV4BTCID: {
-					wUnshieldReqs[0].key: wUnshieldReqs[0].value,
-				},
-			},
-			utxos: map[string]map[string]*statedb.UTXO{
-				portal.TestnetPortalV4BTCID: utxos,
-			},
+	testInit := TestCaseUTXOProcess{
+		utxos: map[string]map[string]*statedb.UTXO{
+			portal.TestnetPortalV4BTCID: utxos,
 		},
 	}
 
-	expectedRes := []ExpectedResultUTXOProcess{
-		{
-			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
-				portal.TestnetPortalV4BTCID: {},
-			},
-			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{
-				portal.TestnetPortalV4BTCID: {},
-			},
-			utxos: map[string]map[string]*statedb.UTXO{
-				portal.TestnetPortalV4BTCID: {},
-			},
-			numBeaconInsts: 1,
-		},
-	}
-
-	return testcases, expectedRes
+	return testInit, requestUnshieldData, listUnshields
 }
 
 func (s *PortalTestSuiteV4) TestUTXOProcess() {
@@ -2135,35 +2111,34 @@ func (s *PortalTestSuiteV4) TestUTXOProcess() {
 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
 	bc.On("GetFinalBeaconHeight").Return(uint64(42))
 	tokenID := portal.TestnetPortalV4BTCID
-	bcH := uint64(0)
+	bcH := uint64(45)
 	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
 
 	pm := portal.NewPortalManager()
-	beaconHeight := uint64(0)
+	beaconHeight := uint64(46)
 	shardHeights := map[byte]uint64{
-		0: uint64(10),
+		0: uint64(1003),
 	}
 	shardID := byte(0)
 
 	s.SetupTestUTXOProcess()
 
 	// build test cases and expected results
-	testcases, expectedResults := s.buildTestCaseAndExpectedResultUTXOProcess()
-	if len(testcases) != len(expectedResults) {
-		fmt.Printf("Testcases and expected results is invalid")
-		return
-	}
+	testInit, testcases, listUnshields := s.buildTestCaseAndExpectedResultUTXOProcess()
 
-	for i := 0; i < len(testcases); i++ {
-		expectedRes := expectedResults[i]
-		tc := testcases[i]
+	s.currentPortalStateForProducer.UTXOs = testInit.utxos
+	s.currentPortalStateForProducer.WaitingUnshieldRequests = testInit.waitingUnshieldReqs
+	s.currentPortalStateForProcess.UTXOs = testInit.utxos
+	s.currentPortalStateForProcess.WaitingUnshieldRequests = testInit.waitingUnshieldReqs
+	s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
 
-		s.currentPortalStateForProducer.UTXOs = tc.utxos
-		s.currentPortalStateForProducer.WaitingUnshieldRequests = tc.waitingUnshieldReqs
-		s.currentPortalStateForProcess.UTXOs = tc.utxos
-		s.currentPortalStateForProcess.WaitingUnshieldRequests = tc.waitingUnshieldReqs
-		s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-		s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	for i := 0; i < len(testcases.testcases); i++ {
+		s.currentPortalStateForProducer.WaitingUnshieldRequests = map[string]map[string]*statedb.WaitingUnshieldRequest{
+			portal.TestnetPortalV4BTCID: testcases.testcases[i],
+		}
+		fmt.Printf("UTOXs length before unshield %v \n", len(s.currentPortalStateForProcess.UTXOs[portal.TestnetPortalV4BTCID]))
+		fmt.Printf("Unshield request list %v \n", s.currentPortalStateForProducer.WaitingUnshieldRequests[portal.TestnetPortalV4BTCID])
 
 		// beacon producer instructions
 		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
@@ -2173,14 +2148,38 @@ func (s *PortalTestSuiteV4) TestUTXOProcess() {
 		err = processPortalInstructionsV4(
 			bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
 
-		// check results
-		s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)), "FAILED AT TESTCASE %v", i)
-		s.Equal(nil, err, "FAILED AT TESTCASE %v", i)
+		// check results after unshield
+		fmt.Printf("test result %v \n", s.currentPortalStateForProcess.ProcessedUnshieldRequests)
+		fmt.Printf("UTOXs length after unshield %v \n", len(s.currentPortalStateForProcess.UTXOs[portal.TestnetPortalV4BTCID]))
 
-		s.Equal(expectedRes.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests, "FAILED AT TESTCASE %v", i)
-		s.Equal(expectedRes.batchUnshieldProcesses, s.currentPortalStateForProducer.ProcessedUnshieldRequests, "FAILED AT TESTCASE %v", i)
-		s.Equal(expectedRes.utxos, s.currentPortalStateForProducer.UTXOs, "FAILED AT TESTCASE %v", i)
-		s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer, "FAILED AT TESTCASE %v", i)
+		// process unshield requests. fee 3619
+		fee := uint64(3619)
+		if len(s.currentPortalStateForProcess.ProcessedUnshieldRequests) > 0 {
+			processedUnshieldRequests := s.currentPortalStateForProcess.ProcessedUnshieldRequests[portal.TestnetPortalV4BTCID]
+			for _, v := range processedUnshieldRequests {
+				totalInput := uint64(0)
+				totalOutput := uint64(0)
+				for _, input := range v.GetUTXOs() {
+					totalInput += input.GetOutputAmount()
+				}
+				for _, output := range v.GetUnshieldRequests() {
+					fmt.Println(output)
+					fmt.Printf("listUnshield %v \n", listUnshields)
+					totalOutput += listUnshields[output].GetAmount()
+				}
+
+				if totalInput > (totalOutput + fee) {
+					change := totalInput - (totalOutput + fee)
+					key, value := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, USER_BTC_ADDRESS_1, common.HashH([]byte(strconv.Itoa(rand.Int()))).String(), uint32(len(v.GetUnshieldRequests())+1), change, "")
+					s.currentPortalStateForProcess.UTXOs[portal.TestnetPortalV4BTCID][key] = value
+				}
+			}
+		}
+		s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+
+		// check results after unshield
+		fmt.Printf("test result %v \n", s.currentPortalStateForProcess.ProcessedUnshieldRequests)
+		fmt.Printf("UTOXs length after unshield successfully %v \n", len(s.currentPortalStateForProcess.UTXOs[portal.TestnetPortalV4BTCID]))
 	}
 }
 
