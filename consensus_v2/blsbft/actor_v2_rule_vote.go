@@ -150,6 +150,8 @@ func createVote(
 	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
 	vote.PrevBlockHash = block.GetPrevHash().String()
 	vote.BlockHeight = block.GetHeight()
+	vote.CommitteeFromBlock = block.CommitteeFromBlock()
+	vote.ChainID = block.GetShardID()
 	err = vote.signVote(userKey)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)

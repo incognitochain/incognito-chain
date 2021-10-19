@@ -45,6 +45,7 @@ consensus_param:
   staking_flow_v3_height: 1
   lemma2_height: 50
   block_producing_v3_height: 1000000000
+  byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: 
     - 1000000000

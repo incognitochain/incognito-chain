@@ -56,7 +56,7 @@ type actorV2 struct {
 	nextBlockFinalityProof map[string]map[int64]string
 
 	ruleDirector      *ActorV2RuleDirector
-	byzantineDetector *ByzantineDetector
+	byzantineDetector IByzantineDetector
 	blockVersion      int
 }
 
@@ -110,7 +110,7 @@ func newActorV2WithValue(
 	a.proposeHistory, err = lru.New(1000)
 	a.ruleDirector = NewActorV2RuleDirector()
 	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestViewHeight(), chain, logger)
-	a.byzantineDetector = new(ByzantineDetector)
+	a.byzantineDetector = getByzantineDetectorRule(NewNilByzantineDetector(), a.chain.GetBestViewHeight(), committeeChain)
 	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	if err != nil {
 		panic(err) //must not error
@@ -244,6 +244,12 @@ func (a *actorV2) run() error {
 				a.chain.GetBestView().GetHeight(),
 				a.chain,
 				a.logger,
+			)
+
+			a.byzantineDetector = getByzantineDetectorRule(
+				a.byzantineDetector,
+				a.chain.GetBestViewHeight(),
+				a.committeeChain,
 			)
 
 			select {
@@ -583,7 +589,6 @@ func (a *actorV2) voteValidBlock(
 	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(proposeBlockInfo.signingCommittees, common.BlsConsensus)
 	for _, userKey := range proposeBlockInfo.userKeySet {
 		pubKey := userKey.GetPublicKey()
-		//TODO: @hung will this trick has bad effect on other vote cases
 		// When node is not connect to highway (drop connection/startup), propose and vote a block will prevent voting for any other blocks having same height but larger timestamp (rule1)
 		// In case number of validator is 22, we need to make 22 turn to propose the old smallest timestamp block
 		// To prevent this, proposer will not vote unless receiving at least one vote (look at receive vote event)
@@ -994,11 +999,8 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	}
 
 	if a.chainID != common.BeaconChainID {
-		if err := a.byzantineDetector.Validate(
+		if err := a.byzantineDetector.validate(
 			&voteMsg,
-			a.byzantineDetector.voteOwnerSignature,
-			a.byzantineDetector.voteMoreThanOneTimesInATimeSlot,
-			a.byzantineDetector.voteForHigherTimeSlotSameHeight,
 		); err != nil {
 			a.logger.Errorf("Found byzantine validator %+v, err %+v", voteMsg.Validator, err)
 			return err

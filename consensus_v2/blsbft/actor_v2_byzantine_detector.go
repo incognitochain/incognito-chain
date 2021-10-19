@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 )
 
@@ -17,7 +18,36 @@ var (
 type VoteMessageHandler func(bftVote *BFTVote) error
 
 type IByzantineDetector interface {
-	Validate(vote *BFTVote, handler ...VoteMessageHandler) error
+	validate(vote *BFTVote) error
+	updateState(finalHeight uint64, finalTimeSlot int64)
+}
+
+func getByzantineDetectorRule(detector IByzantineDetector, height uint64, handler CommitteeChainHandler) IByzantineDetector {
+	if height < config.Param().ConsensusParam.ByzantineDetectorHeight {
+		if reflect.TypeOf(detector) != reflect.TypeOf(new(NilByzantineDetector)) {
+			detector = NewNilByzantineDetector()
+		}
+	} else {
+		if reflect.TypeOf(detector) != reflect.TypeOf(new(ByzantineDetector)) {
+			detector = NewByzantineDetector(handler)
+		}
+	}
+
+	return detector
+}
+
+type NilByzantineDetector struct{}
+
+func NewNilByzantineDetector() *NilByzantineDetector {
+	return &NilByzantineDetector{}
+}
+
+func (n NilByzantineDetector) validate(vote *BFTVote) error {
+	return nil
+}
+
+func (n NilByzantineDetector) updateState(finalHeight uint64, finalTimeSlot int64) {
+	return
 }
 
 type ByzantineDetector struct {
@@ -31,9 +61,15 @@ func NewByzantineDetector(committeeHandler CommitteeChainHandler) *ByzantineDete
 	return &ByzantineDetector{committeeHandler: committeeHandler}
 }
 
-func (b ByzantineDetector) Validate(vote *BFTVote, handlers ...VoteMessageHandler) error {
+func (b ByzantineDetector) validate(vote *BFTVote) error {
 
 	var err error
+
+	handlers := []VoteMessageHandler{
+		b.voteOwnerSignature,
+		b.voteMoreThanOneTimesInATimeSlot,
+		b.voteForHigherTimeSlotSameHeight,
+	}
 
 	if err := b.checkBlackListValidator(vote); err != nil {
 		return err

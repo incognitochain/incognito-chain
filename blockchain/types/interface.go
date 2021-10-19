@@ -31,4 +31,5 @@ type BlockInterface interface {
 	BodyHash() common.Hash
 	GetAggregateRootHash() common.Hash
 	GetFinalityHeight() uint64
+	GetShardID() int
 }

@@ -22,22 +22,19 @@ type BFTPropose struct {
 }
 
 type BFTVote struct {
-	RoundKey      string
-	PrevBlockHash string
-	BlockHeight   uint64
-	BlockHash     string
-	Validator     string
-	BLS           []byte
-	BRI           []byte
-	Confirmation  []byte
-	IsValid       int // 0 not process, 1 valid, -1 not valid
-	// TODO: @hung how to validate timeslot with block height anhd hash
-	ProduceTimeSlot int64
-	ProposeTimeSlot int64
-	//TODO: @hung add committee from block
+	RoundKey           string
+	PrevBlockHash      string
+	BlockHeight        uint64
+	BlockHash          string
+	Validator          string
+	BLS                []byte
+	BRI                []byte
+	Confirmation       []byte
+	IsValid            int // 0 not process, 1 valid, -1 not valid
+	ProduceTimeSlot    int64
+	ProposeTimeSlot    int64
 	CommitteeFromBlock common.Hash
-	//TODO: @hung  add ChainID
-	ChainID int
+	ChainID            int
 	// Portal v4
 	PortalSigs []*portalprocessv4.PortalSig
 }
@@ -57,6 +54,8 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 	data = append(data, common.Int64ToBytes(s.ProposeTimeSlot)...)
 	data = append(data, []byte(s.Validator)...)
 	data = append(data, []byte(s.PrevBlockHash)...)
+	data = append(data, s.CommitteeFromBlock[:]...)
+	data = append(data, common.Int64ToBytes(int64(s.ChainID))...)
 	data = common.HashB(data)
 	var err error
 	s.Confirmation, err = key.BriSignData(data)
@@ -73,6 +72,8 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	data = append(data, common.Int64ToBytes(s.ProposeTimeSlot)...)
 	data = append(data, []byte(s.Validator)...)
 	data = append(data, []byte(s.PrevBlockHash)...)
+	data = append(data, s.CommitteeFromBlock[:]...)
+	data = append(data, common.Int64ToBytes(int64(s.ChainID))...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err
