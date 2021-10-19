@@ -238,7 +238,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	sort.Ints(keys)
 	for _, key := range keys {
 		for _, tx := range pdexv3Txs[byte(key)] {
-			Logger.log.Infof("[pdex] tx %v prepare for build instruction %v:", tx.Hash().String(), tx.GetMetadata())
+			Logger.log.Infof("tx %v prepare for build instruction %v:", tx.Hash().String(), tx.GetMetadata())
 			switch tx.GetMetadataType() {
 			case metadataCommon.Pdexv3UserMintNftRequestMeta:
 				mintNftTxs = append(mintNftTxs, tx)
