@@ -460,6 +460,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 	utxos map[string]*statedb.UTXO,
 	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
 	tinyValueThreshold uint64,
+	minUTXOs uint64,
 ) ([]*BroadcastTx, error) {
 	batchTxs := []*BroadcastTx{}
 	if len(utxos) == 0 || len(waitingUnshieldReqs) == 0 {
@@ -512,7 +513,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 	}
 
 	// appending tiny into batch txs
-	batchTxs = p.AppendTinyUTXOs(batchTxs, sortedUTXOs, tinyValueThreshold)
+	batchTxs = p.AppendTinyUTXOs(batchTxs, sortedUTXOs, tinyValueThreshold, minUTXOs)
 
 	return batchTxs, nil
 }

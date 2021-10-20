@@ -203,11 +203,15 @@ func (p PortalBTCTokenProcessor) CalculateTinyUTXONumber(batchTx *BroadcastTx) i
 }
 
 func (p PortalBTCTokenProcessor) AppendTinyUTXOs(
-	batchTxs []*BroadcastTx, sortedUTXOs []utxoItem, thresholdTinyValue uint64,
+	batchTxs []*BroadcastTx, sortedUTXOs []utxoItem, thresholdTinyValue uint64, minUTXOs uint64,
 ) []*BroadcastTx {
 	indexUTXO := len(sortedUTXOs) - 1
 	tmpIndexUTXO := indexUTXO
 	for i, batch := range batchTxs {
+		// only append tiny utxo when number of utxos in vault greater than minUTXOs param
+		if uint64(indexUTXO+1) <= minUTXOs {
+			return batchTxs
+		}
 		numTinyUTXOs := p.CalculateTinyUTXONumber(batch)
 		fmt.Printf("Batch %v - numTinyUTXOs %v\n", i, numTinyUTXOs)
 		for j := indexUTXO; j >= 0 && numTinyUTXOs > 0; j-- {

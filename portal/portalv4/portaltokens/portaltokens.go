@@ -23,7 +23,8 @@ type PortalTokenProcessor interface {
 	MatchUTXOsAndUnshieldIDsNew(
 		utxos map[string]*statedb.UTXO,
 		waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
-		tinyAmount uint64) ([]*BroadcastTx, error)
+		tinyAmount uint64,
+		minUTXOs uint64) ([]*BroadcastTx, error)
 
 	CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64,
 		bc metadata.ChainRetriever, beaconHeight uint64) (string, string, error)
