@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"sync"
 	"time"
 
@@ -463,8 +464,8 @@ func (chain *ShardChain) GetSigningCommittees(
 }
 
 func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
-	err := rawdbv2.StoreShardFinalityProof(
-		chain.GetChainDatabase(),
+	err := rawdb_consensus.StoreShardFinalityProof(
+		rawdb_consensus.GetConsensusDatabase(),
 		byte(chain.shardID),
 		*block.Hash(),
 		block.GetPrevHash(),
@@ -490,7 +491,7 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 		return nil, nil, err
 	}
 
-	m, err := rawdbv2.GetShardFinalityProof(chain.GetDatabase(), byte(chain.shardID), hash)
+	m, err := rawdb_consensus.GetShardFinalityProof(rawdb_consensus.GetConsensusDatabase(), byte(chain.shardID), hash)
 	if err != nil {
 		return nil, nil, err
 	}

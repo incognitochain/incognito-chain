@@ -253,6 +253,8 @@ func (d *ActorV2RuleDirector) makeLemma1Rule(builder IActorV2RuleBuilder, logger
 
 	builder.SetHandleVoteMessageRule(NewHandleVoteMessage())
 
+	builder.SetInsertBlockRule(NewInsertAndBroadcastRule(chain, logger))
+
 	return builder
 }
 

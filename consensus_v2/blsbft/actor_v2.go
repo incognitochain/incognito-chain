@@ -107,9 +107,9 @@ func newActorV2WithValue(
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 	a.proposeHistory, err = lru.New(1000)
+	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	a.ruleDirector = NewActorV2RuleDirector()
 	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestViewHeight(), chain, logger)
-	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -539,8 +539,10 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		"Committee %+v", a.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
 
 	// @NOTICE: debug mode only, this data should only be used for debugging
-	if err := a.chain.StoreFinalityProof(v.block, v.finalityProof, v.reProposeHashSignature); err != nil {
-		a.logger.Errorf("Store Finality Proof error %+v", err)
+	if v.block.GetVersion() >= types.LEMMA2_VERSION {
+		if err := a.chain.StoreFinalityProof(v.block, v.finalityProof, v.reProposeHashSignature); err != nil {
+			a.logger.Errorf("Store Finality Proof error %+v", err)
+		}
 	}
 	return nil
 }
@@ -967,7 +969,7 @@ func (a *actorV2) handleNewProposeMsg(
 	)
 	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
-		a.logger.Errorf("Fail to apply lemma 2, block %+v, %+v, "+
+		a.logger.Errorf("Fail to HandleBFTProposeMessage, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
 		return err
 	}
