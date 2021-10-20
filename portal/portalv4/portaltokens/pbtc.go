@@ -484,7 +484,8 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 			return batchTxs, fmt.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
 				unshieldReq.value.GetUnshieldID(), err)
 		}
-		fmt.Printf("Unshield amount %v - ChosenUTXOs %+v\n", unshieldReq.value.GetAmount(), chosenUtxos)
+		fmt.Printf("Unshield amount %v - ChosenIndices %+v - ChosenUTXOs %+v\n", unshieldReq.value.GetAmount(),
+			chosenIndices, chosenUtxos)
 		chosenUtxoObjs := []*statedb.UTXO{}
 		for _, u := range chosenUtxos {
 			chosenUtxoObjs = append(chosenUtxoObjs, u.value)
@@ -493,6 +494,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 			UTXOs:       chosenUtxoObjs,
 			UnshieldIDs: []string{unshieldReq.value.GetUnshieldID()},
 		})
+		fmt.Printf("sortedUTXOs before removing: %+v\n", sortedUTXOs)
 		// remove chosen utxos in sortedUTXOs (for next unshielding requests)
 		offsetIndex := 0
 		for _, index := range chosenIndices {

@@ -316,7 +316,7 @@ func TestMatchUTXOsAndUnshieldIDsNew(t *testing.T) {
 	}
 
 	utxoAmts := []uint64{1, 8, 4, 5, 2, 7, 12, 15, 3, 2, 1}
-	unshieldAmts := []uint64{30, 60, 50, 90, 200}
+	unshieldAmts := []uint64{30, 60, 50, 90, 250}
 	utxos := map[string]*statedb.UTXO{}
 	for i, value := range utxoAmts {
 		key := "UTXO " + strconv.Itoa(i)
@@ -328,8 +328,9 @@ func TestMatchUTXOsAndUnshieldIDsNew(t *testing.T) {
 		waitingUnshieldReqs[key] = statedb.NewWaitingUnshieldRequestStateWithValue("", value, key, 100)
 	}
 	thresholdTinyValue := uint64(4)
+	minUTXOs := uint64(1)
 
-	batchTxs, err := p.MatchUTXOsAndUnshieldIDsNew(utxos, waitingUnshieldReqs, thresholdTinyValue)
+	batchTxs, err := p.MatchUTXOsAndUnshieldIDsNew(utxos, waitingUnshieldReqs, thresholdTinyValue, minUTXOs)
 	fmt.Printf("err: %v\n", err)
 	for i, batch := range batchTxs {
 		fmt.Printf("========== Batch %v ==========\n", i)
