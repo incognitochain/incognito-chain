@@ -111,7 +111,8 @@ func newActorV2WithValue(
 	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	a.ruleDirector = NewActorV2RuleDirector()
 	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestViewHeight(), chain, logger)
-	a.byzantineDetector = getByzantineDetectorRule(NewNilByzantineDetector(), a.chain.GetBestViewHeight(), committeeChain)
+	a.byzantineDetector = getByzantineDetectorRule(NewNilByzantineDetector(),
+		a.chain.GetBestViewHeight(), committeeChain, logger)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -250,6 +251,7 @@ func (a *actorV2) run() error {
 				a.byzantineDetector,
 				a.chain.GetBestViewHeight(),
 				a.committeeChain,
+				a.logger,
 			)
 
 			select {

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"reflect"
+	"time"
 )
 
 var (
@@ -22,14 +24,14 @@ type IByzantineDetector interface {
 	updateState(finalHeight uint64, finalTimeSlot int64)
 }
 
-func getByzantineDetectorRule(detector IByzantineDetector, height uint64, handler CommitteeChainHandler) IByzantineDetector {
+func getByzantineDetectorRule(detector IByzantineDetector, height uint64, handler CommitteeChainHandler, logger common.Logger) IByzantineDetector {
 	if height < config.Param().ConsensusParam.ByzantineDetectorHeight {
 		if reflect.TypeOf(detector) != reflect.TypeOf(new(NilByzantineDetector)) {
 			detector = NewNilByzantineDetector()
 		}
 	} else {
 		if reflect.TypeOf(detector) != reflect.TypeOf(new(ByzantineDetector)) {
-			detector = NewByzantineDetector(handler)
+			detector = NewByzantineDetector(handler, logger)
 		}
 	}
 
@@ -50,15 +52,36 @@ func (n NilByzantineDetector) updateState(finalHeight uint64, finalTimeSlot int6
 	return
 }
 
-type ByzantineDetector struct {
-	blackList               map[string]error              // validator => reason for blacklist
-	voteInTimeSlot          map[string]map[int64]*BFTVote // validator => timeslot => vote
-	smallestProduceTimeSlot map[string]map[uint64]int64   // validator => height => timeslot
-	committeeHandler        CommitteeChainHandler
+var defaultBlackListTTL = 30 * 24 * time.Hour
+
+func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
+	return &rawdb_consensus.BlackListValidator{
+		Reason:    reason,
+		StartTime: time.Now(),
+		TTL:       defaultBlackListTTL,
+	}
 }
 
-func NewByzantineDetector(committeeHandler CommitteeChainHandler) *ByzantineDetector {
-	return &ByzantineDetector{committeeHandler: committeeHandler}
+type ByzantineDetector struct {
+	blackList               map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
+	voteInTimeSlot          map[string]map[int64]*BFTVote                  // validator => timeslot => vote
+	smallestProduceTimeSlot map[string]map[uint64]int64                    // validator => height => timeslot
+	committeeHandler        CommitteeChainHandler
+	logger                  common.Logger
+}
+
+func NewByzantineDetector(committeeHandler CommitteeChainHandler, logger common.Logger) *ByzantineDetector {
+
+	blackListValidators, err := rawdb_consensus.GetAllBlackListValidator(rawdb_consensus.GetConsensusDatabase())
+	if err != nil {
+		logger.Error(err)
+	}
+
+	return &ByzantineDetector{
+		committeeHandler: committeeHandler,
+		logger:           logger,
+		blackList:        blackListValidators,
+	}
 }
 
 func (b ByzantineDetector) validate(vote *BFTVote) error {
@@ -105,6 +128,17 @@ func (b *ByzantineDetector) updateState(finalHeight uint64, finalTimeSlot int64)
 		}
 	}
 
+	for validator, blacklist := range b.blackList {
+		if time.Now().Unix() > blacklist.StartTime.Add(blacklist.TTL).Unix() {
+			err := rawdb_consensus.DeleteBlackListValidator(
+				rawdb_consensus.GetConsensusDatabase(),
+				validator,
+			)
+			if err != nil {
+				b.logger.Error("Fail to delete long life-time black list validator", err)
+			}
+		}
+	}
 }
 
 func (b ByzantineDetector) checkBlackListValidator(bftVote *BFTVote) error {
@@ -180,10 +214,19 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) err
 func (b *ByzantineDetector) addNewVote(bftVote *BFTVote, validatorErr error) {
 
 	if b.blackList == nil {
-		b.blackList = make(map[string]error)
+		b.blackList = make(map[string]*rawdb_consensus.BlackListValidator)
 	}
 	if validatorErr != nil {
-		b.blackList[bftVote.Validator] = validatorErr
+		blackListValidator := NewBlackListValidator(validatorErr)
+		b.blackList[bftVote.Validator] = blackListValidator
+		err := rawdb_consensus.StoreBlackListValidator(
+			rawdb_consensus.GetConsensusDatabase(),
+			bftVote.Validator,
+			blackListValidator,
+		)
+		if err != nil {
+			b.logger.Error("Store Black List Validator Error", err)
+		}
 		return
 	}
 
