@@ -136,6 +136,7 @@ func (p PortalBTCTokenProcessor) ChooseUTXOsForUnshieldReq(utxos []utxoItem, uns
 			if err != nil {
 				return nil, nil, err
 			}
+			chosenIndex += i
 		}
 
 		isValid := p.IsAcceptableTxSize(len(chosenUTXOs)+1, 2)
