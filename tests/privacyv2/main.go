@@ -161,8 +161,8 @@ func main() {
 	if os.Args[1] == "only_create_no_vote" {
 		setCreateOnlyNoVoteShard0()
 	}
-	if os.Args[1] == "normal_create" {
-		setNormalCreateShard0()
+	if os.Args[1] == "lemma2_normal_rule" {
+		setLemma2NormalRuleShard0()
 	}
 	if os.Args[1] == "no_handle_vote_only" {
 		setNoHandleVoteShard0()

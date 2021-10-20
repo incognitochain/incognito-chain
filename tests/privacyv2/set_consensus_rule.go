@@ -19,7 +19,9 @@ func setNoVoteRule(url string) {
     "params": [{
         "vote_rule": "no-vote",
         "create_rule": "create-repropose",
-		"handle_vote_rule": "collect-vote"
+		"handle_vote_rule": "collect-vote",
+		"handle_propose_rule": "handle-propose-message",
+		"insert_rule": "insert-and-broadcast"
     }],
     "id": 1
 }`)
@@ -181,7 +183,7 @@ func setCreateOnlyNoVote(url string) {
 	fmt.Println(string(body))
 }
 
-func setNormalCreate(url string) {
+func setLemma2NormalRule(url string) {
 
 	method := "POST"
 
@@ -189,9 +191,11 @@ func setNormalCreate(url string) {
 	"jsonrpc": "1.0",
     "method": "setconsensusrule",
     "params": [{
-        "vote_rule": "vote",
+ 		"vote_rule": "vote", 
         "create_rule": "create-repropose",
-		"handle_vote_rule": "collect-vote"
+        "handle_vote_rule": "collect-vote",
+        "handle_propose_rule": "handle-propose-message",
+        "insert_rule": "insert-and-broadcast"
     }],
     "id": 1
 }`)
@@ -234,7 +238,9 @@ func setNoHandleVote(url string) {
     "params": [{
         "vote_rule": "vote",
         "create_rule": "create-repropose",
-		"handle_vote_rule": "no-collect-vote"
+		"handle_vote_rule": "no-collect-vote",
+		"handle_propose_rule": "handle-propose-message",
+        "insert_rule": "insert-and-broadcast"
     }],
     "id": 1
 }`)
@@ -389,12 +395,12 @@ func setCreateOnlyNoVoteShard0() {
 	}
 }
 
-func setNormalCreateShard0() {
+func setLemma2NormalRuleShard0() {
 	for i, url := range shard0UrlList {
 		if i == 0 {
 			continue
 		}
-		setNormalCreate(url)
+		setLemma2NormalRule(url)
 	}
 }
 

@@ -52,6 +52,10 @@ func (chain *BeaconChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
+func (chain *BeaconChain) GetMultiView() *multiview.MultiView {
+	return chain.multiView
+}
+
 func (chain *BeaconChain) GetBestView() multiview.View {
 	return chain.multiView.GetBestView()
 }
@@ -260,6 +264,9 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
+	panic("this function is not supported on beacon chain")
+}
+func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")
 }
 

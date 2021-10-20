@@ -34,7 +34,6 @@ var (
 	shardTransactionRootHashPrefix     = []byte("s-tx" + string(splitter))
 	shardSlashRootHashPrefix           = []byte("s-sl" + string(splitter))
 	shardFeatureRootHashPrefix         = []byte("s-fe" + string(splitter))
-	shardFinalityProofPrefix           = []byte("s-fp" + string(splitter))
 	previousBestStatePrefix            = []byte("previous-best-state" + string(splitter))
 	splitter                           = []byte("-[-]-")
 
@@ -308,14 +307,6 @@ func GetShardFeatureRootHashKey(shardID byte, height uint64) []byte {
 	key = append(key, shardID)
 	key = append(key, splitter...)
 	key = append(key, buf...)
-	return key
-}
-
-func GetShardFinalityProofKey(shardID byte, hash common.Hash) []byte {
-	temp := make([]byte, 0, len(shardFinalityProofPrefix))
-	key := append(temp, shardID)
-	key = append(key, splitter...)
-	key = append(key, hash[:]...)
 	return key
 }
 

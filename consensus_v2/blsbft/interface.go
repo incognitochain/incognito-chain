@@ -28,6 +28,7 @@ type NodeInterface interface {
 
 type Chain interface {
 	BestViewCommitteeFromBlock() common.Hash
+	GetMultiView() *multiview.MultiView
 	GetFinalView() multiview.View
 	GetBestView() multiview.View
 	GetEpoch() uint64
@@ -55,7 +56,9 @@ type Chain interface {
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error)
+	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	InsertAndBroadcastBlock(block types.BlockInterface) error
+	InsertWithPrevValidationData(types.BlockInterface, string) error
 	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error

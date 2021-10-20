@@ -53,14 +53,16 @@ func NewMultiView() *MultiView {
 			}
 		}
 	}()
-
 	return s
-
 }
 
 func (multiView *MultiView) Reset() {
 	multiView.viewByHash = make(map[common.Hash]View)
 	multiView.viewByPrevHash = make(map[common.Hash][]View)
+}
+
+func (multiView *MultiView) ClearBranch() {
+	multiView.bestView = multiView.finalView
 }
 
 func (multiView *MultiView) removeOutdatedView() {

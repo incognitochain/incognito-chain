@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -290,9 +291,11 @@ func (serverObj *Server) NewServer(
 	monitor.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
 	monitor.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
+	backupDisPeers := strings.Split(cfg.DiscoverPeersAddress, ";")
+	Logger.log.Infof("[newpeerv2] backup discovery peer %v", backupDisPeers)
 	serverObj.highway = peerv2.NewConnManager(
 		host,
-		cfg.DiscoverPeersAddress,
+		backupDisPeers,
 		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
@@ -717,7 +720,7 @@ func (serverObj Server) Start() {
 
 	serverObj.netSync.Start()
 
-	go serverObj.highway.Start(serverObj.blockChain)
+	go serverObj.highway.StartV2(serverObj.blockChain)
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
@@ -1734,9 +1737,15 @@ func (serverObj *Server) PushBlockToAll(
 		}
 		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*types.BeaconBlock)
 		if !ok || msg.(*wire.MessageBlockBeacon).Block == nil {
-			return fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
+			err := fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
+			Logger.log.Error(err)
+			return err
 		}
-		serverObj.PushMessageToAll(msg)
+		err = serverObj.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 		return nil
 	} else {
 		shardBlock, ok := block.(*types.ShardBlock)
@@ -1750,8 +1759,11 @@ func (serverObj *Server) PushBlockToAll(
 		}
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
 		msgShard.(*wire.MessageBlockShard).PreviousValidationData = previousValidationData
-		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID)
-
+		err = serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 		crossShardBlks := types.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
@@ -1760,7 +1772,11 @@ func (serverObj *Server) PushBlockToAll(
 				return err
 			}
 			msgCrossShardShard.(*wire.MessageCrossShard).Block = crossShardBlk
-			serverObj.PushMessageToShard(msgCrossShardShard, shardID)
+			err = serverObj.PushMessageToShard(msgCrossShardShard, shardID)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
 		}
 	}
 	return nil

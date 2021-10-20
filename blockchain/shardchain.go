@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"sync"
 	"time"
 
@@ -57,6 +58,10 @@ func NewShardChain(
 
 func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
+}
+
+func (chain *ShardChain) GetMultiView() *multiview.MultiView {
+	return chain.multiView
 }
 
 func (chain *ShardChain) GetFinalView() multiview.View {
@@ -318,9 +323,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	return nil
 }
 
-func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
-
-	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
 
 	if err := chain.InsertBlock(block, false); err != nil {
 		return err
@@ -331,6 +334,13 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	}
 
 	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	return chain.InsertWithPrevValidationData(block, newValidationData)
 }
 
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
@@ -454,8 +464,8 @@ func (chain *ShardChain) GetSigningCommittees(
 }
 
 func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
-	err := rawdbv2.StoreShardFinalityProof(
-		chain.GetChainDatabase(),
+	err := rawdb_consensus.StoreShardFinalityProof(
+		rawdb_consensus.GetConsensusDatabase(),
 		byte(chain.shardID),
 		*block.Hash(),
 		block.GetPrevHash(),
@@ -481,7 +491,7 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 		return nil, nil, err
 	}
 
-	m, err := rawdbv2.GetShardFinalityProof(chain.GetDatabase(), byte(chain.shardID), hash)
+	m, err := rawdb_consensus.GetShardFinalityProof(rawdb_consensus.GetConsensusDatabase(), byte(chain.shardID), hash)
 	if err != nil {
 		return nil, nil, err
 	}
