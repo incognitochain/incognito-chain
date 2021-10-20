@@ -369,8 +369,8 @@ func addOrder(url string) error {
 		PoolPairID:          poolPairID,
 		TokenToSell:         customTokenID.String(),
 		TokenToBuy:          common.PRVIDStr,
-		SellAmount:          "1000",
-		MinAcceptableAmount: "100",
+		SellAmount:          "4000",
+		MinAcceptableAmount: "1000",
 		NftID:               nftID.String(),
 	}
 
