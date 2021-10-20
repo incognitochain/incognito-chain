@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -105,9 +106,9 @@ func (s *PortalTestSuiteV4) SetupTest() {
 					ChainID:             "Bitcoin-Testnet",
 					MinTokenAmount:      10,
 					MultipleTokenAmount: 10,
-					ExternalInputSize:   1,
-					ExternalOutputSize:  1,
-					ExternalTxMaxSize:   6,
+					ExternalInputSize:   130,
+					ExternalOutputSize:  43,
+					ExternalTxMaxSize:   5120,
 				},
 				ChainParam:    &chaincfg.TestNet3Params,
 				PortalTokenID: portal.TestnetPortalV4BTCID,
@@ -124,6 +125,9 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		},
 		DustValueThreshold: map[string]uint64{
 			portal.TestnetPortalV4BTCID: 1e9, // in nano pBTC - 1e8 satoshi
+		},
+		MinUTXOsInVault: map[string]uint64{
+			portal.TestnetPortalV4BTCID: 300,
 		},
 		BatchNumBlks:                45,
 		PortalReplacementAddress:    "",
@@ -1113,62 +1117,62 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess()
 	return testcases, expectedRes
 }
 
-//func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
-//	fmt.Println("Running TestBatchUnshieldProcess - beacon height 45 ...")
-//	//bc := s.blockChain
-//	// mock test
-//	bc := new(mocks.ChainRetriever)
-//	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
-//	bc.On("GetFinalBeaconHeight").Return(uint64(42))
-//	tokenID := portal.TestnetPortalV4BTCID
-//	bcH := uint64(0)
-//	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
+// func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
+// 	fmt.Println("Running TestBatchUnshieldProcess - beacon height 45 ...")
+// 	//bc := s.blockChain
+// 	// mock test
+// 	bc := new(mocks.ChainRetriever)
+// 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+// 	bc.On("GetFinalBeaconHeight").Return(uint64(42))
+// 	tokenID := portal.TestnetPortalV4BTCID
+// 	bcH := uint64(0)
+// 	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portal.TestnetPortalV4BTCID])
 //
-//	pm := portal.NewPortalManager()
-//	beaconHeight := uint64(45)
-//	shardHeights := map[byte]uint64{
-//		0: uint64(1003),
-//	}
-//	shardID := byte(0)
+// 	pm := portal.NewPortalManager()
+// 	beaconHeight := uint64(45)
+// 	shardHeights := map[byte]uint64{
+// 		0: uint64(1003),
+// 	}
+// 	shardID := byte(0)
 //
-//	s.SetupTestBatchUnshieldProcess()
+// 	s.SetupTestBatchUnshieldProcess()
 //
-//	// build test cases and expected results
-//	testcases, expectedResults := s.buildTestCaseAndExpectedResultBatchUnshieldProcess()
-//	if len(testcases) != len(expectedResults) {
-//		fmt.Printf("Testcases and expected results is invalid")
-//		return
-//	}
+// 	// build test cases and expected results
+// 	testcases, expectedResults := s.buildTestCaseAndExpectedResultBatchUnshieldProcess()
+// 	if len(testcases) != len(expectedResults) {
+// 		fmt.Printf("Testcases and expected results is invalid")
+// 		return
+// 	}
 //
-//	for i := 0; i < len(testcases); i++ {
-//		tc := testcases[i]
-//		expectedRes := expectedResults[i]
+// 	for i := 0; i < len(testcases); i++ {
+// 		tc := testcases[i]
+// 		expectedRes := expectedResults[i]
 //
-//		s.currentPortalStateForProducer.UTXOs = tc.utxos
-//		s.currentPortalStateForProducer.WaitingUnshieldRequests = tc.waitingUnshieldReqs
-//		s.currentPortalStateForProcess.UTXOs = tc.utxos
-//		s.currentPortalStateForProcess.WaitingUnshieldRequests = tc.waitingUnshieldReqs
-//		s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-//		s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+// 		s.currentPortalStateForProducer.UTXOs = tc.utxos
+// 		s.currentPortalStateForProducer.WaitingUnshieldRequests = tc.waitingUnshieldReqs
+// 		s.currentPortalStateForProcess.UTXOs = tc.utxos
+// 		s.currentPortalStateForProcess.WaitingUnshieldRequests = tc.waitingUnshieldReqs
+// 		s.currentPortalStateForProducer.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+// 		s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
 //
-//		// beacon producer instructions
-//		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
-//		s.Equal(nil, err)
+// 		// beacon producer instructions
+// 		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
+// 		s.Equal(nil, err)
 //
-//		// process new instructions
-//		err = processPortalInstructionsV4(
-//			bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
+// 		// process new instructions
+// 		err = processPortalInstructionsV4(
+// 			bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
 //
-//		// check results
-//		s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)), "FAILED AT TESTCASE %v", i)
-//		s.Equal(nil, err, "FAILED AT TESTCASE %v", i)
+// 		// check results
+// 		s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)), "FAILED AT TESTCASE %v", i)
+// 		s.Equal(nil, err, "FAILED AT TESTCASE %v", i)
 //
-//		s.Equal(expectedRes.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests, "FAILED AT TESTCASE %v", i)
-//		s.Equal(expectedRes.batchUnshieldProcesses, s.currentPortalStateForProducer.ProcessedUnshieldRequests, "FAILED AT TESTCASE %v", i)
-//		s.Equal(expectedRes.utxos, s.currentPortalStateForProducer.UTXOs, "FAILED AT TESTCASE %v", i)
-//		s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer, "FAILED AT TESTCASE %v", i)
-//	}
-//}
+// 		s.Equal(expectedRes.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests, "FAILED AT TESTCASE %v", i)
+// 		s.Equal(expectedRes.batchUnshieldProcesses, s.currentPortalStateForProducer.ProcessedUnshieldRequests, "FAILED AT TESTCASE %v", i)
+// 		s.Equal(expectedRes.utxos, s.currentPortalStateForProducer.UTXOs, "FAILED AT TESTCASE %v", i)
+// 		s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer, "FAILED AT TESTCASE %v", i)
+// 	}
+// }
 
 /*
 	Feature 7: fee replacement
@@ -2018,7 +2022,7 @@ func slotIndex(value float64) int {
 
 func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() (TestCaseUTXOProcess, UnshieldRequest, map[string]*statedb.WaitingUnshieldRequest) {
 	// prepare waiting unshielding requests
-	testSize := 40
+	testSize := 20 // 619 current => 4692 old; 398 new with testsize 500
 	adverageInit := 5
 	testLength := testSize / adverageInit
 	m := map[int]int{}
@@ -2077,7 +2081,7 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() (TestCas
 
 	rpcClient := rpccaller.NewRPCClient()
 	meta := map[string]interface{}{
-		"BeaconHeight": "1538097",
+		"BeaconHeight": "1470000",
 	}
 	params := []interface{}{
 		meta,
