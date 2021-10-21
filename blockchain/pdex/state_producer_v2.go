@@ -130,17 +130,6 @@ func (sp *stateProducerV2) addLiquidity(
 				continue
 			}
 		}
-		if rootPoolPair.isEmpty() {
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				waitingContributionState, incomingContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
-			Logger.log.Debugf("tx %v pool is empty", tx.Hash().String())
-			res = append(res, insts...)
-			continue
-		}
 		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
