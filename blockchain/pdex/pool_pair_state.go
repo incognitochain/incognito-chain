@@ -53,18 +53,10 @@ func NewPoolPairStateWithValue(
 }
 
 func (poolPairState *PoolPairState) isEmpty() bool {
-	if (poolPairState.state.Token0RealAmount() == 0 || poolPairState.state.Token1RealAmount() == 0) &&
-		(poolPairState.state.Token0RealAmount() != poolPairState.state.Token1RealAmount()) {
+	if poolPairState.state.Token0RealAmount() == 0 || poolPairState.state.Token1RealAmount() == 0 {
 		return true
 	}
-	if poolPairState.state.Token0RealAmount() == 0 && poolPairState.state.Token1RealAmount() == 0 {
-		return true
-	}
-	if (poolPairState.state.Token0VirtualAmount().Uint64() == 0 || poolPairState.state.Token1VirtualAmount().Uint64() == 0) &&
-		(poolPairState.state.Token0VirtualAmount().Uint64() != poolPairState.state.Token1VirtualAmount().Uint64()) {
-		return true
-	}
-	if poolPairState.state.Token0VirtualAmount().Uint64() == 0 && poolPairState.state.Token1VirtualAmount().Uint64() == 0 {
+	if poolPairState.state.Token0VirtualAmount().Uint64() == 0 || poolPairState.state.Token1VirtualAmount().Uint64() == 0 {
 		return true
 	}
 	if poolPairState.state.ShareAmount() == 0 {
