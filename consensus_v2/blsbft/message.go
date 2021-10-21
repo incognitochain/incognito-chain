@@ -47,7 +47,8 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 	data = append(data, s.BlockHash...)
 	data = append(data, s.BLS...)
 	data = append(data, s.BRI...)
-	data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
+	// TODO: @hung comment because of backward incompatible
+	//data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
 	data = common.HashB(data)
 	var err error
 	s.Confirmation, err = key.BriSignData(data)
@@ -59,7 +60,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	data = append(data, s.BlockHash...)
 	data = append(data, s.BLS...)
 	data = append(data, s.BRI...)
-	data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
+	//data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err
