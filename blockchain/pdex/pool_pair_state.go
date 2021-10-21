@@ -52,6 +52,21 @@ func NewPoolPairStateWithValue(
 	}
 }
 
+func (poolPairState *PoolPairState) isEmpty() bool {
+	if (poolPairState.state.Token0RealAmount() == 0 || poolPairState.state.Token1RealAmount() == 0) &&
+		(poolPairState.state.Token0RealAmount() != poolPairState.state.Token1RealAmount()) {
+		return true
+	}
+	if (poolPairState.state.Token0VirtualAmount().Uint64() == 0 || poolPairState.state.Token1VirtualAmount().Uint64() == 0) &&
+		(poolPairState.state.Token0VirtualAmount().Uint64() != poolPairState.state.Token1VirtualAmount().Uint64()) {
+		return true
+	}
+	if poolPairState.state.ShareAmount() == 0 {
+		return true
+	}
+	return false
+}
+
 func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
 	return poolPairState.state
 }

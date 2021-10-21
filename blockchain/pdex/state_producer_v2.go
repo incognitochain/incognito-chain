@@ -130,6 +130,17 @@ func (sp *stateProducerV2) addLiquidity(
 				continue
 			}
 		}
+		if rootPoolPair.isEmpty() {
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				waitingContributionState, incomingContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			Logger.log.Debugf("tx %v pool is empty", tx.Hash().String())
+			res = append(res, insts...)
+			continue
+		}
 		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
@@ -488,7 +499,7 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		// check that the nftID exists 
+		// check that the nftID exists
 		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
 			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
 			result = append(result, refundInstructions...)
@@ -979,9 +990,19 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, rejectInsts...)
 			continue
 		}
+		if rootPoolPair.isEmpty() {
+			Logger.log.Debugf("tx %v poolPair is empty", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
 		shares, ok := rootPoolPair.shares[metaData.NftID()]
 		if !ok || shares == nil {
 			Logger.log.Debugf("tx %v not found staker", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if shares.amount == 0 || metaData.ShareAmount() == 0 {
+			Logger.log.Debugf("tx %v share amount is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
@@ -1143,6 +1164,16 @@ func (sp *stateProducerV2) unstaking(
 			if err != nil {
 				return res, stakingPoolStates, err
 			}
+			Logger.log.Debugf("tx %v not found staker", tx.Hash().String())
+			res = append(res, insts...)
+			continue
+		}
+		if staker.liquidity == 0 || metaData.UnstakingAmount() == 0 || rootStakingPoolState.liquidity == 0 {
+			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			Logger.log.Debugf("tx %v unstaking amount is 0", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}
