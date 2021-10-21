@@ -51,7 +51,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
-			Logger.log.Debugf("tx %v not found nftID", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
 			res = append(res, refundInst)
 			continue
 		}
@@ -79,7 +79,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
-			Logger.log.Debugf("tx %v is not valid input", tx.Hash().String())
+			Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}
@@ -125,7 +125,7 @@ func (sp *stateProducerV2) addLiquidity(
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
 				}
-				Logger.log.Debugf("tx %v init a pool pair with poolPairID is not null", tx.Hash().String())
+				Logger.log.Warnf("tx %v init a pool pair with poolPairID is not null", tx.Hash().String())
 				res = append(res, insts...)
 				continue
 			}
@@ -161,7 +161,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
-			Logger.log.Debugf("tx %v calculate contribution amount equal to 0", tx.Hash().String())
+			Logger.log.Warnf("tx %v calculate contribution amount equal to 0", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}
@@ -488,7 +488,7 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		// check that the nftID exists 
+		// check that the nftID exists
 		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
 			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
 			result = append(result, refundInstructions...)
@@ -969,19 +969,29 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		_, found := nftIDs[metaData.NftID()]
 		if metaData.NftID() == utils.EmptyString || !found {
-			Logger.log.Debugf("tx %v not found nftID", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
 		rootPoolPair, ok := poolPairs[metaData.PoolPairID()]
 		if !ok || rootPoolPair == nil {
-			Logger.log.Debugf("tx %v PoolPairID is not found", tx.Hash().String())
+			Logger.log.Warnf("tx %v PoolPairID is not found", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if rootPoolPair.isEmpty() {
+			Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
 		shares, ok := rootPoolPair.shares[metaData.NftID()]
 		if !ok || shares == nil {
-			Logger.log.Debugf("tx %v not found staker", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if shares.amount == 0 || metaData.ShareAmount() == 0 {
+			Logger.log.Warnf("tx %v share amount is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
@@ -1067,7 +1077,7 @@ func (sp *stateProducerV2) staking(
 				Logger.log.Infof("tx hash %s error %v", txReqID, err)
 				return res, stakingPoolStates, err
 			}
-			Logger.log.Debugf("tx %v not found poolPair", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found poolPair", tx.Hash().String())
 			res = append(res, rejectInst)
 			continue
 		}
@@ -1080,7 +1090,7 @@ func (sp *stateProducerV2) staking(
 				Logger.log.Infof("tx hash %s error %v", txReqID, err)
 				return res, stakingPoolStates, err
 			}
-			Logger.log.Debugf("tx %v not found nftID ", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found nftID ", tx.Hash().String())
 			res = append(res, rejectInst)
 			continue
 		}
@@ -1123,7 +1133,7 @@ func (sp *stateProducerV2) unstaking(
 			if err != nil {
 				return res, stakingPoolStates, err
 			}
-			Logger.log.Debugf("tx %v not found poolPair", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found poolPair", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}
@@ -1133,7 +1143,7 @@ func (sp *stateProducerV2) unstaking(
 			if err != nil {
 				return res, stakingPoolStates, err
 			}
-			Logger.log.Debugf("tx %v not found nftID", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}
@@ -1143,6 +1153,16 @@ func (sp *stateProducerV2) unstaking(
 			if err != nil {
 				return res, stakingPoolStates, err
 			}
+			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
+			res = append(res, insts...)
+			continue
+		}
+		if staker.liquidity == 0 || metaData.UnstakingAmount() == 0 || rootStakingPoolState.liquidity == 0 {
+			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
+			Logger.log.Warnf("tx %v unstaking amount is 0", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}

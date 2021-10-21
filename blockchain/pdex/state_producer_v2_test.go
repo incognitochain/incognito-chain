@@ -953,7 +953,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 				},
 				beaconHeight: 20,
 			},
-			want: [][]string{},
+			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -974,7 +974,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					orderbook: Orderbook{[]*Order{}},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name:   "Valid Input",
