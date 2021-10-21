@@ -1621,8 +1621,6 @@ func (serverObj *Server) PublishNodeState() error {
 		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 		if validator.State.ChainID == -1 {
 			serverObj.PushMessageToBeacon(msg, nil)
-			b, _ := json.Marshal(msg.(*wire.MessagePeerState).Shards)
-			fmt.Println("[debugshard] shard peer state", string(b))
 		} else {
 			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID))
 		}
