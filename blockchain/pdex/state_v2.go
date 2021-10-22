@@ -427,6 +427,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
 			common.PDEXCoinID,
 			pdexBlockRewards,
+			beaconHeight,
 			s.params,
 			s.poolPairs,
 		)
@@ -450,6 +451,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
 			common.PRVCoinID,
 			burningPRVAmount,
+			beaconHeight,
 			s.params,
 			s.poolPairs,
 		)

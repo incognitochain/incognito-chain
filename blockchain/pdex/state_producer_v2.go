@@ -274,6 +274,7 @@ func (sp *stateProducerV2) modifyParams(
 func (sp *stateProducerV2) mintReward(
 	tokenID common.Hash,
 	mintingAmount uint64,
+	beaconHeight uint64,
 	params *Params,
 	pairs map[string]*PoolPairState,
 ) ([][]string, map[string]*PoolPairState, error) {
@@ -312,6 +313,10 @@ func (sp *stateProducerV2) mintReward(
 
 		if pairReward.Uint64() == 0 {
 			continue
+		}
+
+		if tokenID == common.PDEXCoinID {
+			Logger.log.Debugf("Minting PDEX reward for pair %v at beacon height %v: %v", pairID, beaconHeight, pairReward)
 		}
 
 		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
@@ -488,7 +493,7 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		// check that the nftID exists 
+		// check that the nftID exists
 		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
 			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
 			result = append(result, refundInstructions...)
