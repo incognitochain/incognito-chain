@@ -316,7 +316,7 @@ func (sp *stateProducerV2) mintReward(
 		}
 
 		if tokenID == common.PDEXCoinID {
-			Logger.log.Debugf("Minting PDEX reward for pair %v at beacon height %v: %v", pairID, beaconHeight, pairReward)
+			Logger.log.Infof("Minting PDEX reward for pair %v at beacon height %v: %v", pairID, beaconHeight, pairReward)
 		}
 
 		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
