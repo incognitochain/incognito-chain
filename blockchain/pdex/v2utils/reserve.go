@@ -370,7 +370,15 @@ func TrackFee(
 				}
 				totalBuyAmount += buyAmount
 				// add order balance changes to "accepted" instruction
-				acceptedMeta.OrderChanges[i][ordID] = [2]*big.Int{token0Change, token1Change}
+				prevToken0Change := new(big.Int).SetUint64(0)
+				prevToken1Change := new(big.Int).SetUint64(0)
+				if _, ok := acceptedMeta.OrderChanges[i][ordID]; ok {
+					prevToken0Change = acceptedMeta.OrderChanges[i][ordID][0]
+					prevToken1Change = acceptedMeta.OrderChanges[i][ordID][1]
+				}
+				acceptedMeta.OrderChanges[i][ordID] = [2]*big.Int{new(big.Int).SetUint64(0), new(big.Int).SetUint64(0)}
+				acceptedMeta.OrderChanges[i][ordID][0].Add(prevToken0Change, token0Change)
+				acceptedMeta.OrderChanges[i][ordID][1].Add(prevToken1Change, token1Change)
 				if sellAmountRemain == 0 {
 					break
 				}

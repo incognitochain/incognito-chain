@@ -131,6 +131,41 @@ func TestProduceSameBlockTrades(t *testing.T) {
 	}
 }
 
+func TestProduceTradeWithFee(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Metadata metadataPdexv3.TradeRequest `json:"metadata"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase
+	testcases = append(testcases, produceTradeWithFeeTestCases...)
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+
+			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
+			testState := mustReadState("test_multiple_pools_state.json")
+			testState.params = &Params{
+				DefaultFeeRateBPS: 30,
+			}
+			temp := &StateFormatter{}
+			temp.FromState(testState)
+
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+
+			encodedResult, _ := json.Marshal(TestResult{instructions})
+			Equal(t, testcase.Expected, string(encodedResult))
+		})
+	}
+}
+
 func TestProcessTrade(t *testing.T) {
 	setTestTradeConfig()
 	type TestData struct {
@@ -361,6 +396,7 @@ func mustReadState(filename string) *stateV2 {
 var sortOrderTestcases = mustReadTestcases("sort_orders.json")
 var produceTradeTestcases = mustReadTestcases("produce_trade.json")
 var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trades.json")
+var produceTradeWithFeeTestCases = mustReadTestcases("produce_trade_with_fee.json")
 var processTradeTestcases = mustReadTestcases("process_trade.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")
 var prvRateTestcases = mustReadTestcases("prv_rate.json")
