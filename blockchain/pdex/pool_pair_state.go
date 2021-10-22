@@ -52,6 +52,19 @@ func NewPoolPairStateWithValue(
 	}
 }
 
+func (poolPairState *PoolPairState) isEmpty() bool {
+	if poolPairState.state.Token0RealAmount() == 0 || poolPairState.state.Token1RealAmount() == 0 {
+		return true
+	}
+	if poolPairState.state.Token0VirtualAmount().Uint64() == 0 || poolPairState.state.Token1VirtualAmount().Uint64() == 0 {
+		return true
+	}
+	if poolPairState.state.ShareAmount() == 0 {
+		return true
+	}
+	return false
+}
+
 func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
 	return poolPairState.state
 }
@@ -177,11 +190,8 @@ func (p *PoolPairState) getContributionsByOrder(
 func (p *PoolPairState) computeActualContributedAmounts(
 	contribution0, contribution1 *rawdbv2.Pdexv3Contribution,
 ) (uint64, uint64, uint64, uint64, error) {
-	if (p.state.Token0RealAmount() == 0 || p.state.Token1RealAmount() == 0) && (p.state.Token0RealAmount() != p.state.Token1RealAmount()) {
+	if p.isEmpty() {
 		return 0, 0, 0, 0, errors.New("Pool is invalid to contribute")
-	}
-	if p.state.Token0RealAmount() == 0 && p.state.Token1RealAmount() == 0 {
-		return contribution0.Amount(), 0, contribution1.Amount(), 0, nil
 	}
 	contribution0Amount := big.NewInt(0)
 	tempAmt := big.NewInt(0)

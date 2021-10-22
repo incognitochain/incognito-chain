@@ -732,6 +732,9 @@ func (s *stateV2) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount 
 	if staker.Liquidity() < unstakingAmount {
 		return errors.New("unstakingAmount > current staker liquidity")
 	}
+	if staker.Liquidity() == 0 || unstakingAmount == 0 {
+		return errors.New("unstakingAmount or staker.Liquidity is 0")
+	}
 	return nil
 }
 
@@ -746,6 +749,9 @@ func (s *stateV2) IsValidShareAmount(poolPairID, nftID string, shareAmount uint6
 	}
 	if share.Amount() < shareAmount {
 		return errors.New("shareAmount > current share amount")
+	}
+	if shareAmount == 0 || share.Amount() == 0 {
+		return errors.New("share amount or share.Amount() is 0")
 	}
 	return nil
 }
