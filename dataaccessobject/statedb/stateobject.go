@@ -117,6 +117,38 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newProcessUnshieldRequestBatchObjectWithValue(db, hash, value)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObjectWithValue(db, hash, value)
+	case Pdexv3StatusObjectType:
+		return newPdexv3StatusObjectWithValue(db, hash, value)
+	case Pdexv3ParamsObjectType:
+		return newPdexv3ParamsObjectWithValue(db, hash, value)
+	case Pdexv3ContributionObjectType:
+		return newPdexv3ContributionObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairObjectType:
+		return newPdexv3PoolPairObjectWithValue(db, hash, value)
+	case Pdexv3ShareObjectType:
+		return newPdexv3ShareObjectWithValue(db, hash, value)
+	case Pdexv3NftObjectType:
+		return newPdexv3NftObjectWithValue(db, hash, value)
+	case Pdexv3OrderObjectType:
+		return newPdexv3OrderObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairLpFeePerShareObjectType:
+		return newPdexv3PoolPairLpFeePerShareObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairProtocolFeeObjectType:
+		return newPdexv3PoolPairProtocolFeeObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairStakingPoolFeeObjectType:
+		return newPdexv3PoolPairStakingPoolFeeObjectWithValue(db, hash, value)
+	case Pdexv3ShareTradingFeeObjectType:
+		return newPdexv3ShareTradingFeeObjectWithValue(db, hash, value)
+	case Pdexv3ShareLastLPFeesPerShareObjectType:
+		return newPdexv3ShareLastLpFeePerShareObjectWithValue(db, hash, value)
+	case Pdexv3StakingPoolRewardPerShareObjectType:
+		return newPdexv3StakingPoolRewardPerShareObjectWithValue(db, hash, value)
+	case Pdexv3StakerRewardObjectType:
+		return newPdexv3StakerRewardObjectWithValue(db, hash, value)
+	case Pdexv3StakerLastRewardPerShareObjectType:
+		return newPdexv3StakerLastRewardPerShareObjectWithValue(db, hash, value)
+	case Pdexv3StakerObjectType:
+		return newPdexv3StakerObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -214,6 +246,38 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newProcessUnshieldRequestBatchObject(db, hash)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObject(db, hash)
+	case Pdexv3StatusObjectType:
+		return newPdexv3StatusObject(db, hash)
+	case Pdexv3ParamsObjectType:
+		return newPdexv3ParamsObject(db, hash)
+	case Pdexv3ContributionObjectType:
+		return newPdexv3ContributionObject(db, hash)
+	case Pdexv3PoolPairObjectType:
+		return newPdexv3PoolPairObject(db, hash)
+	case Pdexv3ShareObjectType:
+		return newPdexv3StatusObject(db, hash)
+	case Pdexv3NftObjectType:
+		return newPdexv3NftObject(db, hash)
+	case Pdexv3OrderObjectType:
+		return newPdexv3OrderObject(db, hash)
+	case Pdexv3PoolPairLpFeePerShareObjectType:
+		return newPdexv3PoolPairLpFeePerShareObject(db, hash)
+	case Pdexv3PoolPairProtocolFeeObjectType:
+		return newPdexv3PoolPairProtocolFeeObject(db, hash)
+	case Pdexv3PoolPairStakingPoolFeeObjectType:
+		return newPdexv3PoolPairStakingPoolFeeObject(db, hash)
+	case Pdexv3ShareTradingFeeObjectType:
+		return newPdexv3ShareTradingFeeObject(db, hash)
+	case Pdexv3ShareLastLPFeesPerShareObjectType:
+		return newPdexv3ShareLastLpFeePerShareObject(db, hash)
+	case Pdexv3StakingPoolRewardPerShareObjectType:
+		return newPdexv3StakingPoolRewardPerShareObject(db, hash)
+	case Pdexv3StakerRewardObjectType:
+		return newPdexv3StakerRewardObject(db, hash)
+	case Pdexv3StakerLastRewardPerShareObjectType:
+		return newPdexv3StakerLastRewardPerShareObject(db, hash)
+	case Pdexv3StakerObjectType:
+		return newPdexv3StakerObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

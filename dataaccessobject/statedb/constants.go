@@ -74,6 +74,23 @@ const (
 	// PRV EVM bridge
 	BridgePRVEVMObjectType = 47
 
+	// pDex v3
+	Pdexv3StatusObjectType                    = 48
+	Pdexv3ParamsObjectType                    = 49
+	Pdexv3ContributionObjectType              = 50
+	Pdexv3PoolPairObjectType                  = 51
+	Pdexv3ShareObjectType                     = 52
+	Pdexv3NftObjectType                       = 53
+	Pdexv3OrderObjectType                     = 54
+	Pdexv3StakerObjectType                    = 55
+	Pdexv3PoolPairLpFeePerShareObjectType     = 56
+	Pdexv3PoolPairProtocolFeeObjectType       = 57
+	Pdexv3PoolPairStakingPoolFeeObjectType    = 58
+	Pdexv3ShareTradingFeeObjectType           = 59
+	Pdexv3ShareLastLPFeesPerShareObjectType   = 60
+	Pdexv3StakingPoolRewardPerShareObjectType = 61
+	Pdexv3StakerRewardObjectType              = 62
+	Pdexv3StakerLastRewardPerShareObjectType  = 63
 )
 
 // Prefix length

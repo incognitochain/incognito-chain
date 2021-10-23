@@ -5,7 +5,9 @@ import (
 )
 
 //RestoreBeaconViewStateFromHash ...
-func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
+func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
+	blockchain *BlockChain, includeCommittee bool,
+) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
 	if err != nil {
 		return err

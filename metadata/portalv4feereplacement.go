@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -85,11 +86,11 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(chainRetriever.GetPortalReplacementAddress(beaconHeight))
 	if err != nil {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
 	}
 
 	if ok, err := repl.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
@@ -98,11 +99,11 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4FeeReplacementRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4FeeReplacementRequestMetaError,
 			errors.New("Tx replacement fee request must be version 2"))
 	}
 
@@ -125,7 +126,7 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 }
 
 func (repl PortalReplacementFeeRequest) ValidateMetadataByItself() bool {
-	return repl.Type == PortalV4FeeReplacementRequestMeta
+	return repl.Type == metadataCommon.PortalV4FeeReplacementRequestMeta
 }
 
 func (repl PortalReplacementFeeRequest) Hash() *common.Hash {
@@ -163,7 +164,7 @@ func (repl *PortalReplacementFeeRequest) BuildReqActions(tx Transaction, chainRe
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalV4FeeReplacementRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(metadataCommon.PortalV4FeeReplacementRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
