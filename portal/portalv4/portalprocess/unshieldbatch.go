@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
@@ -169,7 +170,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			// build new instruction with new raw external tx
 			newInst := buildUnshieldBatchingInst(
 				batchID, hexRawExtTxStr, tokenID, bcTx.UnshieldIDs, chosenUTXOs, uint(feeUnshield), beaconHeight+1,
-				metadata.PortalV4UnshieldBatchingMeta, portalcommonv4.PortalV4RequestAcceptedChainStatus)
+				metadataCommon.PortalV4UnshieldBatchingMeta, portalcommonv4.PortalV4RequestAcceptedChainStatus)
 			newInsts = append(newInsts, newInst)
 		}
 	}

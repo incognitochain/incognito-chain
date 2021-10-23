@@ -5,14 +5,18 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/wallet"
+
+	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -31,7 +35,6 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
@@ -85,7 +88,6 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.IsTest = isTest
 	bc.beaconViewCache, _ = lru.New(100)
 	bc.cQuitSync = make(chan struct{})
-	bc.GetBeaconBestState().Params = make(map[string]string)
 	return bc
 }
 
@@ -596,6 +598,10 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		v.pdeStates, err = pdex.InitStatesFromDB(v.featureStateDB, v.BeaconHeight)
+		if err != nil {
+			return err
+		}
 		if v.NumberOfShardBlock == nil || len(v.NumberOfShardBlock) == 0 {
 			v.NumberOfShardBlock = make(map[byte]uint)
 			for i := 0; i < v.ActiveShards; i++ {
@@ -770,7 +776,9 @@ func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database
 	return blockchain.config.DataBase[int(shardID)]
 }
 
-func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash common.Hash, includeCommittee bool) (*BeaconBestState, error) {
+func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
+	blockHash common.Hash, includeCommittee bool,
+) (*BeaconBestState, error) {
 	v, ok := blockchain.beaconViewCache.Get(blockHash)
 	if ok {
 		return v.(*BeaconBestState), nil
@@ -823,6 +831,13 @@ func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bo
 	}
 
 	return beaconHeight >= config.Param().BCHeightBreakPointPrivacyV2
+}
+
+func (blockchain *BlockChain) IsAfterPdexv3CheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+	return beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
 }
 
 func (s *BlockChain) AddRelayShard(sid int) error {

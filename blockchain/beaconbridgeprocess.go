@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -37,10 +38,10 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadata.IssuingBSCRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertBSCTxHashIssued, false)
 
-		case strconv.Itoa(metadata.IssuingPRVERC20RequestMeta):
+		case strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
-		case strconv.Itoa(metadata.IssuingPRVBEP20RequestMeta):
+		case strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
@@ -320,9 +321,9 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		metaType := tx.GetMetadataType()
 		var err error
 		var reqTxID common.Hash
-		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta || 
-			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
-			metaType == metadata.IssuingPRVBEP20RequestMeta  {
+		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
+			metaType == metadata.IssuingBSCRequestMeta || metaType == metadataCommon.IssuingPRVERC20RequestMeta ||
+			metaType == metadataCommon.IssuingPRVBEP20RequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -330,7 +331,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
-			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta {
+			metaType == metadataCommon.IssuingPRVERC20ResponseMeta || metaType == metadataCommon.IssuingPRVBEP20ResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)

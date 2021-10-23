@@ -99,9 +99,18 @@ func (pc PDEContribution) ValidateTxWithBlockChain(tx Transaction, chainRetrieve
 	return true, nil
 }
 
-func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (pc PDEContribution) ValidateSanityData(
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	beaconHeight uint64,
+	tx Transaction,
+) (bool, bool, error) {
 	if chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight) && pc.GetType() == PDEContributionMeta {
 		return false, false, fmt.Errorf("metadata type %v is no longer supported, consider using %v instead", PDEContributionMeta, PDEPRVRequiredContributionRequestMeta)
+	}
+	if chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, fmt.Errorf("metadata type %v is no longer supported", PDEPRVRequiredContributionRequestMeta)
 	}
 
 	if pc.PDEContributionPairID == "" {
