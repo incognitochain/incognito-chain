@@ -235,8 +235,8 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 	//shard
 	for sid, _ := range peerState.Shards {
 		if synckerManager.ShardSyncProcess[int(sid)] != nil {
-			b, _ := json.Marshal(peerState)
-			fmt.Println("[debugshard]: receive peer state", string(b))
+			// b, _ := json.Marshal(peerState)
+			// fmt.Println("[debugshard]: receive peer state", string(b))
 			synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
 		}
 
