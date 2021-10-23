@@ -59,6 +59,10 @@ func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
+func (chain *ShardChain) GetMultiView() *multiview.MultiView {
+	return chain.multiView
+}
+
 func (chain *ShardChain) GetFinalView() multiview.View {
 	return chain.multiView.GetFinalView()
 }

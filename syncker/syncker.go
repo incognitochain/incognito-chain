@@ -130,6 +130,16 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
+	//only start shard when beacon seem to be almost finish (sync up to block of 4 hours ago)
+	if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
+		lastInsertTime := synckerManager.BeaconSyncProcess.lastInsert
+		if lastInsertTime == "" {
+			lastInsertTime = "N/A (node restart)"
+		}
+		Logger.Infof("Beacon is syncing ... last time insert was %v", lastInsertTime)
+		return
+	}
+
 	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
 	for chainID, _ := range chainValidator {
