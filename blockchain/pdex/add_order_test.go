@@ -8,6 +8,7 @@ import (
 
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	. "github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +21,8 @@ func TestSortOrder(t *testing.T) {
 
 	type TestResult struct {
 		Orders []*Order `json:"orders"`
+		MatchTradeBuy0 string
+		MatchTradeBuy1 string
 	}
 
 	var testcases []Testcase
@@ -48,7 +51,19 @@ func TestSortOrder(t *testing.T) {
 				pair.orderbook.InsertOrder(item)
 				testState.poolPairs[blankPairID] = pair
 			}
-			encodedResult, _ := json.Marshal(TestResult{testState.poolPairs[blankPairID].orderbook.orders})
+			res := &TestResult{Orders: testState.poolPairs[blankPairID].orderbook.orders}
+
+			// test the outputs of NextOrder()
+			ord, id, err := testState.poolPairs[blankPairID].orderbook.NextOrder(v2utils.TradeDirectionSell0)
+			NoError(t, err)
+			Equal(t, ord.Id(), id)
+			res.MatchTradeBuy1 = id
+			ord, id, err = testState.poolPairs[blankPairID].orderbook.NextOrder(v2utils.TradeDirectionSell1)
+			NoError(t, err)
+			Equal(t, ord.Id(), id)
+			res.MatchTradeBuy0 = id
+
+			encodedResult, _ := json.Marshal(res)
 			Equal(t, testcase.Expected, string(encodedResult))
 		})
 	}
