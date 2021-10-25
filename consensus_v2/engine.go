@@ -185,6 +185,8 @@ func NewConsensusEngine() *Engine {
 		consensusName: common.BlsConsensus,
 		version:       make(map[int]int),
 	}
+	blsbft.ByzantineDetectorObject = blsbft.NewByzantineDetector(Logger.Log)
+	go blsbft.ByzantineDetectorObject.Loop()
 	return engine
 }
 

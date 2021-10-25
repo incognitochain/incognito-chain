@@ -8,8 +8,10 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/utils"
@@ -828,11 +830,15 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		panic(err)
 	}
-	diskDB, _ = incdb.Open("leveldb", dbPath)
+	diskDB, err = incdb.Open("leveldb", dbPath)
+	if err != nil {
+		panic(err)
+	}
 	wrarperDB = statedb.NewDatabaseAccessWarper(diskDB)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	dataaccessobject.Logger.Init(common.NewBackend(nil).Logger("test", true))
 
+	rawdb_consensus.SetConsensusDatabase(diskDB)
 	return
 }()
 

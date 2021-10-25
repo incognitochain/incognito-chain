@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/config"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -45,17 +46,26 @@ type BFTRequestBlock struct {
 }
 
 func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
+
 	data := []byte{}
-	data = append(data, s.BlockHash...)
-	data = append(data, s.BLS...)
-	data = append(data, s.BRI...)
-	data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
-	data = append(data, common.Int64ToBytes(s.ProduceTimeSlot)...)
-	data = append(data, common.Int64ToBytes(s.ProposeTimeSlot)...)
-	data = append(data, []byte(s.Validator)...)
-	data = append(data, []byte(s.PrevBlockHash)...)
-	data = append(data, s.CommitteeFromBlock[:]...)
-	data = append(data, common.Int64ToBytes(int64(s.ChainID))...)
+
+	if s.BlockHeight < config.Param().ConsensusParam.ByzantineDetectorHeight {
+		data = append(data, s.BlockHash...)
+		data = append(data, s.BLS...)
+		data = append(data, s.BRI...)
+	} else {
+		data = append(data, s.BlockHash...)
+		data = append(data, s.BLS...)
+		data = append(data, s.BRI...)
+		data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
+		data = append(data, common.Int64ToBytes(s.ProduceTimeSlot)...)
+		data = append(data, common.Int64ToBytes(s.ProposeTimeSlot)...)
+		data = append(data, []byte(s.Validator)...)
+		data = append(data, []byte(s.PrevBlockHash)...)
+		data = append(data, s.CommitteeFromBlock[:]...)
+		data = append(data, common.Int64ToBytes(int64(s.ChainID))...)
+	}
+
 	data = common.HashB(data)
 	var err error
 	s.Confirmation, err = key.BriSignData(data)
@@ -63,17 +73,26 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 }
 
 func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
+
 	data := []byte{}
-	data = append(data, s.BlockHash...)
-	data = append(data, s.BLS...)
-	data = append(data, s.BRI...)
-	data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
-	data = append(data, common.Int64ToBytes(s.ProduceTimeSlot)...)
-	data = append(data, common.Int64ToBytes(s.ProposeTimeSlot)...)
-	data = append(data, []byte(s.Validator)...)
-	data = append(data, []byte(s.PrevBlockHash)...)
-	data = append(data, s.CommitteeFromBlock[:]...)
-	data = append(data, common.Int64ToBytes(int64(s.ChainID))...)
+
+	if s.BlockHeight < config.Param().ConsensusParam.ByzantineDetectorHeight {
+		data = append(data, s.BlockHash...)
+		data = append(data, s.BLS...)
+		data = append(data, s.BRI...)
+	} else {
+		data = append(data, s.BlockHash...)
+		data = append(data, s.BLS...)
+		data = append(data, s.BRI...)
+		data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
+		data = append(data, common.Int64ToBytes(s.ProduceTimeSlot)...)
+		data = append(data, common.Int64ToBytes(s.ProposeTimeSlot)...)
+		data = append(data, []byte(s.Validator)...)
+		data = append(data, []byte(s.PrevBlockHash)...)
+		data = append(data, s.CommitteeFromBlock[:]...)
+		data = append(data, common.Int64ToBytes(int64(s.ChainID))...)
+	}
+
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err

@@ -19,7 +19,7 @@ type ConsensusValidatorLemma2 struct {
 	chain  Chain
 }
 
-func NewConsensusValidatorV2(logger common.Logger, chain Chain) *ConsensusValidatorLemma2 {
+func NewConsensusValidatorLemma2(logger common.Logger, chain Chain) *ConsensusValidatorLemma2 {
 	return &ConsensusValidatorLemma2{logger: logger, chain: chain}
 }
 
@@ -164,7 +164,7 @@ type ConsensusValidatorLemma1 struct {
 	chain  Chain
 }
 
-func NewConsensusValidatorV1(logger common.Logger, chain Chain) *ConsensusValidatorLemma1 {
+func NewConsensusValidatorLemma1(logger common.Logger, chain Chain) *ConsensusValidatorLemma1 {
 	return &ConsensusValidatorLemma1{logger: logger, chain: chain}
 }
 
@@ -273,4 +273,27 @@ func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.Bl
 	} // if not swap committees => do nothing
 
 	return false
+}
+
+type ConsensusValidatorNoValidate struct {
+}
+
+func NewConsensusValidatorNoValidate() *ConsensusValidatorNoValidate {
+	return &ConsensusValidatorNoValidate{}
+}
+
+func (c ConsensusValidatorNoValidate) FilterValidProposeBlockInfo(bestViewHash common.Hash, bestViewHeight uint64, finalViewHeight uint64, currentTimeSlot int64, proposeBlockInfos map[string]*ProposeBlockInfo) ([]*ProposeBlockInfo, []*ProposeBlockInfo, []string) {
+	validProposeBlockInfo := []*ProposeBlockInfo{}
+	for _, v := range proposeBlockInfos {
+		validProposeBlockInfo = append(validProposeBlockInfo, v)
+	}
+	return validProposeBlockInfo, []*ProposeBlockInfo{}, []string{}
+}
+
+func (c ConsensusValidatorNoValidate) ValidateBlock(lastVotedBlock types.BlockInterface, isVoteNextHeight bool, proposeBlockInfo *ProposeBlockInfo) (bool, error) {
+	return true, nil
+}
+
+func (c ConsensusValidatorNoValidate) ValidateConsensusRules(lastVotedBlock types.BlockInterface, isVoteNextHeight bool, proposeBlockInfo *ProposeBlockInfo) bool {
+	return true
 }

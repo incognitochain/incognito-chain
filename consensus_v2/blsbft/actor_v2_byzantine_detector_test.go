@@ -1,13 +1,14 @@
 package blsbft
 
 import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"reflect"
 	"testing"
 )
 
 func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 	type fields struct {
-		blackList map[string]error
+		blackList map[string]*rawdb_consensus.BlackListValidator
 	}
 	type args struct {
 		bftVote *BFTVote
@@ -21,8 +22,10 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 		{
 			name: "not in blacklist",
 			fields: fields{
-				blackList: map[string]error{
-					blsKeys[0]: ErrInvalidSignature,
+				blackList: map[string]*rawdb_consensus.BlackListValidator{
+					blsKeys[0]: &rawdb_consensus.BlackListValidator{
+						Reason: ErrDuplicateVoteInOneTimeSlot,
+					},
 				},
 			},
 			args: args{
@@ -35,9 +38,13 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 		{
 			name: "in blacklist",
 			fields: fields{
-				blackList: map[string]error{
-					blsKeys[0]: ErrInvalidSignature,
-					blsKeys[1]: ErrInvalidVoteOwner,
+				blackList: map[string]*rawdb_consensus.BlackListValidator{
+					blsKeys[0]: &rawdb_consensus.BlackListValidator{
+						Reason: ErrDuplicateVoteInOneTimeSlot,
+					},
+					blsKeys[1]: &rawdb_consensus.BlackListValidator{
+						Reason: ErrDuplicateVoteInOneTimeSlot,
+					},
 				},
 			},
 			args: args{
@@ -62,7 +69,7 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 
 func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 	type fields struct {
-		blackList        map[string]error
+		blackList        map[string]*rawdb_consensus.BlackListValidator
 		timeslot         map[string]map[int64]*BFTVote
 		committeeHandler CommitteeChainHandler
 	}
@@ -139,9 +146,8 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := ByzantineDetector{
-				blackList:        tt.fields.blackList,
-				voteInTimeSlot:   tt.fields.timeslot,
-				committeeHandler: tt.fields.committeeHandler,
+				blackList:      tt.fields.blackList,
+				voteInTimeSlot: tt.fields.timeslot,
 			}
 			if err := b.voteMoreThanOneTimesInATimeSlot(tt.args.bftVote); (err != nil) != tt.wantErr {
 				t.Errorf("voteMoreThanOneTimesInATimeSlot() error = %v, wantErr %v", err, tt.wantErr)
@@ -152,7 +158,7 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 
 func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 	type fields struct {
-		blackList        map[string]error
+		blackList        map[string]*rawdb_consensus.BlackListValidator
 		voteInTimeSlot   map[string]map[int64]*BFTVote
 		smallestTimeSlot map[string]map[uint64]int64
 		committeeHandler CommitteeChainHandler
@@ -222,10 +228,9 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := ByzantineDetector{
-				blackList:               tt.fields.blackList,
-				voteInTimeSlot:          tt.fields.voteInTimeSlot,
-				smallestProduceTimeSlot: tt.fields.smallestTimeSlot,
-				committeeHandler:        tt.fields.committeeHandler,
+				blackList:                    tt.fields.blackList,
+				voteInTimeSlot:               tt.fields.voteInTimeSlot,
+				smallestBlockProduceTimeSlot: tt.fields.smallestTimeSlot,
 			}
 			if err := b.voteForHigherTimeSlotSameHeight(tt.args.bftVote); (err != nil) != tt.wantErr {
 				t.Errorf("voteForHigherTimeSlotSameHeight() error = %v, wantErr %v", err, tt.wantErr)
@@ -255,7 +260,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 		ProposeTimeSlot: 163394562,
 	}
 	type fields struct {
-		blackList        map[string]error
+		blackList        map[string]*rawdb_consensus.BlackListValidator
 		voteInTimeSlot   map[string]map[int64]*BFTVote
 		smallestTimeSlot map[string]map[uint64]int64
 		committeeHandler CommitteeChainHandler
@@ -283,7 +288,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
-				blackList: make(map[string]error),
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
 				voteInTimeSlot: map[string]map[int64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProduceTimeSlot: key0VoteHeight10_1,
@@ -310,8 +315,10 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: ErrDuplicateVoteInOneTimeSlot,
 			},
 			fieldAfterProcess: fields{
-				blackList: map[string]error{
-					key0VoteHeight10_1.Validator: ErrDuplicateVoteInOneTimeSlot,
+				blackList: map[string]*rawdb_consensus.BlackListValidator{
+					key0VoteHeight10_1.Validator: &rawdb_consensus.BlackListValidator{
+						Reason: ErrDuplicateVoteInOneTimeSlot,
+					},
 				},
 				voteInTimeSlot:   nil,
 				smallestTimeSlot: nil,
@@ -321,7 +328,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 		{
 			name: "add new data with no error 1",
 			fields: fields{
-				blackList: make(map[string]error),
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
 				voteInTimeSlot: map[string]map[int64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProduceTimeSlot: key0VoteHeight10_1,
@@ -339,7 +346,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
-				blackList: make(map[string]error),
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
 				voteInTimeSlot: map[string]map[int64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
@@ -357,7 +364,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 		{
 			name: "add new data with no error 2",
 			fields: fields{
-				blackList: make(map[string]error),
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
 				voteInTimeSlot: map[string]map[int64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
@@ -376,7 +383,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
-				blackList: make(map[string]error),
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
 				voteInTimeSlot: map[string]map[int64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
@@ -401,17 +408,20 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &ByzantineDetector{
-				blackList:               tt.fields.blackList,
-				voteInTimeSlot:          tt.fields.voteInTimeSlot,
-				smallestProduceTimeSlot: tt.fields.smallestTimeSlot,
-				committeeHandler:        tt.fields.committeeHandler,
+				blackList:                    tt.fields.blackList,
+				voteInTimeSlot:               tt.fields.voteInTimeSlot,
+				smallestBlockProduceTimeSlot: tt.fields.smallestTimeSlot,
 			}
-			b.addNewVote(tt.args.bftVote, tt.args.validatorErr)
-			if !reflect.DeepEqual(b.blackList, tt.fieldAfterProcess.blackList) {
-				t.Errorf("addNewVote.blackList want %+v, got %+v", tt.fieldAfterProcess.blackList, b.blackList)
+			b.addNewVote(diskDB, tt.args.bftVote, tt.args.validatorErr)
+			for k, v := range b.blackList {
+				wantV := tt.fieldAfterProcess.blackList[k]
+				if wantV.Reason != v.Reason {
+					t.Errorf("addNewVote.blackList want %+v, got %+v", tt.fieldAfterProcess.blackList, b.blackList)
+				}
+
 			}
-			if !reflect.DeepEqual(b.smallestProduceTimeSlot, tt.fieldAfterProcess.smallestTimeSlot) {
-				t.Errorf("addNewVote.smallestProduceTimeSlot want %+v, got %+v", tt.fieldAfterProcess.smallestTimeSlot, b.smallestProduceTimeSlot)
+			if !reflect.DeepEqual(b.smallestBlockProduceTimeSlot, tt.fieldAfterProcess.smallestTimeSlot) {
+				t.Errorf("addNewVote.smallestBlockProduceTimeSlot want %+v, got %+v", tt.fieldAfterProcess.smallestTimeSlot, b.smallestBlockProduceTimeSlot)
 			}
 			if !reflect.DeepEqual(b.voteInTimeSlot, tt.fieldAfterProcess.voteInTimeSlot) {
 				t.Errorf("addNewVote.voteInTimeSlot want %+v, got %+v", tt.fieldAfterProcess.voteInTimeSlot, b.voteInTimeSlot)

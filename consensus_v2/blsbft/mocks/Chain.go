@@ -383,6 +383,22 @@ func (_m *Chain) GetMinBlkInterval() time.Duration {
 	return r0
 }
 
+// GetMultiView provides a mock function with given fields:
+func (_m *Chain) GetMultiView() *multiview.MultiView {
+	ret := _m.Called()
+
+	var r0 *multiview.MultiView
+	if rf, ok := ret.Get(0).(func() *multiview.MultiView); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*multiview.MultiView)
+		}
+	}
+
+	return r0
+}
+
 // GetPendingCommittee provides a mock function with given fields:
 func (_m *Chain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	ret := _m.Called()
@@ -510,6 +526,34 @@ func (_m *Chain) InsertAndBroadcastBlock(block types.BlockInterface) error {
 
 // InsertAndBroadcastBlockWithPrevValidationData provides a mock function with given fields: _a0, _a1
 func (_m *Chain) InsertAndBroadcastBlockWithPrevValidationData(_a0 types.BlockInterface, _a1 string) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, string) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// InsertBlock provides a mock function with given fields: block, shouldValidate
+func (_m *Chain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+	ret := _m.Called(block, shouldValidate)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, bool) error); ok {
+		r0 = rf(block, shouldValidate)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// InsertWithPrevValidationData provides a mock function with given fields: _a0, _a1
+func (_m *Chain) InsertWithPrevValidationData(_a0 types.BlockInterface, _a1 string) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error

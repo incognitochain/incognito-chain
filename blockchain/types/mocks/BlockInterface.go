@@ -232,6 +232,20 @@ func (_m *BlockInterface) GetRoundKey() string {
 	return r0
 }
 
+// GetShardID provides a mock function with given fields:
+func (_m *BlockInterface) GetShardID() int {
+	ret := _m.Called()
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
 // GetValidationField provides a mock function with given fields:
 func (_m *BlockInterface) GetValidationField() string {
 	ret := _m.Called()

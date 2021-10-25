@@ -340,20 +340,27 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	handleVoteRule := param["handle_vote_rule"]
 	handleProposeRule := param["handle_propose_rule"]
 	insertRule := param["insert_rule"]
+	validatorRule := param["validator_rule"]
 
 	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
 	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
 	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
 	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
 	blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+	blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
 	return map[string]interface{}{
 		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
 		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
 		"handle_vote_rule":    blsbft.ActorV2BuilderContext.HandleVoteRule,
 		"handle_propose_rule": blsbft.ActorV2BuilderContext.HandleProposeRule,
 		"insert_rule":         blsbft.ActorV2BuilderContext.InsertRule,
+		"validator_rule":      blsbft.ActorV2BuilderContext.ValidatorRule,
 		"lemma2_height":       blsbft.ActorV2BuilderContext.Lemma2Height,
 	}, nil
+}
+
+func (httpServer *HttpServer) handleGetByzantineDetectorInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo(), nil
 }
 
 func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

@@ -55,9 +55,8 @@ type actorV2 struct {
 
 	nextBlockFinalityProof map[string]map[int64]string
 
-	ruleDirector      *ActorV2RuleDirector
-	byzantineDetector IByzantineDetector
-	blockVersion      int
+	ruleDirector *ActorV2RuleDirector
+	blockVersion int
 }
 
 func NewActorV2() *actorV2 {
@@ -111,8 +110,6 @@ func newActorV2WithValue(
 	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	a.ruleDirector = NewActorV2RuleDirector()
 	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestViewHeight(), chain, logger)
-	a.byzantineDetector = getByzantineDetectorRule(NewNilByzantineDetector(),
-		a.chain.GetBestViewHeight(), committeeChain, logger)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -244,13 +241,6 @@ func (a *actorV2) run() error {
 				a.ruleDirector.builder,
 				a.chain.GetBestView().GetHeight(),
 				a.chain,
-				a.logger,
-			)
-
-			a.byzantineDetector = getByzantineDetectorRule(
-				a.byzantineDetector,
-				a.chain.GetBestViewHeight(),
-				a.committeeChain,
 				a.logger,
 			)
 
@@ -1003,7 +993,8 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	}
 
 	if a.chainID != common.BeaconChainID {
-		if err := a.byzantineDetector.validate(
+		if err := ByzantineDetectorObject.Validate(
+			a.chain.GetBestViewHeight(),
 			&voteMsg,
 		); err != nil {
 			a.logger.Errorf("Found byzantine validator %+v, err %+v", voteMsg.Validator, err)
@@ -1088,7 +1079,7 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	a.ruleDirector.builder.ProposeMessageRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
-	a.byzantineDetector.updateState(a.chain.GetFinalView().GetHeight(),
+	ByzantineDetectorObject.UpdateState(a.chain.GetFinalView().GetHeight(),
 		common.CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetProposeTime()))
 
 }

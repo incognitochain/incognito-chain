@@ -139,6 +139,7 @@ const (
 	getFinalityProof           = "getfinalityproof"
 	setConsensusRule           = "setconsensusrule"
 	getConsensusRule           = "getconsensusrule"
+	getByzantineDetectorInfo   = "getbyzantinedetectorinfo"
 	getProposerIndex           = "getproposerindex"
 	//==================================================
 
