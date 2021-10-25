@@ -77,6 +77,16 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
 			newInst = [][]string{burningConfirm}
 
+		case metadataCommon.BurningPDEXERC20RequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPDEXERC20ConfirmMeta, inst, beaconHeight, config.Param().PDEXERC20ContractAddressStr)
+			newInst = [][]string{burningConfirm}
+
+		case metadataCommon.BurningPDEXBEP20RequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPDEXBEP20ConfirmMeta, inst, beaconHeight, config.Param().PDEXBEP20ContractAddressStr)
+			newInst = [][]string{burningConfirm}
+
 		default:
 			continue
 		}
@@ -149,6 +159,22 @@ func buildBurningConfirmInst(
 	}, nil
 }
 
+func isValidWithMetatype(tokenID string, metaType int) bool {
+	if tokenID == common.PRVIDStr {
+		if metaType != metadataCommon.BurningPRVERC20ConfirmMeta && metaType != metadataCommon.BurningPRVBEP20ConfirmMeta {
+			return false
+		}
+	} else if tokenID == common.PDEXIDStr {
+		if metaType != metadataCommon.BurningPDEXERC20ConfirmMeta && metaType != metadataCommon.BurningPDEXBEP20ConfirmMeta {
+			return false
+		}
+	} else {
+		return false
+	}
+
+	return true
+}
+
 // buildBurningPRVEVMConfirmInst builds on beacon an instruction confirming a tx burning PRV-EVM-token
 func buildBurningPRVEVMConfirmInst(
 	burningMetaType int,
@@ -165,8 +191,8 @@ func buildBurningPRVEVMConfirmInst(
 	}
 
 	md := burningReqAction.Meta
-	if md.TokenID.String() != common.PRVIDStr {
-		return nil, errors.New("PRV EVM: invalid PRV token ID")
+	if !isValidWithMetatype(md.TokenID.String(), burningMetaType) {
+		return nil, errors.New(fmt.Sprintf("PRV EVM: invalid token ID %v and metatype %v", md.TokenID.String(), md.Type))
 	}
 
 	tokenID := rCommon.HexToAddress(tokenIDStr)

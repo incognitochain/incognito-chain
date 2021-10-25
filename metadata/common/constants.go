@@ -324,6 +324,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningBSCConfirmMeta),
 	strconv.Itoa(BurningPRVERC20ConfirmMeta),
 	strconv.Itoa(BurningPRVBEP20ConfirmMeta),
+	strconv.Itoa(BurningPDEXERC20ConfirmMeta),
+	strconv.Itoa(BurningPDEXBEP20ConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{

@@ -69,6 +69,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &BurningRequest{}
 	case metadataCommon.BurningPRVERC20RequestMeta:
 		md = &BurningRequest{}
+	case metadataCommon.BurningPDEXBEP20RequestMeta:
+		md = &BurningRequest{}
+	case metadataCommon.BurningPDEXERC20RequestMeta:
+		md = &BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:

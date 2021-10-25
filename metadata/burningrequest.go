@@ -91,13 +91,13 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch &&
 		(bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 ||
 			bReq.Type == BurningPBSCRequestMeta || bReq.Type == metadataCommon.BurningPRVERC20RequestMeta ||
-			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta) {
+			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPDEXERC20RequestMeta ||
+			bReq.Type == metadataCommon.BurningPDEXBEP20RequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
-	if (bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
-		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
-	} else if (bReq.Type != metadataCommon.BurningPRVERC20RequestMeta && bReq.Type != metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
+	if !validateTokenAndType(bReq.Type, bReq.TokenID.String(), common.PRVIDStr, metadataCommon.BurningPRVERC20RequestMeta, metadataCommon.BurningPRVBEP20RequestMeta) || 
+		!validateTokenAndType(bReq.Type, bReq.TokenID.String(), common.PDEXIDStr, metadataCommon.BurningPDEXERC20RequestMeta, metadataCommon.BurningPDEXBEP20RequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	}
 
@@ -107,7 +107,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
 	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 ||
 		bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta
+		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta ||
+		bReq.Type == metadataCommon.BurningPDEXERC20RequestMeta || bReq.Type == metadataCommon.BurningPDEXBEP20RequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {
@@ -151,4 +152,14 @@ func (bReq *BurningRequest) BuildReqActions(tx Transaction, chainRetriever Chain
 
 func (bReq *BurningRequest) CalculateSize() uint64 {
 	return calculateSize(bReq)
+}
+
+func validateTokenAndType(requestType int, tokenRequest string, tokenCheck string, erc20Type int, bep20Type int) bool {
+	if (requestType == erc20Type || requestType == bep20Type) && tokenRequest != tokenCheck {
+		return false
+	} else if (requestType != erc20Type && requestType != bep20Type) && tokenRequest == tokenCheck {
+		return false
+	}
+
+	return true
 }
