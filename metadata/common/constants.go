@@ -178,6 +178,16 @@ const (
 	Pdexv3DistributeStakingRewardMeta       = 305
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
+
+	// erc20/bep20 for pdex token
+	IssuingPDEXERC20RequestMeta  = 320
+	IssuingPDEXERC20ResponseMeta = 321
+	IssuingPDEXBEP20RequestMeta  = 322
+	IssuingPDEXBEP20ResponseMeta = 323
+	BurningPDEXERC20RequestMeta  = 324
+	BurningPDEXERC20ConfirmMeta  = 152
+	BurningPDEXBEP20RequestMeta  = 325
+	BurningPDEXBEP20ConfirmMeta  = 153
 )
 
 var minerCreatedMetaTypes = []int{
