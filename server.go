@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"log"
 	"net"
 	"os"
@@ -333,9 +334,8 @@ func (serverObj *Server) NewServer(
 		return err
 	}
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
-	if err != nil {
-		return err
-	}
+	fixedNodes := serverObj.blockChain.GetShardFixedNodes()
+	blsbft.ByzantineDetectorObject.SetFixedNodes(fixedNodes)
 	go poolManager.Start(relayShards)
 
 	//set bc obj for monitor

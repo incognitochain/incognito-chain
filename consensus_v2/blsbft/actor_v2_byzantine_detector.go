@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sync"
 	"time"
@@ -34,11 +35,22 @@ func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
 }
 
 type ByzantineDetector struct {
+	fixedNodes                   map[string]bool                                // fixed nodes
 	blackList                    map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
 	voteInTimeSlot               map[string]map[int64]*BFTVote                  // validator => timeslot => vote
 	smallestBlockProduceTimeSlot map[string]map[uint64]int64                    // validator => height => timeslot
 	logger                       common.Logger
 	mu                           *sync.RWMutex
+}
+
+func (b *ByzantineDetector) SetFixedNodes(fixedNodes []incognitokey.CommitteePublicKey) {
+	blsKeys := make(map[string]bool)
+	for _, k := range fixedNodes {
+		blsKey := k.GetMiningKeyBase58(common.BlsConsensus)
+		blsKeys[blsKey] = true
+	}
+
+	b.fixedNodes = blsKeys
 }
 
 func NewByzantineDetector(logger common.Logger) *ByzantineDetector {
@@ -167,7 +179,15 @@ func (b *ByzantineDetector) removeBlackListValidator() {
 	}
 }
 
+func (b ByzantineDetector) checkFixedNodes(validator string) bool {
+	return b.fixedNodes[validator]
+}
+
 func (b ByzantineDetector) checkBlackListValidator(bftVote *BFTVote) error {
+
+	if b.checkFixedNodes(bftVote.Validator) {
+		return nil
+	}
 
 	if err, ok := b.blackList[bftVote.Validator]; ok {
 		return fmt.Errorf("validator in black list %+v, due to %+v", bftVote.Validator, err)
