@@ -164,6 +164,9 @@ func main() {
 	if os.Args[1] == "lemma2_normal_rule" {
 		setLemma2NormalRuleShard0()
 	}
+	if os.Args[1] == "test_byzantine_detector" {
+		setByzantineDetectorShard0()
+	}
 	if os.Args[1] == "no_handle_vote_only" {
 		setNoHandleVoteShard0()
 	}

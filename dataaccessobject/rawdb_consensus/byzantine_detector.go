@@ -7,7 +7,7 @@ import (
 )
 
 type BlackListValidator struct {
-	Reason    error
+	Error     string
 	StartTime time.Time
 	TTL       time.Duration
 }

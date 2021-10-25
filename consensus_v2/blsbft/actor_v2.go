@@ -982,16 +982,6 @@ func (a *actorV2) handleNewProposeMsg(
 
 func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 
-	if voteMsg.BlockHeight <= a.chain.GetFinalView().GetHeight() {
-		a.logger.Infof("%v Receive old vote height %+vd but chain final height %+v", a.chainKey, voteMsg.BlockHeight, a.chain.GetFinalView().GetHeight())
-		return nil
-	}
-
-	if !a.ruleDirector.builder.HandleVoteMessageRule().IsHandler() {
-		a.logger.Criticalf("NO COLLECT VOTE")
-		return nil
-	}
-
 	if a.chainID != common.BeaconChainID {
 		if err := ByzantineDetectorObject.Validate(
 			a.chain.GetBestViewHeight(),
@@ -1000,6 +990,11 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 			a.logger.Errorf("Found byzantine validator %+v, err %+v", voteMsg.Validator, err)
 			return err
 		}
+	}
+
+	if !a.ruleDirector.builder.HandleVoteMessageRule().IsHandler() {
+		a.logger.Criticalf("NO COLLECT VOTE")
+		return nil
 	}
 
 	return a.processVoteMessage(voteMsg)

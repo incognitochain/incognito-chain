@@ -24,7 +24,7 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 			fields: fields{
 				blackList: map[string]*rawdb_consensus.BlackListValidator{
 					blsKeys[0]: &rawdb_consensus.BlackListValidator{
-						Reason: ErrDuplicateVoteInOneTimeSlot,
+						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 				},
 			},
@@ -40,10 +40,10 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 			fields: fields{
 				blackList: map[string]*rawdb_consensus.BlackListValidator{
 					blsKeys[0]: &rawdb_consensus.BlackListValidator{
-						Reason: ErrDuplicateVoteInOneTimeSlot,
+						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 					blsKeys[1]: &rawdb_consensus.BlackListValidator{
-						Reason: ErrDuplicateVoteInOneTimeSlot,
+						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 				},
 			},
@@ -317,7 +317,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 			fieldAfterProcess: fields{
 				blackList: map[string]*rawdb_consensus.BlackListValidator{
 					key0VoteHeight10_1.Validator: &rawdb_consensus.BlackListValidator{
-						Reason: ErrDuplicateVoteInOneTimeSlot,
+						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 				},
 				voteInTimeSlot:   nil,
@@ -415,7 +415,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 			b.addNewVote(diskDB, tt.args.bftVote, tt.args.validatorErr)
 			for k, v := range b.blackList {
 				wantV := tt.fieldAfterProcess.blackList[k]
-				if wantV.Reason != v.Reason {
+				if wantV.Error != v.Error {
 					t.Errorf("addNewVote.blackList want %+v, got %+v", tt.fieldAfterProcess.blackList, b.blackList)
 				}
 

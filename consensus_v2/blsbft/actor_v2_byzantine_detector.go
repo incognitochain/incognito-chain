@@ -27,7 +27,7 @@ type VoteMessageHandler func(bftVote *BFTVote) error
 
 func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
 	return &rawdb_consensus.BlackListValidator{
-		Reason:    reason,
+		Error:     reason.Error(),
 		StartTime: time.Now(),
 		TTL:       defaultBlackListTTL,
 	}
@@ -104,13 +104,18 @@ func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error
 	for _, handler := range handlers {
 		err = handler(vote)
 		if err != nil {
+			b.logger.Error("Byzantine Detector Error", err)
 			break
 		}
 	}
 
 	b.addNewVote(rawdb_consensus.GetConsensusDatabase(), vote, err)
 
-	return err
+	if config.Param().ConsensusParam.ByzantineDetectorHeight >= bestViewHeight {
+		return err
+	}
+
+	return nil
 }
 
 func (b *ByzantineDetector) UpdateState(finalHeight uint64, finalTimeSlot int64) {
@@ -136,7 +141,9 @@ func (b *ByzantineDetector) UpdateState(finalHeight uint64, finalTimeSlot int64)
 }
 
 func (b *ByzantineDetector) Loop() {
+
 	ticker := time.Tick(1 * time.Hour)
+
 	for _ = range ticker {
 		b.mu.Lock()
 		b.removeBlackListValidator()
@@ -179,7 +186,9 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(bftVote *BFTVote) err
 	if vote, ok := voteInTimeSlot[bftVote.ProposeTimeSlot]; ok {
 		// allow receiving same vote multiple times
 		if !reflect.DeepEqual(vote, bftVote) {
-			return ErrDuplicateVoteInOneTimeSlot
+			return fmt.Errorf("error name: %+v, "+
+				"first bftvote %+v, latter bftvote %+v",
+				ErrVoteForHigherTimeSlot, vote, bftVote)
 		}
 	}
 
@@ -199,7 +208,9 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) err
 	}
 
 	if bftVote.ProduceTimeSlot > blockTimeSlot {
-		return ErrVoteForHigherTimeSlot
+		return fmt.Errorf("error name: %+v, "+
+			"block height %+v, bigger vote block produce timeslot %+v, smallest vote block produce timeSlot %+v",
+			ErrVoteForHigherTimeSlot, bftVote.BlockHeight, bftVote.ProduceTimeSlot, blockTimeSlot)
 	}
 
 	return nil
