@@ -56,7 +56,7 @@ func (poolPairState *PoolPairState) isEmpty() bool {
 	if poolPairState.state.Token0RealAmount() == 0 || poolPairState.state.Token1RealAmount() == 0 {
 		return true
 	}
-	if poolPairState.state.Token0VirtualAmount().Uint64() == 0 || poolPairState.state.Token1VirtualAmount().Uint64() == 0 {
+	if poolPairState.state.Token0VirtualAmount().Cmp(big.NewInt(0)) == 0 || poolPairState.state.Token1VirtualAmount().Cmp(big.NewInt(0)) == 0 {
 		return true
 	}
 	if poolPairState.state.ShareAmount() == 0 {
