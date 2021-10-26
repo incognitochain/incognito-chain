@@ -58,8 +58,8 @@ func (ob *Orderbook) InsertOrder(ord *Order) {
 		// break equality of rate by comparing ID
 		if rateCmp == 0 {
 			// sell0 orders must precede sell1 orders of the same rate
-			if ord.TradeDirection() != ob.orders[i].TradeDirection(){
-			 	return ord.TradeDirection() == v2.TradeDirectionSell0
+			if ord.TradeDirection() != ob.orders[i].TradeDirection() {
+				return ord.TradeDirection() == v2.TradeDirectionSell0
 			}
 			// no equality for ID since duplicate ID was handled in addOrder flow
 			idCmp := strings.Compare(ord.Id(), ob.orders[i].Id())
@@ -81,7 +81,7 @@ func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, 
 	lstLen := len(ob.orders)
 	switch tradeDirection {
 	case v2.TradeDirectionSell0:
-		for i := 0; i < lstLen; i++ {
+		for i := lstLen - 1; i >= 0; i-- {
 			// only match a trade with an order of the opposite direction
 			if ob.orders[i].TradeDirection() != tradeDirection && ob.orders[i].Token1Balance() > 0 {
 				return &v2.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
@@ -90,7 +90,7 @@ func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, 
 		// no active order
 		return nil, "", nil
 	case v2.TradeDirectionSell1:
-		for i := lstLen - 1; i >= 0; i-- {
+		for i := 0; i < lstLen; i++ {
 			if ob.orders[i].TradeDirection() != tradeDirection && ob.orders[i].Token0Balance() > 0 {
 				return &v2.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
 			}
