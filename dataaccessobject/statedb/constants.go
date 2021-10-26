@@ -91,6 +91,9 @@ const (
 	Pdexv3StakingPoolRewardPerShareObjectType = 61
 	Pdexv3StakerRewardObjectType              = 62
 	Pdexv3StakerLastRewardPerShareObjectType  = 63
+
+	// PDEX EVM bridge
+	BridgePDEXEVMObjectType = 64
 )
 
 // Prefix length

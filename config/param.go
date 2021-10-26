@@ -58,6 +58,8 @@ type param struct {
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	PDEXERC20ContractAddressStr      string `mapstructure:"pdex_erc20_contract_address" description:"smart contract of pdex erc20"`
+	PDEXBEP20ContractAddressStr      string `mapstructure:"pdex_bep20_contract_address" description:"smart contract of pdex bep20"`
 }
 
 type genesisParam struct {

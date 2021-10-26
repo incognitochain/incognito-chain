@@ -161,12 +161,18 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, errors.New("Invalid token id"))
 	}
 
+	if (iReq.Type == metadataCommon.IssuingPDEXBEP20RequestMeta || iReq.Type == metadataCommon.IssuingPDEXERC20RequestMeta) &&
+		iReq.IncTokenID.String() != common.PDEXIDStr {
+		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, errors.New("Invalid pdex token id"))
+	}
+
 	return true, true, nil
 }
 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingBSCRequestMeta ||
-		iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
+		iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta ||
+		iReq.Type == metadataCommon.IssuingPDEXERC20RequestMeta || iReq.Type == metadataCommon.IssuingPDEXBEP20RequestMeta {
 		return true
 	}
 	return false
@@ -217,11 +223,13 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	var protocol, host, port string
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
+	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta ||
+		iReq.Type == metadataCommon.IssuingPDEXBEP20RequestMeta {
 		evmParam := config.Param().BSCParam
 		evmParam.GetFromEnv()
 		host = evmParam.Host
-	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta {
+	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta ||
+		iReq.Type == metadataCommon.IssuingPDEXERC20RequestMeta {
 		evmParam := config.Config().GethParam
 		evmParam.GetFromEnv()
 		protocol = evmParam.Protocol

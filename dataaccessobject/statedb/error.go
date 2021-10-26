@@ -36,6 +36,7 @@ const (
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
+	ErrInvalidBridgePDEXEVMStateType          = "invalid bridge pdex evm tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -267,6 +268,10 @@ const (
 	BridgeInsertPRVEVMTxHashIssuedError
 	IsPRVEVMTxHashIssuedError
 
+	// pdex pegging erc20/bep20
+	BridgeInsertPdexEVMTxHashIssuedError
+	IsPdexEVMTxHashIssuedError
+
 	// pDex v3
 	GetPdexv3StatusError
 	StorePdexv3StatusError
@@ -449,6 +454,10 @@ var ErrCodeMessage = map[int]struct {
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError: {-15102, "Bridge Insert PRV pegging evm Tx Hash Issued Error"},
 	IsPRVEVMTxHashIssuedError:           {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
+
+	// pdex pegging erc20/bep20
+	BridgeInsertPdexEVMTxHashIssuedError: {-15104, "Bridge Insert PDEX pegging evm Tx Hash Issued Error"},
+	IsPdexEVMTxHashIssuedError:           {-15105, "Is PDEX pegging evm Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
