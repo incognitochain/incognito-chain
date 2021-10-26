@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	. "github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func TestSortOrder(t *testing.T) {
 	}
 
 	type TestResult struct {
-		Orders []*Order `json:"orders"`
+		Orders         []*Order `json:"orders"`
 		MatchTradeBuy0 string
 		MatchTradeBuy1 string
 	}
@@ -28,12 +28,14 @@ func TestSortOrder(t *testing.T) {
 	var testcases []Testcase
 	testcases = append(testcases, sortOrderTestcases...)
 
-	testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		&Params{}, nil, map[string]uint64{})
-	blankPairID := "pair0"
-	testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
+			// initialize test state & order book
+			testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
+				&Params{}, nil, map[string]uint64{})
+			blankPairID := "pair0"
+			testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
+
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
