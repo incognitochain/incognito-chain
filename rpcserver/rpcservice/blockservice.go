@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -1003,6 +1004,24 @@ func (blockService BlockService) CheckPRVPeggingHashIssued(data map[string]inter
 	uniqPRVEVMTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
 	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	issued, err := statedb.IsPRVEVMTxHashIssued(bridgeStateDB, uniqPRVEVMTx)
+	return issued, err
+}
+
+func (blockService BlockService) CheckPDEXPeggingHashIssued(data map[string]interface{}) (bool, error) {
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
+	uniqPDEXEVMTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	issued, err := statedb.IsPDEXEVMTxHashIssued(bridgeStateDB, uniqPDEXEVMTx)
 	return issued, err
 }
 
