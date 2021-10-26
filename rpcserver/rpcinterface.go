@@ -157,6 +157,7 @@ var HttpHandler = map[string]httpHandler{
 	generateTokenID:                   (*HttpServer).handleGenerateTokenID,
 	checkBSCHashIssued:                (*HttpServer).handleCheckBSCHashIssued,
 	checkPRVPeggingHashIssued:         (*HttpServer).handleCheckPrvPeggingHashIssued,
+	checkPDEXPeggingHashIssued:        (*HttpServer).handleCheckPdexPeggingHashIssued,
 
 	// wallet
 	getPublicKeyFromPaymentAddress:         (*HttpServer).handleGetPublicKeyFromPaymentAddress,

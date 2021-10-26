@@ -199,6 +199,7 @@ const (
 	createAndSendBurningBSCRequest         = "createandsendburningbscrequest"
 	checkBSCHashIssued                     = "checkbschashissued"
 	checkPRVPeggingHashIssued              = "checkpeggedprvhashissued"
+	checkPDEXPeggingHashIssued             = "checkpeggedpdexhashissued"
 	createAndSendBurningPRVERC20Request    = "createandsendburningprverc20request"
 	createAndSendBurningPRVBEP20Request    = "createandsendburningprvbep20request"
 	createAndSendBurningPDEXERC20Request   = "createandsendburningpdexerc20request"

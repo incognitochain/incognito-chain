@@ -280,6 +280,20 @@ func (httpServer *HttpServer) handleCheckPrvPeggingHashIssued(params interface{}
 	return issued, nil
 }
 
+func (httpServer *HttpServer) handleCheckPdexPeggingHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data := arrayParams[0].(map[string]interface{})
+
+	issued, err := httpServer.blockService.CheckPDEXPeggingHashIssued(data)
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return issued, nil
+}
+
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
