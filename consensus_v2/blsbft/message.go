@@ -45,6 +45,15 @@ type BFTRequestBlock struct {
 	PeerID    string
 }
 
+func (s *BFTVote) isEmptyDataForByzantineDetector() bool {
+
+	if s.BlockHeight == 0 || s.ProduceTimeSlot == 0 || s.ProposeTimeSlot == 0 {
+		return true
+	}
+
+	return false
+}
+
 func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 
 	data := []byte{}

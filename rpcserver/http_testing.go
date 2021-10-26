@@ -363,6 +363,23 @@ func (httpServer *HttpServer) handleGetByzantineDetectorInfo(params interface{},
 	return blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo(), nil
 }
 
+func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
+	}
+	validator, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid validator type"))
+	}
+	err := blsbft.ByzantineDetectorObject.RemoveBlackListValidator(validator)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return "Delete Black list validator " + validator, nil
+}
+
 func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return blsbft.ActorV2BuilderContext, nil
 }

@@ -140,6 +140,7 @@ const (
 	setConsensusRule           = "setconsensusrule"
 	getConsensusRule           = "getconsensusrule"
 	getByzantineDetectorInfo   = "getbyzantinedetectorinfo"
+	removeByzantineDetector    = "removebyzantinedetector"
 	getProposerIndex           = "getproposerindex"
 	//==================================================
 

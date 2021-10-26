@@ -97,6 +97,10 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 
 func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error {
 
+	if vote.isEmptyDataForByzantineDetector() {
+		return nil
+	}
+
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -107,7 +111,7 @@ func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error
 		b.voteForHigherTimeSlotSameHeight,
 	}
 
-	if config.Param().ConsensusParam.ByzantineDetectorHeight >= bestViewHeight {
+	if config.Param().ConsensusParam.ByzantineDetectorHeight < bestViewHeight {
 		if err := b.checkBlackListValidator(vote); err != nil {
 			return err
 		}
@@ -158,25 +162,41 @@ func (b *ByzantineDetector) Loop() {
 
 	for _ = range ticker {
 		b.mu.Lock()
-		b.removeBlackListValidator()
+		b.intervalRemoveBlackListValidator()
 		b.mu.Unlock()
 	}
 }
 
-func (b *ByzantineDetector) removeBlackListValidator() {
+func (b *ByzantineDetector) intervalRemoveBlackListValidator() {
 	for validator, blacklist := range b.blackList {
 		if time.Now().Unix() > blacklist.StartTime.Add(blacklist.TTL).Unix() {
-			err := rawdb_consensus.DeleteBlackListValidator(
-				rawdb_consensus.GetConsensusDatabase(),
-				validator,
-			)
-			if err != nil {
-				b.logger.Error("Fail to delete long life-time black list validator", err)
-			}
-
-			delete(b.blackList, validator)
+			b.removeBlackListValidator(validator)
 		}
 	}
+}
+
+func (b *ByzantineDetector) RemoveBlackListValidator(validator string) error {
+
+	b.mu.Lock()
+	err := b.removeBlackListValidator(validator)
+	b.mu.Unlock()
+
+	return err
+}
+
+func (b *ByzantineDetector) removeBlackListValidator(validator string) error {
+	err := rawdb_consensus.DeleteBlackListValidator(
+		rawdb_consensus.GetConsensusDatabase(),
+		validator,
+	)
+
+	if err != nil {
+		b.logger.Error("Fail to delete black list validator", err)
+		return err
+	}
+	delete(b.blackList, validator)
+
+	return nil
 }
 
 func (b ByzantineDetector) checkFixedNodes(validator string) bool {
