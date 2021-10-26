@@ -79,6 +79,8 @@ func buildMetaInfo() {
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
 		IssuingResponseMeta,
+		IssuingPDEXERC20ResponseMeta,
+		IssuingPDEXBEP20ResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNoInput,
@@ -182,6 +184,8 @@ func buildMetaInfo() {
 		IssuingBSCRequestMeta,
 		IssuingPRVERC20RequestMeta,
 		IssuingPRVBEP20RequestMeta,
+		IssuingPDEXERC20RequestMeta,
+		IssuingPDEXBEP20RequestMeta,
 		ContractingRequestMeta,
 
 		ShardStakingMeta,

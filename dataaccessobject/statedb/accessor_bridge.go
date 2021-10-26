@@ -85,6 +85,21 @@ func IsPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) (bool, error)
 	return true, nil
 }
 
+func IsPDEXEVMTxHashIssued(stateDB *StateDB, uniquePDEXEVMTx []byte) (bool, error) {
+	key := GenerateBridgePDEXEVMObjectKey(uniquePDEXEVMTx)
+	pDexEVMTxState, has, err := stateDB.getBridgePDEXEVMState(key)
+	if err != nil {
+		return false, NewStatedbError(IsPdexEVMTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(pDexEVMTxState.UniquePDEXEVMTx(), uniquePDEXEVMTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {

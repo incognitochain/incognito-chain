@@ -45,17 +45,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &IssuingEVMRequest{}
 	case IssuingBSCRequestMeta:
 		md = &IssuingEVMRequest{}
-	case metadataCommon.IssuingPRVERC20RequestMeta:
+	case metadataCommon.IssuingPRVERC20RequestMeta, metadataCommon.IssuingPDEXERC20RequestMeta:
 		md = &IssuingEVMRequest{}
-	case metadataCommon.IssuingPRVBEP20RequestMeta:
+	case metadataCommon.IssuingPRVBEP20RequestMeta, metadataCommon.IssuingPDEXBEP20RequestMeta:
 		md = &IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
 		md = &IssuingEVMResponse{}
 	case IssuingBSCResponseMeta:
 		md = &IssuingEVMResponse{}
-	case metadataCommon.IssuingPRVERC20ResponseMeta:
+	case metadataCommon.IssuingPRVERC20ResponseMeta, metadataCommon.IssuingPDEXERC20ResponseMeta:
 		md = &IssuingEVMResponse{}
-	case metadataCommon.IssuingPRVBEP20ResponseMeta:
+	case metadataCommon.IssuingPRVBEP20ResponseMeta, metadataCommon.IssuingPDEXBEP20ResponseMeta:
 		md = &IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}

@@ -46,6 +46,8 @@ func collectStatefulActions(
 			metadata.IssuingBSCRequestMeta,
 			metadataCommon.IssuingPRVERC20RequestMeta,
 			metadataCommon.IssuingPRVBEP20RequestMeta,
+			metadataCommon.IssuingPDEXERC20RequestMeta,
+			metadataCommon.IssuingPDEXBEP20RequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -231,7 +233,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					metaType,
 					accumulatedValues,
 					accumulatedValues.UniqPRVEVMTxsUsed,
-					config.Param().PRVERC20ContractAddressStr,
+					config.Param().PDEXERC20ContractAddressStr,
 					"",
 					statedb.IsPRVEVMTxHashIssued,
 					true,
@@ -256,6 +258,42 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTx)
+				}
+			case metadataCommon.IssuingPDEXERC20RequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqPDEXEVMTxsUsed,
+					config.Param().PDEXERC20ContractAddressStr,
+					"",
+					statedb.IsPDEXEVMTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqPDEXEVMTxsUsed = append(accumulatedValues.UniqPDEXEVMTxsUsed, uniqTx)
+				}
+			case metadataCommon.IssuingPDEXBEP20RequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqPDEXEVMTxsUsed,
+					config.Param().PDEXBEP20ContractAddressStr,
+					"",
+					statedb.IsPDEXEVMTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqPDEXEVMTxsUsed = append(accumulatedValues.UniqPDEXEVMTxsUsed, uniqTx)
 				}
 			case metadata.PDEContributionMeta:
 				pdeContributionActions = append(pdeContributionActions, action)
