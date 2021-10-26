@@ -582,6 +582,62 @@ func (httpServer *HttpServer) handleCreateAndSendBurningPRVBEP20Request(params i
 	return sendResult, nil
 }
 
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPDEXERC20Req(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadataCommon.BurningPDEXERC20RequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		true,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPDEXERC20Request(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPDEXERC20Req(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPDEXBEP20Req(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadataCommon.BurningPDEXBEP20RequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		true,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPDEXBEP20Request(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPDEXBEP20Req(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
 func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingPRVERC20Req(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithIssuingEVMReq(params, closeChan, metadataCommon.IssuingPRVERC20RequestMeta)
 	if err != nil {

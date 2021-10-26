@@ -70,6 +70,32 @@ func (httpServer *HttpServer) handleGetPRVBEP20BurnProof(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
+// handleGetPDEXERC20BurnProof returns a proof of a tx burning pdex erc20
+func (httpServer *HttpServer) handleGetPDEXERC20BurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadataCommon.BurningPDEXERC20ConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetPDEXBEP20BurnProof returns a proof of a tx burning pdex bep20
+func (httpServer *HttpServer) handleGetPDEXBEP20BurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadataCommon.BurningPDEXBEP20ConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
 // handleGetBurnProofForDepositToSC returns a proof of a tx burning pETH to deposit to SC
 func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},

@@ -199,6 +199,8 @@ const (
 	checkPRVPeggingHashIssued             = "checkpeggedprvhashissued"
 	createAndSendBurningPRVERC20Request   = "createandsendburningprverc20request"
 	createAndSendBurningPRVBEP20Request   = "createandsendburningprvbep20request"
+	createAndSendBurningPDEXERC20Request  = "createandsendburningpdexerc20request"
+	createAndSendBurningPDEXBEP20Request  = "createandsendburningpdexbep20request"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -209,6 +211,8 @@ const (
 	getBSCBurnProof          = "getbscburnproof"
 	getPRVERC20BurnProof     = "getprverc20burnproof"
 	getPRVBEP20BurnProof     = "getprvbep20burnproof"
+	getPDEXERC20BurnProof    = "getpdexerc20burnproof"
+	getPDEXBEP20BurnProof    = "getpdexbep20burnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"

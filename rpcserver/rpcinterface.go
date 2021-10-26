@@ -176,6 +176,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningBSCRequest:        (*HttpServer).handleCreateAndSendBurningBSCRequest,
 	createAndSendBurningPRVERC20Request:   (*HttpServer).handleCreateAndSendBurningPRVERC20Request,
 	createAndSendBurningPRVBEP20Request:   (*HttpServer).handleCreateAndSendBurningPRVBEP20Request,
+	createAndSendBurningPDEXERC20Request:  (*HttpServer).handleCreateAndSendBurningPDEXERC20Request,
+	createAndSendBurningPDEXBEP20Request:  (*HttpServer).handleCreateAndSendBurningPDEXBEP20Request,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -186,6 +188,8 @@ var HttpHandler = map[string]httpHandler{
 	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 	getPRVERC20BurnProof:     (*HttpServer).handleGetPRVERC20BurnProof,
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
+	getPDEXERC20BurnProof:    (*HttpServer).handleGetPDEXERC20BurnProof,
+	getPDEXBEP20BurnProof:    (*HttpServer).handleGetPDEXBEP20BurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
