@@ -588,7 +588,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningPDEXERC20Req(params in
 		params,
 		closeChan,
 		httpServer,
-		true,
+		false,
 	)
 }
 
@@ -602,7 +602,7 @@ func (httpServer *HttpServer) handleCreateAndSendBurningPDEXERC20Request(params 
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
@@ -616,7 +616,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningPDEXBEP20Req(params in
 		params,
 		closeChan,
 		httpServer,
-		true,
+		false,
 	)
 }
 
@@ -630,7 +630,7 @@ func (httpServer *HttpServer) handleCreateAndSendBurningPDEXBEP20Request(params 
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
