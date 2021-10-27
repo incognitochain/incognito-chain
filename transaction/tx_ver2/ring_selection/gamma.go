@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	prvGammaShape = 100.55
-	prvGammaScale = 0.01
+	prvGammaShape = 0.62
+	prvGammaScale = 16.0
 
-	tokenGammaShape = 100.55
-	tokenGammaScale = 0.01
+	tokenGammaShape = 1.74
+	tokenGammaScale = 13.31
 
 	unitTime = 3600 * 24 // 1 day
 )
