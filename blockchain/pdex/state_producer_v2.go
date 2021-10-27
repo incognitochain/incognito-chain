@@ -62,6 +62,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
+			Logger.log.Warnf("tx %v not found previous contribution", tx.Hash().String())
 			res = append(res, inst)
 			continue
 		}
@@ -116,6 +117,7 @@ func (sp *stateProducerV2) addLiquidity(
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
 				}
+				Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
 				res = append(res, insts...)
 				continue
 			} else {
@@ -151,6 +153,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
+			Logger.log.Warnf("tx %v pool pair is empty", tx.Hash().String())
 			res = append(res, insts...)
 			continue
 		}
