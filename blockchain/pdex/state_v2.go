@@ -229,15 +229,15 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	beaconHeight := env.PrevBeaconHeight() + 1
 
 	var err error
-	pdexv3Txs := env.ListTxs()
+	listTxs := env.ListTxs()
 	keys := []int{}
 
-	for k := range pdexv3Txs {
+	for k := range listTxs {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, key := range keys {
-		for _, tx := range pdexv3Txs[byte(key)] {
+		for _, tx := range listTxs[byte(key)] {
 			Logger.log.Infof("tx %v prepare for build instruction %v:", tx.Hash().String(), tx.GetMetadata())
 			switch tx.GetMetadataType() {
 			case metadataCommon.Pdexv3UserMintNftRequestMeta:

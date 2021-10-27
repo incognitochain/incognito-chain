@@ -800,6 +800,33 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	assert.Nil(t, err)
 	//
 
+	temp, ok := big.NewInt(0).SetString("18446744073709551616", 10)
+	assert.Equal(t, ok, true)
+	assert.NotNil(t, temp)
+
+	//out of range tx
+	outOfRangeMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
+		poolPairID, nftID, otaReceivers, 48019194174972302,
+	)
+	outOfRangeTx := &metadataMocks.Transaction{}
+	outOfRangeTx.On("GetMetadata").Return(outOfRangeMetaData)
+	outOfRangeTx.On("GetValidationEnv").Return(valEnv)
+	outOfRangeTx.On("Hash").Return(txHash)
+	//
+
+	//accept instructions
+	outOfRangeInst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
+		poolPairID, *nftHash, *token0ID, 250000000000000, 48019194174972302, validOTAReceiver1,
+		*txHash, 1,
+	).StringSlice()
+	assert.Nil(t, err)
+	outOfRangeInst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
+		poolPairID, *nftHash, *token1ID, 9223372036854775808, 48019194174972302, validOTAReceiver1,
+		*txHash, 1,
+	).StringSlice()
+	assert.Nil(t, err)
+	//
+
 	type fields struct {
 		stateProducerBase stateProducerBase
 	}
@@ -1020,6 +1047,60 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					shares: map[string]*Share{
 						nftID: &Share{
 							amount:             200,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Out of range uint64 virtual amount",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{outOfRangeTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 48019194174972302,
+							250000000000000, 9223372036854775808,
+							big.NewInt(0).SetUint64(500000000000000),
+							temp, 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             48019194174972302,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{outOfRangeInst0, outOfRangeInst1, mintNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 0, 0, 0,
+						big.NewInt(0).SetUint64(0),
+						big.NewInt(0).SetUint64(0), 20000,
+					),
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             0,
 							tradingFees:        map[common.Hash]uint64{},
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
