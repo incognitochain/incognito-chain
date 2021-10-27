@@ -788,8 +788,22 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	if err != nil {
 		return nil, nil, nil, NewBlockChainError(UpgradeShardCommitteeStateError, err)
 	}
+
+	confirmedBeaconHeightCommittee, err := getConfirmedCommitteeHeightFromBeacon(blockchain, shardBlock)
+	if err != nil {
+		return nil, nil, nil, NewBlockChainError(UpgradeShardCommitteeStateError, fmt.Errorf("get confirmed committee height from beacon, %+v", err))
+	}
+
+	newMaxCommitteeSize := GetMaxCommitteeSize(shardBestState.MaxShardCommitteeSize,
+		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, confirmedBeaconHeightCommittee)
+	if newMaxCommitteeSize != shardBestState.MaxShardCommitteeSize {
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, hash %+v, Confirmed Beacon Height %+v, found new max committee size %+v",
+			shardBlock.Header.ShardID, shardBlock.Header.Height, *shardBlock.Hash(), confirmedBeaconHeightCommittee, newMaxCommitteeSize)
+		shardBestState.MaxShardCommitteeSize = newMaxCommitteeSize
+	}
+
 	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)
-	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
+	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, *shardBlock.Hash())
 	return shardBestState, hashes, committeeChange, nil
 }
 

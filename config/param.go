@@ -77,15 +77,16 @@ type genesisParam struct {
 }
 
 type committeeSize struct {
-	MaxShardCommitteeSize            int `mapstructure:"max_shard_committee_size"`
-	MinShardCommitteeSize            int `mapstructure:"min_shard_committee_size"`
-	MaxBeaconCommitteeSize           int `mapstructure:"max_beacon_committee_size"`
-	MinBeaconCommitteeSize           int `mapstructure:"min_beacon_committee_size"`
-	InitShardCommitteeSize           int `mapstructure:"init_shard_committee_size"`
-	InitBeaconCommitteeSize          int `mapstructure:"init_beacon_committee_size"`
-	ShardCommitteeSizeKeyListV2      int `mapstructure:"shard_committee_size_key_list_v2"`
-	BeaconCommitteeSizeKeyListV2     int `mapstructure:"beacon_committee_size_key_list_v2"`
-	NumberOfFixedShardBlockValidator int `mapstructure:"number_of_fixed_shard_block_validators"`
+	MaxShardCommitteeSize            int            `mapstructure:"max_shard_committee_size"`
+	MinShardCommitteeSize            int            `mapstructure:"min_shard_committee_size"`
+	MaxBeaconCommitteeSize           int            `mapstructure:"max_beacon_committee_size"`
+	MinBeaconCommitteeSize           int            `mapstructure:"min_beacon_committee_size"`
+	InitShardCommitteeSize           int            `mapstructure:"init_shard_committee_size"`
+	InitBeaconCommitteeSize          int            `mapstructure:"init_beacon_committee_size"`
+	ShardCommitteeSizeKeyListV2      int            `mapstructure:"shard_committee_size_key_list_v2"`
+	BeaconCommitteeSizeKeyListV2     int            `mapstructure:"beacon_committee_size_key_list_v2"`
+	NumberOfFixedShardBlockValidator int            `mapstructure:"number_of_fixed_shard_block_validators"`
+	IncreaseMaxShardCommitteeSize    map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
 type blockTime struct {

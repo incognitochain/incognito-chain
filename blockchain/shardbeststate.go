@@ -689,3 +689,17 @@ func FilterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, 
 func GetProposerLength() int {
 	return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 }
+
+func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.ShardBlock) (uint64, error) {
+
+	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
+		return shardBlock.Header.BeaconHeight, nil
+	}
+
+	_, beaconHeight, err := bc.GetBeaconBlockByHash(shardBlock.Header.CommitteeFromBlock)
+	if err != nil {
+		return 0, err
+	}
+
+	return beaconHeight, nil
+}
