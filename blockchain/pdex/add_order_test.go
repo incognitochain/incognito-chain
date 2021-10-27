@@ -102,6 +102,31 @@ func TestProduceOrder(t *testing.T) {
 	}
 }
 
+func TestAutoWithdraw(t *testing.T) {
+	setTestTradeConfig()
+	type TestData StateFormatter
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("auto_withdraw_order.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+			temp := StateFormatter(testdata)
+			testState := temp.State()			
+			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, 100)
+			NoError(t, err)
+
+			encodedResult, _ := json.Marshal(TestResult{instructions})
+			Equal(t, testcase.Expected, string(encodedResult))
+		})
+	}
+}
+
 func TestOrderOverNftIDLimit(t *testing.T) {
 	setTestTradeConfig()
 
