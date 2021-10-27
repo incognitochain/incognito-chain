@@ -132,7 +132,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	contractAddress string,
 	prefix string,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
-	isPRV bool,
+	isNativeToken bool,
 ) ([][]string, []byte, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
@@ -190,8 +190,9 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return append(instructions, rejectedInst), nil, nil
 	}
 	token := append([]byte(prefix), tokenAddr.Bytes()...)
-	// handle case not native token.
-	if !isPRV {
+	// handle case not native token
+	// native token: PRV + PDEX
+	if !isNativeToken {
 		canProcess, err := ac.CanProcessTokenPair(token, md.IncTokenID)
 		if err != nil {
 			Logger.log.Warn("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)

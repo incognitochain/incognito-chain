@@ -198,6 +198,8 @@ var minerCreatedMetaTypes = []int{
 	IssuingBSCResponseMeta,
 	IssuingPRVERC20ResponseMeta,
 	IssuingPRVBEP20ResponseMeta,
+	IssuingPDEXERC20ResponseMeta,
+	IssuingPDEXBEP20ResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,

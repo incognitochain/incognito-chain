@@ -272,7 +272,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					config.Param().PDEXERC20ContractAddressStr,
 					"",
 					statedb.IsPDEXEVMTxHashIssued,
-					false,
+					true,
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqPDEXEVMTxsUsed = append(accumulatedValues.UniqPDEXEVMTxsUsed, uniqTx)
@@ -290,7 +290,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					config.Param().PDEXBEP20ContractAddressStr,
 					"",
 					statedb.IsPDEXEVMTxHashIssued,
-					false,
+					true,
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqPDEXEVMTxsUsed = append(accumulatedValues.UniqPDEXEVMTxsUsed, uniqTx)

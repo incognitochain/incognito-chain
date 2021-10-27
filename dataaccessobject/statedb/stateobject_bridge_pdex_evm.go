@@ -8,27 +8,27 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type BrigePDEXEVMState struct {
+type BridgePDEXEVMState struct {
 	uniquePDEXEVMTx []byte
 }
 
-func (pDexEvmTx BrigePDEXEVMState) UniquePDEXEVMTx() []byte {
+func (pDexEvmTx BridgePDEXEVMState) UniquePDEXEVMTx() []byte {
 	return pDexEvmTx.uniquePDEXEVMTx
 }
 
-func (pDexEvmTx *BrigePDEXEVMState) SetUniquePDEXEVMTx(uniquePDEXEVMTx []byte) {
+func (pDexEvmTx *BridgePDEXEVMState) SetUniquePDEXEVMTx(uniquePDEXEVMTx []byte) {
 	pDexEvmTx.uniquePDEXEVMTx = uniquePDEXEVMTx
 }
 
-func NewBrigePDEXEVMState() *BrigePDEXEVMState {
-	return &BrigePDEXEVMState{}
+func NewBridgePDEXEVMState() *BridgePDEXEVMState {
+	return &BridgePDEXEVMState{}
 }
 
-func NewBrigePDEXEVMStateWithValue(uniquePDEXEVMTx []byte) *BrigePDEXEVMState {
-	return &BrigePDEXEVMState{uniquePDEXEVMTx: uniquePDEXEVMTx}
+func NewBridgePDEXEVMStateWithValue(uniquePDEXEVMTx []byte) *BridgePDEXEVMState {
+	return &BridgePDEXEVMState{uniquePDEXEVMTx: uniquePDEXEVMTx}
 }
 
-func (pDexEvmTx BrigePDEXEVMState) MarshalJSON() ([]byte, error) {
+func (pDexEvmTx BridgePDEXEVMState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniquePDEXEVMTx []byte
 	}{
@@ -40,7 +40,7 @@ func (pDexEvmTx BrigePDEXEVMState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (pDexEvmTx *BrigePDEXEVMState) UnmarshalJSON(data []byte) error {
+func (pDexEvmTx *BridgePDEXEVMState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniquePDEXEVMTx []byte
 	}{}
@@ -52,14 +52,14 @@ func (pDexEvmTx *BrigePDEXEVMState) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type BrigePDEXEVMObject struct {
+type BridgePDEXEVMObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version           int
 	BrigePDEXEVMHash  common.Hash
-	BrigePDEXEVMState *BrigePDEXEVMState
+	BrigePDEXEVMState *BridgePDEXEVMState
 	objectType        int
 	deleted           bool
 
@@ -71,19 +71,19 @@ type BrigePDEXEVMObject struct {
 	dbErr error
 }
 
-func newBrigePDEXEVMObject(db *StateDB, hash common.Hash) *BrigePDEXEVMObject {
-	return &BrigePDEXEVMObject{
+func newBridgePDEXEVMObject(db *StateDB, hash common.Hash) *BridgePDEXEVMObject {
+	return &BridgePDEXEVMObject{
 		version:           defaultVersion,
 		db:                db,
 		BrigePDEXEVMHash:  hash,
-		BrigePDEXEVMState: NewBrigePDEXEVMState(),
+		BrigePDEXEVMState: NewBridgePDEXEVMState(),
 		objectType:        BridgePDEXEVMObjectType,
 		deleted:           false,
 	}
 }
 
-func newBrigePDEXEVMObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BrigePDEXEVMObject, error) {
-	var newBrigePDEXEVMState = NewBrigePDEXEVMState()
+func newBridgePDEXEVMObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BridgePDEXEVMObject, error) {
+	var newBrigePDEXEVMState = NewBridgePDEXEVMState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
@@ -92,12 +92,12 @@ func newBrigePDEXEVMObjectWithValue(db *StateDB, key common.Hash, data interface
 			return nil, err
 		}
 	} else {
-		newBrigePDEXEVMState, ok = data.(*BrigePDEXEVMState)
+		newBrigePDEXEVMState, ok = data.(*BridgePDEXEVMState)
 		if !ok {
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidBridgePDEXEVMStateType, reflect.TypeOf(data))
 		}
 	}
-	return &BrigePDEXEVMObject{
+	return &BridgePDEXEVMObject{
 		version:           defaultVersion,
 		BrigePDEXEVMHash:  key,
 		BrigePDEXEVMState: newBrigePDEXEVMState,
@@ -113,23 +113,23 @@ func GenerateBridgePDEXEVMObjectKey(uniquePDEXEVMTx []byte) common.Hash {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) GetVersion() int {
+func (pDexEvmTx BridgePDEXEVMObject) GetVersion() int {
 	return pDexEvmTx.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (pDexEvmTx *BrigePDEXEVMObject) SetError(err error) {
+func (pDexEvmTx *BridgePDEXEVMObject) SetError(err error) {
 	if pDexEvmTx.dbErr == nil {
 		pDexEvmTx.dbErr = err
 	}
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (pDexEvmTx BridgePDEXEVMObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return pDexEvmTx.trie
 }
 
-func (pDexEvmTx *BrigePDEXEVMObject) SetValue(data interface{}) error {
-	var newBrigePDEXEVMState = NewBrigePDEXEVMState()
+func (pDexEvmTx *BridgePDEXEVMObject) SetValue(data interface{}) error {
+	var newBrigePDEXEVMState = NewBridgePDEXEVMState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
@@ -138,7 +138,7 @@ func (pDexEvmTx *BrigePDEXEVMObject) SetValue(data interface{}) error {
 			return err
 		}
 	} else {
-		newBrigePDEXEVMState, ok = data.(*BrigePDEXEVMState)
+		newBrigePDEXEVMState, ok = data.(*BridgePDEXEVMState)
 		if !ok {
 			return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgePDEXEVMStateType, reflect.TypeOf(data))
 		}
@@ -147,11 +147,11 @@ func (pDexEvmTx *BrigePDEXEVMObject) SetValue(data interface{}) error {
 	return nil
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) GetValue() interface{} {
+func (pDexEvmTx BridgePDEXEVMObject) GetValue() interface{} {
 	return pDexEvmTx.BrigePDEXEVMState
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) GetValueBytes() []byte {
+func (pDexEvmTx BridgePDEXEVMObject) GetValueBytes() []byte {
 	data := pDexEvmTx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
@@ -160,30 +160,30 @@ func (pDexEvmTx BrigePDEXEVMObject) GetValueBytes() []byte {
 	return []byte(value)
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) GetHash() common.Hash {
+func (pDexEvmTx BridgePDEXEVMObject) GetHash() common.Hash {
 	return pDexEvmTx.BrigePDEXEVMHash
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) GetType() int {
+func (pDexEvmTx BridgePDEXEVMObject) GetType() int {
 	return pDexEvmTx.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (pDexEvmTx *BrigePDEXEVMObject) MarkDelete() {
+func (pDexEvmTx *BridgePDEXEVMObject) MarkDelete() {
 	pDexEvmTx.deleted = true
 }
 
-func (pDexEvmTx *BrigePDEXEVMObject) Reset() bool {
-	pDexEvmTx.BrigePDEXEVMState = NewBrigePDEXEVMState()
+func (pDexEvmTx *BridgePDEXEVMObject) Reset() bool {
+	pDexEvmTx.BrigePDEXEVMState = NewBridgePDEXEVMState()
 	return true
 }
 
-func (pDexEvmTx BrigePDEXEVMObject) IsDeleted() bool {
+func (pDexEvmTx BridgePDEXEVMObject) IsDeleted() bool {
 	return pDexEvmTx.deleted
 }
 
 // value is either default or nil
-func (pDexEvmTx BrigePDEXEVMObject) IsEmpty() bool {
-	temp := NewBrigePDEXEVMState()
+func (pDexEvmTx BridgePDEXEVMObject) IsEmpty() bool {
+	temp := NewBridgePDEXEVMState()
 	return reflect.DeepEqual(temp, pDexEvmTx.BrigePDEXEVMState) || pDexEvmTx.BrigePDEXEVMState == nil
 }

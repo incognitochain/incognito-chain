@@ -2374,13 +2374,13 @@ func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState
 }
 
 // ================================= PDEX EVM (ERC20/BEP20) OBJECT =======================================
-func (stateDB *StateDB) getBridgePDEXEVMState(key common.Hash) (*BrigePDEXEVMState, bool, error) {
+func (stateDB *StateDB) getBridgePDEXEVMState(key common.Hash) (*BridgePDEXEVMState, bool, error) {
 	pDexEvmTxState, err := stateDB.getStateObject(BridgePDEXEVMObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if pDexEvmTxState != nil {
-		return pDexEvmTxState.GetValue().(*BrigePDEXEVMState), true, nil
+		return pDexEvmTxState.GetValue().(*BridgePDEXEVMState), true, nil
 	}
-	return NewBrigePDEXEVMState(), false, nil
+	return NewBridgePDEXEVMState(), false, nil
 }
