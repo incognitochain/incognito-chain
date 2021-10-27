@@ -102,6 +102,7 @@ const (
 	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 	randomCommitmentsAndPublicKeys             = "randomcommitmentsandpublickeys"
+	randomDecoysSelection                      = "randomdecoysselection"
 
 	createAndSendTransactionV2                   = "createandsendtransactionv2"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"

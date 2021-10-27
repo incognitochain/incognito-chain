@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/transaction/tx_ver2/ring_selection"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
@@ -405,6 +406,51 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		commitment := coinDB.GetCommitment()
 		indices = append(indices, idx.Uint64())
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
+		commitments = append(commitments, commitment.ToBytesS())
+
+		if hasAssetTags {
+			assetTag := coinDB.GetAssetTag()
+			if assetTag != nil {
+				assetTags = append(assetTags, assetTag.ToBytesS())
+			} else {
+				hasAssetTags = false
+			}
+		}
+	}
+
+	return indices, publicKeys, commitments, assetTags, nil
+}
+
+func (blockchain BlockChain) RandomDecoysFromGamma(numOutputs int, shardID byte, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, [][]byte, error) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, nil, nil, nil, fmt.Errorf("shardID %v is out of range, maxShardNumber is %v", shardID, common.MaxShardNumber)
+	}
+	db := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	latestHeight := blockchain.GetBestStateShard(shardID).ShardHeight
+
+	indices := make([]uint64, 0)
+	publicKeys := make([][]byte, 0)
+	commitments := make([][]byte, 0)
+	assetTags := make([][]byte, 0)
+
+	// these coins either all have asset tags or none does
+	hasAssetTags := true
+	failedCount := 0
+	for i := 0; i < numOutputs; i++ {
+		idx, coinDB, err := ring_selection.Pick(db, shardID, *tokenID, latestHeight)
+		if err != nil {
+			failedCount++
+			if failedCount > 30 {
+				return nil, nil, nil, nil, fmt.Errorf("max attempt exceeded")
+			}
+			Logger.log.Errorf("%v\n", err)
+			i--
+			continue
+		}
+
+		commitment := coinDB.GetCommitment()
+		indices = append(indices, idx.Uint64())
+		publicKeys = append(publicKeys, coinDB.GetPublicKey().ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())
 
 		if hasAssetTags {
