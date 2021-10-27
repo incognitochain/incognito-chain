@@ -1425,7 +1425,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				}
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
-				metadataCommon.IssuingPRVERC20RequestMeta, metadataCommon.IssuingPRVBEP20RequestMeta:
+				metadataCommon.IssuingPRVERC20RequestMeta, metadataCommon.IssuingPRVBEP20RequestMeta,
+				metadataCommon.IssuingPDEXERC20RequestMeta, metadataCommon.IssuingPDEXBEP20RequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

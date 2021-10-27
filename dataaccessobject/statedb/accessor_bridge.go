@@ -85,6 +85,16 @@ func IsPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) (bool, error)
 	return true, nil
 }
 
+func InsertPDEXEVMTxHashIssued(stateDB *StateDB, uniquePDEXEVMTx []byte) error {
+	key := GenerateBridgePDEXEVMObjectKey(uniquePDEXEVMTx)
+	value := NewBrigePDEXEVMStateWithValue(uniquePDEXEVMTx)
+	err := stateDB.SetStateObject(BridgePDEXEVMObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertPdexEVMTxHashIssuedError, err)
+	}
+	return nil
+}
+
 func IsPDEXEVMTxHashIssued(stateDB *StateDB, uniquePDEXEVMTx []byte) (bool, error) {
 	key := GenerateBridgePDEXEVMObjectKey(uniquePDEXEVMTx)
 	pDexEVMTxState, has, err := stateDB.getBridgePDEXEVMState(key)

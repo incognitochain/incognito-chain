@@ -279,7 +279,8 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta {
+	if iReq.Type == IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta ||
+		iReq.Type == metadataCommon.IssuingPDEXERC20RequestMeta {
 		if len(val) == 0 {
 			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
 		}

@@ -44,6 +44,14 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
+		case strconv.Itoa(metadataCommon.IssuingPDEXERC20RequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst,
+				updatingInfoByTokenID, statedb.InsertPDEXEVMTxHashIssued, false)
+
+		case strconv.Itoa(metadataCommon.IssuingPDEXBEP20RequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst,
+				updatingInfoByTokenID, statedb.InsertPDEXEVMTxHashIssued, false)
+
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
@@ -323,7 +331,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadataCommon.IssuingPRVERC20RequestMeta ||
-			metaType == metadataCommon.IssuingPRVBEP20RequestMeta {
+			metaType == metadataCommon.IssuingPRVBEP20RequestMeta ||
+			metaType == metadataCommon.IssuingPDEXERC20RequestMeta || metaType == metadataCommon.IssuingPDEXBEP20RequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -331,7 +340,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
-			metaType == metadataCommon.IssuingPRVERC20ResponseMeta || metaType == metadataCommon.IssuingPRVBEP20ResponseMeta {
+			metaType == metadataCommon.IssuingPRVERC20ResponseMeta || metaType == metadataCommon.IssuingPRVBEP20ResponseMeta ||
+			metaType == metadataCommon.IssuingPDEXERC20ResponseMeta || metaType == metadataCommon.IssuingPDEXBEP20ResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
