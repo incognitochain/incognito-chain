@@ -292,17 +292,18 @@ type Pdexv3Order struct {
 	token0Balance  uint64
 	token1Balance  uint64
 	tradeDirection byte
-	receiver       string
+	receiver       [2]string
 }
 
-func (o *Pdexv3Order) Id() string            { return o.id }
-func (o *Pdexv3Order) NftID() common.Hash    { return o.nftID }
-func (o *Pdexv3Order) Token0Rate() uint64    { return o.token0Rate }
-func (o *Pdexv3Order) Token1Rate() uint64    { return o.token1Rate }
-func (o *Pdexv3Order) Token0Balance() uint64 { return o.token0Balance }
-func (o *Pdexv3Order) Token1Balance() uint64 { return o.token1Balance }
-func (o *Pdexv3Order) TradeDirection() byte  { return o.tradeDirection }
-func (o *Pdexv3Order) Receiver() string      { return o.receiver }
+func (o *Pdexv3Order) Id() string             { return o.id }
+func (o *Pdexv3Order) NftID() common.Hash     { return o.nftID }
+func (o *Pdexv3Order) Token0Rate() uint64     { return o.token0Rate }
+func (o *Pdexv3Order) Token1Rate() uint64     { return o.token1Rate }
+func (o *Pdexv3Order) Token0Balance() uint64  { return o.token0Balance }
+func (o *Pdexv3Order) Token1Balance() uint64  { return o.token1Balance }
+func (o *Pdexv3Order) TradeDirection() byte   { return o.tradeDirection }
+func (o *Pdexv3Order) Token0Receiver() string { return o.receiver[0] }
+func (o *Pdexv3Order) Token1Receiver() string { return o.receiver[1] }
 
 // SetToken0Balance() changes the token0 balance of this order. Only balances can be updated,
 // while rates, id & trade direction cannot
@@ -313,7 +314,7 @@ func NewPdexv3OrderWithValue(
 	id string, nftID common.Hash,
 	token0Rate, token1Rate, token0Balance, token1Balance uint64,
 	tradeDirection byte,
-	receiver string,
+	receiver [2]string,
 ) *Pdexv3Order {
 	return &Pdexv3Order{
 		id:             id,
@@ -336,7 +337,7 @@ func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
 		Token0Balance  uint64      `json:"Token0Balance"`
 		Token1Balance  uint64      `json:"Token1Balance"`
 		TradeDirection byte        `json:"TradeDirection"`
-		Receiver       string      `json:"Receiver"`
+		Receiver       [2]string   `json:"Receiver"`
 	}{
 		Id:             o.id,
 		NftID:          o.nftID,
@@ -362,7 +363,7 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 		Token0Balance  uint64      `json:"Token0Balance"`
 		Token1Balance  uint64      `json:"Token1Balance"`
 		TradeDirection byte        `json:"TradeDirection"`
-		Receiver       string      `json:"Receiver"`
+		Receiver       [2]string   `json:"Receiver"`
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

@@ -1,9 +1,9 @@
 package v2utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
-	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
@@ -199,4 +199,24 @@ func (order *MatchingOrder) ApplyBalanceChanges(change0, change1 *big.Int) error
 	order.SetToken1Balance(temp.Uint64())
 
 	return nil
+}
+
+// CanMatch() returns true if
+// - incoming trade is of opposite direction (sell0 vs sell1)
+// - outstanding order balance is not too small (would exchange for at least 1 unit of TokenBuy using this order's own rate)
+func (order *MatchingOrder) CanMatch(incomingTradeDirection byte) (bool, error) {
+	if order.TradeDirection() == incomingTradeDirection {
+		return false, nil
+	}
+
+	var amountBuyAllFromOrder uint64
+	switch incomingTradeDirection {
+	case TradeDirectionSell0:
+		amountBuyAllFromOrder = order.Token1Balance()
+	case TradeDirectionSell1:
+		amountBuyAllFromOrder = order.Token0Balance()
+	}
+
+	sellAmountToOrder, err := order.SellAmountToOrder(amountBuyAllFromOrder, incomingTradeDirection)
+	return sellAmountToOrder >= 1, err
 }
