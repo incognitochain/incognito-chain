@@ -39,8 +39,10 @@ func TestProduceAcceptedTrade(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
 			NoError(t, err)
+			var expected TestResult
+			errParseExpectedResult := json.Unmarshal(testcase.Expected, &expected)
 
 			// fill trade path with blank data, except for reserves
 			orderbooks := make([]OrderBookIterator, len(testdata.Reserves))
@@ -61,12 +63,11 @@ func TestProduceAcceptedTrade(t *testing.T) {
 				testdata.Reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 				testdata.TradeDirections, common.PRVCoinID, 0, orderbooks)
 			acn := instruction.Action{Content: acceptedMd}
-			if testcase.ExpectSuccess {
-				encodedResult, _ := json.Marshal(TestResult{acn.StringSlice(), changedReserves})
-				NoError(t, err)
-				Equal(t, testcase.Expected, string(encodedResult))
+			if testcase.ExpectFailure {
+				Error(t, err)
 			} else {
-				Equal(t, testcase.Expected, err.Error())
+				NoError(t, errParseExpectedResult)
+				Equal(t, expected, TestResult{acn.StringSlice(), changedReserves})
 			}
 
 		})
@@ -102,10 +103,10 @@ func (o *OrderList) NextOrder(tradeDirection byte) (*MatchingOrder, string, erro
 }
 
 type Testcase struct {
-	Name          string `json:"name"`
-	Data          string `json:"data"`
-	Expected      string `json:"expected"`
-	ExpectSuccess bool   `json:"expectSuccess"`
+	Name          string          `json:"name"`
+	Data          json.RawMessage `json:"data"`
+	Expected      json.RawMessage `json:"expected"`
+	ExpectFailure bool            `json:"fail"`
 }
 
 func mustReadTestcases(filename string) []Testcase {
