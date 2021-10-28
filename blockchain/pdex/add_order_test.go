@@ -104,7 +104,10 @@ func TestProduceOrder(t *testing.T) {
 
 func TestAutoWithdraw(t *testing.T) {
 	setTestTradeConfig()
-	type TestData StateFormatter
+	type TestData struct {
+		State StateFormatter `json:"state"`
+		Limit uint           `json:"limit"`
+	}
 
 	type TestResult struct {
 		Instructions [][]string `json:"instructions"`
@@ -116,9 +119,8 @@ func TestAutoWithdraw(t *testing.T) {
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
-			temp := StateFormatter(testdata)
-			testState := temp.State()			
-			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, 100)
+			testState := testdata.State.State()
+			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
 			NoError(t, err)
 
 			encodedResult, _ := json.Marshal(TestResult{instructions})
