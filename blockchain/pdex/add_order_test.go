@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	. "github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func TestSortOrder(t *testing.T) {
 	}
 
 	type TestResult struct {
-		Orders []*Order `json:"orders"`
+		Orders         []*Order `json:"orders"`
 		MatchTradeBuy0 string
 		MatchTradeBuy1 string
 	}
@@ -28,12 +28,14 @@ func TestSortOrder(t *testing.T) {
 	var testcases []Testcase
 	testcases = append(testcases, sortOrderTestcases...)
 
-	testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
-		&Params{}, nil, map[string]uint64{})
-	blankPairID := "pair0"
-	testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
+			// initialize test state & order book
+			testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
+				&Params{}, nil, map[string]uint64{})
+			blankPairID := "pair0"
+			testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
+
 			var testdata TestData
 			err := json.Unmarshal([]byte(testcase.Data), &testdata)
 			NoError(t, err)
@@ -92,6 +94,33 @@ func TestProduceOrder(t *testing.T) {
 			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
 
 			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+
+			encodedResult, _ := json.Marshal(TestResult{instructions})
+			Equal(t, testcase.Expected, string(encodedResult))
+		})
+	}
+}
+
+func TestAutoWithdraw(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		State StateFormatter `json:"state"`
+		Limit uint           `json:"limit"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("auto_withdraw_order.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			NoError(t, err)
+			testState := testdata.State.State()
+			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
 			NoError(t, err)
 
 			encodedResult, _ := json.Marshal(TestResult{instructions})

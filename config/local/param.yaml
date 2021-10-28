@@ -1,5 +1,5 @@
 name: "local"
-net: 0x22
+net: 0x02
 genesis_param:
   initial_incognito:
     - Version: 1
