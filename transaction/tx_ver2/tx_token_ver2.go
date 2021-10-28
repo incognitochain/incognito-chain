@@ -322,6 +322,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				propertyID,
 				nil,
 				nil,
+				params.LatestHeight,
 			)
 			isBurning, err := txNormal.proveToken(txParams)
 			if err != nil {
@@ -412,6 +413,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		nil,
 		params.MetaData,
 		params.Info,
+		params.LatestHeight,
 	)
 	jsb, _ := json.Marshal(params.TokenParams)
 	utils.Logger.Log.Infof("Create TX token v2 with token params %s", string(jsb))
@@ -952,7 +954,7 @@ func (txToken TxToken) CheckTxVersion(maxTxVersion int8) bool {
 	return !(txToken.Tx.Version > maxTxVersion)
 }
 
-// IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees which the following conditions:
+// IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees with the following conditions:
 //
 // - mintable is true, tokenType is CustomTokenInit
 // - PRV proof is nil

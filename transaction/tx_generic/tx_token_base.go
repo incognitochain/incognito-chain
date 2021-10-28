@@ -35,6 +35,7 @@ type TxTokenParams struct {
 	HasPrivacyToken    bool
 	ShardID            byte
 	Info               []byte
+	LatestHeight       uint64 // the current latest shard height
 }
 
 // CustomTokenParamTx - use for rpc request json body
@@ -61,7 +62,13 @@ func NewTxTokenParams(senderKey *privacy.PrivateKey,
 	hasPrivacyToken bool,
 	shardID byte,
 	info []byte,
-	bridgeStateDB *statedb.StateDB) *TxTokenParams {
+	bridgeStateDB *statedb.StateDB,
+	latestShardHeights ...uint64,
+) *TxTokenParams {
+	latestHeight := uint64(0)
+	if len(latestShardHeights) > 0 {
+		latestHeight = latestShardHeights[0]
+	}
 	params := &TxTokenParams{
 		ShardID:            shardID,
 		PaymentInfo:        paymentInfo,
@@ -75,6 +82,7 @@ func NewTxTokenParams(senderKey *privacy.PrivateKey,
 		SenderKey:          senderKey,
 		TokenParams:        tokenParams,
 		Info:               info,
+		LatestHeight:       latestHeight,
 	}
 	return params
 }

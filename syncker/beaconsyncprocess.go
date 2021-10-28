@@ -54,7 +54,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 		chain:               chain,
 		beaconPool:          NewBlkPool("BeaconPool", isOutdatedBlock),
 		beaconPeerStates:    make(map[string]BeaconPeerState),
-		beaconPeerStateCh:   make(chan *wire.MessagePeerState),
+		beaconPeerStateCh:   make(chan *wire.MessagePeerState, 100),
 		actionCh:            make(chan func()),
 		lastCrossShardState: make(map[byte]map[byte]uint64),
 	}
@@ -79,7 +79,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 				s.chain.SetReady(true)
 			case <-ticker.C:
 				for sender, ps := range s.beaconPeerStates {
-					if ps.Timestamp < time.Now().Unix()-10 {
+					if ps.Timestamp < time.Now().Unix()-20 {
 						delete(s.beaconPeerStates, sender)
 					}
 				}

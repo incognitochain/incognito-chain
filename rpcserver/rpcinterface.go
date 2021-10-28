@@ -91,6 +91,7 @@ var HttpHandler = map[string]httpHandler{
 	listCommitmentIndices:                   (*HttpServer).handleListCommitmentIndices,
 	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 	randomCommitmentsAndPublicKeys:          (*HttpServer).handleRandomCommitmentsAndPublicKeys,
+	randomDecoysSelection:                   (*HttpServer).handleRandomDecoysSelection,
 
 	createAndSendTransactionV2:                (*HttpServer).handleCreateAndSendTxV2,
 	createAndSendStakingTransactionV2:         (*HttpServer).handleCreateAndSendStakingTxV2,
@@ -330,6 +331,8 @@ var HttpHandler = map[string]httpHandler{
 
 	getTxsByDecoys:      (*HttpServer).handleGetTransactionHashByDecoys,
 	getCoinInfoByHashes: (*HttpServer).handleGetCoinInfoByHashes,
+
+	connectionStatus: (*HttpServer).handleGetConnectionStatus,
 }
 
 // Commands that are available to a limited user
