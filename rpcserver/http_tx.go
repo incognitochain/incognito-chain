@@ -728,6 +728,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 
 // handleRandomCommitmentsAndPublicKey - returns a list of random commitments, public keys and indices for creating txver2
 func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Config().IsMainNet {
+		return httpServer.handleRandomDecoysSelection(params, closeChan)
+	}
+
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
