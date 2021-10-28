@@ -742,7 +742,6 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			// will withdraw any outstanding balance
 			if ord.Token0Balance() > 0 {
 				currentBalance := ord.Token0Balance()
-				ord.SetToken0Balance(0)
 				acceptedAction := instruction.NewAction(
 					&metadataPdexv3.AcceptedWithdrawOrder{
 						PoolPairID: pairID,
@@ -758,7 +757,6 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			}
 			if ord.Token1Balance() > 0 {
 				currentBalance := ord.Token1Balance()
-				ord.SetToken1Balance(0)
 				acceptedAction := instruction.NewAction(
 					&metadataPdexv3.AcceptedWithdrawOrder{
 						PoolPairID: pairID,
@@ -773,11 +771,13 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 				outputInstructions = append(outputInstructions, acceptedAction.StringSlice())
 			}
 
-			if numberTxsPerShard[shardID]+uint(len(outputInstructions)) >= limitTxsPerShard {
+			if numberTxsPerShard[shardID]+uint(len(outputInstructions)) > limitTxsPerShard {
 				continue
 			}
 			numberTxsPerShard[shardID] += uint(len(outputInstructions))
-			// apply orderbook changes for withdraw consistency in the same block
+			// apply orderbook changes & accept withdrawal(s)
+			ord.SetToken0Balance(0)
+			ord.SetToken1Balance(0)
 			pairs[pairID] = pair
 			result = append(result, outputInstructions...)
 		}
