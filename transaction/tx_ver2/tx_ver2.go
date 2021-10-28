@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/transaction/tx_ver2/ring_selection"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 
@@ -319,6 +322,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 	indexes := make([][]*big.Int, ringSize)
 	ring := make([][]*privacy.Point, ringSize)
 	var commitmentToZero *privacy.Point
+	gammaFailCount := 0
 	for i := 0; i < ringSize; i++ {
 		sumInputs := new(privacy.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
@@ -337,24 +341,42 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j++ {
-				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
-				if err != nil {
-					utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
-					return nil, nil, nil, err
-				}
-				coinDB := new(privacy.CoinV2)
-				if err := coinDB.SetBytes(coinBytes); err != nil {
-					utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
-					return nil, nil, nil, err
+				var idx *big.Int
+				var coinDB *coin.CoinV2
+
+				// We only use the GammaPicker when the `LatestHeight` is known and the current network is the main-net.
+				if config.Config() != nil && config.Config().IsMainNet && params.LatestHeight != 0 {
+					idx, coinDB, err = ring_selection.Pick(params.StateDB, shardID, *params.TokenID, params.LatestHeight)
+					if err != nil {
+						gammaFailCount++
+						if gammaFailCount > ring_selection.MaxGammaTries {
+							return nil, nil, nil, fmt.Errorf("gamma.pick: max attempt exceeded")
+						}
+						utils.Logger.Log.Errorf("%v\n", err)
+						j--
+						continue
+					}
+				} else {
+					idx, _ = common.RandBigIntMaxRange(lenOTA)
+					coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, idx.Uint64(), shardID)
+					if err != nil {
+						utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
+						return nil, nil, nil, err
+					}
+					coinDB = new(privacy.CoinV2)
+					if err := coinDB.SetBytes(coinBytes); err != nil {
+						utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
+						return nil, nil, nil, err
+					}
+
+					// we do not use burned coins since they will reduce the privacy level of the transaction.
+					if wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						j--
+						continue
+					}
 				}
 
-				// we do not use burned coins since they will reduce the privacy level of the transaction.
-				if wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
-					j--
-					continue
-				}
-
+				rowIndexes[j] = idx
 				row[j] = coinDB.GetPublicKey()
 				sumInputs.Add(sumInputs, coinDB.GetCommitment())
 			}

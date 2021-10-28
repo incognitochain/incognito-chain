@@ -44,16 +44,17 @@ type TxBase struct {
 // Function that choose which version to create metadata Transaction
 
 type TxPrivacyInitParams struct {
-	SenderSK    *privacy.PrivateKey
-	PaymentInfo []*privacy.PaymentInfo
-	InputCoins  []privacy.PlainCoin
-	Fee         uint64
-	HasPrivacy  bool
-	StateDB     *statedb.StateDB
-	TokenID     *common.Hash // default is nil -> use for prv coin
-	MetaData    metadata.Metadata
-	Info        []byte // 512 bytes
-	Kvargs      map[string]interface{}
+	SenderSK     *privacy.PrivateKey
+	PaymentInfo  []*privacy.PaymentInfo
+	InputCoins   []privacy.PlainCoin
+	Fee          uint64
+	HasPrivacy   bool
+	StateDB      *statedb.StateDB
+	TokenID      *common.Hash // default is nil -> use for prv coin
+	MetaData     metadata.Metadata
+	Info         []byte // 512 bytes
+	Kvargs       map[string]interface{}
+	LatestHeight uint64 // the current latest shard height
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -64,23 +65,29 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	stateDB *statedb.StateDB,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
-	info []byte) *TxPrivacyInitParams {
+	info []byte,
+	latestShardHeights ...uint64,
+) *TxPrivacyInitParams {
 	// make sure info is not nil ; zero value for it is []byte{}
-
+	latestHeight := uint64(0)
+	if len(latestShardHeights) > 0 {
+		latestHeight = latestShardHeights[0]
+	}
 	if info == nil {
 		info = []byte{}
 	}
 	params := &TxPrivacyInitParams{
-		StateDB:     stateDB,
-		TokenID:     tokenID,
-		HasPrivacy:  hasPrivacy,
-		InputCoins:  inputCoins,
-		Fee:         fee,
-		MetaData:    metaData,
-		PaymentInfo: paymentInfo,
-		SenderSK:    senderSK,
-		Info:        info,
-		Kvargs:      nil,
+		StateDB:      stateDB,
+		TokenID:      tokenID,
+		HasPrivacy:   hasPrivacy,
+		InputCoins:   inputCoins,
+		Fee:          fee,
+		MetaData:     metaData,
+		PaymentInfo:  paymentInfo,
+		SenderSK:     senderSK,
+		Info:         info,
+		Kvargs:       nil,
+		LatestHeight: latestHeight,
 	}
 	return params
 }
@@ -92,7 +99,7 @@ func GetTxInfo(paramInfo []byte) ([]byte, error) {
 	return paramInfo, nil
 }
 
-func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddree privacy.PaymentAddress) error {
+func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddress privacy.PaymentAddress) error {
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
 	for _, p := range params.PaymentInfo {
@@ -115,7 +122,7 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddre
 		// Should not check error because have checked before
 		changePaymentInfo := new(privacy.PaymentInfo)
 		changePaymentInfo.Amount = uint64(overBalance)
-		changePaymentInfo.PaymentAddress = senderPaymentAddree
+		changePaymentInfo.PaymentAddress = senderPaymentAddress
 		params.PaymentInfo = append(params.PaymentInfo, changePaymentInfo)
 	}
 

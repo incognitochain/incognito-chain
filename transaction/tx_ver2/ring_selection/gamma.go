@@ -23,6 +23,8 @@ const (
 	tokenGammaScale = 13.31
 
 	unitTime = 3600 * 24 // 1 day
+
+	MaxGammaTries = 30
 )
 
 // GammaPicker implements a Gamma distribution picker for choosing random decoys.
@@ -31,6 +33,7 @@ type GammaPicker struct {
 }
 
 // NewGammaPicker returns a new GammaPicker.
+// It is used for the MAIN-NET only.
 func NewGammaPicker(shape, scale float64) *GammaPicker {
 	randSrc := rand.NewSource(common.RandUint64())
 	gamma := distuv.Gamma{
@@ -42,7 +45,7 @@ func NewGammaPicker(shape, scale float64) *GammaPicker {
 	return &GammaPicker{gamma}
 }
 
-// Pick returns a random CoinV2 from the pre-defined distribution.
+// Pick returns a random CoinV2 from the pre-defined Gamma distribution.
 func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight uint64) (*big.Int, *coin.CoinV2, error) {
 	gp := NewGammaPicker(prvGammaShape, prvGammaScale)
 	if tokenID.String() != common.PRVIDStr {
