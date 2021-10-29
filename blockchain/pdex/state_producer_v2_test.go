@@ -220,6 +220,35 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchAndReturnContritubtion1InstBytes2, err := json.Marshal(matchAndReturnContritubtion1Inst2)
 	//
 
+	// out of range materials
+	outOfRangeMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
+		poolPairID, "pair_hash", validOTAReceiver0,
+		token1ID.String(), nftID, 10000000000000000000, 20000,
+	)
+	outOfRangeTx := &metadataMocks.Transaction{}
+	outOfRangeTx.On("GetMetadata").Return(outOfRangeMetaData)
+	outOfRangeTx.On("GetValidationEnv").Return(valEnv)
+	outOfRangeTx.On("Hash").Return(fourthTxHash)
+
+	outOfRangeContribution0State := statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			poolPairID, validOTAReceiver0,
+			*token0ID, *thirdTxHash, *nftHash, 10000000000000000000, 20000, 1,
+		),
+		"pair_hash")
+	outOfRangeInst0 := instruction.NewRefundAddLiquidityWithValue(*outOfRangeContribution0State)
+	outOfRangeInst0Bytes, err := json.Marshal(outOfRangeInst0)
+	outOfRangeContribution1State := statedb.NewPdexv3ContributionStateWithValue(
+		*rawdbv2.NewPdexv3ContributionWithValue(
+			poolPairID, validOTAReceiver0,
+			*token1ID, *fourthTxHash, *nftHash, 10000000000000000000, 20000, 1,
+		),
+		"pair_hash")
+	outOfRangeInst1 := instruction.NewRefundAddLiquidityWithValue(*outOfRangeContribution1State)
+	outOfRangeInst1Bytes, err := json.Marshal(outOfRangeInst1)
+
+	//
+
 	type fields struct {
 		stateProducerBase stateProducerBase
 	}
@@ -670,6 +699,86 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					shares: map[string]*Share{
 						nftID: &Share{
 							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+				},
+			},
+			want2: map[string]rawdbv2.Pdexv3Contribution{},
+			want3: map[string]bool{
+				nftID: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Out of range uint64",
+			fields: fields{
+				stateProducerBase: stateProducerBase{},
+			},
+			args: args{
+				txs: []metadata.Transaction{
+					outOfRangeTx,
+				},
+				beaconHeight: 12,
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 10000000000000000000,
+							10000000000000000000, 200,
+							big.NewInt(0).SetUint64(10000000000000000000),
+							big.NewInt(0).SetUint64(10000000000000000000), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
+					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
+						poolPairID, validOTAReceiver0,
+						*token0ID, *thirdTxHash, *nftHash, 10000000000000000000, 20000, 1,
+					),
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+			},
+			want: [][]string{
+				[]string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionRefundChainStatus,
+					string(outOfRangeInst0Bytes),
+				},
+				[]string{
+					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
+					common.PDEContributionRefundChainStatus,
+					string(outOfRangeInst1Bytes),
+				},
+			},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 10000000000000000000,
+						10000000000000000000, 200,
+						big.NewInt(0).SetUint64(10000000000000000000),
+						big.NewInt(0).SetUint64(10000000000000000000), 20000,
+					),
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             200,
 							tradingFees:        map[common.Hash]uint64{},
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
