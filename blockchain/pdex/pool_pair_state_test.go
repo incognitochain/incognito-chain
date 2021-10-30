@@ -1,7 +1,6 @@
 package pdex
 
 import (
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -1011,8 +1010,6 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			}
 			if !reflect.DeepEqual(p.state, tt.fieldsAfterProcess.state) {
 				t.Errorf("fieldsAfterProcess got = %v, want %v", p.state, tt.fieldsAfterProcess.state)
-				fmt.Println(p.state.Token1VirtualAmount())
-				fmt.Println(tt.fieldsAfterProcess.state.Token1VirtualAmount())
 			}
 			if !reflect.DeepEqual(p.shares, tt.fieldsAfterProcess.shares) {
 				t.Errorf("fieldsAfterProcess got = %v, want %v", p.shares, tt.fieldsAfterProcess.shares)
