@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -715,6 +716,15 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
 	assert.Nil(t, err)
 
+	temp, ok := big.NewInt(0).SetString("36893488147419103220", 10)
+	if ok != true {
+		panic(ok)
+	}
+	temp0, ok := big.NewInt(0).SetString("36893488147419103230", 10)
+	if ok != true {
+		panic(ok)
+	}
+
 	type fields struct {
 		state           rawdbv2.Pdexv3PoolPair
 		shares          map[string]*Share
@@ -936,6 +946,55 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Out of range",
+			fields: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					18446744073709551610, 18446744073709551610, 18446744073709551610,
+					temp,
+					temp,
+					20000,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
+					},
+				},
+				orderbook:       Orderbook{},
+				lpFeesPerShare:  map[common.Hash]*big.Int{},
+				protocolFees:    map[common.Hash]uint64{},
+				stakingPoolFees: map[common.Hash]uint64{},
+			},
+			fieldsAfterProcess: fields{
+				state: *rawdbv2.NewPdexv3PoolPairWithValue(
+					*token0ID, *token1ID,
+					18446744073709551610, 18446744073709551610, 18446744073709551615,
+					temp, temp0,
+					20000,
+				),
+				shares: map[string]*Share{
+					nftID: &Share{
+						amount:             200,
+						tradingFees:        map[common.Hash]uint64{},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{},
+					},
+				},
+				orderbook:       Orderbook{},
+				lpFeesPerShare:  map[common.Hash]*big.Int{},
+				protocolFees:    map[common.Hash]uint64{},
+				stakingPoolFees: map[common.Hash]uint64{},
+			},
+			args: args{
+				tokenID:     *token1ID,
+				amount:      5,
+				shareAmount: 5,
+				operator:    addOperator,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -952,6 +1011,8 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			}
 			if !reflect.DeepEqual(p.state, tt.fieldsAfterProcess.state) {
 				t.Errorf("fieldsAfterProcess got = %v, want %v", p.state, tt.fieldsAfterProcess.state)
+				fmt.Println(p.state.Token1VirtualAmount())
+				fmt.Println(tt.fieldsAfterProcess.state.Token1VirtualAmount())
 			}
 			if !reflect.DeepEqual(p.shares, tt.fieldsAfterProcess.shares) {
 				t.Errorf("fieldsAfterProcess got = %v, want %v", p.shares, tt.fieldsAfterProcess.shares)

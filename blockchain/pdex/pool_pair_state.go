@@ -453,7 +453,7 @@ func (p *PoolPairState) updateSingleTokenAmount(
 			tempVirtualAmount,
 			big.NewInt(0).SetUint64(p.state.ShareAmount()),
 		)
-		if tempVirtualAmount.Uint64() > newRealAmount {
+		if tempVirtualAmount.Cmp(big.NewInt(0).SetUint64(newRealAmount)) > 0 {
 			newVirtualAmount = tempVirtualAmount
 		} else {
 			newVirtualAmount.SetUint64(newRealAmount)
