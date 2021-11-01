@@ -136,7 +136,7 @@ type AcceptWithdrawLiquidity struct {
 	OtaReceiver string      `json:"OtaReceiver"`
 	ShareAmount uint64      `json:"ShareAmount"`
 	TxReqID     common.Hash `json:"TxReqID"`
-	ShardID     byte        `jdon:"ShardID"`
+	ShardID     byte        `json:"ShardID"`
 }
 
 func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(

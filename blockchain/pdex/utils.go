@@ -814,6 +814,11 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 			// convert the fee from PRV to equivalent token by applying discount percent
 			temp.Mul(temp, big.NewInt(100))
 			temp.Div(temp, discountPercent)
+			if !temp.IsUint64() {
+				Logger.log.Warnf("Equivalent fee out of uint64 range")
+				invalidTransactions = append(invalidTransactions, tx)
+				continue
+			}
 			fee = temp.Uint64()
 		} else {
 			// error was handled by tx validation

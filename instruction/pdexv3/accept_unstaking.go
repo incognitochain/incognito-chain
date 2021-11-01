@@ -71,7 +71,7 @@ func (a *AcceptUnstaking) MarshalJSON() ([]byte, error) {
 		Amount        uint64      `json:"Amount"`
 		OtaReceiver   string      `json:"OtaReceiver"`
 		TxReqID       common.Hash `json:"TxReqID"`
-		ShardID       byte        `jdon:"ShardID"`
+		ShardID       byte        `json:"ShardID"`
 	}{
 		StakingPoolID: a.stakingPoolID,
 		NftID:         a.nftID,
@@ -93,7 +93,7 @@ func (a *AcceptUnstaking) UnmarshalJSON(data []byte) error {
 		Amount        uint64      `json:"Amount"`
 		OtaReceiver   string      `json:"OtaReceiver"`
 		TxReqID       common.Hash `json:"TxReqID"`
-		ShardID       byte        `jdon:"ShardID"`
+		ShardID       byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

@@ -164,7 +164,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
-			Logger.log.Warnf("tx %v pool pair is empty", tx.Hash().String())
+			Logger.log.Warnf("tx %v compute contributed amount err %v", tx.Hash().String(), err)
 			res = append(res, insts...)
 			continue
 		}
