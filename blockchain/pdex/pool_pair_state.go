@@ -72,7 +72,7 @@ func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
 func (poolPairState *PoolPairState) LpFeesPerShare() map[common.Hash]*big.Int {
 	res := make(map[common.Hash]*big.Int)
 	for k, v := range poolPairState.lpFeesPerShare {
-		res[k] = big.NewInt(0).SetBytes(v.Bytes())
+		res[k] = big.NewInt(0).Set(v)
 	}
 	return res
 }

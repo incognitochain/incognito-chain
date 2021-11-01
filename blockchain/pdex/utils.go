@@ -814,6 +814,9 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 			// convert the fee from PRV to equivalent token by applying discount percent
 			temp.Mul(temp, big.NewInt(100))
 			temp.Div(temp, discountPercent)
+			if !temp.IsUint64() {
+				return nil, nil, nil, nil, nil, fmt.Errorf("fee is not uint64 type")
+			}
 			fee = temp.Uint64()
 		} else {
 			// error was handled by tx validation
@@ -837,6 +840,9 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 					Logger.log.Warnf("Equivalent fee out of uint64 range")
 					invalidTransactions = append(invalidTransactions, tx)
 					continue
+				}
+				if !temp.IsUint64() {
+					return nil, nil, nil, nil, nil, fmt.Errorf("fee is not uint64 type")
 				}
 				// mark the fee as paid in PRV, and return the equivalent token amount
 				fee = temp.Uint64()
