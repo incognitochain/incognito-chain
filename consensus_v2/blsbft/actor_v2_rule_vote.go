@@ -40,17 +40,17 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 	errVote := 0
 
 	committees := make(map[string]int)
-	if len(proposeBlockInfo.votes) != 0 {
-		for i, v := range proposeBlockInfo.signingCommittees {
+	if len(proposeBlockInfo.Votes) != 0 {
+		for i, v := range proposeBlockInfo.SigningCommittees {
 			committees[v.GetMiningKeyBase58(common.BlsConsensus)] = i
 		}
 	}
 
-	for id, vote := range proposeBlockInfo.votes {
+	for id, vote := range proposeBlockInfo.Votes {
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			if value, ok := committees[vote.Validator]; ok {
-				dsaKey = proposeBlockInfo.signingCommittees[value].MiningPubKey[common.BridgeConsensus]
+				dsaKey = proposeBlockInfo.SigningCommittees[value].MiningPubKey[common.BridgeConsensus]
 			} else {
 				v.logger.Error("Receive vote from nonCommittee member")
 				continue
@@ -64,10 +64,10 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 			if err != nil {
 				v.logger.Error(dsaKey)
 				v.logger.Error(err)
-				proposeBlockInfo.votes[id].IsValid = -1
+				proposeBlockInfo.Votes[id].IsValid = -1
 				errVote++
 			} else {
-				proposeBlockInfo.votes[id].IsValid = 1
+				proposeBlockInfo.Votes[id].IsValid = 1
 				validVote++
 			}
 		} else {
@@ -76,18 +76,18 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 	}
 
 	v.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
-	proposeBlockInfo.hasNewVote = false
-	for key, value := range proposeBlockInfo.votes {
+	proposeBlockInfo.HasNewVote = false
+	for key, value := range proposeBlockInfo.Votes {
 		if value.IsValid == -1 {
-			delete(proposeBlockInfo.votes, key)
+			delete(proposeBlockInfo.Votes, key)
 		}
 	}
 
 	proposeBlockInfo.addBlockInfo(
-		proposeBlockInfo.block,
-		proposeBlockInfo.committees,
-		proposeBlockInfo.signingCommittees,
-		proposeBlockInfo.userKeySet,
+		proposeBlockInfo.Block,
+		proposeBlockInfo.Committees,
+		proposeBlockInfo.SigningCommittees,
+		proposeBlockInfo.UserKeySet,
 		validVote,
 		errVote,
 	)
@@ -172,17 +172,17 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 	errVote := 0
 
 	committees := make(map[string]int)
-	if len(proposeBlockInfo.votes) != 0 {
-		for i, v := range proposeBlockInfo.signingCommittees {
+	if len(proposeBlockInfo.Votes) != 0 {
+		for i, v := range proposeBlockInfo.SigningCommittees {
 			committees[v.GetMiningKeyBase58(common.BlsConsensus)] = i
 		}
 	}
 
-	for id, vote := range proposeBlockInfo.votes {
+	for id, vote := range proposeBlockInfo.Votes {
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			if value, ok := committees[vote.Validator]; ok {
-				dsaKey = proposeBlockInfo.signingCommittees[value].MiningPubKey[common.BridgeConsensus]
+				dsaKey = proposeBlockInfo.SigningCommittees[value].MiningPubKey[common.BridgeConsensus]
 			} else {
 				v.logger.Error("Receive vote from nonCommittee member")
 				continue
@@ -196,10 +196,10 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 			if err != nil {
 				v.logger.Error(dsaKey)
 				v.logger.Error(err)
-				proposeBlockInfo.votes[id].IsValid = -1
+				proposeBlockInfo.Votes[id].IsValid = -1
 				errVote++
 			} else {
-				proposeBlockInfo.votes[id].IsValid = 1
+				proposeBlockInfo.Votes[id].IsValid = 1
 				validVote++
 			}
 		} else {
@@ -208,18 +208,18 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 	}
 
 	v.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
-	proposeBlockInfo.hasNewVote = false
-	for key, value := range proposeBlockInfo.votes {
+	proposeBlockInfo.HasNewVote = false
+	for key, value := range proposeBlockInfo.Votes {
 		if value.IsValid == -1 {
-			delete(proposeBlockInfo.votes, key)
+			delete(proposeBlockInfo.Votes, key)
 		}
 	}
 
 	proposeBlockInfo.addBlockInfo(
-		proposeBlockInfo.block,
-		proposeBlockInfo.committees,
-		proposeBlockInfo.signingCommittees,
-		proposeBlockInfo.userKeySet,
+		proposeBlockInfo.Block,
+		proposeBlockInfo.Committees,
+		proposeBlockInfo.SigningCommittees,
+		proposeBlockInfo.UserKeySet,
 		validVote,
 		errVote,
 	)

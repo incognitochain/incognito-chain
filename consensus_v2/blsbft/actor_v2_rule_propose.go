@@ -61,12 +61,12 @@ func (p ProposeRuleLemma1) HandleCleanMem(finalView uint64) {
 
 func (p ProposeRuleLemma1) HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error) {
 	return &ProposeBlockInfo{
-		block:                   env.block,
-		votes:                   make(map[string]*BFTVote),
-		committees:              incognitokey.DeepCopy(env.committees),
-		signingCommittees:       incognitokey.DeepCopy(env.signingCommittees),
-		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(env.userKeySet),
-		proposerMiningKeyBase58: env.producerPublicBLSMiningKey,
+		Block:                   env.block,
+		Votes:                   make(map[string]*BFTVote),
+		Committees:              incognitokey.DeepCopy(env.committees),
+		SigningCommittees:       incognitokey.DeepCopy(env.signingCommittees),
+		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(env.userKeySet),
+		ProposerMiningKeyBase58: env.producerPublicBLSMiningKey,
 	}, nil
 }
 

@@ -14,25 +14,24 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	block                   types.BlockInterface
-	receiveTime             time.Time
-	committees              []incognitokey.CommitteePublicKey
-	signingCommittees       []incognitokey.CommitteePublicKey
-	userKeySet              []signatureschemes2.MiningKey
-	votes                   map[string]*BFTVote //pk->BFTVote
-	isValid                 bool
-	hasNewVote              bool
-	isVoted                 bool
-	isCommitted             bool
-	validVotes              int
-	errVotes                int
-	proposerSendVote        bool
-	proposerMiningKeyBase58 string
-	lastValidateTime        time.Time
-
-	reProposeHashSignature string
-	isValidLemma2Proof     bool
-	finalityProof          FinalityProof
+	Block                   types.BlockInterface
+	ReceiveTime             time.Time
+	Committees              []incognitokey.CommitteePublicKey
+	SigningCommittees       []incognitokey.CommitteePublicKey
+	UserKeySet              []signatureschemes2.MiningKey
+	Votes                   map[string]*BFTVote //pk->BFTVote
+	IsValid                 bool
+	HasNewVote              bool
+	IsVoted                 bool
+	IsCommitted             bool
+	ValidVotes              int
+	ErrVotes                int
+	ProposerSendVote        bool
+	ProposerMiningKeyBase58 string
+	LastValidateTime        time.Time
+	ReProposeHashSignature  string
+	IsValidLemma2Proof      bool
+	FinalityProof           FinalityProof
 }
 
 func NewProposeBlockInfo() *ProposeBlockInfo {
@@ -48,12 +47,12 @@ func newProposeBlockForProposeMsg(
 	proposerMiningKeyBase58 string,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		block:                   block,
-		votes:                   make(map[string]*BFTVote),
-		committees:              incognitokey.DeepCopy(committees),
-		signingCommittees:       incognitokey.DeepCopy(signingCommittes),
-		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
-		proposerMiningKeyBase58: proposerMiningKeyBase58,
+		Block:                   block,
+		Votes:                   make(map[string]*BFTVote),
+		Committees:              incognitokey.DeepCopy(committees),
+		SigningCommittees:       incognitokey.DeepCopy(signingCommittes),
+		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
+		ProposerMiningKeyBase58: proposerMiningKeyBase58,
 	}
 }
 
@@ -67,15 +66,15 @@ func newProposeBlockForProposeMsgLemma2(
 	isValidLemma2 bool,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		block:                   block,
-		votes:                   make(map[string]*BFTVote),
-		committees:              incognitokey.DeepCopy(committees),
-		signingCommittees:       incognitokey.DeepCopy(signingCommittees),
-		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
-		proposerMiningKeyBase58: proposerMiningKeyBase58,
-		isValidLemma2Proof:      isValidLemma2,
-		reProposeHashSignature:  proposeMsg.ReProposeHashSignature,
-		finalityProof:           proposeMsg.FinalityProof,
+		Block:                   block,
+		Votes:                   make(map[string]*BFTVote),
+		Committees:              incognitokey.DeepCopy(committees),
+		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
+		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
+		ProposerMiningKeyBase58: proposerMiningKeyBase58,
+		IsValidLemma2Proof:      isValidLemma2,
+		ReProposeHashSignature:  proposeMsg.ReProposeHashSignature,
+		FinalityProof:           proposeMsg.FinalityProof,
 	}
 }
 
@@ -86,18 +85,18 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	userKeySet []signatureschemes2.MiningKey,
 	validVotes, errVotes int,
 ) {
-	proposeBlockInfo.block = block
-	proposeBlockInfo.committees = incognitokey.DeepCopy(committees)
-	proposeBlockInfo.signingCommittees = incognitokey.DeepCopy(signingCommittes)
-	proposeBlockInfo.userKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
-	proposeBlockInfo.validVotes = validVotes
-	proposeBlockInfo.errVotes = errVotes
+	proposeBlockInfo.Block = block
+	proposeBlockInfo.Committees = incognitokey.DeepCopy(committees)
+	proposeBlockInfo.SigningCommittees = incognitokey.DeepCopy(signingCommittes)
+	proposeBlockInfo.UserKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
+	proposeBlockInfo.ValidVotes = validVotes
+	proposeBlockInfo.ErrVotes = errVotes
 }
 
 func newBlockInfoForVoteMsg() *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		votes:      make(map[string]*BFTVote),
-		hasNewVote: true,
+		Votes:      make(map[string]*BFTVote),
+		HasNewVote: true,
 	}
 }
 

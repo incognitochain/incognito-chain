@@ -384,6 +384,40 @@ func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeCh
 	return blsbft.ActorV2BuilderContext, nil
 }
 
+func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
+	}
+	tempChainID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid chain id type"))
+	}
+	chainID := int(tempChainID)
+	voteHistory, err := blsbft.InitVoteHistory(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	proposeHistory, err := blsbft.InitProposeHistory(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	receiveBlockByHash, err := blsbft.InitReceiveBlockByHeight(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	receiveBlockByHeight, err := blsbft.InitReceiveBlockByHeight(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return map[string]interface{}{
+		"voteHistory":          voteHistory,
+		"proposeHistory":       proposeHistory,
+		"receiveBlockByHash":   receiveBlockByHash,
+		"receiveBlockByHeight": receiveBlockByHeight,
+	}, nil
+}
+
 func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
 	arrayParams := common.InterfaceSlice(params)
