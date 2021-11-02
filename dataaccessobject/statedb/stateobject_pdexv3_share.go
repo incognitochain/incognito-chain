@@ -130,9 +130,8 @@ func newPdexv3ShareObjectWithValue(db *StateDB, key common.Hash, data interface{
 }
 
 func generatePdexv3ShareObjectPrefix(poolPairID string) []byte {
-	str := string(GetPdexv3SharesPrefix()) + "-" + poolPairID
-	temp := []byte(str)
-	h := common.HashH(temp)
+	b := append(GetPdexv3SharesPrefix(), []byte(poolPairID)...)
+	h := common.HashH(b)
 	return h[:prefixHashKeyLength]
 }
 
