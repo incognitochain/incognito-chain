@@ -352,9 +352,11 @@ const (
 	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
-	getBurnProofForDepositToSC                  = "getburnprooffordeposittosc"
-	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
-	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
+	getBurnProofForDepositToSC                    = "getburnprooffordeposittosc"
+	getBurnPBSCProofForDepositToSC                = "getburnpbscprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest     = "createandsendburningfordeposittoscrequest"
+	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
+	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
 
 	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"

@@ -112,6 +112,22 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
+// handleGetBurnPBSCProofForDepositToSC returns a proof of a tx burning pBSC to deposit to SC
+func (httpServer *HttpServer) handleGetBurnPBSCProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningConfirmForDepositToSCMeta
+	if onBeacon {
+		confirmMeta = metadata.BurningPBSCConfirmForDepositToSCMeta
+	}
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {

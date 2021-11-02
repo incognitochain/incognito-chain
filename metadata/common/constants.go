@@ -188,6 +188,10 @@ const (
 	BurningPDEXERC20ConfirmMeta  = 152
 	BurningPDEXBEP20RequestMeta  = 325
 	BurningPDEXBEP20ConfirmMeta  = 153
+
+	// pBSC
+	BurningPBSCForDepositToSCRequestMeta = 326
+	BurningPBSCConfirmForDepositToSCMeta = 153
 )
 
 var minerCreatedMetaTypes = []int{
@@ -328,6 +332,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPRVBEP20ConfirmMeta),
 	strconv.Itoa(BurningPDEXERC20ConfirmMeta),
 	strconv.Itoa(BurningPDEXBEP20ConfirmMeta),
+	strconv.Itoa(BurningPBSCConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{

@@ -170,17 +170,19 @@ const (
 	InitTokenRequestMeta               = metadataCommon.InitTokenRequestMeta
 	InitTokenResponseMeta              = metadataCommon.InitTokenResponseMeta
 	// incognito mode for bsc
-	IssuingBSCRequestMeta    = metadataCommon.IssuingBSCRequestMeta
-	IssuingBSCResponseMeta   = metadataCommon.IssuingBSCResponseMeta
-	BurningPBSCRequestMeta   = metadataCommon.BurningPBSCRequestMeta
-	BurningBSCConfirmMeta    = metadataCommon.BurningBSCConfirmMeta
-	AllShards                = metadataCommon.AllShards
-	BeaconOnly               = metadataCommon.BeaconOnly
-	StopAutoStakingAmount    = metadataCommon.StopAutoStakingAmount
-	EVMConfirmationBlocks    = metadataCommon.EVMConfirmationBlocks
-	NoAction                 = metadataCommon.NoAction
-	MetaRequestBeaconMintTxs = metadataCommon.MetaRequestBeaconMintTxs
-	MetaRequestShardMintTxs  = metadataCommon.MetaRequestShardMintTxs
+	IssuingBSCRequestMeta                = metadataCommon.IssuingBSCRequestMeta
+	IssuingBSCResponseMeta               = metadataCommon.IssuingBSCResponseMeta
+	BurningPBSCRequestMeta               = metadataCommon.BurningPBSCRequestMeta
+	BurningBSCConfirmMeta                = metadataCommon.BurningBSCConfirmMeta
+	AllShards                            = metadataCommon.AllShards
+	BeaconOnly                           = metadataCommon.BeaconOnly
+	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
+	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
+	NoAction                             = metadataCommon.NoAction
+	MetaRequestBeaconMintTxs             = metadataCommon.MetaRequestBeaconMintTxs
+	MetaRequestShardMintTxs              = metadataCommon.MetaRequestShardMintTxs
+	BurningPBSCForDepositToSCRequestMeta = metadataCommon.BurningPBSCForDepositToSCRequestMeta
+	BurningPBSCConfirmForDepositToSCMeta = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
 )
 
 // export error codes
