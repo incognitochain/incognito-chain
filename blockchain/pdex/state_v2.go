@@ -526,7 +526,10 @@ func (s *stateV2) GetDiff(
 		return nil, newStateChange, errors.New("compareState is nil")
 	}
 	res := newStateV2()
-	compareStateV2 := compareState.(*stateV2)
+	compareStateV2, ok := compareState.(*stateV2)
+	if !ok {
+		return nil, newStateChange, errors.New("compareState is not stateV2")
+	}
 
 	if !reflect.DeepEqual(s.params, compareStateV2.params) {
 		res.params = s.params

@@ -363,7 +363,10 @@ func (s *stateV1) GetDiff(compareState State, stateChange *v2utils.StateChange) 
 	}
 
 	res := newStateV1()
-	compareStateV1 := compareState.(*stateV1)
+	compareStateV1, ok := compareState.(*stateV1)
+	if !ok {
+		return nil, stateChange, errors.New("compareState is not stateV1")
+	}
 
 	for k, v := range s.waitingContributions {
 		if m, ok := compareStateV1.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {

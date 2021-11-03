@@ -7,7 +7,6 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
@@ -794,7 +793,7 @@ func (httpServer *HttpServer) handleGetPdexv3ContributionStatus(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res := v2utils.ContributionStatus{}
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1083,7 +1082,7 @@ func (httpServer *HttpServer) handleGetPdexv3WithdrawLiquidityStatus(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res := v2utils.WithdrawStatus{}
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1115,7 +1114,7 @@ func (httpServer *HttpServer) handleGetPdexv3MintNftStatus(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res := v2utils.MintNftStatus{}
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1183,7 +1182,7 @@ func (httpServer *HttpServer) handlePdexv3GetTradeStatus(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get TradeStatus data"))
 	}
-	res := make(map[string]interface{})
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1216,7 +1215,7 @@ func (httpServer *HttpServer) handlePdexv3GetAddOrderStatus(params interface{}, 
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get AddOrderStatus data"))
 	}
-	res := make(map[string]interface{})
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1253,7 +1252,7 @@ func (httpServer *HttpServer) handlePdexv3GetWithdrawOrderStatus(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			errors.New("Cannot get WithdrawOrderStatus data"))
 	}
-	res := make(map[string]interface{})
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1695,7 +1694,7 @@ func (httpServer *HttpServer) handleGetPdexv3StakingStatus(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res := v2utils.StakingStatus{}
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1853,7 +1852,7 @@ func (httpServer *HttpServer) handleGetPdexv3UnstakingStatus(params interface{},
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res := v2utils.UnstakingStatus{}
+	var res json.RawMessage
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
