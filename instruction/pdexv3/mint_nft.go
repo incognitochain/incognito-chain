@@ -29,6 +29,8 @@ func NewMintNftWithValue(nftID common.Hash, otaReceiver string, shardID byte, tx
 	}
 }
 
+// FromStringSlice verify format [{mintnft-metaType}, {action}, {data}]
+// won't verify source[1] will be verify in other place
 func (m *MintNft) FromStringSlice(source []string) error {
 	if len(source) != 3 {
 		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
@@ -43,6 +45,7 @@ func (m *MintNft) FromStringSlice(source []string) error {
 	return nil
 }
 
+// StringSlice format [{mintnft-metaType}, {action}, {data}]
 func (m *MintNft) StringSlice(action string) ([]string, error) {
 	res := []string{}
 	res = append(res, strconv.Itoa(metadataCommon.Pdexv3MintNftRequestMeta))

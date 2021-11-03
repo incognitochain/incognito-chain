@@ -23,7 +23,7 @@ func (share *Share) Amount() uint64 {
 func (share *Share) LastLPFeesPerShare() map[common.Hash]*big.Int {
 	res := make(map[common.Hash]*big.Int)
 	for k, v := range share.lastLPFeesPerShare {
-		res[k] = big.NewInt(0).SetBytes(v.Bytes())
+		res[k] = big.NewInt(0).Set(v)
 	}
 	return res
 }
@@ -148,7 +148,7 @@ func (staker *Staker) Liquidity() uint64 {
 func (staker *Staker) LastRewardsPerShare() map[common.Hash]*big.Int {
 	res := make(map[common.Hash]*big.Int)
 	for k, v := range staker.lastRewardsPerShare {
-		res[k] = big.NewInt(0).SetBytes(v.Bytes())
+		res[k] = big.NewInt(0).Set(v)
 	}
 	return res
 }
