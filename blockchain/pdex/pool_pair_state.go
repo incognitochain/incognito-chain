@@ -72,7 +72,7 @@ func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
 func (poolPairState *PoolPairState) LpFeesPerShare() map[common.Hash]*big.Int {
 	res := make(map[common.Hash]*big.Int)
 	for k, v := range poolPairState.lpFeesPerShare {
-		res[k] = big.NewInt(0).SetBytes(v.Bytes())
+		res[k] = big.NewInt(0).Set(v)
 	}
 	return res
 }
@@ -96,8 +96,7 @@ func (poolPairState *PoolPairState) StakingPoolFees() map[common.Hash]uint64 {
 func (poolPairState *PoolPairState) Shares() map[string]*Share {
 	res := make(map[string]*Share)
 	for k, v := range poolPairState.shares {
-		res[k] = NewShare()
-		*res[k] = *v
+		res[k] = v.Clone()
 	}
 	return res
 }
@@ -203,7 +202,7 @@ func (p *PoolPairState) computeActualContributedAmounts(
 		tempAmt,
 		new(big.Int).SetUint64(p.state.Token1RealAmount()),
 	)
-	if tempAmt.Uint64() > contribution0.Amount() {
+	if tempAmt.Cmp(big.NewInt(0).SetUint64(contribution0.Amount())) > 0 {
 		contribution0Amount = new(big.Int).SetUint64(contribution0.Amount())
 	} else {
 		contribution0Amount = tempAmt
@@ -217,6 +216,9 @@ func (p *PoolPairState) computeActualContributedAmounts(
 		contribution1Amount,
 		new(big.Int).SetUint64(p.state.Token0RealAmount()),
 	)
+	if !contribution0Amount.IsUint64() || !contribution1Amount.IsUint64() {
+		return 0, 0, 0, 0, errors.New("contributed amount is not uint64")
+	}
 	actualContribution0Amt := contribution0Amount.Uint64()
 	actualContribution1Amt := contribution1Amount.Uint64()
 	return actualContribution0Amt, contribution0.Amount() - actualContribution0Amt, actualContribution1Amt, contribution1.Amount() - actualContribution1Amt, nil
@@ -453,7 +455,7 @@ func (p *PoolPairState) updateSingleTokenAmount(
 			tempVirtualAmount,
 			big.NewInt(0).SetUint64(p.state.ShareAmount()),
 		)
-		if tempVirtualAmount.Uint64() > newRealAmount {
+		if tempVirtualAmount.Cmp(big.NewInt(0).SetUint64(newRealAmount)) > 0 {
 			newVirtualAmount = tempVirtualAmount
 		} else {
 			newVirtualAmount.SetUint64(newRealAmount)

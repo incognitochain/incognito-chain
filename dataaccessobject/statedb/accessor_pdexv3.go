@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
@@ -103,7 +104,7 @@ func DeletePdexv3WaitingContributions(
 	for _, pairHash := range pairHashes {
 		key := GeneratePdexv3ContributionObjectKey(pairHash)
 		if !stateDB.MarkDeleteStateObject(Pdexv3ContributionObjectType, key) {
-			fmt.Printf("Can't delete contributions with pair hash %v maybe 2 contributions have been matched\n", pairHash)
+			dataaccessobject.Logger.Log.Infof("Can't delete contributions with pair hash %v maybe 2 contributions have been matched\n", pairHash)
 		}
 	}
 	return nil
@@ -236,7 +237,7 @@ func GetPdexv3PoolPair(stateDB *StateDB, poolPairID string) (*Pdexv3PoolPairStat
 		return nil, NewStatedbError(GetPdexv3PoolPairError, err)
 	}
 	if !has {
-		return nil, NewStatedbError(GetPdexv3PoolPairError, fmt.Errorf("could not found pDex v3 params in statedb"))
+		return nil, NewStatedbError(GetPdexv3PoolPairError, fmt.Errorf("could not found pDex v3 pool pairs in statedb"))
 	}
 	return s, nil
 }
