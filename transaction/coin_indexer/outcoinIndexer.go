@@ -176,7 +176,9 @@ func (ci *CoinIndexer) CacheCoinPublicKey(coinPublicKey *privacy.Point) error {
 	if err != nil {
 		return err
 	}
+	ci.mtx.Lock()
 	ci.cachedCoinPubKeys[coinPublicKey.String()] = true
+	ci.mtx.Unlock()
 	utils.Logger.Log.Infof("Add coinPublicKey %v success\n", coinPublicKey.String())
 	return nil
 }
