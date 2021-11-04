@@ -22,7 +22,7 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 	tc1Block.On("Hash").Return(&tc1BlockHash).Times(4)
 	tc1CurrentTimeSlot := common.CalculateTimeSlot(tc1ProposeTime)
 	tc1BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc1Block,
+		block:            tc1Block,
 		IsVoted:          true,
 		LastValidateTime: time.Now(),
 	}
@@ -45,7 +45,7 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 	tc2Block.On("Hash").Return(&tc2BlockHash).Times(4)
 	tc2CurrentTimeSlot := common.CalculateTimeSlot(tc2ProposeTime + int64(common.TIMESLOT))
 	tc2BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc2Block,
+		block:            tc2Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -66,7 +66,7 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 	tc3Block.On("Hash").Return(&tc3BlockHash).Times(4)
 	tc3CurrentTimeSlot := common.CalculateTimeSlot(tc3ProposeTime)
 	tc3BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc3Block,
+		block:            tc3Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -87,7 +87,7 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 	tc4Block.On("Hash").Return(&tc4BlockHash).Times(4)
 	tc4CurrentTimeSlot := common.CalculateTimeSlot(tc4ProposeTime)
 	tc4BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc4Block,
+		block:            tc4Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -108,7 +108,7 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 	tc5Block.On("Hash").Return(&tc5BlockHash).Times(4)
 	tc5CurrentTimeSlot := common.CalculateTimeSlot(tc5ProposeTime)
 	tc5BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc5Block,
+		block:            tc5Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -137,12 +137,12 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 
 	tc6CurrentTimeSlot := common.CalculateTimeSlot(tc6ProposeTime)
 	tc6BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc6Block,
+		block:            tc6Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
 	tc6BlockProposeInfo2 := &ProposeBlockInfo{
-		Block:            tc6Block2,
+		block:            tc6Block2,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -164,7 +164,7 @@ func TestConsensusValidatorLemma1_FilterValidProposeBlockInfo(t *testing.T) {
 	tc7Block.On("Hash").Return(&tc7BlockHash).Times(4)
 	tc7CurrentTimeSlot := common.CalculateTimeSlot(tc7ProposeTime)
 	tc7BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc7Block,
+		block:            tc7Block,
 		IsVoted:          false,
 		LastValidateTime: time.Now(),
 	}
@@ -324,7 +324,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 	tc1Block.On("Hash").Return(&tc1BlockHash).Times(4)
 	tc1CurrentTimeSlot := common.CalculateTimeSlot(tc1ProposeTime)
 	tc1BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc1Block,
+		block:            tc1Block,
 		IsVoted:          true,
 		LastValidateTime: time.Now(),
 	}
@@ -347,7 +347,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 	tc2Block.On("Hash").Return(&tc2BlockHash).Times(4)
 	tc2CurrentTimeSlot := common.CalculateTimeSlot(tc2ProposeTime + int64(common.TIMESLOT))
 	tc2BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc2Block,
+		block:            tc2Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -368,7 +368,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 	tc3Block.On("Hash").Return(&tc3BlockHash).Times(4)
 	tc3CurrentTimeSlot := common.CalculateTimeSlot(tc3ProposeTime)
 	tc3BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc3Block,
+		block:            tc3Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -389,7 +389,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 	tc4Block.On("Hash").Return(&tc4BlockHash).Times(4)
 	tc4CurrentTimeSlot := common.CalculateTimeSlot(tc4ProposeTime)
 	tc4BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc4Block,
+		block:            tc4Block,
 		IsVoted:          true,
 		LastValidateTime: oldTimeList,
 	}
@@ -413,7 +413,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 	tc5Block.On("GetFinalityHeight").Return(uint64(0)).Times(10)
 	tc5CurrentTimeSlot := common.CalculateTimeSlot(tc5ProposeTime)
 	tc5BlockProposeInfo := &ProposeBlockInfo{
-		Block:              tc5Block,
+		block:              tc5Block,
 		IsVoted:            true,
 		LastValidateTime:   oldTimeList,
 		IsValidLemma2Proof: false,
@@ -449,13 +449,13 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 
 	tc6CurrentTimeSlot := common.CalculateTimeSlot(tc6ProposeTime)
 	tc6BlockProposeInfo := &ProposeBlockInfo{
-		Block:              tc6Block,
+		block:              tc6Block,
 		IsVoted:            true,
 		LastValidateTime:   oldTimeList,
 		IsValidLemma2Proof: true,
 	}
 	tc6BlockProposeInfo2 := &ProposeBlockInfo{
-		Block:              tc6Block2,
+		block:              tc6Block2,
 		IsVoted:            true,
 		LastValidateTime:   oldTimeList,
 		IsValidLemma2Proof: false,
@@ -478,7 +478,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 	tc7Block.On("Hash").Return(&tc7BlockHash).Times(4)
 	tc7CurrentTimeSlot := common.CalculateTimeSlot(tc7ProposeTime)
 	tc7BlockProposeInfo := &ProposeBlockInfo{
-		Block:            tc7Block,
+		block:            tc7Block,
 		IsVoted:          false,
 		LastValidateTime: time.Now(),
 	}
@@ -503,7 +503,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 
 	tc8CurrentTimeSlot := common.CalculateTimeSlot(tc8ProposeTime)
 	tc8BlockProposeInfo := &ProposeBlockInfo{
-		Block:              tc8Block,
+		block:              tc8Block,
 		IsVoted:            true,
 		LastValidateTime:   oldTimeList,
 		IsValidLemma2Proof: true,
@@ -529,7 +529,7 @@ func TestConsensusValidatorLemma2_FilterValidProposeBlockInfo(t *testing.T) {
 
 	tc9CurrentTimeSlot := common.CalculateTimeSlot(tc9ProposeTime)
 	tc9BlockProposeInfo := &ProposeBlockInfo{
-		Block:              tc9Block,
+		block:              tc9Block,
 		IsVoted:            true,
 		LastValidateTime:   oldTimeList,
 		IsValidLemma2Proof: false,

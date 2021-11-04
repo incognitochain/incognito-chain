@@ -14,7 +14,7 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	Block                   types.BlockInterface
+	block                   types.BlockInterface
 	ReceiveTime             time.Time
 	Committees              []incognitokey.CommitteePublicKey
 	SigningCommittees       []incognitokey.CommitteePublicKey
@@ -38,6 +38,129 @@ func NewProposeBlockInfo() *ProposeBlockInfo {
 	return &ProposeBlockInfo{}
 }
 
+func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
+	type Alias ProposeBlockInfo
+	tempBeaconBlock := struct {
+		Block *types.BeaconBlock
+		Alias *Alias
+	}{}
+	err := json.Unmarshal(data, &tempBeaconBlock)
+	if err != nil {
+		tempShardBlock := struct {
+			Block *types.ShardBlock
+			Alias *Alias
+		}{}
+		err := json.Unmarshal(data, &tempBeaconBlock)
+		if err != nil {
+			return err
+		}
+		p.block = tempShardBlock.Block
+		p.ReceiveTime = tempShardBlock.Alias.ReceiveTime
+		p.Committees = tempShardBlock.Alias.Committees
+		p.SigningCommittees = tempShardBlock.Alias.SigningCommittees
+		p.UserKeySet = tempShardBlock.Alias.UserKeySet
+		p.Votes = tempShardBlock.Alias.Votes
+		p.IsValid = tempShardBlock.Alias.IsValid
+		p.HasNewVote = tempShardBlock.Alias.HasNewVote
+		p.IsVoted = tempShardBlock.Alias.IsVoted
+		p.IsCommitted = tempShardBlock.Alias.IsCommitted
+		p.ValidVotes = tempShardBlock.Alias.ValidVotes
+		p.ErrVotes = tempShardBlock.Alias.ErrVotes
+		p.ProposerSendVote = tempShardBlock.Alias.ProposerSendVote
+		p.ProposerMiningKeyBase58 = tempShardBlock.Alias.ProposerMiningKeyBase58
+		p.LastValidateTime = tempShardBlock.Alias.LastValidateTime
+		p.ReProposeHashSignature = tempShardBlock.Alias.ReProposeHashSignature
+		p.IsValidLemma2Proof = tempShardBlock.Alias.IsValidLemma2Proof
+		p.FinalityProof = tempShardBlock.Alias.FinalityProof
+		return nil
+	}
+	p.block = tempBeaconBlock.Block
+	p.ReceiveTime = tempBeaconBlock.Alias.ReceiveTime
+	p.Committees = tempBeaconBlock.Alias.Committees
+	p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
+	p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
+	p.Votes = tempBeaconBlock.Alias.Votes
+	p.IsValid = tempBeaconBlock.Alias.IsValid
+	p.HasNewVote = tempBeaconBlock.Alias.HasNewVote
+	p.IsVoted = tempBeaconBlock.Alias.IsVoted
+	p.IsCommitted = tempBeaconBlock.Alias.IsCommitted
+	p.ValidVotes = tempBeaconBlock.Alias.ValidVotes
+	p.ErrVotes = tempBeaconBlock.Alias.ErrVotes
+	p.ProposerSendVote = tempBeaconBlock.Alias.ProposerSendVote
+	p.ProposerMiningKeyBase58 = tempBeaconBlock.Alias.ProposerMiningKeyBase58
+	p.LastValidateTime = tempBeaconBlock.Alias.LastValidateTime
+	p.ReProposeHashSignature = tempBeaconBlock.Alias.ReProposeHashSignature
+	p.IsValidLemma2Proof = tempBeaconBlock.Alias.IsValidLemma2Proof
+	p.FinalityProof = tempBeaconBlock.Alias.FinalityProof
+	return nil
+}
+
+func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
+	type Alias ProposeBlockInfo
+	_, isBeaconBlock := p.block.(*types.BeaconBlock)
+	if !isBeaconBlock {
+		data, err := json.Marshal(struct {
+			Block *types.ShardBlock
+			Alias *Alias
+		}{
+			Block: p.block.(*types.ShardBlock),
+			Alias: &Alias{
+				ReceiveTime:             p.ReceiveTime,
+				Committees:              p.Committees,
+				SigningCommittees:       p.SigningCommittees,
+				UserKeySet:              p.UserKeySet,
+				Votes:                   p.Votes,
+				IsValid:                 p.IsValid,
+				HasNewVote:              p.HasNewVote,
+				IsVoted:                 p.IsVoted,
+				IsCommitted:             p.IsCommitted,
+				ValidVotes:              p.ValidVotes,
+				ErrVotes:                p.ErrVotes,
+				ProposerSendVote:        p.ProposerSendVote,
+				ProposerMiningKeyBase58: p.ProposerMiningKeyBase58,
+				LastValidateTime:        p.LastValidateTime,
+				ReProposeHashSignature:  p.ReProposeHashSignature,
+				IsValidLemma2Proof:      p.IsValidLemma2Proof,
+				FinalityProof:           p.FinalityProof,
+			},
+		})
+		if err != nil {
+			return []byte{}, err
+		}
+		return data, nil
+	} else {
+		data, err := json.Marshal(struct {
+			Block *types.BeaconBlock
+			Alias *Alias
+		}{
+			Block: p.block.(*types.BeaconBlock),
+			Alias: &Alias{
+				ReceiveTime:             p.ReceiveTime,
+				Committees:              p.Committees,
+				SigningCommittees:       p.SigningCommittees,
+				UserKeySet:              p.UserKeySet,
+				Votes:                   p.Votes,
+				IsValid:                 p.IsValid,
+				HasNewVote:              p.HasNewVote,
+				IsVoted:                 p.IsVoted,
+				IsCommitted:             p.IsCommitted,
+				ValidVotes:              p.ValidVotes,
+				ErrVotes:                p.ErrVotes,
+				ProposerSendVote:        p.ProposerSendVote,
+				ProposerMiningKeyBase58: p.ProposerMiningKeyBase58,
+				LastValidateTime:        p.LastValidateTime,
+				ReProposeHashSignature:  p.ReProposeHashSignature,
+				IsValidLemma2Proof:      p.IsValidLemma2Proof,
+				FinalityProof:           p.FinalityProof,
+			},
+		})
+		if err != nil {
+			return []byte{}, err
+		}
+		return data, nil
+	}
+}
+
 //NewProposeBlockInfoValue : new propose block info
 func newProposeBlockForProposeMsg(
 	block types.BlockInterface,
@@ -47,7 +170,7 @@ func newProposeBlockForProposeMsg(
 	proposerMiningKeyBase58 string,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		Block:                   block,
+		block:                   block,
 		Votes:                   make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(committees),
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittes),
@@ -66,7 +189,7 @@ func newProposeBlockForProposeMsgLemma2(
 	isValidLemma2 bool,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		Block:                   block,
+		block:                   block,
 		Votes:                   make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(committees),
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
@@ -85,7 +208,7 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	userKeySet []signatureschemes2.MiningKey,
 	validVotes, errVotes int,
 ) {
-	proposeBlockInfo.Block = block
+	proposeBlockInfo.block = block
 	proposeBlockInfo.Committees = incognitokey.DeepCopy(committees)
 	proposeBlockInfo.SigningCommittees = incognitokey.DeepCopy(signingCommittes)
 	proposeBlockInfo.UserKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
@@ -93,11 +216,22 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	proposeBlockInfo.ErrVotes = errVotes
 }
 
-func newBlockInfoForVoteMsg() *ProposeBlockInfo {
-	return &ProposeBlockInfo{
+func newBlockInfoForVoteMsg(chainID int) *ProposeBlockInfo {
+	proposeBlockInfo := &ProposeBlockInfo{
 		Votes:      make(map[string]*BFTVote),
 		HasNewVote: true,
 	}
+	if chainID == common.BeaconChainID {
+		if proposeBlockInfo.block == nil {
+			proposeBlockInfo.block = types.NewBeaconBlock()
+		}
+	} else {
+		if proposeBlockInfo.block == nil {
+			proposeBlockInfo.block = types.NewShardBlock()
+		}
+	}
+
+	return proposeBlockInfo
 }
 
 type FinalityProof struct {

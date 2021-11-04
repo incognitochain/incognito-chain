@@ -61,7 +61,7 @@ func (p ProposeRuleLemma1) HandleCleanMem(finalView uint64) {
 
 func (p ProposeRuleLemma1) HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error) {
 	return &ProposeBlockInfo{
-		Block:                   env.block,
+		block:                   env.block,
 		Votes:                   make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(env.committees),
 		SigningCommittees:       incognitokey.DeepCopy(env.signingCommittees),
