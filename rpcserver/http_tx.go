@@ -728,6 +728,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 
 // handleRandomCommitmentsAndPublicKey - returns a list of random commitments, public keys and indices for creating txver2
 func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Infof("new request: %v\n", params)
 	if config.Config().IsMainNet {
 		return httpServer.handleRandomDecoysSelection(params, closeChan)
 	}
@@ -793,6 +794,7 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 
 // handleRandomCommitmentsAndPublicKey - returns a list of random commitments, public keys and indices for creating txver2
 func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Infof("[handleRandomDecoysSelection] new request: %v\n", params)
 	if !config.Config().IsMainNet {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidMethodPermissionError, fmt.Errorf("RPC not supported by the network configuration"))
 	}
@@ -801,6 +803,8 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
 	}
+
+	Logger.log.Infof("[AAAA] 1\n")
 
 	// #1: ShardID
 	shardID, ok := arrayParams[0].(float64)
@@ -824,11 +828,15 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
 	}
 
+	Logger.log.Infof("[AAAA] 2\n")
+
 	// #2: Number of commitments
 	numOutputs, ok := arrayParams[1].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of commitments is invalid"))
 	}
+
+	Logger.log.Infof("[AAAA] 3\n")
 
 	//#3 - tokenID - default PRV
 	tokenID := &common.Hash{}
@@ -846,6 +854,8 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 		}
 	}
+
+	Logger.log.Infof("[AAAA] 4\n")
 
 	commitmentIndices, publicKeys, commitments, assetTags, err := httpServer.txService.BlockChain.RandomDecoysFromGamma(int(numOutputs), byte(shardID), tokenID)
 	if err != nil {

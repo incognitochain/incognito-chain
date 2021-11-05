@@ -47,6 +47,7 @@ func NewGammaPicker(shape, scale float64) *GammaPicker {
 
 // Pick returns a random CoinV2 from the pre-defined Gamma distribution.
 func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight uint64) (*big.Int, *coin.CoinV2, error) {
+	fmt.Printf("[AAAA] Pick(%v, %v, %v)\n", shardID, tokenID.String(), latestHeight)
 	gp := NewGammaPicker(prvGammaShape, prvGammaScale)
 	if tokenID.String() != common.PRVIDStr {
 		gp = NewGammaPicker(tokenGammaShape, tokenGammaScale)
