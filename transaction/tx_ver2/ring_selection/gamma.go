@@ -24,6 +24,8 @@ const (
 
 	unitTime = 3600 * 24 // 1 day
 
+	blockDeviation = 5
+
 	MaxGammaTries = 1000
 )
 
@@ -54,48 +56,60 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 
 	x := gp.Rand()
 	passedBlock := uint64(math.Ceil(x * unitTime / config.Param().BlockTime.MaxShardBlockCreation.Seconds()))
-	if passedBlock > latestHeight {
-		utils.Logger.Log.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v\n", passedBlock, latestHeight, shardID)
-		return nil, nil, fmt.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v", passedBlock, latestHeight, shardID)
-	}
+	attempt := 0
+	for attempt < 2*blockDeviation {
+		if passedBlock > latestHeight {
+			utils.Logger.Log.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v\n", passedBlock, latestHeight, shardID)
+			return nil, nil, fmt.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v", passedBlock, latestHeight, shardID)
+		}
 
-	blkHeight := latestHeight - passedBlock
-	currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, tokenID, shardID, blkHeight)
-	if err != nil {
-		utils.Logger.Log.Errorf("bad pick: GetOTACoinsByHeight(%v, %v, %v) error: %v\n", tokenID.String(), shardID, blkHeight, err)
-		return nil, nil, err
-	}
-
-	burningPubKey := wallet.GetBurningPublicKey()
-	allCoins := make([]*coin.CoinV2, 0)
-	for _, coinBytes := range currentHeightCoins {
-		tmpCoin := &coin.CoinV2{}
-		err = tmpCoin.SetBytes(coinBytes)
+		blkHeight := latestHeight - passedBlock
+		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, tokenID, shardID, blkHeight)
 		if err != nil {
+			utils.Logger.Log.Errorf("bad pick: GetOTACoinsByHeight(%v, %v, %v) error: %v\n", tokenID.String(), shardID, blkHeight, err)
+			return nil, nil, err
+		}
+
+		burningPubKey := wallet.GetBurningPublicKey()
+		allCoins := make([]*coin.CoinV2, 0)
+		for _, coinBytes := range currentHeightCoins {
+			tmpCoin := &coin.CoinV2{}
+			err = tmpCoin.SetBytes(coinBytes)
+			if err != nil {
+				continue
+			}
+
+			// check if the output coin was sent to the burning address
+			if bytes.Equal(tmpCoin.GetPublicKey().ToBytesS(), burningPubKey) {
+				continue
+			}
+			allCoins = append(allCoins, tmpCoin)
+		}
+
+		if len(allCoins) == 0 {
+			msg := fmt.Sprintf("bad pick: no coin found for shard %v, tokenID %v, blkHeight %v", shardID, tokenID.String(), blkHeight)
+			utils.Logger.Log.Errorf("%v\n", msg)
+
+			if common.RandInt()%2 == 0 {
+				passedBlock += 1 + common.RandUint64()%blockDeviation
+			} else {
+				passedBlock -= 1 + common.RandUint64()%blockDeviation
+			}
+			attempt++
 			continue
 		}
 
-		// check if the output coin was sent to the burning address
-		if bytes.Equal(tmpCoin.GetPublicKey().ToBytesS(), burningPubKey) {
-			continue
+		chosenCoin := allCoins[common.RandInt()%len(allCoins)]
+		chosenIdx, err := statedb.GetOTACoinIndex(db, tokenID, chosenCoin.GetPublicKey().ToBytesS())
+		if err != nil {
+			utils.Logger.Log.Errorf("bad pick: GetOTACoinIndex for shard %v, tokenID %v, publicKey %v error: %v\n",
+				shardID, tokenID.String(), chosenCoin.GetPublicKey().ToBytesS(), err,
+			)
+			return nil, nil, err
 		}
-		allCoins = append(allCoins, tmpCoin)
+
+		return chosenIdx, chosenCoin, nil
 	}
 
-	if len(allCoins) == 0 {
-		msg := fmt.Sprintf("bad pick: no coin found for shard %v, tokenID %v, blkHeight %v", shardID, tokenID.String(), blkHeight)
-		utils.Logger.Log.Errorf("%v\n", msg)
-		return nil, nil, fmt.Errorf(msg)
-	}
-
-	chosenCoin := allCoins[common.RandInt()%len(allCoins)]
-	chosenIdx, err := statedb.GetOTACoinIndex(db, tokenID, chosenCoin.GetPublicKey().ToBytesS())
-	if err != nil {
-		utils.Logger.Log.Errorf("bad pick: GetOTACoinIndex for shard %v, tokenID %v, publicKey %v error: %v\n",
-			shardID, tokenID.String(), chosenCoin.GetPublicKey().ToBytesS(), err,
-		)
-		return nil, nil, err
-	}
-
-	return chosenIdx, chosenCoin, nil
+	return nil, nil, fmt.Errorf("bad pick: no coin found")
 }
