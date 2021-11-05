@@ -24,6 +24,8 @@ const (
 
 	unitTime = 3600 * 24 // 1 day
 
+	// there might be cases where the chosen block does not contain any output coins. In this case,
+	// we will try to choose a random output coin from one of blocks in the interval [k - 5: k + 5].
 	blockDeviation = 5
 
 	MaxGammaTries = 1000
