@@ -939,7 +939,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	//		}
 	//	}
 	//}
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, true)
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, true, true)
 	if err != nil {
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 		return err

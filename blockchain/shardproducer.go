@@ -359,7 +359,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		return nil, err
 	}
 	bView := &BeaconBestState{}
-	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, true)
 
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)

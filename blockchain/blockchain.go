@@ -595,7 +595,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 
 	blockchain.BeaconChain.multiView.Reset()
 	for _, v := range allViews {
-		if err := v.RestoreBeaconViewStateFromHash(blockchain, true); err != nil {
+		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, false); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
 		v.pdeStates, err = pdex.InitStatesFromDB(v.featureStateDB, v.BeaconHeight)
@@ -777,7 +777,7 @@ func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database
 }
 
 func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
-	blockHash common.Hash, includeCommittee bool,
+	blockHash common.Hash, includeCommittee, includePdexv3 bool,
 ) (*BeaconBestState, error) {
 	v, ok := blockchain.beaconViewCache.Get(blockHash)
 	if ok {
@@ -810,7 +810,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
 		shardID := byte(i)
 		beaconView.NumberOfShardBlock[shardID] = 0
 	}
-	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)
+	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3)
 	if err != nil {
 		Logger.log.Error(err)
 	}
