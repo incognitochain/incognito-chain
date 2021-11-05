@@ -1,14 +1,12 @@
 package v2utils
 
 type StateChange struct {
-	Infos        *InfosChange
 	PoolPairs    map[string]*PoolPairChange
 	StakingPools map[string]*StakingPoolChange
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
-		Infos:        NewInfosChange(),
 		PoolPairs:    make(map[string]*PoolPairChange),
 		StakingPools: make(map[string]*StakingPoolChange),
 	}
@@ -27,12 +25,6 @@ type StakerChange struct {
 	IsChanged           bool
 	Rewards             map[string]bool
 	LastRewardsPerShare map[string]bool
-}
-
-func NewInfosChange() *InfosChange {
-	return &InfosChange{
-		IsChanged: false,
-	}
 }
 
 func NewStakingChange() *StakingPoolChange {

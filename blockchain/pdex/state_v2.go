@@ -511,11 +511,14 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			return err
 		}
 	}
-	if stateChange.Infos.IsChanged {
+	if !s.infos.IsZeroValue() {
 		err = statedb.StorePdexv3Infos(
 			env.StateDB(),
 			s.infos.LiquidityMintedEpochs,
 		)
+		if err != nil {
+			return err
+		}
 	}
 	err = s.updateWaitingContributionsToDB(env)
 	if err != nil {
@@ -549,11 +552,10 @@ func (s *stateV2) GetDiff(
 		return nil, newStateChange, errors.New("compareState is not stateV2")
 	}
 
-	if !reflect.DeepEqual(s.infos, compareStateV2.infos) {
+	if !reflect.DeepEqual(s.infos, compareStateV2.infos) || reflect.DeepEqual(s.infos, NewInfos()) {
 		res.infos = s.infos.Clone()
-		newStateChange.Infos.IsChanged = true
 	} else {
-		res.infos = NewInfos()
+		res.infos = EmptyInfos()
 	}
 
 	if !reflect.DeepEqual(s.params, compareStateV2.params) {

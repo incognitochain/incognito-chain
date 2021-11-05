@@ -7,6 +7,7 @@ import (
 
 type Pdexv3State struct {
 	BeaconTimeStamp      int64                                   `json:"BeaconTimeStamp"`
+	Infos                *pdex.Infos                             `json:"Infos,omitempty"`
 	Params               *pdex.Params                            `json:"Params,omitempty"`
 	PoolPairs            *map[string]*pdex.PoolPairState         `json:"PoolPairs,omitempty"`
 	WaitingContributions *map[string]*rawdbv2.Pdexv3Contribution `json:"WaitingContributions,omitempty"`

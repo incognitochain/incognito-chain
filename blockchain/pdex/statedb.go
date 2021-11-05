@@ -85,12 +85,15 @@ func initStateV2FromDB(
 	stateDB *statedb.StateDB,
 ) (*stateV2, error) {
 	infosState, err := statedb.GetPdexv3Infos(stateDB)
-	infos := NewInfosWithValue(infosState)
-	paramsState, err := statedb.GetPdexv3Params(stateDB)
-	params := NewParamsWithValue(paramsState)
 	if err != nil {
 		return nil, err
 	}
+	infos := NewInfosWithValue(infosState)
+	paramsState, err := statedb.GetPdexv3Params(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	params := NewParamsWithValue(paramsState)
 	waitingContributions, err := statedb.GetPdexv3WaitingContributions(stateDB)
 	if err != nil {
 		return nil, err
@@ -257,12 +260,21 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 	return res, nil
 }
 
-func InitParamFromDB(stateDB *statedb.StateDB) (*Params, error) {
-	paramsState, err := statedb.GetPdexv3Params(stateDB)
-	params := NewParamsWithValue(paramsState)
+func InitInfosFromDB(stateDB *statedb.StateDB) (*Infos, error) {
+	infosState, err := statedb.GetPdexv3Infos(stateDB)
 	if err != nil {
 		return nil, err
 	}
+	infos := NewInfosWithValue(infosState)
+	return infos, nil
+}
+
+func InitParamFromDB(stateDB *statedb.StateDB) (*Params, error) {
+	paramsState, err := statedb.GetPdexv3Params(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	params := NewParamsWithValue(paramsState)
 	return params, nil
 }
 

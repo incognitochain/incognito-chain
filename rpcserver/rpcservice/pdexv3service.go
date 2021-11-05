@@ -326,6 +326,12 @@ func (blockService BlockService) GetPdexv3State(
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
+		case Infos:
+			res, err = getPdexv3Infos(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
 		case Params:
 			res, err = getPdexv3Param(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
 			if err != nil {
@@ -481,6 +487,8 @@ func getPdexv3State(
 	if err != nil {
 		return nil, NewRPCError(GetPdexv3StateError, err)
 	}
+	cloneInfos := pdex.NewInfos()
+	*cloneInfos = *pDexv3State.Reader().Infos()
 	cloneParam := pdex.NewParams()
 	*cloneParam = *pDexv3State.Reader().Params()
 	nftIDs := pDexv3State.Reader().NftIDs()
@@ -488,6 +496,7 @@ func getPdexv3State(
 
 	res := &jsonresult.Pdexv3State{
 		BeaconTimeStamp:      beaconTimeStamp,
+		Infos:                cloneInfos,
 		Params:               cloneParam,
 		PoolPairs:            &poolPairs,
 		WaitingContributions: &waitingContributions,
@@ -520,6 +529,20 @@ func getPdexv3PoolPairs(
 	default:
 		return nil, NewRPCError(GetPdexv3StateError, errors.New("Can't recognize verbosity"))
 	}
+}
+
+func getPdexv3Infos(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+) (interface{}, error) {
+	infos, err := pdex.InitInfosFromDB(stateDB)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		Infos:           infos,
+	}
+	return res, nil
 }
 
 func getPdexv3Param(

@@ -1,6 +1,9 @@
 package pdex
 
 import (
+	"math"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -25,4 +28,14 @@ func (p *Infos) Clone() *Infos {
 	*result = *p
 
 	return result
+}
+
+func EmptyInfos() *Infos {
+	return &Infos{
+		LiquidityMintedEpochs: math.MaxUint64,
+	}
+}
+
+func (infos *Infos) IsZeroValue() bool {
+	return reflect.DeepEqual(infos, EmptyInfos()) || infos == nil
 }
