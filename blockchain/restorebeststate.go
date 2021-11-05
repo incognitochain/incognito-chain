@@ -40,6 +40,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		}
 	}
 	if includePdexv3 {
+		beaconBestState.pdeStates = make(map[uint]pdex.State)
 		state, err := pdex.InitStateFromDB(beaconBestState.GetBeaconFeatureStateDB(), beaconBestState.BeaconHeight, pdex.AmplifierVersion)
 		if err != nil {
 			return err
