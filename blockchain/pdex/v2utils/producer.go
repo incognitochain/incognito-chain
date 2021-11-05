@@ -13,33 +13,39 @@ import (
 )
 
 func GetPDEXRewardsForBlock(
-	beaconHeight uint64,
-	mintingBlocks int, decayIntervals int, pdexRewardFirstInterval uint64,
+	beaconHeight uint64, mintedEpochs uint64,
+	mintingFlag bool, lenLiquidityMiningPools int,
+	mintingBlocks uint64, decayIntervals uint64, pdexRewardFirstInterval uint64,
 	decayRateBPS int, bps int,
 ) uint64 {
 	if beaconHeight <= config.Param().PDexParams.Pdexv3BreakPointHeight {
 		return 0
 	}
 	// mint PDEX reward at the end of each epoch
-	if beaconHeight%config.Param().EpochParam.NumberOfBlockInEpoch != 0 {
+	if beaconHeight%config.Param().EpochParam.NumberOfBlockInEpoch != 0 || !mintingFlag || lenLiquidityMiningPools == 0 {
 		return 0
 	}
 
 	epochSize := config.Param().EpochParam.NumberOfBlockInEpoch
-	mintingEpochs := mintingBlocks / int(epochSize)
+	mintingEpochs := mintingBlocks / epochSize
+
+	// fully mint PDEX
+	if mintedEpochs >= mintingEpochs {
+		return 0
+	}
 
 	pdexBlockRewards := uint64(0)
-	intervalLength := uint64(mintingEpochs / decayIntervals)
-	decayIntevalIdx := (beaconHeight - config.Param().PDexParams.Pdexv3BreakPointHeight) / intervalLength / epochSize
-	if decayIntevalIdx < uint64(decayIntervals) {
-		curIntervalReward := pdexRewardFirstInterval
-		for i := uint64(0); i < decayIntevalIdx; i++ {
-			decayAmount := new(big.Int).Mul(new(big.Int).SetUint64(curIntervalReward), big.NewInt(int64(decayRateBPS)))
-			decayAmount = new(big.Int).Div(decayAmount, big.NewInt(int64(bps)))
-			curIntervalReward -= decayAmount.Uint64()
-		}
-		pdexBlockRewards = curIntervalReward / intervalLength
+	intervalLength := mintingEpochs / decayIntervals
+	decayIntevalIdx := mintedEpochs / intervalLength
+
+	curIntervalReward := pdexRewardFirstInterval
+	for i := uint64(0); i < decayIntevalIdx; i++ {
+		decayAmount := new(big.Int).Mul(new(big.Int).SetUint64(curIntervalReward), big.NewInt(int64(decayRateBPS)))
+		decayAmount = new(big.Int).Div(decayAmount, big.NewInt(int64(bps)))
+		curIntervalReward -= decayAmount.Uint64()
 	}
+	pdexBlockRewards = curIntervalReward / intervalLength
+
 	return pdexBlockRewards
 }
 

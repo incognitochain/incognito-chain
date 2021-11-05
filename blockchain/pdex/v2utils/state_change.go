@@ -15,8 +15,7 @@ func NewStateChange() *StateChange {
 }
 
 type InfosChange struct {
-	IsChanged             bool
-	LiquidityMintedEpochs uint64
+	IsChanged bool
 }
 
 type StakingPoolChange struct {

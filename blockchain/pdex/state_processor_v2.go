@@ -887,6 +887,7 @@ func (sp *stateProcessorV2) withdrawProtocolFee(
 func (sp *stateProcessorV2) mintBlockReward(
 	stateDB *statedb.StateDB,
 	inst []string,
+	infos *Infos,
 	pairs map[string]*PoolPairState,
 ) (map[string]*PoolPairState, error) {
 	if len(inst) != 4 {
@@ -912,6 +913,10 @@ func (sp *stateProcessorV2) mintBlockReward(
 	}
 
 	pairReward := actionData.Amount
+
+	if actionData.TokenID == common.PDEXCoinID {
+		infos.LiquidityMintedEpochs++
+	}
 
 	pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
 		&pair.state,

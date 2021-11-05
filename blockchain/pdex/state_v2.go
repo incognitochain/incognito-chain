@@ -132,6 +132,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			s.poolPairs, err = s.processor.mintBlockReward(
 				env.StateDB(),
 				inst,
+				s.infos,
 				s.poolPairs,
 			)
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
@@ -422,7 +423,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	pdexBlockRewards := v2utils.GetPDEXRewardsForBlock(
-		beaconHeight,
+		beaconHeight, s.infos.LiquidityMintedEpochs,
+		s.params.LiquidityMiningFlag, len(s.params.PDEXRewardPoolPairsShare),
 		MintingBlocks, DecayIntervals, PDEXRewardFirstInterval,
 		DecayRateBPS, BPS,
 	)
@@ -432,6 +434,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
 			common.PDEXCoinID,
 			pdexBlockRewards,
+			s.infos,
 			s.params,
 			s.poolPairs,
 		)
@@ -455,6 +458,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
 			common.PRVCoinID,
 			burningPRVAmount,
+			s.infos,
 			s.params,
 			s.poolPairs,
 		)

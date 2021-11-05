@@ -1,9 +1,8 @@
 package pdexv3
 
 const (
-	BaseAmplifier                      = 10000
-	MaxPoolPairWithdrawalReceiver      = 5
-	MaxStakingRewardWithdrawalReceiver = 15
+	BaseAmplifier                 = 10000
+	MaxPoolPairWithdrawalReceiver = 5
 )
 
 const (

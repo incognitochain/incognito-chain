@@ -99,10 +99,6 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
 	}
 
-	if len(withdrawal.Receivers) > MaxStakingRewardWithdrawalReceiver {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Too many receivers"))
-	}
-
 	// Check OTA address string and tx random is valid
 	shardID := byte(tx.GetValidationEnv().ShardID())
 	for _, receiver := range withdrawal.Receivers {

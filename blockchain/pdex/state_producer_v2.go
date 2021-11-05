@@ -304,6 +304,7 @@ func (sp *stateProducerV2) modifyParams(
 func (sp *stateProducerV2) mintReward(
 	tokenID common.Hash,
 	mintingAmount uint64,
+	infos *Infos,
 	params *Params,
 	pairs map[string]*PoolPairState,
 ) ([][]string, map[string]*PoolPairState, error) {
@@ -312,6 +313,10 @@ func (sp *stateProducerV2) mintReward(
 	totalRewardShare := uint64(0)
 	for _, shareAmount := range params.PDEXRewardPoolPairsShare {
 		totalRewardShare += uint64(shareAmount)
+	}
+
+	if tokenID == common.PDEXCoinID {
+		infos.LiquidityMintedEpochs++
 	}
 
 	// To store the keys in slice in sorted order
