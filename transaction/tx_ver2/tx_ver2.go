@@ -349,7 +349,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 					idx, coinDB, err = ring_selection.Pick(params.StateDB, shardID, *params.TokenID, params.LatestHeight)
 					if err != nil {
 						gammaFailCount++
-						if gammaFailCount > ring_selection.MaxGammaTries {
+						if gammaFailCount > ring_selection.MaxGammaTries*len(inputCoins)*ringSize {
 							return nil, nil, nil, fmt.Errorf("gamma.pick: max attempt exceeded")
 						}
 						utils.Logger.Log.Errorf("%v\n", err)

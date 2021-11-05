@@ -88,8 +88,9 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 	}
 
 	if len(allCoins) == 0 {
-		utils.Logger.Log.Errorf("bad pick: no coin found for shard %v, tokenID %v, blkHeight %v\n", shardID, tokenID.String(), blkHeight)
-		return nil, nil, err
+		msg := fmt.Sprintf("bad pick: no coin found for shard %v, tokenID %v, blkHeight %v", shardID, tokenID.String(), blkHeight)
+		utils.Logger.Log.Errorf("%v\n", msg)
+		return nil, nil, fmt.Errorf(msg)
 	}
 
 	chosenCoin := allCoins[common.RandInt()%len(allCoins)]

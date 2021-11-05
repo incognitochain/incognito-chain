@@ -440,7 +440,7 @@ func (blockchain BlockChain) RandomDecoysFromGamma(numOutputs int, shardID byte,
 		idx, coinDB, err := ring_selection.Pick(db, shardID, *tokenID, latestHeight)
 		if err != nil {
 			failedCount++
-			if failedCount > ring_selection.MaxGammaTries {
+			if failedCount > ring_selection.MaxGammaTries * numOutputs {
 				return nil, nil, nil, nil, fmt.Errorf("max attempt exceeded")
 			}
 			Logger.log.Errorf("%v\n", err)
