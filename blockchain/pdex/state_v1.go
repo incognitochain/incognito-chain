@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -313,7 +312,6 @@ func (s *stateV1) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 }
 
 func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
-	time1 := time.Now()
 	sameHeight := false
 	//transform pdex key prefix-<beaconheight>-id1-id2 (if same height, no transform)
 	transformKey := func(key string, beaconHeight uint64) string {
@@ -349,7 +347,6 @@ func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
 	for k, v := range s.tradingFees {
 		newState.tradingFees[transformKey(k, beaconHeight)] = v
 	}
-	Logger.log.Infof("Time spent for transforming keys: %f", time.Since(time1).Seconds())
 	*s = *newState
 }
 
