@@ -24,7 +24,7 @@ const (
 
 	unitTime = 3600 * 24 // 1 day
 
-	MaxGammaTries = 30
+	MaxGammaTries = 1000
 )
 
 // GammaPicker implements a Gamma distribution picker for choosing random decoys.
