@@ -10,6 +10,7 @@ import (
 
 type Pdexv3Infos struct {
 	liquidityMintedEpochs uint64
+	preventEmpty          bool
 }
 
 func (pi Pdexv3Infos) LiquidityMintedEpochs() uint64 {
@@ -19,8 +20,10 @@ func (pi Pdexv3Infos) LiquidityMintedEpochs() uint64 {
 func (pi Pdexv3Infos) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		LiquidityMintedEpochs uint64
+		PreventEmpty          bool
 	}{
 		LiquidityMintedEpochs: pi.liquidityMintedEpochs,
+		PreventEmpty:          pi.preventEmpty,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -31,12 +34,14 @@ func (pi Pdexv3Infos) MarshalJSON() ([]byte, error) {
 func (pi *Pdexv3Infos) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		LiquidityMintedEpochs uint64
+		PreventEmpty          bool
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	pi.liquidityMintedEpochs = temp.LiquidityMintedEpochs
+	pi.preventEmpty = temp.PreventEmpty
 	return nil
 }
 
@@ -49,6 +54,7 @@ func NewPdexv3InfosWithValue(
 ) *Pdexv3Infos {
 	return &Pdexv3Infos{
 		liquidityMintedEpochs: liquidityMintedEpochs,
+		preventEmpty:          true,
 	}
 }
 
