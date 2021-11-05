@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -804,8 +805,6 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
 	}
 
-	Logger.log.Infof("[AAAA] 1\n")
-
 	// #1: ShardID
 	shardID, ok := arrayParams[0].(float64)
 	if !ok {
@@ -828,15 +827,11 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
 	}
 
-	Logger.log.Infof("[AAAA] 2\n")
-
 	// #2: Number of commitments
 	numOutputs, ok := arrayParams[1].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of commitments is invalid"))
 	}
-
-	Logger.log.Infof("[AAAA] 3\n")
 
 	//#3 - tokenID - default PRV
 	tokenID := &common.Hash{}
@@ -855,12 +850,12 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 		}
 	}
 
-	Logger.log.Infof("[AAAA] 4\n")
-
+	start := time.Now()
 	commitmentIndices, publicKeys, commitments, assetTags, err := httpServer.txService.BlockChain.RandomDecoysFromGamma(int(numOutputs), byte(shardID), tokenID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
+	Logger.log.Infof("[RandomDecoysFromGamma] #Coins: %v, timeElapsed: %v\n", numOutputs, time.Since(start).Seconds())
 
 	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments, assetTags)
 	return result, nil
