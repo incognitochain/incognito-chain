@@ -54,7 +54,9 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 	}
 
 	x := gp.Rand()
+	fmt.Printf("[AAAA] x %v\n", x)
 	passedBlock := uint64(math.Ceil(x * unitTime / config.Param().BlockTime.MaxShardBlockCreation.Seconds()))
+	fmt.Printf("[AAAA] passedBlock %v\n", passedBlock)
 	if passedBlock > latestHeight {
 		utils.Logger.Log.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v\n", passedBlock, latestHeight, shardID)
 		return nil, nil, fmt.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v", passedBlock, latestHeight, shardID)
@@ -66,6 +68,8 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 		utils.Logger.Log.Errorf("bad pick: GetOTACoinsByHeight(%v, %v, %v) error: %v\n", tokenID.String(), shardID, blkHeight, err)
 		return nil, nil, err
 	}
+
+	fmt.Printf("[AAAA] blkHeight %v, numCoins %v\n", blkHeight, len(currentHeightCoins))
 
 	burningPubKey := wallet.GetBurningPublicKey()
 	allCoins := make([]*coin.CoinV2, 0)
@@ -96,6 +100,8 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 		)
 		return nil, nil, err
 	}
+
+	fmt.Printf("[AAAA] returnedCoin: %v\n", chosenIdx)
 
 	return chosenIdx, chosenCoin, nil
 }
