@@ -224,6 +224,9 @@ func modifyParam(url string) error {
 		MaxOrdersPerNft                 string            `json:"MaxOrdersPerNft"`
 		AutoWithdrawOrderLimitAmount    string            `json:"AutoWithdrawOrderLimitAmount"`
 		MinPRVReserveTradingRate        string            `json:"MinPRVReserveTradingRate"`
+		LiquidityMiningFlag             bool              `json:"LiquidityMiningFlag"`
+		DefaultOrderRewardPercent       uint              `json:"DefaultOrderRewardPercent"`
+		OrderRewardPercent              map[string]uint   `json:"OrderRewardPercent"`
 	}
 	type Temp struct {
 		NewParams NewParams `json:"NewParams"`
@@ -250,6 +253,7 @@ func modifyParam(url string) error {
 			MaxOrdersPerNft:              "10",
 			AutoWithdrawOrderLimitAmount: "10",
 			MinPRVReserveTradingRate:     "1000",
+			LiquidityMiningFlag:          false,
 		},
 	}
 

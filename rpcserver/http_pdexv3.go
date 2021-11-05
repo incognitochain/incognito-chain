@@ -174,6 +174,29 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MinPRVReserveTradingRate is invalid"))
 	}
 
+	liquidityMiningFlag, ok := newParams["LiquidityMiningFlag"].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("LiquidityMiningFlag is invalid"))
+	}
+
+	defaultOrderRewardPercent, err := common.AssertAndConvertStrToNumber(newParams["DefaultOrderRewardPercent"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DefaultOrderRewardPercent is invalid"))
+	}
+
+	orderRewardPercentTemp, ok := newParams["OrderRewardPercent"].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderRewardPercent is invalid"))
+	}
+	orderRewardPercent := map[string]uint{}
+	for key, percent := range orderRewardPercentTemp {
+		value, err := common.AssertAndConvertStrToNumber(percent)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderRewardPercent is invalid"))
+		}
+		orderRewardPercent[key] = uint(value)
+	}
+
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
@@ -189,6 +212,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
 			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
 			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
+			LiquidityMiningFlag:             liquidityMiningFlag,
+			DefaultOrderRewardPercent:       uint(defaultOrderRewardPercent),
+			OrderRewardPercent:              orderRewardPercent,
 		},
 	)
 	if err != nil {

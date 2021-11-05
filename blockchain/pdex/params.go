@@ -22,6 +22,9 @@ type Params struct {
 	MaxOrdersPerNft                 uint            // max orders per nft
 	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
 	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
+	LiquidityMiningFlag             bool            // will the liquidity mining be enabled in the next epoch
+	DefaultOrderRewardPercent       uint            // default order reward percent get from the trading fee & liquidity mining
+	OrderRewardPercent              map[string]uint // map: poolID -> order reward percent
 }
 
 func NewParams() *Params {
@@ -30,6 +33,7 @@ func NewParams() *Params {
 		PDEXRewardPoolPairsShare: map[string]uint{},
 		StakingPoolsShare:        map[string]uint{},
 		StakingRewardTokens:      []common.Hash{},
+		OrderRewardPercent:       map[string]uint{},
 	}
 }
 
@@ -47,6 +51,9 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		MaxOrdersPerNft:                 paramsState.MaxOrdersPerNft(),
 		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
 		MinPRVReserveTradingRate:        paramsState.MinPRVReserveTradingRate(),
+		LiquidityMiningFlag:             paramsState.LiquidityMiningFlag(),
+		DefaultOrderRewardPercent:       paramsState.DefaultOrderRewardPercent(),
+		OrderRewardPercent:              paramsState.OrderRewardPercent(),
 	}
 }
 
@@ -66,9 +73,14 @@ func (p *Params) Clone() *Params {
 	for k, v := range p.StakingPoolsShare {
 		clonedStakingPoolsShare[k] = v
 	}
+	clonedOrderRewardPercent := map[string]uint{}
+	for k, v := range p.OrderRewardPercent {
+		clonedOrderRewardPercent[k] = v
+	}
 	result.FeeRateBPS = clonedFeeRateBPS
 	result.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
 	result.StakingPoolsShare = clonedStakingPoolsShare
+	result.OrderRewardPercent = clonedOrderRewardPercent
 
 	return result
 }
@@ -113,6 +125,20 @@ func isValidPdexv3Params(
 			return false, fmt.Sprintf("%v", err)
 		}
 	}
+
+	if params.DefaultOrderRewardPercent > 100 {
+		return false, "Default order reward percent is too high"
+	}
+
+	for pairID, percent := range params.OrderRewardPercent {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v is not existed", pairID)
+		}
+		if percent > 100 {
+			return false, fmt.Sprintf("Order reward percent of pair %v is too high", pairID)
+		}
+	}
 	return true, ""
 }
 
@@ -131,6 +157,7 @@ func (params *Params) readConfig() *Params {
 		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
 		AutoWithdrawOrderLimitAmount:    config.Param().PDexParams.Params.AutoWithdrawOrderLimitAmount,
 		MinPRVReserveTradingRate:        config.Param().PDexParams.Params.MinPRVReserveTradingRate,
+		DefaultOrderRewardPercent:       config.Param().PDexParams.Params.DefaultOrderRewardPercent,
 	}
 	if res.FeeRateBPS == nil {
 		res.FeeRateBPS = make(map[string]uint)
@@ -141,5 +168,10 @@ func (params *Params) readConfig() *Params {
 	if res.PDEXRewardPoolPairsShare == nil {
 		res.PDEXRewardPoolPairsShare = make(map[string]uint)
 	}
+	if res.OrderRewardPercent == nil {
+		res.OrderRewardPercent = make(map[string]uint)
+	}
+
+	params.LiquidityMiningFlag = false
 	return res
 }

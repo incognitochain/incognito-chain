@@ -255,6 +255,7 @@ type pdexParam struct {
 		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
 		AutoWithdrawOrderLimitAmount    uint            `mapstructure:"auto_withdraw_order_limit_amount"`
 		MinPRVReserveTradingRate        uint64          `mapstructure:"min_prv_reserve_trading_rate"`
+		DefaultOrderRewardPercent       uint            `mapstructure:"default_order_reward_percent"`
 	} `mapstructure:"params"`
 }
 
