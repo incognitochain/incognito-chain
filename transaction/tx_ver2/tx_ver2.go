@@ -492,7 +492,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintDat
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
 func (tx Tx) IsSalaryTx() bool {
-	if tx.GetType() != common.TxRewardType || tx.GetType() != common.TxReturnStakingType {
+	if tx.GetType() != common.TxRewardType && tx.GetType() != common.TxReturnStakingType {
 		return false
 	}
 

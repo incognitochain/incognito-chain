@@ -673,6 +673,9 @@ func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) 
 			if err != nil {
 				return privacy.PaymentAddress{}, err
 			}
+			if len(keyWallet.KeySet.PrivateKey) > 0 {
+				return privacy.PaymentAddress{}, fmt.Errorf("cannot parse payment address - %v: This is a private key", paymentAddress)
+			}
 			addr = keyWallet.KeySet.PaymentAddress
 		} else {
 			addr = *tmpAddr

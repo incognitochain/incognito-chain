@@ -950,7 +950,7 @@ func (txToken TxToken) CheckTxVersion(maxTxVersion int8) bool {
 	return !(txToken.Tx.Version > maxTxVersion)
 }
 
-// IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees which the following conditions:
+// IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees with the following conditions:
 //
 // - mintable is true, tokenType is CustomTokenInit
 // - PRV proof is nil
