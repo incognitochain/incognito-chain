@@ -855,7 +855,7 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
-	Logger.log.Infof("[RandomDecoysFromGamma] #Coins: %v, timeElapsed: %v\n", numOutputs, time.Since(start).Seconds())
+	Logger.log.Infof("[RandomDecoysFromGamma] Shard: %v, TokenID: %v, #Coins: %v, timeElapsed: %v\n", shardID, tokenID.String(), numOutputs, time.Since(start).Seconds())
 
 	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments, assetTags)
 	return result, nil
