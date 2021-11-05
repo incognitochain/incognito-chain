@@ -116,6 +116,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
 	}
 
+	liqMiningInThisBlock := false
+
 	for _, inst := range env.BeaconInstructions() {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instructions
@@ -129,12 +131,16 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		}
 		switch metadataType {
 		case metadataCommon.Pdexv3MintBlockRewardMeta:
-			s.poolPairs, err = s.processor.mintBlockReward(
+			var isLiqMiningInst bool
+			s.poolPairs, isLiqMiningInst, err = s.processor.mintBlockReward(
 				env.StateDB(),
 				inst,
 				s.infos,
 				s.poolPairs,
 			)
+			if isLiqMiningInst {
+				liqMiningInThisBlock = true
+			}
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
 			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
@@ -211,6 +217,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			return err
 		}
 	}
+
+	if liqMiningInThisBlock {
+		s.infos.LiquidityMintedEpochs++
+	}
+
 	if s.params.IsZeroValue() {
 		s.readConfig()
 	}

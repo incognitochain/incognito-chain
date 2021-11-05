@@ -889,11 +889,11 @@ func (sp *stateProcessorV2) mintBlockReward(
 	inst []string,
 	infos *Infos,
 	pairs map[string]*PoolPairState,
-) (map[string]*PoolPairState, error) {
+) (map[string]*PoolPairState, bool, error) {
 	if len(inst) != 4 {
 		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
 		Logger.log.Errorf(msg)
-		return pairs, errors.New(msg)
+		return pairs, false, errors.New(msg)
 	}
 
 	// unmarshal instructions content
@@ -902,21 +902,17 @@ func (sp *stateProcessorV2) mintBlockReward(
 	if err != nil {
 		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
 		Logger.log.Errorf(msg)
-		return pairs, err
+		return pairs, false, err
 	}
 
 	pair, isExisted := pairs[actionData.PoolPairID]
 	if !isExisted {
 		msg := fmt.Sprintf("Could not find pair %s for minting", actionData.PoolPairID)
 		Logger.log.Errorf(msg)
-		return pairs, fmt.Errorf(msg)
+		return pairs, false, fmt.Errorf(msg)
 	}
 
 	pairReward := actionData.Amount
-
-	if actionData.TokenID == common.PDEXCoinID {
-		infos.LiquidityMintedEpochs++
-	}
 
 	pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
 		&pair.state,
@@ -926,7 +922,7 @@ func (sp *stateProcessorV2) mintBlockReward(
 		0, 0, []common.Hash{},
 	)
 
-	return pairs, err
+	return pairs, bool(actionData.TokenID == common.PDEXCoinID), err
 }
 
 func (sp *stateProcessorV2) userMintNft(
