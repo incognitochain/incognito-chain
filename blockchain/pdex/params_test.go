@@ -18,6 +18,10 @@ func TestParams_IsZeroValue(t *testing.T) {
 		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
 		MaxOrdersPerNft                 uint
+		MinPRVReserveTradingRate        uint64
+		LiquidityMiningFlag             bool
+		DefaultOrderRewardPercent       uint
+		OrderRewardPercent              map[string]uint
 	}
 	tests := []struct {
 		name   string
@@ -31,6 +35,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 				StakingPoolsShare:        make(map[string]uint),
 				PDEXRewardPoolPairsShare: make(map[string]uint),
 				StakingRewardTokens:      []common.Hash{},
+				OrderRewardPercent:       make(map[string]uint),
 			},
 			want: true,
 		},
@@ -68,6 +73,10 @@ func TestParams_IsZeroValue(t *testing.T) {
 				StakingRewardTokens:             tt.fields.StakingRewardTokens,
 				MintNftRequireAmount:            tt.fields.MintNftRequireAmount,
 				MaxOrdersPerNft:                 tt.fields.MaxOrdersPerNft,
+				MinPRVReserveTradingRate:        tt.fields.MinPRVReserveTradingRate,
+				LiquidityMiningFlag:             tt.fields.LiquidityMiningFlag,
+				DefaultOrderRewardPercent:       tt.fields.DefaultOrderRewardPercent,
+				OrderRewardPercent:              tt.fields.OrderRewardPercent,
 			}
 			if got := params.IsZeroValue(); got != tt.want {
 				t.Errorf("Params.IsZeroValue() = %v, want %v", got, tt.want)

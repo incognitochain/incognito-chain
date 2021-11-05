@@ -172,6 +172,6 @@ func (params *Params) readConfig() *Params {
 		res.OrderRewardPercent = make(map[string]uint)
 	}
 
-	params.LiquidityMiningFlag = false
+	res.LiquidityMiningFlag = false
 	return res
 }

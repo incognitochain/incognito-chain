@@ -177,6 +177,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		stateBase                   stateBase
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
+		infos                       *Infos
 		poolPairs                   map[string]*PoolPairState
 		params                      *Params
 		stakingPoolStates           map[string]*StakingPoolState
@@ -203,6 +204,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
+				infos:                       NewInfos(),
 				poolPairs:                   map[string]*PoolPairState{},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
@@ -300,6 +302,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
 				nftIDs:                      map[string]uint64{},
+				infos:                       NewInfos(),
 				params: &Params{
 					MintNftRequireAmount: 100,
 				},
@@ -307,6 +310,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			fieldsAfterProcess: fields{
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
 				nftIDs: map[string]uint64{
@@ -334,6 +338,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
+				infos:  NewInfos(),
 				params: &Params{},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
@@ -381,6 +386,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
+				infos:                       NewInfos(),
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -470,6 +476,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
+				infos:  NewInfos(),
 				params: NewParams(),
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
@@ -530,6 +537,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				stateBase:                   tt.fields.stateBase,
 				waitingContributions:        tt.fields.waitingContributions,
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
+				infos:                       tt.fields.infos,
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
 				stakingPoolStates:           tt.fields.stakingPoolStates,
@@ -667,6 +675,7 @@ func Test_stateV2_Process(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
+		infos                       *Infos
 		params                      *Params
 		stakingPoolStates           map[string]*StakingPoolState
 		orders                      map[int64][]Order
@@ -691,6 +700,7 @@ func Test_stateV2_Process(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
 			},
@@ -716,6 +726,7 @@ func Test_stateV2_Process(t *testing.T) {
 				stateBase:                   stateBase{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -764,6 +775,7 @@ func Test_stateV2_Process(t *testing.T) {
 				stateBase:                   stateBase{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				poolPairs:                   map[string]*PoolPairState{},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
@@ -780,6 +792,7 @@ func Test_stateV2_Process(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				nftIDs:                      map[string]uint64{},
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
@@ -919,6 +932,7 @@ func Test_stateV2_Process(t *testing.T) {
 				waitingContributions:        tt.fields.waitingContributions,
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
 				poolPairs:                   tt.fields.poolPairs,
+				infos:                       tt.fields.infos,
 				params:                      tt.fields.params,
 				stakingPoolStates:           tt.fields.stakingPoolStates,
 				nftIDs:                      tt.fields.nftIDs,
@@ -1091,6 +1105,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
+		infos                       *Infos
 		params                      *Params
 		stakingPoolStates           map[string]*StakingPoolState
 		nftIDs                      map[string]uint64
@@ -1137,6 +1152,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
+				infos: &Infos{},
 				params: &Params{
 					DefaultFeeRateBPS: 30,
 					FeeRateBPS: map[string]uint{
@@ -1164,6 +1180,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 					poolPairs:                   map[string]*PoolPairState{},
+					infos:                       NewInfos(),
 					params: &Params{
 						DefaultFeeRateBPS: 30,
 						FeeRateBPS: map[string]uint{
@@ -1194,6 +1211,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				stateBase:                   stateBase{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -1251,6 +1269,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				stateBase:                   stateBase{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -1299,6 +1318,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					stateBase:                   stateBase{},
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					infos:                       NewInfos(),
 					poolPairs: map[string]*PoolPairState{
 						poolPairID: &PoolPairState{
 							state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -1349,6 +1369,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				stateBase:                   stateBase{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -1426,6 +1447,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
+				infos: NewInfos(),
 				params: &Params{
 					DefaultFeeRateBPS: 30,
 					FeeRateBPS: map[string]uint{
@@ -1453,6 +1475,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 					poolPairs:                   map[string]*PoolPairState{},
+					infos:                       NewInfos(),
 					params: &Params{
 						DefaultFeeRateBPS: 30,
 						FeeRateBPS: map[string]uint{
@@ -1483,6 +1506,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				stateBase:                   stateBase{},
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				infos:                       NewInfos(),
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -1537,6 +1561,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				params: &Params{
 					DefaultFeeRateBPS: 30,
 					FeeRateBPS: map[string]uint{
@@ -1574,6 +1599,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 					poolPairs:                   map[string]*PoolPairState{},
+					infos:                       NewInfos(),
 					params: &Params{
 						DefaultFeeRateBPS: 30,
 						FeeRateBPS: map[string]uint{
@@ -1605,6 +1631,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				params:                      NewParams(),
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
@@ -1647,6 +1674,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				params: &Params{
 					DefaultFeeRateBPS: 30,
 					FeeRateBPS: map[string]uint{
@@ -1683,6 +1711,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 					poolPairs:                   map[string]*PoolPairState{},
+					infos:                       NewInfos(),
 					params: &Params{
 						DefaultFeeRateBPS: 30,
 						FeeRateBPS: map[string]uint{
@@ -1721,6 +1750,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				params:                      NewParams(),
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
@@ -1763,6 +1793,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
+				infos:                       NewInfos(),
 				params: &Params{
 					DefaultFeeRateBPS: 30,
 					FeeRateBPS: map[string]uint{
@@ -1799,6 +1830,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 					poolPairs:                   map[string]*PoolPairState{},
+					infos:                       NewInfos(),
 					params: &Params{
 						DefaultFeeRateBPS: 30,
 						FeeRateBPS: map[string]uint{
@@ -1838,6 +1870,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
 				params:                      NewParams(),
+				infos:                       NewInfos(),
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
 						liquidity: 100,
@@ -1881,6 +1914,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				deletedWaitingContributions: tt.fields.deletedWaitingContributions,
 				poolPairs:                   tt.fields.poolPairs,
 				params:                      tt.fields.params,
+				infos:                       tt.fields.infos,
 				stakingPoolStates:           tt.fields.stakingPoolStates,
 				nftIDs:                      tt.fields.nftIDs,
 				producer:                    tt.fields.producer,

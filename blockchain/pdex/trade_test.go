@@ -334,7 +334,7 @@ type StateFormatter struct {
 
 func (sf *StateFormatter) State() *stateV2 {
 	s := newStateV2WithValue(
-		nil, nil, make(map[string]*PoolPairState),
+		nil, nil, &Infos{}, make(map[string]*PoolPairState),
 		&Params{
 			MaxOrdersPerNft:   DefaultTestMaxOrdersPerNft,
 			DefaultFeeRateBPS: 30,

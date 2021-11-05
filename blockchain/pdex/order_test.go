@@ -31,7 +31,7 @@ func TestSortOrder(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			// initialize test state & order book
-			testState := newStateV2WithValue(nil, nil, make(map[string]*PoolPairState),
+			testState := newStateV2WithValue(nil, nil, &Infos{}, make(map[string]*PoolPairState),
 				&Params{}, nil, map[string]uint64{})
 			blankPairID := "pair0"
 			testState.poolPairs[blankPairID] = &PoolPairState{orderbook: Orderbook{[]*Order{}}}
