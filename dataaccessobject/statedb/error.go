@@ -59,6 +59,7 @@ const (
 	ErrInvalidPortalV4BatchUnshieldRequestType   = "invalid portal batch unshielding request type"
 	// pDex v3
 	ErrInvalidPdexv3StatusStateType                    = "invalid pdex v3 status state type"
+	ErrInvalidPdexv3InfosStateType                     = "invalid pdex v3 infos state type"
 	ErrInvalidPdexv3ParamsStateType                    = "invalid pdex v3 params state type"
 	ErrInvalidPdexv3ContributionStateType              = "invalid pdex v3 contribution state type"
 	ErrInvalidPdexv3PoolPairStateType                  = "invalid pdex v3 pool pair state type"
@@ -278,6 +279,8 @@ const (
 	StorePdexv3TradingFeesError
 	StorePdexv3NftsError
 	GetPdexv3PoolPairError
+	StorePdexv3InfosError
+	GetPdexv3InfosError
 )
 
 var ErrCodeMessage = map[int]struct {

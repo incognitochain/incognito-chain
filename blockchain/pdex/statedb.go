@@ -84,6 +84,8 @@ func initStateV1(
 func initStateV2FromDB(
 	stateDB *statedb.StateDB,
 ) (*stateV2, error) {
+	infosState, err := statedb.GetPdexv3Infos(stateDB)
+	infos := NewInfosWithValue(infosState)
 	paramsState, err := statedb.GetPdexv3Params(stateDB)
 	params := NewParamsWithValue(paramsState)
 	if err != nil {
@@ -107,7 +109,7 @@ func initStateV2FromDB(
 	}
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs, params, stakingPools, nftIDs,
+		infos, poolPairs, params, stakingPools, nftIDs,
 	), nil
 }
 

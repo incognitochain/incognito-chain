@@ -23,6 +23,7 @@ type stateV2 struct {
 	stateBase
 	waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
+	infos                       *Infos
 	poolPairs                   map[string]*PoolPairState
 	params                      *Params
 	stakingPoolStates           map[string]*StakingPoolState // tokenID -> StakingPoolState
@@ -44,6 +45,7 @@ func NewStatev2() *stateV2 { return newStateV2() }
 func newStateV2() *stateV2 {
 	return &stateV2{
 		params:                      NewParams(),
+		infos:                       NewInfos(),
 		waitingContributions:        make(map[string]rawdbv2.Pdexv3Contribution),
 		deletedWaitingContributions: make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs:                   make(map[string]*PoolPairState),
@@ -55,6 +57,7 @@ func newStateV2() *stateV2 {
 func newStateV2WithValue(
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	infos *Infos,
 	poolPairs map[string]*PoolPairState,
 	params *Params,
 	stakingPoolStates map[string]*StakingPoolState,
@@ -63,6 +66,7 @@ func newStateV2WithValue(
 	return &stateV2{
 		waitingContributions:        waitingContributions,
 		deletedWaitingContributions: deletedWaitingContributions,
+		infos:                       infos,
 		poolPairs:                   poolPairs,
 		stakingPoolStates:           stakingPoolStates,
 		params:                      params,
@@ -76,6 +80,7 @@ func (s *stateV2) Version() uint {
 
 func (s *stateV2) Clone() State {
 	res := newStateV2()
+	res.infos = s.infos.Clone()
 	res.params = s.params.Clone()
 
 	for k, v := range s.stakingPoolStates {
@@ -502,6 +507,12 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			return err
 		}
 	}
+	if stateChange.Infos.IsChanged {
+		err = statedb.StorePdexv3Infos(
+			env.StateDB(),
+			s.infos.LiquidityMintedEpochs,
+		)
+	}
 	err = s.updateWaitingContributionsToDB(env)
 	if err != nil {
 		return err
@@ -534,23 +545,15 @@ func (s *stateV2) GetDiff(
 		return nil, newStateChange, errors.New("compareState is not stateV2")
 	}
 
+	if !reflect.DeepEqual(s.infos, compareStateV2.infos) {
+		res.infos = s.infos.Clone()
+		newStateChange.Infos.IsChanged = true
+	} else {
+		res.infos = NewInfos()
+	}
+
 	if !reflect.DeepEqual(s.params, compareStateV2.params) {
-		res.params = s.params
-		clonedFeeRateBPS := map[string]uint{}
-		for k, v := range s.params.FeeRateBPS {
-			clonedFeeRateBPS[k] = v
-		}
-		clonedPDEXRewardPoolPairsShare := map[string]uint{}
-		for k, v := range s.params.PDEXRewardPoolPairsShare {
-			clonedPDEXRewardPoolPairsShare[k] = v
-		}
-		clonedStakingPoolsShare := map[string]uint{}
-		for k, v := range s.params.StakingPoolsShare {
-			clonedStakingPoolsShare[k] = v
-		}
-		res.params.FeeRateBPS = clonedFeeRateBPS
-		res.params.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
-		res.params.StakingPoolsShare = clonedStakingPoolsShare
+		res.params = s.params.Clone()
 	} else {
 		res.params = NewParams()
 	}
@@ -589,6 +592,10 @@ func (s *stateV2) GetDiff(
 
 	return res, newStateChange, nil
 
+}
+
+func (s *stateV2) Infos() *Infos {
+	return s.infos
 }
 
 func (s *stateV2) Params() *Params {

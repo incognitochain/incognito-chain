@@ -2064,6 +2064,17 @@ func (stateDB *StateDB) getPdexv3StatusByKey(key common.Hash) (*Pdexv3StatusStat
 	return NewPdexv3StatusState(), false, nil
 }
 
+func (stateDB *StateDB) getPdexv3InfosByKey(key common.Hash) (*Pdexv3Infos, bool, error) {
+	pDexv3InfosState, err := stateDB.getStateObject(Pdexv3InfosObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pDexv3InfosState != nil {
+		return pDexv3InfosState.GetValue().(*Pdexv3Infos), true, nil
+	}
+	return NewPdexv3Infos(), false, nil
+}
+
 func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bool, error) {
 	pDexv3ParamsState, err := stateDB.getStateObject(Pdexv3ParamsObjectType, key)
 	if err != nil {

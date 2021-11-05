@@ -15,7 +15,7 @@ func newStateBaseWithValue() *stateBase {
 
 //Version of state
 func (s *stateBase) Version() uint {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) Clone() State {
@@ -38,71 +38,75 @@ func (s *stateBase) BuildInstructions(env StateEnvironment) ([][]string, error) 
 }
 
 func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) ClearCache() {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) GetDiff(compareState State, stateChange *v2utils.StateChange) (State, *v2utils.StateChange, error) {
-	panic("Implement this fucntion")
+	panic("Implement this function")
+}
+
+func (s *stateBase) Infos() *Infos {
+	panic("Implement this function")
 }
 
 func (s *stateBase) Params() *Params {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) PoolPairs() []byte {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) WaitingContributions() []byte {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) Shares() map[string]uint64 {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) TradingFees() map[string]uint64 {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) NftIDs() map[string]uint64 {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) Reader() StateReader {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) StakingPools() map[string]*StakingPoolState {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) IsValidNftID(nftID string) error {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) IsValidPoolPairID(poolPairID string) error {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) IsValidMintNftRequireAmount(amount uint64) error {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) IsValidStakingPool(tokenID string) error {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error {
-	panic("Implement this fucntion")
+	panic("Implement this function")
 }
 
 func (s *stateBase) Validator() StateValidator {

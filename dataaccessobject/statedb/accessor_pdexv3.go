@@ -31,6 +31,21 @@ func GetPdexv3Status(stateDB *StateDB, statusType []byte, statusSuffix []byte) (
 	return s.statusContent, nil
 }
 
+func StorePdexv3Infos(
+	stateDB *StateDB,
+	liquidityMintedEpochs uint64,
+) error {
+	key := GeneratePdexv3InfosObjectKey()
+	value := NewPdexv3InfosWithValue(
+		liquidityMintedEpochs,
+	)
+	err := stateDB.SetStateObject(Pdexv3InfosObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePdexv3InfosError, err)
+	}
+	return nil
+}
+
 func StorePdexv3Params(
 	stateDB *StateDB,
 	defaultFeeRateBPS uint,
@@ -72,6 +87,18 @@ func StorePdexv3Params(
 		return NewStatedbError(StorePdexv3ParamsError, err)
 	}
 	return nil
+}
+
+func GetPdexv3Infos(stateDB *StateDB) (*Pdexv3Infos, error) {
+	key := GeneratePdexv3InfosObjectKey()
+	s, has, err := stateDB.getPdexv3InfosByKey(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPdexv3InfosError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPdexv3InfosError, fmt.Errorf("could not found pDex v3 infos in statedb"))
+	}
+	return s, nil
 }
 
 func GetPdexv3Params(stateDB *StateDB) (*Pdexv3Params, error) {

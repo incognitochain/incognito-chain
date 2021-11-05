@@ -85,6 +85,7 @@ var (
 	pdexv3StakingPoolRewardPerSharePrefix   = []byte("pdexv3-stakingpool-rewardpershare-")
 	pdexv3StakerRewardPrefix                = []byte("pdexv3-staker-reward-")
 	pdexv3StakerLastRewardPerSharePrefix    = []byte("pdexv3-staker-lastrewardpershare-")
+	pdexv3InfosPrefix                       = []byte("pdexv3-infos-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -634,6 +635,10 @@ func Pdexv3WithdrawOrderStatusPrefix() []byte {
 func GetPdexv3StatusPrefix(statusType []byte) []byte {
 	h := common.HashH(append(pdexv3StatusPrefix, statusType...))
 	return h[:][:prefixHashKeyLength]
+}
+
+func GetPdexv3InfosPrefix() []byte {
+	return pdexv3InfosPrefix
 }
 
 func GetPdexv3ParamsPrefix() []byte {
