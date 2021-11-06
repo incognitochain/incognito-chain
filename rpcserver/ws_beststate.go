@@ -3,13 +3,14 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"reflect"
 )
 
 func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -107,7 +108,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 				}
 
 				for _, v := range allViews {
-					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true)
+					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true, true)
 					if err != nil {
 						cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
 					}
