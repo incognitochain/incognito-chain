@@ -41,11 +41,17 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 	}
 	if includePdexv3 {
 		beaconBestState.pdeStates = make(map[uint]pdex.State)
-		state, err := pdex.InitStateFromDB(beaconBestState.GetBeaconFeatureStateDB(), beaconBestState.BeaconHeight, pdex.AmplifierVersion)
-		if err != nil {
-			return err
+		pdeStates, ok := blockchain.beaconViewCache.Get(beaconBestState.BestBlockHash.String())
+		if !ok || pdeStates == nil {
+			state, err := pdex.InitStateFromDB(beaconBestState.GetBeaconFeatureStateDB(), beaconBestState.BeaconHeight, pdex.AmplifierVersion)
+			if err != nil {
+				return err
+			}
+			beaconBestState.pdeStates[pdex.AmplifierVersion] = state
+			blockchain.pdeStatesCache.Add(beaconBestState.BestBlockHash.String(), beaconBestState.pdeStates)
+		} else {
+			beaconBestState.pdeStates = pdeStates.(map[uint]pdex.State)
 		}
-		beaconBestState.pdeStates[pdex.AmplifierVersion] = state
 	}
 	return nil
 }
