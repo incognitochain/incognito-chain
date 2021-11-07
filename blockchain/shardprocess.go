@@ -933,7 +933,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	isIncludePdexv3 := false
 	for _, tx := range txs {
 		if tx.GetMetadata() != nil {
-			if metadata.IsPdexv3Tx(tx.GetMetadata()) {
+			if metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()) {
 				isIncludePdexv3 = true
 				break
 			}
