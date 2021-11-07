@@ -46,7 +46,7 @@ func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint
 		return initStateV1(stateDB, beaconHeight)
 	case AmplifierVersion:
 		if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
-			return nil, fmt.Errorf("Beacon height %v < Pdexv3BreakPointHeight %v", beaconHeight, config.Param().PDexParams.Pdexv3BreakPointHeight)
+			return nil, fmt.Errorf("[pdex] Beacon height %v < Pdexv3BreakPointHeight %v", beaconHeight, config.Param().PDexParams.Pdexv3BreakPointHeight)
 		}
 		return initStateV2FromDB(stateDB)
 	default:
