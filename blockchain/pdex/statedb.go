@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -45,7 +46,7 @@ func InitStateFromDB(stateDB *statedb.StateDB, beaconHeight uint64, version uint
 		return initStateV1(stateDB, beaconHeight)
 	case AmplifierVersion:
 		if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
-			return nil, errors.New("Beacon height < Pdexv3BreakPointHeight")
+			return nil, fmt.Errorf("Beacon height %v < Pdexv3BreakPointHeight %v", beaconHeight, config.Param().PDexParams.Pdexv3BreakPointHeight)
 		}
 		return initStateV2FromDB(stateDB)
 	default:
