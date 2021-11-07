@@ -1097,6 +1097,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+
+	//Cache pdex v3 state by beacon block hash
+	blockchain.pdeStatesCache.Add(newBestState.BestBlockHash.String(), newBestState.pdeStates[pdex.AmplifierVersion])
+
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
 	if !config.Config().ForceBackup {
