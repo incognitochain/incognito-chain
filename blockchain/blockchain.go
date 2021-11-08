@@ -594,7 +594,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 
 	blockchain.BeaconChain.multiView.Reset()
 	for _, v := range allViews {
-		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, false); err != nil {
+		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
 		v.pdeStates, err = pdex.InitStatesFromDB(v.featureStateDB, v.BeaconHeight)
