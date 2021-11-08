@@ -50,7 +50,6 @@ type BlockChain struct {
 
 	beaconViewCache       *lru.Cache
 	committeeByEpochCache *lru.Cache
-	pdeStatesCache        *lru.Cache
 }
 
 // Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
@@ -104,7 +103,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
-	blockchain.pdeStatesCache, _ = lru.New(100)
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state

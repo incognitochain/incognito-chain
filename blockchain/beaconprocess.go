@@ -1098,11 +1098,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height >= config.Param().PDexParams.Pdexv3BreakPointHeight {
-		//Cache pdex v3 state by beacon block hash
-		blockchain.pdeStatesCache.Add(newBestState.BestBlockHash.String(), newBestState.pdeStates[pdex.AmplifierVersion])
-	}
-
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
 	if !config.Config().ForceBackup {
