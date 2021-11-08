@@ -15,9 +15,21 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
+type Reward map[common.Hash]uint64 // tokenID -> amount
+
+type OrderReward struct {
+	uncollectedRewards Reward
+}
+
+type MakingVolume struct {
+	volume map[string]*big.Int // nftID -> amount
+}
+
 type PoolPairState struct {
+	makingVolume    map[common.Hash]*MakingVolume // tokenID -> MakingVolume
 	state           rawdbv2.Pdexv3PoolPair
 	shares          map[string]*Share
+	orderReward     map[string]*OrderReward // nftID -> orderReward
 	orderbook       Orderbook
 	lpFeesPerShare  map[common.Hash]*big.Int
 	protocolFees    map[common.Hash]uint64

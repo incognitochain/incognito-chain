@@ -22,6 +22,7 @@ type Params struct {
 	MaxOrdersPerNft                 uint            // max orders per nft
 	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
 	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
+	OrderMiningRewardRatioBPS       map[string]uint // map: pool ID -> x
 }
 
 func NewParams() *Params {

@@ -21,6 +21,7 @@ type Pdexv3Params struct {
 	maxOrdersPerNft                 uint
 	autoWithdrawOrderLimitAmount    uint
 	minPRVReserveTradingRate        uint64
+	orderMiningRewardRatioBPS       map[string]uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -109,6 +110,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		MaxOrdersPerNft                 uint
 		AutoWithdrawOrderLimitAmount    uint
 		MinPRVReserveTradingRate        uint64
+		OrderMiningRewardRatioBPS       map[string]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -126,6 +128,10 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.maxOrdersPerNft = temp.MaxOrdersPerNft
 	pp.autoWithdrawOrderLimitAmount = temp.AutoWithdrawOrderLimitAmount
 	pp.minPRVReserveTradingRate = temp.MinPRVReserveTradingRate
+	if temp.OrderMiningRewardRatioBPS == nil {
+		temp.OrderMiningRewardRatioBPS = make(map[string]uint)
+	}
+	pp.orderMiningRewardRatioBPS = temp.OrderMiningRewardRatioBPS
 	return nil
 }
 
