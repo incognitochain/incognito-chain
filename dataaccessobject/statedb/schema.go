@@ -707,12 +707,12 @@ func GetPdexv3StakingPoolRewardPerSharePrefix() []byte {
 }
 
 func GetPdexv3PoolPairMakingVolumePrefix() []byte {
-	hash := common.HashH(pdexv3PoolPairLpFeePerSharePrefix)
+	hash := common.HashH(pdexv3PoolPairMakingVolumePrefix)
 	return hash[:prefixHashKeyLength]
 }
 
 func GetPdexv3PoolPairOrderRewardPrefix() []byte {
-	hash := common.HashH(pdexv3PoolPairLpFeePerSharePrefix)
+	hash := common.HashH(pdexv3PoolPairOrderRewardPrefix)
 	return hash[:prefixHashKeyLength]
 }
 
