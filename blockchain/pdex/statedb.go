@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -145,9 +146,37 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			v := item.Value()
 			orderbook.InsertOrder(&v)
 		}
+		tempMakingVolume, err := statedb.GetPdexv3PoolPairMakingVolume(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		makingVolume := make(map[common.Hash]*MakingVolume)
+		for k, v := range tempMakingVolume {
+			for key, value := range v {
+				if makingVolume[k] == nil {
+					makingVolume[k] = NewMakingVolume()
+				}
+				makingVolume[k].volume[key] = value
+			}
+		}
+		tempOrderReward, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		orderReward := make(map[string]*OrderReward)
+		for k, v := range tempOrderReward {
+			for key, value := range v {
+				if orderReward[k] == nil {
+					orderReward[k] = NewOrderReward()
+				}
+				orderReward[k].uncollectedRewards[key] = value
+			}
+		}
+
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), shares, *orderbook,
 			lpFeesPerShare, protocolFees, stakingPoolFees,
+			makingVolume, orderReward,
 		)
 		res[poolPairID] = poolPair
 	}
@@ -247,9 +276,36 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 		if err != nil {
 			return nil, err
 		}
+		tempMakingVolume, err := statedb.GetPdexv3PoolPairMakingVolume(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		makingVolume := make(map[common.Hash]*MakingVolume)
+		for k, v := range tempMakingVolume {
+			for key, value := range v {
+				if makingVolume[k] == nil {
+					makingVolume[k] = NewMakingVolume()
+				}
+				makingVolume[k].volume[key] = value
+			}
+		}
+		tempOrderReward, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		orderReward := make(map[string]*OrderReward)
+		for k, v := range tempOrderReward {
+			for key, value := range v {
+				if orderReward[k] == nil {
+					orderReward[k] = NewOrderReward()
+				}
+				orderReward[k].uncollectedRewards[key] = value
+			}
+		}
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), nil, Orderbook{},
 			lpFeesPerShare, protocolFees, stakingPoolFees,
+			makingVolume, orderReward,
 		)
 		res[poolPairID] = poolPair
 	}
@@ -310,9 +366,36 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 	if err != nil {
 		return nil, err
 	}
+	tempMakingVolume, err := statedb.GetPdexv3PoolPairMakingVolume(stateDB, poolPairID)
+	if err != nil {
+		return nil, err
+	}
+	makingVolume := make(map[common.Hash]*MakingVolume)
+	for k, v := range tempMakingVolume {
+		for key, value := range v {
+			if makingVolume[k] == nil {
+				makingVolume[k] = NewMakingVolume()
+			}
+			makingVolume[k].volume[key] = value
+		}
+	}
+	tempOrderReward, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
+	if err != nil {
+		return nil, err
+	}
+	orderReward := make(map[string]*OrderReward)
+	for k, v := range tempOrderReward {
+		for key, value := range v {
+			if orderReward[k] == nil {
+				orderReward[k] = NewOrderReward()
+			}
+			orderReward[k].uncollectedRewards[key] = value
+		}
+	}
 	return NewPoolPairStateWithValue(
 		poolPairState.Value(), nil, Orderbook{},
 		lpFeesPerShare, protocolFees, stakingPoolFees,
+		makingVolume, orderReward,
 	), nil
 }
 

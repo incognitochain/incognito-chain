@@ -177,6 +177,20 @@ func StorePdexv3PoolPairStakingPoolFee(
 	return stateDB.SetStateObject(Pdexv3PoolPairStakingPoolFeeObjectType, key, state)
 }
 
+func StorePdexv3PoolPairOrderReward(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairOrderRewardState,
+) error {
+	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, state.nftID, state.tokenID)
+	return stateDB.SetStateObject(Pdexv3PoolPairProtocolFeeObjectType, key, state)
+}
+
+func StorePdexv3PoolPairMakingVolume(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairMakingVolumeState,
+) error {
+	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, state.nftID, state.tokenID)
+	return stateDB.SetStateObject(Pdexv3PoolPairMakingVolumeObjectType, key, state)
+}
+
 func StorePdexv3ShareTradingFee(
 	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3ShareTradingFeeState,
 ) error {
@@ -286,6 +300,20 @@ func GetPdexv3PoolPairStakingPoolFees(stateDB *StateDB, poolPairID string) (
 ) {
 	prefixHash := generatePdexv3PoolPairStakingPoolFeeObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3PoolPairStakingPoolFees(prefixHash)
+}
+
+func GetPdexv3PoolPairMakingVolume(stateDB *StateDB, poolPairID string) (
+	map[common.Hash]map[string]*big.Int, error,
+) {
+	prefixHash := generateAllPdexv3PoolPairMakingVolumeObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairMakingVolume(prefixHash)
+}
+
+func GetPdexv3PoolPairOrderReward(stateDB *StateDB, poolPairID string) (
+	map[string]map[common.Hash]uint64, error,
+) {
+	prefixHash := generateAllPdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairOrderReward(prefixHash)
 }
 
 func GetPdexv3ShareTradingFees(stateDB *StateDB, poolPairID, nftID string) (

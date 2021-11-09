@@ -299,3 +299,65 @@ func (share *Share) updateToDB(
 	}
 	return nil
 }
+
+type Reward map[common.Hash]uint64 // tokenID -> amount
+
+type OrderReward struct {
+	uncollectedRewards Reward
+}
+
+func NewOrderReward() *OrderReward {
+	return &OrderReward{
+		uncollectedRewards: make(map[common.Hash]uint64),
+	}
+}
+
+func (orderReward *OrderReward) getDiff(
+	nftID string,
+	compareOrderReward *OrderReward,
+	orderRewardChange *v2utils.OrderRewardChange,
+) *v2utils.OrderRewardChange {
+	newOrderRewardChane := orderRewardChange
+	if compareOrderReward == nil {
+		for tokenID := range orderReward.uncollectedRewards {
+			newOrderRewardChane.UncollectedReward[tokenID.String()] = true
+		}
+	} else {
+		for tokenID, value := range orderReward.uncollectedRewards {
+			if m, ok := compareOrderReward.uncollectedRewards[tokenID]; !ok || !reflect.DeepEqual(m, value) {
+				newOrderRewardChane.UncollectedReward[tokenID.String()] = true
+			}
+		}
+	}
+	return orderRewardChange
+}
+
+type MakingVolume struct {
+	volume map[string]*big.Int // nftID -> amount
+}
+
+func NewMakingVolume() *MakingVolume {
+	return &MakingVolume{
+		volume: make(map[string]*big.Int),
+	}
+}
+
+func (makingVolume *MakingVolume) getDiff(
+	nftID string,
+	compareMakingVolume *MakingVolume,
+	makingVolumeChange *v2utils.MakingVolumeChange,
+) *v2utils.MakingVolumeChange {
+	newMakingVolumeChange := makingVolumeChange
+	if compareMakingVolume == nil {
+		for nftID := range makingVolume.volume {
+			newMakingVolumeChange.Volume[nftID] = true
+		}
+	} else {
+		for nftID, value := range makingVolume.volume {
+			if m, ok := compareMakingVolume.volume[nftID]; !ok || !reflect.DeepEqual(m, value) {
+				newMakingVolumeChange.Volume[nftID] = true
+			}
+		}
+	}
+	return newMakingVolumeChange
+}

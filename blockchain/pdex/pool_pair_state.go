@@ -15,16 +15,6 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
-type Reward map[common.Hash]uint64 // tokenID -> amount
-
-type OrderReward struct {
-	uncollectedRewards Reward
-}
-
-type MakingVolume struct {
-	volume map[string]*big.Int // nftID -> amount
-}
-
 type PoolPairState struct {
 	makingVolume    map[common.Hash]*MakingVolume // tokenID -> MakingVolume
 	state           rawdbv2.Pdexv3PoolPair
@@ -38,6 +28,8 @@ type PoolPairState struct {
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
+		makingVolume:    make(map[common.Hash]*MakingVolume),
+		orderReward:     make(map[string]*OrderReward),
 		shares:          make(map[string]*Share),
 		state:           *rawdbv2.NewPdexv3PoolPair(),
 		orderbook:       Orderbook{[]*Order{}},
@@ -53,8 +45,12 @@ func NewPoolPairStateWithValue(
 	orderbook Orderbook,
 	lpFeesPerShare map[common.Hash]*big.Int,
 	protocolFees, stakingPoolFees map[common.Hash]uint64,
+	makingVolume map[common.Hash]*MakingVolume,
+	orderReward map[string]*OrderReward,
 ) *PoolPairState {
 	return &PoolPairState{
+		makingVolume:    makingVolume,
+		orderReward:     orderReward,
 		state:           state,
 		shares:          shares,
 		orderbook:       orderbook,
@@ -184,6 +180,7 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		Orderbook{[]*Order{}},
 		make(map[common.Hash]*big.Int),
 		make(map[common.Hash]uint64), make(map[common.Hash]uint64),
+		make(map[common.Hash]*MakingVolume), make(map[string]*OrderReward),
 	)
 }
 
@@ -305,6 +302,16 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.stakingPoolFees {
 			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 		}
+		for nftID, orderReward := range p.orderReward {
+			orderRewardChange := v2utils.NewOrderRewardChange()
+			orderRewardChange = orderReward.getDiff(nftID, nil, orderRewardChange)
+			poolPairChange.OrderReward[nftID] = orderRewardChange
+		}
+		for tokenID, makingVolume := range p.makingVolume {
+			makingVolumeChange := v2utils.NewMakingVolumeChange()
+			makingVolumeChange = makingVolume.getDiff(tokenID.String(), nil, makingVolumeChange)
+			poolPairChange.MakingVolume[tokenID.String()] = makingVolumeChange
+		}
 		for _, ord := range p.orderbook.orders {
 			newPoolPairChange.OrderIDs[ord.Id()] = true
 		}
@@ -332,6 +339,20 @@ func (p *PoolPairState) getDiff(
 		for tokenID, value := range p.stakingPoolFees {
 			if m, ok := comparePoolPair.stakingPoolFees[tokenID]; !ok || !reflect.DeepEqual(m, value) {
 				newPoolPairChange.StakingPoolFees[tokenID.String()] = true
+			}
+		}
+		for nftID, orderReward := range p.orderReward {
+			if m, ok := comparePoolPair.orderReward[nftID]; !ok || !reflect.DeepEqual(m, orderReward) {
+				orderRewardChange := v2utils.NewOrderRewardChange()
+				orderRewardChange = orderReward.getDiff(nftID, m, orderRewardChange)
+				poolPairChange.OrderReward[nftID] = orderRewardChange
+			}
+		}
+		for tokenID, makingVolume := range p.makingVolume {
+			if m, ok := comparePoolPair.makingVolume[tokenID]; !ok || !reflect.DeepEqual(m, makingVolume) {
+				makingVolumeChange := v2utils.NewMakingVolumeChange()
+				makingVolumeChange = makingVolume.getDiff(tokenID.String(), m, makingVolumeChange)
+				poolPairChange.MakingVolume[tokenID.String()] = makingVolumeChange
 			}
 		}
 		newPoolPairChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newPoolPairChange)
@@ -603,6 +624,31 @@ func (p *PoolPairState) updateToDB(
 				statedb.NewPdexv3PoolPairStakingPoolFeeStateWithValue(tokenID, value),
 			)
 		}
+	}
+	for tokenID, makingVolume := range p.makingVolume {
+		for nftID, volume := range makingVolume.volume {
+			if poolPairChange.MakingVolume[tokenID.String()].Volume[nftID] {
+				statedb.StorePdexv3PoolPairMakingVolume(
+					env.StateDB(), poolPairID,
+					statedb.NewPdexv3PoolPairMakingVolumeStateWithValue(
+						nftID, tokenID, volume,
+					),
+				)
+			}
+		}
+	}
+	for nftID, orderReward := range p.orderReward {
+		for tokenID, uncollectedRewards := range orderReward.uncollectedRewards {
+			if poolPairChange.OrderReward[nftID].UncollectedReward[tokenID.String()] {
+				statedb.StorePdexv3PoolPairOrderReward(
+					env.StateDB(), poolPairID,
+					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
+						tokenID, nftID, uncollectedRewards,
+					),
+				)
+			}
+		}
+
 	}
 	// store / delete orders
 	ordersByID := make(map[string]*Order)

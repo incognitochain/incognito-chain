@@ -609,7 +609,7 @@ func getPdexv3PoolPairShares(
 	temp := map[string]*pdex.PoolPairState{}
 	if len(shares) != 0 {
 		temp[poolPairID] = pdex.NewPoolPairStateWithValue(
-			rawdbv2.Pdexv3PoolPair{}, shares, pdex.Orderbook{}, nil, nil, nil)
+			rawdbv2.Pdexv3PoolPair{}, shares, pdex.Orderbook{}, nil, nil, nil, nil, nil)
 	}
 
 	res := &jsonresult.Pdexv3State{
@@ -631,7 +631,7 @@ func getPdexv3PoolPairOrders(
 		BeaconTimeStamp: beaconTimeStamp,
 		PoolPairs: &map[string]*pdex.PoolPairState{
 			poolPairID: pdex.NewPoolPairStateWithValue(
-				rawdbv2.Pdexv3PoolPair{}, nil, *orderBook, nil, nil, nil),
+				rawdbv2.Pdexv3PoolPair{}, nil, *orderBook, nil, nil, nil, nil, nil),
 		},
 	}
 	return res, nil
