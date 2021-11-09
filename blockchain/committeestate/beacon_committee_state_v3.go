@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -243,6 +244,31 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 	return committeeChange
 }
 
+//assignRandomlyToSecondHalfSubstituteList assign candidates to pending list
+// update beacon state and committeeChange
+// UPDATE PENDING LIST ONLY
+func (b *BeaconCommitteeStateV3) assignRandomlyToSecondHalfSubstituteList(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
+	for _, candidate := range candidates {
+		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
+		randomOffset := 0
+		lengthSubstitute := len(b.shardSubstitute[shardID])
+		half := lengthSubstitute / 2
+		if lengthSubstitute != 0 {
+			randomOffset = calculateNewSubstitutePosition(candidate, rand, half+1)
+			// if shard substitute got only one key, it will assign new key to the 1 position
+			if half == 0 {
+				half = 1
+			}
+			randomOffset += half
+			if randomOffset > lengthSubstitute {
+				randomOffset = lengthSubstitute
+			}
+		}
+		b.shardSubstitute[shardID] = insertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
+	}
+	return committeeChange
+}
+
 //assignToPending assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
@@ -360,13 +386,21 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 
-	committeeChange = b.
-		assignRandomlyToSubstituteList(
-			finishSyncInstruction.PublicKeys,
-			env.RandomNumber,
-			byte(finishSyncInstruction.ChainID),
-			committeeChange)
-
+	if env.BeaconHeight < config.Param().ConsensusParam.StakingFlowV31Height {
+		committeeChange = b.
+			assignRandomlyToSubstituteList(
+				finishSyncInstruction.PublicKeys,
+				env.RandomNumber,
+				byte(finishSyncInstruction.ChainID),
+				committeeChange)
+	} else {
+		committeeChange = b.
+			assignRandomlyToSecondHalfSubstituteList(
+				finishSyncInstruction.PublicKeys,
+				env.RandomNumber,
+				byte(finishSyncInstruction.ChainID),
+				committeeChange)
+	}
 	return committeeChange
 }
 

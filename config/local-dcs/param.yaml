@@ -43,6 +43,7 @@ consensus_param:
   enable_slashing_height_v2: 1
   assign_rule_v3_height: 1
   staking_flow_v3_height: 1
+  staking_flow_v3_1_height: 1000000000000
   block_producing_v3_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: 

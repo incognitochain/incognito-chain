@@ -1392,6 +1392,219 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 	}
 }
 
+func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *testing.T) {
+
+	initTestParams()
+
+	type fields struct {
+		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
+		syncPool                         map[byte][]string
+	}
+	type args struct {
+		candidates      []string
+		rand            int64
+		shardID         byte
+		committeeChange *CommitteeChange
+	}
+	tests := []struct {
+		name               string
+		fields             fields
+		fieldsAfterProcess fields
+		args               args
+		want               *CommitteeChange
+	}{
+		{
+			name: "substitute list is empty",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key2},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key2},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key2}),
+		},
+		{
+			name: "substitute list is not empty",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key3},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key3, key2},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key2},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key2}),
+		},
+		{
+			name: "substitute list is empty, > 1 candidate",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key2, key6, key4},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key2, key4, key6},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key2, key4, key6}),
+		},
+		{
+			name: "substitute list is not empty, > 1 candidate 1",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key5},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key5, key6, key8, key2, key7, key9, key4},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key2, key4, key6, key7, key8, key9},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key2, key4, key6, key7, key8, key9}),
+		},
+		{
+			name: "substitute list is not empty, > 1 candidate 2",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key5, key6, key8, key2, key7, key9, key4},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key5, key6, key8, key2, key7, key9, key10, key4, key12, key11},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key10, key11, key12},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key10, key11, key12}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
+				syncPool:                         tt.fields.syncPool,
+			}
+			if got := b.assignRandomlyToSecondHalfSubstituteList(tt.args.candidates, tt.args.rand, tt.args.shardID, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BeaconCommitteeStateV3.assignToPending() = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(b.shardSubstitute, tt.fieldsAfterProcess.beaconCommitteeStateSlashingBase.shardSubstitute) {
+				t.Errorf("BeaconCommitteeStateV3.assignToPending() b = %v, tt.fieldsAfterProcess %v", b.shardSubstitute, tt.fieldsAfterProcess.beaconCommitteeStateSlashingBase.shardSubstitute)
+			}
+		})
+	}
+}
+
 func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 	initTestParams()
 
