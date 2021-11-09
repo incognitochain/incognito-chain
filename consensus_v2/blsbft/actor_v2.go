@@ -130,7 +130,7 @@ func newActorV2WithValue(
 
 func InitReceiveBlockByHeight(chainID int) (map[uint64][]*ProposeBlockInfo, error) {
 
-	data, err := rawdb_consensus.GetAllReceiveBlockByHeight(
+	data, numberOfBlocks, err := rawdb_consensus.GetAllReceiveBlockByHeight(
 		rawdb_consensus.GetConsensusDatabase(),
 		chainID,
 	)
@@ -141,7 +141,19 @@ func InitReceiveBlockByHeight(chainID int) (map[uint64][]*ProposeBlockInfo, erro
 	res := make(map[uint64][]*ProposeBlockInfo)
 
 	for k, v := range data {
+		numberOfBlock := numberOfBlocks[k]
 		proposeBlockInfos := []*ProposeBlockInfo{}
+		for i := 0; i < numberOfBlock; i++ {
+			if chainID == common.BeaconChainID {
+				proposeBlockInfos = append(proposeBlockInfos, &ProposeBlockInfo{
+					block: types.NewBeaconBlock(),
+				})
+			} else {
+				proposeBlockInfos = append(proposeBlockInfos, &ProposeBlockInfo{
+					block: types.NewShardBlock(),
+				})
+			}
+		}
 		err := json.Unmarshal(v, &proposeBlockInfos)
 		if err != nil {
 			return nil, err
@@ -165,6 +177,7 @@ func (a *actorV2) AddReceiveBlockByHeight(blockHeight uint64, proposeBlockInfo *
 		rawdb_consensus.GetConsensusDatabase(),
 		a.chainID,
 		blockHeight,
+		len(a.receiveBlockByHeight[blockHeight]),
 		data,
 	); err != nil {
 		return err
@@ -750,7 +763,6 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 			var err error
 			if a.chain.IsBeaconChain() {
 				err = a.processWithEnoughVotesBeaconChain(proposeBlockInfo)
-
 			} else {
 				err = a.processWithEnoughVotesShardChain(proposeBlockInfo)
 			}

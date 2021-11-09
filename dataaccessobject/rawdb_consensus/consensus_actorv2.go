@@ -62,9 +62,10 @@ func DeleteProposeHistory(db incdb.Database, chainID int, currentTimeSlot int64)
 	return nil
 }
 
-func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]byte, error) {
+func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]byte, map[uint64]int, error) {
 
 	res := make(map[uint64][]byte)
+	res2 := make(map[uint64]int)
 
 	prefix := GetReceiveBlockByHeightPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
@@ -75,14 +76,16 @@ func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]by
 		tempHeight := keys[2]
 		height, err := common.BytesToUint64([]byte(tempHeight))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		value := make([]byte, len(it.Value()))
 		copy(value, it.Value())
-		res[height] = value
+		values := strings.Split(string(value), string(splitter))
+		res[height] = []byte(values[1])
+		res2[height] = common.BytesToInt([]byte(values[0]))
 	}
 
-	return res, nil
+	return res, res2, nil
 }
 
 func GetReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) ([]byte, error) {
@@ -97,15 +100,23 @@ func GetReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) ([]b
 	return res, nil
 }
 
-func StoreReceiveBlockByHeight(db incdb.Database, chainID int, height uint64, value []byte) error {
+func StoreReceiveBlockByHeight(db incdb.Database, chainID int, height uint64, numberOfBlock int, value []byte) error {
 
 	key := GetReceiveBlockByHeightKey(chainID, height)
+	value = getReceiveBlockByHeightValue(numberOfBlock, value)
 
 	if err := db.Put(key, value); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getReceiveBlockByHeightValue(numberOfBlock int, value []byte) []byte {
+	res := common.IntToBytes(numberOfBlock)
+	res = append(res, splitter...)
+	res = append(res, value...)
+	return res
 }
 
 func DeleteReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) error {

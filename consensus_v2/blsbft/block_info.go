@@ -40,17 +40,41 @@ func NewProposeBlockInfo() *ProposeBlockInfo {
 
 func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 	type Alias ProposeBlockInfo
-	tempBeaconBlock := struct {
-		Block *types.BeaconBlock
-		Alias *Alias
-	}{}
-	err := json.Unmarshal(data, &tempBeaconBlock)
-	if err != nil {
+	if p.block.Type() == common.BeaconChainKey {
+		tempBeaconBlock := struct {
+			Block *types.BeaconBlock
+			Alias *Alias
+		}{}
+		err := json.Unmarshal(data, &tempBeaconBlock)
+		if err != nil {
+			return err
+		}
+		p.block = tempBeaconBlock.Block
+		p.ReceiveTime = tempBeaconBlock.Alias.ReceiveTime
+		p.Committees = tempBeaconBlock.Alias.Committees
+		p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
+		p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
+		p.Votes = tempBeaconBlock.Alias.Votes
+		p.IsValid = tempBeaconBlock.Alias.IsValid
+		p.HasNewVote = tempBeaconBlock.Alias.HasNewVote
+		p.IsVoted = tempBeaconBlock.Alias.IsVoted
+		p.IsCommitted = tempBeaconBlock.Alias.IsCommitted
+		p.ValidVotes = tempBeaconBlock.Alias.ValidVotes
+		p.ErrVotes = tempBeaconBlock.Alias.ErrVotes
+		p.ProposerSendVote = tempBeaconBlock.Alias.ProposerSendVote
+		p.ProposerMiningKeyBase58 = tempBeaconBlock.Alias.ProposerMiningKeyBase58
+		p.LastValidateTime = tempBeaconBlock.Alias.LastValidateTime
+		p.ReProposeHashSignature = tempBeaconBlock.Alias.ReProposeHashSignature
+		p.IsValidLemma2Proof = tempBeaconBlock.Alias.IsValidLemma2Proof
+		p.FinalityProof = tempBeaconBlock.Alias.FinalityProof
+
+		return nil
+	} else {
 		tempShardBlock := struct {
 			Block *types.ShardBlock
 			Alias *Alias
 		}{}
-		err := json.Unmarshal(data, &tempBeaconBlock)
+		err := json.Unmarshal(data, &tempShardBlock)
 		if err != nil {
 			return err
 		}
@@ -74,25 +98,6 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.FinalityProof = tempShardBlock.Alias.FinalityProof
 		return nil
 	}
-	p.block = tempBeaconBlock.Block
-	p.ReceiveTime = tempBeaconBlock.Alias.ReceiveTime
-	p.Committees = tempBeaconBlock.Alias.Committees
-	p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
-	p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
-	p.Votes = tempBeaconBlock.Alias.Votes
-	p.IsValid = tempBeaconBlock.Alias.IsValid
-	p.HasNewVote = tempBeaconBlock.Alias.HasNewVote
-	p.IsVoted = tempBeaconBlock.Alias.IsVoted
-	p.IsCommitted = tempBeaconBlock.Alias.IsCommitted
-	p.ValidVotes = tempBeaconBlock.Alias.ValidVotes
-	p.ErrVotes = tempBeaconBlock.Alias.ErrVotes
-	p.ProposerSendVote = tempBeaconBlock.Alias.ProposerSendVote
-	p.ProposerMiningKeyBase58 = tempBeaconBlock.Alias.ProposerMiningKeyBase58
-	p.LastValidateTime = tempBeaconBlock.Alias.LastValidateTime
-	p.ReProposeHashSignature = tempBeaconBlock.Alias.ReProposeHashSignature
-	p.IsValidLemma2Proof = tempBeaconBlock.Alias.IsValidLemma2Proof
-	p.FinalityProof = tempBeaconBlock.Alias.FinalityProof
-	return nil
 }
 
 func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
