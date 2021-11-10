@@ -241,7 +241,6 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 		b.shardSubstitute[shardID] = insertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
 		Logger.log.Infof("insert candidate %+v to substitute, %+v", candidate, randomOffset)
 	}
-	Logger.log.Infof("substitute list after assign %+v", b.shardSubstitute[shardID])
 	return committeeChange
 }
 
