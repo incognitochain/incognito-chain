@@ -181,13 +181,13 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 		return false, fmt.Errorf("Expect Shard Block with Height greater than 1 have Non-Zero Hash Value")
 	}
 	if shardBlock.Header.Round < 0 {
-		return false, fmt.Errorf("Expect Shard Block Round greater or equal than 1")
+		return false, fmt.Errorf("Expect Shard Block Round greater or equal than 0")
 	}
 	if shardBlock.Header.Epoch < 0 {
-		return false, fmt.Errorf("Expect Shard Block Epoch greater or equal than 1")
+		return false, fmt.Errorf("Expect Shard Block Epoch greater or equal than 0")
 	}
-	if shardBlock.Header.Timestamp <= 0 {
-		return false, fmt.Errorf("Expect Shard Block Time greater than 0")
+	if shardBlock.Header.Timestamp < 0 {
+		return false, fmt.Errorf("Expect Shard Block Time greater or equal than 0")
 	}
 	if len(shardBlock.Header.TxRoot[:]) != common.HashSize {
 		return false, fmt.Errorf("Expect Shard Block Tx Root in the right format")
