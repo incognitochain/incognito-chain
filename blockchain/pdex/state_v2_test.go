@@ -23,6 +23,12 @@ import (
 )
 
 func Test_stateV2_BuildInstructions(t *testing.T) {
+
+	config.AbortParam()
+	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
+	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+	config.Param().EpochParam.NumberOfBlockInEpoch = 50
+
 	token0ID, err := common.Hash{}.NewHashFromStr("123")
 	assert.Nil(t, err)
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
@@ -40,6 +46,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	assert.Nil(t, err)
 	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
 	assert.Nil(t, err)
+	newNftHash, err := common.Hash{}.NewHashFromStr(newNftID)
+	assert.Nil(t, err)
+
 	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
 	assert.Nil(t, err)
 	otaReceiver0 := privacy.OTAReceiver{}
@@ -108,6 +117,13 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv = tx_generic.WithShardID(valEnv, 1)
 	userMintNftTx.On("GetValidationEnv").Return(valEnv)
 	userMintNftTx.On("Hash").Return(txReqID)
+
+	// user mint nft
+	acceptInst0, err := instruction.NewAcceptUserMintNftWithValue(
+		validOTAReceiver0, 100, 1, *newNftHash, *txReqID,
+	).StringSlice()
+	assert.Nil(t, err)
+
 	//
 
 	// staking
@@ -184,9 +200,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 
 	// tradeTx with token to sell fee
 	trade0RequestMetaData, _ := metadataPdexv3.NewTradeRequest(
-		[]string{poolPairID}, *token0ID, 100, 390, 10,
+		[]string{poolPairID}, *token0ID, 100, 380, 10,
 		map[common.Hash]privacy.OTAReceiver{
 			*token0ID: otaReceiver0,
+			*token1ID: otaReceiver1,
 		},
 		metadataCommon.Pdexv3TradeRequestMeta,
 	)
@@ -200,12 +217,34 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	trade0Tx.On("GetValidationEnv").Return(valEnv5)
 	trade0Tx.On("Hash").Return(txReqID)
 	trade0Tx.On("GetTxFullBurnData").Return(true, nil, nil, token0ID, nil)
+	trade0Inst := instruction.NewAction(
+		metadataPdexv3.AcceptedTrade{
+			Receiver:   otaReceiver1,
+			Amount:     380,
+			TradePath:  []string{poolPairID},
+			TokenToBuy: *token1ID,
+			PairChanges: [][2]*big.Int{
+				[2]*big.Int{big.NewInt(100), big.NewInt(-380)},
+			},
+			RewardEarned: []map[common.Hash]uint64{
+				map[common.Hash]uint64{
+					*token0ID: 10,
+				},
+			},
+			OrderChanges: []map[string][2]*big.Int{
+				map[string][2]*big.Int{},
+			},
+		},
+		*txReqID,
+		byte(valEnv5.ShardID()), // sender & receiver shard must be the same
+	).StringSlice()
 
 	// trade tx with prv fee
 	trade1RequestMetaData, _ := metadataPdexv3.NewTradeRequest(
-		[]string{poolPairID}, *token0ID, 100, 390, 10,
+		[]string{poolPairID}, *token0ID, 100, 340, 10,
 		map[common.Hash]privacy.OTAReceiver{
 			*token0ID:        otaReceiver0,
+			*token1ID:        otaReceiver1,
 			common.PRVCoinID: otaReceiver1,
 		},
 		metadataCommon.Pdexv3TradeRequestMeta,
@@ -218,6 +257,27 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	trade1Tx.On("GetValidationEnv").Return(valEnv6)
 	trade1Tx.On("Hash").Return(txReqID)
 	trade1Tx.On("GetTxFullBurnData").Return(true, nil, nil, token0ID, nil)
+	trade1Inst := instruction.NewAction(
+		metadataPdexv3.AcceptedTrade{
+			Receiver:   otaReceiver1,
+			Amount:     343,
+			TradePath:  []string{poolPairID},
+			TokenToBuy: *token1ID,
+			PairChanges: [][2]*big.Int{
+				[2]*big.Int{big.NewInt(100), big.NewInt(-343)},
+			},
+			RewardEarned: []map[common.Hash]uint64{
+				map[common.Hash]uint64{
+					*token0ID: 10,
+				},
+			},
+			OrderChanges: []map[string][2]*big.Int{
+				map[string][2]*big.Int{},
+			},
+		},
+		*txReqID,
+		byte(valEnv5.ShardID()), // sender & receiver shard must be the same
+	).StringSlice()
 
 	// add order trading direction 0
 	addOrderRequest0Metadata, _ := metadataPdexv3.NewAddOrderRequest(
@@ -235,6 +295,21 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv7 = tx_generic.WithShardID(valEnv7, 1)
 	addOrder0Tx.On("GetValidationEnv").Return(valEnv7)
 	addOrder0Tx.On("Hash").Return(txReqID)
+	addOrder0Inst := instruction.NewAction(
+		metadataPdexv3.AcceptedAddOrder{
+			PoolPairID:     poolPairID,
+			OrderID:        txReqID.String(),
+			NftID:          *nftHash1,
+			Token0Rate:     10,
+			Token1Rate:     35,
+			Token0Balance:  10,
+			Token1Balance:  0,
+			TradeDirection: 0,
+			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
+		},
+		*txReqID,
+		byte(valEnv7.ShardID()),
+	).StringSlice()
 
 	// add order trading direction 1
 	addOrderRequest1Metadata, _ := metadataPdexv3.NewAddOrderRequest(
@@ -252,6 +327,21 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv8 = tx_generic.WithShardID(valEnv8, 1)
 	addOrder1Tx.On("GetValidationEnv").Return(valEnv8)
 	addOrder1Tx.On("Hash").Return(txReqID)
+	addOrder1Inst := instruction.NewAction(
+		metadataPdexv3.AcceptedAddOrder{
+			PoolPairID:     poolPairID,
+			OrderID:        txReqID.String(),
+			NftID:          *nftHash1,
+			Token0Rate:     9,
+			Token1Rate:     40,
+			Token0Balance:  0,
+			Token1Balance:  40,
+			TradeDirection: 1,
+			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
+		},
+		*txReqID,
+		byte(valEnv8.ShardID()),
+	).StringSlice()
 
 	// withdraw staking reward
 	withdrawStakingRewardMetadata, _ := metadataPdexv3.NewPdexv3WithdrawalStakingRewardRequest(
@@ -269,6 +359,19 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv9 = tx_generic.WithShardID(valEnv9, 1)
 	withdrawStakingRewardTx.On("GetValidationEnv").Return(valEnv9)
 	withdrawStakingRewardTx.On("Hash").Return(txReqID)
+	withdrawStakingRewardInst := v2utils.BuildWithdrawStakingRewardInsts(
+		common.PRVIDStr, *nftHash1,
+		map[common.Hash]metadataPdexv3.ReceiverInfo{
+			common.PRVCoinID: metadataPdexv3.ReceiverInfo{
+				Address: otaReceiver0,
+				Amount:  100,
+			},
+		},
+		1, *txReqID, metadataPdexv3.RequestAcceptedChainStatus,
+	)[0]
+	mintNftWithdrawStakingRewardInst, _ := instruction.
+		NewMintNftWithValue(*nftHash1, validOTAReceiver1, 1, *txReqID).
+		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
 
 	// withdraw lp fee
 	withdrawLpFeeMetadata, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
@@ -286,6 +389,18 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv10 = tx_generic.WithShardID(valEnv10, 1)
 	withdrawLpFeeTx.On("GetValidationEnv").Return(valEnv10)
 	withdrawLpFeeTx.On("Hash").Return(txReqID)
+	withdrawLpFeeInst := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, *nftHash1,
+		map[common.Hash]metadataPdexv3.ReceiverInfo{
+			common.PRVCoinID: metadataPdexv3.ReceiverInfo{
+				Address: otaReceiver0,
+				Amount:  100,
+			},
+		}, 1, *txReqID, metadataPdexv3.RequestAcceptedChainStatus,
+	)[0]
+	mintNftWithdrawLpFeeInst, _ := instruction.
+		NewMintNftWithValue(*nftHash1, validOTAReceiver1, 1, *txReqID).
+		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
 
 	// modifyParamsTx
 	modifyParamMetadata, _ := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
@@ -311,6 +426,23 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv11 = tx_generic.WithShardID(valEnv11, 1)
 	modifyParamsTx.On("GetValidationEnv").Return(valEnv11)
 	modifyParamsTx.On("Hash").Return(txReqID)
+	modifyParamsInst := v2utils.BuildModifyParamsInst(
+		metadataPdexv3.Pdexv3Params{
+			DefaultFeeRateBPS:               20,
+			FeeRateBPS:                      map[string]uint{poolPairID: 20},
+			PRVDiscountPercent:              20,
+			TradingProtocolFeePercent:       5,
+			TradingStakingPoolRewardPercent: 5,
+			PDEXRewardPoolPairsShare:        map[string]uint{poolPairID: 20},
+			StakingPoolsShare:               map[string]uint{common.PRVIDStr: 5},
+			StakingRewardTokens:             []common.Hash{common.PRVCoinID},
+			MintNftRequireAmount:            1000,
+			MaxOrdersPerNft:                 20,
+			AutoWithdrawOrderLimitAmount:    20,
+			MinPRVReserveTradingRate:        10,
+		},
+		"", 1, *txReqID, metadataPdexv3.RequestAcceptedChainStatus,
+	)
 
 	// withdraw protocol fee
 	withdrawProtocolFeeMetadata, _ := metadataPdexv3.NewPdexv3WithdrawalProtocolFeeRequest(
@@ -320,9 +452,13 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	withdrawProtocolTx.On("GetMetadata").Return(withdrawProtocolFeeMetadata)
 	withdrawProtocolTx.On("GetMetadataType").Return(metadataCommon.Pdexv3WithdrawProtocolFeeRequestMeta)
 	valEnv12 := tx_generic.DefaultValEnv()
-	valEnv12 = tx_generic.WithShardID(valEnv12, 1)
+	valEnv12 = tx_generic.WithShardID(valEnv12, 0)
 	withdrawProtocolTx.On("GetValidationEnv").Return(valEnv12)
 	withdrawProtocolTx.On("Hash").Return(txReqID)
+	withdrawProtocolInst := v2utils.BuildWithdrawProtocolFeeInsts(
+		poolPairID, config.Param().PDexParams.ProtocolFundAddress,
+		map[common.Hash]uint64{common.PRVCoinID: 100}, 0, *txReqID, metadataPdexv3.RequestAcceptedChainStatus,
+	)[0]
 
 	// third contribution tx
 	thirdContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
@@ -341,7 +477,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	waitingContribution3StateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
-			*token0ID, *firstTxHash, *nftHash1, 100, 20000, 1,
+			*token0ID, *thirdTxHash, *nftHash1, 100, 20000, 1,
 		),
 		"pair_hash")
 	waitingContribution3Inst := instruction.NewWaitingAddLiquidityWithValue(*waitingContribution3StateDB)
@@ -365,10 +501,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	matchContribution4StateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver1,
-			*token1ID, *secondTxHash, *nftHash1, 400, 20000, 1,
+			*token1ID, *fourthTxHash, *nftHash1, 400, 20000, 1,
 		),
 		"pair_hash")
-	matchContribution4Inst := instruction.NewMatchAddLiquidityWithValue(*matchContribution4StateDB, poolPairID)
+	matchContribution4Inst := instruction.NewMatchAddLiquidityWithValue(*matchContribution4StateDB, newPoolPairID)
 	matchContribution4InstBytes, err := json.Marshal(matchContribution4Inst)
 	//
 
@@ -460,12 +596,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 					TradingProtocolFeePercent:       0,
 					TradingStakingPoolRewardPercent: 10,
 					PDEXRewardPoolPairsShare:        map[string]uint{},
-					StakingPoolsShare: map[string]uint{
-						common.PRVIDStr: 10,
-					},
-					StakingRewardTokens:  []common.Hash{},
-					MintNftRequireAmount: 1000000000,
-					MaxOrdersPerNft:      10,
+					StakingPoolsShare:               map[string]uint{},
+					StakingRewardTokens:             []common.Hash{},
+					MintNftRequireAmount:            1000000000,
+					MaxOrdersPerNft:                 10,
 				},
 			},
 			args: args{
@@ -512,6 +646,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID: 100,
 				},
+				params: &Params{
+					MintNftRequireAmount: 100,
+				},
 			},
 			args: args{
 				env: &stateEnvironment{
@@ -549,6 +686,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
+				params: &Params{},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
 						liquidity: 100,
@@ -640,6 +778,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 						orderbook: Orderbook{[]*Order{}},
 					},
 				},
+				params: &Params{},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
@@ -705,6 +844,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 						rewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
+				params: NewParams(),
 			},
 			args: args{
 				env: &stateEnvironment{
@@ -821,6 +961,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 								},
 							},
 						},
+						rewardsPerShare: map[common.Hash]*big.Int{
+							common.PRVCoinID: big.NewInt(100),
+						},
 					},
 				},
 			},
@@ -835,32 +978,129 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				producer:                    stateProducerV2{},
 				processor:                   stateProcessorV2{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 1900, 1150, 3077,
+							big.NewInt(0).SetUint64(2100),
+							big.NewInt(0).SetUint64(6877), 20000,
+						),
+						lpFeesPerShare: map[common.Hash]*big.Int{
+							common.PRVCoinID: big.NewInt(100),
+							*token0ID:        big.NewInt(9473684210526314),
+						},
+						protocolFees: map[common.Hash]uint64{
+							common.PRVCoinID: 0,
+							*token0ID:        2,
+						},
+						stakingPoolFees: map[common.Hash]uint64{
+							common.PRVCoinID: 0,
+							*token0ID:        0,
+							*token1ID:        0,
+						},
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:      1900,
+								tradingFees: map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{
+									common.PRVCoinID: big.NewInt(100),
+								},
+							},
+						},
+						orderbook: Orderbook{[]*Order{
+							rawdbv2.NewPdexv3OrderWithValue(
+								"id",
+								*nftHash1,
+								1, 4, 10, 40, 0,
+								[2]string{
+									validOTAReceiver0,
+									validOTAReceiver1,
+								},
+							),
+						}},
+					},
+					poolPairPRV: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							common.PRVCoinID, *token0ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						lpFeesPerShare: map[common.Hash]*big.Int{},
+						protocolFees:   map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{
+							common.PRVCoinID: 0,
+							*token0ID:        0,
+						},
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+					newPoolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID1: &Share{
+								amount:             200,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
 				nftIDs: map[string]uint64{
-					nftID1: 100,
+					nftID1:   100,
+					newNftID: 100,
 				},
 				stakingPoolStates: map[string]*StakingPoolState{
 					common.PRVIDStr: &StakingPoolState{
-						liquidity: 100,
+						liquidity: 200,
 						stakers: map[string]*Staker{
 							nftID1: &Staker{
-								liquidity:           100,
-								rewards:             map[common.Hash]uint64{},
-								lastRewardsPerShare: map[common.Hash]*big.Int{},
+								liquidity: 200,
+								rewards:   map[common.Hash]uint64{},
+								lastRewardsPerShare: map[common.Hash]*big.Int{
+									common.PRVCoinID: big.NewInt(100),
+								},
 							},
 						},
-						rewardsPerShare: map[common.Hash]*big.Int{},
+						rewardsPerShare: map[common.Hash]*big.Int{
+							common.PRVCoinID: big.NewInt(100),
+						},
 					},
+				},
+				params: &Params{
+					DefaultFeeRateBPS:               20,
+					FeeRateBPS:                      map[string]uint{poolPairID: 20},
+					PRVDiscountPercent:              20,
+					TradingProtocolFeePercent:       5,
+					TradingStakingPoolRewardPercent: 5,
+					PDEXRewardPoolPairsShare:        map[string]uint{poolPairID: 20},
+					StakingPoolsShare:               map[string]uint{common.PRVIDStr: 5},
+					StakingRewardTokens:             []common.Hash{common.PRVCoinID},
+					MintNftRequireAmount:            1000,
+					MaxOrdersPerNft:                 20,
+					AutoWithdrawOrderLimitAmount:    20,
+					MinPRVReserveTradingRate:        10,
 				},
 			},
 			args: args{
-				// 2 trade tx, 2 tx order, modify param increase current fee this pool to 200,
-				// 4 stake tx, mint nft, withdraw liquidity,
-				// withdraw lp fee, staking reward, lp liquidity, staking liquidity, unstaking liquidity
 				env: &stateEnvironment{
 					prevBeaconHeight: 30,
 					listTxs: map[byte][]metadataCommon.Transaction{
 						1: []metadataCommon.Transaction{
-							contributionTx0, contributionTx1,
+							contributionTx3, contributionTx4,
 							userMintNftTx,
 							stakingTx,
 							withdrawLiquidityTx,
@@ -875,6 +1115,17 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				},
 			},
 			want: [][]string{
+				mintNftWithdrawLpFeeInst,
+				withdrawLpFeeInst,
+				withdrawProtocolInst,
+				acceptWithdrawLiquidityInst0,
+				acceptWithdrawLiquidityInst1,
+				withdrawLiquidityMintNftInst,
+				unstakingInst,
+				unstakingMintNftInst,
+				mintNftWithdrawStakingRewardInst,
+				withdrawStakingRewardInst,
+				trade0Inst, trade1Inst,
 				[]string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 					common.PDEContributionWaitingChainStatus,
@@ -885,15 +1136,14 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 					common.PDEContributionMatchedChainStatus,
 					string(matchContribution4InstBytes),
 				},
+				stakingInst,
+				addOrder0Inst, addOrder1Inst,
+				acceptInst0,
+				modifyParamsInst,
 			},
 			wantErr: false,
 		},
 	}
-
-	config.AbortParam()
-	config.Param().PDexParams.Pdexv3BreakPointHeight = 1
-	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
-	config.Param().EpochParam.NumberOfBlockInEpoch = 50
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -921,6 +1171,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				t.Errorf("waitingContributions = %v, want %v", s.waitingContributions, tt.fieldsAfterProcess.waitingContributions)
 				return
 			}
+			if !reflect.DeepEqual(s.params, tt.fieldsAfterProcess.params) {
+				t.Errorf("params = %v, want %v", s.params, tt.fieldsAfterProcess.params)
+				return
+			}
 			if !reflect.DeepEqual(s.poolPairs, tt.fieldsAfterProcess.poolPairs) {
 				t.Errorf("poolPairs = %v, want %v", s.poolPairs, tt.fieldsAfterProcess.poolPairs)
 				return
@@ -930,7 +1184,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(s.stakingPoolStates, tt.fieldsAfterProcess.stakingPoolStates) {
-				t.Errorf("stakingPoolStates = %v, want %v", s.stakingPoolStates, tt.fieldsAfterProcess.stakingPoolStates)
+				t.Errorf("stakingPoolStates = %v, want %v", s.stakingPoolStates[common.PRVIDStr], tt.fieldsAfterProcess.stakingPoolStates[common.PRVIDStr])
 				return
 			}
 		})
