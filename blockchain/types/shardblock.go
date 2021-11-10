@@ -165,13 +165,13 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
 		return false, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID)
 	}
-	if shardBlock.Header.Version < SHARD_BLOCK_VERSION {
+	if shardBlock.Header.Version < 0 {
 		return false, fmt.Errorf("Expect Shard Block Version greater or equal than %+v but get %+v ", SHARD_BLOCK_VERSION, shardBlock.Header.Version)
 	}
 	if len(shardBlock.Header.PreviousBlockHash[:]) != common.HashSize {
 		return false, fmt.Errorf("Expect Shard Block Previous Hash in the right format")
 	}
-	if shardBlock.Header.Height < 1 {
+	if shardBlock.Header.Height < 0 {
 		return false, fmt.Errorf("Expect Shard Block Height to be greater than 0")
 	}
 	if shardBlock.Header.Height == 1 && !shardBlock.Header.PreviousBlockHash.IsEqual(&common.Hash{}) {
@@ -180,10 +180,10 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Header.Height > 1 && shardBlock.Header.PreviousBlockHash.IsEqual(&common.Hash{}) {
 		return false, fmt.Errorf("Expect Shard Block with Height greater than 1 have Non-Zero Hash Value")
 	}
-	if shardBlock.Header.Round < 1 {
+	if shardBlock.Header.Round < 0 {
 		return false, fmt.Errorf("Expect Shard Block Round greater or equal than 1")
 	}
-	if shardBlock.Header.Epoch < 1 {
+	if shardBlock.Header.Epoch < 0 {
 		return false, fmt.Errorf("Expect Shard Block Epoch greater or equal than 1")
 	}
 	if shardBlock.Header.Timestamp <= 0 {
@@ -219,7 +219,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255")
 	}
-	if shardBlock.Header.BeaconHeight < 1 {
+	if shardBlock.Header.BeaconHeight < 0 {
 		return false, fmt.Errorf("Expect Shard Block has Beacon Height greater or equal than 1")
 	}
 	//if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsPointEqual(&common.Hash{}) {
