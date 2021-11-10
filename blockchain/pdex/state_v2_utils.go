@@ -306,10 +306,26 @@ type OrderReward struct {
 	uncollectedRewards Reward
 }
 
+func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
+	oldAmount := uint64(0)
+	if _, ok := orderReward.uncollectedRewards[tokenID]; ok {
+		oldAmount = orderReward.uncollectedRewards[tokenID]
+	}
+	orderReward.uncollectedRewards[tokenID] = oldAmount + amount
+}
+
 func NewOrderReward() *OrderReward {
 	return &OrderReward{
 		uncollectedRewards: make(map[common.Hash]uint64),
 	}
+}
+
+func (orderReward *OrderReward) Clone() *OrderReward {
+	res := NewOrderReward()
+	for k, v := range orderReward.uncollectedRewards {
+		res.uncollectedRewards[k] = v
+	}
+	return res
 }
 
 func (orderReward *OrderReward) getDiff(
@@ -340,6 +356,14 @@ func NewMakingVolume() *MakingVolume {
 	return &MakingVolume{
 		volume: make(map[string]*big.Int),
 	}
+}
+
+func (makingVolume *MakingVolume) Clone() *MakingVolume {
+	res := NewMakingVolume()
+	for k, v := range makingVolume.volume {
+		res.volume[k] = new(big.Int).Set(v)
+	}
+	return res
 }
 
 func (makingVolume *MakingVolume) getDiff(

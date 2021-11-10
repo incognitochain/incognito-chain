@@ -266,23 +266,26 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 }
 
 func TrackFee(
-	fee uint64, feeInPRV bool, sellingTokenID common.Hash, baseLPPerShare *big.Int,
+	fee uint64, feeInPRV bool, sellingTokenID common.Hash, baseLPPerShare *big.Int, bps uint,
 	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
 	lpFeesPerShares []map[common.Hash]*big.Int, protocolFees, stakingPoolFees []map[common.Hash]uint64,
 	tradeDirections []byte, orderbooks []OrderBookIterator,
 	poolFees []uint, feeRateBPS uint,
 	acceptedMeta *metadataPdexv3.AcceptedTrade,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
-) (*metadataPdexv3.AcceptedTrade, error) {
+	orderMiningRewardRatioBPS map[string]uint,
+) (*metadataPdexv3.AcceptedTrade, []map[string]map[common.Hash]uint64, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
-		return nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
+		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
 	}
 
 	acceptedMeta.RewardEarned = make([]map[common.Hash]uint64, mutualLen)
 	for i := 0; i < mutualLen; i++ {
 		acceptedMeta.RewardEarned[i] = make(map[common.Hash]uint64)
 	}
+
+	orderRewardChanges := make([]map[string]map[common.Hash]uint64, mutualLen)
 
 	if feeInPRV || sellingTokenID == common.PRVCoinID {
 		// weighted divide fee into reserves
@@ -293,10 +296,33 @@ func TrackFee(
 			reward := new(big.Int).Mul(new(big.Int).SetUint64(feeRemain), new(big.Int).SetUint64(uint64(poolFees[i])))
 			reward.Div(reward, new(big.Int).SetUint64(uint64(sumPoolFees)))
 
+			// split reward between LPs and LOPs by weighted ratio
+			ratio, ok := orderMiningRewardRatioBPS[tradePath[i]]
+			if !ok {
+				ratio = 0
+			}
+
+			ammReward, orderRewards := SplitTradingReward(
+				reward, ratio, bps,
+				acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
+			)
+
+			// add reward to LOPs
+			for ordID, reward := range orderRewards {
+				if _, ok := orderRewardChanges[i][ordID]; !ok {
+					orderRewardChanges[i][ordID] = make(map[common.Hash]uint64)
+				}
+				if _, ok := orderRewardChanges[i][ordID][common.PRVCoinID]; !ok {
+					orderRewardChanges[i][ordID][common.PRVCoinID] = 0
+				}
+				orderRewardChanges[i][ordID][common.PRVCoinID] += reward
+			}
+
+			// add reward to LPs
 			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
 				reserves[i],
-			).AddFee(
-				common.PRVCoinID, reward.Uint64(), baseLPPerShare,
+			).AddLPFee(
+				common.PRVCoinID, ammReward, baseLPPerShare,
 				lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 			)
@@ -305,7 +331,7 @@ func TrackFee(
 			sumPoolFees -= poolFees[i]
 			feeRemain -= reward.Uint64()
 		}
-		return acceptedMeta, nil
+		return acceptedMeta, orderRewardChanges, nil
 	}
 
 	sumPoolFees := feeRateBPS
@@ -322,10 +348,34 @@ func TrackFee(
 		if tradeDirections[i] == TradeDirectionSell1 {
 			rewardToken = reserves[i].Token1ID()
 		}
+
+		// split reward between LPs and LOPs by weighted ratio
+		ratio, ok := orderMiningRewardRatioBPS[tradePath[i]]
+		if !ok {
+			ratio = 0
+		}
+
+		ammReward, orderRewards := SplitTradingReward(
+			reward, ratio, bps,
+			acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
+		)
+
+		// add reward to LOPs
+		for ordID, reward := range orderRewards {
+			if _, ok := orderRewardChanges[i][ordID]; !ok {
+				orderRewardChanges[i][ordID] = make(map[common.Hash]uint64)
+			}
+			if _, ok := orderRewardChanges[i][ordID][rewardToken]; !ok {
+				orderRewardChanges[i][ordID][rewardToken] = 0
+			}
+			orderRewardChanges[i][ordID][rewardToken] += reward
+		}
+
+		// add reward to LPs
 		lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
 			reserves[i],
-		).AddFee(
-			rewardToken, rewardAmount, baseLPPerShare,
+		).AddLPFee(
+			rewardToken, ammReward, baseLPPerShare,
 			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
 			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 		)
@@ -347,11 +397,11 @@ func TrackFee(
 					reserves[i],
 				).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			sellAmountRemain = temp
 			if totalBuyAmount+buyAmount < totalBuyAmount {
-				return nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
+				return nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
 			}
 			totalBuyAmount += buyAmount
 			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)
@@ -362,11 +412,11 @@ func TrackFee(
 			if order != nil {
 				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i])
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				sellAmountRemain = temp
 				if totalBuyAmount+buyAmount < totalBuyAmount {
-					return nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
+					return nil, nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
 				}
 				totalBuyAmount += buyAmount
 				// add order balance changes to "accepted" instruction
@@ -393,10 +443,10 @@ func TrackFee(
 		sellAmountRemain = totalBuyAmount
 	}
 
-	return acceptedMeta, nil
+	return acceptedMeta, orderRewardChanges, nil
 }
 
-func (tp *TradingPair) AddFee(
+func (tp *TradingPair) AddLPFee(
 	tokenID common.Hash, amount uint64, baseLPPerShare *big.Int,
 	rootLpFeesPerShare map[common.Hash]*big.Int, rootProtocolFees, rootStakingPoolFees map[common.Hash]uint64,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,

@@ -111,12 +111,14 @@ func (poolPairState *PoolPairState) Shares() map[string]*Share {
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
-		Shares          map[string]*Share        `json:"Shares,omitempty"`
-		Orderbook       Orderbook                `json:"Orderbook,omitempty"`
-		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
-		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
-		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
+		State           *rawdbv2.Pdexv3PoolPair       `json:"State"`
+		Shares          map[string]*Share             `json:"Shares,omitempty"`
+		Orderbook       Orderbook                     `json:"Orderbook,omitempty"`
+		LpFeesPerShare  map[common.Hash]*big.Int      `json:"LpFeesPerShare"`
+		ProtocolFees    map[common.Hash]uint64        `json:"ProtocolFees"`
+		StakingPoolFees map[common.Hash]uint64        `json:"StakingPoolFees"`
+		OrderReward     map[string]*OrderReward       `json:"OrderReward"`
+		MakingVolume    map[common.Hash]*MakingVolume `json:"MakingVolume"`
 	}{
 		State:           &poolPairState.state,
 		Shares:          poolPairState.shares,
@@ -124,6 +126,8 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 		LpFeesPerShare:  poolPairState.lpFeesPerShare,
 		ProtocolFees:    poolPairState.protocolFees,
 		StakingPoolFees: poolPairState.stakingPoolFees,
+		OrderReward:     poolPairState.orderReward,
+		MakingVolume:    poolPairState.makingVolume,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -133,12 +137,14 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
-		Shares          map[string]*Share        `json:"Shares"`
-		Orderbook       Orderbook                `json:"Orderbook"`
-		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
-		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
-		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
+		State           *rawdbv2.Pdexv3PoolPair       `json:"State"`
+		Shares          map[string]*Share             `json:"Shares"`
+		Orderbook       Orderbook                     `json:"Orderbook"`
+		LpFeesPerShare  map[common.Hash]*big.Int      `json:"LpFeesPerShare"`
+		ProtocolFees    map[common.Hash]uint64        `json:"ProtocolFees"`
+		StakingPoolFees map[common.Hash]uint64        `json:"StakingPoolFees"`
+		OrderReward     map[string]*OrderReward       `json:"OrderReward"`
+		MakingVolume    map[common.Hash]*MakingVolume `json:"MakingVolume"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -152,6 +158,8 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	poolPairState.lpFeesPerShare = temp.LpFeesPerShare
 	poolPairState.protocolFees = temp.ProtocolFees
 	poolPairState.stakingPoolFees = temp.StakingPoolFees
+	poolPairState.orderReward = temp.OrderReward
+	poolPairState.makingVolume = temp.MakingVolume
 	return nil
 }
 
@@ -273,6 +281,12 @@ func (p *PoolPairState) Clone() *PoolPairState {
 	}
 	for k, v := range p.stakingPoolFees {
 		res.stakingPoolFees[k] = v
+	}
+	for k, v := range p.orderReward {
+		res.orderReward[k] = v.Clone()
+	}
+	for k, v := range p.makingVolume {
+		res.makingVolume[k] = v.Clone()
 	}
 
 	res.orderbook = p.orderbook.Clone()

@@ -940,3 +940,18 @@ func getMapWithoutZeroValue(m map[common.Hash]uint64) map[common.Hash]uint64 {
 	}
 	return result
 }
+
+func addOrderReward(
+	base map[string]*OrderReward, additional map[string]map[common.Hash]uint64,
+) map[string]*OrderReward {
+	for ordID, reward := range additional {
+		for tokenID, amt := range reward {
+			if _, ok := base[ordID]; !ok {
+				base[ordID] = NewOrderReward()
+			}
+
+			base[ordID].AddReward(tokenID, amt)
+		}
+	}
+	return base
+}

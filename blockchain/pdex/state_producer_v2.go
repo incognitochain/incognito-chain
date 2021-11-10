@@ -346,7 +346,7 @@ func (sp *stateProducerV2) mintReward(
 
 		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
 			&pair.state,
-		).AddFee(
+		).AddLPFee(
 			tokenID, pairReward.Uint64(), BaseLPFeesPerShare,
 			pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
 			0, 0, []common.Hash{})
@@ -445,13 +445,15 @@ func (sp *stateProducerV2) trade(
 			continue
 		}
 
-		acceptedTradeMd, err = v2.TrackFee(
-			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare,
+		orderRewardsChanges := []map[string]map[common.Hash]uint64{}
+		acceptedTradeMd, orderRewardsChanges, err = v2.TrackFee(
+			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare, BPS,
 			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 			tradeDirections, orderbookList,
 			poolFees, feeRateBPS,
 			acceptedTradeMd,
 			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+			params.OrderMiningRewardRatioBPS,
 		)
 		if err != nil {
 			Logger.log.Warnf("Error handling fee distribution: %v", err)
@@ -463,6 +465,7 @@ func (sp *stateProducerV2) trade(
 		for index, pairID := range currentTrade.TradePath {
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
+			addOrderReward(changedPair.orderReward, orderRewardsChanges[index])
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
 			changedPair.protocolFees = protocolFees[index]
 			changedPair.stakingPoolFees = stakingPoolFees[index]
