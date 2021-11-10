@@ -494,6 +494,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.MaxOrdersPerNft,
 			s.params.AutoWithdrawOrderLimitAmount,
 			s.params.MinPRVReserveTradingRate,
+			s.params.OrderMiningRewardRatioBPS,
 		)
 		if err != nil {
 			return err
@@ -532,22 +533,7 @@ func (s *stateV2) GetDiff(
 	}
 
 	if !reflect.DeepEqual(s.params, compareStateV2.params) {
-		res.params = s.params
-		clonedFeeRateBPS := map[string]uint{}
-		for k, v := range s.params.FeeRateBPS {
-			clonedFeeRateBPS[k] = v
-		}
-		clonedPDEXRewardPoolPairsShare := map[string]uint{}
-		for k, v := range s.params.PDEXRewardPoolPairsShare {
-			clonedPDEXRewardPoolPairsShare[k] = v
-		}
-		clonedStakingPoolsShare := map[string]uint{}
-		for k, v := range s.params.StakingPoolsShare {
-			clonedStakingPoolsShare[k] = v
-		}
-		res.params.FeeRateBPS = clonedFeeRateBPS
-		res.params.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
-		res.params.StakingPoolsShare = clonedStakingPoolsShare
+		res.params = s.params.Clone()
 	} else {
 		res.params = NewParams()
 	}
