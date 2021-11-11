@@ -1126,19 +1126,19 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 					},
 				},
 			},
-			want: [][]string{
+			want: [][]string{ // (x, y, x', y')
 				mintNftWithdrawLpFeeInst,
-				withdrawLpFeeInst,
-				withdrawProtocolInst,
+				withdrawLpFeeInst,    // (1000, 4000, 2000, 8000)
+				withdrawProtocolInst, // (1000, 4000, 2000, 8000)
 				acceptWithdrawLiquidityInst0,
 				acceptWithdrawLiquidityInst1,
-				withdrawLiquidityMintNftInst,
+				withdrawLiquidityMintNftInst, // (950, 3800, 1900, 7600)
 				unstakingInst,
-				unstakingMintNftInst,
+				unstakingMintNftInst, // (950, 3800, 1900, 7600)
 				mintNftWithdrawStakingRewardInst,
 				withdrawStakingRewardInst,
 				trade0Inst, trade1Inst,
-				withdrawOrderInst,
+				withdrawOrderInst, // (1150, 3077, 2100, 6877)
 				[]string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 					common.PDEContributionWaitingChainStatus,
@@ -1148,9 +1148,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 					common.PDEContributionMatchedChainStatus,
 					string(matchContribution4InstBytes),
-				},
+				}, // (1150, 3077, 2100, 6877)
 				stakingInst,
-				addOrder0Inst, addOrder1Inst,
+				addOrder0Inst, addOrder1Inst, // (1150, 3077, 2100, 6877)
 				acceptInst0,
 				modifyParamsInst,
 			},
