@@ -294,11 +294,11 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv7 := tx_generic.DefaultValEnv()
 	valEnv7 = tx_generic.WithShardID(valEnv7, 1)
 	addOrder0Tx.On("GetValidationEnv").Return(valEnv7)
-	addOrder0Tx.On("Hash").Return(txReqID)
+	addOrder0Tx.On("Hash").Return(firstTxHash)
 	addOrder0Inst := instruction.NewAction(
 		metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     poolPairID,
-			OrderID:        txReqID.String(),
+			OrderID:        firstTxHash.String(),
 			NftID:          *nftHash1,
 			Token0Rate:     10,
 			Token1Rate:     35,
@@ -307,7 +307,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			TradeDirection: 0,
 			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
 		},
-		*txReqID,
+		*firstTxHash,
 		byte(valEnv7.ShardID()),
 	).StringSlice()
 
@@ -326,11 +326,11 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	valEnv8 := tx_generic.DefaultValEnv()
 	valEnv8 = tx_generic.WithShardID(valEnv8, 1)
 	addOrder1Tx.On("GetValidationEnv").Return(valEnv8)
-	addOrder1Tx.On("Hash").Return(txReqID)
+	addOrder1Tx.On("Hash").Return(secondTxHash)
 	addOrder1Inst := instruction.NewAction(
 		metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     poolPairID,
-			OrderID:        txReqID.String(),
+			OrderID:        secondTxHash.String(),
 			NftID:          *nftHash1,
 			Token0Rate:     9,
 			Token1Rate:     40,
@@ -339,7 +339,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			TradeDirection: 1,
 			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
 		},
-		*txReqID,
+		*secondTxHash,
 		byte(valEnv8.ShardID()),
 	).StringSlice()
 
@@ -506,7 +506,19 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		"pair_hash")
 	matchContribution4Inst := instruction.NewMatchAddLiquidityWithValue(*matchContribution4StateDB, newPoolPairID)
 	matchContribution4InstBytes, err := json.Marshal(matchContribution4Inst)
-	//
+
+	// with draw order
+	withdrawOrderInst := instruction.NewAction(
+		&metadataPdexv3.AcceptedWithdrawOrder{
+			PoolPairID: poolPairID,
+			OrderID:    txReqID.String(),
+			Receiver:   otaReceiver1,
+			TokenID:    *token1ID,
+			Amount:     40,
+		},
+		*txReqID,
+		byte(0),
+	).StringSlice()
 
 	//
 
@@ -899,9 +911,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 						},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
-								"id",
+								txReqID.String(),
 								*nftHash1,
-								1, 4, 10, 40, 0,
+								10, 40, 0, 40, 0,
 								[2]string{
 									validOTAReceiver0,
 									validOTAReceiver1,
@@ -1009,9 +1021,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 						},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
-								"id",
+								txReqID.String(),
 								*nftHash1,
-								1, 4, 10, 40, 0,
+								10, 40, 0, 0, 0,
 								[2]string{
 									validOTAReceiver0,
 									validOTAReceiver1,
@@ -1126,6 +1138,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 				mintNftWithdrawStakingRewardInst,
 				withdrawStakingRewardInst,
 				trade0Inst, trade1Inst,
+				withdrawOrderInst,
 				[]string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 					common.PDEContributionWaitingChainStatus,
@@ -1450,7 +1463,7 @@ func Test_stateV2_Process(t *testing.T) {
 	addOrder0Inst := instruction.NewAction(
 		metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     poolPairID,
-			OrderID:        txReqID.String(),
+			OrderID:        firstTxHash.String(),
 			NftID:          *nftHash1,
 			Token0Rate:     10,
 			Token1Rate:     35,
@@ -1459,13 +1472,13 @@ func Test_stateV2_Process(t *testing.T) {
 			TradeDirection: 0,
 			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
 		},
-		*txReqID,
+		*firstTxHash,
 		byte(1),
 	).StringSlice()
 	addOrder1Inst := instruction.NewAction(
 		metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     poolPairID,
-			OrderID:        txReqID.String(),
+			OrderID:        secondTxHash.String(),
 			NftID:          *nftHash1,
 			Token0Rate:     9,
 			Token1Rate:     40,
@@ -1474,7 +1487,7 @@ func Test_stateV2_Process(t *testing.T) {
 			TradeDirection: 1,
 			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
 		},
-		*txReqID,
+		*secondTxHash,
 		byte(1),
 	).StringSlice()
 
@@ -1484,6 +1497,7 @@ func Test_stateV2_Process(t *testing.T) {
 	).StringSlice()
 	assert.Nil(t, err)
 
+	// modify params
 	modifyParamsInst := v2utils.BuildModifyParamsInst(
 		metadataPdexv3.Pdexv3Params{
 			DefaultFeeRateBPS:               20,
@@ -1501,6 +1515,19 @@ func Test_stateV2_Process(t *testing.T) {
 		},
 		"", 1, *txReqID, metadataPdexv3.RequestAcceptedChainStatus,
 	)
+
+	// with draw order
+	withdrawOrderInst := instruction.NewAction(
+		&metadataPdexv3.AcceptedWithdrawOrder{
+			PoolPairID: poolPairID,
+			OrderID:    txReqID.String(),
+			Receiver:   otaReceiver1,
+			TokenID:    *token1ID,
+			Amount:     40,
+		},
+		*txReqID,
+		byte(0),
+	).StringSlice()
 
 	type fields struct {
 		stateBase                   stateBase
@@ -1804,9 +1831,9 @@ func Test_stateV2_Process(t *testing.T) {
 						},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
-								"id",
+								txReqID.String(),
 								*nftHash1,
-								1, 4, 10, 40, 0,
+								10, 40, 0, 40, 0,
 								[2]string{
 									validOTAReceiver0,
 									validOTAReceiver1,
@@ -1888,6 +1915,7 @@ func Test_stateV2_Process(t *testing.T) {
 						mintNftWithdrawStakingRewardInst,
 						withdrawStakingRewardInst,
 						trade0Inst, trade1Inst,
+						withdrawOrderInst,
 						[]string{
 							strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
 							common.PDEContributionWaitingChainStatus,
@@ -1948,7 +1976,7 @@ func Test_stateV2_Process(t *testing.T) {
 						},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
-								txReqID.String(),
+								firstTxHash.String(),
 								*nftHash1,
 								10, 35, 10, 0, 0,
 								[2]string{
@@ -1957,16 +1985,7 @@ func Test_stateV2_Process(t *testing.T) {
 								},
 							),
 							rawdbv2.NewPdexv3OrderWithValue(
-								"id",
-								*nftHash1,
-								1, 4, 10, 40, 0,
-								[2]string{
-									validOTAReceiver0,
-									validOTAReceiver1,
-								},
-							),
-							rawdbv2.NewPdexv3OrderWithValue(
-								txReqID.String(),
+								secondTxHash.String(),
 								*nftHash1,
 								9, 40, 0, 40, 1,
 								[2]string{
