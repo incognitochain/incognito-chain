@@ -866,20 +866,27 @@ func (sp *stateProducerV2) withdrawLPFee(
 			continue
 		}
 
-		share, isExisted := poolPair.shares[metaData.NftID.String()]
-		if !isExisted {
-			instructions = append(instructions, rejectInst...)
-			continue
+		lpReward := map[common.Hash]uint64{}
+		share, isExistedShare := poolPair.shares[metaData.NftID.String()]
+		if isExistedShare {
+			// compute amount of received LP reward
+			lpReward, err = poolPair.RecomputeLPFee(metaData.NftID)
+			if err != nil {
+				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
+			}
 		}
 
-		// compute amount of received LP fee
-		reward, err := poolPair.RecomputeLPFee(metaData.NftID)
-		if err != nil {
-			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
+		orderReward := map[common.Hash]uint64{}
+		order, isExistedOrderReward := poolPair.orderReward[metaData.NftID.String()]
+		if isExistedOrderReward {
+			// compute amount of received LOP reward
+			orderReward = order.uncollectedRewards
 		}
+
+		reward := combineReward(lpReward, orderReward)
 
 		if reward == nil || len(reward) == 0 {
-			Logger.log.Infof("No LP reward to withdraw")
+			Logger.log.Infof("No reward to withdraw")
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
@@ -912,10 +919,13 @@ func (sp *stateProducerV2) withdrawLPFee(
 		)
 
 		// update state after fee withdrawal
-		share.tradingFees = resetKeyValueToZero(share.tradingFees)
-		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.lpFeesPerShare {
-			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		if isExistedShare {
+			share.tradingFees = resetKeyValueToZero(share.tradingFees)
+			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
+		}
+
+		if isExistedOrderReward {
+			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}
 
 		instructions = append(instructions, acceptedInst...)

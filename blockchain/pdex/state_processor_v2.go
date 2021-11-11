@@ -791,17 +791,15 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		}
 
 		share, isExisted := poolPair.shares[actionData.NftID.String()]
-		if !isExisted {
-			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NftID.String())
-			Logger.log.Errorf(msg)
-			return pairs, errors.New(msg)
+		if isExisted {
+			// update state after fee withdrawal
+			share.tradingFees = resetKeyValueToZero(share.tradingFees)
+			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 		}
 
-		// update state after fee withdrawal
-		share.tradingFees = resetKeyValueToZero(share.tradingFees)
-		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.lpFeesPerShare {
-			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		order, isExisted := poolPair.orderReward[actionData.NftID.String()]
+		if isExisted {
+			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus

@@ -941,6 +941,24 @@ func getMapWithoutZeroValue(m map[common.Hash]uint64) map[common.Hash]uint64 {
 	return result
 }
 
+func combineReward(
+	reward1 map[common.Hash]uint64,
+	reward2 map[common.Hash]uint64,
+) map[common.Hash]uint64 {
+	result := map[common.Hash]uint64{}
+	for key, value := range reward1 {
+		result[key] = value
+	}
+	for key, value := range reward2 {
+		if _, exists := result[key]; exists {
+			result[key] = value + result[key]
+		} else {
+			result[key] = value
+		}
+	}
+	return result
+}
+
 func addOrderReward(
 	base map[string]*OrderReward, additional map[string]map[common.Hash]uint64,
 ) map[string]*OrderReward {
