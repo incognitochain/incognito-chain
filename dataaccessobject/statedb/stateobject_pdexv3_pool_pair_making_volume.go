@@ -138,22 +138,15 @@ func newPdexv3PoolPairMakingVolumeObjectWithValue(
 	}, nil
 }
 
-func generateAllPdexv3PoolPairMakingVolumeObjectPrefix(poolPairID string) []byte {
+func generatePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID string) []byte {
 	b := append(GetPdexv3PoolPairMakingVolumePrefix(), []byte(poolPairID)...)
-	h := common.HashH(b)
-	return h[:prefixHashKeyLength]
-}
-
-func generatePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID string, tokenID common.Hash) []byte {
-	b := append(GetPdexv3PoolPairMakingVolumePrefix(), []byte(poolPairID)...)
-	b = append(b, tokenID.Bytes()...)
 	h := common.HashH(b)
 	return h[:prefixHashKeyLength]
 }
 
 func GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, nftID string, tokenID common.Hash) common.Hash {
-	prefixHash := generatePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, tokenID)
-	valueHash := common.HashH([]byte(nftID))
+	prefixHash := generatePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID)
+	valueHash := common.HashH(append(tokenID.Bytes(), []byte(nftID)...))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 

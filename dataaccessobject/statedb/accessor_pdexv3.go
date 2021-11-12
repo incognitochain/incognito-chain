@@ -307,14 +307,14 @@ func GetPdexv3PoolPairStakingPoolFees(stateDB *StateDB, poolPairID string) (
 func GetPdexv3PoolPairMakingVolume(stateDB *StateDB, poolPairID string) (
 	map[common.Hash]map[string]*big.Int, error,
 ) {
-	prefixHash := generateAllPdexv3PoolPairMakingVolumeObjectPrefix(poolPairID)
+	prefixHash := generatePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3PoolPairMakingVolume(prefixHash)
 }
 
 func GetPdexv3PoolPairOrderReward(stateDB *StateDB, poolPairID string) (
 	map[string]map[common.Hash]uint64, error,
 ) {
-	prefixHash := generateAllPdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
+	prefixHash := generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3PoolPairOrderReward(prefixHash)
 }
 

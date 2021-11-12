@@ -306,6 +306,30 @@ type OrderReward struct {
 	uncollectedRewards Reward
 }
 
+func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		UncollectedRewards Reward `json:"UncollectedRewards"`
+	}{
+		UncollectedRewards: orderReward.uncollectedRewards,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		UncollectedRewards Reward `json:"UncollectedRewards"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	orderReward.uncollectedRewards = temp.UncollectedRewards
+	return nil
+}
+
 func (orderReward *OrderReward) UncollectedRewards() Reward {
 	res := Reward{}
 	for k, v := range orderReward.uncollectedRewards {
@@ -358,6 +382,30 @@ func (orderReward *OrderReward) getDiff(
 
 type MakingVolume struct {
 	volume map[string]*big.Int // nftID -> amount
+}
+
+func (makingVolume *MakingVolume) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Volume map[string]*big.Int `json:"Volume"`
+	}{
+		Volume: makingVolume.volume,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (makingVolume *MakingVolume) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Volume map[string]*big.Int `json:"Volume"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	makingVolume.volume = temp.Volume
+	return nil
 }
 
 func NewMakingVolume() *MakingVolume {
