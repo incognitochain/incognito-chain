@@ -450,7 +450,7 @@ func (sp *stateProcessorV2) trade(
 					pair.orderRewards[ordID].AddReward(tokenID, reward)
 				}
 
-				// add reward to Lps
+				// add reward to LPs
 				pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = reserveState.AddLPFee(
 					tokenID, ammReward, BaseLPFeesPerShare,
 					pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
