@@ -54,6 +54,9 @@ func SplitTradingReward(
 	reward *big.Int, ratio uint, bps uint,
 	pairChange [2]*big.Int, orderChange map[string][2]*big.Int,
 ) (uint64, map[string]uint64) {
+	if ratio == 0 {
+		return reward.Uint64(), map[string]uint64{}
+	}
 	weightedMakingAmt := new(big.Int).SetUint64(0)
 
 	ammMakingAmt := getMakingAmountFromChange(pairChange)

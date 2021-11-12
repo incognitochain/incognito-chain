@@ -55,6 +55,8 @@ func NewPoolPairChange() *PoolPairChange {
 		LpFeesPerShare:  make(map[string]bool),
 		ProtocolFees:    make(map[string]bool),
 		StakingPoolFees: make(map[string]bool),
+		MakingVolume:    make(map[string]*MakingVolumeChange),
+		OrderRewards:    make(map[string]*OrderRewardChange),
 	}
 }
 

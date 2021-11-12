@@ -121,9 +121,13 @@ func isValidPdexv3Params(
 			return false, fmt.Sprintf("%v", err)
 		}
 	}
-	for poolPairID, ratioBPS := range params.OrderMiningRewardRatioBPS {
+	for pairID, ratioBPS := range params.OrderMiningRewardRatioBPS {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v is not existed", pairID)
+		}
 		if ratioBPS > BPS/2 {
-			return false, fmt.Sprintf("Order mining reward ratio of pair %v is too high", poolPairID)
+			return false, fmt.Sprintf("Order mining reward ratio of pair %v is too high", pairID)
 		}
 	}
 	return true, ""

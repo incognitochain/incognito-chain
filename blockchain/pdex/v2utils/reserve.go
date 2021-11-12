@@ -286,6 +286,9 @@ func TrackFee(
 	}
 
 	orderRewardChanges := make([]map[string]map[common.Hash]uint64, mutualLen)
+	for i := 0; i < mutualLen; i++ {
+		orderRewardChanges[i] = make(map[string]map[common.Hash]uint64)
+	}
 
 	if feeInPRV || sellingTokenID == common.PRVCoinID {
 		// weighted divide fee into reserves
@@ -360,6 +363,8 @@ func TrackFee(
 			acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
 		)
 
+		fmt.Printf("ERR Rewards: %v, %v\n", ammReward, orderRewards)
+
 		// add reward to LOPs
 		for ordID, reward := range orderRewards {
 			if _, ok := orderRewardChanges[i][ordID]; !ok {
@@ -370,6 +375,8 @@ func TrackFee(
 			}
 			orderRewardChanges[i][ordID][rewardToken] += reward
 		}
+
+		fmt.Printf("ERR order reward changes: %+v\n", orderRewardChanges)
 
 		// add reward to LPs
 		lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
