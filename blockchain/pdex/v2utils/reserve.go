@@ -308,17 +308,18 @@ func TrackFee(
 			ammReward, orderRewards := SplitTradingReward(
 				reward, ratio, bps,
 				acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
+				orderbooks[i].NftIDs(),
 			)
 
 			// add reward to LOPs
-			for ordID, reward := range orderRewards {
-				if _, ok := orderRewardChanges[i][ordID]; !ok {
-					orderRewardChanges[i][ordID] = make(map[common.Hash]uint64)
+			for nftID, reward := range orderRewards {
+				if _, ok := orderRewardChanges[i][nftID]; !ok {
+					orderRewardChanges[i][nftID] = make(map[common.Hash]uint64)
 				}
-				if _, ok := orderRewardChanges[i][ordID][common.PRVCoinID]; !ok {
-					orderRewardChanges[i][ordID][common.PRVCoinID] = 0
+				if _, ok := orderRewardChanges[i][nftID][common.PRVCoinID]; !ok {
+					orderRewardChanges[i][nftID][common.PRVCoinID] = 0
 				}
-				orderRewardChanges[i][ordID][common.PRVCoinID] += reward
+				orderRewardChanges[i][nftID][common.PRVCoinID] += reward
 			}
 
 			// add reward to LPs
@@ -361,22 +362,19 @@ func TrackFee(
 		ammReward, orderRewards := SplitTradingReward(
 			reward, ratio, bps,
 			acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
+			orderbooks[i].NftIDs(),
 		)
 
-		fmt.Printf("ERR Rewards: %v, %v\n", ammReward, orderRewards)
-
 		// add reward to LOPs
-		for ordID, reward := range orderRewards {
-			if _, ok := orderRewardChanges[i][ordID]; !ok {
-				orderRewardChanges[i][ordID] = make(map[common.Hash]uint64)
+		for nftID, reward := range orderRewards {
+			if _, ok := orderRewardChanges[i][nftID]; !ok {
+				orderRewardChanges[i][nftID] = make(map[common.Hash]uint64)
 			}
-			if _, ok := orderRewardChanges[i][ordID][rewardToken]; !ok {
-				orderRewardChanges[i][ordID][rewardToken] = 0
+			if _, ok := orderRewardChanges[i][nftID][rewardToken]; !ok {
+				orderRewardChanges[i][nftID][rewardToken] = 0
 			}
-			orderRewardChanges[i][ordID][rewardToken] += reward
+			orderRewardChanges[i][nftID][rewardToken] += reward
 		}
-
-		fmt.Printf("ERR order reward changes: %+v\n", orderRewardChanges)
 
 		// add reward to LPs
 		lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(

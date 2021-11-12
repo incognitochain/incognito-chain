@@ -440,14 +440,15 @@ func (sp *stateProcessorV2) trade(
 				ammReward, orderRewards := v2.SplitTradingReward(
 					new(big.Int).SetUint64(amount), ratio, BPS,
 					md.PairChanges[index], md.OrderChanges[index],
+					pair.orderbook.NftIDs(),
 				)
 
 				// add reward to LOPs
-				for ordID, reward := range orderRewards {
-					if _, ok := pair.orderRewards[ordID]; !ok {
-						pair.orderRewards[ordID] = NewOrderReward()
+				for nftID, reward := range orderRewards {
+					if _, ok := pair.orderRewards[nftID]; !ok {
+						pair.orderRewards[nftID] = NewOrderReward()
 					}
-					pair.orderRewards[ordID].AddReward(tokenID, reward)
+					pair.orderRewards[nftID].AddReward(tokenID, reward)
 				}
 
 				// add reward to LPs
