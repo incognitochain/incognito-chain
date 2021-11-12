@@ -53,6 +53,7 @@ func getMakingAmountFromChange(change [2]*big.Int) *big.Int {
 func SplitTradingReward(
 	reward *big.Int, ratio uint, bps uint,
 	pairChange [2]*big.Int, orderChange map[string][2]*big.Int,
+	nftIDs map[string]string,
 ) (uint64, map[string]uint64) {
 	if ratio == 0 {
 		return reward.Uint64(), map[string]uint64{}
@@ -66,7 +67,11 @@ func SplitTradingReward(
 	weightOrderMakingAmt := map[string]*big.Int{}
 	for ordID, change := range orderChange {
 		orderMakingAmt := getMakingAmountFromChange(change)
-		weightOrderMakingAmt[ordID] = new(big.Int).Mul(orderMakingAmt, new(big.Int).SetUint64(uint64(2*ratio)))
+		nftID := nftIDs[ordID]
+		if _, ok := weightOrderMakingAmt[nftID]; !ok {
+			weightOrderMakingAmt[nftID] = new(big.Int).SetUint64(0)
+		}
+		weightOrderMakingAmt[nftID].Add(weightOrderMakingAmt[nftID], new(big.Int).Mul(orderMakingAmt, new(big.Int).SetUint64(uint64(2*ratio))))
 		weightedMakingAmt.Add(weightedMakingAmt, weightOrderMakingAmt[ordID])
 	}
 
@@ -80,16 +85,16 @@ func SplitTradingReward(
 	reward.Sub(reward, ammReward)
 
 	orderRewards := map[string]uint64{}
-	for ordID := range orderChange {
+	for nftID := range weightOrderMakingAmt {
 		orderReward := new(big.Int).SetUint64(0)
-		if weightOrderMakingAmt[ordID].Cmp(new(big.Int).SetUint64(0)) > 0 {
-			orderReward = new(big.Int).Mul(reward, weightOrderMakingAmt[ordID])
+		if weightOrderMakingAmt[nftID].Cmp(new(big.Int).SetUint64(0)) > 0 {
+			orderReward = new(big.Int).Mul(reward, weightOrderMakingAmt[nftID])
 			orderReward.Div(orderReward, weightedMakingAmt)
 		}
 
-		orderRewards[ordID] = orderReward.Uint64()
+		orderRewards[nftID] = orderReward.Uint64()
 
-		weightedMakingAmt.Sub(weightedMakingAmt, weightOrderMakingAmt[ordID])
+		weightedMakingAmt.Sub(weightedMakingAmt, weightOrderMakingAmt[nftID])
 		reward.Sub(reward, orderReward)
 	}
 

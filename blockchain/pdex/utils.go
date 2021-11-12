@@ -962,13 +962,13 @@ func CombineReward(
 func addOrderReward(
 	base map[string]*OrderReward, additional map[string]map[common.Hash]uint64,
 ) map[string]*OrderReward {
-	for ordID, reward := range additional {
+	for nftID, reward := range additional {
 		for tokenID, amt := range reward {
-			if _, ok := base[ordID]; !ok {
-				base[ordID] = NewOrderReward()
+			if _, ok := base[nftID]; !ok {
+				base[nftID] = NewOrderReward()
 			}
 
-			base[ordID].AddReward(tokenID, amt)
+			base[nftID].AddReward(tokenID, amt)
 		}
 	}
 	return base
