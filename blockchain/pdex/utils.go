@@ -941,7 +941,7 @@ func getMapWithoutZeroValue(m map[common.Hash]uint64) map[common.Hash]uint64 {
 	return result
 }
 
-func combineReward(
+func CombineReward(
 	reward1 map[common.Hash]uint64,
 	reward2 map[common.Hash]uint64,
 ) map[common.Hash]uint64 {

@@ -183,7 +183,7 @@ func StorePdexv3PoolPairOrderReward(
 	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairOrderRewardState,
 ) error {
 	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, state.nftID, state.tokenID)
-	return stateDB.SetStateObject(Pdexv3PoolPairProtocolFeeObjectType, key, state)
+	return stateDB.SetStateObject(Pdexv3PoolPairOrderRewardObjectType, key, state)
 }
 
 func StorePdexv3PoolPairMakingVolume(

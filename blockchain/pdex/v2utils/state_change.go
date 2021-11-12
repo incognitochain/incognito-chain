@@ -45,7 +45,7 @@ type PoolPairChange struct {
 	ProtocolFees    map[string]bool
 	StakingPoolFees map[string]bool
 	MakingVolume    map[string]*MakingVolumeChange
-	OrderReward     map[string]*OrderRewardChange
+	OrderRewards    map[string]*OrderRewardChange
 }
 
 func NewPoolPairChange() *PoolPairChange {

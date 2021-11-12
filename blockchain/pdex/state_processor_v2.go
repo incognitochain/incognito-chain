@@ -444,10 +444,10 @@ func (sp *stateProcessorV2) trade(
 
 				// add reward to LOPs
 				for ordID, reward := range orderRewards {
-					if _, ok := pair.orderReward[ordID]; !ok {
-						pair.orderReward[ordID] = NewOrderReward()
+					if _, ok := pair.orderRewards[ordID]; !ok {
+						pair.orderRewards[ordID] = NewOrderReward()
 					}
-					pair.orderReward[ordID].AddReward(tokenID, reward)
+					pair.orderRewards[ordID].AddReward(tokenID, reward)
 				}
 
 				pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = reserveState.AddLPFee(
@@ -797,7 +797,7 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 		}
 
-		order, isExisted := poolPair.orderReward[actionData.NftID.String()]
+		order, isExisted := poolPair.orderRewards[actionData.NftID.String()]
 		if isExisted {
 			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}

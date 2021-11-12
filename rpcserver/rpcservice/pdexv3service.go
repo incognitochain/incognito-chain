@@ -326,6 +326,12 @@ func (blockService BlockService) GetPdexv3State(
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
+		case PoolPairOrderRewards:
+			res, err = getPdexv3PoolPairOrderReward(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			if err != nil {
+				return res, NewRPCError(GetPdexv3StateError, err)
+			}
+
 		case Params:
 			res, err = getPdexv3Param(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
 			if err != nil {
@@ -632,6 +638,24 @@ func getPdexv3PoolPairOrders(
 		PoolPairs: &map[string]*pdex.PoolPairState{
 			poolPairID: pdex.NewPoolPairStateWithValue(
 				rawdbv2.Pdexv3PoolPair{}, nil, *orderBook, nil, nil, nil, nil, nil),
+		},
+	}
+	return res, nil
+}
+
+func getPdexv3PoolPairOrderReward(
+	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+) (interface{}, error) {
+	orderRewards, err := pdex.InitPoolPairOrderRewards(stateDB, poolPairID)
+	if err != nil {
+		return nil, NewRPCError(GetPdexv3StateError, err)
+	}
+
+	res := &jsonresult.Pdexv3State{
+		BeaconTimeStamp: beaconTimeStamp,
+		PoolPairs: &map[string]*pdex.PoolPairState{
+			poolPairID: pdex.NewPoolPairStateWithValue(
+				rawdbv2.Pdexv3PoolPair{}, nil, pdex.Orderbook{}, nil, nil, nil, nil, orderRewards),
 		},
 	}
 	return res, nil

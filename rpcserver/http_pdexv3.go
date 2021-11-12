@@ -314,51 +314,62 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 	pair := poolPairs[pairID]
 	pairState := pair.State()
 
-	if _, ok := pair.Shares()[nftIDStr]; !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("NftID is not existed"))
-	}
-
 	result := jsonresult.Pdexv3LPValue{
 		PoolValue:  map[string]uint64{},
 		TradingFee: map[string]uint64{},
 	}
 
-	shareAmount := pair.Shares()[nftIDStr].Amount()
-	if shareAmount != 0 {
-		poolAmount0 := new(big.Int).Mul(
-			new(big.Int).SetUint64(pairState.Token0RealAmount()),
-			new(big.Int).SetUint64(shareAmount),
-		)
-		poolAmount0 = new(big.Int).Div(
-			poolAmount0,
-			new(big.Int).SetUint64(pairState.ShareAmount()),
-		)
-		if !poolAmount0.IsUint64() {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+	uncollectedLPReward := map[common.Hash]uint64{}
+	uncollectedOrderReward := map[common.Hash]uint64{}
+
+	share, ok := pair.Shares()[nftIDStr]
+	if ok {
+		shareAmount := share.Amount()
+		if shareAmount != 0 {
+			poolAmount0 := new(big.Int).Mul(
+				new(big.Int).SetUint64(pairState.Token0RealAmount()),
+				new(big.Int).SetUint64(shareAmount),
+			)
+			poolAmount0 = new(big.Int).Div(
+				poolAmount0,
+				new(big.Int).SetUint64(pairState.ShareAmount()),
+			)
+			if !poolAmount0.IsUint64() {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+			}
+
+			poolAmount1 := new(big.Int).Mul(
+				new(big.Int).SetUint64(pairState.Token1RealAmount()),
+				new(big.Int).SetUint64(shareAmount),
+			)
+			poolAmount1 = new(big.Int).Div(
+				poolAmount1,
+				new(big.Int).SetUint64(pairState.ShareAmount()),
+			)
+			if !poolAmount0.IsUint64() {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+			}
+
+			result.PoolValue[pairState.Token0ID().String()] = poolAmount0.Uint64()
+			result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
 		}
 
-		poolAmount1 := new(big.Int).Mul(
-			new(big.Int).SetUint64(pairState.Token1RealAmount()),
-			new(big.Int).SetUint64(shareAmount),
-		)
-		poolAmount1 = new(big.Int).Div(
-			poolAmount1,
-			new(big.Int).SetUint64(pairState.ShareAmount()),
-		)
-		if !poolAmount0.IsUint64() {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+		uncollectedLPReward, err = pair.RecomputeLPFee(*nftID)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 		}
-
-		result.PoolValue[pairState.Token0ID().String()] = poolAmount0.Uint64()
-		result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
 	}
 
-	uncollectedTradingFees, err := pair.RecomputeLPFee(*nftID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	order, ok := pair.OrderRewards()[nftIDStr]
+	if ok {
+		// compute amount of received LOP reward
+		uncollectedOrderReward = order.UncollectedRewards()
 	}
-	for tokenID := range uncollectedTradingFees {
-		result.TradingFee[tokenID.String()] = uncollectedTradingFees[tokenID]
+
+	reward := pdex.CombineReward(uncollectedLPReward, uncollectedOrderReward)
+
+	for tokenID, amount := range reward {
+		result.TradingFee[tokenID.String()] = amount
 	}
 
 	return result, nil

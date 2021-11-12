@@ -465,7 +465,7 @@ func (sp *stateProducerV2) trade(
 		for index, pairID := range currentTrade.TradePath {
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
-			addOrderReward(changedPair.orderReward, orderRewardsChanges[index])
+			addOrderReward(changedPair.orderRewards, orderRewardsChanges[index])
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
 			changedPair.protocolFees = protocolFees[index]
 			changedPair.stakingPoolFees = stakingPoolFees[index]
@@ -877,13 +877,13 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		orderReward := map[common.Hash]uint64{}
-		order, isExistedOrderReward := poolPair.orderReward[metaData.NftID.String()]
+		order, isExistedOrderReward := poolPair.orderRewards[metaData.NftID.String()]
 		if isExistedOrderReward {
 			// compute amount of received LOP reward
 			orderReward = order.uncollectedRewards
 		}
 
-		reward := combineReward(lpReward, orderReward)
+		reward := CombineReward(lpReward, orderReward)
 
 		if reward == nil || len(reward) == 0 {
 			Logger.log.Infof("No reward to withdraw")

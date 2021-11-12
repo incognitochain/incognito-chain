@@ -419,3 +419,19 @@ func InitPoolPairOrders(stateDB *statedb.StateDB, poolPairID string) (*Orderbook
 	}
 	return orderbook, nil
 }
+
+func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[string]*OrderReward, error) {
+	rewards, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
+	if err != nil {
+		return nil, err
+	}
+
+	orderRewards := map[string]*OrderReward{}
+	for orderID, reward := range rewards {
+		orderRewards[orderID] = NewOrderReward()
+		for tokenID, amount := range reward {
+			orderRewards[orderID].uncollectedRewards[tokenID] = amount
+		}
+	}
+	return orderRewards, nil
+}

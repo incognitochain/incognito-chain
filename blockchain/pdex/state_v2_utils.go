@@ -306,6 +306,14 @@ type OrderReward struct {
 	uncollectedRewards Reward
 }
 
+func (orderReward *OrderReward) UncollectedRewards() Reward {
+	res := Reward{}
+	for k, v := range orderReward.uncollectedRewards {
+		res[k] = v
+	}
+	return res
+}
+
 func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
 	oldAmount := uint64(0)
 	if _, ok := orderReward.uncollectedRewards[tokenID]; ok {
