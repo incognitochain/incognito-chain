@@ -437,8 +437,16 @@ func (sp *stateProcessorV2) trade(
 					ratio = 0
 				}
 
+				remain := new(big.Int).SetUint64(0)
+
+				// add staking pools and protocol fees
+				pair.protocolFees, pair.stakingPoolFees, remain = reserveState.AddStakingAndProtocolFee(
+					tokenID, new(big.Int).SetUint64(amount), pair.protocolFees, pair.stakingPoolFees,
+					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+				)
+
 				ammReward, orderRewards := v2.SplitTradingReward(
-					new(big.Int).SetUint64(amount), ratio, BPS,
+					remain, ratio, BPS,
 					md.PairChanges[index], md.OrderChanges[index],
 					pair.orderbook.NftIDs(),
 				)
@@ -452,10 +460,9 @@ func (sp *stateProcessorV2) trade(
 				}
 
 				// add reward to LPs
-				pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = reserveState.AddLPFee(
-					tokenID, ammReward, BaseLPFeesPerShare,
-					pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
-					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+				pair.lpFeesPerShare = reserveState.AddLPFee(
+					tokenID, new(big.Int).SetUint64(ammReward), BaseLPFeesPerShare,
+					pair.lpFeesPerShare,
 				)
 			}
 
@@ -932,12 +939,11 @@ func (sp *stateProcessorV2) mintBlockReward(
 
 	pairReward := actionData.Amount
 
-	pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
+	pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
 		&pair.state,
 	).AddLPFee(
-		actionData.TokenID, pairReward, BaseLPFeesPerShare,
-		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
-		0, 0, []common.Hash{},
+		actionData.TokenID, new(big.Int).SetUint64(pairReward), BaseLPFeesPerShare,
+		pair.lpFeesPerShare,
 	)
 
 	return pairs, err
