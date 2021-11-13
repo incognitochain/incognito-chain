@@ -660,8 +660,12 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 	for nftID, orderReward := range p.orderRewards {
+		orderRewardChange, ok := poolPairChange.OrderRewards[nftID]
+		if !ok {
+			continue
+		}
 		for tokenID, amount := range orderReward.uncollectedRewards {
-			if poolPairChange.OrderRewards[nftID].UncollectedReward[tokenID.String()] {
+			if orderRewardChange.UncollectedReward[tokenID.String()] {
 				statedb.StorePdexv3PoolPairOrderReward(
 					env.StateDB(), poolPairID,
 					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
