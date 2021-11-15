@@ -432,9 +432,12 @@ func (sp *stateProcessorV2) trade(
 
 			for tokenID, amount := range md.RewardEarned[index] {
 				// split reward between LPs and LOPs by weighted ratio
-				ratio, ok := params.OrderMiningRewardRatioBPS[pairID]
-				if !ok {
-					ratio = 0
+				ratio := uint(0)
+				if params.OrderMiningRewardRatioBPS != nil {
+					bps, ok := params.OrderMiningRewardRatioBPS[pairID]
+					if ok {
+						ratio = bps
+					}
 				}
 
 				remain := new(big.Int).SetUint64(0)

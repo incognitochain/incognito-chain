@@ -300,9 +300,12 @@ func TrackFee(
 			reward.Div(reward, new(big.Int).SetUint64(uint64(sumPoolFees)))
 
 			// split reward between LPs and LOPs by weighted ratio
-			ratio, ok := orderMiningRewardRatioBPS[tradePath[i]]
-			if !ok {
-				ratio = 0
+			ratio := uint(0)
+			if orderMiningRewardRatioBPS != nil {
+				bps, ok := orderMiningRewardRatioBPS[tradePath[i]]
+				if ok {
+					ratio = bps
+				}
 			}
 
 			remain := new(big.Int).SetUint64(0)
@@ -363,9 +366,12 @@ func TrackFee(
 		}
 
 		// split reward between LPs and LOPs by weighted ratio
-		ratio, ok := orderMiningRewardRatioBPS[tradePath[i]]
-		if !ok {
-			ratio = 0
+		ratio := uint(0)
+		if orderMiningRewardRatioBPS != nil {
+			bps, ok := orderMiningRewardRatioBPS[tradePath[i]]
+			if ok {
+				ratio = bps
+			}
 		}
 
 		remain := new(big.Int).SetUint64(0)
