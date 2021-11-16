@@ -24,7 +24,7 @@ const (
 
 	unitTime = 40 // 1 block
 
-	// there might be cases where the chosen block does not contain any output coins. In this case,
+	// There might be cases where the chosen blocks do not contain any output coins. In this case,
 	// we will try to choose a random output coin from one of blocks in the interval [k - 10: k + 10].
 	blockDeviation = 10
 
@@ -57,7 +57,7 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 	}
 
 	x := gp.Rand()
-	passedBlock := uint64(math.Ceil(x * unitTime / config.Param().BlockTime.MaxShardBlockCreation.Seconds()))
+	passedBlock := uint64(math.Round(x * unitTime / config.Param().BlockTime.MinShardBlockInterval.Seconds()))
 	attempt := 0
 	for attempt < 2*blockDeviation {
 		if passedBlock > latestHeight {
