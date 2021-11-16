@@ -2452,6 +2452,181 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Only poolpair order rewards",
+			fields: fields{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares:          map[string]*Share{},
+						orderRewards: map[string]*OrderReward{
+							nftID: {
+								uncollectedRewards: Reward{
+									*token0ID: 100,
+									*token1ID: 0,
+								},
+							},
+							nftID1: {
+								uncollectedRewards: Reward{
+									common.PRVCoinID: 50,
+								},
+							},
+						},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
+					},
+				},
+				params: &Params{
+					DefaultFeeRateBPS: 30,
+					FeeRateBPS: map[string]uint{
+						"abc": 12,
+					},
+					PDEXRewardPoolPairsShare:        map[string]uint{},
+					PRVDiscountPercent:              25,
+					TradingProtocolFeePercent:       0,
+					TradingStakingPoolRewardPercent: 10,
+					StakingPoolsShare: map[string]uint{
+						common.PRVIDStr: 10,
+					},
+					MintNftRequireAmount: 1000000000,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{},
+				},
+				nftIDs:    map[string]uint64{},
+				producer:  stateProducerV2{},
+				processor: stateProcessorV2{},
+			},
+			args: args{
+				compareState: &stateV2{
+					stateBase:                   stateBase{},
+					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+					poolPairs: map[string]*PoolPairState{
+						poolPairID: &PoolPairState{
+							state: *rawdbv2.NewPdexv3PoolPairWithValue(
+								*token0ID, *token1ID, 200, 100, 400,
+								big.NewInt(0).SetUint64(200),
+								big.NewInt(0).SetUint64(800), 20000,
+							),
+							lpFeesPerShare:  map[common.Hash]*big.Int{},
+							protocolFees:    map[common.Hash]uint64{},
+							stakingPoolFees: map[common.Hash]uint64{},
+							shares:          map[string]*Share{},
+							orderRewards: map[string]*OrderReward{
+								nftID: {
+									uncollectedRewards: Reward{
+										*token0ID: 100,
+										*token1ID: 200,
+									},
+								},
+							},
+							makingVolume: map[common.Hash]*MakingVolume{},
+							orderbook:    Orderbook{[]*Order{}},
+						},
+					},
+					params: &Params{
+						DefaultFeeRateBPS: 30,
+						FeeRateBPS: map[string]uint{
+							"abc": 12,
+						},
+						PDEXRewardPoolPairsShare:        map[string]uint{},
+						PRVDiscountPercent:              25,
+						TradingProtocolFeePercent:       0,
+						TradingStakingPoolRewardPercent: 10,
+						StakingPoolsShare: map[string]uint{
+							common.PRVIDStr: 10,
+						},
+						MintNftRequireAmount: 1000000000,
+					},
+					stakingPoolStates: map[string]*StakingPoolState{
+						common.PRVIDStr: &StakingPoolState{},
+					},
+					nftIDs:    map[string]uint64{},
+					producer:  stateProducerV2{},
+					processor: stateProcessorV2{},
+				},
+				stateChange: &StateChange{
+					PoolPairs:    map[string]*v2utils.PoolPairChange{},
+					StakingPools: map[string]*v2utils.StakingPoolChange{},
+				},
+			},
+			want: &stateV2{
+				stateBase:                   stateBase{},
+				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
+				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 200, 100, 400,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(800), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares:          map[string]*Share{},
+						orderRewards: map[string]*OrderReward{
+							nftID: {
+								uncollectedRewards: Reward{
+									*token0ID: 100,
+									*token1ID: 0,
+								},
+							},
+							nftID1: {
+								uncollectedRewards: Reward{
+									common.PRVCoinID: 50,
+								},
+							},
+						},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
+					},
+				},
+				params:            NewParams(),
+				stakingPoolStates: map[string]*StakingPoolState{},
+				nftIDs:            map[string]uint64{},
+				producer:          stateProducerV2{},
+				processor:         stateProcessorV2{},
+			},
+			want1: &StateChange{
+				PoolPairs: map[string]*v2utils.PoolPairChange{
+					poolPairID: &v2utils.PoolPairChange{
+						IsChanged:       false,
+						Shares:          map[string]*v2utils.ShareChange{},
+						OrderIDs:        map[string]bool{},
+						LpFeesPerShare:  map[string]bool{},
+						ProtocolFees:    map[string]bool{},
+						StakingPoolFees: map[string]bool{},
+						MakingVolume:    map[string]*v2utils.MakingVolumeChange{},
+						OrderRewards: map[string]*v2utils.OrderRewardChange{
+							nftID: {
+								UncollectedReward: map[string]bool{
+									token1ID.String(): true,
+								},
+							},
+							nftID1: {
+								UncollectedReward: map[string]bool{
+									common.PRVIDStr: true,
+								},
+							},
+						},
+					},
+				},
+				StakingPools: map[string]*v2utils.StakingPoolChange{},
+			},
+			wantErr: false,
+		},
+		{
 			name: "Only poolpair trading fees",
 			fields: fields{
 				stateBase:                   stateBase{},

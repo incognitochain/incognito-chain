@@ -103,12 +103,17 @@ func (s *stateV2) Process(env StateEnvironment) error {
 	s.processor.clearCache()
 	beaconHeight := env.PrevBeaconHeight() + 1
 
-	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
+		// reset staking pool rewards
 		poolPair.stakingPoolFees = map[common.Hash]uint64{}
 		poolPair.stakingPoolFees[common.PRVCoinID] = 0
 		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
 		poolPair.stakingPoolFees[poolPair.state.Token1ID()] = 0
+
+		// init order rewards
+		if poolPair.orderRewards == nil {
+			poolPair.orderRewards = map[string]*OrderReward{}
+		}
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -269,8 +274,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 
 	orderCountByNftID := make(map[string]uint)
-	// Reset staking pool rewards
 	for _, poolPair := range s.poolPairs {
+		// reset staking pool rewards
 		poolPair.stakingPoolFees = map[common.Hash]uint64{}
 		poolPair.stakingPoolFees[common.PRVCoinID] = 0
 		poolPair.stakingPoolFees[poolPair.state.Token0ID()] = 0
@@ -280,6 +285,11 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		for _, ord := range poolPair.orderbook.orders {
 			// increment counter by NftID (orderCountByNftID[ord.NftID()] is 0 if no entry)
 			orderCountByNftID[ord.NftID().String()] = orderCountByNftID[ord.NftID().String()] + 1
+		}
+
+		// init order rewards
+		if poolPair.orderRewards == nil {
+			poolPair.orderRewards = map[string]*OrderReward{}
 		}
 	}
 
