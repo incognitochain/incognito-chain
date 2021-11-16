@@ -956,7 +956,7 @@ func CombineReward(
 			result[key] = value
 		}
 	}
-	return result
+	return getMapWithoutZeroValue(result)
 }
 
 func addOrderReward(
