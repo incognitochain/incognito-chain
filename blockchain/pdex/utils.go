@@ -829,6 +829,7 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 				if !exists {
 					Logger.log.Warnf("Cannot get price of token %s against PRV", sellingTokenID.String())
 					invalidTransactions = append(invalidTransactions, tx)
+					feeInPRVMap[tx.Hash().String()] = true
 					continue
 				}
 				temp := big.NewInt(0).SetUint64(fee)

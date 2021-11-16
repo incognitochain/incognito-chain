@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -289,15 +290,56 @@ func TestIgnoreSmallPRVPool(t *testing.T) {
 	}
 }
 
-func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment {
+func TestProduceFeeInPRVTrade(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Metadata metadataPdexv3.TradeRequest `json:"metadata"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("produce_trade_fee_prv.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
+
+			env := mockTxsForProducer([]metadataCommon.Metadata{&testdata.Metadata}, 0, true)
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+			Equal(t, expected, TestResult{instructions})
+		})
+	}
+}
+
+func mockTxsForProducer(mds []metadataCommon.Metadata, shardID byte, burningPRV bool) StateEnvironment {
 	var txLst []metadataCommon.Transaction
 	for _, md := range mds {
+		// for compatibility within tests, use the actual Hash() function; mock others when necessary
 		mytx := &transaction.TxVersion2{}
 		valEnv := tx_generic.DefaultValEnv()
 		valEnv = tx_generic.WithShardID(valEnv, int(shardID))
 		mytx.SetMetadata(md)
-		mytx.SetValidationEnv(valEnv)
-		txLst = append(txLst, mytx)
+
+		mocktx := &metadataMocks.Transaction{}
+		mocktx.On("GetMetadata").Return(md)
+		mocktx.On("GetMetadataType").Return(md.GetType())
+		mocktx.On("GetValidationEnv").Return(valEnv)
+		mocktx.On("Hash").Return(mytx.Hash())
+		// default for trade: set isBurn to true, fee is in sellToken
+		var burnedPRVCoin privacy.Coin = &privacy.CoinV2{}
+		if !burningPRV {
+			burnedPRVCoin = nil
+		}
+		mocktx.On("GetTxFullBurnData").Return(true, burnedPRVCoin, nil, nil, nil)
+		txLst = append(txLst, mocktx)
 	}
 
 	return NewStateEnvBuilder().
@@ -306,6 +348,10 @@ func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment
 		BuildBCHeightBreakPointPrivacyV2(0).
 		BuildStateDB(testDB).
 		Build()
+}
+
+func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment {
+	return mockTxsForProducer(mds, shardID, false)
 }
 
 func skipToProcess(instructions [][]string) StateEnvironment {
