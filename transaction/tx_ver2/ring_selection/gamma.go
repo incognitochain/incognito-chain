@@ -16,17 +16,17 @@ import (
 )
 
 const (
-	prvGammaShape = 0.38
-	prvGammaScale = 11.46
+	prvGammaShape = 0.25
+	prvGammaScale = 55629.11
 
-	tokenGammaShape = 0.35
-	tokenGammaScale = 20.57
+	tokenGammaShape = 0.44
+	tokenGammaScale = 26088.24
 
-	unitTime = 3600 * 24 // 1 day
+	unitTime = 40 // 1 block
 
 	// there might be cases where the chosen block does not contain any output coins. In this case,
-	// we will try to choose a random output coin from one of blocks in the interval [k - 5: k + 5].
-	blockDeviation = 5
+	// we will try to choose a random output coin from one of blocks in the interval [k - 10: k + 10].
+	blockDeviation = 10
 
 	MaxGammaTries = 1000
 )
