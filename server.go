@@ -718,9 +718,9 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	serverObj.netSync.Start()
-
 	go serverObj.highway.StartV2(serverObj.blockChain)
+
+	serverObj.netSync.Start()
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
