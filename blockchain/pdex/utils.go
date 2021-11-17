@@ -803,7 +803,6 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 			amount = v.SellAmount
 		default:
 			Logger.log.Warnf("Cannot get trading fee of metadata type %v", md.GetType())
-			invalidTransactions = append(invalidTransactions, tx)
 			continue
 		}
 
