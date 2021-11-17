@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/transaction/tx_ver2/ring_selection"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
@@ -506,8 +507,8 @@ func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID b
 		}
 
 		tmpResult, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), coinDB.GetPublicKey().ToBytesS())
-		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key")
+		if err != nil || tmpResult == nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key %v", base58.Base58Check{}.Encode(coinDB.GetPublicKey().ToBytesS(), 0))
 		}
 		var txHash *common.Hash
 		for _, txHashes := range tmpResult {
