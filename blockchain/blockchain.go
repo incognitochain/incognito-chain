@@ -507,7 +507,7 @@ func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID b
 		}
 
 		tmpResult, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), coinDB.GetPublicKey().ToBytesS())
-		if err != nil || tmpResult == nil {
+		if err != nil || len(tmpResult) == 0 {
 			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key %v", base58.Base58Check{}.Encode(coinDB.GetPublicKey().ToBytesS(), 0))
 		}
 		var txHash *common.Hash
