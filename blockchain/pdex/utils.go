@@ -796,7 +796,6 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 		md := tx.GetMetadata()
 		var sellingTokenID common.Hash
 		var fee, amount uint64
-		var feeInPRV bool = false
 		switch v := md.(type) {
 		case *metadataPdexv3.TradeRequest:
 			sellingTokenID = v.TokenToSell
@@ -809,6 +808,7 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 		}
 
 		if sellingTokenID == common.PRVCoinID {
+			feeInPRVMap[tx.Hash().String()] = false // only true when trading another token with PRV as fee
 			// sell & fee in PRV
 			temp := big.NewInt(0).SetUint64(fee)
 			// convert the fee from PRV to equivalent token by applying discount percent
@@ -823,13 +823,14 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 		} else {
 			// error was handled by tx validation
 			_, burnedPRVCoin, _, _, _ := tx.GetTxFullBurnData()
-			if burnedPRVCoin != nil {
+			feeInPRV := burnedPRVCoin != nil
+			feeInPRVMap[tx.Hash().String()] = feeInPRV
+			if feeInPRV {
 				// sell other token & fee in PRV
 				rates, exists := rateMap[sellingTokenID]
 				if !exists {
 					Logger.log.Warnf("Cannot get price of token %s against PRV", sellingTokenID.String())
 					invalidTransactions = append(invalidTransactions, tx)
-					feeInPRVMap[tx.Hash().String()] = true
 					continue
 				}
 				temp := big.NewInt(0).SetUint64(fee)
@@ -846,12 +847,10 @@ func getWeightedFee(txs []metadata.Transaction, pairs map[string]*PoolPairState,
 				}
 				// mark the fee as paid in PRV, and return the equivalent token amount
 				fee = temp.Uint64()
-				feeInPRV = true
 			}
 		}
 		resultTransactions = append(resultTransactions, tx)
 		fees[tx.Hash().String()] = fee
-		feeInPRVMap[tx.Hash().String()] = feeInPRV
 		sellAmounts[tx.Hash().String()] = amount
 	}
 	return resultTransactions, feeInPRVMap, fees, sellAmounts, invalidTransactions, nil
