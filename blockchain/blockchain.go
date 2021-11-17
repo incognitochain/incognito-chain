@@ -506,19 +506,24 @@ func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID b
 
 		}
 
-		tmpResult, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), coinDB.GetPublicKey().ToBytesS())
-		if err != nil || len(tmpResult) == 0 {
-			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key %v", base58.Base58Check{}.Encode(coinDB.GetPublicKey().ToBytesS(), 0))
-		}
 		var txHash *common.Hash
-		for _, txHashes := range tmpResult {
-			if len(txHashes) > 0 {
-				txHash = &txHashes[0]
-				break
+		for tmpShardID := 0; tmpShardID < common.MaxShardNumber; tmpShardID++ {
+			tmpResult, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(byte(tmpShardID)), coinDB.GetPublicKey().ToBytesS())
+			if err != nil || len(tmpResult) == 0 {
+				continue
 			}
+
+			for _, txHashes := range tmpResult {
+				if len(txHashes) > 0 {
+					txHash = &txHashes[0]
+					break
+				}
+			}
+			break
 		}
+
 		if txHash == nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key (shard %v) for tmpResult %v", shardID, tmpResult)
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key %v", base58.Base58Check{}.Encode(coinDB.GetPublicKey().ToBytesS(), 0))
 		}
 		_, _, blockHeight, _, tx, err := blockchain.GetTransactionByHash(*txHash)
 		if err != nil {
