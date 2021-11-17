@@ -518,7 +518,7 @@ func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID b
 			}
 		}
 		if txHash == nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key (shard %v)", shardID)
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key (shard %v) for tmpResult %v", shardID, tmpResult)
 		}
 		_, _, blockHeight, _, tx, err := blockchain.GetTransactionByHash(*txHash)
 		if err != nil {
