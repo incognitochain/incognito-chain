@@ -16,8 +16,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
-
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 	"github.com/incognitochain/incognito-chain/addrmanager"
