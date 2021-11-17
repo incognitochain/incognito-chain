@@ -515,7 +515,7 @@ func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID b
 		}
 		_, _, blockHeight, _, _, err := blockchain.GetTransactionByHash(txHashes[0])
 		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by hash (%v): %v", txHashes[0],r)
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by hash (%v): %v", txHashes[0], err)
 		}
 		blocks, err := blockchain.GetShardBlockByHeight(blockHeight, shardID)
 		if err != nil {
