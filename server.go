@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -718,9 +720,9 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	serverObj.netSync.Start()
-
 	go serverObj.highway.StartV2(serverObj.blockChain)
+
+	serverObj.netSync.Start()
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
