@@ -8,6 +8,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -90,7 +91,11 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
 				bcHash := sBestView.GetBeaconHash()
-				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, false)
+				includePdexv3Tx := false
+				if sBestView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
+					includePdexv3Tx = true
+				}
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, includePdexv3Tx)
 				if err != nil {
 					Logger.log.Errorf("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
 				} else {
