@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"strconv"
 	"sync"
 
@@ -436,16 +437,21 @@ func (blockchain BlockChain) RandomDecoysFromGamma(numOutputs int, shardID byte,
 	// these coins either all have asset tags or none does
 	hasAssetTags := true
 	failedCount := 0
+	var idx *big.Int
+	var coinDB *coin.CoinV2
+	var err error
 	for i := 0; i < numOutputs; i++ {
-		idx, coinDB, err := ring_selection.Pick(db, shardID, *tokenID, latestHeight)
-		if err != nil {
-			failedCount++
-			if failedCount > ring_selection.MaxGammaTries * numOutputs {
-				return nil, nil, nil, nil, fmt.Errorf("max attempt exceeded")
+		for {
+			idx, coinDB, err = ring_selection.Pick(db, shardID, *tokenID, latestHeight)
+			if err != nil {
+				failedCount++
+				if failedCount > ring_selection.MaxGammaTries*numOutputs {
+					return nil, nil, nil, nil, fmt.Errorf("max attempt exceeded")
+				}
+			} else {
+				break
 			}
-			Logger.log.Errorf("%v\n", err)
-			i--
-			continue
+
 		}
 
 		commitment := coinDB.GetCommitment()

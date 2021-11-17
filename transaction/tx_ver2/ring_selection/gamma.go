@@ -31,14 +31,14 @@ const (
 	MaxGammaTries = 1000
 )
 
-// GammaPicker implements a Gamma distribution picker for choosing random decoys.
-type GammaPicker struct {
+// gammaPicker implements a Gamma distribution picker for choosing random decoys.
+type gammaPicker struct {
 	distuv.Gamma
 }
 
-// NewGammaPicker returns a new GammaPicker.
+// NewGammaPicker returns a new gammaPicker.
 // It is used for the MAIN-NET only.
-func NewGammaPicker(shape, scale float64) *GammaPicker {
+func NewGammaPicker(shape, scale float64) *gammaPicker {
 	randSrc := rand.NewSource(common.RandUint64())
 	gamma := distuv.Gamma{
 		Alpha: shape,
@@ -46,7 +46,7 @@ func NewGammaPicker(shape, scale float64) *GammaPicker {
 		Src:   randSrc,
 	}
 
-	return &GammaPicker{gamma}
+	return &gammaPicker{gamma}
 }
 
 // Pick returns a random CoinV2 from the pre-defined Gamma distribution.
@@ -59,13 +59,14 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 	x := gp.Rand()
 	passedBlock := uint64(math.Round(x * unitTime / config.Param().BlockTime.MinShardBlockInterval.Seconds()))
 	attempt := 0
+	tmpPassedBlock := passedBlock
 	for attempt < 2*blockDeviation {
-		if passedBlock > latestHeight {
+		if tmpPassedBlock > latestHeight {
 			utils.Logger.Log.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v\n", passedBlock, latestHeight, shardID)
 			return nil, nil, fmt.Errorf("bad pick: passedBlock %v is greater than the current block %v, shardID %v", passedBlock, latestHeight, shardID)
 		}
 
-		blkHeight := latestHeight - passedBlock
+		blkHeight := latestHeight - tmpPassedBlock
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, tokenID, shardID, blkHeight)
 		if err != nil {
 			utils.Logger.Log.Errorf("bad pick: GetOTACoinsByHeight(%v, %v, %v) error: %v\n", tokenID.String(), shardID, blkHeight, err)
@@ -93,9 +94,9 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 			utils.Logger.Log.Errorf("%v\n", msg)
 
 			if common.RandInt()%2 == 0 {
-				passedBlock += 1 + common.RandUint64()%blockDeviation
+				tmpPassedBlock = passedBlock + 1 + common.RandUint64()%blockDeviation
 			} else {
-				passedBlock -= 1 + common.RandUint64()%blockDeviation
+				tmpPassedBlock = passedBlock - 1 - common.RandUint64()%blockDeviation
 			}
 			attempt++
 			continue

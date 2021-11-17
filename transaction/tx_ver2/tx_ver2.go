@@ -344,17 +344,18 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 				var idx *big.Int
 				var coinDB *coin.CoinV2
 
-				// We only use the GammaPicker when the `LatestHeight` is known and the current network is the main-net.
+				// We only use the gammaPicker when the `LatestHeight` is known and the current network is the main-net.
 				if config.Config() != nil && config.Config().IsMainNet && params.LatestHeight != 0 {
-					idx, coinDB, err = ring_selection.Pick(params.StateDB, shardID, *params.TokenID, params.LatestHeight)
-					if err != nil {
-						gammaFailCount++
-						if gammaFailCount > ring_selection.MaxGammaTries*len(inputCoins)*ringSize {
-							return nil, nil, nil, fmt.Errorf("gamma.pick: max attempt exceeded")
+					for {
+						idx, coinDB, err = ring_selection.Pick(params.StateDB, shardID, *params.TokenID, params.LatestHeight)
+						if err != nil {
+							gammaFailCount++
+							if gammaFailCount > ring_selection.MaxGammaTries*len(inputCoins)*ringSize {
+								return nil, nil, nil, fmt.Errorf("gamma.pick: max attempt exceeded")
+							}
+						} else {
+							break
 						}
-						utils.Logger.Log.Errorf("%v\n", err)
-						j--
-						continue
 					}
 				} else {
 					idx, _ = common.RandBigIntMaxRange(lenOTA)
