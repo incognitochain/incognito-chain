@@ -472,6 +472,82 @@ func (blockchain BlockChain) RandomDecoysFromGamma(numOutputs int, shardID byte,
 	return indices, publicKeys, commitments, assetTags, nil
 }
 
+func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID byte, tokenID *common.Hash) ([]int64, []uint64, [][]byte, [][]byte, [][]byte, error) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, nil, nil, nil, nil, fmt.Errorf("shardID %v is out of range, maxShardNumber is %v", shardID, common.MaxShardNumber)
+	}
+	db := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	latestHeight := blockchain.GetBestStateShard(shardID).ShardHeight
+
+	createdTime := make([]int64, 0)
+	indices := make([]uint64, 0)
+	publicKeys := make([][]byte, 0)
+	commitments := make([][]byte, 0)
+	assetTags := make([][]byte, 0)
+
+	// these coins either all have asset tags or none does
+	hasAssetTags := true
+	failedCount := 0
+	var idx *big.Int
+	var coinDB *coin.CoinV2
+	var err error
+	for i := 0; i < numOutputs; i++ {
+		for {
+			idx, coinDB, err = ring_selection.Pick(db, shardID, *tokenID, latestHeight)
+			if err != nil {
+				failedCount++
+				if failedCount > ring_selection.MaxGammaTries*numOutputs {
+					return nil, nil, nil, nil, nil, fmt.Errorf("max attempt exceeded")
+				}
+			} else {
+				break
+			}
+
+		}
+
+		tmpResult, err := rawdbv2.GetTxByPublicKey(blockchain.GetShardChainDatabase(shardID), coinDB.GetPublicKey().ToBytesS())
+		if err != nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key")
+		}
+		txHashes, ok := tmpResult[shardID]
+		if !ok || len(txHashes) == 0 {
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key (shard %v)", shardID)
+		}
+		_, _, blockHeight, _, _, err := blockchain.GetTransactionByHash(txHashes[0])
+		if err != nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by hash (%v): %v", txHashes[0],r)
+		}
+		blocks, err := blockchain.GetShardBlockByHeight(blockHeight, shardID)
+		if err != nil {
+			Logger.log.Errorf("blkHeight %v, shard %v not found: %v\n", blockHeight, shardID, err)
+			continue
+		}
+		lockTime := int64(0)
+		for _, blk := range blocks {
+			if blk.GetProduceTime() > lockTime {
+				lockTime = blk.GetProduceTime()
+			}
+		}
+
+		createdTime = append(createdTime, lockTime)
+		commitment := coinDB.GetCommitment()
+		indices = append(indices, idx.Uint64())
+		publicKeys = append(publicKeys, coinDB.GetPublicKey().ToBytesS())
+		commitments = append(commitments, commitment.ToBytesS())
+
+		if hasAssetTags {
+			assetTag := coinDB.GetAssetTag()
+			if assetTag != nil {
+				assetTags = append(assetTags, assetTag.ToBytesS())
+			} else {
+				hasAssetTags = false
+			}
+		}
+	}
+
+	return createdTime, indices, publicKeys, commitments, assetTags, nil
+}
+
 func (blockchain *BlockChain) GetActiveShardNumber() int {
 	return blockchain.GetBeaconBestState().ActiveShards
 }

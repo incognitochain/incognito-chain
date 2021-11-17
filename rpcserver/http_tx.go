@@ -789,7 +789,7 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 		return nil, err2
 	}
 
-	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments, assetTags)
+	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(nil, commitmentIndices, publicKeys, commitments, assetTags)
 	return result, nil
 }
 
@@ -851,13 +851,15 @@ func (httpServer *HttpServer) handleRandomDecoysSelection(params interface{}, cl
 	}
 
 	start := time.Now()
-	commitmentIndices, publicKeys, commitments, assetTags, err := httpServer.txService.BlockChain.RandomDecoysFromGamma(int(numOutputs), byte(shardID), tokenID)
+	createdTime, commitmentIndices, publicKeys, commitments, assetTags, err := httpServer.txService.BlockChain.RandomDecoysFromGammaTest(int(numOutputs), byte(shardID), tokenID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
 	}
 	Logger.log.Infof("[RandomDecoysFromGamma] Shard: %v, TokenID: %v, #Coins: %v, timeElapsed: %v\n", shardID, tokenID.String(), numOutputs, time.Since(start).Seconds())
 
-	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments, assetTags)
+	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(createdTime, commitmentIndices, publicKeys, commitments, assetTags)
+	result.CurrentLockTime = httpServer.txService.BlockChain.BeaconChain.GetLastBlockTimeStamp()
+
 	return result, nil
 }
 
