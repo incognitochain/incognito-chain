@@ -509,17 +509,24 @@ func (blockchain BlockChain) RandomDecoysFromGammaTest(numOutputs int, shardID b
 		if err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key")
 		}
-		txHashes, ok := tmpResult[shardID]
-		if !ok || len(txHashes) == 0 {
+		var txHash *common.Hash
+		for _, txHashes := range tmpResult {
+			if len(txHashes) > 0 {
+				txHash = &txHashes[0]
+				break
+			}
+		}
+		if txHash == nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by public key (shard %v)", shardID)
 		}
-		_, _, blockHeight, _, _, err := blockchain.GetTransactionByHash(txHashes[0])
+		_, _, blockHeight, _, tx, err := blockchain.GetTransactionByHash(*txHash)
 		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by hash (%v): %v", txHashes[0], err)
+			return nil, nil, nil, nil, nil, fmt.Errorf("cannot get transaction by hash (%v): %v", txHash.String(), err)
 		}
-		blocks, err := blockchain.GetShardBlockByHeight(blockHeight, shardID)
+		txShardID := tx.GetSenderAddrLastByte()
+		blocks, err := blockchain.GetShardBlockByHeight(blockHeight, txShardID)
 		if err != nil {
-			Logger.log.Errorf("blkHeight %v, shard %v not found: %v\n", blockHeight, shardID, err)
+			Logger.log.Errorf("blkHeight %v, shard %v not found: %v\n", blockHeight, txShardID, err)
 			continue
 		}
 		lockTime := int64(0)
