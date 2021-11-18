@@ -36,6 +36,9 @@ type NetSync struct {
 	cMessage chan interface{}
 	cQuit    chan struct{}
 
+	cTxMessage chan wire.Message
+	cpuUsage   float64
+
 	config *NetSyncConfig
 	cache  *NetSyncCache
 
@@ -122,7 +125,9 @@ func (netSync *NetSync) Start() error {
 	}
 	Logger.log.Debug("Starting sync manager")
 	//netSync.waitgroup.Add(1)
+	go netSync.transactionHandler()
 	go netSync.messageHandler()
+	go netSync.GetCPUUsage()
 	go netSync.cacheLoop()
 	return nil
 }
@@ -198,13 +203,50 @@ out:
 	Logger.log.Debug("Block handler done")
 }
 
+func (netSync *NetSync) GetCPUUsage() {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+	for _ = range ticker.C {
+		idle, total := common.GetCPUSample()
+		netSync.cpuUsage = 100 * float64(total-idle) / float64(total)
+		Logger.log.Infof("TestCPU: CPU Usage %v", netSync.cpuUsage)
+	}
+}
+
+func (netSync *NetSync) transactionHandler() {
+	ticker := time.NewTicker(1 * time.Second)
+	txsrps := 100 // total transaction release per second
+	defer ticker.Stop()
+	queueTx := []wire.Message{}
+	for {
+		select {
+		case msgTx := <-netSync.cTxMessage:
+			queueTx = append(queueTx, msgTx)
+		case <-ticker.C:
+			i := 0
+			if netSync.cpuUsage < 80 {
+				for ; (i < txsrps) && (i < len(queueTx)); i++ {
+					netSync.cMessage <- queueTx[i]
+				}
+				queueTx = queueTx[i:]
+			}
+		}
+	}
+}
+
 func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
-	netSync.cMessage <- msg
+	if netSync.cpuUsage > 80 {
+		go func(msg *wire.MessageTx) {
+			netSync.cTxMessage <- msg
+		}(msg)
+	} else {
+		netSync.cMessage <- msg
+	}
 	return nil
 }
 
@@ -214,7 +256,13 @@ func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTx
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
-	netSync.cMessage <- msg
+	if netSync.cpuUsage > 80 {
+		go func(msg *wire.MessageTx) {
+			netSync.cTxMessage <- msg
+		}((*wire.MessageTx)(msg))
+	} else {
+		netSync.cMessage <- msg
+	}
 	return nil
 }
 

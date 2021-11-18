@@ -5,19 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"os"
 	"syscall"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/google/uuid"
 	"github.com/incognitochain/incognito-chain/blockchain"
 
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -25,32 +25,6 @@ import (
 var monitorFile *os.File
 var globalParam *logKV
 var blockchainObj *blockchain.BlockChain
-
-func getCPUSample() (idle, total uint64) {
-	contents, err := ioutil.ReadFile("/proc/stat")
-	if err != nil {
-		return
-	}
-	lines := strings.Split(string(contents), "\n")
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		if fields[0] == "cpu" {
-			numFields := len(fields)
-			for i := 1; i < numFields; i++ {
-				val, err := strconv.ParseUint(fields[i], 10, 64)
-				if err != nil {
-					fmt.Println("Error: ", i, fields[i], err)
-				}
-				total += val // tally up all the numbers to get total ticks
-				if i == 4 {  // idle is the 5th field in the cpu line
-					idle = val
-				}
-			}
-			return
-		}
-	}
-	return
-}
 
 func init() {
 	uid := uuid.New()
@@ -69,7 +43,7 @@ func init() {
 
 	go func() {
 		ticker := time.NewTicker(40 * time.Second)
-		idle0, total0 := getCPUSample()
+		idle0, total0 := common.GetCPUSample()
 		var m runtime.MemStats
 		for _ = range ticker.C {
 			if blockchainObj == nil {
@@ -77,7 +51,7 @@ func init() {
 				continue
 			}
 			l := NewLog()
-			idle1, total1 := getCPUSample()
+			idle1, total1 := common.GetCPUSample()
 			idleTicks := float64(idle1 - idle0)
 			totalTicks := float64(total1 - total0)
 			cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
@@ -93,7 +67,7 @@ func init() {
 				l.Add("DISK_USAGE", fmt.Sprintf("%.2f", float64(Used*100)/float64(All)))
 			}
 			l.Add("CPU_USAGE", fmt.Sprintf("%.2f", cpuUsage), "MEM_USAGE", m.Sys>>20)
-			idle0, total0 = getCPUSample()
+			idle0, total0 = common.GetCPUSample()
 			l.Write()
 		}
 	}()
