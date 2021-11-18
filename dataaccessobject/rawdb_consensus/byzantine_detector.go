@@ -3,6 +3,7 @@ package rawdb_consensus
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"strings"
 	"time"
 )
 
@@ -44,7 +45,8 @@ func GetAllBlackListValidator(db incdb.Database) (map[string]*BlackListValidator
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
-		validator := string(key)
+		keys := strings.Split(string(key), string(splitter))
+		validator := keys[1]
 
 		data := make([]byte, len(it.Value()))
 		copy(data, it.Value())
