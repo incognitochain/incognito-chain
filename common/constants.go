@@ -58,7 +58,7 @@ const (
 )
 
 var (
-	MaxTxSize    = uint64(100)  // unit KB = 100KB
+	MaxTxSize    = uint64(500)  // unit KB = 1000KB
 	MaxBlockSize = uint64(2000) //unit kilobytes = 2 Megabyte
 )
 
