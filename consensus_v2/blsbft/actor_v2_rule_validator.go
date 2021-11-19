@@ -135,6 +135,9 @@ func (c ConsensusValidatorLemma2) ValidateBlock(lastVotedBlock types.BlockInterf
 func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.BlockInterface, isVoteNextHeight bool, proposeBlockInfo *ProposeBlockInfo) bool {
 
 	if !isVoteNextHeight {
+		c.logger.Infof("Block %+v is valid with because no block in height is voted yet %+v",
+			*proposeBlockInfo.block.Hash(),
+			proposeBlockInfo.block.GetHeight())
 		return true
 	}
 
@@ -142,16 +145,21 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
 	if blockProduceTimeSlot < lastBlockProduceTimeSlot {
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
-		c.logger.Debug("Block Produce Time %+v, < Last Block Produce Time %+v", blockProduceTimeSlot, lastBlockProduceTimeSlot)
+		c.logger.Infof("Block %+v is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
+			*proposeBlockInfo.block.Hash(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		return true
 	} else if blockProduceTimeSlot == lastBlockProduceTimeSlot &&
 		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
-		c.logger.Debug("Block Propose Time %+v, < Last Block Propose Time %+v",
+		c.logger.Infof("Block %+v is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
+			*proposeBlockInfo.block.Hash(),
 			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
 			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {
+		c.logger.Infof("Block %+v is valid with rule 3, Block Produce Time %+v, < Last Block Produce Time %+v",
+			*proposeBlockInfo.block.Hash(),
+			blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		// blockProduceTimeSlot is larger or equal than voted block
 		return true
 	} // if not swap committees => do nothing

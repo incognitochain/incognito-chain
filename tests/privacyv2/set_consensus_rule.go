@@ -144,7 +144,7 @@ func setVoteRule(url string) {
 	fmt.Println(string(body))
 }
 
-func setCreateOnly(url string) {
+func setFixedNodeNoHandleProposeMsg(url string) {
 
 	method := "POST"
 
@@ -152,9 +152,12 @@ func setCreateOnly(url string) {
 	"jsonrpc": "1.0",
     "method": "setconsensusrule",
     "params": [{
-        "vote_rule": "vote",
-        "create_rule": "create",
-		"handle_vote_rule": "collect-vote"
+ 		"vote_rule": "vote", 
+        "create_rule": "create-repropose",
+        "handle_vote_rule": "collect-vote",
+        "handle_propose_rule": "no-handle-propose-message",
+        "insert_rule": "insert-and-broadcast",
+ 		"validator_rule": "validator-lemma2"
     }],
     "id": 1
 }`)
@@ -187,7 +190,7 @@ func setCreateOnly(url string) {
 	fmt.Println(string(body))
 }
 
-func setCreateOnlyNoVote(url string) {
+func setCreateOnly(url string) {
 
 	method := "POST"
 
@@ -195,9 +198,12 @@ func setCreateOnlyNoVote(url string) {
 	"jsonrpc": "1.0",
     "method": "setconsensusrule",
     "params": [{
-        "vote_rule": "no-vote",
-        "create_rule": "create",
-		"handle_vote_rule": "collect-vote"
+ 		"vote_rule": "vote", 
+        "create_rule": "create-only",
+        "handle_vote_rule": "collect-vote",
+        "handle_propose_rule": "handle-propose-message",
+        "insert_rule": "insert-and-broadcast",
+ 		"validator_rule": "validator-lemma2"
     }],
     "id": 1
 }`)
@@ -431,21 +437,20 @@ func setVoteRuleShard0() {
 	}
 }
 
-func setCreateOnlyShard0() {
+func setFixedNodeNoHandleProposeMsgShard0() {
 	for i, url := range shard0UrlList {
 		if i == 0 {
 			continue
 		}
-		setCreateOnly(url)
+		setFixedNodeNoHandleProposeMsg(url)
 	}
 }
 
-func setCreateOnlyNoVoteShard0() {
+func setNode12CreateOnly() {
 	for i, url := range shard0UrlList {
-		if i == 0 {
-			continue
+		if i == 1 || i == 2 {
+			setCreateOnly(url)
 		}
-		setCreateOnlyNoVote(url)
 	}
 }
 

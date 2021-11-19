@@ -34,6 +34,8 @@ func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
 	}
 }
 
+//TODO: @hung
+//2. vote for smaller height but already vote for higher height
 type ByzantineDetector struct {
 	fixedNodes                   map[string]bool                                // fixed nodes
 	blackList                    map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
@@ -225,6 +227,9 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(bftVote *BFTVote) err
 
 	if vote, ok := voteInTimeSlot[bftVote.ProposeTimeSlot]; ok {
 		// allow receiving same vote multiple times
+		if !vote.CommitteeFromBlock.IsEqual(&bftVote.CommitteeFromBlock) {
+			return nil
+		}
 		if !reflect.DeepEqual(vote, bftVote) {
 			return fmt.Errorf("error name: %+v, "+
 				"first bftvote %+v, latter bftvote %+v",

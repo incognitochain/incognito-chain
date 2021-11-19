@@ -10,7 +10,7 @@ var (
 	VOTE_RULE_NO_VOTE              = "no-vote"
 	HANDLE_VOTE_MESSAGE_COLLECT    = "collect-vote"
 	HANDLE_VOTE_MESSAGE_NO_COLLECT = "no-collect-vote"
-	CREATE_RULE_CREATE_ONLY        = "create"
+	CREATE_RULE_CREATE_ONLY        = "create-only"
 	CREATE_RULE_NORMAL             = "create-repropose"
 	HANDLE_PROPOSE_MESSAGE_NORMAL  = "handle-propose-message"
 	HANDLE_PROPOSEMESSAGE_NO       = "no-handle-propose-message"

@@ -671,7 +671,7 @@ func (a *actorV2) run() error {
 
 				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock(bestView, v); err == nil {
+					if err := a.validateBlock(bestView.GetHeight(), v); err == nil {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -888,12 +888,13 @@ func (a *actorV2) voteValidBlock(
 	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(proposeBlockInfo.SigningCommittees, common.BlsConsensus)
 	for _, userKey := range proposeBlockInfo.UserKeySet {
 		pubKey := userKey.GetPublicKey()
-		// When node is not connect to highway (drop connection/startup), propose and vote a block will prevent voting for any other blocks having same height but larger timestamp (rule1)
-		// In case number of validator is 22, we need to make 22 turn to propose the old smallest timestamp block
-		// To prevent this, proposer will not vote unless receiving at least one vote (look at receive vote event)
-		if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 {
-			continue
-		}
+		// TODO: @dung.v review, persist consensus data no longer require this code
+		//// When node is not connect to highway (drop connection/startup), propose and vote a block will prevent voting for any other blocks having same height but larger timestamp (rule1)
+		//// In case number of validator is 22, we need to make 22 turn to propose the old smallest timestamp block
+		//// To prevent this, proposer will not vote unless receiving at least one vote (look at receive vote event)
+		//if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 {
+		//	continue
+		//}
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(a.GetConsensusName()), committeeBLSString) != -1 {
 			err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0))
 			if err != nil {
@@ -1334,7 +1335,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if proposeBlockInfo.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock(a.chain.GetBestView(), proposeBlockInfo); err != nil {
+					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err != nil {
 						err = a.voteValidBlock(proposeBlockInfo)
 						if err != nil {
 							a.logger.Debug(err)
@@ -1442,15 +1443,23 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 	// HACK CASE, block already insert but still vote
 	// if block is inserted => no need to validate again
 	for _, tryVoteInsertedBlock := range tryVoteInsertedBlocks {
-		a.voteValidBlock(tryVoteInsertedBlock)
+		if !tryVoteInsertedBlock.IsValid {
+			err := a.validateBlock(tryVoteInsertedBlock.block.GetHeight()-1, tryVoteInsertedBlock)
+			if err != nil {
+				a.logger.Errorf("Block %+v try vote inserted block but invalid", *tryVoteInsertedBlock.block.Hash())
+				continue
+			}
+		}
+		if tryVoteInsertedBlock.IsValid {
+			a.voteValidBlock(tryVoteInsertedBlock)
+		}
 	}
 
 	return validProposeBlock
 }
 
-func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
+func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
 
-	bestViewHeight := bestView.GetHeight()
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 

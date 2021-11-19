@@ -155,11 +155,11 @@ func main() {
 	if os.Args[1] == "set_vote" {
 		setVoteRuleShard0()
 	}
-	if os.Args[1] == "only_create" {
-		setCreateOnlyShard0()
+	if os.Args[1] == "fixed-node-no-handle-propose-message" {
+		setFixedNodeNoHandleProposeMsgShard0()
 	}
-	if os.Args[1] == "only_create_no_vote" {
-		setCreateOnlyNoVoteShard0()
+	if os.Args[1] == "node_1_2_only_create" {
+		setNode12CreateOnly()
 	}
 	if os.Args[1] == "lemma2_normal_rule" {
 		setLemma2NormalRuleShard0()
