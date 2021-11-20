@@ -264,7 +264,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		nodeList.Put([]byte{}, proofBytes)
 	}
 	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(evmHeader.ReceiptHash, keybuf.Bytes(), proof)
+	val, err := trie.VerifyProof(evmHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
 		Logger.log.Warn(errMsg)

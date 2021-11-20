@@ -3,7 +3,7 @@ module github.com/incognitochain/incognito-chain
 go 1.13
 
 require (
-	cloud.google.com/go v0.38.0
+	cloud.google.com/go v0.51.0
 	github.com/0xBahamoot/go-bigcompressor v1.0.5
 	github.com/0xsirrush/color v1.7.0
 	github.com/allegro/bigcache v1.2.1
@@ -21,13 +21,13 @@ require (
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/elastic/gosigar v0.10.4 // indirect
 	github.com/etcd-io/bbolt v1.3.3 // indirect
-	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
+	github.com/ethereum/go-ethereum v1.10.7
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0
-	github.com/google/uuid v1.1.1
+	github.com/golang/protobuf v1.4.3
+	github.com/google/uuid v1.1.5
 	github.com/gorilla/websocket v1.4.2
-	github.com/hashicorp/golang-lru v0.5.4
+	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50
 	github.com/incognitochain/go-libp2p-pubsub v0.2.7-0.20210126072501-9870234752e4
 	github.com/jbenet/goprocess v0.1.4
@@ -45,9 +45,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/libp2p/go-libp2p-swarm v0.2.8
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
-	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
-	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -58,16 +56,16 @@ require (
 	github.com/stathat/consistent v1.0.0 // indirect
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
-	github.com/stretchr/testify v1.6.1
-	github.com/syndtr/goleveldb v1.0.0
+	github.com/stretchr/testify v1.7.0
+	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	google.golang.org/api v0.10.0
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	google.golang.org/api v0.15.0
 	google.golang.org/grpc v1.27.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.3.0
 	stathat.com/c/consistent v1.0.0
 )
 
