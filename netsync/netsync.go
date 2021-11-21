@@ -205,11 +205,14 @@ out:
 
 func (netSync *NetSync) GetCPUUsage() {
 	ticker := time.NewTicker(2 * time.Second)
+	idle0, total0 := common.GetCPUSample()
 	defer ticker.Stop()
 	for _ = range ticker.C {
-		idle, total := common.GetCPUSample()
+		idle1, total1 := common.GetCPUSample()
+		idle, total := idle1-idle0, total1-total0
 		netSync.cpuUsage = 100 * float64(total-idle) / float64(total)
-		Logger.log.Infof("TestCPU: CPU Usage %v", netSync.cpuUsage)
+		Logger.log.Infof("TestCPU: CPU Usage %v %v %v", idle, total, netSync.cpuUsage)
+		idle0, total0 = common.GetCPUSample()
 	}
 }
 
