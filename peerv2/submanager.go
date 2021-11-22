@@ -403,6 +403,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 				wire.CmdCrossShard,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
+				wire.CmdMsgFeatureStat,
 			}
 
 		case common.SyncingRole:
@@ -421,6 +422,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
+				wire.CmdMsgFeatureStat,
 			}
 		}
 

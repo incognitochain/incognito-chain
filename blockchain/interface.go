@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/wire"
+	libp2p "github.com/libp2p/go-libp2p-core/peer"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -44,10 +46,12 @@ type ConsensusEngine interface {
 	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
+	GetSyncingValidators() []*consensus.Validator
 }
 
 type Server interface {
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
+	PushMessageToBeacon(msg wire.Message, exclusivePeerIDs map[libp2p.ID]bool) error
 }
 
 type Highway interface {

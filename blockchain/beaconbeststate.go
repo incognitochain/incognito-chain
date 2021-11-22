@@ -83,6 +83,8 @@ type BeaconBestState struct {
 
 	pdeState      *CurrentPDEState
 	portalStateV4 *portalprocess.CurrentPortalStateV4
+
+	TriggeredFeature map[string]uint64 `json:"TriggeredFeature"`
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -979,6 +981,44 @@ func (beaconBestState *BeaconBestState) upgradeBlockProducingV3Config() error {
 	return nil
 }
 
+func (beaconBestState *BeaconBestState) ExtractPendingAndCommittee(validatorFromUserKeys []*consensus.Validator) ([]*consensus.Validator, []string) {
+	if len(validatorFromUserKeys) == 0 {
+		return []*consensus.Validator{}, []string{}
+	}
+	beaconValidators := beaconBestState.beaconCommitteeState.GetBeaconCommittee()
+	shardValidators := beaconBestState.beaconCommitteeState.GetShardCommittee()
+	finishedSyncUserKeys := []*consensus.Validator{}
+	finishedSyncValidators := []string{}
+
+	for _, v := range beaconValidators {
+		blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+		for _, userKey := range validatorFromUserKeys {
+			if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+				finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+				temp, _ := v.ToBase58()
+				finishedSyncValidators = append(finishedSyncValidators, temp)
+				break
+			}
+		}
+	}
+
+	for _, validators := range shardValidators {
+		for _, v := range validators {
+			blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+			for _, userKey := range validatorFromUserKeys {
+				if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+					finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+					temp, _ := v.ToBase58()
+					finishedSyncValidators = append(finishedSyncValidators, temp)
+					break
+				}
+			}
+		}
+	}
+
+	return finishedSyncUserKeys, finishedSyncValidators
+}
+
 func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []*consensus.Validator, shardID byte) ([]*consensus.Validator, []string) {
 	if len(validatorFromUserKeys) == 0 {
 		return []*consensus.Validator{}, []string{}
@@ -998,7 +1038,6 @@ func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validator
 			}
 		}
 	}
-
 	return finishedSyncUserKeys, finishedSyncValidators
 }
 

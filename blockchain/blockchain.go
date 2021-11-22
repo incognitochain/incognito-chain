@@ -1071,7 +1071,7 @@ func (blockchain *BlockChain) ReceiveFeatureReport(committeePublicKeys []string,
 			Logger.log.Errorf("Verify feature stat Sign failed", committeePublicKeys[i], signatures[i])
 			continue
 		}
-		DeafaultFeatureStat.addNode(committeePublicKeys[i], features)
+		DefaultFeatureStat.addNode(committeePublicKeys[i], features)
 	}
 
 }

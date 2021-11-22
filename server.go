@@ -284,6 +284,7 @@ func (serverObj *Server) NewServer(
 			OnBFTMsg:     serverObj.OnBFTMsg,
 			OnPeerState:  serverObj.OnPeerState,
 			OnFinishSync: serverObj.OnFinishSync,
+			OnFeatureMsg: serverObj.OnFeatureMsg,
 		},
 		BC: serverObj.blockChain,
 	}
@@ -958,6 +959,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnPeerState: serverObj.OnPeerState,
 			//
 			OnFinishSync:         serverObj.OnFinishSync,
+			OnFeatureMsg:         serverObj.OnFeatureMsg,
 			PushRawBytesToShard:  serverObj.PushRawBytesToShard,
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
