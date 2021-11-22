@@ -6,10 +6,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 const RUNNING_SYNC = "running_sync"
@@ -18,48 +16,39 @@ const STOP_SYNC = "stop_sync"
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
-
 func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
 
-	containSwap := func(inst [][]string) bool {
-		for _, inst := range inst {
-			if inst[0] == instruction.SWAP_ACTION {
+	validatorRootHashChange := func(blk interface{}) bool {
+		switch blk.(type) {
+		case *types.BeaconBlock:
+			header := blk.(*types.BeaconBlock).Header
+			bestHeader := chain.GetBestView().GetBlock().(*types.BeaconBlock).Header
+			if header.ShardCandidateRoot != bestHeader.ShardCandidateRoot || header.ShardCommitteeAndValidatorRoot != bestHeader.ShardCommitteeAndValidatorRoot ||
+				header.BeaconCommitteeAndValidatorRoot != bestHeader.BeaconCommitteeAndValidatorRoot || header.BeaconCandidateRoot != bestHeader.BeaconCandidateRoot {
+				return true
+			}
+		case *types.ShardBlock:
+			header := blk.(*types.ShardBlock).Header
+			bestHeader := chain.GetBestView().GetBlock().(*types.ShardBlock).Header
+			if header.CommitteeRoot != bestHeader.CommitteeRoot || header.PendingValidatorRoot != header.PendingValidatorRoot {
 				return true
 			}
 		}
 		return false
 	}
 
+	//if validator root hash change -> break into chunks
 	for i, v := range blocks {
-		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-			shouldBreak := false
-			switch v.(type) {
-			case *types.BeaconBlock:
-				// do nothing, beacon committee assume not change
-				//if v.GetCurrentEpoch() == curEpoch+1 {
-				//	sameCommitteeBlock = blocks[:i+1]
-				//	break
-				//}
-			case *types.ShardBlock:
-				//if block contain swap inst,
-				if containSwap(v.(*types.ShardBlock).Body.Instructions) {
-					sameCommitteeBlock = blocks[:i+1]
-					shouldBreak = true
-				}
+		if validatorRootHashChange(v) {
+			if i == 0 {
+				sameCommitteeBlock = blocks[:1]
+			} else {
+				sameCommitteeBlock = blocks[:i]
 			}
-			if shouldBreak {
-				break
-			}
-		} else {
-			//TODO: Checking committees for beacon when release beacon
-			if i != len(blocks)-1 {
-				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
-					sameCommitteeBlock = blocks[:i+1]
-					break
-				}
-			}
+			break
 		}
+
 	}
 
 	//check block height is sequential
@@ -75,19 +64,22 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 
 	//validate the last block for batching
 	//get block has same committee
-	epochCommittee := []incognitokey.CommitteePublicKey{}
+	committees := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
-		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
 	}
-
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
-			validBlockForInsert = sameCommitteeBlock[:i]
+		signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
+		if err != nil {
+			return 0, err
+		}
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
+			sameCommitteeBlock = sameCommitteeBlock[:i]
 		} else {
 			break
 		}
@@ -115,13 +107,15 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 				err = chain.InsertBlock(v, batchingValidate == false)
 			}
 			if err != nil {
-				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)
+				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
 				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
 				return 0, err
 			}
 		}
+
 	}
-	return len(validBlockForInsert), nil
+
+	return len(sameCommitteeBlock), nil
 }
 
 //final block

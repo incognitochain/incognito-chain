@@ -100,7 +100,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*types.Be
 }
 
 func (blockchain *BlockChain) GetBeaconBlockByView(view multiview.View, height uint64) (*types.BeaconBlock, error) {
-	blkhash, err := blockchain.GetBeaconBlockHashByView(blockchain.BeaconChain.GetFinalView(), height)
+	blkhash, err := blockchain.GetBeaconBlockHashByView(view, height)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +252,20 @@ func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, s
 	return shardBlock, shardBlock.Header.Height, nil
 }
 
+func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (bool, error) {
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		has, err := rawdbv2.HasShardBlock(blockchain.GetShardChainDatabase(shardID), hash)
+		if err != nil {
+			return false, NewBlockChainError(GetShardBlockByHashError, err)
+		}
+		if has {
+			return true, nil
+		}
+	}
+	return false, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
+}
+
 func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.ShardBlock, uint64, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
@@ -269,7 +283,6 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 }
 
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
-	Logger.log.Info("[slashing] bestShardHeights:", bestShardHeights)
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
 		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetFinalView().GetHeight()
@@ -312,9 +325,6 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 				break
 			}
 		}
-		Logger.log.Info("[slashing] shardID:", shardID)
-		Logger.log.Info("[slashing] shardBlocks:", shardBlocks)
-
 		allShardBlocks[shardID] = shardBlocks
 	}
 	return allShardBlocks

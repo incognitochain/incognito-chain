@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -12,7 +13,7 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
-const BTCBlockConfirmations = 1
+const BTCBlockConfirmations = 6
 
 type MerkleProof struct {
 	ProofHash *chainhash.Hash
@@ -25,7 +26,7 @@ type BTCProof struct {
 	BlockHash    *chainhash.Hash
 }
 
-func ParseBTCProofFromB64EncodeStr(b64EncodedStr string) (*BTCProof, error) {
+func ParseAndValidateSanityBTCProofFromB64EncodeStr(b64EncodedStr string) (*BTCProof, error) {
 	jsonBytes, err := base64.StdEncoding.DecodeString(b64EncodedStr)
 	if err != nil {
 		return nil, err
@@ -35,7 +36,32 @@ func ParseBTCProofFromB64EncodeStr(b64EncodedStr string) (*BTCProof, error) {
 	if err != nil {
 		return nil, err
 	}
+	isValid, err := ValidateSanityBTCProof(&proof)
+	if !isValid && err != nil {
+		return nil, err
+	}
 	return &proof, nil
+}
+
+func ValidateSanityBTCProof(btcProof *BTCProof) (bool, error) {
+	if btcProof == nil {
+		return false, errors.New("ValidateSanityBTCProof btcProof is nil")
+	}
+	if len(btcProof.MerkleProofs) == 0 {
+		return false, errors.New("ValidateSanityBTCProof MerkleProofs is empty")
+	}
+	for _, mp := range btcProof.MerkleProofs {
+		if mp.ProofHash == nil {
+			return false, errors.New("ValidateSanityBTCProof ProofHash is nil")
+		}
+	}
+	if btcProof.BTCTx == nil {
+		return false, errors.New("ValidateSanityBTCProof BTCTx is nil")
+	}
+	if btcProof.BlockHash == nil {
+		return false, errors.New("ValidateSanityBTCProof BlockHash is nil")
+	}
+	return true, nil
 }
 
 func buildMerkleTreeStoreFromTxHashes(txHashes []*chainhash.Hash) []*chainhash.Hash {

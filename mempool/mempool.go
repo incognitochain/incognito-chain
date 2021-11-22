@@ -185,10 +185,8 @@ func (tp *TxPool) MonitorPool() {
 		}
 		Logger.log.Infof("MonitorPool: End to collect timeout ttl tx - Count of txsToBeRemoved=%+v", len(txsToBeRemoved))
 		for _, txDesc := range txsToBeRemoved {
-			txHash := *txDesc.Desc.Tx.Hash()
 			tp.removeTx(txDesc.Desc.Tx)
 			tp.TriggerCRemoveTxs(txDesc.Desc.Tx)
-			tp.removeCandidateByTxHash(txHash)
 			//tp.removeRequestStopStakingByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
@@ -470,7 +468,7 @@ func (tp *TxPool) checkFees(
 	txType := tx.GetType()
 	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
 		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
-		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainDataBaseID])
+		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainID])
 		if err != nil {
 			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 				fmt.Errorf("transaction %+v - cannot get beacon state db at height: %d",
@@ -917,6 +915,8 @@ func (tp *TxPool) RemoveStuckTx(txHash common.Hash, tx metadata.Transaction) {
 			delete(tp.poolSerialNumbersHashList, hash)
 		}
 	}
+
+	tp.removeCandidateByTxHash(txHash)
 	tp.removeRequestStopStakingByTxHash(txHash)
 	tp.TriggerCRemoveTxs(tx)
 }
@@ -954,6 +954,7 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 		}
 	}
 	tp.removeRequestStopStakingByTxHash(*tx.Hash())
+	tp.removeCandidateByTxHash(*tx.Hash())
 }
 
 func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {

@@ -17,7 +17,7 @@ type View interface {
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
-	CommitteeEngineVersion() uint
+	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
@@ -53,14 +53,16 @@ func NewMultiView() *MultiView {
 			}
 		}
 	}()
-
 	return s
-
 }
 
 func (multiView *MultiView) Reset() {
 	multiView.viewByHash = make(map[common.Hash]View)
 	multiView.viewByPrevHash = make(map[common.Hash][]View)
+}
+
+func (multiView *MultiView) ClearBranch() {
+	multiView.bestView = multiView.finalView
 }
 
 func (multiView *MultiView) removeOutdatedView() {

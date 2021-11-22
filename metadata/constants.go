@@ -11,16 +11,16 @@ const (
 	IssuingETHRequestMeta  = 80
 	IssuingETHResponseMeta = 81
 
-	ShardBlockReward             = 36
-	AcceptedBlockRewardInfoMeta  = 37
+	ShardBlockReward = 36
+
 	ShardBlockSalaryResponseMeta = 38
 	BeaconRewardRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
 	IncDAORewardRequestMeta      = 42
-	ShardBlockRewardRequestMeta  = 43
-	WithDrawRewardRequestMeta    = 44
-	WithDrawRewardResponseMeta   = 45
+
+	WithDrawRewardRequestMeta  = 44
+	WithDrawRewardResponseMeta = 45
 
 	//staking
 	ShardStakingMeta    = 63
@@ -134,6 +134,16 @@ const (
 	IssuingBSCResponseMeta = 251
 	BurningPBSCRequestMeta = 252
 	BurningBSCConfirmMeta  = 253
+
+	// erc20/bep20 for prv token
+	IssuingPRVERC20RequestMeta = 270
+	IssuingPRVERC20ResponseMeta = 271
+	IssuingPRVBEP20RequestMeta = 272
+	IssuingPRVBEP20ResponseMeta = 273
+	BurningPRVERC20RequestMeta = 274
+	BurningPRVERC20ConfirmMeta  = 150
+	BurningPRVBEP20RequestMeta = 275
+	BurningPRVBEP20ConfirmMeta  = 151
 )
 
 var minerCreatedMetaTypes = []int{
@@ -142,6 +152,8 @@ var minerCreatedMetaTypes = []int{
 	IssuingResponseMeta,
 	IssuingETHResponseMeta,
 	IssuingBSCResponseMeta,
+	IssuingPRVERC20ResponseMeta,
+	IssuingPRVBEP20ResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,

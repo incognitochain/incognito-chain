@@ -3,11 +3,13 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_v2"
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
 	"io/ioutil"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -44,25 +46,25 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 }
 
 func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	engine, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
+	_, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found, got "+reflect.TypeOf(httpServer.config.ConsensusEngine).String()))
 	}
 
 	arr := []interface{}{}
-	for chainID, bftactor := range engine.BFTProcess {
-		bftactorV3, ok := bftactor.(*blsbftv3.BLSBFT_V3)
-		if !ok {
-			continue
-		}
-		m := map[string]interface{}{
-			"ChainID":              chainID,
-			"VoteHistory":          bftactorV3.GetVoteHistory(),
-			"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
-			"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
-		}
-		arr = append(arr, m)
-	}
+	/*for chainID, bftactor := range engine.BFTProcess() {*/
+	//bftactorV2, ok := bftactor.(temp)
+	//if !ok {
+	//continue
+	//}
+	//m := map[string]interface{}{
+	//"ChainID":              chainID,
+	//"VoteHistory":          bftactorV3.GetVoteHistory(),
+	//"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
+	//"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
+	//}
+	//arr = append(arr, m)
+	/*}*/
 
 	return arr, nil
 }
@@ -81,6 +83,39 @@ func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, c
 	// _, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
 	newAutoStaking := map[string]bool{}
 	return []interface{}{beaconConsensusStateRootHash, newAutoStaking}, nil
+}
+
+func (httpServer *HttpServer) handleGetTotalBlockInEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(-1, errors.New("Invalid number of params, accept only 1 value"))
+	}
+	epoch := uint64(arrayParams[0].(float64))
+
+	res := make(map[byte]*stats.NumberOfBlockInOneEpochStats)
+	for i := 0; i < httpServer.config.BlockChain.BeaconChain.GetActiveShardNumber(); i++ {
+		shardID := byte(i)
+		numberOfBlockInOneEpochStats, err := stats.GetShardEpochBPV3Stats(httpServer.config.BlockChain.GetShardChainDatabase(shardID), shardID, epoch)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(-1, err)
+		}
+		res[shardID] = numberOfBlockInOneEpochStats
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetDetailBlocksOfEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := byte(arrayParams[0].(float64))
+	epoch := uint64(arrayParams[1].(float64))
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(-1, errors.New("Invalid number of params, accept only 2 value"))
+	}
+	res, err := stats.GetShardHeightBPV3Stats(httpServer.config.BlockChain.GetShardChainDatabase(shardID), shardID, epoch)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -119,7 +154,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
 	currentValidatorStr := make(map[int][]string)
 	for shardID, v := range currentValidator {
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
@@ -152,6 +187,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
+		"syncing":          syncingValidators,
 	}, nil
 }
 

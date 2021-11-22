@@ -42,6 +42,32 @@ func (httpServer *HttpServer) handleGetBSCBurnProof(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
+// handleGetPRVERC20BurnProof returns a proof of a tx burning prv erc20
+func (httpServer *HttpServer) handleGetPRVERC20BurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningPRVERC20ConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetPRVBEP20BurnProof returns a proof of a tx burning prv bep20
+func (httpServer *HttpServer) handleGetPRVBEP20BurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningPRVBEP20ConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
 // handleGetBurnProofForDepositToSC returns a proof of a tx burning pETH to deposit to SC
 func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	params interface{},
@@ -283,6 +309,8 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 	return burningAddress, nil
 }
 
+//Notice: this function is used when getting proof
+//make sure it will get from final view
 func getSingleBeaconBlockByHeight(bc *blockchain.BlockChain, height uint64) (*types.BeaconBlock, error) {
 	beaconBlock, err := bc.GetBeaconBlockByView(bc.BeaconChain.GetFinalView(), height)
 	if err != nil {

@@ -58,7 +58,7 @@ const (
 )
 
 var (
-	MaxTxSize    = uint64(100)  // unit KB = 100KB
+	MaxTxSize    = uint64(500)  // unit KB = 500KB
 	MaxBlockSize = uint64(2000) //unit kilobytes = 2 Megabyte
 )
 
@@ -81,12 +81,9 @@ const (
 	BeaconRole    = "beacon"
 	ShardRole     = "shard"
 	CommitteeRole = "committee"
-	ProposerRole  = "proposer"
-	ValidatorRole = "validator"
 	PendingRole   = "pending"
 	SyncingRole   = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole   = "waiting"
-	UnstakeRole   = "unstake" // for unstake node
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -103,7 +100,8 @@ const (
 )
 
 const (
-	BeaconChainDataBaseID        = -1
+	BeaconChainID                = -1
+	BeaconChainSyncID            = 255
 	BeaconChainDatabaseDirectory = "beacon"
 	ShardChainDatabaseDirectory  = "shard"
 )

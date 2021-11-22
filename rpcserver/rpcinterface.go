@@ -29,12 +29,14 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:           (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:              (*HttpServer).handleGetRawMempool,
+	getSyncPoolValidator:       (*HttpServer).handleGetSyncPoolValidator,
+	getSyncPoolValidatorDetail: (*HttpServer).handleGetSyncPoolValidatorDetail,
+	getNumberOfTxsInMempool:    (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:            (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:          (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:             (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen:    (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -103,6 +105,8 @@ var HttpHandler = map[string]httpHandler{
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
+	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
+	getDetailBlocksOfEpoch:     (*HttpServer).handleGetDetailBlocksOfEpoch,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
@@ -152,21 +156,26 @@ var HttpHandler = map[string]httpHandler{
 	getBridgeReqWithStatus:            (*HttpServer).handleGetBridgeReqWithStatus,
 	generateTokenID:                   (*HttpServer).handleGenerateTokenID,
 	checkBSCHashIssued:                (*HttpServer).handleCheckBSCHashIssued,
+	checkPRVPeggingHashIssued:         (*HttpServer).handleCheckPrvPeggingHashIssued,
 
 	// wallet
-	getPublicKeyFromPaymentAddress:     (*HttpServer).handleGetPublicKeyFromPaymentAddress,
-	defragmentAccount:                  (*HttpServer).handleDefragmentAccount,
-	defragmentAccountV2:                (*HttpServer).handleDefragmentAccountV2,
-	defragmentAccountToken:             (*HttpServer).handleDefragmentAccountToken,
-	defragmentAccountTokenV2:           (*HttpServer).handleDefragmentAccountTokenV2,
-	getStackingAmount:                  (*HttpServer).handleGetStakingAmount,
-	hashToIdenticon:                    (*HttpServer).handleHashToIdenticon,
-	createAndSendBurningRequest:        (*HttpServer).handleCreateAndSendBurningRequest,
-	createAndSendBurningRequestV2:      (*HttpServer).handleCreateAndSendBurningRequestV2,
-	createAndSendTxWithIssuingETHReq:   (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
-	createAndSendTxWithIssuingETHReqV2: (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
-	createAndSendTxWithIssuingBSCReq:   (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
-	createAndSendBurningBSCRequest:     (*HttpServer).handleCreateAndSendBurningBSCRequest,
+	getPublicKeyFromPaymentAddress:        (*HttpServer).handleGetPublicKeyFromPaymentAddress,
+	defragmentAccount:                     (*HttpServer).handleDefragmentAccount,
+	defragmentAccountV2:                   (*HttpServer).handleDefragmentAccountV2,
+	defragmentAccountToken:                (*HttpServer).handleDefragmentAccountToken,
+	defragmentAccountTokenV2:              (*HttpServer).handleDefragmentAccountTokenV2,
+	getStackingAmount:                     (*HttpServer).handleGetStakingAmount,
+	hashToIdenticon:                       (*HttpServer).handleHashToIdenticon,
+	createAndSendBurningRequest:           (*HttpServer).handleCreateAndSendBurningRequest,
+	createAndSendBurningRequestV2:         (*HttpServer).handleCreateAndSendBurningRequestV2,
+	createAndSendTxWithIssuingETHReq:      (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
+	createAndSendTxWithIssuingETHReqV2:    (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
+	createAndSendTxWithIssuingBSCReq:      (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
+	createAndSendTxWithIssuingPRVERC20Req: (*HttpServer).handleCreateAndSendTxWithIssuingPRVERC20Req,
+	createAndSendTxWithIssuingPRVBEP20Req: (*HttpServer).handleCreateAndSendTxWithIssuingPRVBEP20Req,
+	createAndSendBurningBSCRequest:        (*HttpServer).handleCreateAndSendBurningBSCRequest,
+	createAndSendBurningPRVERC20Request:   (*HttpServer).handleCreateAndSendBurningPRVERC20Request,
+	createAndSendBurningPRVBEP20Request:   (*HttpServer).handleCreateAndSendBurningPRVBEP20Request,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -175,6 +184,8 @@ var HttpHandler = map[string]httpHandler{
 	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
 	getBurnProof:             (*HttpServer).handleGetBurnProof,
 	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
+	getPRVERC20BurnProof:     (*HttpServer).handleGetPRVERC20BurnProof,
+	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -312,9 +323,12 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxPortalConvertVaultRequest:   (*HttpServer).handleCreateAndSendTxWithPortalConvertVault,
 	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
 	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
+	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
+
+	connectionStatus: (*HttpServer).handleGetConnectionStatus,
 }
 
 // Commands that are available to a limited user

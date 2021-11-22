@@ -31,6 +31,7 @@ type SynckerManagerConfig struct {
 	Network    Network
 	Blockchain *blockchain.BlockChain
 	Consensus  peerv2.ConsensusData
+	MiningKey  string
 }
 
 type SynckerManager struct {
@@ -39,6 +40,7 @@ type SynckerManager struct {
 	BeaconSyncProcess     *BeaconSyncProcess
 	ShardSyncProcess      map[int]*ShardSyncProcess
 	CrossShardSyncProcess map[int]*CrossShardSyncProcess
+	Blockchain            *blockchain.BlockChain
 	beaconPool            *BlkPool
 	shardPool             map[int]*BlkPool
 	crossShardPool        map[int]*BlkPool
@@ -75,12 +77,17 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
 		sid := chain.GetShardID()
-		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain, chain)
+		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(
+			sid, synckerManager.config.Network,
+			synckerManager.config.Blockchain,
+			synckerManager.config.Blockchain.BeaconChain,
+			chain, synckerManager.config.Consensus,
+		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
-
 	}
+	synckerManager.Blockchain = config.Blockchain
 
 	//watch commitee change
 	go synckerManager.manageSyncProcess()
@@ -123,6 +130,14 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
+	if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
+		lastInsertTime := synckerManager.BeaconSyncProcess.lastInsert
+		if lastInsertTime == "" {
+			lastInsertTime = "N/A (node restart)"
+		}
+		Logger.Infof("Beacon is syncing ... last time insert was %v", lastInsertTime)
+	}
+
 	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
 	for chainID, _ := range chainValidator {
@@ -132,6 +147,20 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		wg.Add(1)
 		go func(sid int, syncProc *ShardSyncProcess) {
 			defer wg.Done()
+
+			//only start shard when beacon seem to be almost finish (sync up to block of 4 hours ago) and not in relay shards
+			if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
+				shouldRelay := false
+				for _, relaySID := range synckerManager.config.Blockchain.GetConfig().RelayShards {
+					if sid == int(relaySID) {
+						shouldRelay = true
+					}
+				}
+				if !shouldRelay {
+					return
+				}
+			}
+
 			if _, ok := wantedShard[byte(sid)]; ok {
 				//check preload shard
 				if preloadAddr != "" {
@@ -278,11 +307,15 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 					if synckerManager.crossShardPool[int(toShard)].HasHash(shardState.Hash) {
 						//validate crossShardBlock before add to result
 						blkXShard := synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash)
-
+						isValid := types.VerifyCrossShardBlockUTXO(blkXShard.(*types.CrossShardBlock))
+						if !isValid {
+							Logger.Error("Validate Crossshard block body fail", blkXShard.GetHeight(), blkXShard.Hash())
+							return nil
+						}
 						// TODO: @committees
 						//For releasing beacon nodes and re verify cross shard blocks from beacon
 						//Use committeeFromBlock field for getting committees
-						if beaconFinalView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+						if beaconFinalView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 							beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), beaconBlock.GetHeight()-1)
 							if err != nil {
 								Logger.Error("Cannot get beacon consensus root hash from block ", beaconBlock.GetHeight()-1)

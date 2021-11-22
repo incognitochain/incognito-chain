@@ -1356,6 +1356,18 @@ func TestBlockChain_IsFirstBeaconHeightInEpoch(t *testing.T) {
 				EpochV2:           350,
 				EpochV2BreakPoint: 4,
 			},
+		}, {
+			name:   "< break point 6",
+			fields: fields{},
+			args: args{
+				beaconHeight: 51,
+			},
+			want: true,
+			param: param{
+				Epoch:             50,
+				EpochV2:           350,
+				EpochV2BreakPoint: 100000,
+			},
 		},
 		{
 			name:   "= break point 1",
@@ -1768,6 +1780,18 @@ func TestBlockChain_IsLastBeaconHeightInEpoch(t *testing.T) {
 				Epoch:             100,
 				EpochV2:           350,
 				EpochV2BreakPoint: 4,
+			},
+		}, {
+			name:   "< break point 6",
+			fields: fields{},
+			args: args{
+				beaconHeight: 50,
+			},
+			want: true,
+			param: param{
+				Epoch:             50,
+				EpochV2:           350,
+				EpochV2BreakPoint: 10000,
 			},
 		},
 		{

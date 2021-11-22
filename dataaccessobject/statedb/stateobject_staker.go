@@ -9,6 +9,43 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+//@NOTE this struct is view object only
+type StakerInfoSlashingVersion struct {
+	committeePublicKey string
+	rewardReceiver     key.PaymentAddress
+	txStakingID        common.Hash
+	autoStaking        bool
+}
+
+func NewStakerInfoSlashingVersionWithCommittee(committeePublicKey string) *StakerInfoSlashingVersion {
+	return &StakerInfoSlashingVersion{committeePublicKey: committeePublicKey}
+}
+
+func (s StakerInfoSlashingVersion) CommitteePublicKey() string {
+	return s.committeePublicKey
+}
+
+func (s StakerInfoSlashingVersion) RewardReceiver() key.PaymentAddress {
+	return s.rewardReceiver
+}
+
+func (s StakerInfoSlashingVersion) TxStakingID() common.Hash {
+	return s.txStakingID
+}
+
+func (s StakerInfoSlashingVersion) AutoStaking() bool {
+	return s.autoStaking
+}
+
+func NewStakerInfoSlashingVersion(committeePublicKey string, s *StakerInfo) *StakerInfoSlashingVersion {
+	return &StakerInfoSlashingVersion{
+		committeePublicKey: committeePublicKey,
+		rewardReceiver:     s.rewardReceiver,
+		txStakingID:        s.txStakingID,
+		autoStaking:        s.autoStaking,
+	}
+}
+
 type StakerInfo struct {
 	rewardReceiver key.PaymentAddress
 	txStakingID    common.Hash

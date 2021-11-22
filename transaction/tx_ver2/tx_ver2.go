@@ -348,6 +348,13 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 					utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
 					return nil, nil, nil, err
 				}
+
+				// we do not use burned coins since they will reduce the privacy level of the transaction.
+				if wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+					j--
+					continue
+				}
+
 				row[j] = coinDB.GetPublicKey()
 				sumInputs.Add(sumInputs, coinDB.GetCommitment())
 			}
@@ -485,7 +492,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintDat
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
 func (tx Tx) IsSalaryTx() bool {
-	if tx.GetType() != common.TxRewardType || tx.GetType() != common.TxReturnStakingType {
+	if tx.GetType() != common.TxRewardType && tx.GetType() != common.TxReturnStakingType {
 		return false
 	}
 
