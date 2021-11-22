@@ -769,6 +769,28 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
+
+	//update trigger feature
+	for _, beaconBlock := range beaconBlocks {
+		for _, inst := range beaconBlock.Body.Instructions {
+			if inst[0] == instruction.ENABLE_FEATURE {
+				enableFeatures, _ := instruction.ImportEnableFeatureInstructionFromString(inst)
+				if shardBestState.TriggeredFeature == nil {
+					shardBestState.TriggeredFeature = make(map[string]uint64)
+				}
+				for _, feature := range enableFeatures.Features {
+					if common.IndexOfStr(feature, shardBestState.getUntriggerFeature()) != -1 {
+						shardBestState.TriggeredFeature[feature] = shardBlock.GetHeight()
+					} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
+						panic("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
+					}
+
+				}
+			}
+		}
+	}
+
+	//update committee
 	beaconInstructions, _, err := blockchain.
 		extractInstructionsFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {

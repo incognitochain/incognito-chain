@@ -1109,6 +1109,16 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
 }
 
+func (curView *BeaconBestState) getUntriggerFeature() []string {
+	unTriggerFeatures := []string{}
+	for f, _ := range config.Param().AutoEnableFeature {
+		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
+			unTriggerFeatures = append(unTriggerFeatures, f)
+		}
+	}
+	return unTriggerFeatures
+}
+
 func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion, slashingCommittees []string) []*statedb.StakerInfoSlashingVersion {
 
 	nonSlashingCommittees := []*statedb.StakerInfoSlashingVersion{}

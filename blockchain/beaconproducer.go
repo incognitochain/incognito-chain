@@ -499,16 +499,6 @@ func addFinishInstruction(
 	return instructions
 }
 
-func (curView *BeaconBestState) getUntriggerFeature() []string {
-	unTriggerFeatures := []string{}
-	for f, _ := range config.Param().AutoEnableFeature {
-		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
-			unTriggerFeatures = append(unTriggerFeatures, f)
-		}
-	}
-	return unTriggerFeatures
-}
-
 func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string, []string) {
 	instructions := [][]string{}
 	enableFeature := []string{}
@@ -520,6 +510,10 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if !ok {
 			continue
 		}
+		if uint64(autoEnableFeatureInfo.MinTriggerBlockHeight) > curView.BeaconHeight {
+			continue
+		}
+
 		// check proposer threshold
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report()
@@ -548,12 +542,14 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if invalidCondition {
 			continue
 		}
-		//generate instruction for valid condition
-		inst := instruction.NewEnableFeatureInstructionWithValue(feature)
-		instructions = append(instructions, inst.ToString())
 		enableFeature = append(enableFeature, feature)
 	}
 
+	if len(enableFeature) > 0 {
+		//generate instruction for valid condition
+		inst := instruction.NewEnableFeatureInstructionWithValue(enableFeature)
+		instructions = append(instructions, inst.ToString())
+	}
 	return instructions, enableFeature
 }
 
