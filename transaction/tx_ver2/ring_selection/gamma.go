@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	prvGammaShape = 0.23
-	prvGammaScale = 101579.72
+	prvGammaShape = 0.2669
+	prvGammaScale = 53394.1388
 
-	tokenGammaShape = 0.22
-	tokenGammaScale = 43115.41
+	tokenGammaShape = 0.1981
+	tokenGammaScale = 74422.0547
 
 	unitTime = 40 // 1 block
 
