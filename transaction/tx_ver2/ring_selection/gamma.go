@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	//prvGammaShape = 0.25
-	//prvGammaScale = 55629.11
-	//
-	//tokenGammaShape = 0.44
-	//tokenGammaScale = 26088.24
+	prvGammaShape = 0.23
+	prvGammaScale = 101579.72
+
+	tokenGammaShape = 0.22
+	tokenGammaScale = 43115.41
 
 	unitTime = 40 // 1 block
 
@@ -31,27 +31,27 @@ const (
 	MaxGammaTries = 1000
 )
 
-var prvGammaParams = map[byte]gammaParam{
-	0: {shape: 0.21, scale: 62009.44},
-	1: {shape: 0.39, scale: 23779.52},
-	2: {shape: 0.35, scale: 32336.8},
-	3: {shape: 0.25, scale: 45754.25},
-	4: {shape: 0.32, scale: 38802.11},
-	5: {shape: 0.21, scale: 107515.24},
-	6: {shape: 0.26, scale: 35210.31},
-	7: {shape: 0.26, scale: 47902.53},
-}
+// var prvGammaParams = map[byte]gammaParam{
+//	0: {shape: 0.21, scale: 62009.44},
+//	1: {shape: 0.39, scale: 23779.52},
+//	2: {shape: 0.35, scale: 32336.8},
+//	3: {shape: 0.25, scale: 45754.25},
+//	4: {shape: 0.32, scale: 38802.11},
+//	5: {shape: 0.21, scale: 107515.24},
+//	6: {shape: 0.26, scale: 35210.31},
+//	7: {shape: 0.26, scale: 47902.53},
+//}
 
-var tokenGammaParams = map[byte]gammaParam{
-	0: {shape: 0.21, scale: 69940.95},
-	1: {shape: 0.54, scale: 35918.5},
-	2: {shape: 0.27, scale: 32638.93},
-	3: {shape: 0.4, scale: 26112.0},
-	4: {shape: 0.82, scale: 26394.58},
-	5: {shape: 0.69, scale: 54912.61},
-	6: {shape: 0.27, scale: 45319.47},
-	7: {shape: 0.27, scale: 52005.54},
-}
+// var tokenGammaParams = map[byte]gammaParam{
+//	0: {shape: 0.21, scale: 69940.95},
+//	1: {shape: 0.54, scale: 35918.5},
+//	2: {shape: 0.27, scale: 32638.93},
+//	3: {shape: 0.4, scale: 26112.0},
+//	4: {shape: 0.82, scale: 26394.58},
+//	5: {shape: 0.69, scale: 54912.61},
+//	6: {shape: 0.27, scale: 45319.47},
+//	7: {shape: 0.27, scale: 52005.54},
+//}
 
 type gammaParam struct {
 	shape float64
@@ -65,11 +65,11 @@ type gammaPicker struct {
 
 // NewGammaPicker returns a new gammaPicker.
 // It is used for the MAIN-NET only.
-func NewGammaPicker(shape, scale float64) *gammaPicker {
+func NewGammaPicker(param gammaParam) *gammaPicker {
 	randSrc := rand.NewSource(common.RandUint64())
 	gamma := distuv.Gamma{
-		Alpha: shape,
-		Beta:  1 / scale,
+		Alpha: param.shape,
+		Beta:  1 / param.scale,
 		Src:   randSrc,
 	}
 
@@ -78,11 +78,11 @@ func NewGammaPicker(shape, scale float64) *gammaPicker {
 
 // Pick returns a random CoinV2 from the pre-defined Gamma distribution.
 func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight uint64) (*big.Int, *coin.CoinV2, error) {
-	param := prvGammaParams[shardID]
+	param := gammaParam{shape: prvGammaShape, scale: prvGammaScale}
 	if tokenID.String() != common.PRVIDStr {
-		param = tokenGammaParams[shardID]
+		param = gammaParam{shape: tokenGammaShape, scale: tokenGammaScale}
 	}
-	gp := NewGammaPicker(param.shape, param.scale)
+	gp := NewGammaPicker(param)
 
 	x := gp.Rand()
 	passedBlock := uint64(math.Round(x * unitTime / config.Param().BlockTime.MinShardBlockInterval.Seconds()))

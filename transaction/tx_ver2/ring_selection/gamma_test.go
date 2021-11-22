@@ -8,7 +8,10 @@ import (
 func TestNewGammaPicker(t *testing.T) {
 	shape := 0.6168096414830899
 	scale := 34565.54623186987
-	gp := NewGammaPicker(shape, scale)
+	gp := NewGammaPicker(gammaParam{
+		shape: shape,
+		scale: scale,
+	})
 
 	mean := shape * scale
 	variant := shape * scale * scale
