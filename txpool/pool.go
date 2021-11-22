@@ -2,7 +2,6 @@ package txpool
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 	"time"
@@ -335,7 +334,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			return
 		}
 		if _, exist := tp.Cacher.Get(tx.Hash().String()); exist {
-			log.Printf("[txTracing] Not validate tx %v cuz it found in cache, cost %v", txHash, time.Since(start))
+			Logger.Debugf("[txTracing] Not validate tx %v cuz it found in cache, cost %v", txHash, time.Since(start))
 			errChan <- validateResult{
 				err:    nil,
 				result: false,
@@ -346,6 +345,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			Logger.Debugf("Caching tx %v at %v", tx.Hash().String(), time.Now())
 			tp.Cacher.Add(tx.Hash().String(), nil, tp.ttl)
 		}
+		start = time.Now()
 		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
 			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
 			errChan <- validateResult{
