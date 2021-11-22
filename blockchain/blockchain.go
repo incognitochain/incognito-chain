@@ -45,8 +45,7 @@ type BlockChain struct {
 
 	IsTest bool
 
-	beaconViewCache *lru.Cache
-
+	beaconViewCache       *lru.Cache
 	committeeByEpochCache *lru.Cache
 }
 
@@ -111,6 +110,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	} else {
 		blockchain.config.usingNewPool = true
 	}
+
+	//initialize feature statistic
+	blockchain.InitFeatureStat()
 
 	if err := blockchain.InitChainState(); err != nil {
 		return err
@@ -1053,6 +1055,24 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 		syncPool,
 		shardID,
 	)
+
+}
+
+//receive feature report from other node, add to list feature stat if node is
+func (blockchain *BlockChain) ReceiveFeatureReport(committeePublicKeys []string, signatures [][]byte, features []string) {
+	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	for i, key := range committeePublicKeyStructs {
+		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], []byte(wire.CmdMsgFeatureStat), signatures[i])
+		if err != nil {
+			Logger.log.Errorf("Verify feature stat Sign failed, err", committeePublicKeys[i], signatures[i], err)
+			continue
+		}
+		if !isValid {
+			Logger.log.Errorf("Verify feature stat Sign failed", committeePublicKeys[i], signatures[i])
+			continue
+		}
+		DeafaultFeatureStat.addNode(committeePublicKeys[i], features)
+	}
 
 }
 

@@ -431,6 +431,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 			wire.CmdPeerState,
 			wire.CmdBlockShard,
 			wire.CmdMsgFinishSync,
+			wire.CmdMsgFeatureStat,
 		}
 	default:
 		containShard := false

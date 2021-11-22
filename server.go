@@ -984,6 +984,14 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 	}
 }
 
+//OnFeatureMsg handle feature message
+func (serverObj *Server) OnFeatureMsg(p *peer.PeerConn, msg *wire.MessageFeature) {
+	Logger.log.Info("Receive a MsgFeature", msg.CommitteePublicKey, msg.Feature)
+	if len(msg.CommitteePublicKey) > 0 {
+		serverObj.blockChain.ReceiveFeatureReport(msg.CommitteePublicKey, msg.Signature, msg.Feature)
+	}
+}
+
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
