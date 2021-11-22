@@ -79,6 +79,7 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 	netSync.config = cfg
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{}, 1000)
+	netSync.cTxMessage = make(chan wire.Message, 1000)
 
 	// init cache
 	blockCache := cache.New(messageLiveTime, messageCleanupInterval)
@@ -229,6 +230,7 @@ func (netSync *NetSync) transactionHandler() {
 			i := 0
 			if netSync.cpuUsage < 80 {
 				for ; (i < txsrps) && (i < len(queueTx)); i++ {
+					Logger.log.Infof("netSync.cpuUsage %v is low now, send tx to mempool", netSync.cpuUsage)
 					netSync.cMessage <- queueTx[i]
 				}
 				queueTx = queueTx[i:]
@@ -239,15 +241,18 @@ func (netSync *NetSync) transactionHandler() {
 
 func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
+
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
 	if netSync.cpuUsage > 80 {
+		Logger.log.Infof("Received tx %v, cpuUsage too high %v, send to another pool", msg.Transaction.Hash().String(), netSync.cpuUsage)
 		go func(msg *wire.MessageTx) {
 			netSync.cTxMessage <- msg
 		}(msg)
 	} else {
+		Logger.log.Infof("Received tx %v, send to mempool", msg.Transaction.Hash().String(), netSync.cpuUsage)
 		netSync.cMessage <- msg
 	}
 	return nil
