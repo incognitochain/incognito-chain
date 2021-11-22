@@ -1307,7 +1307,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 		}
 	}
 
-	if !a.ruleDirector.builder.HandleVoteMessageRule().IsHandler() {
+	if !a.ruleDirector.builder.HandleVoteMessageRule().IsHandle() {
 		//a.logger.Critical("NO COLLECT VOTE")
 		return nil
 	}

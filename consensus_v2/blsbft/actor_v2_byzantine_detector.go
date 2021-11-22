@@ -241,8 +241,8 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(newVote *BFTVote) err
 			return nil
 		}
 		if !reflect.DeepEqual(vote, newVote) {
-			return fmt.Errorf("error name: %+v \n"+
-				"first bftvote: %+v \n latter bftvote: %+v",
+			return fmt.Errorf("error name: %+v,"+
+				"first bftvote: %+v, latter bftvote: %+v",
 				ErrVoteForHigherTimeSlot, vote, newVote)
 		}
 	}
@@ -263,8 +263,8 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(newVote *BFTVote) err
 	}
 
 	if newVote.ProduceTimeSlot > blockTimeSlot {
-		return fmt.Errorf("error name: %+v \n"+
-			"block height: %+v \n bigger vote: %+v \n smallest vote: %+v",
+		return fmt.Errorf("error name: %+v,"+
+			"block height: %+v, bigger vote: %+v, smallest vote: %+v",
 			ErrVoteForHigherTimeSlot, newVote.BlockHeight, newVote, smallestTimeSlotBlock)
 	}
 
@@ -288,8 +288,8 @@ func (b ByzantineDetector) voteForSmallerBlockHeight(newVote *BFTVote) error {
 	}
 
 	if recentVote.BlockHeight > newVote.BlockHeight {
-		return fmt.Errorf("error name: %+v \n"+
-			"recent vote %+v \n new vote %+v",
+		return fmt.Errorf("error name: %+v,"+
+			"recent vote %+v, new vote %+v",
 			ErrVoteForSmallerBlockHeight, recentVote, newVote)
 	}
 

@@ -64,7 +64,7 @@ func setTestByzantineDetector(url string) {
     "method": "setconsensusrule",
     "params": [{
         "vote_rule": "vote",
-        "create_rule": "create",
+        "create_rule": "create-only",
 		"handle_vote_rule": "no-collect-vote",
 		"handle_propose_rule": "handle-propose-message",
 		"insert_rule": "insert-and-broadcast",

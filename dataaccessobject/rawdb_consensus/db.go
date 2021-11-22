@@ -38,18 +38,17 @@ func GetShardFinalityProofKey(shardID byte, hash common.Hash) []byte {
 	return key
 }
 
+func GetByzantineBlackListPrefix() []byte {
+	temp := make([]byte, len(blacklistPrefix))
+	copy(temp, blacklistPrefix)
+	return temp
+}
+
 func GetByzantineBlackListKey(validator string) []byte {
 	prefix := GetByzantineBlackListPrefix()
 	key := append(prefix, []byte(validator)...)
 
 	return key
-}
-
-func GetByzantineBlackListPrefix() []byte {
-	temp := make([]byte, len(blacklistPrefix))
-	copy(temp, blacklistPrefix)
-	temp = append(temp, splitter...)
-	return temp
 }
 
 func GetProposeHistoryPrefix(chainID int) []byte {

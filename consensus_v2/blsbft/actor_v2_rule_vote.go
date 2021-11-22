@@ -233,7 +233,7 @@ func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.
 }
 
 type IHandleVoteMessageRule interface {
-	IsHandler() bool
+	IsHandle() bool
 }
 
 type HandleVoteMessage struct {
@@ -243,7 +243,7 @@ func NewHandleVoteMessage() *HandleVoteMessage {
 	return &HandleVoteMessage{}
 }
 
-func (h HandleVoteMessage) IsHandler() bool {
+func (h HandleVoteMessage) IsHandle() bool {
 	return true
 }
 
@@ -254,6 +254,6 @@ func NewNoHandleVoteMessage() *NoHandleVoteMessage {
 	return &NoHandleVoteMessage{}
 }
 
-func (h NoHandleVoteMessage) IsHandler() bool {
+func (h NoHandleVoteMessage) IsHandle() bool {
 	return false
 }
