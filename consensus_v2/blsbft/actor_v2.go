@@ -48,7 +48,7 @@ type actorV2 struct {
 	currentTimeSlot int64
 
 	proposeHistory       map[int64]struct{}
-	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //blockHeight -> blockInfo
+	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //recentVotedBlockHeight -> blockInfo
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 	// previous block hash -> a map of next block block time slot -> corresponding re-propose hash signature
@@ -1308,7 +1308,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	}
 
 	if !a.ruleDirector.builder.HandleVoteMessageRule().IsHandler() {
-		a.logger.Criticalf("NO COLLECT VOTE")
+		//a.logger.Critical("NO COLLECT VOTE")
 		return nil
 	}
 

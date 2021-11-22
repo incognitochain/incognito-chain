@@ -16,11 +16,12 @@ import (
 var (
 	ErrDuplicateVoteInOneTimeSlot = errors.New("duplicate vote in one timeslot")
 	ErrVoteForHigherTimeSlot      = errors.New("vote for block with same height but higher timeslot")
+	ErrVoteForSmallerBlockHeight  = errors.New("vote for block smaller block height but voted for higher block height")
 )
 
 var ByzantineDetectorObject *ByzantineDetector
 
-var defaultBlackListTTL = 30 * 24 * time.Hour
+var defaultBlackListTTL = 1 * time.Second
 var defaultHeightTTL = uint64(100)
 var defaultTimeSlotTTL = int64(100)
 
@@ -40,7 +41,8 @@ type ByzantineDetector struct {
 	fixedNodes                   map[string]bool                                // fixed nodes
 	blackList                    map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
 	voteInTimeSlot               map[string]map[int64]*BFTVote                  // validator => timeslot => vote
-	smallestBlockProduceTimeSlot map[string]map[uint64]int64                    // validator => height => timeslot
+	validRecentVote              map[string]*BFTVote
+	smallestBlockProduceTimeSlot map[string]map[uint64]int64 // validator => height => timeslot
 	logger                       common.Logger
 	mu                           *sync.RWMutex
 }
@@ -56,7 +58,7 @@ func (b *ByzantineDetector) SetFixedNodes(fixedNodes []incognitokey.CommitteePub
 }
 
 func NewByzantineDetector(logger common.Logger) *ByzantineDetector {
-
+	defaultBlackListTTL = time.Duration(config.Param().EpochParam.NumberOfBlockInEpoch) * time.Duration(common.TIMESLOT) * time.Second
 	blackListValidators, err := rawdb_consensus.GetAllBlackListValidator(rawdb_consensus.GetConsensusDatabase())
 	if err != nil {
 		logger.Error(err)
@@ -67,6 +69,7 @@ func NewByzantineDetector(logger common.Logger) *ByzantineDetector {
 		blackList:                    blackListValidators,
 		voteInTimeSlot:               make(map[string]map[int64]*BFTVote),
 		smallestBlockProduceTimeSlot: make(map[string]map[uint64]int64),
+		validRecentVote:              make(map[string]*BFTVote),
 		mu:                           new(sync.RWMutex),
 	}
 }
@@ -78,7 +81,9 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 
 	blackList := make(map[string]*rawdb_consensus.BlackListValidator)
 	voteInTimeSlot := make(map[string]map[int64]*BFTVote)
+	validRecentVote := make(map[string]*BFTVote)
 	smallestBlockProduceTimeSlot := make(map[string]map[uint64]int64)
+
 	for k, v := range b.blackList {
 		blackList[k] = v
 	}
@@ -88,10 +93,15 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 	for k, v := range b.smallestBlockProduceTimeSlot {
 		smallestBlockProduceTimeSlot[k] = v
 	}
+	for k, v := range b.validRecentVote {
+		validRecentVote[k] = v
+	}
+
 	m := map[string]interface{}{
 		"BlackList":                 blackList,
 		"VoteInTimeSlot":            voteInTimeSlot,
 		"BlockWithSmallestTimeSlot": smallestBlockProduceTimeSlot,
+		"ValidRecentVote":           validRecentVote,
 	}
 
 	return m
@@ -218,60 +228,85 @@ func (b ByzantineDetector) checkBlackListValidator(bftVote *BFTVote) error {
 	return nil
 }
 
-func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(bftVote *BFTVote) error {
+func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(newVote *BFTVote) error {
 
-	voteInTimeSlot, ok := b.voteInTimeSlot[bftVote.Validator]
+	voteInTimeSlot, ok := b.voteInTimeSlot[newVote.Validator]
 	if !ok {
 		return nil
 	}
 
-	if vote, ok := voteInTimeSlot[bftVote.ProposeTimeSlot]; ok {
+	if vote, ok := voteInTimeSlot[newVote.ProposeTimeSlot]; ok {
 		// allow receiving same vote multiple times
-		if !vote.CommitteeFromBlock.IsEqual(&bftVote.CommitteeFromBlock) {
+		if !vote.CommitteeFromBlock.IsEqual(&newVote.CommitteeFromBlock) {
 			return nil
 		}
-		if !reflect.DeepEqual(vote, bftVote) {
-			return fmt.Errorf("error name: %+v, "+
-				"first bftvote %+v, latter bftvote %+v",
-				ErrVoteForHigherTimeSlot, vote, bftVote)
+		if !reflect.DeepEqual(vote, newVote) {
+			return fmt.Errorf("error name: %+v \n"+
+				"first bftvote: %+v \n latter bftvote: %+v",
+				ErrVoteForHigherTimeSlot, vote, newVote)
 		}
 	}
 
 	return nil
 }
 
-func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(bftVote *BFTVote) error {
+func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(newVote *BFTVote) error {
 
-	smallestTimeSlotBlock, ok := b.smallestBlockProduceTimeSlot[bftVote.Validator]
+	smallestTimeSlotBlock, ok := b.smallestBlockProduceTimeSlot[newVote.Validator]
 	if !ok {
 		return nil
 	}
 
-	blockTimeSlot, ok := smallestTimeSlotBlock[bftVote.BlockHeight]
+	blockTimeSlot, ok := smallestTimeSlotBlock[newVote.BlockHeight]
 	if !ok {
 		return nil
 	}
 
-	if bftVote.ProduceTimeSlot > blockTimeSlot {
-		return fmt.Errorf("error name: %+v, "+
-			"block height %+v, bigger vote block produce timeslot %+v, smallest vote block produce timeSlot %+v",
-			ErrVoteForHigherTimeSlot, bftVote.BlockHeight, bftVote.ProduceTimeSlot, blockTimeSlot)
+	if newVote.ProduceTimeSlot > blockTimeSlot {
+		return fmt.Errorf("error name: %+v \n"+
+			"block height: %+v \n bigger vote: %+v \n smallest vote: %+v",
+			ErrVoteForHigherTimeSlot, newVote.BlockHeight, newVote, smallestTimeSlotBlock)
 	}
 
 	return nil
 }
 
-func (b *ByzantineDetector) addNewVote(database incdb.Database, bftVote *BFTVote, validatorErr error) {
+func (b ByzantineDetector) voteForSmallerBlockHeight(newVote *BFTVote) error {
+
+	recentVote, ok := b.validRecentVote[newVote.Validator]
+
+	if !ok {
+		return nil
+	}
+
+	if newVote.ChainID != recentVote.ChainID {
+		return nil
+	}
+
+	if newVote.CommitteeFromBlock != newVote.CommitteeFromBlock {
+		return nil
+	}
+
+	if recentVote.BlockHeight > newVote.BlockHeight {
+		return fmt.Errorf("error name: %+v \n"+
+			"recent vote %+v \n new vote %+v",
+			ErrVoteForSmallerBlockHeight, recentVote, newVote)
+	}
+
+	return nil
+}
+
+func (b *ByzantineDetector) addNewVote(database incdb.Database, newVote *BFTVote, validatorErr error) {
 
 	if b.blackList == nil {
 		b.blackList = make(map[string]*rawdb_consensus.BlackListValidator)
 	}
 	if validatorErr != nil {
 		blackListValidator := NewBlackListValidator(validatorErr)
-		b.blackList[bftVote.Validator] = blackListValidator
+		b.blackList[newVote.Validator] = blackListValidator
 		err := rawdb_consensus.StoreBlackListValidator(
 			database,
-			bftVote.Validator,
+			newVote.Validator,
 			blackListValidator,
 		)
 		if err != nil {
@@ -283,20 +318,22 @@ func (b *ByzantineDetector) addNewVote(database incdb.Database, bftVote *BFTVote
 	if b.voteInTimeSlot == nil {
 		b.voteInTimeSlot = make(map[string]map[int64]*BFTVote)
 	}
-	_, ok := b.voteInTimeSlot[bftVote.Validator]
+	_, ok := b.voteInTimeSlot[newVote.Validator]
 	if !ok {
-		b.voteInTimeSlot[bftVote.Validator] = make(map[int64]*BFTVote)
+		b.voteInTimeSlot[newVote.Validator] = make(map[int64]*BFTVote)
 	}
-	b.voteInTimeSlot[bftVote.Validator][bftVote.ProposeTimeSlot] = bftVote
+	b.voteInTimeSlot[newVote.Validator][newVote.ProposeTimeSlot] = newVote
 
 	if b.smallestBlockProduceTimeSlot == nil {
 		b.smallestBlockProduceTimeSlot = make(map[string]map[uint64]int64)
 	}
-	_, ok2 := b.smallestBlockProduceTimeSlot[bftVote.Validator]
+	_, ok2 := b.smallestBlockProduceTimeSlot[newVote.Validator]
 	if !ok2 {
-		b.smallestBlockProduceTimeSlot[bftVote.Validator] = make(map[uint64]int64)
+		b.smallestBlockProduceTimeSlot[newVote.Validator] = make(map[uint64]int64)
 	}
-	if res, ok := b.smallestBlockProduceTimeSlot[bftVote.Validator][bftVote.BlockHeight]; !ok || (ok && bftVote.ProduceTimeSlot < res) {
-		b.smallestBlockProduceTimeSlot[bftVote.Validator][bftVote.BlockHeight] = bftVote.ProduceTimeSlot
+	if res, ok := b.smallestBlockProduceTimeSlot[newVote.Validator][newVote.BlockHeight]; !ok || (ok && newVote.ProduceTimeSlot < res) {
+		b.smallestBlockProduceTimeSlot[newVote.Validator][newVote.BlockHeight] = newVote.ProduceTimeSlot
 	}
+
+	b.validRecentVote[newVote.Validator] = newVote
 }

@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"reflect"
 	"testing"
@@ -425,6 +426,148 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 			}
 			if !reflect.DeepEqual(b.voteInTimeSlot, tt.fieldAfterProcess.voteInTimeSlot) {
 				t.Errorf("addNewVote.voteInTimeSlot want %+v, got %+v", tt.fieldAfterProcess.voteInTimeSlot, b.voteInTimeSlot)
+			}
+		})
+	}
+}
+
+func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
+	type fields struct {
+		validRecentVote map[string]*BFTVote
+	}
+	type args struct {
+		newVote *BFTVote
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "first vote",
+			fields: fields{
+				validRecentVote: map[string]*BFTVote{},
+			},
+			args: args{
+				newVote: &BFTVote{
+					Validator: blsKeys[0],
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "vote for another chain",
+			fields: fields{
+				validRecentVote: map[string]*BFTVote{
+					blsKeys[0]: &BFTVote{
+						Validator: blsKeys[0],
+						ChainID:   0,
+					},
+				},
+			},
+			args: args{
+				newVote: &BFTVote{
+					Validator: blsKeys[0],
+					ChainID:   1,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "vote block created by another committee",
+			fields: fields{
+				validRecentVote: map[string]*BFTVote{
+					blsKeys[0]: &BFTVote{
+						Validator:          blsKeys[0],
+						ChainID:            0,
+						CommitteeFromBlock: common.Hash{0},
+					},
+				},
+			},
+			args: args{
+				newVote: &BFTVote{
+					Validator:          blsKeys[0],
+					ChainID:            0,
+					CommitteeFromBlock: common.Hash{1},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "vote for higher block",
+			fields: fields{
+				validRecentVote: map[string]*BFTVote{
+					blsKeys[0]: &BFTVote{
+						Validator:          blsKeys[0],
+						ChainID:            0,
+						CommitteeFromBlock: common.Hash{1},
+						BlockHeight:        10,
+					},
+				},
+			},
+			args: args{
+				newVote: &BFTVote{
+					Validator:          blsKeys[0],
+					ChainID:            0,
+					CommitteeFromBlock: common.Hash{1},
+					BlockHeight:        11,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "vote for equal block",
+			fields: fields{
+				validRecentVote: map[string]*BFTVote{
+					blsKeys[0]: &BFTVote{
+						Validator:          blsKeys[0],
+						ChainID:            0,
+						CommitteeFromBlock: common.Hash{1},
+						BlockHeight:        10,
+					},
+				},
+			},
+			args: args{
+				newVote: &BFTVote{
+					Validator:          blsKeys[0],
+					ChainID:            0,
+					CommitteeFromBlock: common.Hash{1},
+					BlockHeight:        10,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "vote for smaller block",
+			fields: fields{
+				validRecentVote: map[string]*BFTVote{
+					blsKeys[0]: &BFTVote{
+						Validator:          blsKeys[0],
+						ChainID:            0,
+						CommitteeFromBlock: common.Hash{1},
+						BlockHeight:        10,
+					},
+				},
+			},
+			args: args{
+				newVote: &BFTVote{
+					Validator:          blsKeys[0],
+					ChainID:            0,
+					CommitteeFromBlock: common.Hash{1},
+					BlockHeight:        9,
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := ByzantineDetector{
+				validRecentVote: tt.fields.validRecentVote,
+			}
+			if err := b.voteForSmallerBlockHeight(tt.args.newVote); (err != nil) != tt.wantErr {
+				t.Errorf("voteForSmallerBlockHeight() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
