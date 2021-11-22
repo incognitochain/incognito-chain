@@ -114,6 +114,10 @@ func Pick(db *statedb.StateDB, shardID byte, tokenID common.Hash, latestHeight u
 			if bytes.Equal(tmpCoin.GetPublicKey().ToBytesS(), burningPubKey) {
 				continue
 			}
+			// we should also skip pDEX NFT tokens
+			if tokenID.String() != common.PRVIDStr && !tmpCoin.IsEncrypted() && tmpCoin.GetValue() == 1 {
+				continue
+			}
 			allCoins = append(allCoins, tmpCoin)
 		}
 
