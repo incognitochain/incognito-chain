@@ -17,6 +17,7 @@ const (
 	TRUE                           = "true"
 	FALSE                          = "false"
 	FINISH_SYNC_ACTION             = "finishsync"
+	ENABLE_FEATURE                 = "enablefeature"
 	ACCEPT_BLOCK_REWARD_V3_ACTION  = "acceptblockrewardv3"
 	SHARD_RECEIVE_REWARD_V3_ACTION = "shardreceiverewardv3"
 

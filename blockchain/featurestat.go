@@ -19,6 +19,7 @@ type FeatureStat struct {
 type FeatureReportInfo struct {
 	ValidatorStat map[string]map[int]uint64 // feature -> shardid -> stat
 	ProposeStat   map[string]map[int]uint64 // feature -> shardid -> stat
+	ValidatorSize map[int]int               // chainid -> all validator size
 }
 
 func (bc *BlockChain) InitFeatureStat() {
@@ -26,7 +27,7 @@ func (bc *BlockChain) InitFeatureStat() {
 		blockchain: bc,
 		nodes:      make(map[string][]string),
 	}
-
+	fmt.Println("debugfeature InitFeatureStat")
 	//send message periodically
 	go func() {
 		for {
@@ -34,12 +35,7 @@ func (bc *BlockChain) InitFeatureStat() {
 
 			//get untrigger feature
 			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
-			unTriggerFeatures := []string{}
-			for f, _ := range config.Param().AutoEnableFeature {
-				if beaconView.TriggeredFeature == nil || beaconView.TriggeredFeature[f] == 0 {
-					unTriggerFeatures = append(unTriggerFeatures, f)
-				}
-			}
+			unTriggerFeatures := beaconView.getUntriggerFeature()
 
 			validatorFromUserKeys, syncValidator := beaconView.ExtractPendingAndCommittee(bc.config.ConsensusEngine.GetSyncingValidators())
 			featureSyncValidators := []string{}
@@ -70,20 +66,22 @@ func (bc *BlockChain) InitFeatureStat() {
 func (stat *FeatureStat) Report() FeatureReportInfo {
 	validatorStat := make(map[string]map[int]uint64)
 	proposeStat := make(map[string]map[int]uint64)
+	validatorSize := make(map[int]int)
 
 	beaconCommittee, err := incognitokey.CommitteeKeyListToString(stat.blockchain.BeaconChain.GetCommittee())
 	if err != nil {
 		Logger.log.Error(err)
 	}
-
+	validatorSize[-1] = len(beaconCommittee)
 	shardCommmittee := map[int][]string{}
 	for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
 		shardCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetCommittee())
+		validatorSize[i] = len(shardCommmittee[i])
 		if err != nil {
 			Logger.log.Error(err)
 		}
 	}
-
+	fmt.Println("debugfeature", len(stat.nodes))
 	for key, features := range stat.nodes {
 		//if key is in Committee list
 		chainCommitteeID := -2
@@ -110,6 +108,7 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 				featureList[feature] = true
 			}
 		}
+
 		//count
 		for feature, _ := range featureList {
 			if validatorStat[feature] == nil {
@@ -133,13 +132,16 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 		}
 	}
 
+	Logger.log.Infof("=========== \n%+v", validatorStat)
 	return FeatureReportInfo{
 		validatorStat,
 		proposeStat,
+		validatorSize,
 	}
 
 }
 
 func (featureStat *FeatureStat) addNode(key string, features []string) {
+	fmt.Println("debugfeature addnode", key)
 	featureStat.nodes[key] = features
 }

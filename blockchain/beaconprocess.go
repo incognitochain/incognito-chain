@@ -344,6 +344,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)
 	instructions = addFinishInstruction(instructions, finishSyncInstruction)
 
+	enableFeatureInstructions, _ := curView.generateEnableFeatureInstructions()
+	instructions = append(instructions, enableFeatureInstructions...)
+
 	if len(incurredInstructions) != 0 {
 		instructions = append(instructions, incurredInstructions...)
 	}
@@ -552,6 +555,16 @@ func (curView *BeaconBestState) updateBeaconBestState(
 			beaconBestState.IsGetRandomNumber = true
 			isFoundRandomInstruction = true
 			Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
+		}
+
+		if inst[0] == instruction.ENABLE_FEATURE {
+			enableFeatures, _ := instruction.ImportEnableFeatureInstructionFromString(inst)
+			if beaconBestState.TriggeredFeature == nil {
+				beaconBestState.TriggeredFeature = make(map[string]uint64)
+			}
+			for _, feature := range enableFeatures.Features {
+				beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
+			}
 		}
 	}
 
@@ -914,7 +927,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
 		strconv.Itoa(metadata.BurningBSCConfirmMeta),
 		strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
-        strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta),
+		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)

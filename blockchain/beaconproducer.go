@@ -93,6 +93,9 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	finishSyncInstructions := copiedCurView.generateFinishSyncInstruction()
 	instructions = addFinishInstruction(instructions, finishSyncInstructions)
 
+	enableFeatureInstructions, _ := copiedCurView.generateEnableFeatureInstructions()
+	instructions = append(instructions, enableFeatureInstructions...)
+
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
 	// Process new block with new view
@@ -494,6 +497,64 @@ func addFinishInstruction(
 	instructions = append(instructions, res...)
 
 	return instructions
+}
+
+func (curView *BeaconBestState) getUntriggerFeature() []string {
+	unTriggerFeatures := []string{}
+	for f, _ := range config.Param().AutoEnableFeature {
+		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
+			unTriggerFeatures = append(unTriggerFeatures, f)
+		}
+	}
+	return unTriggerFeatures
+}
+
+func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string, []string) {
+	instructions := [][]string{}
+	enableFeature := []string{}
+	// get valid untrigger feature
+	unTriggerFeatures := curView.getUntriggerFeature()
+
+	for _, feature := range unTriggerFeatures {
+		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
+		if !ok {
+			continue
+		}
+		// check proposer threshold
+		invalidCondition := false
+		featureStatReport := DefaultFeatureStat.Report()
+		if featureStatReport.ProposeStat[feature] != nil {
+			for chainID, size := range featureStatReport.ValidatorSize {
+				if featureStatReport.ProposeStat[feature][chainID] < uint64(size*90/100) {
+					invalidCondition = true
+					break
+				}
+			}
+		}
+
+		if invalidCondition {
+			continue
+		}
+
+		//check validator threshold
+		if featureStatReport.ValidatorStat[feature] != nil {
+			for chainID, size := range featureStatReport.ValidatorSize {
+				if featureStatReport.ValidatorStat[feature][chainID] < uint64(size*autoEnableFeatureInfo.RequiredPercentage/100) {
+					invalidCondition = true
+					break
+				}
+			}
+		}
+		if invalidCondition {
+			continue
+		}
+		//generate instruction for valid condition
+		inst := instruction.NewEnableFeatureInstructionWithValue(feature)
+		instructions = append(instructions, inst.ToString())
+		enableFeature = append(enableFeature, feature)
+	}
+
+	return instructions, enableFeature
 }
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
