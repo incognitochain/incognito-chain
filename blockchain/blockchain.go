@@ -145,14 +145,22 @@ func (blockchain *BlockChain) InitChainState() error {
 	if err != nil {
 		return err
 	}
-	if err := blockchain.RestoreBeaconViews(); err != nil {
-		Logger.log.Error("debug restore beacon fail, init", err)
+	//check if bestview is not stored, then init
+	bcDB := blockchain.GetBeaconChainDatabase()
+	if _, err := rawdbv2.GetBeaconViews(bcDB); err != nil {
 		err := blockchain.initBeaconState()
 		if err != nil {
-			Logger.log.Error("debug beacon state init error")
+			Logger.log.Error("debug beacon state init error", err)
+			return err
+		}
+	} else {
+		//if restore fail, return err
+		if err := blockchain.RestoreBeaconViews(); err != nil {
+			Logger.log.Error("debug restore beacon fail, init", err)
 			return err
 		}
 	}
+
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
 
 	finishsync.NewDefaultFinishSyncMsgPool()
@@ -187,14 +195,22 @@ func (blockchain *BlockChain) InitChainState() error {
 		if err != nil {
 			return err
 		}
-		if err := blockchain.RestoreShardViews(shardID); err != nil {
-			Logger.log.Error("debug restore shard fail, init")
+
+		//check if bestview is not stored, then init
+		if _, err := rawdbv2.GetShardBestState(blockchain.GetShardChainDatabase(shardID), shardID); err != nil {
 			err := blockchain.InitShardState(shardID)
 			if err != nil {
-				Logger.log.Error("debug shard state init error")
+				Logger.log.Error("debug shard state init error", err)
+				return err
+			}
+		} else {
+			//if restore fail, return err
+			if err := blockchain.RestoreShardViews(shardID); err != nil {
+				Logger.log.Error("debug restore shard fail, init", err)
 				return err
 			}
 		}
+
 		sBestState := blockchain.ShardChain[shardID].GetBestState()
 		txDB := sBestState.GetCopiedTransactionStateDB()
 
@@ -594,7 +610,11 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 
 	blockchain.BeaconChain.multiView.Reset()
 	for _, v := range allViews {
-		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, true); err != nil {
+		includePdexv3 := false
+		if v.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
+			includePdexv3 = true
+		}
+		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
 		v.pdeStates, err = pdex.InitStatesFromDB(v.featureStateDB, v.BeaconHeight)
