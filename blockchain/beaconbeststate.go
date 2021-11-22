@@ -460,6 +460,10 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
+
+	if beaconBestState.pdeStates == nil {
+		beaconBestState.pdeStates = make(map[uint]pdex.State)
+	}
 	for version, state := range target.pdeStates {
 		if state != nil {
 			beaconBestState.pdeStates[version] = state.Clone()
