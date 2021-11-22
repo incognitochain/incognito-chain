@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -700,7 +701,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
 		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-		MaxShardCommitteeSize:            config.Param().CommitteeSize.MaxShardCommitteeSize,
+		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
 			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
@@ -737,7 +738,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 		ActiveShards:                     beaconBestState.ActiveShards,
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
-		MaxShardCommitteeSize:            config.Param().CommitteeSize.MaxShardCommitteeSize,
+		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  config.Param().ConsensusParam.StakingFlowV3Height,
@@ -1098,4 +1099,34 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	}
 
 	return nonSlashingCommittees
+}
+
+func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize map[uint64]int, beaconHeight uint64) int {
+
+	if len(increaseMaxCommitteeSize) == 0 {
+		return currentMaxCommitteeSize
+	}
+
+	heights := []uint64{}
+	for k, _ := range increaseMaxCommitteeSize {
+		heights = append(heights, k)
+	}
+
+	sort.Slice(heights, func(i, j int) bool {
+		return heights[i] < heights[j]
+	})
+
+	key := uint64(0)
+	// heights is sorted increasing array
+	for _, height := range heights {
+		if beaconHeight >= height {
+			key = height
+		}
+	}
+
+	if key == 0 {
+		return currentMaxCommitteeSize
+	}
+
+	return increaseMaxCommitteeSize[key]
 }
