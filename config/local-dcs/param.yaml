@@ -36,14 +36,16 @@ swap_committee_param:
   offset: 1
   swap_offset: 1
   assign_offset: 2
-consensus_param: 
+consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
   enable_slashing_height_v2: 1
   assign_rule_v3_height: 1
   staking_flow_v3_height: 1
-  block_producing_v3_height: 1000000000000
+  lemma2_height: 1
+  byzantine_detector_height: 1
+  block_producing_v3_height: 1000000000
   timeslot: 10
   epoch_break_point_swap_new_key: 
     - 1000000000

@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -333,9 +335,8 @@ func (serverObj *Server) NewServer(
 		return err
 	}
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
-	if err != nil {
-		return err
-	}
+	fixedNodes := serverObj.blockChain.GetShardFixedNodes()
+	blsbft.ByzantineDetectorObject.SetFixedNodes(fixedNodes)
 	go poolManager.Start(relayShards)
 
 	//set bc obj for monitor

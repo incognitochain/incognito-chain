@@ -254,7 +254,6 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 	}
 }
 
-//TODO: @hung review sync finish sync message when node in SYNC_MODE only???
 func (s *ShardSyncProcess) syncFinishSyncMessage() {
 
 	sleepTime := time.Duration(common.TIMESLOT/2) * time.Second

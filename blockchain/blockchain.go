@@ -1124,3 +1124,16 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
 }
+
+func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePublicKey {
+
+	shardCommittees := blockchain.BeaconChain.GetFinalViewState().GetShardCommittee()
+	numberOfFixedNode := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+	m := []incognitokey.CommitteePublicKey{}
+
+	for _, shardCommittee := range shardCommittees {
+		m = append(m, shardCommittee[:numberOfFixedNode]...)
+	}
+
+	return m
+}

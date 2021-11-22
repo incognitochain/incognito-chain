@@ -3027,8 +3027,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113, key91, key96},
-						1: []string{key114, key115, key90, key92, key93, key94, key95, key97, key98},
+						0: []string{key112, key113, key91},
+						1: []string{key114, key115, key90, key92, key93, key94, key95, key96, key97, key98},
 					},
 				},
 			},
@@ -3057,8 +3057,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			},
 			wantCommitteeChange: NewCommitteeChange().
 				AddNextEpochShardCandidateRemoved([]string{key90, key91, key92, key93, key94, key95, key96, key97, key98}).
-				AddSyncingPoolAdded(0, []string{key91, key96}).
-				AddSyncingPoolAdded(1, []string{key90, key92, key93, key94, key95, key97, key98}).
+				AddSyncingPoolAdded(0, []string{key91}).
+				AddSyncingPoolAdded(1, []string{key90, key92, key93, key94, key95, key96, key97, key98}).
 				AddStopAutoStakes([]string{key92, key94, key93}),
 			wantReturnInstruction: [][]string{},
 			wantErr:               false,

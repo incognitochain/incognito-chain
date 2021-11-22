@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -108,6 +109,14 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
+	// Create db for mempool and use it
+	consensusDB, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, "consensus"))
+	if err != nil {
+		Logger.log.Error("could not open connection to leveldb")
+		Logger.log.Error(err)
+		panic(err)
+	}
+	rawdb_consensus.SetConsensusDatabase(consensusDB)
 	// Create db for mempool and use it
 	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.MempoolDir))
 	if err != nil {

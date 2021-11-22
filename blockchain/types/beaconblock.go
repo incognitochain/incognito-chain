@@ -54,6 +54,9 @@ type BeaconHeader struct {
 	//for version 2
 	Proposer    string `json:"Proposer"`
 	ProposeTime int64  `json:"ProposeTime"`
+
+	//for version 6
+	FinalityHeight uint64 `json:"FinalityHeight"`
 }
 
 func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
@@ -158,6 +161,10 @@ func (beaconBlock BeaconBlock) CommitteeFromBlock() common.Hash {
 	return common.Hash{}
 }
 
+func (beaconBlock BeaconBlock) GetFinalityHeight() uint64 {
+	return beaconBlock.Header.FinalityHeight
+}
+
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
 		ValidationData string `json:"ValidationData"`
@@ -172,6 +179,22 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	beaconBlock.Header = tempBeaconBlock.Header
 	beaconBlock.Body = tempBeaconBlock.Body
 	return nil
+}
+
+func (beaconBlock *BeaconBlock) GetAggregateRootHash() common.Hash {
+	res := []byte{}
+	res = append(res, byte(beaconBlock.Header.Version))
+	res = append(res, beaconBlock.Header.InstructionHash.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardStateHash.Bytes()...)
+	res = append(res, beaconBlock.Header.InstructionMerkleRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.BeaconCommitteeAndValidatorRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.BeaconCandidateRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardCandidateRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardCommitteeAndValidatorRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.AutoStakingRoot.Bytes()...)
+	res = append(res, beaconBlock.Header.ShardSyncValidatorRoot.Bytes()...)
+
+	return common.HashH(res)
 }
 
 func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
@@ -257,6 +280,10 @@ func (header *BeaconHeader) toString() string {
 	if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
+	}
+
+	if header.Version >= LEMMA2_VERSION {
+		res += fmt.Sprintf("%v", header.FinalityHeight)
 	}
 
 	return res
