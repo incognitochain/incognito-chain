@@ -59,6 +59,7 @@ type BeaconBestState struct {
 	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
 	NumberOfShardBlock      map[byte]uint        `json:"NumberOfShardBlock"`
+	TriggeredFeature        map[string]uint64    `json:"TriggeredFeature"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -83,8 +84,6 @@ type BeaconBestState struct {
 
 	pdeState      *CurrentPDEState
 	portalStateV4 *portalprocess.CurrentPortalStateV4
-
-	TriggeredFeature map[string]uint64 `json:"TriggeredFeature"`
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {

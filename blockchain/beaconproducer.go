@@ -567,20 +567,14 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	return instructions
 }
 
-func (curView *BeaconBestState) filterEnableFeatureInstruction(instructions [][]string) ([][]string, [][]string) {
-
-	res := [][]string{}
+func filterEnableFeatureInstruction(instructions [][]string) [][]string {
 	enableFeatureInstructions := [][]string{}
-
 	for _, v := range instructions {
 		if v[0] == instruction.ENABLE_FEATURE {
 			enableFeatureInstructions = append(enableFeatureInstructions, v)
-		} else {
-			res = append(res, v)
 		}
 	}
-
-	return res, enableFeatureInstructions
+	return enableFeatureInstructions
 }
 
 func (curView *BeaconBestState) filterFinishSyncInstruction(instructions [][]string) ([][]string, [][]string) {

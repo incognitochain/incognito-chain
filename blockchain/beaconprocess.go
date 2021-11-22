@@ -344,7 +344,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)
 	instructions = addFinishInstruction(instructions, finishSyncInstruction)
 
-	enableFeatureInstructions, _ := curView.filterEnableFeatureInstruction(beaconBlock.Body.Instructions)
+	enableFeatureInstructions := filterEnableFeatureInstruction(beaconBlock.Body.Instructions)
 	instructions = append(instructions, enableFeatureInstructions...)
 
 	if len(incurredInstructions) != 0 {
