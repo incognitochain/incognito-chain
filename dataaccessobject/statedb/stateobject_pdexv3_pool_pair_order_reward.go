@@ -145,7 +145,7 @@ func generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID string) []byte {
 
 func GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID string, tokenID common.Hash) common.Hash {
 	prefixHash := generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
-	valueHash := common.HashH(append([]byte(nftID), tokenID.Bytes()...))
+	valueHash := common.HashH(append([]byte(nftID), []byte(tokenID.String())...))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 

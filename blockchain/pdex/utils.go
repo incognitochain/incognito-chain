@@ -950,6 +950,7 @@ func CombineReward(
 	}
 	for key, value := range reward2 {
 		if _, exists := result[key]; exists {
+			// the reward is not greater than the total supply
 			result[key] = value + result[key]
 		} else {
 			result[key] = value

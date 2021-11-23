@@ -189,7 +189,7 @@ func StorePdexv3PoolPairOrderReward(
 func StorePdexv3PoolPairMakingVolume(
 	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairMakingVolumeState,
 ) error {
-	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, state.nftID, state.tokenID)
+	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, state.tokenID, state.nftID)
 	return stateDB.SetStateObject(Pdexv3PoolPairMakingVolumeObjectType, key, state)
 }
 
