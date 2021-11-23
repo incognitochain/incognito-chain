@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -25,10 +26,10 @@ var defaultBlackListTTL = 1 * time.Second
 var defaultHeightTTL = uint64(100)
 var defaultTimeSlotTTL = int64(100)
 
-type VoteMessageHandler func(bftVote *BFTVote) error
+type VoteMessageHandler func(bftVote *consensustypes.BFTVote) error
 
-func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
-	return &rawdb_consensus.BlackListValidator{
+func NewBlackListValidator(reason error) *consensustypes.BlackListValidator {
+	return &consensustypes.BlackListValidator{
 		Error:     reason.Error(),
 		StartTime: time.Now(),
 		TTL:       defaultBlackListTTL,
@@ -38,10 +39,10 @@ func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
 //TODO: @hung
 //2. vote for smaller height but already vote for higher height
 type ByzantineDetector struct {
-	fixedNodes                   map[string]bool                                // fixed nodes
-	blackList                    map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
-	voteInTimeSlot               map[string]map[int64]*BFTVote                  // validator => timeslot => vote
-	validRecentVote              map[string]*BFTVote
+	fixedNodes                   map[string]bool                               // fixed nodes
+	blackList                    map[string]*consensustypes.BlackListValidator // validator => reason for blacklist
+	voteInTimeSlot               map[string]map[int64]*consensustypes.BFTVote  // validator => timeslot => vote
+	validRecentVote              map[string]*consensustypes.BFTVote
 	smallestBlockProduceTimeSlot map[string]map[uint64]int64 // validator => height => timeslot
 	logger                       common.Logger
 	mu                           *sync.RWMutex
@@ -67,9 +68,9 @@ func NewByzantineDetector(logger common.Logger) *ByzantineDetector {
 	return &ByzantineDetector{
 		logger:                       logger,
 		blackList:                    blackListValidators,
-		voteInTimeSlot:               make(map[string]map[int64]*BFTVote),
+		voteInTimeSlot:               make(map[string]map[int64]*consensustypes.BFTVote),
 		smallestBlockProduceTimeSlot: make(map[string]map[uint64]int64),
-		validRecentVote:              make(map[string]*BFTVote),
+		validRecentVote:              make(map[string]*consensustypes.BFTVote),
 		mu:                           new(sync.RWMutex),
 	}
 }
@@ -79,9 +80,9 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	blackList := make(map[string]*rawdb_consensus.BlackListValidator)
-	voteInTimeSlot := make(map[string]map[int64]*BFTVote)
-	validRecentVote := make(map[string]*BFTVote)
+	blackList := make(map[string]*consensustypes.BlackListValidator)
+	voteInTimeSlot := make(map[string]map[int64]*consensustypes.BFTVote)
+	validRecentVote := make(map[string]*consensustypes.BFTVote)
 	smallestBlockProduceTimeSlot := make(map[string]map[uint64]int64)
 
 	for k, v := range b.blackList {
@@ -107,9 +108,9 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 	return m
 }
 
-func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error {
+func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *consensustypes.BFTVote) error {
 
-	if vote.isEmptyDataForByzantineDetector() {
+	if vote.IsEmptyDataForByzantineDetector() {
 		return nil
 	}
 
@@ -215,7 +216,7 @@ func (b ByzantineDetector) checkFixedNodes(validator string) bool {
 	return b.fixedNodes[validator]
 }
 
-func (b ByzantineDetector) checkBlackListValidator(bftVote *BFTVote) error {
+func (b ByzantineDetector) checkBlackListValidator(bftVote *consensustypes.BFTVote) error {
 
 	if b.checkFixedNodes(bftVote.Validator) {
 		return nil
@@ -228,7 +229,7 @@ func (b ByzantineDetector) checkBlackListValidator(bftVote *BFTVote) error {
 	return nil
 }
 
-func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(newVote *BFTVote) error {
+func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(newVote *consensustypes.BFTVote) error {
 
 	voteInTimeSlot, ok := b.voteInTimeSlot[newVote.Validator]
 	if !ok {
@@ -250,7 +251,7 @@ func (b ByzantineDetector) voteMoreThanOneTimesInATimeSlot(newVote *BFTVote) err
 	return nil
 }
 
-func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(newVote *BFTVote) error {
+func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(newVote *consensustypes.BFTVote) error {
 
 	smallestTimeSlotBlock, ok := b.smallestBlockProduceTimeSlot[newVote.Validator]
 	if !ok {
@@ -271,7 +272,7 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(newVote *BFTVote) err
 	return nil
 }
 
-func (b ByzantineDetector) voteForSmallerBlockHeight(newVote *BFTVote) error {
+func (b ByzantineDetector) voteForSmallerBlockHeight(newVote *consensustypes.BFTVote) error {
 
 	recentVote, ok := b.validRecentVote[newVote.Validator]
 
@@ -296,10 +297,10 @@ func (b ByzantineDetector) voteForSmallerBlockHeight(newVote *BFTVote) error {
 	return nil
 }
 
-func (b *ByzantineDetector) addNewVote(database incdb.Database, newVote *BFTVote, validatorErr error) {
+func (b *ByzantineDetector) addNewVote(database incdb.Database, newVote *consensustypes.BFTVote, validatorErr error) {
 
 	if b.blackList == nil {
-		b.blackList = make(map[string]*rawdb_consensus.BlackListValidator)
+		b.blackList = make(map[string]*consensustypes.BlackListValidator)
 	}
 	if validatorErr != nil {
 		blackListValidator := NewBlackListValidator(validatorErr)
@@ -316,11 +317,11 @@ func (b *ByzantineDetector) addNewVote(database incdb.Database, newVote *BFTVote
 	}
 
 	if b.voteInTimeSlot == nil {
-		b.voteInTimeSlot = make(map[string]map[int64]*BFTVote)
+		b.voteInTimeSlot = make(map[string]map[int64]*consensustypes.BFTVote)
 	}
 	_, ok := b.voteInTimeSlot[newVote.Validator]
 	if !ok {
-		b.voteInTimeSlot[newVote.Validator] = make(map[int64]*BFTVote)
+		b.voteInTimeSlot[newVote.Validator] = make(map[int64]*consensustypes.BFTVote)
 	}
 	b.voteInTimeSlot[newVote.Validator][newVote.ProposeTimeSlot] = newVote
 

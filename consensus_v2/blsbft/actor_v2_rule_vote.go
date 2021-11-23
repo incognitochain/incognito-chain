@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -24,7 +25,7 @@ func NewVoteMessageEnvironment(userKey *signatureschemes2.MiningKey, signingComm
 
 type IVoteRule interface {
 	ValidateVote(*ProposeBlockInfo) *ProposeBlockInfo
-	CreateVote(*VoteMessageEnvironment, types.BlockInterface) (*BFTVote, error)
+	CreateVote(*VoteMessageEnvironment, types.BlockInterface) (*consensustypes.BFTVote, error)
 }
 
 type VoteRule struct {
@@ -60,7 +61,7 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 				continue
 			}
 
-			err := vote.validateVoteOwner(dsaKey)
+			err := vote.ValidateVoteOwner(dsaKey)
 			if err != nil {
 				v.logger.Error(dsaKey)
 				v.logger.Error(err)
@@ -95,7 +96,7 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 	return proposeBlockInfo
 }
 
-func (v VoteRule) CreateVote(env *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
+func (v VoteRule) CreateVote(env *VoteMessageEnvironment, block types.BlockInterface) (*consensustypes.BFTVote, error) {
 
 	vote, err := createVote(env.userKey, block, env.signingCommittees, env.portalParamV4)
 	if err != nil {
@@ -111,8 +112,8 @@ func createVote(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
 	portalParamsV4 portalv4.PortalParams,
-) (*BFTVote, error) {
-	var vote = new(BFTVote)
+) (*consensustypes.BFTVote, error) {
+	var vote = new(consensustypes.BFTVote)
 	bytelist := []blsmultisig.PublicKey{}
 	selfIdx := 0
 	userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
@@ -152,7 +153,7 @@ func createVote(
 	vote.BlockHeight = block.GetHeight()
 	vote.CommitteeFromBlock = block.CommitteeFromBlock()
 	vote.ChainID = block.GetShardID()
-	err = vote.signVote(userKey)
+	err = vote.SignVote(userKey)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
@@ -192,7 +193,7 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 				continue
 			}
 
-			err := vote.validateVoteOwner(dsaKey)
+			err := vote.ValidateVoteOwner(dsaKey)
 			if err != nil {
 				v.logger.Error(dsaKey)
 				v.logger.Error(err)
@@ -227,7 +228,7 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 	return proposeBlockInfo
 }
 
-func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
+func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.BlockInterface) (*consensustypes.BFTVote, error) {
 	i.logger.Criticalf("NO VOTE")
 	return nil, fmt.Errorf("No vote for block %+v, %+v", block.GetHeight(), block.Hash().String())
 }

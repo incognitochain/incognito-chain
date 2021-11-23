@@ -2,7 +2,11 @@ package consensustypes
 
 import (
 	"encoding/json"
+	"errors"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
@@ -30,4 +34,35 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 		return "", err
 	}
 	return string(result), nil
+}
+
+func ValidateSingleBriSig(
+	dataHash *common.Hash,
+	briSig []byte,
+	candidate []byte,
+) error {
+	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
+	if err != nil {
+		return err
+	}
+	if !result {
+		return errors.New("invalid BRI Signature")
+	}
+	return nil
+}
+
+func ValidateBLSSig(
+	dataHash *common.Hash,
+	aggSig []byte,
+	validatorIdx []int,
+	committee []blsmultisig.PublicKey,
+) error {
+	result, err := blsmultisig.Verify(aggSig, dataHash.GetBytes(), validatorIdx, committee)
+	if err != nil {
+		return err
+	}
+	if !result {
+		return errors.New("Invalid Signature!")
+	}
+	return nil
 }

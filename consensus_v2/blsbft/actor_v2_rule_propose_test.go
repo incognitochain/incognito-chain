@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
@@ -42,9 +43,9 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		userKeySet:                 []signatureschemes2.MiningKey{},
 		producerPublicBLSMiningKey: "",
 	}
-	tc1ProposeMsg := &BFTPropose{
+	tc1ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -83,9 +84,9 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		userKeySet:                 []signatureschemes2.MiningKey{},
 		producerPublicBLSMiningKey: "",
 	}
-	tc2ProposeMsg := &BFTPropose{
+	tc2ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -115,9 +116,9 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		userKeySet:                 []signatureschemes2.MiningKey{},
 		producerPublicBLSMiningKey: "",
 	}
-	tc3ProposeMsg := &BFTPropose{
+	tc3ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -219,9 +220,9 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		userKeySet:                 []signatureschemes2.MiningKey{},
 		producerPublicBLSMiningKey: "",
 	}
-	tc4ProposeMsg := &BFTPropose{
+	tc4ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -296,7 +297,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	}
 	type args struct {
 		env        *ProposeMessageEnvironment
-		proposeMsg *BFTPropose
+		proposeMsg *consensustypes.BFTPropose
 	}
 	tests := []struct {
 		name    string
@@ -715,7 +716,7 @@ func TestProposeRuleLemma2_verifyLemma2FirstBlockNextHeight(t *testing.T) {
 	config.AbortParam()
 	config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 8
 
-	tc1ProposeMsg := &BFTPropose{
+	tc1ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
 	}
 	tc1Block := &mocksTypes.BlockInterface{}
@@ -730,7 +731,7 @@ func TestProposeRuleLemma2_verifyLemma2FirstBlockNextHeight(t *testing.T) {
 	tc1FinalityProof := make(map[string]map[int64]string)
 	tc1Chain := &mocks.Chain{}
 
-	tc2ProposeMsg := &BFTPropose{
+	tc2ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12EGPejMDU3wwnAo2drdnWw14TmnFtozW1LBDtMA4oZR4FVfhxwRqMqkXoWMQymEy2tvMbcgkeVF9woiZV8dCHk1Fi8R8Wat",
 	}
 	tc2Block := &mocksTypes.BlockInterface{}
@@ -747,7 +748,7 @@ func TestProposeRuleLemma2_verifyLemma2FirstBlockNextHeight(t *testing.T) {
 	tc2FinalityProof := make(map[string]map[int64]string)
 	tc2Chain := &mocks.Chain{}
 
-	tc3ProposeMsg := &BFTPropose{
+	tc3ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12EGPejMDU3wwnAo2drdnWw14TmnFtozW1LBDtMA4oZR4FVfhxwRqMqkXoWMQymEy2tvMbcgkeVF9woiZV8dCHk1Fi8R8Wat",
 	}
 	tc3Block := &mocksTypes.BlockInterface{}
@@ -762,7 +763,7 @@ func TestProposeRuleLemma2_verifyLemma2FirstBlockNextHeight(t *testing.T) {
 	tc3FinalityProof := make(map[string]map[int64]string)
 	tc3Chain := &mocks.Chain{}
 
-	tc4ProposeMsg := &BFTPropose{
+	tc4ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12EGPejMDU3wwnAo2drdnWw14TmnFtozW1LBDtMA4oZR4FVfhxwRqMqkXoWMQymEy2tvMbcgkeVF9woiZV8dCHk1Fi8R8Wat",
 	}
 	tc4Block := &mocksTypes.BlockInterface{}
@@ -779,7 +780,7 @@ func TestProposeRuleLemma2_verifyLemma2FirstBlockNextHeight(t *testing.T) {
 	tc4FinalityProof := make(map[string]map[int64]string)
 	tc4Chain := &mocks.Chain{}
 
-	tc5ProposeMsg := &BFTPropose{
+	tc5ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12EGPejMDU3wwnAo2drdnWw14TmnFtozW1LBDtMA4oZR4FVfhxwRqMqkXoWMQymEy2tvMbcgkeVF9woiZV8dCHk1Fi8R8Wat",
 	}
 	tc5Block := &mocksTypes.BlockInterface{}
@@ -802,7 +803,7 @@ func TestProposeRuleLemma2_verifyLemma2FirstBlockNextHeight(t *testing.T) {
 		chain                  Chain
 	}
 	type args struct {
-		proposeMsg *BFTPropose
+		proposeMsg *consensustypes.BFTPropose
 		block      types.BlockInterface
 	}
 	tests := []struct {
@@ -896,9 +897,9 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 	config.AbortParam()
 	config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 8
 
-	tc1ProposeMsg := &BFTPropose{
+	tc1ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -914,9 +915,9 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 	tc1Block.On("GetAggregateRootHash").Return(common.Hash{}.NewHashFromStr2("874615a2fcacb79434fb851a137da03055eddd9bd086d7b60e6f74a565c887b9"))
 	tc1Committee := shard0Committee
 
-	tc2ProposeMsg := &BFTPropose{
+	tc2ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"12YUeCqoWMgMhMewWRFLwExzCANqcJLkHA6yV3rLC3NoN3RqbcfMX9Mu69Qh6zHQtFWTGNdQrxmQt7BMfZXbapKwVQfyr15Q",
@@ -960,9 +961,9 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 	tc2Block.On("GetAggregateRootHash").Return(common.Hash{}.NewHashFromStr2("874615a2fcacb79434fb851a137da03055eddd9bd086d7b60e6f74a565c887b9"))
 	tc2Committee := shard0Committee
 
-	tc3ProposeMsg := &BFTPropose{
+	tc3ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1rtHzbBpvTpeEWcGAqz5pTxh3x3tH1RsBPVbFXxWHXabeApbno2We1VwEHZoLJPoYuS5HQboTfQQoRY76VyttqosGRGAheL",
 				"12YUeCqoWMgMhMewWRFLwExzCANqcJLkHA6yV3rLC3NoN3RqbcfMX9Mu69Qh6zHQtFWTGNdQrxmQt7BMfZXbapKwVQfyr15Q",
@@ -1012,7 +1013,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 		chain                  Chain
 	}
 	type args struct {
-		proposeMsg *BFTPropose
+		proposeMsg *consensustypes.BFTPropose
 		block      types.BlockInterface
 		committees []incognitokey.CommitteePublicKey
 	}
@@ -1093,9 +1094,9 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 	config.AbortParam()
 	config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 8
 
-	tc1ProposeMsg := &BFTPropose{
+	tc1ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -1112,9 +1113,9 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 	tc1Block.On("GetAggregateRootHash").Return(common.Hash{}.NewHashFromStr2("698bed377b2d7c6c280924f6af6c46c7e84acddddc99268ac76e9393b3d3b05f"))
 	tc1Committee := shard0Committee
 
-	tc2ProposeMsg := &BFTPropose{
+	tc2ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1194,9 +1195,9 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 	tc2Block.On("GetAggregateRootHash").Return(common.Hash{}.NewHashFromStr2("698bed377b2d7c6c280924f6af6c46c7e84acddddc99268ac76e9393b3d3b05f"))
 	tc2Committee := shard0Committee
 
-	tc3ProposeMsg := &BFTPropose{
+	tc3ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -1215,9 +1216,9 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 	tc3Block.On("GetHeight").Return(uint64(5))
 	tc3Committee := shard0Committee
 
-	tc4ProposeMsg := &BFTPropose{
+	tc4ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1299,9 +1300,9 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 	tc4Block.On("GetHeight").Return(uint64(5))
 	tc4Committee := shard0Committee
 
-	tc5ProposeMsg := &BFTPropose{
+	tc5ProposeMsg := &consensustypes.BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: consensustypes.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1389,7 +1390,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 		chain                  Chain
 	}
 	type args struct {
-		proposeMsg *BFTPropose
+		proposeMsg *consensustypes.BFTPropose
 		block      types.BlockInterface
 		committees []incognitokey.CommitteePublicKey
 	}
@@ -1503,7 +1504,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	tc1FinalityProof := make(map[string]map[int64]string)
 	tc1Chain := &mocks.Chain{}
 	tc1Block := &mocksTypes.BlockInterface{}
-	tc1InputProof := FinalityProof{
+	tc1InputProof := consensustypes.FinalityProof{
 		ReProposeHashSignature: []string{},
 	}
 	tc1ReProposeHashSignature := ""
@@ -1519,7 +1520,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	tc2FinalityProof := make(map[string]map[int64]string)
 	tc2Chain := &mocks.Chain{}
 	tc2Block := &mocksTypes.BlockInterface{}
-	tc2InputProof := FinalityProof{
+	tc2InputProof := consensustypes.FinalityProof{
 		ReProposeHashSignature: []string{"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 			"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
 			"1E2x3nf8K3YLdoPDQeWh8mtiS5zhErfTYvBiniidDZXYBVfET8zWkswMepQ4hd39Q7zTLZ4UTbmx9oP4QsfBdDTLVKcgQrt",
@@ -1598,7 +1599,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	tc3FinalityProof := make(map[string]map[int64]string)
 	tc3Chain := &mocks.Chain{}
 	tc3Block := &mocksTypes.BlockInterface{}
-	tc3InputProof := FinalityProof{
+	tc3InputProof := consensustypes.FinalityProof{
 		ReProposeHashSignature: []string{
 			"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 			"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1685,7 +1686,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	type args struct {
 		block                  types.BlockInterface
 		reProposeHashSignature string
-		proof                  FinalityProof
+		proof                  consensustypes.FinalityProof
 	}
 	tests := []struct {
 		name                       string
@@ -2082,7 +2083,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   *FinalityProof
+		want   *consensustypes.FinalityProof
 		want1  bool
 	}{
 		{
@@ -2096,7 +2097,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           nil,
 				currentTimeSlot: 163275391,
 			},
-			want:  NewFinalityProof(),
+			want:  consensustypes.NewFinalityProof(),
 			want1: false,
 		},
 		{
@@ -2110,7 +2111,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           tc2Block,
 				currentTimeSlot: 163275391,
 			},
-			want:  NewFinalityProof(),
+			want:  consensustypes.NewFinalityProof(),
 			want1: false,
 		},
 		{
@@ -2124,7 +2125,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           tc3Block,
 				currentTimeSlot: 163275388,
 			},
-			want:  NewFinalityProof(),
+			want:  consensustypes.NewFinalityProof(),
 			want1: false,
 		},
 		{
@@ -2138,7 +2139,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           tc4Block,
 				currentTimeSlot: 163275388,
 			},
-			want: &FinalityProof{
+			want: &consensustypes.FinalityProof{
 				ReProposeHashSignature: []string{
 					"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 					"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",

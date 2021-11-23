@@ -33,8 +33,8 @@ type actorV1 struct {
 
 	userKeySet       []signatureschemes2.MiningKey
 	bftMessageCh     chan wire.MessageBFT
-	proposeMessageCh chan BFTPropose
-	voteMessageCh    chan BFTVote
+	proposeMessageCh chan consensustypes.BFTPropose
+	voteMessageCh    chan consensustypes.BFTVote
 
 	isStarted bool
 	destroyCh chan struct{}
@@ -63,6 +63,12 @@ type actorV1 struct {
 	lockEarlyVotes sync.Mutex
 	isOngoing      bool
 	stopCh         chan struct{}
+}
+
+type vote struct {
+	BLS          []byte
+	BRI          []byte
+	Confirmation []byte
 }
 
 func (actorV1 actorV1) SetBlockVersion(int) {
@@ -97,16 +103,16 @@ func (actorV1 *actorV1) GetChainID() int {
 
 func (actorV1 *actorV1) processBFTMsg(msg *wire.MessageBFT) {
 	switch msg.Type {
-	case MSG_PROPOSE:
-		var msgPropose BFTPropose
+	case consensustypes.MSG_PROPOSE:
+		var msgPropose consensustypes.BFTPropose
 		err := json.Unmarshal(msg.Content, &msgPropose)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		actorV1.proposeMessageCh <- msgPropose
-	case MSG_VOTE:
-		var msgVote BFTVote
+	case consensustypes.MSG_VOTE:
+		var msgVote consensustypes.BFTVote
 		err := json.Unmarshal(msg.Content, &msgVote)
 		if err != nil {
 			fmt.Println(err)
@@ -125,7 +131,7 @@ func (actorV1 *actorV1) preValidateVote(blockHash []byte, Vote *vote, candidate 
 	data = append(data, Vote.BLS...)
 	data = append(data, Vote.BRI...)
 	dataHash := common.HashH(data)
-	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
+	err := consensustypes.ValidateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
 	return err
 }
 
@@ -198,8 +204,8 @@ func (actorV1 *actorV1) run() error {
 	actorV1.stopCh = make(chan struct{})
 	actorV1.earlyVotes = make(map[string]map[string]vote)
 	actorV1.blocks = map[string]types.BlockInterface{}
-	actorV1.proposeMessageCh = make(chan BFTPropose)
-	actorV1.voteMessageCh = make(chan BFTVote)
+	actorV1.proposeMessageCh = make(chan consensustypes.BFTPropose)
+	actorV1.voteMessageCh = make(chan consensustypes.BFTVote)
 	actorV1.initRoundData()
 
 	actorV1.logger.Info("start bls-bft consensus for chain", actorV1.chainKey)
@@ -260,7 +266,7 @@ func (actorV1 *actorV1) run() error {
 							// committeeArr := []incognitokey.CommitteePublicKey{}
 							// committeeArr = append(committeeArr, actorV1.RoundData.Committee...)
 							actorV1.roundData.lockVotes.Unlock()
-							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
+							go func(voteMsg consensustypes.BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
 								v := vote{
 									BLS:          voteMsg.BLS,
 									BRI:          voteMsg.BRI,
@@ -271,7 +277,7 @@ func (actorV1 *actorV1) run() error {
 									return
 								}
 								if len(voteMsg.BRI) != 0 {
-									if err := validateSingleBriSig(&blockHash, voteMsg.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+									if err := consensustypes.ValidateSingleBriSig(&blockHash, voteMsg.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										actorV1.logger.Error(err)
 										return
 									}
@@ -285,7 +291,7 @@ func (actorV1 *actorV1) run() error {
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 									msg.(*wire.MessageBFT).ChainKey = actorV1.chainKey
 									msg.(*wire.MessageBFT).Content = voteCtnBytes
-									msg.(*wire.MessageBFT).Type = MSG_VOTE
+									msg.(*wire.MessageBFT).Type = consensustypes.MSG_VOTE
 									// TODO uncomment here when switch to non-highway mode
 									// e.Node.PushMessageToChain(msg, e.Chain)
 								}()
@@ -514,7 +520,7 @@ func (actorV1 *actorV1) enterNewRound() {
 
 }
 
-func (actorV1 *actorV1) addVote(voteMsg BFTVote) {
+func (actorV1 *actorV1) addVote(voteMsg consensustypes.BFTVote) {
 	actorV1.roundData.lockVotes.Lock()
 	defer actorV1.roundData.lockVotes.Unlock()
 	v := vote{
@@ -527,7 +533,7 @@ func (actorV1 *actorV1) addVote(voteMsg BFTVote) {
 	return
 }
 
-func (actorV1 *actorV1) addEarlyVote(voteMsg BFTVote) {
+func (actorV1 *actorV1) addEarlyVote(voteMsg consensustypes.BFTVote) {
 	actorV1.lockEarlyVotes.Lock()
 	defer actorV1.lockEarlyVotes.Unlock()
 	if _, ok := actorV1.earlyVotes[voteMsg.RoundKey]; !ok {
@@ -599,8 +605,8 @@ func NewActorV1WithValue(
 	actorV1.node = node
 	actorV1.logger = logger
 	actorV1.destroyCh = make(chan struct{})
-	actorV1.proposeMessageCh = make(chan BFTPropose)
-	actorV1.voteMessageCh = make(chan BFTVote)
+	actorV1.proposeMessageCh = make(chan consensustypes.BFTPropose)
+	actorV1.voteMessageCh = make(chan consensustypes.BFTVote)
 	actorV1.chain = chain
 	actorV1.chainKey = chainKey
 	actorV1.chainID = chainID
@@ -780,8 +786,8 @@ func (actorV1) Destroy() {
 
 func (actorV1 *actorV1) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 	switch msgBFT.Type {
-	case MSG_PROPOSE:
-		var msgPropose BFTPropose
+	case consensustypes.MSG_PROPOSE:
+		var msgPropose consensustypes.BFTPropose
 		err := json.Unmarshal(msgBFT.Content, &msgPropose)
 		if err != nil {
 			actorV1.logger.Error(err)
@@ -789,8 +795,8 @@ func (actorV1 *actorV1) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 		}
 		msgPropose.PeerID = msgBFT.PeerID
 		actorV1.proposeMessageCh <- msgPropose
-	case MSG_VOTE:
-		var msgVote BFTVote
+	case consensustypes.MSG_VOTE:
+		var msgVote consensustypes.BFTVote
 		err := json.Unmarshal(msgBFT.Content, &msgVote)
 		if err != nil {
 			actorV1.logger.Error(err)

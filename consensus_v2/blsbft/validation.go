@@ -8,15 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
-
-type vote struct {
-	BLS          []byte
-	BRI          []byte
-	Confirmation []byte
-}
 
 type blockValidation interface {
 	types.BlockInterface
@@ -38,7 +31,7 @@ func ValidateProducerSigV1(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := consensustypes.ValidateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -58,7 +51,7 @@ func ValidateProducerSigV2(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := consensustypes.ValidateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -96,7 +89,7 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
 	}
 
-	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+	if err := consensustypes.ValidateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil
@@ -117,37 +110,6 @@ func validateSingleBLSSig(
 	}
 	if !result {
 		return NewConsensusError(UnExpectedError, errors.New("invalid BLS Signature"))
-	}
-	return nil
-}
-
-func validateSingleBriSig(
-	dataHash *common.Hash,
-	briSig []byte,
-	candidate []byte,
-) error {
-	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
-	if err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	if !result {
-		return NewConsensusError(UnExpectedError, errors.New("invalid BRI Signature"))
-	}
-	return nil
-}
-
-func validateBLSSig(
-	dataHash *common.Hash,
-	aggSig []byte,
-	validatorIdx []int,
-	committee []blsmultisig.PublicKey,
-) error {
-	result, err := blsmultisig.Verify(aggSig, dataHash.GetBytes(), validatorIdx, committee)
-	if err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	if !result {
-		return NewConsensusError(UnExpectedError, errors.New("Invalid Signature!"))
 	}
 	return nil
 }

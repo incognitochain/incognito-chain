@@ -36,8 +36,8 @@ type actorV2 struct {
 
 	userKeySet       []signatureschemes2.MiningKey
 	bftMessageCh     chan wire.MessageBFT
-	proposeMessageCh chan BFTPropose
-	voteMessageCh    chan BFTVote
+	proposeMessageCh chan consensustypes.BFTPropose
+	voteMessageCh    chan consensustypes.BFTVote
 
 	isStarted bool
 	destroyCh chan struct{}
@@ -98,8 +98,8 @@ func newActorV2WithValue(
 	a.node = node
 	a.logger = logger
 	a.destroyCh = make(chan struct{})
-	a.proposeMessageCh = make(chan BFTPropose)
-	a.voteMessageCh = make(chan BFTVote)
+	a.proposeMessageCh = make(chan consensustypes.BFTPropose)
+	a.voteMessageCh = make(chan consensustypes.BFTVote)
 	a.proposeHistory, err = InitProposeHistory(chainID)
 	if err != nil {
 		panic(err) //must not error
@@ -465,8 +465,8 @@ func (a actorV2) IsStarted() bool {
 
 func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 	switch msgBFT.Type {
-	case MSG_PROPOSE:
-		var msgPropose BFTPropose
+	case consensustypes.MSG_PROPOSE:
+		var msgPropose consensustypes.BFTPropose
 		err := json.Unmarshal(msgBFT.Content, &msgPropose)
 		if err != nil {
 			a.logger.Error(err)
@@ -474,8 +474,8 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 		}
 		msgPropose.PeerID = msgBFT.PeerID
 		a.proposeMessageCh <- msgPropose
-	case MSG_VOTE:
-		var msgVote BFTVote
+	case consensustypes.MSG_VOTE:
+		var msgVote consensustypes.BFTVote
 		err := json.Unmarshal(msgBFT.Content, &msgVote)
 		if err != nil {
 			a.logger.Error(err)
@@ -629,7 +629,7 @@ func (a *actorV2) run() error {
 						}
 					}
 
-					var finalityProof = NewFinalityProof()
+					var finalityProof = consensustypes.NewFinalityProof()
 					var isValidRePropose bool = false
 					if proposeBlockInfo.block != nil {
 						finalityProof, isValidRePropose = a.ruleDirector.builder.ProposeMessageRule().
@@ -855,7 +855,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 func (a *actorV2) createBLSAggregatedSignatures(
 	committees []incognitokey.CommitteePublicKey,
 	tempValidationData string,
-	votes map[string]*BFTVote,
+	votes map[string]*consensustypes.BFTVote,
 ) (string, error) {
 	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
 	if err != nil {
@@ -1040,7 +1040,7 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 }
 
 func (a *actorV2) sendBFTProposeMsg(
-	bftPropose *BFTPropose,
+	bftPropose *consensustypes.BFTPropose,
 ) error {
 
 	msg, _ := a.makeBFTProposeMsg(bftPropose, a.chainKey, a.currentTimeSlot)
@@ -1050,13 +1050,13 @@ func (a *actorV2) sendBFTProposeMsg(
 	return nil
 }
 
-func (a *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candidate []byte) error {
+func (a *actorV2) preValidateVote(blockHash []byte, vote *consensustypes.BFTVote, candidate []byte) error {
 	data := []byte{}
 	data = append(data, blockHash...)
 	data = append(data, vote.BLS...)
 	data = append(data, vote.BRI...)
 	dataHash := common.HashH(data)
-	err := validateSingleBriSig(&dataHash, vote.Confirmation, candidate)
+	err := consensustypes.ValidateSingleBriSig(&dataHash, vote.Confirmation, candidate)
 	return err
 }
 
@@ -1180,7 +1180,7 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }
 
-func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
+func (a *actorV2) handleProposeMsg(proposeMsg consensustypes.BFTPropose) error {
 
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
 	if err != nil || blockInfo == nil {
@@ -1259,7 +1259,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 }
 
 func (a *actorV2) handleNewProposeMsg(
-	proposeMsg BFTPropose,
+	proposeMsg consensustypes.BFTPropose,
 	block types.BlockInterface,
 	previousBlock types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -1295,7 +1295,7 @@ func (a *actorV2) handleNewProposeMsg(
 	return nil
 }
 
-func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
+func (a *actorV2) handleVoteMsg(voteMsg consensustypes.BFTVote) error {
 
 	if a.chainID != common.BeaconChainID {
 		if err := ByzantineDetectorObject.Validate(
@@ -1315,7 +1315,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	return a.processVoteMessage(voteMsg)
 }
 
-func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
+func (a *actorV2) processVoteMessage(voteMsg consensustypes.BFTVote) error {
 	voteMsg.IsValid = 0
 	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(voteMsg.BlockHash); ok { //if received block is already initiated
 		if _, ok := proposeBlockInfo.Votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
@@ -1503,7 +1503,7 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	return nil
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
+func (a *actorV2) combineVotes(votes map[string]*consensustypes.BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {
@@ -1534,7 +1534,7 @@ func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (
 }
 
 func (a *actorV2) makeBFTProposeMsg(
-	proposeCtn *BFTPropose,
+	proposeCtn *consensustypes.BFTPropose,
 	chainKey string,
 	ts int64,
 ) (wire.Message, error) {
@@ -1545,14 +1545,14 @@ func (a *actorV2) makeBFTProposeMsg(
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
 	msg.(*wire.MessageBFT).Content = proposeCtnBytes
-	msg.(*wire.MessageBFT).Type = MSG_PROPOSE
+	msg.(*wire.MessageBFT).Type = consensustypes.MSG_PROPOSE
 	msg.(*wire.MessageBFT).TimeSlot = ts
 	msg.(*wire.MessageBFT).Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	msg.(*wire.MessageBFT).PeerID = proposeCtn.PeerID
 	return msg, nil
 }
 
-func (a *actorV2) makeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64, height uint64) (wire.Message, error) {
+func (a *actorV2) makeBFTVoteMsg(vote *consensustypes.BFTVote, chainKey string, ts int64, height uint64) (wire.Message, error) {
 	voteCtnBytes, err := json.Marshal(vote)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
@@ -1560,13 +1560,13 @@ func (a *actorV2) makeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64, heigh
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
 	msg.(*wire.MessageBFT).Content = voteCtnBytes
-	msg.(*wire.MessageBFT).Type = MSG_VOTE
+	msg.(*wire.MessageBFT).Type = consensustypes.MSG_VOTE
 	msg.(*wire.MessageBFT).TimeSlot = ts
 	msg.(*wire.MessageBFT).Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	return msg, nil
 }
 
-func (a *actorV2) makeBFTRequestBlk(request BFTRequestBlock, peerID string, chainKey string) (wire.Message, error) {
+func (a *actorV2) makeBFTRequestBlk(request consensustypes.BFTRequestBlock, peerID string, chainKey string) (wire.Message, error) {
 	requestCtnBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
@@ -1574,7 +1574,7 @@ func (a *actorV2) makeBFTRequestBlk(request BFTRequestBlock, peerID string, chai
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
 	msg.(*wire.MessageBFT).Content = requestCtnBytes
-	msg.(*wire.MessageBFT).Type = MsgRequestBlk
+	msg.(*wire.MessageBFT).Type = consensustypes.MsgRequestBlk
 	return msg, nil
 }
 

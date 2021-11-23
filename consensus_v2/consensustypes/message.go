@@ -1,12 +1,12 @@
-package blsbft
+package consensustypes
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/config"
-	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 const (
@@ -45,7 +45,7 @@ type BFTRequestBlock struct {
 	PeerID    string
 }
 
-func (s *BFTVote) isEmptyDataForByzantineDetector() bool {
+func (s *BFTVote) IsEmptyDataForByzantineDetector() bool {
 
 	if s.BlockHeight == 0 || s.ProduceTimeSlot == 0 || s.ProposeTimeSlot == 0 {
 		return true
@@ -54,7 +54,7 @@ func (s *BFTVote) isEmptyDataForByzantineDetector() bool {
 	return false
 }
 
-func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
+func (s *BFTVote) SignVote(key *signatureschemes2.MiningKey) error {
 
 	data := []byte{}
 
@@ -81,7 +81,7 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 	return err
 }
 
-func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
+func (s *BFTVote) ValidateVoteOwner(ownerPk []byte) error {
 
 	data := []byte{}
 
@@ -103,6 +103,6 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	}
 
 	dataHash := common.HashH(data)
-	err := validateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
+	err := ValidateSingleBriSig(&dataHash, s.Confirmation, ownerPk)
 	return err
 }

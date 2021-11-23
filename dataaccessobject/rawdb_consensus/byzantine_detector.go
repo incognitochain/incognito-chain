@@ -2,22 +2,12 @@ package rawdb_consensus
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"strings"
-	"time"
 )
 
-type BlackListValidator struct {
-	Error     string
-	StartTime time.Time
-	TTL       time.Duration
-}
-
-func NewBlackListValidator() *BlackListValidator {
-	return &BlackListValidator{}
-}
-
-func StoreBlackListValidator(db incdb.KeyValueWriter, validator string, blackListValidator *BlackListValidator) error {
+func StoreBlackListValidator(db incdb.KeyValueWriter, validator string, blackListValidator *consensustypes.BlackListValidator) error {
 
 	key := GetByzantineBlackListKey(validator)
 
@@ -33,14 +23,14 @@ func StoreBlackListValidator(db incdb.KeyValueWriter, validator string, blackLis
 	return nil
 }
 
-func GetAllBlackListValidator(db incdb.Database) (map[string]*BlackListValidator, error) {
+func GetAllBlackListValidator(db incdb.Database) (map[string]*consensustypes.BlackListValidator, error) {
 
 	prefix := GetByzantineBlackListPrefix()
 
 	it := db.NewIteratorWithPrefix(prefix)
 	defer it.Release()
 
-	blacklistValidators := make(map[string]*BlackListValidator)
+	blacklistValidators := make(map[string]*consensustypes.BlackListValidator)
 
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
@@ -50,7 +40,7 @@ func GetAllBlackListValidator(db incdb.Database) (map[string]*BlackListValidator
 
 		data := make([]byte, len(it.Value()))
 		copy(data, it.Value())
-		blackListValidator := NewBlackListValidator()
+		blackListValidator := consensustypes.NewBlackListValidator()
 		if err := json.Unmarshal(data, blackListValidator); err != nil {
 			return nil, err
 		}
@@ -66,7 +56,7 @@ func DeleteBlackListValidator(db incdb.KeyValueWriter, validator string) error {
 	return db.Delete(key)
 }
 
-func GetBlackListValidator(db incdb.KeyValueReader, validator string) (bool, *BlackListValidator, error) {
+func GetBlackListValidator(db incdb.KeyValueReader, validator string) (bool, *consensustypes.BlackListValidator, error) {
 
 	key := GetByzantineBlackListKey(validator)
 	has, err := db.Has(key)
@@ -82,7 +72,7 @@ func GetBlackListValidator(db incdb.KeyValueReader, validator string) (bool, *Bl
 	if err != nil {
 		return false, nil, err
 	}
-	blackListValidator := NewBlackListValidator()
+	blackListValidator := consensustypes.NewBlackListValidator()
 
 	if err := json.Unmarshal(data, blackListValidator); err != nil {
 		return false, nil, err

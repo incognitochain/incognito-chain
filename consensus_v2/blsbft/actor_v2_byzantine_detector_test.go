@@ -2,17 +2,17 @@ package blsbft
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"reflect"
 	"testing"
 )
 
 func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 	type fields struct {
-		blackList map[string]*rawdb_consensus.BlackListValidator
+		blackList map[string]*consensustypes.BlackListValidator
 	}
 	type args struct {
-		bftVote *BFTVote
+		bftVote *consensustypes.BFTVote
 	}
 	tests := []struct {
 		name    string
@@ -23,14 +23,14 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 		{
 			name: "not in blacklist",
 			fields: fields{
-				blackList: map[string]*rawdb_consensus.BlackListValidator{
-					blsKeys[0]: &rawdb_consensus.BlackListValidator{
+				blackList: map[string]*consensustypes.BlackListValidator{
+					blsKeys[0]: &consensustypes.BlackListValidator{
 						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 				},
 			},
 			args: args{
-				bftVote: &BFTVote{
+				bftVote: &consensustypes.BFTVote{
 					Validator: blsKeys[1],
 				},
 			},
@@ -39,17 +39,17 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 		{
 			name: "in blacklist",
 			fields: fields{
-				blackList: map[string]*rawdb_consensus.BlackListValidator{
-					blsKeys[0]: &rawdb_consensus.BlackListValidator{
+				blackList: map[string]*consensustypes.BlackListValidator{
+					blsKeys[0]: &consensustypes.BlackListValidator{
 						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
-					blsKeys[1]: &rawdb_consensus.BlackListValidator{
+					blsKeys[1]: &consensustypes.BlackListValidator{
 						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 				},
 			},
 			args: args{
-				bftVote: &BFTVote{
+				bftVote: &consensustypes.BFTVote{
 					Validator: blsKeys[1],
 				},
 			},
@@ -70,12 +70,12 @@ func TestByzantineDetector_checkBlackListValidator(t *testing.T) {
 
 func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 	type fields struct {
-		blackList        map[string]*rawdb_consensus.BlackListValidator
-		timeslot         map[string]map[int64]*BFTVote
+		blackList        map[string]*consensustypes.BlackListValidator
+		timeslot         map[string]map[int64]*consensustypes.BFTVote
 		committeeHandler CommitteeChainHandler
 	}
 	type args struct {
-		bftVote *BFTVote
+		bftVote *consensustypes.BFTVote
 	}
 	tests := []struct {
 		name    string
@@ -86,12 +86,12 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 		{
 			name: "first vote in a specific timeslot",
 			fields: fields{
-				timeslot: map[string]map[int64]*BFTVote{
-					blsKeys[0]: make(map[int64]*BFTVote),
+				timeslot: map[string]map[int64]*consensustypes.BFTVote{
+					blsKeys[0]: make(map[int64]*consensustypes.BFTVote),
 				},
 			},
 			args: args{
-				&BFTVote{
+				&consensustypes.BFTVote{
 					Validator:       blsKeys[0],
 					BlockHeight:     10,
 					ProposeTimeSlot: 163394559,
@@ -102,9 +102,9 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 		{
 			name: "second vote is not the same vote as the first vote",
 			fields: fields{
-				timeslot: map[string]map[int64]*BFTVote{
+				timeslot: map[string]map[int64]*consensustypes.BFTVote{
 					blsKeys[0]: {
-						163394559: &BFTVote{
+						163394559: &consensustypes.BFTVote{
 							Validator:       blsKeys[0],
 							BlockHeight:     10,
 							ProposeTimeSlot: 163394559,
@@ -113,7 +113,7 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 				},
 			},
 			args: args{
-				&BFTVote{
+				&consensustypes.BFTVote{
 					Validator:       blsKeys[0],
 					BlockHeight:     11,
 					ProposeTimeSlot: 163394559,
@@ -124,9 +124,9 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 		{
 			name: "second vote is the same vote as first vote",
 			fields: fields{
-				timeslot: map[string]map[int64]*BFTVote{
+				timeslot: map[string]map[int64]*consensustypes.BFTVote{
 					blsKeys[0]: {
-						163394559: &BFTVote{
+						163394559: &consensustypes.BFTVote{
 							Validator:       blsKeys[0],
 							BlockHeight:     11,
 							ProposeTimeSlot: 163394559,
@@ -135,7 +135,7 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 				},
 			},
 			args: args{
-				&BFTVote{
+				&consensustypes.BFTVote{
 					Validator:       blsKeys[0],
 					BlockHeight:     11,
 					ProposeTimeSlot: 163394559,
@@ -159,13 +159,13 @@ func TestByzantineDetector_voteMoreThanOneTimesInATimeSlot(t *testing.T) {
 
 func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 	type fields struct {
-		blackList        map[string]*rawdb_consensus.BlackListValidator
-		voteInTimeSlot   map[string]map[int64]*BFTVote
+		blackList        map[string]*consensustypes.BlackListValidator
+		voteInTimeSlot   map[string]map[int64]*consensustypes.BFTVote
 		smallestTimeSlot map[string]map[uint64]int64
 		committeeHandler CommitteeChainHandler
 	}
 	type args struct {
-		bftVote *BFTVote
+		bftVote *consensustypes.BFTVote
 	}
 	tests := []struct {
 		name    string
@@ -181,7 +181,7 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				bftVote: &BFTVote{
+				bftVote: &consensustypes.BFTVote{
 					Validator:       blsKeys[0],
 					ProduceTimeSlot: 163394559,
 					BlockHeight:     10,
@@ -199,7 +199,7 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				bftVote: &BFTVote{
+				bftVote: &consensustypes.BFTVote{
 					Validator:       blsKeys[0],
 					ProduceTimeSlot: 163394558,
 					BlockHeight:     10,
@@ -217,7 +217,7 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				bftVote: &BFTVote{
+				bftVote: &consensustypes.BFTVote{
 					Validator:       blsKeys[0],
 					ProduceTimeSlot: 163394560,
 					BlockHeight:     10,
@@ -242,32 +242,32 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 
 func TestByzantineDetector_addNewVote(t *testing.T) {
 
-	key0VoteHeight10_1 := &BFTVote{
+	key0VoteHeight10_1 := &consensustypes.BFTVote{
 		Validator:       blsKeys[0],
 		BlockHeight:     10,
 		ProduceTimeSlot: 163394560,
 		ProposeTimeSlot: 163394560,
 	}
-	key0VoteHeight10_2 := &BFTVote{
+	key0VoteHeight10_2 := &consensustypes.BFTVote{
 		Validator:       blsKeys[0],
 		BlockHeight:     10,
 		ProduceTimeSlot: 163394560,
 		ProposeTimeSlot: 163394561,
 	}
-	key1VoteHeight10_3 := &BFTVote{
+	key1VoteHeight10_3 := &consensustypes.BFTVote{
 		Validator:       blsKeys[1],
 		BlockHeight:     10,
 		ProduceTimeSlot: 163394562,
 		ProposeTimeSlot: 163394562,
 	}
 	type fields struct {
-		blackList        map[string]*rawdb_consensus.BlackListValidator
-		voteInTimeSlot   map[string]map[int64]*BFTVote
+		blackList        map[string]*consensustypes.BlackListValidator
+		voteInTimeSlot   map[string]map[int64]*consensustypes.BFTVote
 		smallestTimeSlot map[string]map[uint64]int64
 		committeeHandler CommitteeChainHandler
 	}
 	type args struct {
-		bftVote      *BFTVote
+		bftVote      *consensustypes.BFTVote
 		validatorErr error
 	}
 	tests := []struct {
@@ -289,8 +289,8 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
-				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
-				voteInTimeSlot: map[string]map[int64]*BFTVote{
+				blackList: make(map[string]*consensustypes.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*consensustypes.BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProduceTimeSlot: key0VoteHeight10_1,
 					},
@@ -316,8 +316,8 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: ErrDuplicateVoteInOneTimeSlot,
 			},
 			fieldAfterProcess: fields{
-				blackList: map[string]*rawdb_consensus.BlackListValidator{
-					key0VoteHeight10_1.Validator: &rawdb_consensus.BlackListValidator{
+				blackList: map[string]*consensustypes.BlackListValidator{
+					key0VoteHeight10_1.Validator: &consensustypes.BlackListValidator{
 						Error: ErrDuplicateVoteInOneTimeSlot.Error(),
 					},
 				},
@@ -329,8 +329,8 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 		{
 			name: "add new data with no error 1",
 			fields: fields{
-				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
-				voteInTimeSlot: map[string]map[int64]*BFTVote{
+				blackList: make(map[string]*consensustypes.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*consensustypes.BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProduceTimeSlot: key0VoteHeight10_1,
 					},
@@ -347,8 +347,8 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
-				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
-				voteInTimeSlot: map[string]map[int64]*BFTVote{
+				blackList: make(map[string]*consensustypes.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*consensustypes.BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
 						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
@@ -365,8 +365,8 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 		{
 			name: "add new data with no error 2",
 			fields: fields{
-				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
-				voteInTimeSlot: map[string]map[int64]*BFTVote{
+				blackList: make(map[string]*consensustypes.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*consensustypes.BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
 						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
@@ -384,8 +384,8 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
-				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
-				voteInTimeSlot: map[string]map[int64]*BFTVote{
+				blackList: make(map[string]*consensustypes.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*consensustypes.BFTVote{
 					key0VoteHeight10_1.Validator: {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
 						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
@@ -433,10 +433,10 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 
 func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 	type fields struct {
-		validRecentVote map[string]*BFTVote
+		validRecentVote map[string]*consensustypes.BFTVote
 	}
 	type args struct {
-		newVote *BFTVote
+		newVote *consensustypes.BFTVote
 	}
 	tests := []struct {
 		name    string
@@ -447,10 +447,10 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 		{
 			name: "first vote",
 			fields: fields{
-				validRecentVote: map[string]*BFTVote{},
+				validRecentVote: map[string]*consensustypes.BFTVote{},
 			},
 			args: args{
-				newVote: &BFTVote{
+				newVote: &consensustypes.BFTVote{
 					Validator: blsKeys[0],
 				},
 			},
@@ -459,15 +459,15 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 		{
 			name: "vote for another chain",
 			fields: fields{
-				validRecentVote: map[string]*BFTVote{
-					blsKeys[0]: &BFTVote{
+				validRecentVote: map[string]*consensustypes.BFTVote{
+					blsKeys[0]: &consensustypes.BFTVote{
 						Validator: blsKeys[0],
 						ChainID:   0,
 					},
 				},
 			},
 			args: args{
-				newVote: &BFTVote{
+				newVote: &consensustypes.BFTVote{
 					Validator: blsKeys[0],
 					ChainID:   1,
 				},
@@ -477,8 +477,8 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 		{
 			name: "vote block created by another committee",
 			fields: fields{
-				validRecentVote: map[string]*BFTVote{
-					blsKeys[0]: &BFTVote{
+				validRecentVote: map[string]*consensustypes.BFTVote{
+					blsKeys[0]: &consensustypes.BFTVote{
 						Validator:          blsKeys[0],
 						ChainID:            0,
 						CommitteeFromBlock: common.Hash{0},
@@ -486,7 +486,7 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				newVote: &BFTVote{
+				newVote: &consensustypes.BFTVote{
 					Validator:          blsKeys[0],
 					ChainID:            0,
 					CommitteeFromBlock: common.Hash{1},
@@ -497,8 +497,8 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 		{
 			name: "vote for higher block",
 			fields: fields{
-				validRecentVote: map[string]*BFTVote{
-					blsKeys[0]: &BFTVote{
+				validRecentVote: map[string]*consensustypes.BFTVote{
+					blsKeys[0]: &consensustypes.BFTVote{
 						Validator:          blsKeys[0],
 						ChainID:            0,
 						CommitteeFromBlock: common.Hash{1},
@@ -507,7 +507,7 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				newVote: &BFTVote{
+				newVote: &consensustypes.BFTVote{
 					Validator:          blsKeys[0],
 					ChainID:            0,
 					CommitteeFromBlock: common.Hash{1},
@@ -519,8 +519,8 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 		{
 			name: "vote for equal block",
 			fields: fields{
-				validRecentVote: map[string]*BFTVote{
-					blsKeys[0]: &BFTVote{
+				validRecentVote: map[string]*consensustypes.BFTVote{
+					blsKeys[0]: &consensustypes.BFTVote{
 						Validator:          blsKeys[0],
 						ChainID:            0,
 						CommitteeFromBlock: common.Hash{1},
@@ -529,7 +529,7 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				newVote: &BFTVote{
+				newVote: &consensustypes.BFTVote{
 					Validator:          blsKeys[0],
 					ChainID:            0,
 					CommitteeFromBlock: common.Hash{1},
@@ -541,8 +541,8 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 		{
 			name: "vote for smaller block",
 			fields: fields{
-				validRecentVote: map[string]*BFTVote{
-					blsKeys[0]: &BFTVote{
+				validRecentVote: map[string]*consensustypes.BFTVote{
+					blsKeys[0]: &consensustypes.BFTVote{
 						Validator:          blsKeys[0],
 						ChainID:            0,
 						CommitteeFromBlock: common.Hash{1},
@@ -551,7 +551,7 @@ func TestByzantineDetector_voteForSmallerBlockHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				newVote: &BFTVote{
+				newVote: &consensustypes.BFTVote{
 					Validator:          blsKeys[0],
 					ChainID:            0,
 					CommitteeFromBlock: common.Hash{1},
