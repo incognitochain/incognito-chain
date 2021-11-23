@@ -328,12 +328,19 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 			return
 		}
 		if !netSync.usingNewPool {
-			hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
-			if err != nil {
-				Logger.log.Error(err)
+			txDB := sBState.GetCopiedTransactionStateDB()
+			err := tx.LoadData(txDB)
+			if err == nil {
+				hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
+				if err != nil {
+					Logger.log.Errorf("Validate tx %v return err %v", tx.Hash().String(), err)
+				} else {
+					Logger.log.Debugf("Node got hash of transaction %s", hash.String())
+				}
 			} else {
-				Logger.log.Debugf("Node got hash of transaction %s", hash.String())
+				Logger.log.Errorf("Validate tx %v return err %v", tx.Hash().String(), err)
 			}
+
 		} else {
 			tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 			if err != nil {
