@@ -1847,6 +1847,8 @@ func Test_stateV2_Process(t *testing.T) {
 								},
 							},
 						},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
 								txReqID.String(),
@@ -1994,6 +1996,8 @@ func Test_stateV2_Process(t *testing.T) {
 								},
 							},
 						},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
 								firstTxHash.String(),
