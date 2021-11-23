@@ -30,14 +30,12 @@ type VoteMessageHandler func(bftVote *consensustypes.BFTVote) error
 
 func NewBlackListValidator(reason error) *consensustypes.BlackListValidator {
 	return &consensustypes.BlackListValidator{
-		Error:     reason.Error(),
+		ErrorName: reason,
 		StartTime: time.Now(),
 		TTL:       defaultBlackListTTL,
 	}
 }
 
-//TODO: @hung
-//2. vote for smaller height but already vote for higher height
 type ByzantineDetector struct {
 	fixedNodes                   map[string]bool                               // fixed nodes
 	blackList                    map[string]*consensustypes.BlackListValidator // validator => reason for blacklist
