@@ -28,7 +28,7 @@ type CoinIndexer struct {
 	mtx                 *sync.RWMutex
 	db                  incdb.Database
 	accessTokens        map[string]bool
-	idxQueue            map[byte][]IndexParam
+	idxQueue            map[byte][]*IndexParam
 	queueSize           int
 	statusChan          chan JobStatus
 	quitChan            chan bool
@@ -36,7 +36,7 @@ type CoinIndexer struct {
 	cachedCoinPubKeys   *sync.Map
 
 	managedOTAKeys *sync.Map
-	IdxChan        chan IndexParam
+	IdxChan        chan *IndexParam
 }
 
 // The following constants indicate the state of an OTAKey.
@@ -83,9 +83,9 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 
 	// initialize the queue
 	queueSize := 0
-	idxQueue := make(map[byte][]IndexParam)
+	idxQueue := make(map[byte][]*IndexParam)
 	for shard := 0; shard < common.MaxShardNumber; shard++ {
-		tmpQueue := make([]IndexParam, 0)
+		tmpQueue := make([]*IndexParam, 0)
 		idxQueue[byte(shard)] = tmpQueue
 	}
 
@@ -120,9 +120,9 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 				if otaKey.GetPublicSpend() == nil || otaKey.GetOTASecretKey() == nil {
 					utils.Logger.Log.Infof("invalid otaKey %x, %v\n", rawOTAKey, otaKey)
 				}
-				shardID := common.GetShardIDFromLastByte(otaKey.GetPublicSpend().ToBytesS()[len(otaKey.GetPublicSpend().ToBytesS())])
+				shardID := common.GetShardIDFromLastByte(otaKey.GetPublicSpend().ToBytesS()[len(otaKey.GetPublicSpend().ToBytesS()) - 1])
 
-				idxParam := IndexParam{
+				idxParam := &IndexParam{
 					FromHeight: 0,
 					ToHeight:   0, // at this stage, we don't have the information about the ToHeight, it will be handled in the `Start` function.
 					OTAKey:     otaKey,
@@ -246,7 +246,7 @@ func (ci *CoinIndexer) IsQueueFull(shardID byte) bool {
 }
 
 // ReIndexOutCoin re-scans all output coins from idxParams.FromHeight to idxParams.ToHeight and adds them to the cache if the belongs to idxParams.OTAKey.
-func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
+func (ci *CoinIndexer) ReIndexOutCoin(idxParams *IndexParam) {
 	status := JobStatus{
 		otaKey: idxParams.OTAKey,
 		err:    nil,
@@ -342,13 +342,13 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParam) {
 // ReIndexOutCoinBatch re-scans all output coins for a list of indexing params of the same shardID.
 //
 // Callers must manage to make sure all indexing params belong to the same shard.
-func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb.StateDB, id string) {
+func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *statedb.StateDB, id string) {
 	if len(idxParams) == 0 {
 		return
 	}
 
 	// create some map instances and necessary params
-	mapIdxParams := make(map[string]IndexParam)
+	mapIdxParams := make(map[string]*IndexParam)
 	mapStatuses := make(map[string]JobStatus)
 	mapOutputCoins := make(map[string][]privacy.Coin)
 	minHeight := uint64(math.MaxUint64)
@@ -584,7 +584,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 		return
 	}
 
-	ci.IdxChan = make(chan IndexParam, 10*ci.numWorkers)
+	ci.IdxChan = make(chan *IndexParam, 10*ci.numWorkers)
 	ci.statusChan = make(chan JobStatus, 10*ci.numWorkers)
 	ci.quitChan = make(chan bool)
 

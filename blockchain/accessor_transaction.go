@@ -475,7 +475,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 				IsReset:    isReset,
 			}
 
-			outcoinIndexer.IdxChan <- idxParams
+			outcoinIndexer.IdxChan <- &idxParams
 
 			Logger.log.Infof("Authorized OTA Key Submission %x", otaKey)
 			return nil

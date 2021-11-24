@@ -197,12 +197,8 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 // to any of the given IndexParam's using the given filters.
 //
 // The wider the range [startHeight: desHeight] is, the longer time this function should take.
-func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
-	// avoid overlap; unless lower height is 0
-	start := startHeight + 1
-	if startHeight == 0 {
-		start = 0
-	}
+func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+	start := startHeight
 
 	res := make(map[string][]privacy.Coin)
 	for otaStr := range idxParams {
@@ -265,7 +261,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 
 		}
 	}
-	utils.Logger.Log.Infof("#skipped for heights %v to %v: %v\n", start, destHeight, countSkipped)
+	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v\n", start, destHeight, tokenID.String(), countSkipped)
 	return res, nil
 }
 
