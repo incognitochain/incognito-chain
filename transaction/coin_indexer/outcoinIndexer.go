@@ -594,7 +594,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 
 	start := time.Now()
 	for idx := uint64(0); idx < prvCoinLength.Uint64(); {
-		tmpStart := time.Now() // measure time for each round
 		nextIdx := idx + utils.MaxOutcoinQueryInterval
 		if nextIdx > prvCoinLength.Uint64() {
 			nextIdx = prvCoinLength.Uint64()
@@ -620,7 +619,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsPRV[otaStr]...)
 
-			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsPRV[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsPRV[otaStr]), len(listOutputCoins), time.Since(start).Seconds())
 			mapOutputCoins[otaStr] = listOutputCoins
 		}
 
@@ -628,7 +627,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 	}
 
 	for idx := uint64(0); idx < tokenCoinLength.Uint64(); {
-		tmpStart := time.Now() // measure time for each round
 		nextIdx := idx + utils.MaxOutcoinQueryInterval
 		if nextIdx > tokenCoinLength.Uint64() {
 			nextIdx = tokenCoinLength.Uint64()
@@ -654,7 +652,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
 
-			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d Token coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d Token coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(start).Seconds())
 			mapOutputCoins[otaStr] = listOutputCoins
 		}
 
