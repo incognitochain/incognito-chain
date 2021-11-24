@@ -590,9 +590,10 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		}
 		return
 	}
+	utils.Logger.Log.Infof("[CoinIndexer] Current #Coins for shard %v: PRV %v, TOKEN %v\n", shardID, prvCoinLength.Uint64(), tokenCoinLength.Uint64())
 
 	start := time.Now()
-	for idx := uint64(0); idx <= prvCoinLength.Uint64(); {
+	for idx := uint64(0); idx < prvCoinLength.Uint64(); {
 		tmpStart := time.Now() // measure time for each round
 		nextIdx := idx + utils.MaxOutcoinQueryInterval
 		if nextIdx > prvCoinLength.Uint64() {
@@ -626,7 +627,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		idx = nextIdx
 	}
 
-	for idx := uint64(0); idx <= tokenCoinLength.Uint64(); {
+	for idx := uint64(0); idx < tokenCoinLength.Uint64(); {
 		tmpStart := time.Now() // measure time for each round
 		nextIdx := idx + utils.MaxOutcoinQueryInterval
 		if nextIdx > tokenCoinLength.Uint64() {
