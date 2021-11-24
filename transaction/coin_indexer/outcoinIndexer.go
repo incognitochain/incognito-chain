@@ -632,16 +632,10 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 			otaKeyBytes := OTAKeyToRaw(idxParams.OTAKey)
 			utils.Logger.Log.Infof("New authorized OTAKey received: %x\n", otaKeyBytes)
 
-			// update the state of the OTAKey to Indexing
-			err = ci.AddOTAKey(idxParams.OTAKey, StatusIndexing)
-			if err != nil {
-				utils.Logger.Log.Errorf("Adding OTAKey %x error: %v\n", otaKeyBytes, err)
-			} else {
-				ci.mtx.Lock()
-				ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
-				ci.queueSize++
-				ci.mtx.Unlock()
-			}
+			ci.mtx.Lock()
+			ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
+			ci.queueSize++
+			ci.mtx.Unlock()
 
 		case <-ci.quitChan:
 			ci.mtx.Lock()
@@ -685,7 +679,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 				start = time.Now()
 			} else {
 				utils.Logger.Log.Infof("CoinIndexer is full or no OTA key is found in queue, numWorking %v, queueSize %v\n", numWorking, ci.queueSize)
-				time.Sleep(10 * time.Second)
+				time.Sleep(2 * time.Second)
 			}
 		}
 	}
