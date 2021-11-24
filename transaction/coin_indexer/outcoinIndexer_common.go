@@ -2,6 +2,7 @@ package coinIndexer
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -263,6 +264,74 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 		}
 	}
 	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v\n", start, destHeight, tokenID.String(), countSkipped)
+	return res, nil
+}
+
+// QueryBatchDbCoinVer2ByIndices queries the db to get v2 coins with indices in [fromIndex,toIndex] checks if the coins belong
+// to any of the given IndexParam's using the given filters.
+//
+// The wider the range [fromIndex: toIndex] is, the longer time this function should take.
+func QueryBatchDbCoinVer2ByIndices(idxParams map[string]*IndexParam, shardID byte, tokenID *common.Hash, fromIndex, toIndex uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+	if fromIndex > toIndex {
+		return nil, fmt.Errorf("invalid index range [%v,%v]", fromIndex, toIndex)
+	}
+
+	res := make(map[string][]privacy.Coin)
+	for otaStr := range idxParams {
+		res[otaStr] = make([]privacy.Coin, 0)
+	}
+
+	burningPubKey := wallet.GetBurningPublicKey()
+	countSkipped := 0
+	for idx := fromIndex; idx <= toIndex; idx++ {
+		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx, shardID)
+		if err != nil {
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by idx error: %v\n", err)
+			return nil, err
+		}
+
+		cv2 := &privacy.CoinV2{}
+		err = cv2.SetBytes(coinBytes)
+		if err != nil {
+			utils.Logger.Log.Error("Get outCoins ver 2 from bytes", err)
+			return nil, err
+		}
+
+		// check if the output coin was sent to the burning address
+		if bytes.Equal(cv2.GetPublicKey().ToBytesS(), burningPubKey) {
+			countSkipped++
+			continue
+		}
+
+		if _, ok := cachedCoins.Load(cv2.GetPublicKey().String()); ok {
+			// coin has already been cached, so we skip.
+			countSkipped++
+			continue
+		}
+
+		for otaStr, idxParam := range idxParams {
+			// create parameter(s) for CoinMatcher filters.
+			otaKey := idxParam.OTAKey
+			params := make(map[string]interface{})
+			params["otaKey"] = otaKey
+			params["db"] = db
+			params["tokenID"] = tokenID
+
+			pass := false
+			for _, f := range filters {
+				if f(cv2, params) {
+					pass = true
+					break
+				}
+			}
+			if pass {
+				res[otaStr] = append(res[otaStr], cv2)
+				break
+			}
+		}
+
+	}
+	utils.Logger.Log.Infof("#skipped for indices [%v,%v], tokenID %v: %v\n", fromIndex, toIndex, tokenID.String(), countSkipped)
 	return res, nil
 }
 
