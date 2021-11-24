@@ -888,7 +888,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						}
 						return true
 					}
-					outcoinIndexer.ManagedOTAKeys.Range(handler)
+					outcoinIndexer.GetManagedOTAKeys().Range(handler)
 				}
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())

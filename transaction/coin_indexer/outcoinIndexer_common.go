@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"sync"
 )
 
 const (
@@ -21,6 +22,12 @@ type JobStatus struct {
 	id     string // id of the indexing go-routine
 	otaKey privacy.OTAKey
 	err    error
+}
+
+// IndexerInitialConfig is the initial config provided when starting the CoinIndexer.
+type IndexerInitialConfig struct {
+	TxDbs      []*statedb.StateDB
+	BestBlocks []uint64
 }
 
 type IndexParam struct {
@@ -190,7 +197,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 // to any of the given IndexParam's using the given filters.
 //
 // The wider the range [startHeight: desHeight] is, the longer time this function should take.
-func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins map[string]interface{}, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
 	// avoid overlap; unless lower height is 0
 	start := startHeight + 1
 	if startHeight == 0 {
@@ -224,7 +231,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 				continue
 			}
 
-			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {
+			if _, ok := cachedCoins.Load(cv2.GetPublicKey().String()); ok {
 				// coin has already been cached, so we skip.
 				countSkipped++
 				continue
@@ -303,19 +310,6 @@ func (ci *CoinIndexer) getIdxParamsForIndexing(totalWorker int) map[byte]int {
 				res[shardID] = IndexingBatchSize
 			}
 		}
-	}
-
-	return res
-}
-
-func (ci *CoinIndexer) cloneCachedCoins() map[string]interface{} {
-	res := make(map[string]interface{})
-	if len(ci.cachedCoinPubKeys) != 0 {
-		ci.mtx.Lock()
-		for otaStr := range ci.cachedCoinPubKeys {
-			res[otaStr] = true
-		}
-		ci.mtx.Unlock()
 	}
 
 	return res
