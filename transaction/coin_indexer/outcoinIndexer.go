@@ -110,8 +110,11 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 			} else {
 				m.Store(rawOTAKey, status)
 			}
+			utils.Logger.Log.Infof("Loaded OTAKey %x with status %v\n", rawOTAKey, status)
 
-			// in case this is an enhanced cache, try to re-add "un-done" params (i.e, params with status = StatusIndexing).
+			// In case this is an enhanced cache, try to re-add "un-done" params (i.e, params with status = StatusIndexing).
+			// For these IdxParam's, as a quick fix, we'll have to re-cache from the beginning.
+			//nolint // TODO(thanhn-inc): find a better solution.
 			if status == StatusIndexing && authorizedCache {
 				otaKey := OTAKeyFromRaw(rawOTAKey)
 				if otaKey.GetPublicSpend() == nil || otaKey.GetOTASecretKey() == nil {
