@@ -35,8 +35,6 @@ func NewBlackListValidator(reason error) *rawdb_consensus.BlackListValidator {
 	}
 }
 
-//TODO: @hung
-//2. vote for smaller height but already vote for higher height
 type ByzantineDetector struct {
 	fixedNodes                   map[string]bool                                // fixed nodes
 	blackList                    map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
@@ -121,6 +119,7 @@ func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error
 	handlers := []VoteMessageHandler{
 		b.voteMoreThanOneTimesInATimeSlot,
 		b.voteForHigherTimeSlotSameHeight,
+		b.voteForSmallerBlockHeight,
 	}
 
 	if config.Param().ConsensusParam.ByzantineDetectorHeight < bestViewHeight {
