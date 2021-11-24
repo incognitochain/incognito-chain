@@ -141,6 +141,7 @@ func QueryDbCoinVer1(pubKey []byte, tokenID *common.Hash, db *statedb.StateDB) (
 
 // QueryDbCoinVer2 returns all v2 output coins of a public key on the given tokenID for heights from `startHeight` to
 // `destHeight` using the given list of filters.
+//nolint // TODO: consider using get coin by index to speed up the performance.
 func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) ([]privacy.Coin, error) {
 	pubKeyBytes := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
@@ -197,6 +198,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 // to any of the given IndexParam's using the given filters.
 //
 // The wider the range [startHeight: desHeight] is, the longer time this function should take.
+//nolint // TODO: consider using get coin by index to speed up the performance.
 func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
 	start := startHeight
 
@@ -258,7 +260,6 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 					break
 				}
 			}
-
 		}
 	}
 	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v\n", start, destHeight, tokenID.String(), countSkipped)

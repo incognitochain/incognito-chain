@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"math"
 	"sync"
@@ -123,7 +124,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 				shardID := common.GetShardIDFromLastByte(otaKey.GetPublicSpend().ToBytesS()[len(otaKey.GetPublicSpend().ToBytesS()) - 1])
 
 				idxParam := &IndexParam{
-					FromHeight: 0,
+					FromHeight: config.Param().CoinVersion2LowestHeight,
 					ToHeight:   0, // at this stage, we don't have the information about the ToHeight, it will be handled in the `Start` function.
 					OTAKey:     otaKey,
 					TxDb:       nil, // at this stage, we don't have the information about the TxDb, it will be handled in the `Start` function.
