@@ -679,7 +679,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 				start = time.Now()
 			} else {
 				utils.Logger.Log.Infof("CoinIndexer is full or no OTA key is found in queue, numWorking %v, queueSize %v\n", numWorking, ci.queueSize)
-				time.Sleep(2 * time.Second)
+				time.Sleep(10 * time.Second)
 			}
 		}
 	}
