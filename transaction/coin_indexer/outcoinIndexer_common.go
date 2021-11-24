@@ -216,6 +216,13 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 			return nil, err
 		}
 		utils.Logger.Log.Infof("GetOTACoinsByHeight timeElapsed: %v\n", time.Since(tmpStart))
+		tmpStart = time.Now()
+		_, err = statedb.GetOTACoinByIndex(db, *tokenID, 100, shardID)
+		if err != nil {
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v\n", err)
+			return nil, err
+		}
+		utils.Logger.Log.Infof("GetOTACoinByIndex timeElapsed: %v\n", time.Since(tmpStart))
 		for _, coinBytes := range currentHeightCoins {
 			cv2 := &privacy.CoinV2{}
 			err = cv2.SetBytes(coinBytes)
