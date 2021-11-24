@@ -130,7 +130,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 					ShardID:    shardID,
 					IsReset:    true,
 				}
-
+				utils.Logger.Log.Infof("Added OTAKey %x to queue\n", rawOTAKey)
 				idxQueue[shardID] = append(idxQueue[shardID], idxParam)
 				queueSize++
 			}
