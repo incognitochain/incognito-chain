@@ -130,14 +130,12 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
-	//only start shard when beacon seem to be almost finish (sync up to block of 4 hours ago)
 	if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
 		lastInsertTime := synckerManager.BeaconSyncProcess.lastInsert
 		if lastInsertTime == "" {
 			lastInsertTime = "N/A (node restart)"
 		}
 		Logger.Infof("Beacon is syncing ... last time insert was %v", lastInsertTime)
-		return
 	}
 
 	wg := sync.WaitGroup{}
@@ -149,6 +147,20 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		wg.Add(1)
 		go func(sid int, syncProc *ShardSyncProcess) {
 			defer wg.Done()
+
+			//only start shard when beacon seem to be almost finish (sync up to block of 4 hours ago) and not in relay shards
+			if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
+				shouldRelay := false
+				for _, relaySID := range synckerManager.config.Blockchain.GetConfig().RelayShards {
+					if sid == int(relaySID) {
+						shouldRelay = true
+					}
+				}
+				if !shouldRelay {
+					return
+				}
+			}
+
 			if _, ok := wantedShard[byte(sid)]; ok {
 				//check preload shard
 				if preloadAddr != "" {
@@ -235,8 +247,8 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 	//shard
 	for sid, _ := range peerState.Shards {
 		if synckerManager.ShardSyncProcess[int(sid)] != nil {
-			b, _ := json.Marshal(peerState)
-			fmt.Println("[debugshard]: receive peer state", string(b))
+			// b, _ := json.Marshal(peerState)
+			// fmt.Println("[debugshard]: receive peer state", string(b))
 			synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
 		}
 
