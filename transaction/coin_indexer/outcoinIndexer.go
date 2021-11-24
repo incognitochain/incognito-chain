@@ -121,7 +121,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 				if otaKey.GetPublicSpend() == nil || otaKey.GetOTASecretKey() == nil {
 					utils.Logger.Log.Infof("invalid otaKey %x, %v\n", rawOTAKey, otaKey)
 				}
-				shardID := common.GetShardIDFromLastByte(otaKey.GetPublicSpend().ToBytesS()[len(otaKey.GetPublicSpend().ToBytesS()) - 1])
+				shardID := common.GetShardIDFromLastByte(otaKey.GetPublicSpend().ToBytesS()[len(otaKey.GetPublicSpend().ToBytesS())-1])
 
 				idxParam := &IndexParam{
 					FromHeight: config.Param().CoinVersion2LowestHeight,
@@ -509,6 +509,198 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 	}
 }
 
+// ReIndexOutCoinBatchByIndices re-scans all output coins for a list of indexing params of the same shardID.
+//
+// Callers must manage to make sure all indexing params belong to the same shard.
+func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txDb *statedb.StateDB, id string) {
+	if len(idxParams) == 0 {
+		return
+	}
+
+	// create some map instances and necessary params
+	mapIdxParams := make(map[string]*IndexParam)
+	mapStatuses := make(map[string]JobStatus)
+	mapOutputCoins := make(map[string][]privacy.Coin)
+	shardID := idxParams[0].ShardID
+	for _, idxParam := range idxParams {
+		otaStr := fmt.Sprintf("%x", OTAKeyToRaw(idxParam.OTAKey))
+		mapIdxParams[otaStr] = idxParam
+		mapStatuses[otaStr] = JobStatus{id: id, otaKey: idxParam.OTAKey, err: nil}
+		mapOutputCoins[otaStr] = make([]privacy.Coin, 0)
+	}
+
+	for otaStr, idxParam := range mapIdxParams {
+		vkb := OTAKeyToRaw(idxParam.OTAKey)
+		utils.Logger.Log.Infof("[CoinIndexer] Re-index output coins for key %x", idxParam.OTAKey)
+		keyExists, state := ci.HasOTAKey(vkb)
+		if keyExists {
+			if state == StatusIndexingFinished && !idxParam.IsReset {
+				utils.Logger.Log.Errorf("[CoinIndexer] ota key %v has been processed with status %v and isReset = false", idxParam.OTAKey, state)
+
+				ci.statusChan <- mapStatuses[otaStr]
+				delete(mapIdxParams, otaStr)
+				delete(mapStatuses, otaStr)
+				delete(mapOutputCoins, otaStr)
+			}
+		}
+		if state != StatusIndexing {
+			ci.managedOTAKeys.Store(vkb, StatusIndexing)
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v\n", r)
+			}
+			if exists, tmpState := ci.HasOTAKey(vkb); exists && tmpState == StatusIndexing {
+				ci.managedOTAKeys.Delete(vkb)
+			}
+		}()
+	}
+
+	if len(mapIdxParams) == 0 {
+		utils.Logger.Log.Infof("[CoinIndexer] No indexParam to proceed")
+		return
+	}
+
+	prvCoinLength, err := statedb.GetOTACoinLength(txDb, common.PRVCoinID, shardID)
+	if err != nil {
+		utils.Logger.Log.Errorf("[CoinIndexer] GetOTACoinLength for PRV error: %v\n", err)
+
+		for otaStr := range mapStatuses {
+			status := mapStatuses[otaStr]
+			status.err = err
+			ci.statusChan <- status
+			delete(mapIdxParams, otaStr)
+			delete(mapStatuses, otaStr)
+			delete(mapOutputCoins, otaStr)
+		}
+		return
+	}
+	tokenCoinLength, err := statedb.GetOTACoinLength(txDb, common.ConfidentialAssetID, shardID)
+	if err != nil {
+		utils.Logger.Log.Errorf("[CoinIndexer] GetOTACoinLength for TOKEN error: %v\n", err)
+
+		for otaStr := range mapStatuses {
+			status := mapStatuses[otaStr]
+			status.err = err
+			ci.statusChan <- status
+			delete(mapIdxParams, otaStr)
+			delete(mapStatuses, otaStr)
+			delete(mapOutputCoins, otaStr)
+		}
+		return
+	}
+
+	start := time.Now()
+	for idx := uint64(0); idx <= prvCoinLength.Uint64(); {
+		tmpStart := time.Now() // measure time for each round
+		nextIdx := idx + utils.MaxOutcoinQueryInterval
+		if nextIdx > prvCoinLength.Uint64() {
+			nextIdx = prvCoinLength.Uint64()
+		}
+
+		// query token output coins
+		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2ByIndices(mapIdxParams, shardID, &common.PRVCoinID, idx, nextIdx-1, txDb, ci.cachedCoinPubKeys, getCoinFilterByOTAKey())
+		if err != nil {
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
+
+			for otaStr := range mapStatuses {
+				status := mapStatuses[otaStr]
+				status.err = err
+				ci.statusChan <- status
+				delete(mapIdxParams, otaStr)
+				delete(mapStatuses, otaStr)
+				delete(mapOutputCoins, otaStr)
+			}
+			return
+		}
+
+		// Add output coins to maps
+		for otaStr, listOutputCoins := range mapOutputCoins {
+			listOutputCoins = append(listOutputCoins, currentOutputCoinsPRV[otaStr]...)
+
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsPRV[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
+			mapOutputCoins[otaStr] = listOutputCoins
+		}
+
+		idx = nextIdx
+	}
+
+	for idx := uint64(0); idx <= tokenCoinLength.Uint64(); {
+		tmpStart := time.Now() // measure time for each round
+		nextIdx := idx + utils.MaxOutcoinQueryInterval
+		if nextIdx > tokenCoinLength.Uint64() {
+			nextIdx = tokenCoinLength.Uint64()
+		}
+
+		// query token output coins
+		currentOutputCoinsToken, err := QueryBatchDbCoinVer2ByIndices(mapIdxParams, shardID, &common.ConfidentialAssetID, idx, nextIdx-1, txDb, ci.cachedCoinPubKeys, getCoinFilterByOTAKey())
+		if err != nil {
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying Token coins from db - %v\n", err)
+
+			for otaStr := range mapStatuses {
+				status := mapStatuses[otaStr]
+				status.err = err
+				ci.statusChan <- status
+				delete(mapIdxParams, otaStr)
+				delete(mapStatuses, otaStr)
+				delete(mapOutputCoins, otaStr)
+			}
+			return
+		}
+
+		// Add output coins to maps
+		for otaStr, listOutputCoins := range mapOutputCoins {
+			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
+
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d Token coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
+			mapOutputCoins[otaStr] = listOutputCoins
+		}
+
+		idx = nextIdx
+	}
+
+	// write
+	for otaStr, idxParam := range mapIdxParams {
+		vkb := OTAKeyToRaw(idxParam.OTAKey)
+		allOutputCoins := mapOutputCoins[otaStr]
+
+		err := ci.AddOTAKey(idxParam.OTAKey, StatusIndexingFinished)
+		if err == nil {
+			utils.Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x\n", len(allOutputCoins), vkb)
+			err = ci.StoreIndexedOutputCoins(idxParam.OTAKey, allOutputCoins, shardID)
+			if err != nil {
+				utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v\n", vkb, err)
+
+				status := mapStatuses[otaStr]
+				status.err = err
+				ci.statusChan <- status
+				delete(mapIdxParams, otaStr)
+				delete(mapStatuses, otaStr)
+				delete(mapOutputCoins, otaStr)
+				continue
+			}
+		} else {
+			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey %x, error: %v\n", vkb, err)
+
+			status := mapStatuses[otaStr]
+			status.err = err
+			ci.statusChan <- status
+			delete(mapIdxParams, otaStr)
+			delete(mapStatuses, otaStr)
+			delete(mapOutputCoins, otaStr)
+			continue
+		}
+
+		utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, len(allOutputCoins), time.Since(start).Seconds())
+
+		ci.statusChan <- mapStatuses[otaStr]
+		delete(mapIdxParams, otaStr)
+		delete(mapStatuses, otaStr)
+		delete(mapOutputCoins, otaStr)
+	}
+}
+
 // GetIndexedOutCoin returns the indexed (i.e, cached) output coins of an otaKey w.r.t a tokenID.
 // It returns an error if the otaKey hasn't been submitted (state = 0) or the indexing is in progress (state = 1).
 func (ci *CoinIndexer) GetIndexedOutCoin(otaKey privacy.OTAKey, tokenID *common.Hash, txDb *statedb.StateDB, shardID byte) ([]privacy.Coin, int, error) {
@@ -673,7 +865,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 
 						// increase 1 go-routine
 						numWorking += 1
-						go ci.ReIndexOutCoinBatch(idxParams, idxParams[0].TxDb, id)
+						go ci.ReIndexOutCoinBatchByIndices(idxParams, idxParams[0].TxDb, id)
 					}
 				}
 				start = time.Now()
