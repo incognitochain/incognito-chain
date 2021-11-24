@@ -108,7 +108,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 			if status == 0 {
 				m.Store(rawOTAKey, StatusKeySubmittedUsual)
 			} else {
-				m.Store(rawOTAKey, status)
+				m.Store(rawOTAKey, int(status))
 			}
 			utils.Logger.Log.Infof("Loaded OTAKey %x with status %v\n", rawOTAKey, status)
 
