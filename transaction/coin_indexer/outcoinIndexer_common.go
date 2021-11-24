@@ -283,10 +283,10 @@ func QueryBatchDbCoinVer2ByIndices(idxParams map[string]*IndexParam, shardID byt
 
 	burningPubKey := wallet.GetBurningPublicKey()
 	countSkipped := 0
-	for height := fromIndex; height <= toIndex; height++ {
-		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, height, shardID)
+	for idx := fromIndex; idx <= toIndex; idx++ {
+		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx, shardID)
 		if err != nil {
-			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v\n", err)
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by idx error: %v\n", err)
 			return nil, err
 		}
 
@@ -310,11 +310,6 @@ func QueryBatchDbCoinVer2ByIndices(idxParams map[string]*IndexParam, shardID byt
 		}
 
 		for otaStr, idxParam := range idxParams {
-			if height < idxParam.FromHeight || height > idxParam.ToHeight {
-				// Outside the required range, so we skip.
-				continue
-			}
-
 			// create parameter(s) for CoinMatcher filters.
 			otaKey := idxParam.OTAKey
 			params := make(map[string]interface{})
