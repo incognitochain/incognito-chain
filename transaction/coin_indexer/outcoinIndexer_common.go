@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"sync"
+	"time"
 )
 
 const (
@@ -208,11 +209,13 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 	burningPubKey := wallet.GetBurningPublicKey()
 	countSkipped := 0
 	for height := start; height <= destHeight; height++ {
+		tmpStart := time.Now()
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
 			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v\n", err)
 			return nil, err
 		}
+		utils.Logger.Log.Infof("GetOTACoinsByHeight timeElapsed: %v\n", time.Since(tmpStart))
 		for _, coinBytes := range currentHeightCoins {
 			cv2 := &privacy.CoinV2{}
 			err = cv2.SetBytes(coinBytes)
@@ -258,7 +261,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 					break
 				}
 			}
-
+			utils.Logger.Log.Infof("CheckCoin timeElapsed: %v\n", time.Since(tmpStart))
 		}
 	}
 	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v\n", start, destHeight, tokenID.String(), countSkipped)
