@@ -68,7 +68,7 @@ func (txBuilder *TxBuilderV2) Build(
 		}
 		switch inst[1] {
 		case common.PDEWithdrawalAcceptedChainStatus:
-			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB)
+			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB, beaconHeight)
 		}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
