@@ -7,6 +7,7 @@ import (
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -25,6 +26,7 @@ func (txBuilder *TxBuilderV2) Build(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
+	beaconHeight uint64,
 ) (metadata.Transaction, error) {
 	var tx metadata.Transaction
 	var err error
@@ -66,7 +68,7 @@ func (txBuilder *TxBuilderV2) Build(
 		}
 		switch inst[1] {
 		case common.PDEWithdrawalAcceptedChainStatus:
-			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB)
+			tx, err = buildAcceptedWithdrawLiquidity(inst, producerPrivateKey, shardID, transactionStateDB, beaconHeight)
 		}
 	case metadataCommon.Pdexv3TradeRequestMeta:
 		switch inst[1] {
@@ -410,6 +412,7 @@ func buildAcceptedWithdrawLiquidity(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
+	beaconHeight uint64,
 ) (metadata.Transaction, error) {
 	var tx metadata.Transaction
 	withdrawLiquidityInst := instruction.NewAcceptWithdrawLiquidity()
@@ -428,6 +431,9 @@ func buildAcceptedWithdrawLiquidity(
 	otaReceiver := privacy.OTAReceiver{}
 	err = otaReceiver.FromString(withdrawLiquidityInst.OtaReceiver())
 	if err != nil {
+		if config.Param().Net == config.Testnet2Net && beaconHeight < 3790600 {
+			return tx, nil
+		}
 		return tx, err
 	}
 	tx, err = buildMintTokenTx(
@@ -460,7 +466,6 @@ func buildUnstakingTx(
 	otaReceiver := privacy.OTAReceiver{}
 	err = otaReceiver.FromString(acceptInst.OtaReceiver())
 	if err != nil {
-		Logger.log.Info("[pdex] err:", err)
 		return tx, err
 	}
 	metaData := metadataPdexv3.NewUnstakingResponseWithValue(
@@ -470,7 +475,6 @@ func buildUnstakingTx(
 		acceptInst.StakingPoolID(), acceptInst.Amount(),
 		otaReceiver, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
-		Logger.log.Info("[pdex] err:", err)
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}
 	return tx, err
