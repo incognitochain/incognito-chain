@@ -12,6 +12,9 @@ LOCAL = local
 BUILD_FILE_NAME = incognito
 
 build:
+	$(GOBUILD) -o $(BUILD_FILE_NAME)
+
+build-detail:
 	$(GOBUILD) -v -o $(BUILD_FILE_NAME)
 
 local:
