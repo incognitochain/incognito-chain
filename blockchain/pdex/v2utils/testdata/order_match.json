@@ -1,0 +1,109 @@
+[{
+    "name": "Valid full order match",
+    "data": {
+        "amountIn": 80,
+        "fee": 20,
+        "reserves": [{
+            "Token0RealAmount": 1000,
+            "Token1RealAmount": 2000,
+            "Token0VirtualAmount": 8000,
+            "Token1VirtualAmount": 15000
+        }],
+        "tradeDirections": [0],
+        "orders": [
+            [{
+                "Id": "Order 1",
+                "Token0Rate": 80,
+                "Token1Rate": 155,
+                "Token0Balance": 0,
+                "Token1Balance": 155,
+                "TradeDirection": 1
+            }]
+        ]
+    },
+    "expected": {
+        "instructions": ["285", "1", "0", "0000000000000000000000000000000000000000000000000000000000000000", "{\"Content\":{\"Receiver\":\"15VRBi1S7Pme5bUpHW12HZVjXCTg1FwDM3yoSUjWgGEhVJoLudKwtpQk3iSmwe27ffsj76LLZvyJ9x5tbX44SmKBSzdegpLsNKFc71j4jDxQh1PYSVbVHtTbgMoLvUUReaQWyyoXPvuarV5E\",\"Amount\":155,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000004\",\"PairChanges\":[[0,0]],\"RewardEarned\":null,\"OrderChanges\":[{\"Order 1\":[80,-155]}]}}"],
+        "changedReserves": [{
+            "Token0ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token1ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0RealAmount": 1000,
+            "Token1RealAmount": 2000,
+            "Token0VirtualAmount": 8000,
+            "Token1VirtualAmount": 15000,
+            "Amplifier": 0,
+            "ShareAmount": 0
+        }]
+    }
+}, {
+    "name": "Valid order match -> pool swap",
+    "data": {
+        "amountIn": 160,
+        "fee": 20,
+        "reserves": [{
+            "Token0RealAmount": 1000,
+            "Token1RealAmount": 2000,
+            "Token0VirtualAmount": 8000,
+            "Token1VirtualAmount": 15000
+        }],
+        "tradeDirections": [0],
+        "orders": [
+            [{
+                "Id": "Order 1",
+                "Token0Rate": 80,
+                "Token1Rate": 155,
+                "Token0Balance": 0,
+                "Token1Balance": 155,
+                "TradeDirection": 1
+            }]
+        ]
+    },
+    "expected": {
+        "instructions": ["285", "1", "0", "0000000000000000000000000000000000000000000000000000000000000000", "{\"Content\":{\"Receiver\":\"15VRBi1S7Pme5bUpHW12HZVjXCTg1FwDM3yoSUjWgGEhVJoLudKwtpQk3iSmwe27ffsj76LLZvyJ9x5tbX44SmKBSzdegpLsNKFc71j4jDxQh1PYSVbVHtTbgMoLvUUReaQWyyoXPvuarV5E\",\"Amount\":303,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000004\",\"PairChanges\":[[80,-148]],\"RewardEarned\":null,\"OrderChanges\":[{\"Order 1\":[80,-155]}]}}"],
+        "changedReserves": [{
+            "Token0ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token1ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0RealAmount": 1080,
+            "Token1RealAmount": 1852,
+            "Token0VirtualAmount": 8080,
+            "Token1VirtualAmount": 14852,
+            "Amplifier": 0,
+            "ShareAmount": 0
+        }]
+    }
+}, {
+    "name": "Valid pool swap -> order match",
+    "data": {
+        "amountIn": 1500,
+        "fee": 50,
+        "reserves": [{
+            "Token0RealAmount": 1000,
+            "Token1RealAmount": 2000,
+            "Token0VirtualAmount": 8000,
+            "Token1VirtualAmount": 15000
+        }],
+        "tradeDirections": [1],
+        "orders": [
+            [{
+                "Id": "Order 1",
+                "Token0Rate": 8000,
+                "Token1Rate": 15500,
+                "Token0Balance": 8000,
+                "Token1Balance": 0,
+                "TradeDirection": 0
+            }]
+        ]
+    },
+    "expected": {
+        "instructions": ["285", "1", "0", "0000000000000000000000000000000000000000000000000000000000000000", "{\"Content\":{\"Receiver\":\"15VRBi1S7Pme5bUpHW12HZVjXCTg1FwDM3yoSUjWgGEhVJoLudKwtpQk3iSmwe27ffsj76LLZvyJ9x5tbX44SmKBSzdegpLsNKFc71j4jDxQh1PYSVbVHtTbgMoLvUUReaQWyyoXPvuarV5E\",\"Amount\":775,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000004\",\"PairChanges\":[[-129,247]],\"RewardEarned\":null,\"OrderChanges\":[{\"Order 1\":[-646,1253]}]}}"],
+        "changedReserves": [{
+            "Token0ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token1ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0RealAmount": 871,
+            "Token1RealAmount": 2247,
+            "Token0VirtualAmount": 7871,
+            "Token1VirtualAmount": 15247,
+            "Amplifier": 0,
+            "ShareAmount": 0
+        }]
+    }
+}]

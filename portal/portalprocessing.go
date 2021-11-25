@@ -4,6 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
@@ -15,7 +16,7 @@ func CollectPortalInstructions(pm *PortalManager, metaType int, action []string,
 		pm.RelayingChainsProcessors[metaType].PutAction(action)
 	} else if metadata.IsPortalMetaTypeV3(metaType) {
 		pm.PortalInstProcessorsV3[metaType].PutAction(action, shardID)
-	} else if metadata.IsPortalMetaTypeV4(metaType) {
+	} else if metadataCommon.IsPortalMetaTypeV4(metaType) {
 		pm.PortalInstProcessorsV4[metaType].PutAction(action, shardID)
 	} else {
 		isCollected = false

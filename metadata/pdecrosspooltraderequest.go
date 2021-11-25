@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 // TODO: Update error type to correct one
@@ -98,9 +97,12 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 	// if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
 	// }
+	if chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
+		return false, false, fmt.Errorf("metadata type %v is no longer supported", PDECrossPoolTradeRequestMeta)
+	}
 
 	// check ota address string and tx random is valid
-	_, err, ver := checkIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)
+	_, err, ver := metadataCommon.CheckIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
 		return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
 	}
@@ -108,7 +110,7 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		return false, false, fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
 	}
 	if ver == 2 {
-		_, errSub, verSub := checkIncognitoAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
+		_, errSub, verSub := metadataCommon.CheckIncognitoAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
 		if errSub != nil || verSub == 1 {
 			return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
 		}

@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -13,13 +16,10 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/pkg/errors"
-	"math/big"
-	"strings"
 )
 
 func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
-	gethParam := config.Param().GethParam
-	gethParam.GetFromEnv()
+	gethParam := config.Config().GethParam
 	ethHeader, err := GetEVMHeader(blockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)

@@ -9,9 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -23,6 +25,8 @@ import (
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // NewBlockShard Create New block Shard:
@@ -283,7 +287,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height)
+	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +359,11 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		return nil, err
 	}
 	bView := &BeaconBestState{}
-	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
+	includePdexv3Tx := false
+	if curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
+		includePdexv3Tx = true
+	}
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, includePdexv3Tx)
 
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
@@ -397,10 +405,16 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*types.BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
+	curView *ShardBestState,
+	beaconBlocks []*types.BeaconBlock,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) ([]metadata.Transaction, [][]string, error) {
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
+
 	for _, beaconBlock := range beaconBlocks {
 		blockHash := beaconBlock.Header.Hash()
 		beaconRootHashes, err := GetBeaconRootsHashByBlockHash(
@@ -415,6 +429,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 		if err != nil {
 			return nil, nil, err
 		}
+
 		for _, inst := range beaconBlock.Body.Instructions {
 			if len(inst) <= 2 {
 				continue
@@ -444,37 +459,13 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
 				}
-			case metadata.IssuingPRVERC20RequestMeta:
+			case metadataCommon.IssuingPRVERC20RequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPRVERC20ResponseMeta, true)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingPRVERC20ResponseMeta, true)
 				}
-			case metadata.IssuingPRVBEP20RequestMeta:
+			case metadataCommon.IssuingPRVBEP20RequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPRVBEP20ResponseMeta, true)
-				}
-			case metadata.PDETradeRequestMeta:
-				if len(inst) >= 4 {
-					newTx, err = blockGenerator.buildPDETradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDECrossPoolTradeRequestMeta:
-				if len(inst) >= 4 {
-					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(inst[2], inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEWithdrawalRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PDEWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEFeeWithdrawalRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-				}
-			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
-				if len(inst) >= 4 {
-					if inst[2] == common.PDEContributionRefundChainStatus {
-						newTx, err = blockGenerator.buildPDERefundContributionTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-					} else if inst[2] == common.PDEContributionMatchedNReturnedChainStatus {
-						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
-					}
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingPRVBEP20ResponseMeta, true)
 				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
@@ -539,17 +530,35 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			// portal v4
-			case metadata.PortalV4ShieldingRequestMeta:
+			case metadataCommon.PortalV4ShieldingRequestMeta:
 				if len(inst) >= 4 && inst[2] == portalcommonv4.PortalV4RequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedShieldingRequestTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalV4UnshieldingRequestMeta:
+			case metadataCommon.PortalV4UnshieldingRequestMeta:
 				if len(inst) >= 4 && inst[2] == portalcommonv4.PortalV4RequestRefundedChainStatus {
 					newTx, err = curView.buildPortalRefundedUnshieldingRequestTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 
 			default:
-				continue
+				if metadataCommon.IsPDEType(metaType) {
+					pdeTxBuilderV1 := pdex.TxBuilderV1{}
+					newTx, err = pdeTxBuilderV1.Build(
+						metaType,
+						inst,
+						producerPrivateKey,
+						shardID,
+						curView.GetCopiedTransactionStateDB(),
+					)
+				} else if metadataCommon.IsPdexv3Type(metaType) {
+					pdeTxBuilderV2 := pdex.TxBuilderV2{}
+					newTx, err = pdeTxBuilderV2.Build(
+						metaType,
+						inst,
+						producerPrivateKey,
+						shardID,
+						curView.GetCopiedTransactionStateDB(),
+					)
+				}
 			}
 			if err != nil {
 				return nil, nil, err
@@ -845,7 +854,6 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 
 			switch l[0] {
 			case instruction.STAKE_ACTION:
-
 				if l[2] == "shard" {
 					shard := strings.Split(l[1], ",")
 					newShardCandidates := []string{}
@@ -866,7 +874,6 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 						instructions = append(instructions, l)
 					}
 				}
-
 				if l[2] == "beacon" {
 					beacon := strings.Split(l[1], ",")
 					newBeaconCandidates := []string{}
@@ -922,7 +929,10 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
 func CreateShardInstructionsFromTransactionAndInstruction(
-	transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) (instructions [][]string, pdexv3Txs []metadata.Transaction, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -934,19 +944,23 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
-			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-			if err == nil {
-				instructions = append(instructions, actionPairs...)
+			if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight && metadata.IsPdexv3Tx(metadataValue) {
+				pdexv3Txs = append(pdexv3Txs, tx)
 			} else {
-				Logger.log.Errorf("Build Request Action Error %+v", err)
+				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
+				if err == nil {
+					instructions = append(instructions, actionPairs...)
+				} else {
+					Logger.log.Errorf("Build Request Action Error %+v", err)
+				}
 			}
 		}
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
@@ -965,7 +979,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			if len(stopAutoStakingMetadata.CommitteePublicKey) != 0 {
 				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
@@ -973,7 +987,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		case metadata.UnStakingMeta:
 			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
 			if !ok {
-				return nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.UnstakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			if len(unstakingMetadata.CommitteePublicKey) != 0 {
 				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
@@ -985,12 +999,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		if len(stakeShardPublicKey) != len(stakeShardTxID) &&
 			len(stakeShardTxID) != len(stakeShardRewardReceiver) &&
 			len(stakeShardRewardReceiver) != len(stakeShardAutoStaking) {
-			return nil, NewBlockChainError(StakeInstructionError,
+			return nil, nil, NewBlockChainError(StakeInstructionError,
 				fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoStaking)))
 		}
 		stakeShardPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeShardPublicKey)
 		if err != nil {
-			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
+			return nil, nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
 		inst := []string{
@@ -1018,5 +1032,5 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
-	return instructions, nil
+	return instructions, pdexv3Txs, nil
 }

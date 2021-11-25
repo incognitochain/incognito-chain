@@ -57,6 +57,24 @@ const (
 	ErrInvalidPortalShieldingRequestType         = "invalid portal shielding request type"
 	ErrInvalidPortalV4WaitingUnshieldRequestType = "invalid portal waiting unshielding request type"
 	ErrInvalidPortalV4BatchUnshieldRequestType   = "invalid portal batch unshielding request type"
+	// pDex v3
+	ErrInvalidPdexv3StatusStateType                    = "invalid pdex v3 status state type"
+	ErrInvalidPdexv3ParamsStateType                    = "invalid pdex v3 params state type"
+	ErrInvalidPdexv3ContributionStateType              = "invalid pdex v3 contribution state type"
+	ErrInvalidPdexv3PoolPairStateType                  = "invalid pdex v3 pool pair state type"
+	ErrInvalidPdexv3ShareStateType                     = "invalid pdex v3 share state type"
+	ErrInvalidPdexv3NftStateType                       = "invalid pdex v3 nft state type"
+	ErrInvalidPdexv3OrderStateType                     = "invalid pdex v3 order state type"
+	ErrInvalidPdexv3StakingPoolStateType               = "invalid pdex v3 staking pool state type"
+	ErrInvalidPdexv3StakerStateType                    = "invalid pdex v3 staker state type"
+	ErrInvalidPdexv3PoolPairLpFeePerShareStateType     = "invalid pdex v3 pool pair lp fee per share state type"
+	ErrInvalidPdexv3PoolPairProtocolFeeStateType       = "invalid pdex v3 pool pair protocol fee state type"
+	ErrInvalidPdexv3PoolPairStakingPoolFeeStateType    = "invalid pdex v3 pool pair staking pool fee state type"
+	ErrInvalidPdexv3ShareTradingFeeStateType           = "invalid pdex v3 share trading fee state type"
+	ErrInvalidPdexv3LastLPFeesPerShareStateType        = "invalid pdex v3 share last lp fees per share state type"
+	ErrInvalidPdexv3StakingPoolRewardPerShareStateType = "invalid pdex v3 staking pool reward per share state type"
+	ErrInvalidPdexv3StakerRewardStateType              = "invalid pdex v3 staker reward state type"
+	ErrInvalidPdexv3StakerLastRewardPerShareStateType  = "invalid pdex v3 staker last reward per share state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -248,6 +266,18 @@ const (
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError
 	IsPRVEVMTxHashIssuedError
+
+	// pDex v3
+	GetPdexv3StatusError
+	StorePdexv3StatusError
+	GetPdexv3ParamsError
+	StorePdexv3ParamsError
+	StorePdexv3ContributionError
+	StorePdexv3PoolPairError
+	StorePdexv3ShareError
+	StorePdexv3TradingFeesError
+	StorePdexv3NftsError
+	GetPdexv3PoolPairError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -418,7 +448,7 @@ var ErrCodeMessage = map[int]struct {
 
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError: {-15102, "Bridge Insert PRV pegging evm Tx Hash Issued Error"},
-	IsPRVEVMTxHashIssuedError:     {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
+	IsPRVEVMTxHashIssuedError:           {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
