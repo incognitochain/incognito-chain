@@ -428,7 +428,7 @@ func buildAcceptedWithdrawLiquidity(
 	otaReceiver := privacy.OTAReceiver{}
 	err = otaReceiver.FromString(withdrawLiquidityInst.OtaReceiver())
 	if err != nil {
-		return tx, err
+		return tx, nil
 	}
 	tx, err = buildMintTokenTx(
 		withdrawLiquidityInst.TokenID(), withdrawLiquidityInst.TokenAmount(),
