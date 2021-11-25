@@ -125,7 +125,14 @@ func (blockchain *BlockChain) Init(config *Config) error {
 			return err
 		}
 		if config.IndexerWorkers > 0 {
-			go outcoinIndexer.Start()
+			txDbs := make([]*statedb.StateDB, 0)
+			bestBlocks := make([]uint64, 0)
+			for shard := 0; shard < common.MaxShardNumber; shard++{
+				txDbs = append(txDbs, blockchain.GetBestStateTransactionStateDB(byte(shard)))
+				bestBlocks = append(bestBlocks, blockchain.GetBestStateShard(byte(shard)).ShardHeight)
+			}
+			cfg := &coinIndexer.IndexerInitialConfig{TxDbs: txDbs, BestBlocks: bestBlocks}
+			go outcoinIndexer.Start(cfg)
 		}
 	}
 	return nil
