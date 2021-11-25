@@ -12,7 +12,7 @@ LOCAL = local
 BUILD_FILE_NAME = incognito
 
 build:
-	$(GOBUILD) -o -v $(BUILD_FILE_NAME)
+	$(GOBUILD) -o $(BUILD_FILE_NAME) -v
 
 local:
 	INCOGNITO_NETWORK_KEY=$(LOCAL) ./$(BUILD_FILE_NAME) 2>&1 | tee local.log
