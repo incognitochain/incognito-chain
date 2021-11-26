@@ -309,6 +309,7 @@ func (o *Pdexv3Order) Token1Receiver() string { return o.receiver[1] }
 // while rates, id & trade direction cannot
 func (o *Pdexv3Order) SetToken0Balance(b uint64) { o.token0Balance = b }
 func (o *Pdexv3Order) SetToken1Balance(b uint64) { o.token1Balance = b }
+func (o *Pdexv3Order) SetNftID(id common.Hash) { o.nftID = id }
 
 func NewPdexv3OrderWithValue(
 	id string, nftID common.Hash,

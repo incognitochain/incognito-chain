@@ -693,6 +693,10 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 					}
 				}
+				// set NextOTA
+				if md.NextOTA != nil {
+					ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
+				}
 			}
 		}
 

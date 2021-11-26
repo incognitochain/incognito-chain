@@ -630,18 +630,16 @@ TransactionLoop:
 		}
 
 		// always return NFT in response
-		nftReceiver, exists := currentOrderReq.Receiver[currentOrderReq.NftID]
-		if !exists {
-			return result, pairs, fmt.Errorf("NFT receiver not found in WithdrawOrder Request")
-		}
-		recvStr, _ := nftReceiver.String() // error handled in tx validation
-
-		mintInstruction, err := instruction.NewMintNftWithValue(
-			currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
-		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
-		result = append(result, mintInstruction)
-		if err != nil {
-			return result, pairs, err
+		nftReceiver, accessByNFT := currentOrderReq.Receiver[currentOrderReq.NftID]
+		if accessByNFT {
+			recvStr, _ := nftReceiver.String() // error handled in tx validation
+			mintInstruction, err := instruction.NewMintNftWithValue(
+				currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
+			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
+			result = append(result, mintInstruction)
+			if err != nil {
+				return result, pairs, err
+			}
 		}
 
 		// default to reject
@@ -711,6 +709,14 @@ TransactionLoop:
 						result = append(result, refundAction.StringSlice())
 						continue TransactionLoop
 					}
+					if !accessByNFT {
+						if currentOrderReq.NextOTA == nil {
+							Logger.log.Warnf("Unexpected invalid access for order %s", orderID)
+							result = append(result, refundAction.StringSlice())
+							continue TransactionLoop
+						}
+						ord.SetNftID(common.Hash(currentOrderReq.NextOTA.Bytes()))
+					}
 					// apply orderbook changes for withdraw consistency in the same block
 					pairs[currentOrderReq.PoolPairID] = pair
 
@@ -723,6 +729,7 @@ TransactionLoop:
 								Receiver:   currentOrderReq.Receiver[tokenID],
 								TokenID:    tokenID,
 								Amount:     withdrawAmount,
+								NextOTA:    currentOrderReq.NextOTA, // is nil when using NftID
 							},
 							*tx.Hash(),
 							byte(tx.GetValidationEnv().ShardID()),

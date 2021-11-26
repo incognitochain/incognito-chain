@@ -44,14 +44,31 @@ func NewAddOrderRequest(
 	return r, nil
 }
 
+func (req AddOrderRequest) NextAccessOTA() *AccessOTA {
+	result := AccessOTA{}
+	err := result.FromBytes([32]byte(req.NftID))
+	if err != nil {
+		return nil
+	}
+	return &result
+}
+
 func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
 	if err != nil {
 		return false, err
 	}
+	
 	err = beaconViewRetriever.IsValidNftID(req.NftID.String())
 	if err != nil {
-		return false, err
+		if req.NextAccessOTA() == nil {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
+		valid, err1 := ValidPdexv3Access(nil, *req.NextAccessOTA(), tx, transactionStateDB)
+		if valid {
+			return true, nil
+		}
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
 	}
 	return true, nil
 }

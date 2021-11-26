@@ -31,8 +31,8 @@ type TxTokenDataVersion2 struct {
 	PropertyID     common.Hash
 	PropertyName   string
 	PropertySymbol string
-	SigPubKey      []byte `json:"SigPubKey,omitempty"` // 33 bytes
-	Sig            []byte `json:"Sig,omitempty"`       //
+	SigPubKey      []byte `json:"SigPubKey,omitempty"`
+	Sig            []byte `json:"Sig,omitempty"`
 	Proof          privacy.Proof
 
 	Type     int
@@ -1299,4 +1299,24 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 		return result[i].String() < result[j].String()
 	})
 	return result
+}
+
+func (txToken TxToken) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash][]privacy.Point, error) {
+	shardID := common.GetShardIDFromLastByte(txToken.Tx.PubKeyLastByteSender)
+	result := make(map[common.Hash][]privacy.Point)
+	keys, err := getDerivableInputFromSigPubKey(txToken.Tx.SigPubKey, common.PRVCoinID, txToken.Hash(), shardID, transactionStateDB)
+	if err != nil {
+		return nil, err
+	}
+	result[common.PRVCoinID] = keys
+
+	// token inputs without a plain tokenID are deemed not derivable
+	if txToken.TokenData.PropertyID != common.ConfidentialAssetID {
+		keys, err = getDerivableInputFromSigPubKey(txToken.TokenData.SigPubKey, txToken.TokenData.PropertyID, txToken.Hash(), shardID, transactionStateDB)
+		if err != nil {
+			return nil, err
+		}
+		result[txToken.TokenData.PropertyID] = keys
+	}
+	return result, nil
 }
