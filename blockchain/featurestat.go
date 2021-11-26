@@ -63,6 +63,20 @@ func (bc *BlockChain) InitFeatureStat() {
 
 }
 
+func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
+	nodeFeatures := stat.nodes[cpk]
+	//get feature that beacon is preparing to trigger
+	unTriggerFeatures := curView.getUntriggerFeature()
+
+	//check if node contain the untriggered feature
+	for _, feature := range unTriggerFeatures {
+		if common.IndexOfStr(feature, nodeFeatures) == -1 {
+			return false
+		}
+	}
+	return true
+}
+
 func (stat *FeatureStat) Report() FeatureReportInfo {
 	validatorStat := make(map[string]map[int]uint64)
 	proposeStat := make(map[string]map[int]uint64)

@@ -554,8 +554,21 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 }
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
+	//get validators in sync pool that contain latest code
+	syncVal := make(map[byte][]string)
+	for shardID, validators := range curView.beaconCommitteeState.GetSyncingValidators() {
+		validValidator := []incognitokey.CommitteePublicKey{}
+		for _, v := range validators {
+			validatorStr, _ := v.ToBase58()
+			if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
+				validValidator = append(validValidator, v)
+			}
+		}
+		syncVal[shardID], _ = incognitokey.CommitteeKeyListToString(validValidator)
+	}
 
-	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(curView.GetSyncingValidatorsString())
+	//generate instruction for validator that finish syncing
+	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(syncVal)
 	instructions := [][]string{}
 
 	for _, finishSyncInstruction := range finishSyncInstructions {
