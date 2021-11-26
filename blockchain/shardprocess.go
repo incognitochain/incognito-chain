@@ -774,7 +774,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	for _, beaconBlock := range beaconBlocks {
 		for _, inst := range beaconBlock.Body.Instructions {
 			if inst[0] == instruction.ENABLE_FEATURE {
-				enableFeatures, _ := instruction.ImportEnableFeatureInstructionFromString(inst)
+				enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
+				if err != nil {
+					return nil, nil, nil, err
+				}
 				if shardBestState.TriggeredFeature == nil {
 					shardBestState.TriggeredFeature = make(map[string]uint64)
 				}

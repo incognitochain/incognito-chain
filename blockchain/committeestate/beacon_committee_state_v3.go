@@ -202,7 +202,17 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+		case instruction.DEQUEUE:
+			dequeueInstruction, err := instruction.ValidateAndImportDequeueInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange, err = b.processDequeueInstruction(dequeueInstruction, committeeChange)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 		}
+
 	}
 
 	hashes, err := b.Hash(committeeChange)
@@ -348,6 +358,32 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 	}
 
 	return nil
+}
+
+//move validators from pending to sync pool
+func (b *BeaconCommitteeStateV3) processDequeueInstruction(
+	dequeueInst *instruction.DequeueInstruction, committeeChange *CommitteeChange,
+) (*CommitteeChange, error) {
+	if dequeueInst.Reason == instruction.OUTDATED_DEQUEUE_REASON {
+		//swap pending to sync pool
+		for shardID, pendingValIndex := range dequeueInst.DequeueList {
+			shardDequeueList := []string{}
+			for _, index := range pendingValIndex {
+				if index >= len(b.shardSubstitute[byte(shardID)]) {
+					return nil, fmt.Errorf("Substitute index error")
+				}
+				//remove from substitute
+				b.shardSubstitute[byte(shardID)] = append(b.shardSubstitute[byte(shardID)][:index], b.shardSubstitute[byte(shardID)][index+1:]...)
+				shardDequeueList = append(shardDequeueList, b.shardSubstitute[byte(shardID)][index])
+			}
+			//insert to sync pool
+			b.syncPool[byte(shardID)] = append(b.syncPool[byte(shardID)], shardDequeueList...)
+			committeeChange.AddShardSubstituteRemoved(byte(shardID), shardDequeueList)
+			committeeChange.AddSyncingPoolAdded(byte(shardID), shardDequeueList)
+		}
+	}
+
+	return committeeChange, nil
 }
 
 //processFinishSyncInstruction move validators from pending to sync pool

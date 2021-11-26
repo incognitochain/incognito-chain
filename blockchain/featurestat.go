@@ -159,3 +159,13 @@ func (featureStat *FeatureStat) addNode(key string, features []string) {
 	fmt.Println("debugfeature addnode", key)
 	featureStat.nodes[key] = features
 }
+
+func (featureStat *FeatureStat) containExpectedFeature(key string, expectedFeature []string) bool {
+	for _, f := range expectedFeature {
+		if common.IndexOfStr(f, featureStat.nodes[key]) == -1 {
+			return false
+		}
+	}
+	return true
+
+}

@@ -29,7 +29,7 @@ func AbortParam() {
 type AutoEnableFeature struct {
 	Version               int
 	MinTriggerBlockHeight int
-	MaxTriggerBlockHeight int
+	ForceBlockHeight      int
 	RequiredPercentage    int
 }
 

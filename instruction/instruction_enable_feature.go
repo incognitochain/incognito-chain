@@ -48,10 +48,10 @@ func ValidateAndImportEnableFeatureInstructionFromString(instruction []string) (
 
 // ImportFeatureEnableInstructionFromString is unsafe method
 func ImportEnableFeatureInstructionFromString(instruction []string) (*EnableFeatureInstruction, error) {
-	finishSyncInstruction := NewEnableFeatureInstruction()
+	featureEnableInstruction := NewEnableFeatureInstruction()
 	featureName := instruction[1]
-	finishSyncInstruction.Features = strings.Split(featureName, ",")
-	return finishSyncInstruction, nil
+	featureEnableInstruction.Features = strings.Split(featureName, ",")
+	return featureEnableInstruction, nil
 }
 
 //ValidateFeatureEnableInstructionSanity ...
