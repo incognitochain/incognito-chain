@@ -27,7 +27,6 @@ func AbortParam() {
 }
 
 type AutoEnableFeature struct {
-	Version               int
 	MinTriggerBlockHeight int
 	ForceBlockHeight      int
 	RequiredPercentage    int
@@ -69,7 +68,7 @@ type param struct {
 }
 
 type genesisParam struct {
-	InitialIncognito                            []initialIncognito
+	InitialIncognito                            []InitialIncognito
 	FeePerTxKb                                  uint64 `mapstructure:"fee_per_tx_kb" description:"fee per tx calculate by kb"`
 	ConsensusAlgorithm                          string `mapstructure:"consensus_algorithm"`
 	BlockTimestamp                              string `mapstructure:"block_timestamp"`

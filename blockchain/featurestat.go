@@ -3,6 +3,7 @@ package blockchain
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -22,6 +23,42 @@ type FeatureReportInfo struct {
 	ValidatorSize map[int]int               // chainid -> all validator size
 }
 
+func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*consensus.Validator, unTriggerFeatures []string) (*wire.MessageFeature, error) {
+
+	if len(validators) == 0 {
+		return nil, nil
+	}
+
+	if len(unTriggerFeatures) == 0 {
+		return nil, nil
+	}
+
+	validatorFromUserKeys, syncValidator := beaconView.ExtractPendingAndCommittee(validators)
+	featureSyncValidators := []string{}
+	featureSyncSignatures := [][]byte{}
+
+	signBytes := []byte{}
+	for _, v := range unTriggerFeatures {
+		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
+	}
+	for i, v := range validatorFromUserKeys {
+		dataSign := signBytes[:]
+		signature, err := v.MiningKey.BriSignData(append(dataSign, []byte(syncValidator[i])...))
+		if err != err {
+			continue
+		}
+		featureSyncSignatures = append(featureSyncSignatures, signature)
+		featureSyncValidators = append(featureSyncValidators, syncValidator[i])
+	}
+	if len(featureSyncValidators) == 0 {
+		return nil, nil
+	}
+	Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
+	msg := wire.NewMessageFeature(featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
+
+	return msg, nil
+}
+
 func (bc *BlockChain) InitFeatureStat() {
 	DefaultFeatureStat = &FeatureStat{
 		blockchain: bc,
@@ -36,23 +73,17 @@ func (bc *BlockChain) InitFeatureStat() {
 			//get untrigger feature
 			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
 			unTriggerFeatures := beaconView.getUntriggerFeature()
+			msg, err := CreateNewFeatureStatMessage(beaconView, bc.config.ConsensusEngine.GetValidators(), unTriggerFeatures)
 
-			validatorFromUserKeys, syncValidator := beaconView.ExtractPendingAndCommittee(bc.config.ConsensusEngine.GetSyncingValidators())
-			featureSyncValidators := []string{}
-			featureSyncSignatures := [][]byte{}
-			for i, v := range validatorFromUserKeys {
-				signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFeatureStat))
-				if err != nil {
-					continue
-				}
-				featureSyncSignatures = append(featureSyncSignatures, signature)
-				featureSyncValidators = append(featureSyncValidators, syncValidator[i])
-			}
-			if len(featureSyncValidators) == 0 {
+			if err != nil {
+				Logger.log.Error(err)
 				continue
 			}
-			Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
-			msg := wire.NewMessageFeature(featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
+
+			if msg == nil {
+				continue
+			}
+
 			if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
 				Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
 			}
@@ -71,6 +102,7 @@ func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk st
 	//check if node contain the untriggered feature
 	for _, feature := range unTriggerFeatures {
 		if common.IndexOfStr(feature, nodeFeatures) == -1 {
+			fmt.Println("node", cpk, "not content feature", feature, nodeFeatures, len(nodeFeatures))
 			return false
 		}
 	}
@@ -156,7 +188,7 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 }
 
 func (featureStat *FeatureStat) addNode(key string, features []string) {
-	fmt.Println("debugfeature addnode", key)
+	//fmt.Println("debugfeature addnode", key, features)
 	featureStat.nodes[key] = features
 }
 

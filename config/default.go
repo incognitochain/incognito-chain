@@ -239,9 +239,8 @@ var Tesnet2Param = &param{
 	},
 	AutoEnableFeature: map[string]AutoEnableFeature{
 		"TestFeature": AutoEnableFeature{
-			Version:               1,
 			MinTriggerBlockHeight: 1e9,
-			MaxTriggerBlockHeight: 1e9,
+			ForceBlockHeight:      1e9,
 			RequiredPercentage:    80,
 		},
 	},

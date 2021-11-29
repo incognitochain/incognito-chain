@@ -1061,8 +1061,14 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 //receive feature report from other node, add to list feature stat if node is
 func (blockchain *BlockChain) ReceiveFeatureReport(committeePublicKeys []string, signatures [][]byte, features []string) {
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	signBytes := []byte{}
+	for _, v := range features {
+		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
+	}
 	for i, key := range committeePublicKeyStructs {
-		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], []byte(wire.CmdMsgFeatureStat), signatures[i])
+		dataSign := signBytes[:]
+		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], append(dataSign, []byte(committeePublicKeys[i])...), signatures[i])
+
 		if err != nil {
 			Logger.log.Errorf("Verify feature stat Sign failed, err", committeePublicKeys[i], signatures[i], err)
 			continue
@@ -1143,4 +1149,11 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
+}
+
+func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
+	if cid == -1 {
+		return blockchain.BeaconChain
+	}
+	return blockchain.ShardChain[cid]
 }

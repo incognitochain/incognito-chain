@@ -233,7 +233,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 	validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
-		s.consensus.GetSyncingValidators(), byte(s.shardID))
+		s.consensus.GetValidators(), byte(s.shardID))
 	finishedSyncValidators := []string{}
 	finishedSyncSignatures := [][]byte{}
 	for i, v := range validatorFromUserKeys {

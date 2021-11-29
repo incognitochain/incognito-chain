@@ -496,7 +496,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
+	v.block.(BlockValidation).AddValidationField(validationData)
 
 	if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
 		return err
@@ -514,7 +514,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
+	v.block.(BlockValidation).AddValidationField(validationData)
 
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
@@ -531,7 +531,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			return err
 		}
 
-		previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
+		previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
 		if err := a.chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
 			return err
 		}
@@ -565,7 +565,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 		return "", err
 	}
 
-	aggSig, brigSigs, validatorIdx, portalSigs, err := a.combineVotes(votes, committeeBLSString)
+	aggSig, brigSigs, validatorIdx, portalSigs, err := CombineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
 	}
@@ -612,7 +612,7 @@ func (a *actorV2) voteValidBlock(
 	return nil
 }
 
-func createVote(
+func CreateVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -707,7 +707,7 @@ func (a *actorV2) proposeBlock(
 	validationData.PortalSig = portalSigs
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
-	block.(blockValidation).AddValidationField(validationDataString)
+	block.(BlockValidation).AddValidationField(validationDataString)
 	blockData, _ := json.Marshal(block)
 
 	var proposeCtn = new(BFTPropose)
@@ -851,7 +851,7 @@ func (a *actorV2) sendVote(
 	portalParamV4 portalv4.PortalParams,
 ) error {
 
-	Vote, err := createVote(userKey, block, signingCommittees, portalParamV4)
+	Vote, err := CreateVote(userKey, block, signingCommittees, portalParamV4)
 	if err != nil {
 		a.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -1235,7 +1235,7 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	return nil
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
+func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {

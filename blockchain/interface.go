@@ -46,7 +46,7 @@ type ConsensusEngine interface {
 	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
-	GetSyncingValidators() []*consensus.Validator
+	GetValidators() []*consensus.Validator
 }
 
 type Server interface {
@@ -60,8 +60,8 @@ type Highway interface {
 }
 
 type Syncker interface {
-	GetCrossShardBlocksForShardProducer(toShard byte, list map[byte][]uint64) map[byte][]interface{}
-	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
+	GetCrossShardBlocksForShardProducer(view *ShardBestState, list map[byte][]uint64) map[byte][]interface{}
+	GetCrossShardBlocksForShardValidator(view *ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }

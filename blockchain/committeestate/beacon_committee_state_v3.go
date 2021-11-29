@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -367,15 +368,26 @@ func (b *BeaconCommitteeStateV3) processDequeueInstruction(
 	if dequeueInst.Reason == instruction.OUTDATED_DEQUEUE_REASON {
 		//swap pending to sync pool
 		for shardID, pendingValIndex := range dequeueInst.DequeueList {
+			//get de
 			shardDequeueList := []string{}
 			for _, index := range pendingValIndex {
 				if index >= len(b.shardSubstitute[byte(shardID)]) {
-					return nil, fmt.Errorf("Substitute index error")
+					fmt.Println("dequeue", dequeueInst.DequeueList)
+					fmt.Println("pendingValidator", len(b.shardSubstitute[byte(shardID)]))
+					panic(1)
+					return nil, errors.New("Substitute index error")
 				}
-				//remove from substitute
-				b.shardSubstitute[byte(shardID)] = append(b.shardSubstitute[byte(shardID)][:index], b.shardSubstitute[byte(shardID)][index+1:]...)
 				shardDequeueList = append(shardDequeueList, b.shardSubstitute[byte(shardID)][index])
 			}
+
+			//remove from shard substitute/pending list
+			newShardSubtitute := []string{}
+			for _, v := range b.shardSubstitute[byte(shardID)] {
+				if common.IndexOfStr(v, shardDequeueList) == -1 {
+					newShardSubtitute = append(newShardSubtitute, v)
+				}
+			}
+			b.shardSubstitute[byte(shardID)] = newShardSubtitute
 			//insert to sync pool
 			b.syncPool[byte(shardID)] = append(b.syncPool[byte(shardID)], shardDequeueList...)
 			committeeChange.AddShardSubstituteRemoved(byte(shardID), shardDequeueList)
