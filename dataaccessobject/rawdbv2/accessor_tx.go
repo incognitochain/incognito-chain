@@ -150,10 +150,10 @@ func GetOutCoinsByIndexedOTAKey(db incdb.Database, tokenID common.Hash, shardID 
 	return outputCoins, nil
 }
 
-func StoreIndexedOTAKey(db incdb.Database, theKey []byte) error {
+func StoreIndexedOTAKey(db incdb.Database, theKey []byte, state int) error {
 	key := generateIndexedOTAKeyObjectKey(theKey)
 	// only care about `PublicKey` field
-	value := theKey
+	value := append(theKey, byte(state))
 	err := db.Put(key, value)
 	if err != nil {
 		return NewRawdbError(StoreOTAKeyError, err)
