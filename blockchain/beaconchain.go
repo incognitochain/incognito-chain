@@ -52,6 +52,10 @@ func (chain *BeaconChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
+func (chain *BeaconChain) GetMultiView() *multiview.MultiView {
+	return chain.multiView
+}
+
 func (chain *BeaconChain) GetBestView() multiview.View {
 	return chain.multiView.GetBestView()
 }
