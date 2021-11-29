@@ -487,6 +487,34 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleListPrivacyCustomTokenIDs(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	added := make(map[string]interface{})
+	result := make([]string, 0)
+
+	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+	}
+	for tokenID, _ := range listPrivacyToken {
+		if _, ok := added[tokenID.String()]; !ok {
+			result = append(result, tokenID.String())
+		}
+	}
+
+	// overwrite amounts with bridge tokens
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	for _, bridgeToken := range allBridgeTokens {
+		if _, ok := added[bridgeToken.TokenID.String()]; !ok {
+			result = append(result, bridgeToken.TokenID.String())
+		}
+	}
+
+	return result, nil
+}
+
 func (httpServer *HttpServer) handleGetPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 1 {
