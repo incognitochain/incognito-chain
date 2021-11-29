@@ -948,16 +948,32 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	//		}
 	//	}
 	//}
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, true)
+	_, beaconHeight, err := blockchain.GetBeaconBlockByHash(beaconHash)
 	if err != nil {
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 		return err
 	}
-	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
+	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, beaconHeight, beaconHash, curView)
+}
+func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
+	for _, tx := range txs {
+		if tx.GetMetadata() != nil {
+			switch tx.GetMetadata().GetType() {
+			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+				return true
+			}
+		}
+	}
+	return false
 }
 
-func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {
+func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight uint64, beaconHash common.Hash, curView *ShardBestState) error {
 	if blockchain.config.usingNewPool {
+		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...))
+		if err != nil {
+			Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
+			return err
+		}
 		ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 			blockchain,
 			curView,
@@ -976,7 +992,7 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 		listTxs := []metadata.Transaction{}
 		for _, tx := range txs {
 			if tx.IsSalaryTx() {
-				_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, int64(bView.BeaconHeight), curView)
+				_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, int64(beaconHeight), curView)
 				if err != nil {
 					return err
 				}
@@ -984,14 +1000,14 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 				listTxs = append(listTxs, tx)
 			}
 		}
-		_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listTxs, int64(bView.BeaconHeight), curView)
+		_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listTxs, int64(beaconHeight), curView)
 		if err != nil {
 			Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
 			for index, tx := range listTxs {
 				if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
 					continue
 				}
-				_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, int64(bView.BeaconHeight), curView)
+				_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, int64(beaconHeight), curView)
 				if err1 != nil {
 					Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err1)
 					return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
