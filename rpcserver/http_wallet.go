@@ -504,13 +504,13 @@ func (httpServer *HttpServer) handleListPrivacyCustomTokenIDs(params interface{}
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 		}
-		Logger.log.Infof("ListPrivacyCustomToken timeElapsed: %v\n", time.Since(start).Seconds())
 		for tokenID, _ := range listPrivacyToken {
 			if _, ok := added[tokenID.String()]; !ok {
 				result = append(result, tokenID.String())
 			}
 		}
 	}
+	Logger.log.Infof("ListPrivacyCustomToken timeElapsed: %v\n", time.Since(start).Seconds())
 
 	// overwrite amounts with bridge tokens
 	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
