@@ -704,7 +704,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 				}
 
 				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 				if err == nil {
 					valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 					tx.SetValidationEnv(valEnv)
@@ -2024,7 +2024,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 				}
 
 				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 				tx.SetValidationEnv(valEnv)
 				valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())

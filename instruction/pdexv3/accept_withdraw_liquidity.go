@@ -78,7 +78,7 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		ShareAmount uint64      `json:"ShareAmount"`
 		OtaReceiver string      `json:"OtaReceiver"`
 		TxReqID     common.Hash `json:"TxReqID"`
-		ShardID     byte        `jdon:"ShardID"`
+		ShardID     byte        `json:"ShardID"`
 	}{
 		PoolPairID:  a.poolPairID,
 		NftID:       a.nftID,
@@ -104,7 +104,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 		OtaReceiver string      `json:"OtaReceiver"`
 		ShareAmount uint64      `json:"ShareAmount"`
 		TxReqID     common.Hash `json:"TxReqID"`
-		ShardID     byte        `jdon:"ShardID"`
+		ShardID     byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {

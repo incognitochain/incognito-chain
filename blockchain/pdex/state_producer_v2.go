@@ -62,6 +62,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
+			Logger.log.Warnf("tx %v not found previous contribution", tx.Hash().String())
 			res = append(res, inst)
 			continue
 		}
@@ -109,6 +110,17 @@ func (sp *stateProducerV2) addLiquidity(
 					waitingContribution.TxReqID().String(),
 				)
 				if err != nil {
+					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
+						waitingContribution, metaData.PairHash(),
+					)
+					token1ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
+						incomingContribution, metaData.PairHash(),
+					)
+					insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+						token0ContributionState, token1ContributionState,
+					)
+					Logger.log.Warnf("tx %v add share err %v", tx.Hash().String(), err)
+					res = append(res, insts...)
 					continue
 				}
 				poolPairs[poolPairID] = newPoolPair
@@ -116,6 +128,7 @@ func (sp *stateProducerV2) addLiquidity(
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
 				}
+				Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
 				res = append(res, insts...)
 				continue
 			} else {
@@ -151,6 +164,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
+			Logger.log.Warnf("tx %v compute contributed amount err %v", tx.Hash().String(), err)
 			res = append(res, insts...)
 			continue
 		}
@@ -171,7 +185,15 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
 		if err != nil {
-			return res, poolPairs, waitingContributions, err
+			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err1 != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			Logger.log.Warnf("tx %v add reserve data err %v", tx.Hash().String(), err)
+			res = append(res, insts...)
+			continue
 		}
 		err = poolPair.addShare(
 			*nftHash,
@@ -179,7 +201,15 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.TxReqID().String(),
 		)
 		if err != nil {
-			return res, poolPairs, waitingContributions, err
+			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err1 != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			Logger.log.Warnf("tx %v add share err %v:", tx.Hash().String(), err)
+			res = append(res, insts...)
+			continue
 		}
 		insts, err := v2utils.BuildMatchAndReturnAddLiquidityInstructions(
 			token0ContributionState, token1ContributionState,
@@ -550,14 +580,15 @@ TransactionLoop:
 			tokenToBuy = pair.state.Token0ID()
 		}
 
-		// set receiver on order to withdraw to after fully matched
-		recv, exists := currentOrderReq.Receiver[tokenToBuy]
+		// receivers on order to withdraw to after fully matched
+		_, exists = currentOrderReq.Receiver[tokenToBuy]
 		if !exists {
 			Logger.log.Warnf("Receiver for buying token %v not found for new order", tokenToBuy)
 			result = append(result, refundInstructions...)
 			continue TransactionLoop
 		}
-		recvStr, _ := recv.String()
+		token0RecvStr, _ := currentOrderReq.Receiver[pair.state.Token0ID()].String()
+		token1RecvStr, _ := currentOrderReq.Receiver[pair.state.Token1ID()].String()
 
 		// increment order count to keep same-block requests from exceeding limit
 		orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
@@ -571,7 +602,7 @@ TransactionLoop:
 			Token0Balance:  token0Balance,
 			Token1Balance:  token1Balance,
 			TradeDirection: tradeDirection,
-			Receiver:       recvStr,
+			Receiver:       [2]string{token0RecvStr, token1RecvStr},
 		}
 
 		acceptedAction := instruction.NewAction(
@@ -722,56 +753,63 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 	numberTxsPerShard := make(map[byte]uint)
 	for pairID, pair := range pairs {
 		for _, ord := range pair.orderbook.orders {
-			withdrawResults := make(map[common.Hash]uint64)
-			matchedToken0 := ord.TradeDirection() == byte(v2utils.TradeDirectionSell0) &&
-				ord.Token0Balance() == 0 && ord.Token1Balance() > 0
-			matchedToken1 := ord.TradeDirection() == byte(v2utils.TradeDirectionSell1) &&
-				ord.Token1Balance() == 0 && ord.Token0Balance() > 0
+			temp := &v2utils.MatchingOrder{ord}
+			// check if this order can be matched any further
+			if canMatch, err := temp.CanMatch(1 - ord.TradeDirection()); canMatch || err != nil {
+				continue
+			}
 
-			recv := privacy.OTAReceiver{}
-			var shardID byte
-			if matchedToken0 || matchedToken1 {
-				recv.FromString(ord.Receiver()) // error was handled when adding this order
-				shardID = recv.GetShardID()
-				if numberTxsPerShard[shardID] >= limitTxsPerShard {
-					continue
-				}
-				numberTxsPerShard[shardID]++
-			}
-			if matchedToken0 {
-				// order has sold all token0 for token1. Withdraw token
-				currentBalance := ord.Token1Balance()
-				withdrawResults[pair.state.Token1ID()] = currentBalance
-				ord.SetToken1Balance(0)
-			}
-			if matchedToken1 {
-				// order has sold all token1 for token0. Withdraw token0
+			// an order that isn't further matchable is eligible for automatic withdrawal
+			token0Recv := privacy.OTAReceiver{}
+			token0Recv.FromString(ord.Token0Receiver()) // error ignored (handled when adding this order)
+			token1Recv := privacy.OTAReceiver{}
+			token1Recv.FromString(ord.Token1Receiver()) // error ignored (handled when adding this order)
+
+			txHash, _ := common.Hash{}.NewHashFromStr(ord.Id()) // order ID is a valid hash
+			shardID := token0Recv.GetShardID()                  // receivers for tokens must belong to the same shard as sender
+
+			var outputInstructions [][]string
+			// will withdraw any outstanding balance
+			if ord.Token0Balance() > 0 {
 				currentBalance := ord.Token0Balance()
-				withdrawResults[pair.state.Token0ID()] = currentBalance
-				ord.SetToken0Balance(0)
-			}
-
-			// apply orderbook changes for withdraw consistency in the same block
-			pairs[pairID] = pair
-
-			// in execution, produce at most 1 "accepted" metadata
-			for tokenID, withdrawAmount := range withdrawResults {
-				txHash, _ := common.Hash{}.NewHashFromStr(ord.Id()) // order ID is a valid hash
-
 				acceptedAction := instruction.NewAction(
 					&metadataPdexv3.AcceptedWithdrawOrder{
 						PoolPairID: pairID,
 						OrderID:    ord.Id(),
-						Receiver:   recv,
-						TokenID:    tokenID,
-						Amount:     withdrawAmount,
+						Receiver:   token0Recv,
+						TokenID:    pair.state.Token0ID(),
+						Amount:     currentBalance,
 					},
 					*txHash,
 					shardID,
 				)
-				result = append(result, acceptedAction.StringSlice())
+				outputInstructions = append(outputInstructions, acceptedAction.StringSlice())
+			}
+			if ord.Token1Balance() > 0 {
+				currentBalance := ord.Token1Balance()
+				acceptedAction := instruction.NewAction(
+					&metadataPdexv3.AcceptedWithdrawOrder{
+						PoolPairID: pairID,
+						OrderID:    ord.Id(),
+						Receiver:   token1Recv,
+						TokenID:    pair.state.Token1ID(),
+						Amount:     currentBalance,
+					},
+					*txHash,
+					shardID,
+				)
+				outputInstructions = append(outputInstructions, acceptedAction.StringSlice())
 			}
 
+			if numberTxsPerShard[shardID]+uint(len(outputInstructions)) > limitTxsPerShard {
+				continue
+			}
+			numberTxsPerShard[shardID] += uint(len(outputInstructions))
+			// apply orderbook changes & accept withdrawal(s)
+			ord.SetToken0Balance(0)
+			ord.SetToken1Balance(0)
+			pairs[pairID] = pair
+			result = append(result, outputInstructions...)
 		}
 	}
 
@@ -1000,7 +1038,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
 		)
 		if err != nil {
-			return res, poolPairs, err
+			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
@@ -1009,7 +1049,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			token0Amount, token1Amount, shareAmount,
 			txReqID, shardID)
 		if err != nil {
-			return res, poolPairs, err
+			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
 		}
 		res = append(res, insts...)
 		poolPairs[metaData.PoolPairID()] = poolPair
@@ -1068,28 +1110,21 @@ func (sp *stateProducerV2) staking(
 		if err != nil {
 			return res, stakingPoolStates, err
 		}
+		rejectInst, err := instruction.NewRejectStakingWithValue(
+			metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+		).StringSlice()
+		if err != nil {
+			Logger.log.Infof("tx hash %s error %v", txReqID, err)
+			return res, stakingPoolStates, err
+		}
 		rootStakingPoolState, found := stakingPoolStates[metaData.TokenID()]
 		if !found || rootStakingPoolState == nil {
-			rejectInst, err := instruction.NewRejectStakingWithValue(
-				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-			).StringSlice()
-			if err != nil {
-				Logger.log.Infof("tx hash %s error %v", txReqID, err)
-				return res, stakingPoolStates, err
-			}
 			Logger.log.Warnf("tx %v not found poolPair", tx.Hash().String())
 			res = append(res, rejectInst)
 			continue
 		}
 		_, found = nftIDs[metaData.NftID()]
 		if metaData.NftID() == utils.EmptyString || !found {
-			rejectInst, err := instruction.NewRejectStakingWithValue(
-				metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
-			).StringSlice()
-			if err != nil {
-				Logger.log.Infof("tx hash %s error %v", txReqID, err)
-				return res, stakingPoolStates, err
-			}
 			Logger.log.Warnf("tx %v not found nftID ", tx.Hash().String())
 			res = append(res, rejectInst)
 			continue
@@ -1097,7 +1132,9 @@ func (sp *stateProducerV2) staking(
 		stakingPoolState := rootStakingPoolState.Clone()
 		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
-			return res, stakingPoolStates, err
+			Logger.log.Warnf("tx %v update liquidity err %v ", tx.Hash().String(), err)
+			res = append(res, rejectInst)
+			continue
 		}
 		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
@@ -1128,48 +1165,43 @@ func (sp *stateProducerV2) unstaking(
 		txReqID := *tx.Hash()
 		stakingPoolID, _ := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
 		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
+		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+		if err != nil {
+			return res, stakingPoolStates, err
+		}
 		if !found || rootStakingPoolState == nil {
-			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
 			Logger.log.Warnf("tx %v not found poolPair", tx.Hash().String())
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		_, found = nftIDs[metaData.NftID()]
 		if metaData.NftID() == utils.EmptyString || !found {
-			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
 			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		staker, found := rootStakingPoolState.stakers[metaData.NftID()]
 		if !found || staker == nil {
-			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
 			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		if staker.liquidity == 0 || metaData.UnstakingAmount() == 0 || rootStakingPoolState.liquidity == 0 {
-			insts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
 			Logger.log.Warnf("tx %v unstaking amount is 0", tx.Hash().String())
-			res = append(res, insts...)
+			res = append(res, rejectInsts...)
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err := stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
+		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
-			return res, stakingPoolStates, err
+			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if metaData.OtaReceivers()[metaData.StakingPoolID()] == utils.EmptyString {
+			Logger.log.Warnf("tx %v ota receiver is invalid", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
 		}
 		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 		insts, err := v2.BuildAcceptUnstakingInstructions(

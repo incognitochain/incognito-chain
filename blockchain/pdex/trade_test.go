@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"strconv"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -70,22 +72,17 @@ func TestProduceTrade(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
 			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
 
 			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
-			testState := mustReadState("test_state.json")
-			testState.params = &Params{
-				DefaultFeeRateBPS: 30,
-			}
-			temp := &StateFormatter{}
-			temp.FromState(testState)
-
 			instructions, err := testState.BuildInstructions(env)
 			NoError(t, err)
-
-			encodedResult, _ := json.Marshal(TestResult{instructions})
-			Equal(t, testcase.Expected, string(encodedResult))
+			Equal(t, expected, TestResult{instructions})
 		})
 	}
 }
@@ -105,8 +102,12 @@ func TestProduceSameBlockTrades(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
 			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
 
 			var mds []metadataCommon.Metadata
 			for _, md := range testdata.Metadata {
@@ -115,18 +116,9 @@ func TestProduceSameBlockTrades(t *testing.T) {
 			}
 
 			env := skipToProduce(mds, 0)
-			testState := mustReadState("test_state.json")
-			testState.params = &Params{
-				DefaultFeeRateBPS: 30,
-			}
-			temp := &StateFormatter{}
-			temp.FromState(testState)
-
 			instructions, err := testState.BuildInstructions(env)
 			NoError(t, err)
-
-			encodedResult, _ := json.Marshal(TestResult{instructions})
-			Equal(t, testcase.Expected, string(encodedResult))
+			Equal(t, expected, TestResult{instructions})
 		})
 	}
 }
@@ -146,22 +138,17 @@ func TestProduceTradeWithFee(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
 			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_multiple_pools_state.json")
 
 			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
-			testState := mustReadState("test_multiple_pools_state.json")
-			testState.params = &Params{
-				DefaultFeeRateBPS: 30,
-			}
-			temp := &StateFormatter{}
-			temp.FromState(testState)
-
 			instructions, err := testState.BuildInstructions(env)
 			NoError(t, err)
-
-			encodedResult, _ := json.Marshal(TestResult{instructions})
-			Equal(t, testcase.Expected, string(encodedResult))
+			Equal(t, expected, TestResult{instructions})
 		})
 	}
 }
@@ -179,17 +166,18 @@ func TestProcessTrade(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
 			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
 
 			env := skipToProcess(testdata.Instructions)
-			testState := mustReadState("test_state.json")
 			err = testState.Process(env)
 			NoError(t, err)
-
-			temp := (&StateFormatter{}).FromState(testState)
-			encodedResult, _ := json.Marshal(TestResult(*temp))
-			Equal(t, testcase.Expected, string(encodedResult))
+			result := (&StateFormatter{}).FromState(testState)
+			EqualValues(t, expected, *result)
 		})
 	}
 }
@@ -200,9 +188,7 @@ func TestBuildResponseTrade(t *testing.T) {
 		Instructions [][]string `json:"instructions"`
 	}
 
-	type TestResult struct {
-		Tx metadataCommon.Transaction `json:"tx"`
-	}
+	type TestResult = transaction.TxTokenVersion2
 
 	var testcases []Testcase
 	testcases = append(testcases, buildResponseTradeTestcases...)
@@ -214,34 +200,33 @@ func TestBuildResponseTrade(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
 			NoError(t, err)
 
 			myInstruction := testdata.Instructions[0]
 			metaType, err := strconv.Atoi(myInstruction[0])
 			NoError(t, err)
-
 			tx, err := (&TxBuilderV2{}).Build(
 				metaType,
 				myInstruction,
 				&blankPrivateKey,
 				blankShardID,
 				testDB,
+				10,
 			)
 			NoError(t, err)
 			txv2, ok := tx.(*transaction.TxTokenVersion2)
 			True(t, ok)
-			mintedCoin, ok := txv2.TokenData.
-				Proof.GetOutputCoins()[0].(*privacy.CoinV2)
+			mintedCoin, ok := txv2.TokenData.Proof.GetOutputCoins()[0].(*privacy.CoinV2)
 			True(t, ok)
 
-			var expectedTx transaction.TxTokenVersion2
-			err = json.Unmarshal([]byte(testcase.Expected), &expectedTx)
-			NoError(t, err)
-			expectedMintedCoin, ok := expectedTx.TokenData.Proof.GetOutputCoins()[0].(*privacy.CoinV2)
+			expectedMintedCoin, ok := expected.TokenData.Proof.GetOutputCoins()[0].(*privacy.CoinV2)
 			True(t, ok)
 			// check token id, receiver & value
-			Equal(t, expectedTx.TokenData.PropertyID, txv2.TokenData.PropertyID)
+			Equal(t, expected.TokenData.PropertyID, txv2.TokenData.PropertyID)
 			True(t, bytes.Equal(expectedMintedCoin.GetPublicKey().ToBytesS(),
 				mintedCoin.GetPublicKey().ToBytesS()))
 			Equal(t, expectedMintedCoin.GetValue(), mintedCoin.GetValue())
@@ -252,20 +237,23 @@ func TestBuildResponseTrade(t *testing.T) {
 func TestGetPRVRate(t *testing.T) {
 	setTestTradeConfig()
 	type TestData map[string]*PoolPairState
+	type TestResult = [3]*big.Int
 
 	var testcases []Testcase
 	testcases = append(testcases, prvRateTestcases...)
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
 			NoError(t, err)
 
 			chosenPoolMap := getTokenPricesAgainstPRV(testdata, 0)
 			Equal(t, len(chosenPoolMap), 1) // testcases must be 1-pair only
 			for _, result := range chosenPoolMap {
-				encodedResult, _ := json.Marshal(result)
-				Equal(t, testcase.Expected, string(encodedResult))
+				Equal(t, expected, result)
 			}
 		})
 	}
@@ -277,38 +265,82 @@ func TestIgnoreSmallPRVPool(t *testing.T) {
 		MinPRVReserve uint64
 		Pools         map[string]*PoolPairState
 	}
+	type TestResult = [3]*big.Int
 
 	var testcases []Testcase
 	testcases = append(testcases, minPRVReserveTestcases...)
 	for _, testcase := range testcases {
 		t.Run(testcase.Name, func(t *testing.T) {
 			var testdata TestData
-			err := json.Unmarshal([]byte(testcase.Data), &testdata)
+			err := json.Unmarshal(testcase.Data, &testdata)
 			NoError(t, err)
+			var expected TestResult
+			errParseExpectedResult := json.Unmarshal(testcase.Expected, &expected)
 
 			chosenPoolMap := getTokenPricesAgainstPRV(testdata.Pools, testdata.MinPRVReserve)
-			if len(chosenPoolMap) == 0 {
-				Equal(t, testcase.Expected, "")
+			if testcase.ExpectFailure {
+				Equal(t, 0, len(chosenPoolMap))
 			} else {
-				Equal(t, len(chosenPoolMap), 1) // testcases must be 1-pair only
+				NoError(t, errParseExpectedResult)
+				Equal(t, 1, len(chosenPoolMap)) // testcases must be 1-pair only
 				for _, result := range chosenPoolMap {
-					encodedResult, _ := json.Marshal(result)
-					Equal(t, testcase.Expected, string(encodedResult))
+					Equal(t, expected, result)
 				}
 			}
 		})
 	}
 }
 
-func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment {
+func TestProduceFeeInPRVTrade(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Metadata metadataPdexv3.TradeRequest `json:"metadata"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("produce_trade_fee_prv.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
+
+			env := mockTxsForProducer([]metadataCommon.Metadata{&testdata.Metadata}, 0, true)
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+			Equal(t, expected, TestResult{instructions})
+		})
+	}
+}
+
+func mockTxsForProducer(mds []metadataCommon.Metadata, shardID byte, burningPRV bool) StateEnvironment {
 	var txLst []metadataCommon.Transaction
 	for _, md := range mds {
+		// for compatibility within tests, use the actual Hash() function; mock others when necessary
 		mytx := &transaction.TxVersion2{}
 		valEnv := tx_generic.DefaultValEnv()
 		valEnv = tx_generic.WithShardID(valEnv, int(shardID))
 		mytx.SetMetadata(md)
-		mytx.SetValidationEnv(valEnv)
-		txLst = append(txLst, mytx)
+
+		mocktx := &metadataMocks.Transaction{}
+		mocktx.On("GetMetadata").Return(md)
+		mocktx.On("GetMetadataType").Return(md.GetType())
+		mocktx.On("GetValidationEnv").Return(valEnv)
+		mocktx.On("Hash").Return(mytx.Hash())
+		// default for trade: set isBurn to true, fee is in sellToken
+		var burnedPRVCoin privacy.Coin = &privacy.CoinV2{}
+		if !burningPRV {
+			burnedPRVCoin = nil
+		}
+		mocktx.On("GetTxFullBurnData").Return(true, burnedPRVCoin, nil, nil, nil)
+		txLst = append(txLst, mocktx)
 	}
 
 	return NewStateEnvBuilder().
@@ -319,6 +351,10 @@ func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment
 		Build()
 }
 
+func skipToProduce(mds []metadataCommon.Metadata, shardID byte) StateEnvironment {
+	return mockTxsForProducer(mds, shardID, false)
+}
+
 func skipToProcess(instructions [][]string) StateEnvironment {
 	return NewStateEnvBuilder().
 		BuildBeaconInstructions(instructions).
@@ -327,10 +363,10 @@ func skipToProcess(instructions [][]string) StateEnvironment {
 }
 
 type Testcase struct {
-	Name          string `json:"name"`
-	Data          string `json:"data"`
-	Expected      string `json:"expected"`
-	ExpectSuccess bool   `json:"expectSuccess"`
+	Name          string          `json:"name"`
+	Data          json.RawMessage `json:"data"`
+	Expected      json.RawMessage `json:"expected"`
+	ExpectFailure bool            `json:"fail"`
 }
 
 // format a pool, discarding data irrelevant to this test
@@ -346,7 +382,10 @@ type StateFormatter struct {
 func (sf *StateFormatter) State() *stateV2 {
 	s := newStateV2WithValue(
 		nil, nil, make(map[string]*PoolPairState),
-		&Params{MaxOrdersPerNft: DefaultTestMaxOrdersPerNft},
+		&Params{
+			MaxOrdersPerNft:   DefaultTestMaxOrdersPerNft,
+			DefaultFeeRateBPS: 30,
+		},
 		nil, make(map[string]uint64),
 	)
 	for k, v := range sf.PoolPairs {

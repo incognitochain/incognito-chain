@@ -82,17 +82,18 @@ func (ob *Orderbook) NextOrder(tradeDirection byte) (*v2.MatchingOrder, string, 
 	switch tradeDirection {
 	case v2.TradeDirectionSell0:
 		for i := lstLen - 1; i >= 0; i-- {
-			// only match a trade with an order of the opposite direction
-			if ob.orders[i].TradeDirection() != tradeDirection && ob.orders[i].Token1Balance() > 0 {
-				return &v2.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
+			currentOrder := &v2.MatchingOrder{ob.orders[i]}
+			if check, err := currentOrder.CanMatch(tradeDirection); check && err == nil {
+				return currentOrder, ob.orders[i].Id(), nil
 			}
 		}
 		// no active order
 		return nil, "", nil
 	case v2.TradeDirectionSell1:
 		for i := 0; i < lstLen; i++ {
-			if ob.orders[i].TradeDirection() != tradeDirection && ob.orders[i].Token0Balance() > 0 {
-				return &v2.MatchingOrder{ob.orders[i]}, ob.orders[i].Id(), nil
+			currentOrder := &v2.MatchingOrder{ob.orders[i]}
+			if check, err := currentOrder.CanMatch(tradeDirection); check && err == nil {
+				return currentOrder, ob.orders[i].Id(), nil
 			}
 		}
 		// no active order

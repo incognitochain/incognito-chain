@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -136,7 +137,7 @@ type AcceptWithdrawLiquidity struct {
 	OtaReceiver string      `json:"OtaReceiver"`
 	ShareAmount uint64      `json:"ShareAmount"`
 	TxReqID     common.Hash `json:"TxReqID"`
-	ShardID     byte        `jdon:"ShardID"`
+	ShardID     byte        `json:"ShardID"`
 }
 
 func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
@@ -189,19 +190,20 @@ func (response *WithdrawLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		pk := mintCoin.GetPublicKey().ToBytesS()
 		paidAmount := mintCoin.GetValue()
 
-		otaReceiver := coin.OTAReceiver{}
-		metadataCommon.Logger.Log.Info("instContent.OtaReceiver:", instContent.OtaReceiver)
-		err = otaReceiver.FromString(instContent.OtaReceiver)
-		if err != nil {
-			return false, errors.New("Invalid ota receiver")
-		}
-
-		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
-		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
-			instContent.TokenAmount != paidAmount ||
-			!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
-			instContent.TokenID.String() != coinID.String() {
-			return false, errors.New("Coin is invalid")
+		beaconHeight := beaconViewRetriever.GetHeight()
+		if config.Param().Net != config.Testnet2Net || beaconHeight >= 3790600 {
+			otaReceiver := coin.OTAReceiver{}
+			err = otaReceiver.FromString(instContent.OtaReceiver)
+			if err != nil {
+				return false, errors.New("Invalid ota receiver")
+			}
+			txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+			if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) ||
+				instContent.TokenAmount != paidAmount ||
+				!bytes.Equal(txR[:], otaReceiver.TxRandom[:]) ||
+				instContent.TokenID.String() != coinID.String() {
+				return false, errors.New("Coin is invalid")
+			}
 		}
 		idx = i
 		fmt.Println("BUGLOG Verify Metadata --- OK")

@@ -38,6 +38,9 @@ func (r *RejectStaking) FromStringSlice(source []string) error {
 	if source[0] != strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3StakingRequestMeta, source[0])
 	}
+	if source[1] != common.Pdexv3RejectStakingStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3RejectStakingStatus, source[1])
+	}
 	err := json.Unmarshal([]byte(source[2]), r)
 	if err != nil {
 		return err
