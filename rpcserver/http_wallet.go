@@ -493,14 +493,22 @@ func (httpServer *HttpServer) handleListPrivacyCustomTokenIDs(params interface{}
 	result := make([]string, 0)
 
 	start := time.Now()
-	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
-	}
-	Logger.log.Infof("ListPrivacyCustomToken timeElapsed: %v\n", time.Since(start).Seconds())
-	for tokenID, _ := range listPrivacyToken {
-		if _, ok := added[tokenID.String()]; !ok {
-			result = append(result, tokenID.String())
+	if allTokens := httpServer.blockService.BlockChain.ListAllPrivacyCustomTokensAndPRVFromCache(); allTokens != nil {
+		for tokenID, _ := range allTokens {
+			if _, ok := added[tokenID.String()]; !ok {
+				result = append(result, tokenID.String())
+			}
+		}
+	} else {
+		listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
+		Logger.log.Infof("ListPrivacyCustomToken timeElapsed: %v\n", time.Since(start).Seconds())
+		for tokenID, _ := range listPrivacyToken {
+			if _, ok := added[tokenID.String()]; !ok {
+				result = append(result, tokenID.String())
+			}
 		}
 	}
 
