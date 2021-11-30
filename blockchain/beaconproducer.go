@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -162,7 +163,13 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
 
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
+		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, nil, NewBlockChainError(CloneBeaconBestStateError, err)
+		}
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(
+			featureStateDB,
+			cloneBeaconBestState.portalStateV3)
 		if err != nil {
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
