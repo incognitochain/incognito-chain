@@ -128,6 +128,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if preView == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
 		defer cancel()
+		blockchain.config.Syncker.ReceiveBlock(beaconBlock, "", "")
 		blockchain.config.Syncker.SyncMissingBeaconBlock(ctx, "", preHash)
 		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
 	}

@@ -162,6 +162,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if preView == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
 		defer cancel()
+		blockchain.config.Syncker.ReceiveBlock(shardBlock, "", "")
 		blockchain.config.Syncker.SyncMissingShardBlock(ctx, "", shardID, preHash)
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
