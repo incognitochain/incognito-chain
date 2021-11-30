@@ -717,6 +717,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 					}
 					Logger.log.Info("Store custom token when it is issued", tokenData.PropertyID, tokenData.PropertySymbol, tokenData.PropertyName)
 					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
+					if EnableIndexingCoinByOTAKey {
+						outcoinIndexer.AddTokenID(tokenID)
+					}
 					if err != nil {
 						return err
 					}
