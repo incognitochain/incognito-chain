@@ -774,6 +774,7 @@ func (ci *CoinIndexer) AddTokenID(tokenID common.Hash) {
 		ci.mtx.Lock()
 		ci.allTokens[tokenID] = true
 		ci.mtx.Unlock()
+		utils.Logger.Log.Infof("Add tokenID %v to cache\n", tokenID.String())
 	}
 }
 
