@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type PortalRewardInfo struct {
@@ -28,7 +29,7 @@ func (p *PortalRewardInfo) AddPortalRewardInfo(tokenID string, amount uint64) {
 	p.rewards[tokenID] += amount
 }
 
-func (p PortalRewardInfo) MarshalJSON() ([]byte, error) {
+func (p *PortalRewardInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Rewards map[string]uint64
 	}{

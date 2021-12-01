@@ -12,11 +12,7 @@ import (
 	"strings"
 	"time"
 
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-
 	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -28,7 +24,10 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -960,6 +959,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadataCommon.BurningPDEXERC20ConfirmMeta),
 		strconv.Itoa(metadataCommon.BurningPDEXBEP20ConfirmMeta),
 		strconv.Itoa(metadataCommon.BurningPBSCConfirmForDepositToSCMeta),
+		strconv.Itoa(metadataCommon.BurningPRVERC20ConfirmMeta),
+		strconv.Itoa(metadataCommon.BurningPRVBEP20ConfirmMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
@@ -967,10 +968,27 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	// execute, store Portal Instruction
 	// execute, store Ralaying Instruction
-	newBestState.portalStateV4, err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
+	newBestState.portalStateV3, newBestState.portalStateV4, err = blockchain.processPortalInstructions(newBestState.
+		featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
+
+	// optimize storing PortalV3 state
+	if newBestState.portalStateV3 != nil {
+		if !reflect.DeepEqual(curView.portalStateV3, newBestState.portalStateV3) {
+			// check updated field in portalStateV3 and store these field into statedb
+			diffState := getDiffPortalStateV3(curView.portalStateV3, newBestState.portalStateV3)
+			err = portalprocessv3.StorePortalStateToDB(
+				newBestState.featureStateDB,
+				diffState)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+	}
+
 	// optimize storing PortalV4 state
 	if newBestState.portalStateV4 != nil {
 		if !reflect.DeepEqual(curView.portalStateV4, newBestState.portalStateV4) {

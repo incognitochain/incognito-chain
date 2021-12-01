@@ -28,7 +28,7 @@ func NewPortalExternalTxStateWithValue(uniqueExtTx []byte) *PortalExternalTxStat
 	return &PortalExternalTxState{uniqueExternalTx: uniqueExtTx}
 }
 
-func (ethtx PortalExternalTxState) MarshalJSON() ([]byte, error) {
+func (ethtx *PortalExternalTxState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueExternalTx []byte
 	}{

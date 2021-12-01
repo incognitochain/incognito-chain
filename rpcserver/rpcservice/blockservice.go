@@ -1289,7 +1289,7 @@ func (blockService BlockService) GetCustodianTopupWaitingPortingStatusV3(txID st
 }
 
 func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string, collateralTokenID string, beaconHeight uint64, stateDB *statedb.StateDB) (map[string]uint64, error) {
-	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB, nil)
 	if err != nil {
 		return nil, err
 	}
