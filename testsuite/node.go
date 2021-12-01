@@ -701,6 +701,9 @@ func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures [
 	for _, v := range unTriggerFeatures {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
+	timestamp := time.Now().Unix()
+	timestampStr := fmt.Sprintf("%v", timestamp)
+	signBytes = append(signBytes, []byte(timestampStr)...)
 	for _, v := range accs {
 		dataSign := signBytes[:]
 		dataSign = append(dataSign, []byte(v.SelfCommitteePubkey)...)
@@ -715,5 +718,5 @@ func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures [
 		return
 	}
 	//fmt.Println("Send ", featureSyncValidators, unTriggerFeatures)
-	s.GetBlockchain().ReceiveFeatureReport(featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
+	s.GetBlockchain().ReceiveFeatureReport(int(timestamp), featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
 }

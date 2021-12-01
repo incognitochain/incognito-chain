@@ -1059,12 +1059,14 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 }
 
 //receive feature report from other node, add to list feature stat if node is
-func (blockchain *BlockChain) ReceiveFeatureReport(committeePublicKeys []string, signatures [][]byte, features []string) {
+func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	signBytes := []byte{}
 	for _, v := range features {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
+	timestampStr := fmt.Sprintf("%v", timestamp)
+	signBytes = append(signBytes, []byte(timestampStr)...)
 	for i, key := range committeePublicKeyStructs {
 		dataSign := signBytes[:]
 		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], append(dataSign, []byte(committeePublicKeys[i])...), signatures[i])
@@ -1074,10 +1076,11 @@ func (blockchain *BlockChain) ReceiveFeatureReport(committeePublicKeys []string,
 			continue
 		}
 		if !isValid {
+			fmt.Println("timestamp", timestamp, timestampStr)
 			Logger.log.Errorf("Verify feature stat Sign failed", committeePublicKeys[i], signatures[i])
 			continue
 		}
-		DefaultFeatureStat.addNode(committeePublicKeys[i], features)
+		DefaultFeatureStat.addNode(timestamp, committeePublicKeys[i], features)
 	}
 
 }

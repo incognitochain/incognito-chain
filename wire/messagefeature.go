@@ -10,13 +10,14 @@ import (
 )
 
 type MessageFeature struct {
+	Timestamp          int
 	Feature            []string
 	CommitteePublicKey []string
 	Signature          [][]byte
 }
 
-func NewMessageFeature(committeePublicKey []string, signature [][]byte, feature []string) *MessageFeature {
-	return &MessageFeature{CommitteePublicKey: committeePublicKey, Signature: signature, Feature: feature}
+func NewMessageFeature(timestamp int, committeePublicKey []string, signature [][]byte, feature []string) *MessageFeature {
+	return &MessageFeature{Timestamp: timestamp, CommitteePublicKey: committeePublicKey, Signature: signature, Feature: feature}
 }
 
 func (msg *MessageFeature) Hash() string {

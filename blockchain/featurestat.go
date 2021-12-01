@@ -12,9 +12,13 @@ import (
 
 var DefaultFeatureStat *FeatureStat
 
+type NodeFeatureInfo struct {
+	Features  []string
+	Timestamp int
+}
 type FeatureStat struct {
 	blockchain *BlockChain
-	nodes      map[string][]string // committeePK : feature lists
+	nodes      map[string]NodeFeatureInfo // committeePK : feature lists
 }
 
 type FeatureReportInfo struct {
@@ -41,6 +45,10 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*cons
 	for _, v := range unTriggerFeatures {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
+	timestamp := time.Now().Unix()
+	timestampStr := fmt.Sprintf("%v", timestamp)
+	signBytes = append(signBytes, []byte(timestampStr)...)
+
 	for i, v := range validatorFromUserKeys {
 		dataSign := signBytes[:]
 		signature, err := v.MiningKey.BriSignData(append(dataSign, []byte(syncValidator[i])...))
@@ -54,7 +62,7 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*cons
 		return nil, nil
 	}
 	Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
-	msg := wire.NewMessageFeature(featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
+	msg := wire.NewMessageFeature(int(timestamp), featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
 
 	return msg, nil
 }
@@ -62,7 +70,7 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*cons
 func (bc *BlockChain) InitFeatureStat() {
 	DefaultFeatureStat = &FeatureStat{
 		blockchain: bc,
-		nodes:      make(map[string][]string),
+		nodes:      make(map[string]NodeFeatureInfo),
 	}
 	fmt.Println("debugfeature InitFeatureStat")
 	//send message periodically
@@ -95,14 +103,14 @@ func (bc *BlockChain) InitFeatureStat() {
 }
 
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
-	nodeFeatures := stat.nodes[cpk]
+	nodeFeatures := stat.nodes[cpk].Features
 	//get feature that beacon is preparing to trigger
 	unTriggerFeatures := curView.getUntriggerFeature()
 
 	//check if node contain the untriggered feature
 	for _, feature := range unTriggerFeatures {
 		if common.IndexOfStr(feature, nodeFeatures) == -1 {
-			fmt.Println("node", cpk, "not content feature", feature, nodeFeatures, len(nodeFeatures))
+			//fmt.Println("node", cpk, "not content feature", feature, nodeFeatures, len(nodeFeatures))
 			return false
 		}
 	}
@@ -149,7 +157,7 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 
 		//check valid trigger feature and remove duplicate
 		featureList := map[string]bool{}
-		for _, feature := range features {
+		for _, feature := range features.Features {
 			if _, ok := config.Param().AutoEnableFeature[feature]; ok {
 				featureList[feature] = true
 			}
@@ -187,14 +195,22 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 
 }
 
-func (featureStat *FeatureStat) addNode(key string, features []string) {
-	//fmt.Println("debugfeature addnode", key, features)
-	featureStat.nodes[key] = features
+func (featureStat *FeatureStat) addNode(timestamp int, key string, features []string) {
+	//not update from old message
+	if _, ok := featureStat.nodes[key]; ok && featureStat.nodes[key].Timestamp > timestamp {
+		panic(1)
+		return
+	}
+
+	featureStat.nodes[key] = NodeFeatureInfo{
+		features, timestamp,
+	}
+
 }
 
 func (featureStat *FeatureStat) containExpectedFeature(key string, expectedFeature []string) bool {
 	for _, f := range expectedFeature {
-		if common.IndexOfStr(f, featureStat.nodes[key]) == -1 {
+		if common.IndexOfStr(f, featureStat.nodes[key].Features) == -1 {
 			return false
 		}
 	}

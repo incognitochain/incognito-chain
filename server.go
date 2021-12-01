@@ -990,7 +990,7 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 func (serverObj *Server) OnFeatureMsg(p *peer.PeerConn, msg *wire.MessageFeature) {
 	Logger.log.Info("Receive a MsgFeature", msg.CommitteePublicKey, msg.Feature)
 	if len(msg.CommitteePublicKey) > 0 {
-		serverObj.blockChain.ReceiveFeatureReport(msg.CommitteePublicKey, msg.Signature, msg.Feature)
+		serverObj.blockChain.ReceiveFeatureReport(msg.Timestamp, msg.CommitteePublicKey, msg.Signature, msg.Feature)
 	}
 }
 
