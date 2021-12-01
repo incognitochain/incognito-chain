@@ -72,7 +72,6 @@ func (bc *BlockChain) InitFeatureStat() {
 		blockchain: bc,
 		nodes:      make(map[string]NodeFeatureInfo),
 	}
-	fmt.Println("debugfeature InitFeatureStat")
 	//send message periodically
 	go func() {
 		for {
@@ -128,32 +127,17 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 	}
 	validatorSize[-1] = len(beaconCommittee)
 	shardCommmittee := map[int][]string{}
+	pendingCommmittee := map[int][]string{}
 	for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
 		shardCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetCommittee())
-		validatorSize[i] = len(shardCommmittee[i])
+		pendingCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetPendingCommittee())
+		validatorSize[i] = len(shardCommmittee[i]) + len(pendingCommmittee[i])
 		if err != nil {
 			Logger.log.Error(err)
 		}
 	}
-	fmt.Println("debugfeature", len(stat.nodes))
-	for key, features := range stat.nodes {
-		//if key is in Committee list
-		chainCommitteeID := -2
-		chainCommiteeIndex := map[int]int{}
-		if common.IndexOfStr(key, beaconCommittee) > -1 {
-			chainCommitteeID = -1
-			chainCommiteeIndex[-1] = common.IndexOfStr(key, beaconCommittee)
-		}
-		for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
-			if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
-				chainCommitteeID = i
-				chainCommiteeIndex[-1] = common.IndexOfStr(key, shardCommmittee[i])
-			}
-		}
 
-		if chainCommitteeID == -2 {
-			continue
-		}
+	for key, features := range stat.nodes {
 
 		//check valid trigger feature and remove duplicate
 		featureList := map[string]bool{}
@@ -168,25 +152,34 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 			if validatorStat[feature] == nil {
 				validatorStat[feature] = make(map[int]uint64)
 			}
-			validatorStat[feature][chainCommitteeID]++
-			//if key is proposer
-			if chainCommitteeID == -1 && chainCommiteeIndex[-1] < 7 {
-				if proposeStat[feature] == nil {
-					proposeStat[feature] = make(map[int]uint64)
-				}
+			if proposeStat[feature] == nil {
+				proposeStat[feature] = make(map[int]uint64)
+			}
+			//check in beacon
+			if common.IndexOfStr(key, beaconCommittee) > -1 {
+				validatorStat[feature][-1]++
 				proposeStat[feature][-1]++
 			}
-			if chainCommitteeID > -1 && chainCommiteeIndex[chainCommitteeID] < config.Param().CommitteeSize.NumberOfFixedShardBlockValidator {
-				if proposeStat[feature] == nil {
-					proposeStat[feature] = make(map[int]uint64)
-				}
-				proposeStat[feature][chainCommitteeID]++
-			}
 
+			//check in shard
+			for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
+				//if in pending -> increase validator set
+				if common.IndexOfStr(key, pendingCommmittee[i]) > -1 {
+					validatorStat[feature][-1]++
+				}
+				//if in committee, increase validator set
+				if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
+					validatorStat[feature][i]++
+					//if in proposer, increase proposer
+					if common.IndexOfStr(key, shardCommmittee[i]) < config.Param().CommitteeSize.NumberOfFixedShardBlockValidator {
+						proposeStat[feature][i]++
+					}
+				}
+			}
 		}
 	}
 
-	Logger.log.Infof("=========== \n%+v", validatorStat)
+	//Logger.log.Infof("=========== \n%+v", validatorStat)
 	return FeatureReportInfo{
 		validatorStat,
 		proposeStat,

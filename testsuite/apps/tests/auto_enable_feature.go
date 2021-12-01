@@ -29,6 +29,7 @@ func Test_Auto_Enable() {
 		config.Param().ConsensusParam.StakingFlowV3Height = 15
 		config.Param().CommitteeSize.MaxShardCommitteeSize = 16
 		config.Param().CommitteeSize.MinShardCommitteeSize = 4
+		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 4
 		config.Param().ConsensusParam.ConsensusV2Epoch = 1
 		config.Param().EpochParam.NumberOfBlockInEpoch = 20
 		config.Param().EpochParam.RandomTime = 10
@@ -106,7 +107,7 @@ func Test_Auto_Enable() {
 		node.SendFinishSync(stakers, 1)
 		for i, s := range stakers {
 			if i > 5 {
-				node.SendFeatureStat([]account.Account{s}, []string{"TestFeature"})
+				node.SendFeatureStat([]*account.Account{&s}, []string{"TestFeature"})
 			}
 		}
 
@@ -135,14 +136,13 @@ func Test_Auto_Enable() {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		config.Param().AutoEnableFeature["TestFeature_2"] = config.AutoEnableFeature{
-			1500,
+			700,
 			500,
 			80,
 		}
 
 		if height > 600 {
-			fmt.Println(config.Param().AutoEnableFeature)
-			node.SendFeatureStat(stakers, []string{"TestFeature_2", "TestFeature"})
+			node.SendFeatureStat(node.GetAllAccounts(), []string{"TestFeature_2", "TestFeature"})
 			node.SendFinishSync(stakers, 0)
 			node.SendFinishSync(stakers, 1)
 		}
@@ -152,7 +152,21 @@ func Test_Auto_Enable() {
 			fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
 		}
-
+		if height > 800 {
+			node.SendFeatureStat(node.GetAllAccounts(), []string{"TestFeature_3", "TestFeature"})
+			config.Param().AutoEnableFeature["TestFeature_3"] = config.AutoEnableFeature{
+				900,
+				850,
+				80,
+			}
+		}
 		node.GenerateBlock().NextRound()
+		if height == 750 || height == 950 {
+			fmt.Println(blockchain.DefaultFeatureStat.Report())
+			fmt.Println("beacon ==============", node.GetBlockchain().GetBeaconBestState().TriggeredFeature)
+			fmt.Println("shard 0 ==============", node.GetBlockchain().GetBestStateShard(0).TriggeredFeature)
+			fmt.Println("shard 1  ==============", node.GetBlockchain().GetBestStateShard(1).TriggeredFeature)
+			node.Pause()
+		}
 	}
 }

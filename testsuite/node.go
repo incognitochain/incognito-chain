@@ -694,7 +694,7 @@ func (s *NodeEngine) SendFinishSync(accs []account.Account, sid byte) {
 	s.GetBlockchain().AddFinishedSyncValidators(msg.CommitteePublicKey, msg.Signature, msg.ShardID)
 }
 
-func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures []string) {
+func (s *NodeEngine) SendFeatureStat(accs []*account.Account, unTriggerFeatures []string) {
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 	signBytes := []byte{}

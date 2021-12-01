@@ -537,18 +537,23 @@ func (curView *BeaconBestState) generateOutdatedDequeueInstruction() *instructio
 		expectedContainFeature = append(expectedContainFeature, feature)
 	}
 
-	//loop all shard pending validators, check if the validator code is latest or node
+	//loop all shard pending validators, check if the validator code is latest or not
 	outdatedValidatorIndex := map[int][]int{} // shardID -> idnex
-	for i := 0; i < curView.ActiveShards; i++ {
-		committeeList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardPendingValidator(byte(i)))
+	for cid := 0; cid < curView.ActiveShards; cid++ {
+		pendingList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardPendingValidator(byte(cid)))
+		committeeList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardCommittee(byte(cid)))
 		if err != nil {
-			Logger.log.Infof("Get Committee from shard %v error %v", i, err)
+			Logger.log.Infof("Get Committee from shard %v error %v", cid, err)
 			return nil
 		}
-		for validatorIndex, cpk := range committeeList {
+		for validatorIndex, cpk := range pendingList {
 			if DefaultFeatureStat.containExpectedFeature(cpk, expectedContainFeature) == false {
-				outdatedValidatorIndex[i] = append(outdatedValidatorIndex[i], validatorIndex)
+				outdatedValidatorIndex[cid] = append(outdatedValidatorIndex[cid], validatorIndex)
 			}
+		}
+		if len(outdatedValidatorIndex[cid]) >= int((float64(len(pendingList)+len(committeeList)))*DEQUEUE_THRESHOLD_PERCENT) {
+			Logger.log.Infof("Chain %v cannot generate dequeue, not enough updated node, outdate %v , validator: %v", cid, len(outdatedValidatorIndex[cid]), (len(pendingList) + len(committeeList)))
+			delete(outdatedValidatorIndex, cid)
 		}
 	}
 
@@ -573,15 +578,22 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		// check proposer threshold
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report()
-		if featureStatReport.ProposeStat[feature] != nil {
-			for chainID, size := range featureStatReport.ValidatorSize {
-				if featureStatReport.ProposeStat[feature][chainID] < uint64(size*90/100) {
-					invalidCondition = true
-					break
-				}
+		if featureStatReport.ProposeStat[feature] == nil {
+			continue
+		}
+		beaconProposerSize := len(curView.GetCommittee())
+		//if number of beacon proposer update < 90%, not generate inst
+		if featureStatReport.ProposeStat[feature][-1] < uint64(beaconProposerSize*90/100) {
+			continue
+		}
+		//if number of each shard proposer update < 90%, not generate inst
+		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
+			shardProposerSize := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+			if featureStatReport.ProposeStat[feature][chainID] < uint64(shardProposerSize*90/100) {
+				invalidCondition = true
+				break
 			}
 		}
-
 		if invalidCondition {
 			continue
 		}
