@@ -616,14 +616,11 @@ func (blockchain *BlockChain) GetAllTokenBalancesV2(keySet *incognitokey.KeySet)
 	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
 
 	// get all token
-	allTokens, err := blockchain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
-	if err != nil {
-		return nil, err
-	}
+	allTokens := blockchain.ListAllPrivacyCustomTokensAndPRVFromCache()
 
 	// create a map from Hash(TokenID) => TokenID
 	rawAssetTags := make(map[string]*common.Hash)
-	for _, tokenID := range allTokens {
+	for tokenID := range allTokens {
 		clonedTokenID, err := new(common.Hash).NewHash(tokenID[:])
 		if err != nil {
 			return nil, err

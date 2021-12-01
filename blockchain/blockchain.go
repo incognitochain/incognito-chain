@@ -128,6 +128,13 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		for tokenID, _ := range tokenStates {
 			allTokens[tokenID] = true
 		}
+		bridgeTokenIDs, _, err := blockchain.GetAllBridgeTokens()
+		if err != nil {
+			return err
+		}
+		for _, bridgeTokenID := range bridgeTokenIDs {
+			allTokens[bridgeTokenID] = true
+		}
 
 		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken, allTokens)
 		if err != nil {

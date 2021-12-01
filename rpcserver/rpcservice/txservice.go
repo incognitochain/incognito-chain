@@ -1743,7 +1743,16 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 }
 
 // GetListPrivacyCustomTokenBalanceNew returns the balance of all tokens given a privateKey.
-func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string) (jsonresult.ListCustomTokenBalance, *RPCError) {
+func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string, includeV1 ...bool) (jsonresult.ListCustomTokenBalance, *RPCError) {
+	if !blockchain.EnableIndexingCoinByOTAKey {
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, fmt.Errorf("RPC not supported by node configuration"))
+	}
+
+	withV1 := false
+	if len(includeV1) > 0 {
+		withV1 = includeV1[0]
+	}
+
 	res := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	balances := make(map[string]jsonresult.CustomTokenBalance)
 
@@ -1761,17 +1770,10 @@ func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string
 	res.PaymentAddress = w.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	// get the info of centralized tokens
-	tokenStates, err := txService.ListPrivacyCustomToken()
-	if err != nil {
-		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance res: %+v, err: %+v", nil, err)
-		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
-	}
-	for _, tokenState := range tokenStates {
+	allTokens := txService.BlockChain.ListAllPrivacyCustomTokensAndPRVFromCache()
+	for tokenID := range allTokens {
 		item := jsonresult.CustomTokenBalance{}
-		item.Name = tokenState.PropertyName()
-		item.Symbol = tokenState.PropertySymbol()
-		item.TokenID = tokenState.TokenID().String()
-		item.TokenImage = common.Render([]byte(item.TokenID))
+		item.TokenID = tokenID.String()
 		item.Amount = 0
 		item.IsPrivacy = true
 		balances[item.TokenID] = item
@@ -1786,14 +1788,10 @@ func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string
 		bridgeTokenID := bridgeToken.TokenID.String()
 		if tokenInfo, ok := balances[bridgeTokenID]; ok {
 			tokenInfo.IsBridgeToken = true
-			balances[bridgeTokenID] = tokenInfo
 			continue
 		}
 		item := jsonresult.CustomTokenBalance{}
-		item.Name = ""
-		item.Symbol = ""
 		item.TokenID = bridgeToken.TokenID.String()
-		item.TokenImage = common.Render([]byte(item.TokenID))
 		item.Amount = 0
 		item.IsPrivacy = true
 		item.IsBridgeToken = true
@@ -1801,10 +1799,14 @@ func (txService TxService) GetListPrivacyCustomTokenBalanceNew(privateKey string
 	}
 
 	// get v1 balances
-	v1Balances, err := txService.BlockChain.GetAllTokenBalancesV1(&(w.KeySet))
-	if err != nil {
-		return res, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
+	var v1Balances map[string]uint64
+	if withV1 {
+		v1Balances, err = txService.BlockChain.GetAllTokenBalancesV1(&(w.KeySet))
+		if err != nil {
+			return res, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
+		}
 	}
+
 	// get v2 balances
 	v2Balances, err := txService.BlockChain.GetAllTokenBalancesV2(&(w.KeySet))
 	if err != nil {

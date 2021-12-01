@@ -467,7 +467,6 @@ func (httpServer *HttpServer) handleGetTransactionHashPublicKey(params interface
 
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
@@ -477,8 +476,13 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	if len(privateKey) == 0 || !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
+	withV1 := false
+	if len(arrayParams) > 1 {
+		_, ok := arrayParams[1].(bool)
+		withV1 = ok
+	}
 
-	result, err := httpServer.txService.GetListPrivacyCustomTokenBalanceNew(privateKey)
+	result, err := httpServer.txService.GetListPrivacyCustomTokenBalanceNew(privateKey, withV1)
 	if err != nil {
 		return nil, err
 	}
