@@ -536,6 +536,11 @@ func (a *actorV2) run() error {
 		for { //actor loop
 			if !a.isStarted { //sleep if this process is not start
 				time.Sleep(time.Second)
+				select {
+				case <-a.proposeMessageCh:
+				case <-a.voteMessageCh:
+				}
+
 				continue
 			}
 
