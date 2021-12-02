@@ -46,7 +46,6 @@ func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin privacy
 	}
 	result, err := outCoin.Decrypt(keySet)
 	if err != nil {
-		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
 		return nil, err
 	}
 	keyImage := result.GetKeyImage()

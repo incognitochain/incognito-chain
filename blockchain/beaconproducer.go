@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -164,7 +163,13 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
 
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
+		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, nil, NewBlockChainError(CloneBeaconBestStateError, err)
+		}
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(
+			featureStateDB,
+			cloneBeaconBestState.portalStateV3)
 		if err != nil {
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
