@@ -539,6 +539,7 @@ func (a *actorV2) run() error {
 				select {
 				case <-a.proposeMessageCh:
 				case <-a.voteMessageCh:
+				default:
 				}
 
 				continue
