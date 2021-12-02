@@ -12,5 +12,6 @@ const (
 	NftIDs               = "NftIDs"
 	All                  = "All"
 	SimpleVerbosity      = 1
-	FullVerbosity        = 2
+	IntermidateVerbosity = 2
+	FullVerbosity        = 3
 )

@@ -507,6 +507,16 @@ func getPdexv3PoolPairs(
 			return nil, NewRPCError(GetPdexv3StateError, err)
 		}
 		return poolPairIDs, nil
+	case IntermidateVerbosity:
+		poolPairStates, err := pdex.InitIntermediatePoolPairStatesFromDB(stateDB)
+		if err != nil {
+			return nil, NewRPCError(GetPdexv3StateError, err)
+		}
+		res := &jsonresult.Pdexv3State{
+			BeaconTimeStamp: beaconTimeStamp,
+			PoolPairs:       &poolPairStates,
+		}
+		return res, nil
 	case FullVerbosity:
 		poolPairStates, err := pdex.InitFullPoolPairStatesFromDB(stateDB)
 		if err != nil {
