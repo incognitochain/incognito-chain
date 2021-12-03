@@ -112,7 +112,7 @@ func InitPublicKeyBurningAddressByte() error {
 	if err != nil {
 		return err
 	}
-	common.BurningAddressByte = keyWalletBurningAdd2.KeySet.PaymentAddress.Pk
+	common.BurningAddressByte2 = keyWalletBurningAdd2.KeySet.PaymentAddress.Pk
 	return nil
 }
 
