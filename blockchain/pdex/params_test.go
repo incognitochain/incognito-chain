@@ -18,6 +18,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 		StakingRewardTokens             []common.Hash
 		MintNftRequireAmount            uint64
 		MaxOrdersPerNft                 uint
+		OrderMiningRewardRatioBPS       map[string]uint
 	}
 	tests := []struct {
 		name   string
@@ -27,10 +28,11 @@ func TestParams_IsZeroValue(t *testing.T) {
 		{
 			name: "is zero value",
 			fields: fields{
-				FeeRateBPS:               make(map[string]uint),
-				StakingPoolsShare:        make(map[string]uint),
-				PDEXRewardPoolPairsShare: make(map[string]uint),
-				StakingRewardTokens:      []common.Hash{},
+				FeeRateBPS:                make(map[string]uint),
+				StakingPoolsShare:         make(map[string]uint),
+				PDEXRewardPoolPairsShare:  make(map[string]uint),
+				StakingRewardTokens:       []common.Hash{},
+				OrderMiningRewardRatioBPS: make(map[string]uint),
 			},
 			want: true,
 		},
@@ -51,6 +53,9 @@ func TestParams_IsZeroValue(t *testing.T) {
 				StakingRewardTokens:  []common.Hash{},
 				MintNftRequireAmount: 1000000000,
 				MaxOrdersPerNft:      10,
+				OrderMiningRewardRatioBPS: map[string]uint{
+					"abs": 100,
+				},
 			},
 			want: false,
 		},
@@ -68,6 +73,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 				StakingRewardTokens:             tt.fields.StakingRewardTokens,
 				MintNftRequireAmount:            tt.fields.MintNftRequireAmount,
 				MaxOrdersPerNft:                 tt.fields.MaxOrdersPerNft,
+				OrderMiningRewardRatioBPS:       tt.fields.OrderMiningRewardRatioBPS,
 			}
 			if got := params.IsZeroValue(); got != tt.want {
 				t.Errorf("Params.IsZeroValue() = %v, want %v", got, tt.want)

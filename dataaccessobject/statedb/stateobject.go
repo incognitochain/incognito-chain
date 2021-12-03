@@ -149,6 +149,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3StakerLastRewardPerShareObjectWithValue(db, hash, value)
 	case Pdexv3StakerObjectType:
 		return newPdexv3StakerObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairMakingVolumeObjectType:
+		return newPdexv3PoolPairMakingVolumeObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairOrderRewardObjectType:
+		return newPdexv3PoolPairOrderRewardObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -278,6 +282,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3StakerLastRewardPerShareObject(db, hash)
 	case Pdexv3StakerObjectType:
 		return newPdexv3StakerObject(db, hash)
+	case Pdexv3PoolPairMakingVolumeObjectType:
+		return newPdexv3PoolPairMakingVolumeObject(db, hash)
+	case Pdexv3PoolPairOrderRewardObjectType:
+		return newPdexv3PoolPairOrderRewardObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

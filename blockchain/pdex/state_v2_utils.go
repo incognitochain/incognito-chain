@@ -299,3 +299,145 @@ func (share *Share) updateToDB(
 	}
 	return nil
 }
+
+type Reward map[common.Hash]uint64 // tokenID -> amount
+
+type OrderReward struct {
+	uncollectedRewards Reward
+}
+
+func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		UncollectedRewards Reward `json:"UncollectedRewards"`
+	}{
+		UncollectedRewards: orderReward.uncollectedRewards,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		UncollectedRewards Reward `json:"UncollectedRewards"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	orderReward.uncollectedRewards = temp.UncollectedRewards
+	return nil
+}
+
+func (orderReward *OrderReward) UncollectedRewards() Reward {
+	res := Reward{}
+	for k, v := range orderReward.uncollectedRewards {
+		res[k] = v
+	}
+	return res
+}
+
+func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
+	oldAmount := uint64(0)
+	if _, ok := orderReward.uncollectedRewards[tokenID]; ok {
+		oldAmount = orderReward.uncollectedRewards[tokenID]
+	}
+	orderReward.uncollectedRewards[tokenID] = oldAmount + amount
+}
+
+func NewOrderReward() *OrderReward {
+	return &OrderReward{
+		uncollectedRewards: make(map[common.Hash]uint64),
+	}
+}
+
+func (orderReward *OrderReward) Clone() *OrderReward {
+	res := NewOrderReward()
+	for k, v := range orderReward.uncollectedRewards {
+		res.uncollectedRewards[k] = v
+	}
+	return res
+}
+
+func (orderReward *OrderReward) getDiff(
+	nftID string,
+	compareOrderReward *OrderReward,
+	orderRewardChange *v2utils.OrderRewardChange,
+) *v2utils.OrderRewardChange {
+	newOrderRewardChane := orderRewardChange
+	if compareOrderReward == nil {
+		for tokenID := range orderReward.uncollectedRewards {
+			newOrderRewardChane.UncollectedReward[tokenID.String()] = true
+		}
+	} else {
+		for tokenID, value := range orderReward.uncollectedRewards {
+			if m, ok := compareOrderReward.uncollectedRewards[tokenID]; !ok || !reflect.DeepEqual(m, value) {
+				newOrderRewardChane.UncollectedReward[tokenID.String()] = true
+			}
+		}
+	}
+	return orderRewardChange
+}
+
+type MakingVolume struct {
+	volume map[string]*big.Int // nftID -> amount
+}
+
+func (makingVolume *MakingVolume) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Volume map[string]*big.Int `json:"Volume"`
+	}{
+		Volume: makingVolume.volume,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (makingVolume *MakingVolume) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Volume map[string]*big.Int `json:"Volume"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	makingVolume.volume = temp.Volume
+	return nil
+}
+
+func NewMakingVolume() *MakingVolume {
+	return &MakingVolume{
+		volume: make(map[string]*big.Int),
+	}
+}
+
+func (makingVolume *MakingVolume) Clone() *MakingVolume {
+	res := NewMakingVolume()
+	for k, v := range makingVolume.volume {
+		res.volume[k] = new(big.Int).Set(v)
+	}
+	return res
+}
+
+func (makingVolume *MakingVolume) getDiff(
+	nftID string,
+	compareMakingVolume *MakingVolume,
+	makingVolumeChange *v2utils.MakingVolumeChange,
+) *v2utils.MakingVolumeChange {
+	newMakingVolumeChange := makingVolumeChange
+	if compareMakingVolume == nil {
+		for nftID := range makingVolume.volume {
+			newMakingVolumeChange.Volume[nftID] = true
+		}
+	} else {
+		for nftID, value := range makingVolume.volume {
+			if m, ok := compareMakingVolume.volume[nftID]; !ok || !reflect.DeepEqual(m, value) {
+				newMakingVolumeChange.Volume[nftID] = true
+			}
+		}
+	}
+	return newMakingVolumeChange
+}

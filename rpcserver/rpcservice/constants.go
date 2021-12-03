@@ -6,6 +6,7 @@ const (
 	PoolPair             = "PoolPair"
 	PoolPairShares       = "PoolPairShares"
 	PoolPairOrders       = "PoolPairOrders"
+	PoolPairOrderRewards = "PoolPairOrderRewards"
 	Params               = "Params"
 	StakingPools         = "StakingPools"
 	StakingPool          = "StakingPool"

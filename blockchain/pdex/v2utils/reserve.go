@@ -266,22 +266,28 @@ func MaybeAcceptTrade(amountIn, fee uint64, tradePath []string, receiver privacy
 }
 
 func TrackFee(
-	fee uint64, feeInPRV bool, sellingTokenID common.Hash, baseLPPerShare *big.Int,
+	fee uint64, feeInPRV bool, sellingTokenID common.Hash, baseLPPerShare *big.Int, bps uint,
 	tradePath []string, reserves []*rawdbv2.Pdexv3PoolPair,
 	lpFeesPerShares []map[common.Hash]*big.Int, protocolFees, stakingPoolFees []map[common.Hash]uint64,
 	tradeDirections []byte, orderbooks []OrderBookIterator,
 	poolFees []uint, feeRateBPS uint,
 	acceptedMeta *metadataPdexv3.AcceptedTrade,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
-) (*metadataPdexv3.AcceptedTrade, error) {
+	orderMiningRewardRatioBPS map[string]uint,
+) (*metadataPdexv3.AcceptedTrade, []map[string]map[common.Hash]uint64, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
-		return nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
+		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
 	}
 
 	acceptedMeta.RewardEarned = make([]map[common.Hash]uint64, mutualLen)
 	for i := 0; i < mutualLen; i++ {
 		acceptedMeta.RewardEarned[i] = make(map[common.Hash]uint64)
+	}
+
+	orderRewardChanges := make([]map[string]map[common.Hash]uint64, mutualLen)
+	for i := 0; i < mutualLen; i++ {
+		orderRewardChanges[i] = make(map[string]map[common.Hash]uint64)
 	}
 
 	if feeInPRV || sellingTokenID == common.PRVCoinID {
@@ -293,19 +299,55 @@ func TrackFee(
 			reward := new(big.Int).Mul(new(big.Int).SetUint64(feeRemain), new(big.Int).SetUint64(uint64(poolFees[i])))
 			reward.Div(reward, new(big.Int).SetUint64(uint64(sumPoolFees)))
 
-			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
+			// split reward between LPs and LOPs by weighted ratio
+			ratio := uint(0)
+			if orderMiningRewardRatioBPS != nil {
+				bps, ok := orderMiningRewardRatioBPS[tradePath[i]]
+				if ok {
+					ratio = bps
+				}
+			}
+
+			remain := new(big.Int).SetUint64(0)
+
+			// add staking pools and protocol fees
+			protocolFees[i], stakingPoolFees[i], remain = NewTradingPairWithValue(
 				reserves[i],
-			).AddFee(
-				common.PRVCoinID, reward.Uint64(), baseLPPerShare,
-				lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
+			).AddStakingAndProtocolFee(
+				common.PRVCoinID, reward, protocolFees[i], stakingPoolFees[i],
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
+			)
+
+			ammReward, orderRewards := SplitTradingReward(
+				remain, ratio, bps,
+				acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
+				orderbooks[i].NftIDs(),
+			)
+
+			// add reward to LOPs
+			for nftID, reward := range orderRewards {
+				if _, ok := orderRewardChanges[i][nftID]; !ok {
+					orderRewardChanges[i][nftID] = make(map[common.Hash]uint64)
+				}
+				if _, ok := orderRewardChanges[i][nftID][common.PRVCoinID]; !ok {
+					orderRewardChanges[i][nftID][common.PRVCoinID] = 0
+				}
+				orderRewardChanges[i][nftID][common.PRVCoinID] += reward
+			}
+
+			// add reward to LPs
+			lpFeesPerShares[i] = NewTradingPairWithValue(
+				reserves[i],
+			).AddLPFee(
+				common.PRVCoinID, new(big.Int).SetUint64(ammReward), baseLPPerShare,
+				lpFeesPerShares[i],
 			)
 			acceptedMeta.RewardEarned[i][common.PRVCoinID] = reward.Uint64()
 
 			sumPoolFees -= poolFees[i]
 			feeRemain -= reward.Uint64()
 		}
-		return acceptedMeta, nil
+		return acceptedMeta, orderRewardChanges, nil
 	}
 
 	sumPoolFees := feeRateBPS
@@ -322,12 +364,49 @@ func TrackFee(
 		if tradeDirections[i] == TradeDirectionSell1 {
 			rewardToken = reserves[i].Token1ID()
 		}
-		lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i] = NewTradingPairWithValue(
+
+		// split reward between LPs and LOPs by weighted ratio
+		ratio := uint(0)
+		if orderMiningRewardRatioBPS != nil {
+			bps, ok := orderMiningRewardRatioBPS[tradePath[i]]
+			if ok {
+				ratio = bps
+			}
+		}
+
+		remain := new(big.Int).SetUint64(0)
+
+		// add staking pools and protocol fees
+		protocolFees[i], stakingPoolFees[i], remain = NewTradingPairWithValue(
 			reserves[i],
-		).AddFee(
-			rewardToken, rewardAmount, baseLPPerShare,
-			lpFeesPerShares[i], protocolFees[i], stakingPoolFees[i],
+		).AddStakingAndProtocolFee(
+			rewardToken, reward, protocolFees[i], stakingPoolFees[i],
 			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
+		)
+
+		ammReward, orderRewards := SplitTradingReward(
+			remain, ratio, bps,
+			acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
+			orderbooks[i].NftIDs(),
+		)
+
+		// add reward to LOPs
+		for nftID, reward := range orderRewards {
+			if _, ok := orderRewardChanges[i][nftID]; !ok {
+				orderRewardChanges[i][nftID] = make(map[common.Hash]uint64)
+			}
+			if _, ok := orderRewardChanges[i][nftID][rewardToken]; !ok {
+				orderRewardChanges[i][nftID][rewardToken] = 0
+			}
+			orderRewardChanges[i][nftID][rewardToken] += reward
+		}
+
+		// add reward to LPs
+		lpFeesPerShares[i] = NewTradingPairWithValue(
+			reserves[i],
+		).AddLPFee(
+			rewardToken, new(big.Int).SetUint64(ammReward), baseLPPerShare,
+			lpFeesPerShares[i],
 		)
 		acceptedMeta.RewardEarned[i][rewardToken] = rewardAmount
 
@@ -347,11 +426,11 @@ func TrackFee(
 					reserves[i],
 				).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			sellAmountRemain = temp
 			if totalBuyAmount+buyAmount < totalBuyAmount {
-				return nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
+				return nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
 			}
 			totalBuyAmount += buyAmount
 			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)
@@ -362,11 +441,11 @@ func TrackFee(
 			if order != nil {
 				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i])
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				sellAmountRemain = temp
 				if totalBuyAmount+buyAmount < totalBuyAmount {
-					return nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
+					return nil, nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
 				}
 				totalBuyAmount += buyAmount
 				// add order balance changes to "accepted" instruction
@@ -393,14 +472,14 @@ func TrackFee(
 		sellAmountRemain = totalBuyAmount
 	}
 
-	return acceptedMeta, nil
+	return acceptedMeta, orderRewardChanges, nil
 }
 
-func (tp *TradingPair) AddFee(
-	tokenID common.Hash, amount uint64, baseLPPerShare *big.Int,
-	rootLpFeesPerShare map[common.Hash]*big.Int, rootProtocolFees, rootStakingPoolFees map[common.Hash]uint64,
+func (tp *TradingPair) AddStakingAndProtocolFee(
+	tokenID common.Hash, amount *big.Int,
+	rootProtocolFees, rootStakingPoolFees map[common.Hash]uint64,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
-) (map[common.Hash]*big.Int, map[common.Hash]uint64, map[common.Hash]uint64) {
+) (map[common.Hash]uint64, map[common.Hash]uint64, *big.Int) {
 	isStakingRewardToken := false
 	for _, stakingRewardToken := range stakingRewardTokens {
 		if tokenID == stakingRewardToken {
@@ -424,9 +503,7 @@ func (tp *TradingPair) AddFee(
 		}
 	}
 
-	fee := new(big.Int).SetUint64(amount)
-
-	protocolFees := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(protocolFeePercent)))
+	protocolFees := new(big.Int).Mul(amount, new(big.Int).SetUint64(uint64(protocolFeePercent)))
 	protocolFees = new(big.Int).Div(protocolFees, new(big.Int).SetUint64(100))
 
 	if protocolFees.IsUint64() && protocolFees.Uint64() != 0 {
@@ -440,7 +517,7 @@ func (tp *TradingPair) AddFee(
 		rootProtocolFees = tempProtocolFees
 	}
 
-	stakingRewards := new(big.Int).Mul(fee, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
+	stakingRewards := new(big.Int).Mul(amount, new(big.Int).SetUint64(uint64(stakingPoolRewardPercent)))
 	stakingRewards = new(big.Int).Div(stakingRewards, new(big.Int).SetUint64(100))
 
 	if stakingRewards.IsUint64() && stakingRewards.Uint64() != 0 {
@@ -454,20 +531,26 @@ func (tp *TradingPair) AddFee(
 		rootStakingPoolFees = tempStakingRewards
 	}
 
-	if tp.ShareAmount() == 0 {
-		return rootLpFeesPerShare, rootProtocolFees, rootStakingPoolFees
-	}
+	remain := new(big.Int).Sub(amount, protocolFees)
+	remain.Sub(remain, stakingRewards)
 
+	return rootProtocolFees, rootStakingPoolFees, remain
+}
+
+func (tp *TradingPair) AddLPFee(
+	tokenID common.Hash, amount *big.Int, baseLPPerShare *big.Int,
+	rootLpFeesPerShare map[common.Hash]*big.Int,
+) map[common.Hash]*big.Int {
+	if tp.ShareAmount() == 0 {
+		return rootLpFeesPerShare
+	}
 	oldLPFeesPerShare, isExisted := rootLpFeesPerShare[tokenID]
 	if !isExisted {
 		oldLPFeesPerShare = big.NewInt(0)
 	}
 
-	lpRewards := new(big.Int).Sub(fee, protocolFees)
-	lpRewards = new(big.Int).Sub(lpRewards, stakingRewards)
-
 	// delta (fee / LP share) = LP Reward * BASE / totalLPShare
-	deltaLPFeesPerShare := new(big.Int).Mul(lpRewards, baseLPPerShare)
+	deltaLPFeesPerShare := new(big.Int).Mul(amount, baseLPPerShare)
 	deltaLPFeesPerShare = new(big.Int).Div(deltaLPFeesPerShare, new(big.Int).SetUint64(tp.ShareAmount()))
 
 	// update accumulated sum of (fee / LP share)
@@ -476,7 +559,7 @@ func (tp *TradingPair) AddFee(
 	tempLPFeesPerShare[tokenID] = newLPFeesPerShare
 
 	rootLpFeesPerShare = tempLPFeesPerShare
-	return rootLpFeesPerShare, rootProtocolFees, rootStakingPoolFees
+	return rootLpFeesPerShare
 }
 
 func HasInsufficientLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {

@@ -16,8 +16,10 @@ import (
 )
 
 type PoolPairState struct {
+	makingVolume    map[common.Hash]*MakingVolume // tokenID -> MakingVolume
 	state           rawdbv2.Pdexv3PoolPair
 	shares          map[string]*Share
+	orderRewards    map[string]*OrderReward // nftID -> orderReward
 	orderbook       Orderbook
 	lpFeesPerShare  map[common.Hash]*big.Int
 	protocolFees    map[common.Hash]uint64
@@ -26,6 +28,8 @@ type PoolPairState struct {
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
+		makingVolume:    make(map[common.Hash]*MakingVolume),
+		orderRewards:    make(map[string]*OrderReward),
 		shares:          make(map[string]*Share),
 		state:           *rawdbv2.NewPdexv3PoolPair(),
 		orderbook:       Orderbook{[]*Order{}},
@@ -41,8 +45,12 @@ func NewPoolPairStateWithValue(
 	orderbook Orderbook,
 	lpFeesPerShare map[common.Hash]*big.Int,
 	protocolFees, stakingPoolFees map[common.Hash]uint64,
+	makingVolume map[common.Hash]*MakingVolume,
+	orderRewards map[string]*OrderReward,
 ) *PoolPairState {
 	return &PoolPairState{
+		makingVolume:    makingVolume,
+		orderRewards:    orderRewards,
 		state:           state,
 		shares:          shares,
 		orderbook:       orderbook,
@@ -101,14 +109,24 @@ func (poolPairState *PoolPairState) Shares() map[string]*Share {
 	return res
 }
 
+func (poolPairState *PoolPairState) OrderRewards() map[string]*OrderReward {
+	res := make(map[string]*OrderReward)
+	for k, v := range poolPairState.orderRewards {
+		res[k] = v.Clone()
+	}
+	return res
+}
+
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
-		Shares          map[string]*Share        `json:"Shares,omitempty"`
-		Orderbook       Orderbook                `json:"Orderbook,omitempty"`
-		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
-		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
-		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
+		State           *rawdbv2.Pdexv3PoolPair       `json:"State"`
+		Shares          map[string]*Share             `json:"Shares,omitempty"`
+		Orderbook       Orderbook                     `json:"Orderbook,omitempty"`
+		LpFeesPerShare  map[common.Hash]*big.Int      `json:"LpFeesPerShare"`
+		ProtocolFees    map[common.Hash]uint64        `json:"ProtocolFees"`
+		StakingPoolFees map[common.Hash]uint64        `json:"StakingPoolFees"`
+		OrderRewards    map[string]*OrderReward       `json:"OrderRewards"`
+		MakingVolume    map[common.Hash]*MakingVolume `json:"MakingVolume"`
 	}{
 		State:           &poolPairState.state,
 		Shares:          poolPairState.shares,
@@ -116,6 +134,8 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 		LpFeesPerShare:  poolPairState.lpFeesPerShare,
 		ProtocolFees:    poolPairState.protocolFees,
 		StakingPoolFees: poolPairState.stakingPoolFees,
+		OrderRewards:    poolPairState.orderRewards,
+		MakingVolume:    poolPairState.makingVolume,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -125,12 +145,14 @@ func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 
 func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State           *rawdbv2.Pdexv3PoolPair  `json:"State"`
-		Shares          map[string]*Share        `json:"Shares"`
-		Orderbook       Orderbook                `json:"Orderbook"`
-		LpFeesPerShare  map[common.Hash]*big.Int `json:"LpFeesPerShare"`
-		ProtocolFees    map[common.Hash]uint64   `json:"ProtocolFees"`
-		StakingPoolFees map[common.Hash]uint64   `json:"StakingPoolFees"`
+		State           *rawdbv2.Pdexv3PoolPair       `json:"State"`
+		Shares          map[string]*Share             `json:"Shares"`
+		Orderbook       Orderbook                     `json:"Orderbook"`
+		LpFeesPerShare  map[common.Hash]*big.Int      `json:"LpFeesPerShare"`
+		ProtocolFees    map[common.Hash]uint64        `json:"ProtocolFees"`
+		StakingPoolFees map[common.Hash]uint64        `json:"StakingPoolFees"`
+		OrderRewards    map[string]*OrderReward       `json:"OrderRewards"`
+		MakingVolume    map[common.Hash]*MakingVolume `json:"MakingVolume"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -144,6 +166,8 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 	poolPairState.lpFeesPerShare = temp.LpFeesPerShare
 	poolPairState.protocolFees = temp.ProtocolFees
 	poolPairState.stakingPoolFees = temp.StakingPoolFees
+	poolPairState.orderRewards = temp.OrderRewards
+	poolPairState.makingVolume = temp.MakingVolume
 	return nil
 }
 
@@ -172,6 +196,7 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 		Orderbook{[]*Order{}},
 		make(map[common.Hash]*big.Int),
 		make(map[common.Hash]uint64), make(map[common.Hash]uint64),
+		make(map[common.Hash]*MakingVolume), make(map[string]*OrderReward),
 	)
 }
 
@@ -265,6 +290,12 @@ func (p *PoolPairState) Clone() *PoolPairState {
 	for k, v := range p.stakingPoolFees {
 		res.stakingPoolFees[k] = v
 	}
+	for k, v := range p.orderRewards {
+		res.orderRewards[k] = v.Clone()
+	}
+	for k, v := range p.makingVolume {
+		res.makingVolume[k] = v.Clone()
+	}
 
 	res.orderbook = p.orderbook.Clone()
 	return res
@@ -293,6 +324,16 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.stakingPoolFees {
 			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 		}
+		for nftID, orderReward := range p.orderRewards {
+			orderRewardChange := v2utils.NewOrderRewardChange()
+			orderRewardChange = orderReward.getDiff(nftID, nil, orderRewardChange)
+			poolPairChange.OrderRewards[nftID] = orderRewardChange
+		}
+		for tokenID, makingVolume := range p.makingVolume {
+			makingVolumeChange := v2utils.NewMakingVolumeChange()
+			makingVolumeChange = makingVolume.getDiff(tokenID.String(), nil, makingVolumeChange)
+			poolPairChange.MakingVolume[tokenID.String()] = makingVolumeChange
+		}
 		for _, ord := range p.orderbook.orders {
 			newPoolPairChange.OrderIDs[ord.Id()] = true
 		}
@@ -320,6 +361,20 @@ func (p *PoolPairState) getDiff(
 		for tokenID, value := range p.stakingPoolFees {
 			if m, ok := comparePoolPair.stakingPoolFees[tokenID]; !ok || !reflect.DeepEqual(m, value) {
 				newPoolPairChange.StakingPoolFees[tokenID.String()] = true
+			}
+		}
+		for nftID, orderReward := range p.orderRewards {
+			if m, ok := comparePoolPair.orderRewards[nftID]; !ok || !reflect.DeepEqual(m, orderReward) {
+				orderRewardChange := v2utils.NewOrderRewardChange()
+				orderRewardChange = orderReward.getDiff(nftID, m, orderRewardChange)
+				poolPairChange.OrderRewards[nftID] = orderRewardChange
+			}
+		}
+		for tokenID, makingVolume := range p.makingVolume {
+			if m, ok := comparePoolPair.makingVolume[tokenID]; !ok || !reflect.DeepEqual(m, makingVolume) {
+				makingVolumeChange := v2utils.NewMakingVolumeChange()
+				makingVolumeChange = makingVolume.getDiff(tokenID.String(), m, makingVolumeChange)
+				poolPairChange.MakingVolume[tokenID.String()] = makingVolumeChange
 			}
 		}
 		newPoolPairChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newPoolPairChange)
@@ -591,6 +646,35 @@ func (p *PoolPairState) updateToDB(
 				statedb.NewPdexv3PoolPairStakingPoolFeeStateWithValue(tokenID, value),
 			)
 		}
+	}
+	for tokenID, makingVolume := range p.makingVolume {
+		for nftID, volume := range makingVolume.volume {
+			if poolPairChange.MakingVolume[tokenID.String()].Volume[nftID] {
+				statedb.StorePdexv3PoolPairMakingVolume(
+					env.StateDB(), poolPairID,
+					statedb.NewPdexv3PoolPairMakingVolumeStateWithValue(
+						nftID, tokenID, volume,
+					),
+				)
+			}
+		}
+	}
+	for nftID, orderReward := range p.orderRewards {
+		orderRewardChange, ok := poolPairChange.OrderRewards[nftID]
+		if !ok {
+			continue
+		}
+		for tokenID, amount := range orderReward.uncollectedRewards {
+			if orderRewardChange.UncollectedReward[tokenID.String()] {
+				statedb.StorePdexv3PoolPairOrderReward(
+					env.StateDB(), poolPairID,
+					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
+						tokenID, nftID, amount,
+					),
+				)
+			}
+		}
+
 	}
 	// store / delete orders
 	ordersByID := make(map[string]*Order)
