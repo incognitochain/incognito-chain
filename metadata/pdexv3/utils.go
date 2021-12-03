@@ -1,6 +1,7 @@
 package pdexv3
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -33,11 +34,20 @@ func isValidOTAReceiver(receiverAddress privacy.OTAReceiver, expectedShardID byt
 type AccessOTA privacy.Point
 
 func (ota AccessOTA) MarshalJSON() ([]byte, error) {
-	return privacy.Point(ota).MarshalText(), nil
+	temp := common.Hash((privacy.Point)(ota).ToBytes())
+	return json.Marshal(temp)
 }
 
 func (ota *AccessOTA) UnmarshalJSON(data []byte) error {
-	_, err := (*privacy.Point)(ota).UnmarshalText(data)
+	var temp common.Hash
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	p, err := (&privacy.Point{}).FromBytes([32]byte(temp))
+	if p != nil {
+		*ota = AccessOTA(*p)
+	}
 	return err
 }
 
@@ -55,15 +65,18 @@ type BurnInputReader interface {
 }
 
 // TODO: specify which token & min amount for access
-func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.Transaction, transactionStateDB *statedb.StateDB) (bool, error) {
+func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.Transaction, accessTokenID common.Hash, transactionStateDB *statedb.StateDB) (bool, error) {
+	if accessTokenID != common.PRVCoinID {
+		accessTokenID = common.ConfidentialAssetID
+	}
 	// check that nextOTA is valid
 	p := (*privacy.Point)(&nextOTA)
 	if !p.PointValid() {
-		return false, fmt.Errorf("invalid point - next AccessOTA")
+		return false, fmt.Errorf("invalid point - next AccessOTA %v", nextOTA.Bytes())
 	}
 	rawPubkey := p.ToBytesS()
 
-	exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, common.ConfidentialAssetID, rawPubkey)
+	exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, accessTokenID, rawPubkey)
 	if err != nil {
 		return false, err
 	}
@@ -87,7 +100,7 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 		}
 		rawPubkey := burnOTAPoint.ToBytesS()
 
-		exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, common.ConfidentialAssetID, rawPubkey)
+		exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, accessTokenID, rawPubkey)
 		if err != nil {
 			return false, err
 		}

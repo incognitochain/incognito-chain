@@ -64,7 +64,7 @@ func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transactio
 		if req.NextAccessOTA() == nil {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
-		valid, err1 := ValidPdexv3Access(nil, *req.NextAccessOTA(), tx, transactionStateDB)
+		valid, err1 := ValidPdexv3Access(nil, *req.NextAccessOTA(), tx, common.PRVCoinID, transactionStateDB)
 		if valid {
 			return true, nil
 		}

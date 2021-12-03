@@ -62,10 +62,10 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 	err = beaconViewRetriever.IsValidNftID(req.NftID.String())
 	if err != nil {
 		if isReceivingNFT || req.NextOTA == nil || req.BurntAccessOTA() == nil {
-			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with OTA. NFT: %v, NextOTA: %v, BurnOTA: %v", isReceivingNFT, req.NextOTA, req.BurntAccessOTA())
+			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with OTA. NFT: %v, NextOTA: %v, BurnOTA: %v", tx.Hash().String(), isReceivingNFT, req.NextOTA, req.BurntAccessOTA())
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
-		valid, err1 := ValidPdexv3Access(req.BurntAccessOTA(), *req.NextOTA, tx, transactionStateDB)
+		valid, err1 := ValidPdexv3Access(req.BurntAccessOTA(), *req.NextOTA, tx, common.PRVCoinID, transactionStateDB)
 		if !valid {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
 		}

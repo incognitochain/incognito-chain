@@ -43,8 +43,9 @@ func (md AcceptedWithdrawOrder) GetStatus() int {
 }
 
 type RejectedWithdrawOrder struct {
-	PoolPairID string `json:"PoolPairID"`
-	OrderID    string `json:"OrderID"`
+	PoolPairID string     `json:"PoolPairID"`
+	OrderID    string     `json:"OrderID"`
+	NextOTA    *AccessOTA `json:"NextOTA,omitempty"`
 }
 
 func (md RejectedWithdrawOrder) GetType() int {

@@ -665,7 +665,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 
 		pair, exists := pairs[md.PoolPairID]
 		if !exists {
-			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
+			return pairs, fmt.Errorf("Cannot find pair %s for processing withdraw order", md.PoolPairID)
 		}
 
 		for index, ord := range pair.orderbook.orders {
@@ -708,7 +708,23 @@ func (sp *stateProcessorV2) withdrawOrder(
 		if err != nil {
 			return pairs, err
 		}
+		// skip error checking since concrete type is specified above
+		md, _ := currentOrder.Content.(*metadataPdexv3.RejectedWithdrawOrder)
 		txID = currentOrder.RequestTxID()
+		pair, exists := pairs[md.PoolPairID]
+		if !exists {
+			return pairs, fmt.Errorf("Cannot find pair %s for processing withdraw order", md.PoolPairID)
+		}
+		for _, ord := range pair.orderbook.orders {
+			if ord.Id() == md.OrderID {
+				// set NextOTA
+				if md.NextOTA != nil {
+					ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
+				}
+			}
+		}
+		// write changes to state
+		pairs[md.PoolPairID] = pair
 	default:
 		return pairs, fmt.Errorf("Invalid status %s from instruction", inst[1])
 	}

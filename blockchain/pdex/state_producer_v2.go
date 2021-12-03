@@ -518,18 +518,16 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		// check that the nftID exists
-		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
-			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
-			result = append(result, refundInstructions...)
-			continue TransactionLoop
-		}
-		// check that the nftID has not exceeded its order count limit
-		if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
-			Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
-				currentOrderReq.NftID.String(), params.MaxOrdersPerNft)
-			result = append(result, refundInstructions...)
-			continue TransactionLoop
+		// when accessing using NftID, check that the nftID exists
+		_, accessByNFT := nftIDs[currentOrderReq.NftID.String()]
+		if accessByNFT {
+			// check that the nftID has not exceeded its order count limit
+			if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
+				Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
+					currentOrderReq.NftID.String(), params.MaxOrdersPerNft)
+				result = append(result, refundInstructions...)
+				continue TransactionLoop
+			}
 		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
@@ -590,8 +588,10 @@ TransactionLoop:
 		token0RecvStr, _ := currentOrderReq.Receiver[pair.state.Token0ID()].String()
 		token1RecvStr, _ := currentOrderReq.Receiver[pair.state.Token1ID()].String()
 
-		// increment order count to keep same-block requests from exceeding limit
-		orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
+		if accessByNFT {
+			// increment order count to keep same-block requests from exceeding limit
+			orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
+		}
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
@@ -629,7 +629,7 @@ TransactionLoop:
 			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
 
-		// always return NFT in response
+		// when accessing using NftID, mint NFT in response
 		nftReceiver, accessByNFT := currentOrderReq.Receiver[currentOrderReq.NftID]
 		if accessByNFT {
 			recvStr, _ := nftReceiver.String() // error handled in tx validation
@@ -643,18 +643,19 @@ TransactionLoop:
 		}
 
 		// default to reject
+		refundMd := &metadataPdexv3.RejectedWithdrawOrder{
+			PoolPairID: currentOrderReq.PoolPairID,
+			OrderID:    currentOrderReq.OrderID,
+		}
 		refundAction := instruction.NewAction(
-			&metadataPdexv3.RejectedWithdrawOrder{
-				PoolPairID: currentOrderReq.PoolPairID,
-				OrderID:    currentOrderReq.OrderID,
-			},
+			refundMd,
 			*tx.Hash(),
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
 		if !exists {
-			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
+			Logger.log.Warnf("Cannot find pair %s for withdraw order", currentOrderReq.PoolPairID)
 			result = append(result, refundAction.StringSlice())
 			continue TransactionLoop
 		}
@@ -663,6 +664,17 @@ TransactionLoop:
 		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
 				if ord.NftID() == currentOrderReq.NftID {
+					if !accessByNFT {
+						if currentOrderReq.NextOTA == nil {
+							Logger.log.Warnf("Unexpected invalid access for order %s", orderID)
+							result = append(result, refundAction.StringSlice())
+							continue TransactionLoop
+						}
+						// access successful -> reject also changes NextOTA
+						refundMd.NextOTA = currentOrderReq.NextOTA
+						ord.SetNftID(common.Hash(currentOrderReq.NextOTA.Bytes()))
+					}
+
 					withdrawResults := make(map[common.Hash]uint64)
 					_, withdrawToken0 := currentOrderReq.Receiver[pair.state.Token0ID()]
 					_, withdrawToken1 := currentOrderReq.Receiver[pair.state.Token1ID()]
@@ -708,14 +720,6 @@ TransactionLoop:
 							currentOrderReq.Receiver, orderID)
 						result = append(result, refundAction.StringSlice())
 						continue TransactionLoop
-					}
-					if !accessByNFT {
-						if currentOrderReq.NextOTA == nil {
-							Logger.log.Warnf("Unexpected invalid access for order %s", orderID)
-							result = append(result, refundAction.StringSlice())
-							continue TransactionLoop
-						}
-						ord.SetNftID(common.Hash(currentOrderReq.NextOTA.Bytes()))
 					}
 					// apply orderbook changes for withdraw consistency in the same block
 					pairs[currentOrderReq.PoolPairID] = pair
