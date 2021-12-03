@@ -22,7 +22,8 @@ type Params struct {
 	MaxOrdersPerNft                 uint            // max orders per nft
 	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
 	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
-	OrderTradingRewardRatioBPS      map[string]uint // map: pool ID -> ratio of LOP rewards compare with LP rewards (0.1% ~ 10 BPS)
+	OrderTradingRewardRatioBPS      map[string]uint // map: pool ID -> the weight of LOP rewards compared with LP rewards (0.1% ~ 10 BPS)
+	OrderLiquidityMiningBPS         map[string]uint // map: pool ID -> order liquidity mining BPS (1500 BPS -> the percent of reward for AMM : buy orders : sell orders will be 70% : 15% : 15%)
 }
 
 func NewParams() *Params {
@@ -32,6 +33,7 @@ func NewParams() *Params {
 		StakingPoolsShare:          map[string]uint{},
 		StakingRewardTokens:        []common.Hash{},
 		OrderTradingRewardRatioBPS: map[string]uint{},
+		OrderLiquidityMiningBPS:    map[string]uint{},
 	}
 }
 
@@ -50,6 +52,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
 		MinPRVReserveTradingRate:        paramsState.MinPRVReserveTradingRate(),
 		OrderTradingRewardRatioBPS:      paramsState.OrderTradingRewardRatioBPS(),
+		OrderLiquidityMiningBPS:         paramsState.OrderLiquidityMiningBPS(),
 	}
 }
 
@@ -73,10 +76,15 @@ func (p *Params) Clone() *Params {
 	for k, v := range p.OrderTradingRewardRatioBPS {
 		clonedOrderTradingRewardRatioBPS[k] = v
 	}
+	clonedOrderLiquidityMiningBPS := map[string]uint{}
+	for k, v := range p.OrderLiquidityMiningBPS {
+		clonedOrderLiquidityMiningBPS[k] = v
+	}
 	result.FeeRateBPS = clonedFeeRateBPS
 	result.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
 	result.StakingPoolsShare = clonedStakingPoolsShare
 	result.OrderTradingRewardRatioBPS = clonedOrderTradingRewardRatioBPS
+	result.OrderLiquidityMiningBPS = clonedOrderLiquidityMiningBPS
 
 	return result
 }
@@ -126,8 +134,17 @@ func isValidPdexv3Params(
 		if !isExisted {
 			return false, fmt.Sprintf("Pair %v does not exist", pairID)
 		}
+		if ratioBPS > BPS {
+			return false, fmt.Sprintf("Order trading reward ratio of pair %v is too high", pairID)
+		}
+	}
+	for pairID, ratioBPS := range params.OrderLiquidityMiningBPS {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v does not exist", pairID)
+		}
 		if ratioBPS > BPS/2 {
-			return false, fmt.Sprintf("Order mining reward ratio of pair %v is too high", pairID)
+			return false, fmt.Sprintf("Order liquidity mining BPS of pair %v is too high", pairID)
 		}
 	}
 	return true, ""
@@ -160,6 +177,9 @@ func (params *Params) readConfig() *Params {
 	}
 	if res.OrderTradingRewardRatioBPS == nil {
 		res.OrderTradingRewardRatioBPS = make(map[string]uint)
+	}
+	if res.OrderLiquidityMiningBPS == nil {
+		res.OrderLiquidityMiningBPS = make(map[string]uint)
 	}
 	return res
 }

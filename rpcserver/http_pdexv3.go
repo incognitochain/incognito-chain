@@ -187,6 +187,19 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		orderTradingRewardRatioBPS[key] = uint(value)
 	}
 
+	orderLiquidityMiningBPSTmp, ok := newParams["OrderLiquidityMiningBPS"].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderLiquidityMiningBPS is invalid"))
+	}
+	orderLiquidityMiningBPS := map[string]uint{}
+	for key, share := range orderLiquidityMiningBPSTmp {
+		value, err := common.AssertAndConvertStrToNumber(share)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderLiquidityMiningBPS is invalid"))
+		}
+		orderLiquidityMiningBPS[key] = uint(value)
+	}
+
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
@@ -203,6 +216,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
 			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
 			OrderTradingRewardRatioBPS:      orderTradingRewardRatioBPS,
+			OrderLiquidityMiningBPS:         orderLiquidityMiningBPS,
 		},
 	)
 	if err != nil {
