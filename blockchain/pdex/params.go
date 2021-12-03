@@ -152,6 +152,9 @@ func isValidPdexv3Params(
 	if params.DAOContributingPercent > 100 {
 		return false, "DAO contributing percent is too high"
 	}
+	if params.DAOContributingPercent > 0 && len(params.PDEXRewardPoolPairsShare) == 0 {
+		return false, "Liquidity mining is enabled but no reward pool is specified"
+	}
 	return true, ""
 }
 
