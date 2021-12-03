@@ -200,6 +200,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		orderLiquidityMiningBPS[key] = uint(value)
 	}
 
+	daoContributingPercent, err := common.AssertAndConvertStrToNumber(newParams["DAOContributingPercent"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DAOContributingPercent is invalid"))
+	}
+
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
@@ -217,6 +222,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
 			OrderTradingRewardRatioBPS:      orderTradingRewardRatioBPS,
 			OrderLiquidityMiningBPS:         orderLiquidityMiningBPS,
+			DAOContributingPercent:          uint(daoContributingPercent),
 		},
 	)
 	if err != nil {

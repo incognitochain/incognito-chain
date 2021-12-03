@@ -23,6 +23,7 @@ type Pdexv3Params struct {
 	minPRVReserveTradingRate        uint64
 	orderTradingRewardRatioBPS      map[string]uint
 	orderLiquidityMiningBPS         map[string]uint
+	daoContributingPercent          uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -71,6 +72,10 @@ func (pp Pdexv3Params) OrderLiquidityMiningBPS() map[string]uint {
 	return pp.orderLiquidityMiningBPS
 }
 
+func (pp Pdexv3Params) DAOContributingPercent() uint {
+	return pp.daoContributingPercent
+}
+
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		DefaultFeeRateBPS               uint
@@ -87,6 +92,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		MinPRVReserveTradingRate        uint64
 		OrderTradingRewardRatioBPS      map[string]uint
 		OrderLiquidityMiningBPS         map[string]uint
+		DAOContributingPercent          uint
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
@@ -102,6 +108,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		MinPRVReserveTradingRate:        pp.minPRVReserveTradingRate,
 		OrderTradingRewardRatioBPS:      pp.orderTradingRewardRatioBPS,
 		OrderLiquidityMiningBPS:         pp.orderLiquidityMiningBPS,
+		DAOContributingPercent:          pp.daoContributingPercent,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -125,6 +132,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		MinPRVReserveTradingRate        uint64
 		OrderTradingRewardRatioBPS      map[string]uint
 		OrderLiquidityMiningBPS         map[string]uint
+		DAOContributingPercent          uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -150,6 +158,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		temp.OrderLiquidityMiningBPS = make(map[string]uint)
 	}
 	pp.orderLiquidityMiningBPS = temp.OrderLiquidityMiningBPS
+	pp.daoContributingPercent = temp.DAOContributingPercent
 	return nil
 }
 
@@ -172,6 +181,7 @@ func NewPdexv3ParamsWithValue(
 	minPRVReserveTradingRate uint64,
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
+	daoContributingPercent uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
@@ -188,6 +198,7 @@ func NewPdexv3ParamsWithValue(
 		minPRVReserveTradingRate:        minPRVReserveTradingRate,
 		orderTradingRewardRatioBPS:      orderTradingRewardRatioBPS,
 		orderLiquidityMiningBPS:         orderLiquidityMiningBPS,
+		daoContributingPercent:          daoContributingPercent,
 	}
 }
 

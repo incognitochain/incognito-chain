@@ -20,6 +20,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 		MaxOrdersPerNft                 uint
 		OrderTradingRewardRatioBPS      map[string]uint
 		OrderLiquidityMiningBPS         map[string]uint
+		DAOContributingPercent          uint
 	}
 	tests := []struct {
 		name   string
@@ -61,6 +62,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 				OrderLiquidityMiningBPS: map[string]uint{
 					"abs": 1500,
 				},
+				DAOContributingPercent: 80,
 			},
 			want: false,
 		},
@@ -80,6 +82,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 				MaxOrdersPerNft:                 tt.fields.MaxOrdersPerNft,
 				OrderTradingRewardRatioBPS:      tt.fields.OrderTradingRewardRatioBPS,
 				OrderLiquidityMiningBPS:         tt.fields.OrderLiquidityMiningBPS,
+				DAOContributingPercent:          tt.fields.DAOContributingPercent,
 			}
 			if got := params.IsZeroValue(); got != tt.want {
 				t.Errorf("Params.IsZeroValue() = %v, want %v", got, tt.want)

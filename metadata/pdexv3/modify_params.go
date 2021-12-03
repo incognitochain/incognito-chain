@@ -27,6 +27,7 @@ type Pdexv3Params struct {
 	MinPRVReserveTradingRate        uint64          `json:"MinPRVReserveTradingRate"`
 	OrderTradingRewardRatioBPS      map[string]uint `json:"OrderTradingRewardRatioBPS,omitempty"`
 	OrderLiquidityMiningBPS         map[string]uint `json:"OrderLiquidityMiningBPS,omitempty"`
+	DAOContributingPercent          uint            `json:"DAOContributingPercent,omitempty"`
 }
 
 type ParamsModifyingRequest struct {
