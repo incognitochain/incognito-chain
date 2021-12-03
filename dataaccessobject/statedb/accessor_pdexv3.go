@@ -45,7 +45,7 @@ func StorePdexv3Params(
 	maxOrdersPerNft uint,
 	autoWithdrawOrderLimitAmount uint,
 	minPRVReserveTradingRate uint64,
-	orderMiningRewardRatioBPS map[string]uint,
+	orderTradingRewardRatioBPS map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
@@ -61,7 +61,7 @@ func StorePdexv3Params(
 		maxOrdersPerNft,
 		autoWithdrawOrderLimitAmount,
 		minPRVReserveTradingRate,
-		orderMiningRewardRatioBPS,
+		orderTradingRewardRatioBPS,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {

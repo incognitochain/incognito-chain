@@ -174,17 +174,17 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MinPRVReserveTradingRate is invalid"))
 	}
 
-	orderMiningRewardRatioBPSTmp, ok := newParams["OrderMiningRewardRatioBPS"].(map[string]interface{})
+	orderTradingRewardRatioBPSTmp, ok := newParams["OrderTradingRewardRatioBPS"].(map[string]interface{})
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderMiningRewardRatioBPS is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderTradingRewardRatioBPS is invalid"))
 	}
-	orderMiningRewardRatioBPS := map[string]uint{}
-	for key, share := range orderMiningRewardRatioBPSTmp {
+	orderTradingRewardRatioBPS := map[string]uint{}
+	for key, share := range orderTradingRewardRatioBPSTmp {
 		value, err := common.AssertAndConvertStrToNumber(share)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderMiningRewardRatioBPS is invalid"))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderTradingRewardRatioBPS is invalid"))
 		}
-		orderMiningRewardRatioBPS[key] = uint(value)
+		orderTradingRewardRatioBPS[key] = uint(value)
 	}
 
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
@@ -202,7 +202,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
 			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
 			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
-			OrderMiningRewardRatioBPS:       orderMiningRewardRatioBPS,
+			OrderTradingRewardRatioBPS:      orderTradingRewardRatioBPS,
 		},
 	)
 	if err != nil {

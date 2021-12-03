@@ -452,7 +452,7 @@ func (sp *stateProducerV2) trade(
 			poolFees, feeRateBPS,
 			acceptedTradeMd,
 			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
-			params.OrderMiningRewardRatioBPS,
+			params.OrderTradingRewardRatioBPS,
 		)
 		if err != nil {
 			Logger.log.Warnf("Error handling fee distribution: %v", err)

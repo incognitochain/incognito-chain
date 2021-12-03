@@ -71,7 +71,7 @@ func SplitTradingReward(
 		if _, ok := weightOrderMakingAmt[nftID]; !ok {
 			weightOrderMakingAmt[nftID] = new(big.Int).SetUint64(0)
 		}
-		weightOrderMakingAmt[nftID].Add(weightOrderMakingAmt[nftID], new(big.Int).Mul(orderMakingAmt, new(big.Int).SetUint64(uint64(2*ratio))))
+		weightOrderMakingAmt[nftID].Add(weightOrderMakingAmt[nftID], new(big.Int).Mul(orderMakingAmt, new(big.Int).SetUint64(uint64(ratio))))
 	}
 	for _, weight := range weightOrderMakingAmt {
 		weightedMakingAmt.Add(weightedMakingAmt, weight)
