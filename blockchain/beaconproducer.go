@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -160,6 +161,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	validUnstakePublicKeys := make(map[string]bool)
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
+	pdexReward := uint64(0)
 
 	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
 
@@ -175,12 +177,21 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
 
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+		isSplitRewardForPdex := curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
+
+		pdexRewardPercent := uint(0)
+		if isSplitRewardForPdex {
+			pdexRewardPercent = curView.pdeStates[pdex.AmplifierVersion].Reader().Params().DAOContributingPercent
+		}
+
+		rewardByEpochInstruction, rewardForCustodianByEpoch, pdexReward, err = blockchain.buildRewardInstructionByEpoch(
 			curView,
 			newBeaconBlock.Header.Height,
 			curView.Epoch,
 			isSplitRewardForCustodian,
 			percentCustodianRewards,
+			isSplitRewardForPdex,
+			pdexRewardPercent,
 			newBeaconBlock.Header.Version,
 		)
 		if err != nil {
@@ -242,6 +253,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		portalParams,
 		shardStates,
 		allPdexv3Txs,
+		pdexReward,
 	)
 
 	if err != nil {
