@@ -18,6 +18,7 @@ type WithdrawLiquidityRequest struct {
 	nftID        string
 	otaReceivers map[string]string
 	shareAmount  uint64
+	accessOption *AccessOption
 }
 
 func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
@@ -29,16 +30,17 @@ func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
 }
 
 func NewWithdrawLiquidityRequestWithValue(
-	poolPairID, nftID string,
+	poolPairID string,
 	otaReceivers map[string]string,
 	shareAmount uint64,
+	accessOption *AccessOption,
 ) *WithdrawLiquidityRequest {
 	return &WithdrawLiquidityRequest{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3WithdrawLiquidityRequestMeta,
 		},
 		poolPairID:   poolPairID,
-		nftID:        nftID,
+		accessOption: accessOption,
 		otaReceivers: otaReceivers,
 		shareAmount:  shareAmount,
 	}
@@ -52,7 +54,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	err := request.accessOption.isValid(tx, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
 		return false, err
 	}
@@ -141,7 +143,7 @@ func (request *WithdrawLiquidityRequest) CalculateSize() uint64 {
 func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID   string            `json:"PoolPairID"`
-		NftID        string            `json:"NftID"`
+		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
 		metadataCommon.MetadataBase
@@ -161,7 +163,7 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID   string            `json:"PoolPairID"`
-		NftID        string            `json:"NftID"`
+		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
 		metadataCommon.MetadataBase

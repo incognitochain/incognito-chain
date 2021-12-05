@@ -16,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateV2 struct {
@@ -600,14 +599,19 @@ func NewContributionWithMetaData(
 	metaData metadataPdexv3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
 ) *rawdbv2.Pdexv3Contribution {
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
-	nftID := common.Hash{}
-	if metaData.NftID() != utils.EmptyString {
-		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
-		nftID = *nftHash
+	accessOption := metaData.AccessOption()
+
+	identityID := common.Hash{}
+	if !accessOption.NftID().IsZeroValue() {
+		identityID = accessOption.NftID()
+	} else {
+		temp := accessOption.NextOTA().Bytes()
+		identityID.SetBytes(temp[:])
 	}
+
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.OtaReceiver(),
-		*tokenHash, txReqID, nftID,
+		*tokenHash, txReqID, identityID,
 		metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
 	)

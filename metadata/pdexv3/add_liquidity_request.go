@@ -14,13 +14,14 @@ import (
 )
 
 type AddLiquidityRequest struct {
-	poolPairID  string // only "" for the first contribution of pool
-	pairHash    string
-	otaReceiver string // refund pToken
-	tokenID     string
-	nftID       string
-	tokenAmount uint64
-	amplifier   uint // only set for the first contribution
+	poolPairID   string // only "" for the first contribution of pool
+	pairHash     string
+	otaReceiver  string // refund pToken
+	tokenID      string
+	nftID        string
+	tokenAmount  uint64
+	amplifier    uint // only set for the first contribution
+	accessOption *AccessOption
 	metadataCommon.MetadataBase
 }
 
@@ -29,8 +30,9 @@ func NewAddLiquidity() *AddLiquidityRequest {
 }
 
 func NewAddLiquidityRequestWithValue(
-	poolPairID, pairHash, otaReceiver, tokenID, nftID string,
+	poolPairID, pairHash, otaReceiver, tokenID string,
 	tokenAmount uint64, amplifier uint,
+	accessOption *AccessOption,
 ) *AddLiquidityRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
@@ -40,7 +42,7 @@ func NewAddLiquidityRequestWithValue(
 		pairHash:     pairHash,
 		otaReceiver:  otaReceiver,
 		tokenID:      tokenID,
-		nftID:        nftID,
+		accessOption: accessOption,
 		tokenAmount:  tokenAmount,
 		amplifier:    amplifier,
 		MetadataBase: metadataBase,
@@ -55,7 +57,7 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	err := request.accessOption.isValid(tx, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
 		return false, err
 	}
@@ -88,13 +90,6 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 	if tokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
-	nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
-	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if nftID.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
-	}
 	otaReceiver := privacy.OTAReceiver{}
 	err = otaReceiver.FromString(request.otaReceiver)
 	if err != nil {
@@ -106,7 +101,6 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 	if request.amplifier < BaseAmplifier {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
 	}
-
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
@@ -152,22 +146,23 @@ func (request *AddLiquidityRequest) CalculateSize() uint64 {
 
 func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash    string `json:"PairHash"`
-		OtaReceiver string `json:"OtaReceiver"` // receive pToken
-		TokenID     string `json:"TokenID"`
-		NftID       string `json:"NftID"`
-		TokenAmount uint64 `json:"TokenAmount"`
-		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
+		PoolPairID   string        `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash     string        `json:"PairHash"`
+		OtaReceiver  string        `json:"OtaReceiver"` // receive pToken
+		TokenID      string        `json:"TokenID"`
+		NftID        string        `json:"NftID,omitempty"` // will be removed when next ota is ready
+		TokenAmount  uint64        `json:"TokenAmount"`
+		Amplifier    uint          `json:"Amplifier"` // only set for the first contribution
+		AccessOption *AccessOption `json:"AccessOption,omitempty"`
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:   request.poolPairID,
 		PairHash:     request.pairHash,
 		OtaReceiver:  request.otaReceiver,
 		TokenID:      request.tokenID,
-		NftID:        request.nftID,
 		TokenAmount:  request.tokenAmount,
 		Amplifier:    request.amplifier,
+		AccessOption: request.accessOption,
 		MetadataBase: request.MetadataBase,
 	})
 	if err != nil {
@@ -178,13 +173,14 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 
 func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash    string `json:"PairHash"`
-		OtaReceiver string `json:"OtaReceiver"` // receive pToken
-		TokenID     string `json:"TokenID"`
-		NftID       string `json:"NftID"`
-		TokenAmount uint64 `json:"TokenAmount"`
-		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
+		PoolPairID   string        `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash     string        `json:"PairHash"`
+		OtaReceiver  string        `json:"OtaReceiver"` // receive pToken
+		TokenID      string        `json:"TokenID"`
+		NftID        string        `json:"NftID,omitempty"` // will be disabled when next ota is ready
+		TokenAmount  uint64        `json:"TokenAmount"`
+		Amplifier    uint          `json:"Amplifier"` // only set for the first contribution
+		AccessOption *AccessOption `json:"AccessOption,omitempty"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -195,10 +191,12 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	request.pairHash = temp.PairHash
 	request.otaReceiver = temp.OtaReceiver
 	request.tokenID = temp.TokenID
-	request.nftID = temp.NftID
 	request.tokenAmount = temp.TokenAmount
 	request.amplifier = temp.Amplifier
 	request.MetadataBase = temp.MetadataBase
+	if temp.AccessOption != nil && request.accessOption != nil {
+		request.accessOption = temp.AccessOption
+	}
 	return nil
 }
 
@@ -226,8 +224,8 @@ func (request *AddLiquidityRequest) Amplifier() uint {
 	return request.amplifier
 }
 
-func (request *AddLiquidityRequest) NftID() string {
-	return request.nftID
+func (request *AddLiquidityRequest) AccessOption() AccessOption {
+	return *request.accessOption
 }
 
 func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

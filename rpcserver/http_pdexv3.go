@@ -718,8 +718,8 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 	}
 
 	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
-		mdReader.PoolPairID, mdReader.PairHash, otaReceiverStr, mdReader.TokenID, mdReader.NftID,
-		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier))
+		mdReader.PoolPairID, mdReader.PairHash, otaReceiverStr, mdReader.TokenID,
+		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier), nil)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.TokenID)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
@@ -1457,7 +1457,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 		WithdrawTokenIDs []common.Hash
 		Amount           Uint64Reader
 		NftID            common.Hash
-		NextOTA 		 *metadataPdexv3.AccessOTA
+		NextOTA          *metadataPdexv3.AccessOTA
 	}{}
 
 	// parse params & metadata

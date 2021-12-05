@@ -136,3 +136,86 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 
 	return true, nil
 }
+
+type AccessOption struct {
+	nextOTA  *AccessOTA
+	burntOTA *AccessOTA
+	nftID    common.Hash
+}
+
+func (a *AccessOption) NextOTA() AccessOTA {
+	return *a.nextOTA
+}
+
+func (a *AccessOption) BurntOTA() AccessOTA {
+	return *a.burntOTA
+}
+
+func (a *AccessOption) NftID() common.Hash {
+	return a.nftID
+}
+
+func (a *AccessOption) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		NextOTA  *AccessOTA  `json:"NextOTA"`
+		BurntOTA *AccessOTA  `json:"BurntOTA"`
+		NftID    common.Hash `json:"NftID"`
+	}{
+		NextOTA:  a.nextOTA,
+		NftID:    a.nftID,
+		BurntOTA: a.burntOTA,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (a *AccessOption) UnmarshalJSON(data []byte) error {
+	var temp struct {
+		NextOTA  *AccessOTA  `json:"NextOTA"`
+		BurntOTA *AccessOTA  `json:"BurntOTA"`
+		NftID    common.Hash `json:"NftID"`
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+
+	*a = AccessOption{
+		nftID:    temp.NftID,
+		nextOTA:  temp.NextOTA,
+		burntOTA: temp.BurntOTA,
+	}
+	return nil
+}
+
+func (a *AccessOption) isValid(
+	tx metadataCommon.Transaction,
+	beaconViewRetriever metadataCommon.BeaconViewRetriever,
+	transactionStateDB *statedb.StateDB,
+	isWithdrawRequest bool,
+) error {
+	err := beaconViewRetriever.IsValidNftID(a.nftID.String())
+	if err != nil {
+		if isWithdrawRequest && a.burntOTA == nil {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("burn OTA is null")))
+		}
+		if a.nextOTA == nil {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("next OTA is null")))
+		}
+		valid, err1 := ValidPdexv3Access(a.burntOTA, *a.nextOTA, tx, common.PRVCoinID, transactionStateDB)
+		if valid {
+			return nil
+		}
+		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
+	}
+	return nil
+}
+
+func (a *AccessOption) IsEmpty(isWithdrawRequest bool) bool {
+	if isWithdrawRequest && a.burntOTA == nil {
+		return true
+	}
+	return a.nftID.IsZeroValue() && a.nextOTA == nil
+}
