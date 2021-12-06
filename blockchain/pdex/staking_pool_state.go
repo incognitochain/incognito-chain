@@ -120,11 +120,7 @@ func (s *StakingPoolState) getDiff(
 			stakingPoolChange.Stakers[nftID] = stakerChange
 		}
 	} else {
-		for tokenID, value := range s.rewardsPerShare {
-			if m, ok := compareStakingPoolState.rewardsPerShare[tokenID]; !ok || !reflect.DeepEqual(m, value) {
-				newStakingPoolChange.RewardsPerShare[tokenID.String()] = true
-			}
-		}
+		newStakingPoolChange.RewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(s.rewardsPerShare, compareStakingPoolState.rewardsPerShare)
 		for nftID, staker := range s.stakers {
 			if m, ok := compareStakingPoolState.stakers[nftID]; !ok || !reflect.DeepEqual(m, staker) {
 				stakerChange := v2utils.NewStakerChange()

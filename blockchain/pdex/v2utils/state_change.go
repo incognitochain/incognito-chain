@@ -1,5 +1,12 @@
 package v2utils
 
+import (
+	"math/big"
+	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
+
 type StateChange struct {
 	PoolPairs    map[string]*PoolPairChange
 	StakingPools map[string]*StakingPoolChange
@@ -91,4 +98,52 @@ func NewOrderRewardChange() *OrderRewardChange {
 	return &OrderRewardChange{
 		UncollectedReward: make(map[string]bool),
 	}
+}
+
+func GetChangedElementsFromMapUint64(map0, map1 map[common.Hash]uint64) map[string]bool {
+	res := map[string]bool{}
+	for k, v := range map0 {
+		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k.String()] = true
+		}
+	}
+
+	for k, v := range map1 {
+		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k.String()] = true
+		}
+	}
+	return res
+}
+
+func GetChangedElementsFromMapBigInt(map0, map1 map[common.Hash]*big.Int) map[string]bool {
+	res := map[string]bool{}
+	for k, v := range map0 {
+		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k.String()] = true
+		}
+	}
+
+	for k, v := range map1 {
+		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k.String()] = true
+		}
+	}
+	return res
+}
+
+func GetChangedElementsFromMapStringBigInt(map0, map1 map[string]*big.Int) map[string]bool {
+	res := map[string]bool{}
+	for k, v := range map0 {
+		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k] = true
+		}
+	}
+
+	for k, v := range map1 {
+		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k] = true
+		}
+	}
+	return res
 }
