@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"io/ioutil"
 	"reflect"
@@ -324,6 +325,9 @@ func (httpServer *HttpServer) handleGetFinalityProof(params interface{}, closeCh
 }
 
 func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Param().Net == config.MainnetNet {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidRequestError, fmt.Errorf("Cannot execute on mainnet"))
+	}
 
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
