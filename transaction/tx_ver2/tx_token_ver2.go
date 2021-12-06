@@ -1301,22 +1301,35 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 	return result
 }
 
-func (txToken TxToken) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash][]privacy.Point, error) {
-	shardID := common.GetShardIDFromLastByte(txToken.Tx.PubKeyLastByteSender)
-	result := make(map[common.Hash][]privacy.Point)
-	keys, err := getDerivableInputFromSigPubKey(txToken.Tx.SigPubKey, common.PRVCoinID, txToken.Hash(), shardID, transactionStateDB)
-	if err != nil {
-		return nil, err
+func (txToken TxToken) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash]privacy.Point, error) {
+	isBurn, burnedPRVCoin, burnedTokenCoin, _, err := txToken.GetTxFullBurnData()
+	if !isBurn || err != nil {
+		return nil, fmt.Errorf("txToken burns no coin")
 	}
-	result[common.PRVCoinID] = keys
 
-	// token inputs without a plain tokenID are deemed not derivable
-	if txToken.TokenData.PropertyID != common.ConfidentialAssetID {
-		keys, err = getDerivableInputFromSigPubKey(txToken.TokenData.SigPubKey, txToken.TokenData.PropertyID, txToken.Hash(), shardID, transactionStateDB)
+	shardID := common.GetShardIDFromLastByte(txToken.Tx.PubKeyLastByteSender)
+	result := make(map[common.Hash]privacy.Point)
+	if burnedPRVCoin != nil {
+		pk, err := getDerivableInputFromSigPubKey(txToken.Tx.SigPubKey, common.PRVCoinID, txToken.Hash(), shardID, transactionStateDB)
 		if err != nil {
 			return nil, err
 		}
-		result[txToken.TokenData.PropertyID] = keys
+		if pk != nil {
+			result[common.PRVCoinID] = *pk
+		}
+	}
+
+	if burnedTokenCoin != nil {
+		// token inputs without a plain tokenID are deemed not derivable
+		if txToken.TokenData.PropertyID != common.ConfidentialAssetID {
+			pk, err := getDerivableInputFromSigPubKey(txToken.TokenData.SigPubKey, txToken.TokenData.PropertyID, txToken.Hash(), shardID, transactionStateDB)
+			if err != nil {
+				return nil, err
+			}
+			if pk != nil {
+				result[txToken.TokenData.PropertyID] = *pk
+			}
+		}
 	}
 	return result, nil
 }

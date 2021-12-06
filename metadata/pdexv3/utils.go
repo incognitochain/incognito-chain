@@ -61,7 +61,7 @@ func (ota *AccessOTA) FromBytes(data [32]byte) error {
 }
 
 type BurnInputReader interface {
-	DerivableBurnInput(*statedb.StateDB) (map[common.Hash][]privacy.Point, error)
+	DerivableBurnInput(*statedb.StateDB) (map[common.Hash]privacy.Point, error)
 }
 
 // TODO: specify which token & min amount for access
@@ -122,11 +122,9 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 		}
 
 		burnValid := false
-		for _, burnInputCoinPubkeys := range burnMap {
-			for _, p := range burnInputCoinPubkeys {
-				if privacy.IsPointEqual(burnOTAPoint, &p) {
-					burnValid = true
-				}
+		for _, burnInputCoinPubkey := range burnMap {
+			if privacy.IsPointEqual(burnOTAPoint, &burnInputCoinPubkey) {
+				burnValid = true
 			}
 		}
 		if !burnValid {
