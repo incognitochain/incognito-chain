@@ -108,7 +108,8 @@ func findUpNearestAmount(arr []utxoItem, amount uint64) (utxoItem, int, error) {
 	return utxoItem{}, -1, errors.New("Not found the up nearest amount")
 }
 
-func (p PortalBTCTokenProcessor) ChooseUTXOsForUnshieldReq(utxos []utxoItem, unshieldAmount uint64,
+func (p PortalBTCTokenProcessor) ChooseUTXOsForUnshieldReq(
+	utxos []utxoItem, unshieldAmount uint64,
 ) ([]utxoItem, []int, error) {
 	if len(utxos) == 0 {
 		return []utxoItem{}, []int{}, errors.New("The list utxos is empty")
@@ -155,36 +156,39 @@ func (p PortalBTCTokenProcessor) ChooseUTXOsForUnshieldReq(utxos []utxoItem, uns
 	return chosenUTXOs, chosenIndices, nil
 }
 
-func (p PortalBTCTokenProcessor) MergeBatches(batchTxs []*BroadcastTx) ([]*BroadcastTx, error) {
+func (p PortalBTCTokenProcessor) MergeBatches(batchTxs []*BroadcastTx) []*BroadcastTx {
 	mergedBatches := []*BroadcastTx{}
 	if len(batchTxs) == 0 {
-		return mergedBatches, nil
+		return mergedBatches
 	}
 
-	tmpBatchUTXOs := []*statedb.UTXO{}
-	tmpBatchUnshieldIDs := []string{}
-	for i := 0; i < len(batchTxs); {
-		tmpBatchUTXOs = batchTxs[i].UTXOs
-		tmpBatchUnshieldIDs = batchTxs[i].UnshieldIDs
-		isValid := true
-		j := i + 1
-		for isValid && j < len(batchTxs) {
-			nextBatch := batchTxs[j]
-			isValid = p.IsAcceptableTxSize(len(tmpBatchUTXOs)+len(nextBatch.UTXOs),
-				len(tmpBatchUnshieldIDs)+len(nextBatch.UnshieldIDs)+1) // 1 for output change
-			if isValid {
-				tmpBatchUTXOs = append(tmpBatchUTXOs, nextBatch.UTXOs...)
-				tmpBatchUnshieldIDs = append(tmpBatchUnshieldIDs, nextBatch.UnshieldIDs...)
-				j++
-			}
+	tmpBatchUTXOs := batchTxs[0].UTXOs
+	tmpBatchUnshieldIDs := batchTxs[0].UnshieldIDs
+	for j := 1; j < len(batchTxs); j++ {
+		nextBatch := batchTxs[j]
+		isValid := p.IsAcceptableTxSize(len(tmpBatchUTXOs)+len(nextBatch.UTXOs),
+			len(tmpBatchUnshieldIDs)+len(nextBatch.UnshieldIDs)+1) // 1 for output change
+		if isValid {
+			tmpBatchUTXOs = append(tmpBatchUTXOs, nextBatch.UTXOs...)
+			tmpBatchUnshieldIDs = append(tmpBatchUnshieldIDs, nextBatch.UnshieldIDs...)
+		} else {
+			mergedBatches = append(mergedBatches, &BroadcastTx{
+				UTXOs:       tmpBatchUTXOs,
+				UnshieldIDs: tmpBatchUnshieldIDs,
+			})
+			tmpBatchUTXOs = nextBatch.UTXOs
+			tmpBatchUnshieldIDs = nextBatch.UnshieldIDs
 		}
-		mergedBatches = append(mergedBatches, &BroadcastTx{
-			UTXOs:       tmpBatchUTXOs,
-			UnshieldIDs: tmpBatchUnshieldIDs,
-		})
-		i = j
+
+		if j == len(batchTxs)-1 {
+			mergedBatches = append(mergedBatches, &BroadcastTx{
+				UTXOs:       tmpBatchUTXOs,
+				UnshieldIDs: tmpBatchUnshieldIDs,
+			})
+		}
 	}
-	return mergedBatches, nil
+
+	return mergedBatches
 }
 
 func (p PortalBTCTokenProcessor) EstimateTxSize(numInputs int, numOutputs int) uint {
@@ -208,21 +212,19 @@ func (p PortalBTCTokenProcessor) AppendTinyUTXOs(
 ) []*BroadcastTx {
 	indexUTXO := len(sortedUTXOs) - 1
 	tmpIndexUTXO := indexUTXO
-	for i, batch := range batchTxs {
+	for _, batch := range batchTxs {
 		// only append tiny utxo when number of utxos in vault greater than minUTXOs param
 		if uint64(indexUTXO+1) <= minUTXOs {
 			return batchTxs
 		}
 		numTinyUTXOs := p.CalculateTinyUTXONumber(batch)
-		fmt.Printf("Batch %v - numTinyUTXOs %v\n", i, numTinyUTXOs)
 		for j := indexUTXO; j >= 0 && numTinyUTXOs > 0; j-- {
-			if sortedUTXOs[j].value.GetOutputAmount() <= thresholdTinyValue {
-				batch.UTXOs = append(batch.UTXOs, sortedUTXOs[j].value)
-				numTinyUTXOs--
-				tmpIndexUTXO--
-			} else {
+			if sortedUTXOs[j].value.GetOutputAmount() > thresholdTinyValue {
 				return batchTxs
 			}
+			batch.UTXOs = append(batch.UTXOs, sortedUTXOs[j].value)
+			numTinyUTXOs--
+			tmpIndexUTXO--
 		}
 		indexUTXO = tmpIndexUTXO
 	}
