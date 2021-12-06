@@ -9,21 +9,22 @@ import (
 )
 
 type Pdexv3Params struct {
-	defaultFeeRateBPS               uint
-	feeRateBPS                      map[string]uint
-	prvDiscountPercent              uint
-	tradingProtocolFeePercent       uint
-	tradingStakingPoolRewardPercent uint
-	pdexRewardPoolPairsShare        map[string]uint
-	stakingPoolsShare               map[string]uint
-	stakingRewardTokens             []common.Hash
-	mintNftRequireAmount            uint64
-	maxOrdersPerNft                 uint
-	autoWithdrawOrderLimitAmount    uint
-	minPRVReserveTradingRate        uint64
-	orderTradingRewardRatioBPS      map[string]uint
-	orderLiquidityMiningBPS         map[string]uint
-	daoContributingPercent          uint
+	defaultFeeRateBPS                 uint
+	feeRateBPS                        map[string]uint
+	prvDiscountPercent                uint
+	tradingProtocolFeePercent         uint
+	tradingStakingPoolRewardPercent   uint
+	pdexRewardPoolPairsShare          map[string]uint
+	stakingPoolsShare                 map[string]uint
+	stakingRewardTokens               []common.Hash
+	mintNftRequireAmount              uint64
+	maxOrdersPerNft                   uint
+	autoWithdrawOrderLimitAmount      uint
+	minPRVReserveTradingRate          uint64
+	defaultOrderTradingRewardRatioBPS uint
+	orderTradingRewardRatioBPS        map[string]uint
+	orderLiquidityMiningBPS           map[string]uint
+	daoContributingPercent            uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -64,6 +65,10 @@ func (pp Pdexv3Params) MinPRVReserveTradingRate() uint64 {
 	return pp.minPRVReserveTradingRate
 }
 
+func (pp Pdexv3Params) DefaultOrderTradingRewardRatioBPS() uint {
+	return pp.defaultOrderTradingRewardRatioBPS
+}
+
 func (pp Pdexv3Params) OrderTradingRewardRatioBPS() map[string]uint {
 	return pp.orderTradingRewardRatioBPS
 }
@@ -78,37 +83,39 @@ func (pp Pdexv3Params) DAOContributingPercent() uint {
 
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		DefaultFeeRateBPS               uint
-		FeeRateBPS                      map[string]uint
-		PRVDiscountPercent              uint
-		TradingProtocolFeePercent       uint
-		TradingStakingPoolRewardPercent uint
-		PDEXRewardPoolPairsShare        map[string]uint
-		StakingPoolsShare               map[string]uint
-		StakingRewardTokens             []common.Hash
-		MintNftRequireAmount            uint64
-		MaxOrdersPerNft                 uint
-		AutoWithdrawOrderLimitAmount    uint
-		MinPRVReserveTradingRate        uint64
-		OrderTradingRewardRatioBPS      map[string]uint
-		OrderLiquidityMiningBPS         map[string]uint
-		DAOContributingPercent          uint
+		DefaultFeeRateBPS                 uint
+		FeeRateBPS                        map[string]uint
+		PRVDiscountPercent                uint
+		TradingProtocolFeePercent         uint
+		TradingStakingPoolRewardPercent   uint
+		PDEXRewardPoolPairsShare          map[string]uint
+		StakingPoolsShare                 map[string]uint
+		StakingRewardTokens               []common.Hash
+		MintNftRequireAmount              uint64
+		MaxOrdersPerNft                   uint
+		AutoWithdrawOrderLimitAmount      uint
+		MinPRVReserveTradingRate          uint64
+		DefaultOrderTradingRewardRatioBPS uint
+		OrderTradingRewardRatioBPS        map[string]uint
+		OrderLiquidityMiningBPS           map[string]uint
+		DAOContributingPercent            uint
 	}{
-		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
-		FeeRateBPS:                      pp.feeRateBPS,
-		PRVDiscountPercent:              pp.prvDiscountPercent,
-		TradingProtocolFeePercent:       pp.tradingProtocolFeePercent,
-		TradingStakingPoolRewardPercent: pp.tradingStakingPoolRewardPercent,
-		PDEXRewardPoolPairsShare:        pp.pdexRewardPoolPairsShare,
-		StakingPoolsShare:               pp.stakingPoolsShare,
-		StakingRewardTokens:             pp.stakingRewardTokens,
-		MintNftRequireAmount:            pp.mintNftRequireAmount,
-		MaxOrdersPerNft:                 pp.maxOrdersPerNft,
-		AutoWithdrawOrderLimitAmount:    pp.autoWithdrawOrderLimitAmount,
-		MinPRVReserveTradingRate:        pp.minPRVReserveTradingRate,
-		OrderTradingRewardRatioBPS:      pp.orderTradingRewardRatioBPS,
-		OrderLiquidityMiningBPS:         pp.orderLiquidityMiningBPS,
-		DAOContributingPercent:          pp.daoContributingPercent,
+		DefaultFeeRateBPS:                 pp.defaultFeeRateBPS,
+		FeeRateBPS:                        pp.feeRateBPS,
+		PRVDiscountPercent:                pp.prvDiscountPercent,
+		TradingProtocolFeePercent:         pp.tradingProtocolFeePercent,
+		TradingStakingPoolRewardPercent:   pp.tradingStakingPoolRewardPercent,
+		PDEXRewardPoolPairsShare:          pp.pdexRewardPoolPairsShare,
+		StakingPoolsShare:                 pp.stakingPoolsShare,
+		StakingRewardTokens:               pp.stakingRewardTokens,
+		MintNftRequireAmount:              pp.mintNftRequireAmount,
+		MaxOrdersPerNft:                   pp.maxOrdersPerNft,
+		AutoWithdrawOrderLimitAmount:      pp.autoWithdrawOrderLimitAmount,
+		MinPRVReserveTradingRate:          pp.minPRVReserveTradingRate,
+		DefaultOrderTradingRewardRatioBPS: pp.defaultOrderTradingRewardRatioBPS,
+		OrderTradingRewardRatioBPS:        pp.orderTradingRewardRatioBPS,
+		OrderLiquidityMiningBPS:           pp.orderLiquidityMiningBPS,
+		DAOContributingPercent:            pp.daoContributingPercent,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -118,21 +125,22 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 
 func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		DefaultFeeRateBPS               uint
-		FeeRateBPS                      map[string]uint
-		PRVDiscountPercent              uint
-		TradingProtocolFeePercent       uint
-		TradingStakingPoolRewardPercent uint
-		PDEXRewardPoolPairsShare        map[string]uint
-		StakingPoolsShare               map[string]uint
-		StakingRewardTokens             []common.Hash
-		MintNftRequireAmount            uint64
-		MaxOrdersPerNft                 uint
-		AutoWithdrawOrderLimitAmount    uint
-		MinPRVReserveTradingRate        uint64
-		OrderTradingRewardRatioBPS      map[string]uint
-		OrderLiquidityMiningBPS         map[string]uint
-		DAOContributingPercent          uint
+		DefaultFeeRateBPS                 uint
+		FeeRateBPS                        map[string]uint
+		PRVDiscountPercent                uint
+		TradingProtocolFeePercent         uint
+		TradingStakingPoolRewardPercent   uint
+		PDEXRewardPoolPairsShare          map[string]uint
+		StakingPoolsShare                 map[string]uint
+		StakingRewardTokens               []common.Hash
+		MintNftRequireAmount              uint64
+		MaxOrdersPerNft                   uint
+		AutoWithdrawOrderLimitAmount      uint
+		MinPRVReserveTradingRate          uint64
+		DefaultOrderTradingRewardRatioBPS uint
+		OrderTradingRewardRatioBPS        map[string]uint
+		OrderLiquidityMiningBPS           map[string]uint
+		DAOContributingPercent            uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -150,6 +158,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	pp.maxOrdersPerNft = temp.MaxOrdersPerNft
 	pp.autoWithdrawOrderLimitAmount = temp.AutoWithdrawOrderLimitAmount
 	pp.minPRVReserveTradingRate = temp.MinPRVReserveTradingRate
+	pp.defaultOrderTradingRewardRatioBPS = temp.DefaultOrderTradingRewardRatioBPS
 	if temp.OrderTradingRewardRatioBPS == nil {
 		temp.OrderTradingRewardRatioBPS = make(map[string]uint)
 	}
@@ -179,26 +188,28 @@ func NewPdexv3ParamsWithValue(
 	maxOrdersPerNft uint,
 	autoWithdrawOrderLimitAmount uint,
 	minPRVReserveTradingRate uint64,
+	defaultOrderTradingRewardRatioBPS uint,
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
-		defaultFeeRateBPS:               defaultFeeRateBPS,
-		feeRateBPS:                      feeRateBPS,
-		prvDiscountPercent:              prvDiscountPercent,
-		tradingProtocolFeePercent:       tradingProtocolFeePercent,
-		tradingStakingPoolRewardPercent: tradingStakingPoolRewardPercent,
-		pdexRewardPoolPairsShare:        pdexRewardPoolPairsShare,
-		stakingPoolsShare:               stakingPoolsShare,
-		stakingRewardTokens:             stakingRewardTokens,
-		mintNftRequireAmount:            mintNftRequireAmount,
-		maxOrdersPerNft:                 maxOrdersPerNft,
-		autoWithdrawOrderLimitAmount:    autoWithdrawOrderLimitAmount,
-		minPRVReserveTradingRate:        minPRVReserveTradingRate,
-		orderTradingRewardRatioBPS:      orderTradingRewardRatioBPS,
-		orderLiquidityMiningBPS:         orderLiquidityMiningBPS,
-		daoContributingPercent:          daoContributingPercent,
+		defaultFeeRateBPS:                 defaultFeeRateBPS,
+		feeRateBPS:                        feeRateBPS,
+		prvDiscountPercent:                prvDiscountPercent,
+		tradingProtocolFeePercent:         tradingProtocolFeePercent,
+		tradingStakingPoolRewardPercent:   tradingStakingPoolRewardPercent,
+		pdexRewardPoolPairsShare:          pdexRewardPoolPairsShare,
+		stakingPoolsShare:                 stakingPoolsShare,
+		stakingRewardTokens:               stakingRewardTokens,
+		mintNftRequireAmount:              mintNftRequireAmount,
+		maxOrdersPerNft:                   maxOrdersPerNft,
+		autoWithdrawOrderLimitAmount:      autoWithdrawOrderLimitAmount,
+		minPRVReserveTradingRate:          minPRVReserveTradingRate,
+		defaultOrderTradingRewardRatioBPS: defaultOrderTradingRewardRatioBPS,
+		orderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
+		orderLiquidityMiningBPS:           orderLiquidityMiningBPS,
+		daoContributingPercent:            daoContributingPercent,
 	}
 }
 

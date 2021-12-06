@@ -174,6 +174,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MinPRVReserveTradingRate is invalid"))
 	}
 
+	defaultOrderTradingRewardRatioBPS, err := common.AssertAndConvertStrToNumber(newParams["DefaultOrderTradingRewardRatioBPS"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DefaultOrderTradingRewardRatioBPS is invalid"))
+	}
+
 	orderTradingRewardRatioBPSTmp, ok := newParams["OrderTradingRewardRatioBPS"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderTradingRewardRatioBPS is invalid"))
@@ -208,21 +213,22 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
-			DefaultFeeRateBPS:               uint(defaultFeeRateBPS),
-			FeeRateBPS:                      feeRateBPS,
-			PRVDiscountPercent:              uint(prvDiscountPercent),
-			TradingProtocolFeePercent:       uint(tradingProtocolFeePercent),
-			TradingStakingPoolRewardPercent: uint(tradingStakingPoolRewardPercent),
-			PDEXRewardPoolPairsShare:        pdexRewardPoolPairsShare,
-			StakingPoolsShare:               stakingPoolsShare,
-			StakingRewardTokens:             stakingRewardTokens,
-			MintNftRequireAmount:            mintNftRequireAmount,
-			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
-			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
-			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
-			OrderTradingRewardRatioBPS:      orderTradingRewardRatioBPS,
-			OrderLiquidityMiningBPS:         orderLiquidityMiningBPS,
-			DAOContributingPercent:          uint(daoContributingPercent),
+			DefaultFeeRateBPS:                 uint(defaultFeeRateBPS),
+			FeeRateBPS:                        feeRateBPS,
+			PRVDiscountPercent:                uint(prvDiscountPercent),
+			TradingProtocolFeePercent:         uint(tradingProtocolFeePercent),
+			TradingStakingPoolRewardPercent:   uint(tradingStakingPoolRewardPercent),
+			PDEXRewardPoolPairsShare:          pdexRewardPoolPairsShare,
+			StakingPoolsShare:                 stakingPoolsShare,
+			StakingRewardTokens:               stakingRewardTokens,
+			MintNftRequireAmount:              mintNftRequireAmount,
+			MaxOrdersPerNft:                   uint(maxOrdersPerNft),
+			AutoWithdrawOrderLimitAmount:      uint(autoWithdrawOrderLimitAmount),
+			MinPRVReserveTradingRate:          minPRVReserveTradingRate,
+			DefaultOrderTradingRewardRatioBPS: uint(defaultOrderTradingRewardRatioBPS),
+			OrderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
+			OrderLiquidityMiningBPS:           orderLiquidityMiningBPS,
+			DAOContributingPercent:            uint(daoContributingPercent),
 		},
 	)
 	if err != nil {

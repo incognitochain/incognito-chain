@@ -273,7 +273,7 @@ func TrackFee(
 	poolFees []uint, feeRateBPS uint,
 	acceptedMeta *metadataPdexv3.AcceptedTrade,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
-	orderTradingRewardRatioBPS map[string]uint,
+	defaultOrderTradingRewardRatioBPS uint, orderTradingRewardRatioBPS map[string]uint,
 ) (*metadataPdexv3.AcceptedTrade, []map[string]map[common.Hash]uint64, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
@@ -300,7 +300,7 @@ func TrackFee(
 			reward.Div(reward, new(big.Int).SetUint64(uint64(sumPoolFees)))
 
 			// split reward between LPs and LOPs by weighted ratio
-			ratio := uint(0)
+			ratio := defaultOrderTradingRewardRatioBPS
 			if orderTradingRewardRatioBPS != nil {
 				bps, ok := orderTradingRewardRatioBPS[tradePath[i]]
 				if ok {
@@ -366,7 +366,7 @@ func TrackFee(
 		}
 
 		// split reward between LPs and LOPs by weighted ratio
-		ratio := uint(0)
+		ratio := defaultOrderTradingRewardRatioBPS
 		if orderTradingRewardRatioBPS != nil {
 			bps, ok := orderTradingRewardRatioBPS[tradePath[i]]
 			if ok {
