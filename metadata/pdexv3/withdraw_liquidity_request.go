@@ -146,12 +146,14 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
+		AccessOption *AccessOption     `json:"AccessOption.omitempty"`
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:   request.poolPairID,
 		NftID:        request.nftID,
 		OtaReceivers: request.otaReceivers,
 		ShareAmount:  request.shareAmount,
+		AccessOption: request.accessOption,
 		MetadataBase: request.MetadataBase,
 	})
 	if err != nil {
@@ -166,12 +168,14 @@ func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
 		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
+		AccessOption *AccessOption     `json:"AccessOption,omitempty"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	request.accessOption = temp.AccessOption
 	request.poolPairID = temp.PoolPairID
 	request.nftID = temp.NftID
 	request.otaReceivers = temp.OtaReceivers
@@ -194,6 +198,10 @@ func (request *WithdrawLiquidityRequest) ShareAmount() uint64 {
 
 func (request *WithdrawLiquidityRequest) NftID() string {
 	return request.nftID
+}
+
+func (request *WithdrawLiquidityRequest) AccessOption() AccessOption {
+	return *request.accessOption
 }
 
 func (request *WithdrawLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

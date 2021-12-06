@@ -1008,14 +1008,16 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
 
-		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+		accessOption := metaData.AccessOption()
+		_, accessByNFT := nftIDs[accessOption.NftID().String()]
+
+		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessByNFT)
 		if err != nil {
 			return res, poolPairs, err
 		}
 
-		_, found := nftIDs[metaData.NftID()]
-		if metaData.NftID() == utils.EmptyString || !found {
-			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
+		if accessOption.IsEmpty(true) {
+			Logger.log.Warnf("tx %v accessOption is not valid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
@@ -1030,13 +1032,21 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, rejectInsts...)
 			continue
 		}
-		shares, ok := rootPoolPair.shares[metaData.NftID()]
-		if !ok || shares == nil {
-			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
+
+		var share *Share
+		if accessByNFT {
+			share, ok = rootPoolPair.shares[accessOption.NftID().String()]
+		} else {
+			temp := accessOption.BurntOTA().Bytes()
+			share, ok = rootPoolPair.shares[string(temp[:])]
+		}
+
+		if share == nil || !ok {
+			Logger.log.Warnf("tx %v not found LP", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
-		if shares.amount == 0 || metaData.ShareAmount() == 0 {
+		if share.amount == 0 || metaData.ShareAmount() == 0 {
 			Logger.log.Warnf("tx %v share amount is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
@@ -1055,7 +1065,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			*metaData,
 			poolPair.state.Token0ID(), poolPair.state.Token1ID(),
 			token0Amount, token1Amount, shareAmount,
-			txReqID, shardID)
+			txReqID, shardID, accessByNFT)
 		if err != nil {
 			return res, poolPairs, err
 		}
