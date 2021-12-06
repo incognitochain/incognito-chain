@@ -448,10 +448,14 @@ func (sp *stateProcessorV2) trade(
 					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
 				)
 
-				ammReward, orderRewards := v2.SplitTradingReward(
-					remain, ratio, BPS,
+				ammMakingVolume, orderMakingVolumes := v2utils.GetMakingVolumes(
 					md.PairChanges[index], md.OrderChanges[index],
 					pair.orderbook.NftIDs(),
+				)
+
+				ammReward, orderRewards := v2.SplitTradingReward(
+					remain, ratio, BPS,
+					ammMakingVolume, orderMakingVolumes,
 				)
 
 				// add reward to LOPs

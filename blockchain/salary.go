@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -502,8 +503,13 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	if len(totalRewardForIncDAO) > 0 {
 		prvReward := totalRewardForIncDAO[common.PRVCoinID]
 		if prvReward > 0 && isSplitRewardForPdex {
-			rewardForPdex = prvReward * uint64(pdexRewardPercent) / 100
-			totalRewardForIncDAO[common.PRVCoinID] = totalRewardForIncDAO[common.PRVCoinID] - rewardForPdex
+			temp := new(big.Int).Mul(new(big.Int).SetUint64(prvReward), new(big.Int).SetUint64(uint64(pdexRewardPercent)))
+			temp = temp.Div(temp, big.NewInt(100))
+			if !temp.IsUint64() {
+				return nil, nil, rewardForPdex, errors.New("Reward for Pdex is not uint64")
+			}
+			rewardForPdex = temp.Uint64()
+			totalRewardForIncDAO[common.PRVCoinID] = prvReward - rewardForPdex
 		}
 		instRewardForIncDAO, err = blockchain.buildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
 		if err != nil {

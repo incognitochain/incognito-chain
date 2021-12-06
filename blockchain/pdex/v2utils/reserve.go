@@ -318,10 +318,14 @@ func TrackFee(
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 			)
 
-			ammReward, orderRewards := SplitTradingReward(
-				remain, ratio, bps,
+			ammMakingVolume, orderMakingVolumes := GetMakingVolumes(
 				acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
 				orderbooks[i].NftIDs(),
+			)
+
+			ammReward, orderRewards := SplitTradingReward(
+				remain, ratio, bps,
+				ammMakingVolume, orderMakingVolumes,
 			)
 
 			// add reward to LOPs
@@ -384,10 +388,14 @@ func TrackFee(
 			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 		)
 
-		ammReward, orderRewards := SplitTradingReward(
-			remain, ratio, bps,
+		ammMakingVolume, orderMakingVolumes := GetMakingVolumes(
 			acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
 			orderbooks[i].NftIDs(),
+		)
+
+		ammReward, orderRewards := SplitTradingReward(
+			remain, ratio, bps,
+			ammMakingVolume, orderMakingVolumes,
 		)
 
 		// add reward to LOPs
