@@ -479,8 +479,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 		if err != nil {
 			Logger.log.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
 				unshieldReq.value.GetUnshieldID(), err)
-			return batchTxs, fmt.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
-				unshieldReq.value.GetUnshieldID(), err)
+			continue
 		}
 		chosenUtxoObjs := []*statedb.UTXO{}
 		for _, u := range chosenUtxos {
@@ -503,11 +502,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 	}
 
 	// merge small batches
-	batchTxs, err := p.MergeBatches(batchTxs)
-	if err != nil {
-		Logger.log.Errorf("Error when merging small batches: %v\n", err)
-		return nil, fmt.Errorf("Error when merging small batches: %v\n", err)
-	}
+	batchTxs = p.MergeBatches(batchTxs)
 
 	// appending tiny into batch txs
 	batchTxs = p.AppendTinyUTXOs(batchTxs, sortedUTXOs, tinyValueThreshold, minUTXOs)
