@@ -15,10 +15,9 @@ import (
 type WithdrawLiquidityRequest struct {
 	metadataCommon.MetadataBase
 	poolPairID   string
-	nftID        string
 	otaReceivers map[string]string
 	shareAmount  uint64
-	accessOption *AccessOption
+	AccessOption
 }
 
 func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
@@ -26,6 +25,7 @@ func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3WithdrawLiquidityRequestMeta,
 		},
+		AccessOption: *NewAccessOption(),
 	}
 }
 
@@ -40,7 +40,7 @@ func NewWithdrawLiquidityRequestWithValue(
 			Type: metadataCommon.Pdexv3WithdrawLiquidityRequestMeta,
 		},
 		poolPairID:   poolPairID,
-		accessOption: accessOption,
+		AccessOption: *accessOption,
 		otaReceivers: otaReceivers,
 		shareAmount:  shareAmount,
 	}
@@ -54,7 +54,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.accessOption.isValid(tx, beaconViewRetriever, transactionStateDB, false)
+	err := request.AccessOption.isValid(tx, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
 		return false, err
 	}
@@ -77,13 +77,6 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	}
 	if request.poolPairID == "" {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pool pair id should not be empty"))
-	}
-	nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
-	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if nftID.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
 	}
 	for tokenID, otaReceiverStr := range request.otaReceivers {
 		_, err := common.Hash{}.NewHashFromStr(tokenID)
@@ -110,7 +103,8 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
 	}
-	if !bytes.Equal(burnedTokenID[:], nftID[:]) {
+	nftHash := request.nftHash
+	if !bytes.Equal(burnedTokenID[:], nftHash[:]) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
 	}
 	if burnCoin.GetValue() != 1 {
@@ -120,7 +114,7 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
-	if nftID.String() == common.PRVCoinID.String() {
+	if request.nftID == common.PRVCoinID.String() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Invalid NftID"))
 	}
 	return true, true, nil
@@ -146,14 +140,14 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
-		AccessOption *AccessOption     `json:"AccessOption.omitempty"`
+		AccessOption
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:   request.poolPairID,
 		NftID:        request.nftID,
 		OtaReceivers: request.otaReceivers,
 		ShareAmount:  request.shareAmount,
-		AccessOption: request.accessOption,
+		AccessOption: request.AccessOption,
 		MetadataBase: request.MetadataBase,
 	})
 	if err != nil {
@@ -165,19 +159,17 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PoolPairID   string            `json:"PoolPairID"`
-		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
-		AccessOption *AccessOption     `json:"AccessOption,omitempty"`
+		AccessOption
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	request.accessOption = temp.AccessOption
+	request.AccessOption = temp.AccessOption
 	request.poolPairID = temp.PoolPairID
-	request.nftID = temp.NftID
 	request.otaReceivers = temp.OtaReceivers
 	request.shareAmount = temp.ShareAmount
 	request.MetadataBase = temp.MetadataBase
@@ -194,14 +186,6 @@ func (request *WithdrawLiquidityRequest) OtaReceivers() map[string]string {
 
 func (request *WithdrawLiquidityRequest) ShareAmount() uint64 {
 	return request.shareAmount
-}
-
-func (request *WithdrawLiquidityRequest) NftID() string {
-	return request.nftID
-}
-
-func (request *WithdrawLiquidityRequest) AccessOption() AccessOption {
-	return *request.accessOption
 }
 
 func (request *WithdrawLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

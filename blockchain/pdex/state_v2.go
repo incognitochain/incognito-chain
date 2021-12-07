@@ -599,13 +599,12 @@ func NewContributionWithMetaData(
 	metaData metadataPdexv3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
 ) *rawdbv2.Pdexv3Contribution {
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
-	accessOption := metaData.AccessOption()
 
 	identityID := common.Hash{}
-	if !accessOption.NftID().IsZeroValue() {
-		identityID = accessOption.NftID()
+	if !metaData.NftHash().IsZeroValue() {
+		identityID = metaData.NftHash()
 	} else {
-		temp := accessOption.NextOTA().Bytes()
+		temp := metaData.NextOTA().Bytes()
 		identityID.SetBytes(temp[:])
 	}
 

@@ -45,9 +45,8 @@ func (sp *stateProducerV2) addLiquidity(
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
 		)
-		accessOption := metaData.AccessOption()
-		_, accessByNFT := nftIDs[accessOption.NftID().String()]
-		if accessOption.IsEmpty(false) || !accessByNFT {
+		_, accessByNFT := nftIDs[metaData.NftID()]
+		if metaData.AccessOption.IsEmpty(false) || !accessByNFT {
 			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
@@ -1008,15 +1007,14 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
 
-		accessOption := metaData.AccessOption()
-		_, accessByNFT := nftIDs[accessOption.NftID().String()]
+		_, accessByNFT := nftIDs[metaData.NftID()]
 
 		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessByNFT)
 		if err != nil {
 			return res, poolPairs, err
 		}
 
-		if accessOption.IsEmpty(true) {
+		if metaData.AccessOption.IsEmpty(true) {
 			Logger.log.Warnf("tx %v accessOption is not valid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
@@ -1035,9 +1033,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		var share *Share
 		if accessByNFT {
-			share, ok = rootPoolPair.shares[accessOption.NftID().String()]
+			share, ok = rootPoolPair.shares[metaData.NftID()]
 		} else {
-			temp := accessOption.BurntOTA().Bytes()
+			temp := metaData.BurntOTA().Bytes()
 			share, ok = rootPoolPair.shares[string(temp[:])]
 		}
 

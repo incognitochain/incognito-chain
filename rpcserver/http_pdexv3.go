@@ -904,7 +904,7 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	otaReceivers[poolPairState.Token1ID().String()] = otaReceiverToken1Str
 
 	md := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		mdReader.PoolPairID, mdReader.NftID, otaReceivers, uint64(mdReader.ShareAmount),
+		mdReader.PoolPairID, otaReceivers, uint64(mdReader.ShareAmount), nil,
 	)
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 	if md.NftID() == common.PRVIDStr {
