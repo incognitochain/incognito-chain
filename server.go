@@ -29,7 +29,6 @@ import (
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	stats "github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -560,13 +559,6 @@ func (serverObj *Server) NewServer(
 			serverObj.PublishNodeState()
 		}
 	}()
-
-	//Init Metric Tool
-	//if cfg.MetricUrl != "" {
-	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	//	metrics.InitMetricTool(&grafana)
-	//}
-	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
 
 	return nil
 }
