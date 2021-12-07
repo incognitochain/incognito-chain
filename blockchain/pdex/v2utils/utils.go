@@ -53,7 +53,7 @@ func getMakingAmountFromChange(change [2]*big.Int) *big.Int {
 func GetMakingVolumes(
 	pairChange [2]*big.Int, orderChange map[string][2]*big.Int,
 	nftIDs map[string]string,
-) (*big.Int, map[string]*big.Int) {
+) (*big.Int, map[string]*big.Int, byte) {
 	ammMakingAmt := getMakingAmountFromChange(pairChange)
 
 	orderMakingAmts := map[string]*big.Int{}
@@ -66,7 +66,20 @@ func GetMakingVolumes(
 		orderMakingAmts[nftID].Add(orderMakingAmts[nftID], orderMakingAmt)
 	}
 
-	return ammMakingAmt, orderMakingAmts
+	sellToken0 := pairChange[0].Cmp(big.NewInt(0)) > 0
+	for _, change := range orderChange {
+		if change[0].Cmp(big.NewInt(0)) > 0 {
+			sellToken0 = true
+			break
+		}
+	}
+
+	tradeDirection := TradeDirectionSell1
+	if sellToken0 {
+		tradeDirection = TradeDirectionSell0
+	}
+
+	return ammMakingAmt, orderMakingAmts, byte(tradeDirection)
 }
 
 func SplitTradingReward(

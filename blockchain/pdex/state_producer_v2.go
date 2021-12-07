@@ -445,7 +445,8 @@ func (sp *stateProducerV2) trade(
 		}
 
 		orderRewardsChanges := []map[string]map[common.Hash]uint64{}
-		acceptedTradeMd, orderRewardsChanges, err = v2.TrackFee(
+		orderMakingChanges := []map[common.Hash]map[string]*big.Int{}
+		acceptedTradeMd, orderRewardsChanges, orderMakingChanges, err = v2.TrackFee(
 			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare, BPS,
 			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 			tradeDirections, orderbookList,
@@ -465,6 +466,9 @@ func (sp *stateProducerV2) trade(
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
 			addOrderReward(changedPair.orderRewards, orderRewardsChanges[index])
+			if params.DAOContributingPercent > 0 {
+				addMakingVolume(changedPair.makingVolume, orderMakingChanges[index])
+			}
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
 			changedPair.protocolFees = protocolFees[index]
 			changedPair.stakingPoolFees = stakingPoolFees[index]

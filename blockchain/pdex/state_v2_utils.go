@@ -365,15 +365,15 @@ func (orderReward *OrderReward) getDiff(
 	compareOrderReward *OrderReward,
 	orderRewardChange *v2utils.OrderRewardChange,
 ) *v2utils.OrderRewardChange {
-	newOrderRewardChane := orderRewardChange
+	newOrderRewardChange := orderRewardChange
 	if compareOrderReward == nil {
 		for tokenID := range orderReward.uncollectedRewards {
-			newOrderRewardChane.UncollectedReward[tokenID.String()] = true
+			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
 	} else {
 		for tokenID, value := range orderReward.uncollectedRewards {
 			if m, ok := compareOrderReward.uncollectedRewards[tokenID]; !ok || !reflect.DeepEqual(m, value) {
-				newOrderRewardChane.UncollectedReward[tokenID.String()] = true
+				newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 			}
 		}
 	}
@@ -406,6 +406,14 @@ func (makingVolume *MakingVolume) UnmarshalJSON(data []byte) error {
 	}
 	makingVolume.volume = temp.Volume
 	return nil
+}
+
+func (makingVolume *MakingVolume) AddVolume(nftID string, amount *big.Int) {
+	oldAmount := big.NewInt(0)
+	if _, ok := makingVolume.volume[nftID]; ok {
+		oldAmount = makingVolume.volume[nftID]
+	}
+	makingVolume.volume[nftID] = big.NewInt(0).Add(oldAmount, amount)
 }
 
 func NewMakingVolume() *MakingVolume {

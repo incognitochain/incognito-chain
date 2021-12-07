@@ -274,10 +274,10 @@ func TrackFee(
 	acceptedMeta *metadataPdexv3.AcceptedTrade,
 	protocolFeePercent, stakingPoolRewardPercent uint, stakingRewardTokens []common.Hash,
 	defaultOrderTradingRewardRatioBPS uint, orderTradingRewardRatioBPS map[string]uint,
-) (*metadataPdexv3.AcceptedTrade, []map[string]map[common.Hash]uint64, error) {
+) (*metadataPdexv3.AcceptedTrade, []map[string]map[common.Hash]uint64, []map[common.Hash]map[string]*big.Int, error) {
 	mutualLen := len(reserves)
 	if len(tradeDirections) != mutualLen || len(orderbooks) != mutualLen {
-		return nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
+		return nil, nil, nil, fmt.Errorf("Trade path vs directions vs orderbooks length mismatch")
 	}
 
 	acceptedMeta.RewardEarned = make([]map[common.Hash]uint64, mutualLen)
@@ -288,6 +288,11 @@ func TrackFee(
 	orderRewardChanges := make([]map[string]map[common.Hash]uint64, mutualLen)
 	for i := 0; i < mutualLen; i++ {
 		orderRewardChanges[i] = make(map[string]map[common.Hash]uint64)
+	}
+
+	orderMakingChanges := make([]map[common.Hash]map[string]*big.Int, mutualLen)
+	for i := 0; i < mutualLen; i++ {
+		orderMakingChanges[i] = make(map[common.Hash]map[string]*big.Int)
 	}
 
 	if feeInPRV || sellingTokenID == common.PRVCoinID {
@@ -318,10 +323,16 @@ func TrackFee(
 				protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 			)
 
-			ammMakingVolume, orderMakingVolumes := GetMakingVolumes(
+			ammMakingVolume, orderMakingVolumes, tradeDirection := GetMakingVolumes(
 				acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
 				orderbooks[i].NftIDs(),
 			)
+
+			makingToken := reserves[i].Token0ID()
+			if tradeDirection == TradeDirectionSell0 {
+				makingToken = reserves[i].Token1ID()
+			}
+			orderMakingChanges[i][makingToken] = orderMakingVolumes
 
 			ammReward, orderRewards := SplitTradingReward(
 				remain, ratio, bps,
@@ -351,7 +362,7 @@ func TrackFee(
 			sumPoolFees -= poolFees[i]
 			feeRemain -= reward.Uint64()
 		}
-		return acceptedMeta, orderRewardChanges, nil
+		return acceptedMeta, orderRewardChanges, orderMakingChanges, nil
 	}
 
 	sumPoolFees := feeRateBPS
@@ -388,10 +399,16 @@ func TrackFee(
 			protocolFeePercent, stakingPoolRewardPercent, stakingRewardTokens,
 		)
 
-		ammMakingVolume, orderMakingVolumes := GetMakingVolumes(
+		ammMakingVolume, orderMakingVolumes, tradeDirection := GetMakingVolumes(
 			acceptedMeta.PairChanges[i], acceptedMeta.OrderChanges[i],
 			orderbooks[i].NftIDs(),
 		)
+
+		makingToken := reserves[i].Token0ID()
+		if tradeDirection == TradeDirectionSell0 {
+			makingToken = reserves[i].Token1ID()
+		}
+		orderMakingChanges[i][makingToken] = orderMakingVolumes
 
 		ammReward, orderRewards := SplitTradingReward(
 			remain, ratio, bps,
@@ -434,11 +451,11 @@ func TrackFee(
 					reserves[i],
 				).SwapToReachOrderRate(sellAmountRemain, tradeDirections[i], order)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			sellAmountRemain = temp
 			if totalBuyAmount+buyAmount < totalBuyAmount {
-				return nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
+				return nil, nil, nil, fmt.Errorf("Sum exceeds uint64 range after swapping in pool")
 			}
 			totalBuyAmount += buyAmount
 			accumulatedToken0Change.Add(accumulatedToken0Change, token0Change)
@@ -449,11 +466,11 @@ func TrackFee(
 			if order != nil {
 				buyAmount, temp, token0Change, token1Change, err := order.Match(sellAmountRemain, tradeDirections[i])
 				if err != nil {
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				sellAmountRemain = temp
 				if totalBuyAmount+buyAmount < totalBuyAmount {
-					return nil, nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
+					return nil, nil, nil, fmt.Errorf("Sum exceeds uint64 range after matching order")
 				}
 				totalBuyAmount += buyAmount
 				// add order balance changes to "accepted" instruction
@@ -480,7 +497,7 @@ func TrackFee(
 		sellAmountRemain = totalBuyAmount
 	}
 
-	return acceptedMeta, orderRewardChanges, nil
+	return acceptedMeta, orderRewardChanges, orderMakingChanges, nil
 }
 
 func (tp *TradingPair) AddStakingAndProtocolFee(

@@ -448,7 +448,7 @@ func (sp *stateProcessorV2) trade(
 					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
 				)
 
-				ammMakingVolume, orderMakingVolumes := v2utils.GetMakingVolumes(
+				ammMakingVolume, orderMakingVolumes, tradeDirection := v2utils.GetMakingVolumes(
 					md.PairChanges[index], md.OrderChanges[index],
 					pair.orderbook.NftIDs(),
 				)
@@ -457,6 +457,21 @@ func (sp *stateProcessorV2) trade(
 					remain, ratio, BPS,
 					ammMakingVolume, orderMakingVolumes,
 				)
+
+				makingToken := reserveState.Token0ID()
+				if tradeDirection == v2.TradeDirectionSell0 {
+					makingToken = reserveState.Token1ID()
+				}
+
+				// add volume to LOPs
+				if params.DAOContributingPercent > 0 {
+					if _, ok := pair.makingVolume[makingToken]; !ok {
+						pair.makingVolume[makingToken] = NewMakingVolume()
+					}
+					for nftID, amount := range orderMakingVolumes {
+						pair.makingVolume[makingToken].AddVolume(nftID, amount)
+					}
+				}
 
 				// add reward to LOPs
 				for nftID, reward := range orderRewards {
