@@ -426,17 +426,11 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintPDEXGenesisInstructions...)
 	}
 
-	pdexBlockRewards := v2utils.GetPDEXRewardsForBlock(
-		beaconHeight,
-		MintingBlocks, DecayIntervals, PDEXRewardFirstInterval,
-		DecayRateBPS, BPS,
-	)
-
-	if pdexBlockRewards > 0 {
+	if env.Reward() > 0 {
 		var mintInstructions [][]string
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
-			common.PDEXCoinID,
-			pdexBlockRewards,
+			common.PRVCoinID,
+			env.Reward(),
 			s.params,
 			s.poolPairs,
 		)

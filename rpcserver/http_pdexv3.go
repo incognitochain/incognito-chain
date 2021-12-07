@@ -341,8 +341,10 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 	pairState := pair.State()
 
 	result := jsonresult.Pdexv3LPValue{
-		PoolValue:  map[string]uint64{},
-		TradingFee: map[string]uint64{},
+		PoolValue:   map[string]uint64{},
+		LPReward:    map[string]uint64{},
+		OrderReward: map[string]uint64{},
+		PoolReward:  map[string]uint64{},
 	}
 
 	uncollectedLPReward := map[common.Hash]uint64{}
@@ -394,8 +396,14 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 
 	reward := pdex.CombineReward(uncollectedLPReward, uncollectedOrderReward)
 
+	for tokenID, amount := range uncollectedLPReward {
+		result.LPReward[tokenID.String()] = amount
+	}
+	for tokenID, amount := range uncollectedOrderReward {
+		result.OrderReward[tokenID.String()] = amount
+	}
 	for tokenID, amount := range reward {
-		result.TradingFee[tokenID.String()] = amount
+		result.PoolReward[tokenID.String()] = amount
 	}
 
 	return result, nil
@@ -531,7 +539,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		poolPairState.Token0ID().String(),
 		poolPairState.Token1ID().String(),
 		common.PRVIDStr,
-		common.PDEXIDStr,
 		nftIDStr,
 	}
 
