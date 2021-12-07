@@ -181,7 +181,7 @@ const (
 
 	// pBSC
 	BurningPBSCForDepositToSCRequestMeta = 326
-	BurningPBSCConfirmForDepositToSCMeta = 153
+	BurningPBSCConfirmForDepositToSCMeta = 152
 )
 
 var minerCreatedMetaTypes = []int{
