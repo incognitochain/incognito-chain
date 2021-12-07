@@ -162,10 +162,10 @@ var localPortalParam = PortalParams{
 				LocalPortalV4BTCID: 500000, // 500000 nano pbtc = 50000 satoshi
 			},
 			DustValueThreshold: map[string]uint64{
-				LocalPortalV4BTCID: 10000000, // 1000000 nano pbtc = 100000 satoshi
+				LocalPortalV4BTCID: 10000000, // 1000000 nano pbtc = 0.01 BTC
 			},
 			MinUTXOsInVault: map[string]uint64{
-				LocalPortalV4BTCID: 500,
+				LocalPortalV4BTCID: 50,
 			},
 			BatchNumBlks:                15, // ~ 2.5 mins
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
@@ -244,7 +244,7 @@ var testnet1PortalParams = PortalParams{
 				TestnetPortalV4BTCID: 10000000, // nano pbtc
 			},
 			MinUTXOsInVault: map[string]uint64{
-				TestnetPortalV4BTCID: 500,
+				TestnetPortalV4BTCID: 50,
 			},
 			BatchNumBlks:                20,
 			PortalReplacementAddress:    "12sv8WUvkvFfD5SW3aaXDSPs8yx2SxPdbv6a2LAU6FJb2kBKqmLcCuQ6ZQst4fg7THBTBtERaqMpJ7KBgsnRYobmysFEM2pbMwLE2kGzwyxgSijnZT7VQGeuUxBryC1Z6ebd8EWqDUkxwpW7Gqt8",
@@ -323,7 +323,7 @@ var testnet2PortalParams = PortalParams{
 				Testnet2PortalV4BTCID: 10000000, // nano pbtc
 			},
 			MinUTXOsInVault: map[string]uint64{
-				Testnet2PortalV4BTCID: 500,
+				Testnet2PortalV4BTCID: 50,
 			},
 			BatchNumBlks:                20, //
 			PortalReplacementAddress:    "12sv8WUvkvFfD5SW3aaXDSPs8yx2SxPdbv6a2LAU6FJb2kBKqmLcCuQ6ZQst4fg7THBTBtERaqMpJ7KBgsnRYobmysFEM2pbMwLE2kGzwyxgSijnZT7VQGeuUxBryC1Z6ebd8EWqDUkxwpW7Gqt8",
