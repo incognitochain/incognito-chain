@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type PortalStatusState struct {
@@ -37,7 +38,7 @@ func (s *PortalStatusState) SetStatusContent(statusContent []byte) {
 	s.statusContent = statusContent
 }
 
-func (s PortalStatusState) MarshalJSON() ([]byte, error) {
+func (s *PortalStatusState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		StatusType    []byte
 		StatusSuffix  []byte

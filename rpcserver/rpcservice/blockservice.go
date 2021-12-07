@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -1286,7 +1287,7 @@ func (blockService BlockService) GetCustodianTopupWaitingPortingStatusV3(txID st
 }
 
 func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string, collateralTokenID string, beaconHeight uint64, stateDB *statedb.StateDB) (map[string]uint64, error) {
-	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB, nil)
 	if err != nil {
 		return nil, err
 	}
