@@ -3,6 +3,8 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"io/ioutil"
 	"reflect"
 	"time"
@@ -298,6 +300,147 @@ func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, c
 	rewardStateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconRewardStateDB()
 	amount, err := statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, shardID, common.PRVCoinID)
 	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+}
+
+func (httpServer *HttpServer) handleGetFinalityProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	tempShardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+	tempHash, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"))
+	}
+	shardID := byte(tempShardID)
+	hash := common.Hash{}.NewHashFromStr2(tempHash)
+	shardBlock, m, err := httpServer.config.BlockChain.ShardChain[shardID].GetFinalityProof(hash)
+	return map[string]interface{}{
+		"Block": shardBlock,
+		"Data":  m,
+	}, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+}
+
+func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Param().Net == config.MainnetNet {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidRequestError, fmt.Errorf("Cannot execute on mainnet"))
+	}
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
+	}
+
+	param, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid flag Value"))
+	}
+
+	voteRule := param["vote_rule"]
+	createRule := param["create_rule"]
+	handleVoteRule := param["handle_vote_rule"]
+	handleProposeRule := param["handle_propose_rule"]
+	insertRule := param["insert_rule"]
+	validatorRule := param["validator_rule"]
+
+	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
+	blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+	blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	return map[string]interface{}{
+		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
+		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
+		"handle_vote_rule":    blsbft.ActorV2BuilderContext.HandleVoteRule,
+		"handle_propose_rule": blsbft.ActorV2BuilderContext.HandleProposeRule,
+		"insert_rule":         blsbft.ActorV2BuilderContext.InsertRule,
+		"validator_rule":      blsbft.ActorV2BuilderContext.ValidatorRule,
+		"lemma2_height":       blsbft.ActorV2BuilderContext.Lemma2Height,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetByzantineDetectorInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo(), nil
+}
+
+func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
+	}
+	validator, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid validator type"))
+	}
+	err := blsbft.ByzantineDetectorObject.RemoveBlackListValidator(validator)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return "Delete Black list validator " + validator, nil
+}
+
+func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return blsbft.ActorV2BuilderContext, nil
+}
+
+func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 1, len(arrayParams)))
+	}
+	tempChainID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid chain id type"))
+	}
+	chainID := int(tempChainID)
+	voteHistory, err := blsbft.InitVoteHistory(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	proposeHistory, err := blsbft.InitProposeHistory(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	receiveBlockByHash, err := blsbft.InitReceiveBlockByHash(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	receiveBlockByHeight, err := blsbft.InitReceiveBlockByHeight(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return map[string]interface{}{
+		"voteHistory":          voteHistory,
+		"proposeHistory":       proposeHistory,
+		"receiveBlockByHash":   receiveBlockByHash,
+		"receiveBlockByHeight": receiveBlockByHeight,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	tempShardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee())
+	committee, _ := tempCommittee.ToBase58()
+
+	return map[string]interface{}{
+		"Proposer":      committee,
+		"ProposerIndex": committeIndex,
+	}, nil
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

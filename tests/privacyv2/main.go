@@ -148,6 +148,37 @@ func main() {
 			stopAutoStake(numberOfStopAutoStake)
 		}
 	}
+
+	if os.Args[1] == "set_no_vote" {
+		setNoVoteRuleShard0()
+	}
+	if os.Args[1] == "set_vote" {
+		setVoteRuleShard0()
+	}
+	if os.Args[1] == "fixed-node-no-handle-propose-message" {
+		setFixedNodeNoHandleProposeMsgShard0()
+	}
+	if os.Args[1] == "node_1_2_only_create" {
+		setNode12CreateOnly()
+	}
+	if os.Args[1] == "lemma2_normal_rule" {
+		setLemma2NormalRuleShard0()
+	}
+	if os.Args[1] == "test_byzantine_detector" {
+		setByzantineDetectorShard0()
+	}
+	if os.Args[1] == "no_handle_vote_only" {
+		setNoHandleVoteShard0()
+	}
+	if os.Args[1] == "no_handle_vote_no_vote" {
+		setNoHandleVoteNoVoteShard0()
+	}
+	if os.Args[1] == "handle_vote_only" {
+		setHandleVoteShard0()
+	}
+	if os.Args[1] == "interval_vote" {
+		setIntervalVoteRule()
+	}
 }
 
 func flushTx() {

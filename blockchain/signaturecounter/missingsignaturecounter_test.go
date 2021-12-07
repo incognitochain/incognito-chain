@@ -626,12 +626,6 @@ func TestMissingSignatureCounter_GetAllSlashingPenaltyWithExpectedTotalBlock(t *
 		args   args
 		want   map[string]Penalty
 	}{
-		//TODO: @hung Add test cases.
-		// case 1: no penalty
-		// case 2: not in list
-		// case 4: total < expected
-		// case 5: total = expected
-		// case 6: total > expected
 		{
 			name: "no penalty",
 			fields: fields{
