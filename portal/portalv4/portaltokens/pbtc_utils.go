@@ -195,10 +195,13 @@ func (p PortalBTCTokenProcessor) EstimateTxSize(numInputs int, numOutputs int) u
 	return p.ExternalInputSize*uint(numInputs) + p.ExternalOutputSize*uint(numOutputs)
 }
 
-func (p PortalBTCTokenProcessor) CalculateTinyUTXONumber(batchTx *BroadcastTx) int {
+func (p PortalBTCTokenProcessor) CalculateTinyUTXONumber(batchTx *BroadcastTx, maxUTXOsCanPick int) int {
 	estimatedTxSize := p.EstimateTxSize(len(batchTx.UTXOs), len(batchTx.UnshieldIDs)+1)
 	remainTxSize := p.ExternalTxMaxSize - estimatedTxSize
 	maxTinyUTXOs := int(remainTxSize / p.ExternalInputSize)
+	if maxTinyUTXOs > maxUTXOsCanPick {
+		maxTinyUTXOs = maxUTXOsCanPick
+	}
 
 	tinyUTXOs := len(batchTx.UnshieldIDs)/3 + 1
 	if tinyUTXOs > maxTinyUTXOs {
@@ -217,7 +220,8 @@ func (p PortalBTCTokenProcessor) AppendTinyUTXOs(
 		if uint64(indexUTXO+1) <= minUTXOs {
 			return batchTxs
 		}
-		numTinyUTXOs := p.CalculateTinyUTXONumber(batch)
+		maxUTXOsCanPick := indexUTXO + 1 - int(minUTXOs)
+		numTinyUTXOs := p.CalculateTinyUTXONumber(batch, maxUTXOsCanPick)
 		for j := indexUTXO; j >= 0 && numTinyUTXOs > 0; j-- {
 			if sortedUTXOs[j].value.GetOutputAmount() > thresholdTinyValue {
 				return batchTxs
