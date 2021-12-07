@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
@@ -127,7 +128,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		if config.IndexerWorkers > 0 {
 			txDbs := make([]*statedb.StateDB, 0)
 			bestBlocks := make([]uint64, 0)
-			for shard := 0; shard < common.MaxShardNumber; shard++{
+			for shard := 0; shard < common.MaxShardNumber; shard++ {
 				txDbs = append(txDbs, blockchain.GetBestStateTransactionStateDB(byte(shard)))
 				bestBlocks = append(bestBlocks, blockchain.GetBestStateShard(byte(shard)).ShardHeight)
 			}
@@ -144,7 +145,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 func (blockchain *BlockChain) InitChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
-
+	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
@@ -1146,4 +1147,17 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
+}
+
+func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePublicKey {
+
+	shardCommittees := blockchain.BeaconChain.GetFinalViewState().GetShardCommittee()
+	numberOfFixedNode := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+	m := []incognitokey.CommitteePublicKey{}
+
+	for _, shardCommittee := range shardCommittees {
+		m = append(m, shardCommittee[:numberOfFixedNode]...)
+	}
+
+	return m
 }

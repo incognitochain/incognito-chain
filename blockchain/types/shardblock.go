@@ -49,6 +49,9 @@ type ShardHeader struct {
 
 	//for version >= 3
 	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
+
+	//for version 6
+	FinalityHeight uint64 `json:"FinalityHeight"`
 }
 
 type ShardBody struct {
@@ -129,6 +132,27 @@ func (shardBlock ShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (shardBlock *ShardBlock) GetAggregateRootHash() common.Hash {
+
+	res := []byte{}
+	res = append(res, byte(shardBlock.Header.Version))
+	res = append(res, shardBlock.Header.BeaconHash.Bytes()...)
+	res = append(res, shardBlock.Header.TxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.ShardTxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CrossTransactionRoot.Bytes()...)
+	res = append(res, shardBlock.Header.InstructionsRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CommitteeRoot.Bytes()...)
+	res = append(res, shardBlock.Header.PendingValidatorRoot.Bytes()...)
+	res = append(res, shardBlock.Header.StakingTxRoot.Bytes()...)
+	res = append(res, shardBlock.Header.InstructionMerkleRoot.Bytes()...)
+	res = append(res, shardBlock.Header.CommitteeFromBlock.Bytes()...)
+
+	return common.HashH(res)
+}
+func (shardBlock ShardBlock) GetFinalityHeight() uint64 {
+	return shardBlock.Header.FinalityHeight
+}
+
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
 	if shardBlock.Header.Height == 1 && len(shardBlock.ValidationData) != 0 {
@@ -141,13 +165,13 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
 		return false, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID)
 	}
-	if shardBlock.Header.Version < SHARD_BLOCK_VERSION {
+	if shardBlock.Header.Version < 0 {
 		return false, fmt.Errorf("Expect Shard Block Version greater or equal than %+v but get %+v ", SHARD_BLOCK_VERSION, shardBlock.Header.Version)
 	}
 	if len(shardBlock.Header.PreviousBlockHash[:]) != common.HashSize {
 		return false, fmt.Errorf("Expect Shard Block Previous Hash in the right format")
 	}
-	if shardBlock.Header.Height < 1 {
+	if shardBlock.Header.Height < 0 {
 		return false, fmt.Errorf("Expect Shard Block Height to be greater than 0")
 	}
 	if shardBlock.Header.Height == 1 && !shardBlock.Header.PreviousBlockHash.IsEqual(&common.Hash{}) {
@@ -156,14 +180,14 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Header.Height > 1 && shardBlock.Header.PreviousBlockHash.IsEqual(&common.Hash{}) {
 		return false, fmt.Errorf("Expect Shard Block with Height greater than 1 have Non-Zero Hash Value")
 	}
-	if shardBlock.Header.Round < 1 {
-		return false, fmt.Errorf("Expect Shard Block Round greater or equal than 1")
+	if shardBlock.Header.Round < 0 {
+		return false, fmt.Errorf("Expect Shard Block Round greater or equal than 0")
 	}
-	if shardBlock.Header.Epoch < 1 {
-		return false, fmt.Errorf("Expect Shard Block Epoch greater or equal than 1")
+	if shardBlock.Header.Epoch < 0 {
+		return false, fmt.Errorf("Expect Shard Block Epoch greater or equal than 0")
 	}
-	if shardBlock.Header.Timestamp <= 0 {
-		return false, fmt.Errorf("Expect Shard Block Time greater than 0")
+	if shardBlock.Header.Timestamp < 0 {
+		return false, fmt.Errorf("Expect Shard Block Time greater or equal than 0")
 	}
 	if len(shardBlock.Header.TxRoot[:]) != common.HashSize {
 		return false, fmt.Errorf("Expect Shard Block Tx Root in the right format")
@@ -195,7 +219,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255")
 	}
-	if shardBlock.Header.BeaconHeight < 1 {
+	if shardBlock.Header.BeaconHeight < 0 {
 		return false, fmt.Errorf("Expect Shard Block has Beacon Height greater or equal than 1")
 	}
 	//if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsPointEqual(&common.Hash{}) {
@@ -325,13 +349,17 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version >= 2 {
+	if shardHeader.Version >= MULTI_VIEW_VERSION {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version >= 3 {
+	if shardHeader.Version >= SHARD_SFV2_VERSION {
 		res += shardHeader.CommitteeFromBlock.String()
+	}
+
+	if shardHeader.Version >= LEMMA2_VERSION {
+		res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
 	}
 
 	return res
