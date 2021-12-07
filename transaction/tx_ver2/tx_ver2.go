@@ -823,40 +823,43 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	return nil
 }
 
-func (tx Tx) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash][]privacy.Point, error) {
-	result := make(map[common.Hash][]privacy.Point)
-	keys, err := getDerivableInputFromSigPubKey(tx.SigPubKey, common.PRVCoinID, tx.Hash(), common.GetShardIDFromLastByte(tx.PubKeyLastByteSender), transactionStateDB)
+func (tx Tx) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash]privacy.Point, error) {
+	isBurn, burnedPRVCoin, _, _, err := tx.GetTxFullBurnData()
+	if !isBurn || err != nil || burnedPRVCoin == nil {
+		return nil, fmt.Errorf("tx burns no coin")
+	}
+
+	result := make(map[common.Hash]privacy.Point)
+	pk, err := getDerivableInputFromSigPubKey(tx.SigPubKey, common.PRVCoinID, tx.Hash(), common.GetShardIDFromLastByte(tx.PubKeyLastByteSender), transactionStateDB)
 	if err != nil {
 		return nil, err
 	}
-	result[common.PRVCoinID] = keys
+	if pk != nil {
+		result[common.PRVCoinID] = *pk
+	}
 	return result, nil
 }
 
-func getDerivableInputFromSigPubKey(rawPubkey []byte, tokenID common.Hash, txHash *common.Hash, shardID byte, transactionStateDB *statedb.StateDB) ([]privacy.Point, error) {
+func getDerivableInputFromSigPubKey(rawPubkey []byte, tokenID common.Hash, txHash *common.Hash, shardID byte, transactionStateDB *statedb.StateDB) (*privacy.Point, error) {
 	ringPubkey := new(SigPubKey)
 	if err := ringPubkey.SetBytes(rawPubkey); err != nil {
 		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("invalid SigPubKey in tx %s, token %s", txHash.String(), tokenID.String()))
 	}
 	ringSize := len(ringPubkey.Indexes)
-	if ringSize != 1 {
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("cannot identify burn input in tx %s, token %s with ring size %d", txHash.String(), tokenID.String(), ringSize))
+	if ringSize != 1 || len(ringPubkey.Indexes[0]) != 1 {
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("cannot identify burn input in tx %s, token %s with ring size %d, input length %d", txHash.String(), tokenID.String(), ringSize, len(ringPubkey.Indexes[0])))
 	}
-	var result []privacy.Point
-	for _, index := range ringPubkey.Indexes[0] {
-		rawCoin, err := statedb.GetOTACoinByIndex(transactionStateDB, tokenID, index.Uint64(), shardID)
-		if err != nil {
-			return nil, utils.NewTransactionErr(utils.UnexpectedError, err)
-		}
-		c := new(privacy.CoinV2)
-		if err := c.SetBytes(rawCoin); err != nil {
-			return nil, utils.NewTransactionErr(utils.UnexpectedError, err)
-		}
-		p := c.GetPublicKey()
-		if p == nil {
-			return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("coin from db must have public key"))
-		}
-		result = append(result, *p)
+	rawCoin, err := statedb.GetOTACoinByIndex(transactionStateDB, tokenID, ringPubkey.Indexes[0][0].Uint64(), shardID)
+	if err != nil {
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
-	return result, nil
+	c := new(privacy.CoinV2)
+	if err := c.SetBytes(rawCoin); err != nil {
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, err)
+	}
+	p := c.GetPublicKey()
+	if p == nil {
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("coin from db must have public key"))
+	}
+	return p, nil
 }
