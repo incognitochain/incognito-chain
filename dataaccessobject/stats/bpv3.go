@@ -2,8 +2,6 @@ package stats
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/config"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -12,7 +10,7 @@ import (
 )
 
 var (
-	IsEnableBPV3Stats bool = config.Param().IsEnableBPV3Stats
+	IsEnableBPV3Stats bool = false
 )
 var (
 	shardEpochBPV3StatsPrefix  = []byte("s-b-bpv3-stats-epoch")
