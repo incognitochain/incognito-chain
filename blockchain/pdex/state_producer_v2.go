@@ -45,7 +45,7 @@ func (sp *stateProducerV2) addLiquidity(
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
 		)
-		_, accessByNFT := nftIDs[metaData.NftID()]
+		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
 		if metaData.AccessOption.IsEmpty(false) || !accessByNFT {
 			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
@@ -340,12 +340,11 @@ func (sp *stateProducerV2) mintReward(
 			continue
 		}
 
-		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
+		pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
 			&pair.state,
-		).AddFee(
-			tokenID, pairReward.Uint64(), BaseLPFeesPerShare,
-			pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
-			0, 0, []common.Hash{})
+		).AddLPFee(
+			tokenID, pairReward, BaseLPFeesPerShare,
+			pair.lpFeesPerShare)
 
 		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, pairReward.Uint64(), tokenID)...)
 	}
@@ -441,13 +440,15 @@ func (sp *stateProducerV2) trade(
 			continue
 		}
 
-		acceptedTradeMd, err = v2.TrackFee(
-			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare,
+		orderRewardsChanges := []map[string]map[common.Hash]uint64{}
+		acceptedTradeMd, orderRewardsChanges, err = v2.TrackFee(
+			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare, BPS,
 			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 			tradeDirections, orderbookList,
 			poolFees, feeRateBPS,
 			acceptedTradeMd,
 			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+			params.OrderMiningRewardRatioBPS,
 		)
 		if err != nil {
 			Logger.log.Warnf("Error handling fee distribution: %v", err)
@@ -459,6 +460,7 @@ func (sp *stateProducerV2) trade(
 		for index, pairID := range currentTrade.TradePath {
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
+			addOrderReward(changedPair.orderRewards, orderRewardsChanges[index])
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
 			changedPair.protocolFees = protocolFees[index]
 			changedPair.stakingPoolFees = stakingPoolFees[index]
@@ -870,20 +872,27 @@ func (sp *stateProducerV2) withdrawLPFee(
 			continue
 		}
 
-		share, isExisted := poolPair.shares[metaData.NftID.String()]
-		if !isExisted {
-			instructions = append(instructions, rejectInst...)
-			continue
+		lpReward := map[common.Hash]uint64{}
+		share, isExistedShare := poolPair.shares[metaData.NftID.String()]
+		if isExistedShare {
+			// compute amount of received LP reward
+			lpReward, err = poolPair.RecomputeLPFee(metaData.NftID)
+			if err != nil {
+				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
+			}
 		}
 
-		// compute amount of received LP fee
-		reward, err := poolPair.RecomputeLPFee(metaData.NftID)
-		if err != nil {
-			return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
+		orderReward := map[common.Hash]uint64{}
+		order, isExistedOrderReward := poolPair.orderRewards[metaData.NftID.String()]
+		if isExistedOrderReward {
+			// compute amount of received LOP reward
+			orderReward = order.uncollectedRewards
 		}
+
+		reward := CombineReward(lpReward, orderReward)
 
 		if reward == nil || len(reward) == 0 {
-			Logger.log.Infof("No LP reward to withdraw")
+			Logger.log.Infof("No reward to withdraw")
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
@@ -916,10 +925,13 @@ func (sp *stateProducerV2) withdrawLPFee(
 		)
 
 		// update state after fee withdrawal
-		share.tradingFees = resetKeyValueToZero(share.tradingFees)
-		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.lpFeesPerShare {
-			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		if isExistedShare {
+			share.tradingFees = resetKeyValueToZero(share.tradingFees)
+			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
+		}
+
+		if isExistedOrderReward {
+			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}
 
 		instructions = append(instructions, acceptedInst...)
@@ -1007,7 +1019,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
 
-		_, accessByNFT := nftIDs[metaData.NftID()]
+		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
 
 		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessByNFT)
 		if err != nil {
@@ -1033,9 +1045,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		var share *Share
 		if accessByNFT {
-			share, ok = rootPoolPair.shares[metaData.NftID()]
+			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
 		} else {
-			temp := metaData.BurntOTA().Bytes()
+			temp := metaData.AccessOption.BurntOTA.Bytes()
 			share, ok = rootPoolPair.shares[string(temp[:])]
 		}
 
@@ -1051,12 +1063,15 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
+			metaData.AccessOption.NftID.String(), metaData.ShareAmount(), beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
 			continue
+		}
+		if !accessByNFT {
+
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
@@ -1065,7 +1080,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			token0Amount, token1Amount, shareAmount,
 			txReqID, shardID, accessByNFT)
 		if err != nil {
-			return res, poolPairs, err
+			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
 		}
 		res = append(res, insts...)
 		poolPairs[metaData.PoolPairID()] = poolPair
@@ -1209,6 +1226,11 @@ func (sp *stateProducerV2) unstaking(
 		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if metaData.OtaReceivers()[metaData.StakingPoolID()] == utils.EmptyString {
+			Logger.log.Warnf("tx %v ota receiver is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}

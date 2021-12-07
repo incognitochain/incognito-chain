@@ -107,6 +107,7 @@ const (
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
 	listCustomToken                              = "listcustomtoken"
 	listPrivacyCustomToken                       = "listprivacycustomtoken"
+	listPrivacyCustomTokenIDs                    = "listprivacycustomtokenids"
 	getPrivacyCustomToken                        = "getprivacycustomtoken"
 	listPrivacyCustomTokenByShard                = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken                 = "getbalanceprivacycustomtoken"
@@ -282,6 +283,9 @@ const (
 	getPdexv3EstimatedStakingPoolReward            = "pdexv3_getEstimatedStakingPoolReward"
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
+	pdexv3MintPdexAccessToken                      = "pdexv3_txMintPdexAccessToken"
+	getPdexv3PdexAccessTokenStatus                 = "pdexv3_getPdexAccessTokenStatus"
+	// end of pdex v3
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

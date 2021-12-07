@@ -452,7 +452,9 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			want3: &v2utils.ContributionStatus{

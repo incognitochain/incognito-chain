@@ -125,7 +125,10 @@ func TestAutoWithdraw(t *testing.T) {
 			var expected TestResult
 			err = json.Unmarshal(testcase.Expected, &expected)
 			NoError(t, err)
-			testState := testdata.State.State()
+			testState := testdata.State.State(&Params{
+				MaxOrdersPerNft:   DefaultTestMaxOrdersPerNft,
+				DefaultFeeRateBPS: 30,
+			})
 
 			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
 			NoError(t, err)

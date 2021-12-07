@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type ReceiverInfo struct {
@@ -137,106 +136,49 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 }
 
 type AccessOption struct {
-	nextOTA  *AccessOTA
-	burntOTA *AccessOTA
-	nftID    string
-	nftHash  common.Hash
+	NextOTA  *AccessOTA  `json:"NextOTA,omitempty"`
+	BurntOTA *AccessOTA  `json:"BurntOTA,omitempty"`
+	NftID    common.Hash `json:"NftID"`
 }
 
 func NewAccessOption() *AccessOption {
 	return &AccessOption{}
 }
 
-func NewAccessOptionWithValue(nextOTA, burntOTA *AccessOTA, nftID string) *AccessOption {
-	nftHash, _ := common.Hash{}.NewHashFromStr(nftID)
+func NewAccessOptionWithValue(nextOTA, burntOTA *AccessOTA, nftID common.Hash) *AccessOption {
 	return &AccessOption{
-		nextOTA:  nextOTA,
-		burntOTA: burntOTA,
-		nftID:    nftID,
-		nftHash:  *nftHash,
+		NextOTA:  nextOTA,
+		BurntOTA: burntOTA,
+		NftID:    nftID,
 	}
 }
 
-func (a *AccessOption) NextOTA() AccessOTA {
-	return *a.nextOTA
-}
-
-func (a *AccessOption) BurntOTA() AccessOTA {
-	return *a.burntOTA
-}
-
-func (a *AccessOption) NftHash() common.Hash {
-	return a.nftHash
-}
-
-func (a *AccessOption) NftID() string {
-	return a.nftID
-}
-
-func (a *AccessOption) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		NextOTA  *AccessOTA `json:"NextOTA,omitempty"`
-		BurntOTA *AccessOTA `json:"BurntOTA,omitempty"`
-		NftID    string     `json:"NftID"`
-	}{
-		NextOTA:  a.nextOTA,
-		NftID:    a.nftID,
-		BurntOTA: a.burntOTA,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (a *AccessOption) UnmarshalJSON(data []byte) error {
-	var temp struct {
-		NextOTA  *AccessOTA `json:"NextOTA,omitempty"`
-		BurntOTA *AccessOTA `json:"BurntOTA,omitempty"`
-		NftID    string     `json:"NftID"`
-	}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-
-	nftHash, _ := common.Hash{}.NewHashFromStr(temp.NftID)
-
-	*a = AccessOption{
-		nftID:    temp.NftID,
-		nextOTA:  temp.NextOTA,
-		burntOTA: temp.BurntOTA,
-		nftHash:  *nftHash,
-	}
-	return nil
-}
-
-func (a *AccessOption) isValid(
+func (a *AccessOption) IsValid(
 	tx metadataCommon.Transaction,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	transactionStateDB *statedb.StateDB,
 	isWithdrawRequest bool,
 ) error {
-	err := beaconViewRetriever.IsValidNftID(a.nftID)
+	err := beaconViewRetriever.IsValidNftID(a.NftID.String())
 	if err != nil {
-		if isWithdrawRequest && a.burntOTA == nil {
+		if isWithdrawRequest && a.BurntOTA == nil {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("burn OTA is null")))
 		}
-		if a.nextOTA == nil {
+		if a.NextOTA == nil {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("next OTA is null")))
 		}
-		valid, err1 := ValidPdexv3Access(a.burntOTA, *a.nextOTA, tx, common.PRVCoinID, transactionStateDB)
-		if valid {
-			return nil
+		valid, err1 := ValidPdexv3Access(a.BurntOTA, *a.NextOTA, tx, common.PRVCoinID, transactionStateDB)
+		if !valid {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
 		}
-		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
+		return nil
 	}
 	return nil
 }
 
 func (a *AccessOption) IsEmpty(isWithdrawRequest bool) bool {
-	if isWithdrawRequest && a.burntOTA == nil {
+	if isWithdrawRequest && a.BurntOTA == nil {
 		return true
 	}
-	return a.nftHash.IsZeroValue() && a.nextOTA == nil && a.nftID == utils.EmptyString
+	return a.NftID.IsZeroValue() && a.NextOTA == nil
 }

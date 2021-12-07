@@ -75,6 +75,8 @@ const (
 	ErrInvalidPdexv3StakingPoolRewardPerShareStateType = "invalid pdex v3 staking pool reward per share state type"
 	ErrInvalidPdexv3StakerRewardStateType              = "invalid pdex v3 staker reward state type"
 	ErrInvalidPdexv3StakerLastRewardPerShareStateType  = "invalid pdex v3 staker last reward per share state type"
+	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
+	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

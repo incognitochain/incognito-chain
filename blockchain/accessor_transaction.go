@@ -475,7 +475,14 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 				IsReset:    isReset,
 			}
 
-			outcoinIndexer.IdxChan <- idxParams
+			outcoinIndexer.IdxChan <- &idxParams
+
+			// Add the OTAKey to the CoinIndexer here to avoid missing coins when new blocks arrive
+			err := outcoinIndexer.AddOTAKey(idxParams.OTAKey, coinIndexer.StatusIndexing)
+			if err != nil {
+				Logger.log.Errorf("Adding OTAKey %v error: %v\n", coinIndexer.OTAKeyToRaw(idxParams.OTAKey), err)
+				return err
+			}
 
 			Logger.log.Infof("Authorized OTA Key Submission %x", otaKey)
 			return nil
@@ -710,6 +717,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 					}
 					Logger.log.Info("Store custom token when it is issued", tokenData.PropertyID, tokenData.PropertySymbol, tokenData.PropertyName)
 					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
+					if EnableIndexingCoinByOTAKey {
+						outcoinIndexer.AddTokenID(tokenID)
+					}
 					if err != nil {
 						return err
 					}
@@ -888,7 +898,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						}
 						return true
 					}
-					outcoinIndexer.ManagedOTAKeys.Range(handler)
+					outcoinIndexer.GetManagedOTAKeys().Range(handler)
 				}
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())

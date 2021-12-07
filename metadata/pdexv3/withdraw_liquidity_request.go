@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type WithdrawLiquidityRequest struct {
@@ -54,11 +55,11 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.isValid(tx, beaconViewRetriever, transactionStateDB, false)
+	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, request.nftID, request.shareAmount)
+	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, request.AccessOption.NftID.String(), request.shareAmount)
 	if err != nil {
 		return false, err
 	}
@@ -75,8 +76,11 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Feature pdexv3 has not been activated yet"))
 	}
-	if request.poolPairID == "" {
+	if request.poolPairID == utils.EmptyString {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pool pair id should not be empty"))
+	}
+	if request.otaReceivers[request.AccessOption.NftID.String()] == utils.EmptyString {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID's ota receiver can not be empty"))
 	}
 	for tokenID, otaReceiverStr := range request.otaReceivers {
 		_, err := common.Hash{}.NewHashFromStr(tokenID)
@@ -103,8 +107,7 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
 	}
-	nftHash := request.nftHash
-	if !bytes.Equal(burnedTokenID[:], nftHash[:]) {
+	if !bytes.Equal(burnedTokenID[:], request.AccessOption.NftID[:]) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
 	}
 	if burnCoin.GetValue() != 1 {
@@ -114,7 +117,7 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
-	if request.nftID == common.PRVCoinID.String() {
+	if request.AccessOption.NftID == common.PRVCoinID {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Invalid NftID"))
 	}
 	return true, true, nil
@@ -137,14 +140,12 @@ func (request *WithdrawLiquidityRequest) CalculateSize() uint64 {
 func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID   string            `json:"PoolPairID"`
-		NftID        string            `json:"NftID,omitempty"`
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
 		AccessOption
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:   request.poolPairID,
-		NftID:        request.nftID,
 		OtaReceivers: request.otaReceivers,
 		ShareAmount:  request.shareAmount,
 		AccessOption: request.AccessOption,

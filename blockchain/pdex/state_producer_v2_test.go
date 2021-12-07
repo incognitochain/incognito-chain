@@ -383,7 +383,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -419,7 +421,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -456,7 +460,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -474,7 +480,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -583,7 +591,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -625,7 +635,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -661,7 +673,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -703,7 +717,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -740,7 +756,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
@@ -783,7 +801,9 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			want2: map[string]rawdbv2.Pdexv3Contribution{},
@@ -936,6 +956,21 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	assert.Nil(t, err)
 	//
 
+	invalidOtaReceivers := map[string]string{
+		nftID:             validOTAReceiver0,
+		token0ID.String(): validOTAReceiver1,
+	}
+
+	// invalid otaReceivers tx
+	invalidOtaReceiversMetadata := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
+		poolPairID, nftID, invalidOtaReceivers, 100,
+	)
+	invalidOtaReceiversTx := &metadataMocks.Transaction{}
+	invalidOtaReceiversTx.On("GetMetadata").Return(invalidOtaReceiversMetadata)
+	invalidOtaReceiversTx.On("GetValidationEnv").Return(valEnv)
+	invalidOtaReceiversTx.On("Hash").Return(txHash)
+	//
+
 	type fields struct {
 		stateProducerBase stateProducerBase
 	}
@@ -975,7 +1010,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1001,7 +1038,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1028,7 +1067,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1054,7 +1095,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1081,7 +1124,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1107,7 +1152,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1134,7 +1181,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1160,7 +1209,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1188,7 +1239,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1210,6 +1263,61 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					shares: map[string]*Share{
 						nftID: &Share{
 							amount:             0,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Invalid ota receivers",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{invalidOtaReceiversTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
 							tradingFees:        map[common.Hash]uint64{},
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
@@ -1324,7 +1432,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	validInputTx.On("Hash").Return(txHash)
 
 	// accept instructions
-	acceptWithdrawLPInsts := v2utils.BuildWithdrawLPFeeInsts(
+	acceptWithdrawLPInstsOnlyLP := v2utils.BuildWithdrawLPFeeInsts(
 		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
 			*token0ID: {
 				Address: otaReceiver0,
@@ -1333,6 +1441,32 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 			*token1ID: {
 				Address: otaReceiver1,
 				Amount:  1200,
+			},
+		},
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+	)
+	acceptWithdrawLPInstsOnlyOrderReward := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+			*token0ID: {
+				Address: otaReceiver0,
+				Amount:  150,
+			},
+			*token1ID: {
+				Address: otaReceiver1,
+				Amount:  250,
+			},
+		},
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+	)
+	acceptWithdrawLPInstsBothReward := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+			*token0ID: {
+				Address: otaReceiver0,
+				Amount:  450,
+			},
+			*token1ID: {
+				Address: otaReceiver1,
+				Amount:  1450,
 			},
 		},
 		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
@@ -1376,7 +1510,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1401,7 +1537,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1428,7 +1566,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1453,13 +1593,15 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:   "Valid Input",
+			name:   "Valid LP withdrawal",
 			fields: fields{},
 			args: args{
 				txs: []metadata.Transaction{validInputTx},
@@ -1489,14 +1631,16 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 								},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
 					nftID: 100,
 				},
 			},
-			want: [][]string{mintNftInst, acceptWithdrawLPInsts[0], acceptWithdrawLPInsts[1]},
+			want: [][]string{mintNftInst, acceptWithdrawLPInstsOnlyLP[0], acceptWithdrawLPInstsOnlyLP[1]},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -1523,7 +1667,161 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Valid order reward withdrawal",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{validInputTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						lpFeesPerShare: map[common.Hash]*big.Int{
+							*token0ID: convertToLPFeesPerShare(300, 300),
+							*token1ID: convertToLPFeesPerShare(1200, 300),
+						},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares:          map[string]*Share{},
+						orderRewards: map[string]*OrderReward{
+							nftID: &OrderReward{
+								uncollectedRewards: Reward{
+									*token0ID: 150,
+									*token1ID: 250,
+								},
+							},
+						},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+			},
+			want: [][]string{mintNftInst, acceptWithdrawLPInstsOnlyOrderReward[0], acceptWithdrawLPInstsOnlyOrderReward[1]},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					lpFeesPerShare: map[common.Hash]*big.Int{
+						*token0ID: convertToLPFeesPerShare(300, 300),
+						*token1ID: convertToLPFeesPerShare(1200, 300),
+					},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares:          map[string]*Share{},
+					orderRewards: map[string]*OrderReward{
+						nftID: &OrderReward{
+							uncollectedRewards: Reward{
+								*token0ID: 0,
+								*token1ID: 0,
+							},
+						},
+					},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Valid both rewards withdrawal",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{validInputTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						lpFeesPerShare: map[common.Hash]*big.Int{
+							*token0ID: convertToLPFeesPerShare(300, 300),
+							*token1ID: convertToLPFeesPerShare(1200, 300),
+						},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount: 300,
+								tradingFees: map[common.Hash]uint64{
+									*token0ID: 100,
+									*token1ID: 200,
+								},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{
+									*token0ID: convertToLPFeesPerShare(100, 300),
+									*token1ID: convertToLPFeesPerShare(200, 300),
+								},
+							},
+						},
+						orderRewards: map[string]*OrderReward{
+							nftID: &OrderReward{
+								uncollectedRewards: Reward{
+									*token0ID: 150,
+									*token1ID: 250,
+								},
+							},
+						},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+			},
+			want: [][]string{mintNftInst, acceptWithdrawLPInstsBothReward[0], acceptWithdrawLPInstsBothReward[1]},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					lpFeesPerShare: map[common.Hash]*big.Int{
+						*token0ID: convertToLPFeesPerShare(300, 300),
+						*token1ID: convertToLPFeesPerShare(1200, 300),
+					},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount: 300,
+							tradingFees: map[common.Hash]uint64{
+								*token0ID: 0,
+								*token1ID: 0,
+							},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{
+								*token0ID: convertToLPFeesPerShare(300, 300),
+								*token1ID: convertToLPFeesPerShare(1200, 300),
+							},
+						},
+					},
+					orderRewards: map[string]*OrderReward{
+						nftID: &OrderReward{
+							uncollectedRewards: Reward{
+								*token0ID: 0,
+								*token1ID: 0,
+							},
+						},
+					},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1648,7 +1946,9 @@ func Test_stateProducerV2_withdrawProtocolFee(t *testing.T) {
 								lastLPFeesPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1673,7 +1973,9 @@ func Test_stateProducerV2_withdrawProtocolFee(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1712,7 +2014,9 @@ func Test_stateProducerV2_withdrawProtocolFee(t *testing.T) {
 								},
 							},
 						},
-						orderbook: Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{},
+						orderbook:    Orderbook{[]*Order{}},
 					},
 				},
 				nftIDs: map[string]uint64{
@@ -1749,7 +2053,9 @@ func Test_stateProducerV2_withdrawProtocolFee(t *testing.T) {
 							},
 						},
 					},
-					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{},
+					makingVolume: map[common.Hash]*MakingVolume{},
+					orderbook:    Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,

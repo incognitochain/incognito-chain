@@ -46,10 +46,10 @@ func NewAddLiquidityRequestWithValue(
 		pairHash:     pairHash,
 		otaReceiver:  otaReceiver,
 		tokenID:      tokenID,
-		AccessOption: *accessOption,
 		tokenAmount:  tokenAmount,
 		amplifier:    amplifier,
 		MetadataBase: metadataBase,
+		AccessOption: *accessOption,
 	}
 }
 
@@ -61,7 +61,7 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.isValid(tx, beaconViewRetriever, transactionStateDB, false)
+	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
 		return false, err
 	}
@@ -154,7 +154,6 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 		PairHash    string `json:"PairHash"`
 		OtaReceiver string `json:"OtaReceiver"` // receive pToken
 		TokenID     string `json:"TokenID"`
-		NftID       string `json:"NftID,omitempty"` // will be removed when next ota is ready
 		TokenAmount uint64 `json:"TokenAmount"`
 		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
 		AccessOption
@@ -169,6 +168,7 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 		AccessOption: request.AccessOption,
 		MetadataBase: request.MetadataBase,
 	})
+
 	if err != nil {
 		return []byte{}, err
 	}
@@ -181,7 +181,6 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 		PairHash    string `json:"PairHash"`
 		OtaReceiver string `json:"OtaReceiver"` // receive pToken
 		TokenID     string `json:"TokenID"`
-		NftID       string `json:"NftID,omitempty"` // will be disabled when next ota is ready
 		TokenAmount uint64 `json:"TokenAmount"`
 		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
 		AccessOption

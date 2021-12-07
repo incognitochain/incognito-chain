@@ -19,6 +19,7 @@ func (order *MatchingOrder) UnmarshalJSON(data []byte) error {
 
 type OrderBookIterator interface {
 	NextOrder(tradeDirection byte) (*MatchingOrder, string, error)
+	NftIDs() map[string]string
 }
 
 // BuyAmountFromOrder() computes the theoretical (by rate) output amount given incoming trade's sell amount. Order balance only needs to be non-zero since it can be partially matched

@@ -182,6 +182,36 @@ func TestProcessTrade(t *testing.T) {
 	}
 }
 
+func TestProcessOrderReward(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	type TestResult StateFormatter
+
+	var testcases []Testcase
+	testcases = append(testcases, processTradeOrderRewardTestcases...)
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state_order_reward.json", "params.json")
+
+			env := skipToProcess(testdata.Instructions)
+			err = testState.Process(env)
+			NoError(t, err)
+			result := (&StateFormatter{}).FromState(testState)
+
+			EqualValues(t, expected, *result)
+		})
+	}
+}
+
 func TestBuildResponseTrade(t *testing.T) {
 	setTestTradeConfig()
 	type TestData struct {
@@ -215,6 +245,7 @@ func TestBuildResponseTrade(t *testing.T) {
 				&blankPrivateKey,
 				blankShardID,
 				testDB,
+				10,
 			)
 			NoError(t, err)
 			txv2, ok := tx.(*transaction.TxTokenVersion2)
@@ -370,27 +401,27 @@ type Testcase struct {
 
 // format a pool, discarding data irrelevant to this test
 type PoolFormatter struct {
-	State     *rawdbv2.Pdexv3PoolPair `json:"state"`
-	Orderbook Orderbook               `json:"orderbook"`
+	State        *rawdbv2.Pdexv3PoolPair `json:"state"`
+	Orderbook    Orderbook               `json:"orderbook"`
+	OrderRewards map[string]*OrderReward `json:"orderrewards"`
 }
 
 type StateFormatter struct {
 	PoolPairs map[string]PoolFormatter `json:"poolPairs"`
 }
 
-func (sf *StateFormatter) State() *stateV2 {
+func (sf *StateFormatter) State(params *Params) *stateV2 {
 	s := newStateV2WithValue(
 		nil, nil, make(map[string]*PoolPairState),
-		&Params{
-			MaxOrdersPerNft:   DefaultTestMaxOrdersPerNft,
-			DefaultFeeRateBPS: 30,
-		},
+		params,
 		nil, make(map[string]uint64),
 	)
 	for k, v := range sf.PoolPairs {
 		s.poolPairs[k] = &PoolPairState{
-			state:     *v.State,
-			orderbook: v.Orderbook,
+			state:          *v.State,
+			orderbook:      v.Orderbook,
+			orderRewards:   v.OrderRewards,
+			lpFeesPerShare: map[common.Hash]*big.Int{},
 		}
 	}
 	return s
@@ -399,7 +430,11 @@ func (sf *StateFormatter) State() *stateV2 {
 func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 	sf.PoolPairs = make(map[string]PoolFormatter)
 	for k, v := range s.poolPairs {
-		sf.PoolPairs[k] = PoolFormatter{State: &v.state, Orderbook: v.orderbook}
+		sf.PoolPairs[k] = PoolFormatter{
+			State:        &v.state,
+			Orderbook:    v.orderbook,
+			OrderRewards: v.orderRewards,
+		}
 	}
 	return sf
 }
@@ -417,7 +452,7 @@ func mustReadTestcases(filename string) []Testcase {
 	return results
 }
 
-func mustReadState(filename string) *stateV2 {
+func mustReadState(filename string, paramsFiles ...string) *stateV2 {
 	raw, err := ioutil.ReadFile("testdata/" + filename)
 	if err != nil {
 		panic(err)
@@ -428,7 +463,21 @@ func mustReadState(filename string) *stateV2 {
 	if err != nil {
 		panic(err)
 	}
-	return temp.State()
+	params := &Params{
+		MaxOrdersPerNft:   DefaultTestMaxOrdersPerNft,
+		DefaultFeeRateBPS: 30,
+	}
+	if len(paramsFiles) > 0 {
+		rawParams, err := ioutil.ReadFile("testdata/" + paramsFiles[0])
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(rawParams, params)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return temp.State(params)
 }
 
 var sortOrderTestcases = mustReadTestcases("sort_orders.json")
@@ -436,6 +485,7 @@ var produceTradeTestcases = mustReadTestcases("produce_trade.json")
 var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trades.json")
 var produceTradeWithFeeTestCases = mustReadTestcases("produce_trade_with_fee.json")
 var processTradeTestcases = mustReadTestcases("process_trade.json")
+var processTradeOrderRewardTestcases = mustReadTestcases("process_trade_order_reward.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")
 var prvRateTestcases = mustReadTestcases("prv_rate.json")
 var minPRVReserveTestcases = mustReadTestcases("min_prv_reserve.json")

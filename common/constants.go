@@ -70,6 +70,7 @@ var (
 	ConfidentialAssetName = "CA"
 	PDEXCoinID            = Hash{6}
 	PDEXCoinName          = "PDEX"
+	PdexAccessCoinID      = Hash{7}
 	MaxShardNumber        = 0
 )
 
@@ -192,6 +193,7 @@ const (
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
+const PdexAccessIDStr = "0000000000000000000000000000000000000000000000000000000000000007"
 const PDEXDenominatingDecimal = 9
 
 const ETHChainName = "eth"

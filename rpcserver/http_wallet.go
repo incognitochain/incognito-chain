@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
@@ -484,6 +485,45 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 			}
 		}
 	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleListPrivacyCustomTokenIDs(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	added := make(map[string]interface{})
+	result := make([]string, 0)
+
+	start := time.Now()
+	if allTokens := httpServer.blockService.BlockChain.ListAllPrivacyCustomTokensAndPRVFromCache(); allTokens != nil {
+		for tokenID, _ := range allTokens {
+			if _, ok := added[tokenID.String()]; !ok {
+				result = append(result, tokenID.String())
+			}
+		}
+	} else {
+		listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+		}
+		for tokenID, _ := range listPrivacyToken {
+			if _, ok := added[tokenID.String()]; !ok {
+				result = append(result, tokenID.String())
+			}
+		}
+	}
+	Logger.log.Infof("ListPrivacyCustomToken timeElapsed: %v\n", time.Since(start).Seconds())
+
+	// overwrite amounts with bridge tokens
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	Logger.log.Infof("GetAllBridgeTokens timeElapsed: %v\n", time.Since(start).Seconds())
+	for _, bridgeToken := range allBridgeTokens {
+		if _, ok := added[bridgeToken.TokenID.String()]; !ok {
+			result = append(result, bridgeToken.TokenID.String())
+		}
+	}
+
 	return result, nil
 }
 

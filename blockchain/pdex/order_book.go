@@ -149,3 +149,11 @@ func (ob *Orderbook) Clone() Orderbook {
 	}
 	return *result
 }
+
+func (ob *Orderbook) NftIDs() map[string]string {
+	result := make(map[string]string)
+	for _, ord := range ob.orders {
+		result[ord.Id()] = ord.NftID().String()
+	}
+	return result
+}

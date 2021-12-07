@@ -174,6 +174,19 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MinPRVReserveTradingRate is invalid"))
 	}
 
+	orderMiningRewardRatioBPSTmp, ok := newParams["OrderMiningRewardRatioBPS"].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderMiningRewardRatioBPS is invalid"))
+	}
+	orderMiningRewardRatioBPS := map[string]uint{}
+	for key, share := range orderMiningRewardRatioBPSTmp {
+		value, err := common.AssertAndConvertStrToNumber(share)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OrderMiningRewardRatioBPS is invalid"))
+		}
+		orderMiningRewardRatioBPS[key] = uint(value)
+	}
+
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
@@ -189,6 +202,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			MaxOrdersPerNft:                 uint(maxOrdersPerNft),
 			AutoWithdrawOrderLimitAmount:    uint(autoWithdrawOrderLimitAmount),
 			MinPRVReserveTradingRate:        minPRVReserveTradingRate,
+			OrderMiningRewardRatioBPS:       orderMiningRewardRatioBPS,
 		},
 	)
 	if err != nil {
@@ -300,51 +314,62 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 	pair := poolPairs[pairID]
 	pairState := pair.State()
 
-	if _, ok := pair.Shares()[nftIDStr]; !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("NftID is not existed"))
-	}
-
 	result := jsonresult.Pdexv3LPValue{
 		PoolValue:  map[string]uint64{},
 		TradingFee: map[string]uint64{},
 	}
 
-	shareAmount := pair.Shares()[nftIDStr].Amount()
-	if shareAmount != 0 {
-		poolAmount0 := new(big.Int).Mul(
-			new(big.Int).SetUint64(pairState.Token0RealAmount()),
-			new(big.Int).SetUint64(shareAmount),
-		)
-		poolAmount0 = new(big.Int).Div(
-			poolAmount0,
-			new(big.Int).SetUint64(pairState.ShareAmount()),
-		)
-		if !poolAmount0.IsUint64() {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+	uncollectedLPReward := map[common.Hash]uint64{}
+	uncollectedOrderReward := map[common.Hash]uint64{}
+
+	share, ok := pair.Shares()[nftIDStr]
+	if ok {
+		shareAmount := share.Amount()
+		if shareAmount != 0 {
+			poolAmount0 := new(big.Int).Mul(
+				new(big.Int).SetUint64(pairState.Token0RealAmount()),
+				new(big.Int).SetUint64(shareAmount),
+			)
+			poolAmount0 = new(big.Int).Div(
+				poolAmount0,
+				new(big.Int).SetUint64(pairState.ShareAmount()),
+			)
+			if !poolAmount0.IsUint64() {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+			}
+
+			poolAmount1 := new(big.Int).Mul(
+				new(big.Int).SetUint64(pairState.Token1RealAmount()),
+				new(big.Int).SetUint64(shareAmount),
+			)
+			poolAmount1 = new(big.Int).Div(
+				poolAmount1,
+				new(big.Int).SetUint64(pairState.ShareAmount()),
+			)
+			if !poolAmount0.IsUint64() {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+			}
+
+			result.PoolValue[pairState.Token0ID().String()] = poolAmount0.Uint64()
+			result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
 		}
 
-		poolAmount1 := new(big.Int).Mul(
-			new(big.Int).SetUint64(pairState.Token1RealAmount()),
-			new(big.Int).SetUint64(shareAmount),
-		)
-		poolAmount1 = new(big.Int).Div(
-			poolAmount1,
-			new(big.Int).SetUint64(pairState.ShareAmount()),
-		)
-		if !poolAmount0.IsUint64() {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, errors.New("Could not get pool amount"))
+		uncollectedLPReward, err = pair.RecomputeLPFee(*nftID)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 		}
-
-		result.PoolValue[pairState.Token0ID().String()] = poolAmount0.Uint64()
-		result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
 	}
 
-	uncollectedTradingFees, err := pair.RecomputeLPFee(*nftID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
+	order, ok := pair.OrderRewards()[nftIDStr]
+	if ok {
+		// compute amount of received LOP reward
+		uncollectedOrderReward = order.UncollectedRewards()
 	}
-	for tokenID := range uncollectedTradingFees {
-		result.TradingFee[tokenID.String()] = uncollectedTradingFees[tokenID]
+
+	reward := pdex.CombineReward(uncollectedLPReward, uncollectedOrderReward)
+
+	for tokenID, amount := range reward {
+		result.TradingFee[tokenID.String()] = amount
 	}
 
 	return result, nil
@@ -717,9 +742,14 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
+	// tempory code
+	nftHash, _ := common.Hash{}.NewHashFromStr(mdReader.NftID)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, *nftHash)
+	//
+
 	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		mdReader.PoolPairID, mdReader.PairHash, otaReceiverStr, mdReader.TokenID,
-		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier), nil)
+		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier), accessOption)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.TokenID)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
@@ -907,15 +937,11 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 		mdReader.PoolPairID, otaReceivers, uint64(mdReader.ShareAmount), nil,
 	)
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
-	if md.NftID() == common.PRVIDStr {
+	if md.AccessOption.NftID == common.PRVCoinID {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("Cannot use PRV for withdrawLiquidity tx"))
 	}
-	nftID, err := common.Hash{}.NewHashFromStr(md.NftID())
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-	}
-	paramSelect.SetTokenID(*nftID)
+	paramSelect.SetTokenID(md.AccessOption.NftID)
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -2128,4 +2154,12 @@ func (httpServer *HttpServer) handleGetPdexv3WithdrawalStakingRewardStatus(param
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3WithdrawalStakingRewardStatusError, err)
 	}
 	return status, nil
+}
+
+func (httpServer *HttpServer) handlePdexv3MintPdexAccessToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return nil, nil
+}
+
+func (httpServer *HttpServer) handleGetPdexv3MintPdexAccessTokenStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return nil, nil
 }

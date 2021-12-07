@@ -25,6 +25,8 @@ type Pdexv3Params struct {
 	MaxOrdersPerNft                 uint            `json:"MaxOrdersPerNft"`
 	AutoWithdrawOrderLimitAmount    uint            `json:"AutoWithdrawOrderLimitAmount"`
 	MinPRVReserveTradingRate        uint64          `json:"MinPRVReserveTradingRate"`
+	OrderMiningRewardRatioBPS       map[string]uint `json:"OrderMiningRewardRatioBPS,omitempty"`
+	MinPrvForMintPdexAccessToken    uint64          `json:"MinPrvForMintPdexAccessToken,omitempty"`
 }
 
 type ParamsModifyingRequest struct {

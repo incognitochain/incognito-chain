@@ -939,3 +939,37 @@ func getMapWithoutZeroValue(m map[common.Hash]uint64) map[common.Hash]uint64 {
 	}
 	return result
 }
+
+func CombineReward(
+	reward1 map[common.Hash]uint64,
+	reward2 map[common.Hash]uint64,
+) map[common.Hash]uint64 {
+	result := map[common.Hash]uint64{}
+	for key, value := range reward1 {
+		result[key] = value
+	}
+	for key, value := range reward2 {
+		if _, exists := result[key]; exists {
+			// the reward is not greater than the total supply
+			result[key] = value + result[key]
+		} else {
+			result[key] = value
+		}
+	}
+	return getMapWithoutZeroValue(result)
+}
+
+func addOrderReward(
+	base map[string]*OrderReward, additional map[string]map[common.Hash]uint64,
+) map[string]*OrderReward {
+	for nftID, reward := range additional {
+		for tokenID, amt := range reward {
+			if _, ok := base[nftID]; !ok {
+				base[nftID] = NewOrderReward()
+			}
+
+			base[nftID].AddReward(tokenID, amt)
+		}
+	}
+	return base
+}

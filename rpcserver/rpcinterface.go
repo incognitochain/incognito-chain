@@ -133,6 +133,7 @@ var HttpHandler = map[string]httpHandler{
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
 	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
 	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
+	listPrivacyCustomTokenIDs:                  (*HttpServer).handleListPrivacyCustomTokenIDs,
 	getPrivacyCustomToken:                      (*HttpServer).handleGetPrivacyCustomToken,
 	listPrivacyCustomTokenByShard:              (*HttpServer).handleListPrivacyCustomTokenByShard,
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
@@ -255,6 +256,9 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3EstimatedStakingPoolReward:            (*HttpServer).handleGetPdexv3EstimatedStakingPoolReward,
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
+	pdexv3MintPdexAccessToken:                      (*HttpServer).handlePdexv3MintPdexAccessToken,
+	getPdexv3PdexAccessTokenStatus:                 (*HttpServer).handleGetPdexv3MintPdexAccessTokenStatus,
+	// end of pdex v3
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
