@@ -1253,3 +1253,57 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 	}
 	return pools, err
 }
+
+func (sp *stateProcessorV2) mintAccessTokens(
+	stateDB *statedb.StateDB,
+	inst []string,
+) error {
+	if len(inst) != 3 {
+		return fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
+	}
+	status := byte(0)
+	txReqID := common.Hash{}
+	var burntAmount uint64
+	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
+		return fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
+	}
+	switch inst[1] {
+	case common.Pdexv3RejectStringStatus:
+		refundInst := instruction.NewRejectMintAccessToken()
+		err := refundInst.FromStringSlice(inst)
+		if err != nil {
+			return err
+		}
+		burntAmount = refundInst.Amount()
+		txReqID = refundInst.TxReqID()
+		status = common.Pdexv3RejectStatus
+	case common.Pdexv3AcceptStringStatus:
+		acceptInst := instruction.NewAcceptMintAccessToken()
+		err := acceptInst.FromStringSlice(inst)
+		if err != nil {
+			return err
+		}
+		burntAmount = acceptInst.BurntAmount()
+		txReqID = acceptInst.TxReqID()
+		status = common.Pdexv3AcceptStatus
+	default:
+		return errors.New("Can not recognize status")
+	}
+
+	mintNftStatus := v2.MintNftStatus{
+		Status:      status,
+		BurntAmount: burntAmount,
+	}
+	data, err := json.Marshal(mintNftStatus)
+	if err != nil {
+		return err
+	}
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3MintPdexAccessTokenStatusPrefix(),
+		txReqID.Bytes(),
+		data,
+	)
+	return nil
+}

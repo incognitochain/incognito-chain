@@ -19,7 +19,11 @@ type MintAccessTokenRequest struct {
 }
 
 func NewMintAccessTokenRequest() *MintAccessTokenRequest {
-	return &MintAccessTokenRequest{}
+	return &MintAccessTokenRequest{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3MintAccessTokenRequestMeta,
+		},
+	}
 }
 
 func NewMintAccessTokenRequestWithValue(
@@ -27,6 +31,9 @@ func NewMintAccessTokenRequestWithValue(
 	otaReceiver *privacy.OTAReceiver,
 ) *MintAccessTokenRequest {
 	return &MintAccessTokenRequest{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3MintAccessTokenRequestMeta,
+		},
 		amount:      amount,
 		otaReceiver: otaReceiver,
 	}

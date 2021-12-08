@@ -733,7 +733,7 @@ func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
 }
 
 // pDex v3 prefix for mintnft status
-func Pdexv3UserMintPdexAccessTokenStatusPrefix() []byte {
+func Pdexv3MintPdexAccessTokenStatusPrefix() []byte {
 	return pdexv3MintAccessTokenStatusPrefix
 }
 

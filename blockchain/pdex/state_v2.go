@@ -202,6 +202,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.stakingPoolStates,
 			)
+		case metadataCommon.Pdexv3MintAccessTokenRequestMeta:
+			err = s.processor.mintAccessTokens(
+				env.StateDB(),
+				inst,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}

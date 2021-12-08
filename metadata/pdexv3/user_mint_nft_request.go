@@ -19,7 +19,11 @@ type UserMintNftRequest struct {
 }
 
 func NewUserMintNftRequest() *UserMintNftRequest {
-	return &UserMintNftRequest{}
+	return &UserMintNftRequest{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3UserMintNftRequestMeta,
+		},
+	}
 }
 
 func NewUserMintNftRequestWithValue(otaReceiver string, amount uint64) *UserMintNftRequest {

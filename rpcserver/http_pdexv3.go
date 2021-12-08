@@ -2189,7 +2189,7 @@ func (httpServer *HttpServer) handleGetPdexv3MintPdexAccessTokenStatus(params in
 	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPdexv3Status(
 		stateDB,
-		statedb.Pdexv3UserMintPdexAccessTokenStatusPrefix(),
+		statedb.Pdexv3MintPdexAccessTokenStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {
@@ -2253,7 +2253,7 @@ func (httpServer *HttpServer) createPdexv3MintAccessTokenTransaction(
 	temp := bc.GetBurningAddress(bestState.BeaconHeight)
 	w, _ := wallet.Base58CheckDeserialize(temp)
 	burnAddr := w.KeySet.PaymentAddress
-	amount := bc.GetBeaconBestState().PdeState(pdex.AmplifierVersion).Reader().Params().MintNftRequireAmount
+	amount := bc.GetBeaconBestState().PdeState(pdex.AmplifierVersion).Reader().Params().MinPrvForMintPdexAccessToken
 
 	md := metadataPdexv3.NewMintAccessTokenRequestWithValue(amount, &otaReceiver)
 	paramSelect.SetMetadata(md)
