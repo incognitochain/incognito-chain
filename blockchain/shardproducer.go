@@ -557,6 +557,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						producerPrivateKey,
 						shardID,
 						curView.GetCopiedTransactionStateDB(),
+						beaconBlock.Header.Height,
 					)
 				}
 			}

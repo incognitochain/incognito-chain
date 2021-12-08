@@ -2,12 +2,14 @@ package coinIndexer
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"sync"
 )
 
 const (
@@ -21,6 +23,12 @@ type JobStatus struct {
 	id     string // id of the indexing go-routine
 	otaKey privacy.OTAKey
 	err    error
+}
+
+// IndexerInitialConfig is the initial config provided when starting the CoinIndexer.
+type IndexerInitialConfig struct {
+	TxDbs      []*statedb.StateDB
+	BestBlocks []uint64
 }
 
 type IndexParam struct {
@@ -134,6 +142,7 @@ func QueryDbCoinVer1(pubKey []byte, tokenID *common.Hash, db *statedb.StateDB) (
 
 // QueryDbCoinVer2 returns all v2 output coins of a public key on the given tokenID for heights from `startHeight` to
 // `destHeight` using the given list of filters.
+//nolint // TODO: consider using get coin by index to speed up the performance.
 func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) ([]privacy.Coin, error) {
 	pubKeyBytes := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
@@ -190,12 +199,9 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 // to any of the given IndexParam's using the given filters.
 //
 // The wider the range [startHeight: desHeight] is, the longer time this function should take.
-func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins map[string]interface{}, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
-	// avoid overlap; unless lower height is 0
-	start := startHeight + 1
-	if startHeight == 0 {
-		start = 0
-	}
+//nolint // TODO: consider using get coin by index to speed up the performance.
+func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenID *common.Hash, startHeight, destHeight uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+	start := startHeight
 
 	res := make(map[string][]privacy.Coin)
 	for otaStr := range idxParams {
@@ -224,7 +230,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 				continue
 			}
 
-			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {
+			if _, ok := cachedCoins.Load(cv2.GetPublicKey().String()); ok {
 				// coin has already been cached, so we skip.
 				countSkipped++
 				continue
@@ -255,10 +261,77 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 					break
 				}
 			}
-
 		}
 	}
-	utils.Logger.Log.Infof("#skipped for heights %v to %v: %v\n", start, destHeight, countSkipped)
+	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v\n", start, destHeight, tokenID.String(), countSkipped)
+	return res, nil
+}
+
+// QueryBatchDbCoinVer2ByIndices queries the db to get v2 coins with indices in [fromIndex,toIndex] checks if the coins belong
+// to any of the given IndexParam's using the given filters.
+//
+// The wider the range [fromIndex: toIndex] is, the longer time this function should take.
+func QueryBatchDbCoinVer2ByIndices(idxParams map[string]*IndexParam, shardID byte, tokenID *common.Hash, fromIndex, toIndex uint64, db *statedb.StateDB, cachedCoins *sync.Map, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+	if fromIndex > toIndex {
+		return nil, fmt.Errorf("invalid index range [%v,%v]", fromIndex, toIndex)
+	}
+
+	res := make(map[string][]privacy.Coin)
+	for otaStr := range idxParams {
+		res[otaStr] = make([]privacy.Coin, 0)
+	}
+
+	burningPubKey := wallet.GetBurningPublicKey()
+	countSkipped := 0
+	for idx := fromIndex; idx <= toIndex; idx++ {
+		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx, shardID)
+		if err != nil {
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by idx error: %v\n", err)
+			return nil, err
+		}
+
+		cv2 := &privacy.CoinV2{}
+		err = cv2.SetBytes(coinBytes)
+		if err != nil {
+			utils.Logger.Log.Error("Get outCoins ver 2 from bytes", err)
+			return nil, err
+		}
+
+		// check if the output coin was sent to the burning address
+		if bytes.Equal(cv2.GetPublicKey().ToBytesS(), burningPubKey) {
+			countSkipped++
+			continue
+		}
+
+		if _, ok := cachedCoins.Load(cv2.GetPublicKey().String()); ok {
+			// coin has already been cached, so we skip.
+			countSkipped++
+			continue
+		}
+
+		for otaStr, idxParam := range idxParams {
+			// create parameter(s) for CoinMatcher filters.
+			otaKey := idxParam.OTAKey
+			params := make(map[string]interface{})
+			params["otaKey"] = otaKey
+			params["db"] = db
+			params["tokenID"] = tokenID
+
+			pass := false
+			for _, f := range filters {
+				if f(cv2, params) {
+					pass = true
+					break
+				}
+			}
+			if pass {
+				res[otaStr] = append(res[otaStr], cv2)
+				break
+			}
+		}
+
+	}
+	utils.Logger.Log.Infof("#skipped for indices [%v,%v], tokenID %v: %v\n", fromIndex, toIndex, tokenID.String(), countSkipped)
 	return res, nil
 }
 
@@ -303,19 +376,6 @@ func (ci *CoinIndexer) getIdxParamsForIndexing(totalWorker int) map[byte]int {
 				res[shardID] = IndexingBatchSize
 			}
 		}
-	}
-
-	return res
-}
-
-func (ci *CoinIndexer) cloneCachedCoins() map[string]interface{} {
-	res := make(map[string]interface{})
-	if len(ci.cachedCoinPubKeys) != 0 {
-		ci.mtx.Lock()
-		for otaStr := range ci.cachedCoinPubKeys {
-			res[otaStr] = true
-		}
-		ci.mtx.Unlock()
 	}
 
 	return res

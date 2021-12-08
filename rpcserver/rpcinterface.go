@@ -133,6 +133,7 @@ var HttpHandler = map[string]httpHandler{
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
 	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
 	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
+	listPrivacyCustomTokenIDs:                  (*HttpServer).handleListPrivacyCustomTokenIDs,
 	getPrivacyCustomToken:                      (*HttpServer).handleGetPrivacyCustomToken,
 	listPrivacyCustomTokenByShard:              (*HttpServer).handleListPrivacyCustomTokenByShard,
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,

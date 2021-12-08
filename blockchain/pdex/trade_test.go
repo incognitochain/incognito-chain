@@ -245,6 +245,7 @@ func TestBuildResponseTrade(t *testing.T) {
 				&blankPrivateKey,
 				blankShardID,
 				testDB,
+				10,
 			)
 			NoError(t, err)
 			txv2, ok := tx.(*transaction.TxTokenVersion2)
