@@ -15,10 +15,10 @@ import (
 
 type WithdrawLiquidityRequest struct {
 	metadataCommon.MetadataBase
-	poolPairID   string
+	poolPairID string
+	AccessOption
 	otaReceivers map[string]string
 	shareAmount  uint64
-	AccessOption
 }
 
 func NewWithdrawLiquidityRequest() *WithdrawLiquidityRequest {
@@ -139,10 +139,10 @@ func (request *WithdrawLiquidityRequest) CalculateSize() uint64 {
 
 func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID   string            `json:"PoolPairID"`
+		PoolPairID string `json:"PoolPairID"`
+		AccessOption
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
-		AccessOption
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:   request.poolPairID,
@@ -159,10 +159,10 @@ func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {
 
 func (request *WithdrawLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID   string            `json:"PoolPairID"`
+		PoolPairID string `json:"PoolPairID"`
+		AccessOption
 		OtaReceivers map[string]string `json:"OtaReceivers"`
 		ShareAmount  uint64            `json:"ShareAmount"`
-		AccessOption
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
