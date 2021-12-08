@@ -65,13 +65,13 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with OTA. NFT: %v, NextOTA: %v, BurnOTA: %v", tx.Hash().String(), isReceivingNFT, req.NextOTA, req.BurntAccessOTA())
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
-		valid, err1 := ValidPdexv3Access(req.BurntAccessOTA(), *req.NextOTA, tx, common.PRVCoinID, transactionStateDB)
+		valid, err1 := ValidPdexv3Access(req.BurntAccessOTA(), *req.NextOTA, tx, common.ConfidentialAssetID, transactionStateDB)
 		if !valid {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
 		}
 	} else {
 		if !isReceivingNFT || req.NextOTA != nil {
-			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with NFT. NFT: %v, NextOTA: %v", isReceivingNFT, req.NextOTA)
+			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with NFT. NFT: %v, NextOTA: %v", tx.Hash().String(), isReceivingNFT, req.NextOTA)
 			return false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid access for NftID"))
 		}

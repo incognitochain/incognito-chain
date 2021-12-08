@@ -64,7 +64,6 @@ type BurnInputReader interface {
 	DerivableBurnInput(*statedb.StateDB) (map[common.Hash]privacy.Point, error)
 }
 
-// TODO: specify which token & min amount for access
 func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.Transaction, accessTokenID common.Hash, transactionStateDB *statedb.StateDB) (bool, error) {
 	if accessTokenID != common.PRVCoinID {
 		accessTokenID = common.ConfidentialAssetID
@@ -120,15 +119,13 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 		if err != nil {
 			return false, fmt.Errorf("cannot identify burn input for tx %s: %v", tx.Hash().String(), err)
 		}
-
-		burnValid := false
-		for _, burnInputCoinPubkey := range burnMap {
-			if privacy.IsPointEqual(burnOTAPoint, &burnInputCoinPubkey) {
-				burnValid = true
-			}
-		}
-		if !burnValid {
+		if burnInputCoinPubkey, exists := burnMap[common.PdexAccessCoinID]; !exists || !privacy.IsPointEqual(burnOTAPoint, &burnInputCoinPubkey) {
 			return false, fmt.Errorf("burn missing: tx %s must burn AccessOTA %s from metadata", tx.Hash().String(), burnOTAPoint.String())
+		}
+		// check that burn output is PdexAccess, with sufficient amount
+		isBurn, _, burnedTokenCoin, burnedTokenID, err := tx.GetTxFullBurnData()
+		if !isBurn || *burnedTokenID != common.PdexAccessCoinID || burnedTokenCoin.GetValue() < MinPdexv3AccessBurn {
+			return false, fmt.Errorf("invalid burn output (%v, %d) for Pdexv3 Access", burnedTokenID, burnedTokenCoin.GetValue())
 		}
 	}
 
@@ -167,7 +164,7 @@ func (a *AccessOption) IsValid(
 		if a.NextOTA == nil {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("next OTA is null")))
 		}
-		valid, err1 := ValidPdexv3Access(a.BurntOTA, *a.NextOTA, tx, common.PRVCoinID, transactionStateDB)
+		valid, err1 := ValidPdexv3Access(a.BurntOTA, *a.NextOTA, tx, common.ConfidentialAssetID, transactionStateDB)
 		if !valid {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
 		}
