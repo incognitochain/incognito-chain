@@ -328,11 +328,11 @@ func StorePdexv3StakerLastRewardPerShare(
 }
 
 func DeletePdexv3StakerLastRewardPerShare(
-	stateDB *StateDB, poolPairID, nftID, tokenID string,
+	stateDB *StateDB, stakingPoolID, nftID, tokenID string,
 ) error {
-	key := GeneratePdexv3StakerLastRewardPerShareObjectKey(poolPairID, nftID, tokenID)
+	key := GeneratePdexv3StakerLastRewardPerShareObjectKey(stakingPoolID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3StakerLastRewardPerShareObjectType, key) {
-		return fmt.Errorf("Cannot delete staker last reward per share with ID %v - %v - %v", poolPairID, nftID, tokenID)
+		return fmt.Errorf("Cannot delete staker last reward per share with ID %v - %v - %v", stakingPoolID, nftID, tokenID)
 	}
 	return nil
 }
@@ -345,11 +345,11 @@ func StorePdexv3StakerReward(
 }
 
 func DeletePdexv3StakerReward(
-	stateDB *StateDB, poolPairID, nftID, tokenID string,
+	stateDB *StateDB, stakingPoolID, nftID, tokenID string,
 ) error {
-	key := GeneratePdexv3StakerRewardObjectKey(poolPairID, nftID, tokenID)
+	key := GeneratePdexv3StakerRewardObjectKey(stakingPoolID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3StakerRewardObjectType, key) {
-		return fmt.Errorf("Cannot delete staker reward with ID %v - %v - %v", poolPairID, nftID, tokenID)
+		return fmt.Errorf("Cannot delete staker reward with ID %v - %v - %v", stakingPoolID, nftID, tokenID)
 	}
 	return nil
 }
