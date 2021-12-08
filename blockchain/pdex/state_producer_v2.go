@@ -1047,8 +1047,15 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if accessByNFT {
 			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
 		} else {
-			temp := metaData.AccessOption.BurntOTA.Bytes()
-			share, ok = rootPoolPair.shares[string(temp[:])]
+			data := metaData.AccessOption.BurntOTA.Bytes()
+			var hash common.Hash
+			err := json.Unmarshal(data[:], &hash)
+			if err != nil {
+				Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
+				res = append(res, rejectInsts...)
+				continue
+			}
+			share, ok = rootPoolPair.shares[hash.String()]
 		}
 
 		if share == nil || !ok {

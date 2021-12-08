@@ -173,6 +173,9 @@ func (a *AccessOption) IsValid(
 		}
 		return nil
 	}
+	if a.BurntOTA != nil || a.NextOTA != nil {
+		return errors.New("NftID and nextOTA can not be availability at the same time")
+	}
 	return nil
 }
 
@@ -181,4 +184,8 @@ func (a *AccessOption) IsEmpty(isWithdrawRequest bool) bool {
 		return true
 	}
 	return a.NftID.IsZeroValue() && a.NextOTA == nil
+}
+
+func (a *AccessOption) UseNft() bool {
+	return !a.NftID.IsZeroValue()
 }
