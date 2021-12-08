@@ -283,8 +283,8 @@ const (
 	getPdexv3EstimatedStakingPoolReward            = "pdexv3_getEstimatedStakingPoolReward"
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
-	pdexv3MintPdexAccessToken                      = "pdexv3_txMintPdexAccessToken"
-	getPdexv3PdexAccessTokenStatus                 = "pdexv3_getPdexAccessTokenStatus"
+	pdexv3MintPdexAccessToken                      = "pdexv3_txMintAccessToken"
+	pdexv3GetMintAccessTokenStatus                 = "pdexv3_getMintAccessTokenStatus"
 	// end of pdex v3
 
 	// get burning address

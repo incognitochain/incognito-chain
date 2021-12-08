@@ -178,6 +178,8 @@ const (
 	Pdexv3DistributeStakingRewardMeta       = 305
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
+	Pdexv3MintAccessTokenRequestMeta        = 309
+	Pdexv3MintAccessTokenResponsetMeta      = 310
 )
 
 var minerCreatedMetaTypes = []int{
@@ -223,6 +225,7 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3StakingResponseMeta,
 	Pdexv3UnstakingResponseMeta,
 	Pdexv3WithdrawStakingRewardResponseMeta,
+	Pdexv3MintAccessTokenResponsetMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

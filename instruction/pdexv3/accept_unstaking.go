@@ -45,8 +45,8 @@ func (a *AcceptUnstaking) FromStringSlice(source []string) error {
 	if source[0] != strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3UnstakingRequestMeta, source[0])
 	}
-	if source[1] != common.Pdexv3AcceptUnstakingStatus {
-		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptUnstakingStatus, source[1])
+	if source[1] != common.Pdexv3AcceptStringStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptStringStatus, source[1])
 	}
 	err := json.Unmarshal([]byte(source[2]), a)
 	return err
@@ -55,7 +55,7 @@ func (a *AcceptUnstaking) FromStringSlice(source []string) error {
 func (a *AcceptUnstaking) StringSlice() ([]string, error) {
 	res := []string{}
 	res = append(res, strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-	res = append(res, common.Pdexv3AcceptUnstakingStatus)
+	res = append(res, common.Pdexv3AcceptStringStatus)
 	data, err := json.Marshal(a)
 	if err != nil {
 		return res, err

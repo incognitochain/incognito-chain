@@ -12,32 +12,34 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type UserMintNftRequest struct {
+type MintAccessTokenRequest struct {
 	metadataCommon.MetadataBase
-	otaReceiver string
+	otaReceiver *privacy.OTAReceiver
 	amount      uint64
 }
 
-func NewUserMintNftRequest() *UserMintNftRequest {
-	return &UserMintNftRequest{
+func NewMintAccessTokenRequest() *MintAccessTokenRequest {
+	return &MintAccessTokenRequest{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3UserMintNftRequestMeta,
+			Type: metadataCommon.Pdexv3MintAccessTokenRequestMeta,
 		},
 	}
 }
 
-func NewUserMintNftRequestWithValue(otaReceiver string, amount uint64) *UserMintNftRequest {
-	metadataBase := metadataCommon.MetadataBase{
-		Type: metadataCommon.Pdexv3UserMintNftRequestMeta,
-	}
-	return &UserMintNftRequest{
-		otaReceiver:  otaReceiver,
-		amount:       amount,
-		MetadataBase: metadataBase,
+func NewMintAccessTokenRequestWithValue(
+	amount uint64,
+	otaReceiver *privacy.OTAReceiver,
+) *MintAccessTokenRequest {
+	return &MintAccessTokenRequest{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3MintAccessTokenRequestMeta,
+		},
+		amount:      amount,
+		otaReceiver: otaReceiver,
 	}
 }
 
-func (request *UserMintNftRequest) ValidateTxWithBlockChain(
+func (request *MintAccessTokenRequest) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -45,13 +47,13 @@ func (request *UserMintNftRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	if err := beaconViewRetriever.IsValidMintNftRequireAmount(request.amount); err != nil {
+	if err := beaconViewRetriever.IsValidPdexv3MintAccessTokenAmount(request.amount); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (request *UserMintNftRequest) ValidateSanityData(
+func (request *MintAccessTokenRequest) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
@@ -61,12 +63,7 @@ func (request *UserMintNftRequest) ValidateSanityData(
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Feature pdexv3 has not been activated yet"))
 	}
-	otaReceiver := privacy.OTAReceiver{}
-	err := otaReceiver.FromString(request.otaReceiver)
-	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if !otaReceiver.IsValid() {
+	if !request.otaReceiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("ReceiveAddress is not valid"))
 	}
 	if request.amount == 0 {
@@ -87,30 +84,30 @@ func (request *UserMintNftRequest) ValidateSanityData(
 	if tx.GetType() != common.TxNormalType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be normal privacy type"))
 	}
-	if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+	if request.otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 	}
 	return true, true, nil
 }
 
-func (request *UserMintNftRequest) ValidateMetadataByItself() bool {
-	return request.Type == metadataCommon.Pdexv3UserMintNftRequestMeta
+func (request *MintAccessTokenRequest) ValidateMetadataByItself() bool {
+	return request.Type == metadataCommon.Pdexv3MintAccessTokenRequestMeta
 }
 
-func (request *UserMintNftRequest) Hash() *common.Hash {
+func (request *MintAccessTokenRequest) Hash() *common.Hash {
 	rawBytes, _ := json.Marshal(&request)
 	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
-func (request *UserMintNftRequest) CalculateSize() uint64 {
+func (request *MintAccessTokenRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
-func (request *UserMintNftRequest) MarshalJSON() ([]byte, error) {
+func (request *MintAccessTokenRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		OtaReceiver string `json:"OtaReceiver"`
-		Amount      uint64 `json:"Amount"`
+		OtaReceiver *privacy.OTAReceiver `json:"OtaReceiver"`
+		Amount      uint64               `json:"Amount"`
 		metadataCommon.MetadataBase
 	}{
 		Amount:       request.amount,
@@ -123,10 +120,10 @@ func (request *UserMintNftRequest) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (request *UserMintNftRequest) UnmarshalJSON(data []byte) error {
+func (request *MintAccessTokenRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		OtaReceiver string `json:"OtaReceiver"`
-		Amount      uint64 `json:"Amount"`
+		OtaReceiver *privacy.OTAReceiver `json:"OtaReceiver"`
+		Amount      uint64               `json:"Amount"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -139,23 +136,21 @@ func (request *UserMintNftRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (request *UserMintNftRequest) OtaReceiver() string {
-	return request.otaReceiver
+func (request *MintAccessTokenRequest) OtaReceiver() privacy.OTAReceiver {
+	return *request.otaReceiver
 }
 
-func (request *UserMintNftRequest) Amount() uint64 {
+func (request *MintAccessTokenRequest) Amount() uint64 {
 	return request.amount
 }
 
-func (request *UserMintNftRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+func (request *MintAccessTokenRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	otaReceiver := privacy.OTAReceiver{}
-	otaReceiver.FromString(request.otaReceiver)
 	result = append(result, metadataCommon.OTADeclaration{
-		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID,
+		PublicKey: request.otaReceiver.PublicKey.ToBytes(), TokenID: common.PRVCoinID,
 	})
 	result = append(result, metadataCommon.OTADeclaration{
-		PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+		PublicKey: request.otaReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
 	})
 	return result
 }

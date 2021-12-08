@@ -986,7 +986,7 @@ func (sp *stateProcessorV2) userMintNft(
 		return nftIDs, nil, fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
 	}
 	switch inst[1] {
-	case common.Pdexv3RejectUserMintNftStatus:
+	case common.Pdexv3RejectStringStatus:
 		refundInst := instruction.NewRejectUserMintNft()
 		err := refundInst.FromStringSlice(inst)
 		if err != nil {
@@ -995,7 +995,7 @@ func (sp *stateProcessorV2) userMintNft(
 		burntAmount = refundInst.Amount()
 		txReqID = refundInst.TxReqID()
 		status = common.Pdexv3RejectStatus
-	case common.Pdexv3AcceptUserMintNftStatus:
+	case common.Pdexv3AcceptStringStatus:
 		acceptInst := instruction.NewAcceptUserMintNft()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
@@ -1042,7 +1042,7 @@ func (sp *stateProcessorV2) staking(
 	var txReqID common.Hash
 	var liquidity uint64
 	switch inst[1] {
-	case common.Pdexv3AcceptStakingStatus:
+	case common.Pdexv3AcceptStringStatus:
 		acceptInst := instruction.NewAcceptStaking()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
@@ -1058,7 +1058,7 @@ func (sp *stateProcessorV2) staking(
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
-	case common.Pdexv3RejectStakingStatus:
+	case common.Pdexv3RejectStringStatus:
 		rejectInst := instruction.NewRejectStaking()
 		err := rejectInst.FromStringSlice(inst)
 		if err != nil {
@@ -1101,7 +1101,7 @@ func (sp *stateProcessorV2) unstaking(
 	var txReqID common.Hash
 	var liquidity uint64
 	switch inst[1] {
-	case common.Pdexv3AcceptUnstakingStatus:
+	case common.Pdexv3AcceptStringStatus:
 		acceptInst := instruction.NewAcceptUnstaking()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
@@ -1117,7 +1117,7 @@ func (sp *stateProcessorV2) unstaking(
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
-	case common.Pdexv3RejectUnstakingStatus:
+	case common.Pdexv3RejectStringStatus:
 		rejectInst := instruction.NewRejectUnstaking()
 		err := rejectInst.FromStringSlice(inst)
 		if err != nil {
@@ -1252,4 +1252,58 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 		Logger.log.Errorf("PDex v3 Withdrawal Staking Reward Fee: An error occurred while tracking request tx - Error: %v", err)
 	}
 	return pools, err
+}
+
+func (sp *stateProcessorV2) mintAccessTokens(
+	stateDB *statedb.StateDB,
+	inst []string,
+) error {
+	if len(inst) != 3 {
+		return fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
+	}
+	status := byte(0)
+	txReqID := common.Hash{}
+	var burntAmount uint64
+	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
+		return fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
+	}
+	switch inst[1] {
+	case common.Pdexv3RejectStringStatus:
+		refundInst := instruction.NewRejectMintAccessToken()
+		err := refundInst.FromStringSlice(inst)
+		if err != nil {
+			return err
+		}
+		burntAmount = refundInst.Amount()
+		txReqID = refundInst.TxReqID()
+		status = common.Pdexv3RejectStatus
+	case common.Pdexv3AcceptStringStatus:
+		acceptInst := instruction.NewAcceptMintAccessToken()
+		err := acceptInst.FromStringSlice(inst)
+		if err != nil {
+			return err
+		}
+		burntAmount = acceptInst.BurntAmount()
+		txReqID = acceptInst.TxReqID()
+		status = common.Pdexv3AcceptStatus
+	default:
+		return errors.New("Can not recognize status")
+	}
+
+	mintNftStatus := v2.MintNftStatus{
+		Status:      status,
+		BurntAmount: burntAmount,
+	}
+	data, err := json.Marshal(mintNftStatus)
+	if err != nil {
+		return err
+	}
+
+	err = statedb.TrackPdexv3Status(
+		stateDB,
+		statedb.Pdexv3MintPdexAccessTokenStatusPrefix(),
+		txReqID.Bytes(),
+		data,
+	)
+	return nil
 }

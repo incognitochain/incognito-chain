@@ -49,7 +49,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
-					common.Pdexv3AcceptStakingStatus,
+					common.Pdexv3AcceptStringStatus,
 					string(data),
 				},
 			},
@@ -61,7 +61,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta),
-					common.Pdexv3AcceptStakingStatus,
+					common.Pdexv3AcceptStringStatus,
 					string(data),
 				},
 			},
@@ -143,7 +143,7 @@ func TestAcceptStaking_StringSlice(t *testing.T) {
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta),
-				common.Pdexv3AcceptStakingStatus,
+				common.Pdexv3AcceptStringStatus,
 				string(data),
 			},
 			wantErr: false,

@@ -13,36 +13,36 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
-type UserMintNftResponse struct {
+type MintAccessTokenResponse struct {
 	metadataCommon.MetadataBase
 	status  string
 	txReqID string
 }
 
-func NewUserMintNftResponse() *UserMintNftResponse {
-	return &UserMintNftResponse{
+func NewMintAccessTokenResponse() *MintAccessTokenResponse {
+	return &MintAccessTokenResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3UserMintNftResponseMeta,
+			Type: metadataCommon.Pdexv3MintAccessTokenResponsetMeta,
 		},
 	}
 }
 
-func NewUserMintNftResponseWithValue(status, txReqID string) *UserMintNftResponse {
-	return &UserMintNftResponse{
+func NewMintAccessTokenResponseWithValue(status, txReqID string) *MintAccessTokenResponse {
+	return &MintAccessTokenResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3UserMintNftResponseMeta,
+			Type: metadataCommon.Pdexv3MintAccessTokenResponsetMeta,
 		},
 		status:  status,
 		txReqID: txReqID,
 	}
 }
 
-func (response *UserMintNftResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (response *MintAccessTokenResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (response *UserMintNftResponse) ValidateTxWithBlockChain(
+func (response *MintAccessTokenResponse) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -54,7 +54,7 @@ func (response *UserMintNftResponse) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (response *UserMintNftResponse) ValidateSanityData(
+func (response *MintAccessTokenResponse) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
@@ -74,21 +74,21 @@ func (response *UserMintNftResponse) ValidateSanityData(
 	return true, true, nil
 }
 
-func (response *UserMintNftResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.Pdexv3UserMintNftResponseMeta
+func (response *MintAccessTokenResponse) ValidateMetadataByItself() bool {
+	return response.Type == metadataCommon.Pdexv3MintAccessTokenRequestMeta
 }
 
-func (response *UserMintNftResponse) Hash() *common.Hash {
+func (response *MintAccessTokenResponse) Hash() *common.Hash {
 	rawBytes, _ := json.Marshal(&response)
 	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
-func (response *UserMintNftResponse) CalculateSize() uint64 {
+func (response *MintAccessTokenResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
-func (response *UserMintNftResponse) MarshalJSON() ([]byte, error) {
+func (response *MintAccessTokenResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Status  string `json:"Status"`
 		TxReqID string `json:"TxReqID"`
@@ -104,7 +104,7 @@ func (response *UserMintNftResponse) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (response *UserMintNftResponse) UnmarshalJSON(data []byte) error {
+func (response *MintAccessTokenResponse) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Status  string `json:"Status"`
 		TxReqID string `json:"TxReqID"`
@@ -120,30 +120,29 @@ func (response *UserMintNftResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (response *UserMintNftResponse) TxReqID() string {
+func (response *MintAccessTokenResponse) TxReqID() string {
 	return response.txReqID
 }
 
-func (response *UserMintNftResponse) Status() string {
+func (response *MintAccessTokenResponse) Status() string {
 	return response.status
 }
 
-type acceptUserMintNft struct {
-	NftID       common.Hash `json:"NftID"`
+type acceptMintAccessToken struct {
 	BurntAmount uint64      `json:"BurntAmount"`
 	OtaReceiver string      `json:"OtaReceiver"`
 	ShardID     byte        `json:"ShardID"`
 	TxReqID     common.Hash `json:"TxReqID"`
 }
 
-type refundUserMintNft struct {
+type rejectMintAccessToken struct {
 	OtaReceiver string      `json:"OtaReceiver"`
 	Amount      uint64      `json:"Amount"`
 	ShardID     byte        `json:"ShardID"`
 	TxReqID     common.Hash `json:"TxReqID"`
 }
 
-func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (response *MintAccessTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,
 	tx metadataCommon.Transaction,
@@ -161,7 +160,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
 			continue
 		}
 		instContributionStatus := inst[1]
@@ -177,7 +176,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var amount uint64
 		switch inst[1] {
 		case common.Pdexv3RejectStringStatus:
-			var instContent refundUserMintNft
+			var instContent rejectMintAccessToken
 			err := json.Unmarshal(contentBytes, &instContent)
 			if err != nil {
 				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
@@ -189,7 +188,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			amount = instContent.Amount
 			txReqID = instContent.TxReqID.String()
 		case common.Pdexv3AcceptStringStatus:
-			var instContent acceptUserMintNft
+			var instContent acceptMintAccessToken
 			err := json.Unmarshal(contentBytes, &instContent)
 			if err != nil {
 				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
@@ -197,7 +196,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 				continue
 			}
 			instShardID = instContent.ShardID
-			tokenID = instContent.NftID
+			tokenID = common.PdexAccessCoinID
 			otaReceiverStr = instContent.OtaReceiver
 			amount = 1
 			txReqID = instContent.TxReqID.String()
@@ -239,8 +238,8 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		metadataCommon.Logger.Log.Debugf("no Pdexv3 user mint nft instruction tx %s", tx.Hash().String())
-		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 user mint nft instruction tx %s", tx.Hash().String()))
+		metadataCommon.Logger.Log.Debugf("no Pdexv3 user mint access token instruction tx %s", tx.Hash().String())
+		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 user mint access token instruction tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil
