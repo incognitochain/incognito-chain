@@ -293,22 +293,41 @@ func (share *Share) deleteFromDB(
 	if err != nil {
 		return err
 	}
-	for tokenID, _ := range share.tradingFees {
-		err := statedb.DeletePdexv3ShareTradingFee(
-			env.StateDB(), poolPairID, nftID, tokenID.String(),
-		)
-		if err != nil {
-			return err
+
+	for tokenID, isChanged := range shareChange.TradingFees {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+			if err != nil {
+				return err
+			}
+			if _, found := share.tradingFees[*tokenHash]; !found {
+				err := statedb.DeletePdexv3ShareTradingFee(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
-	for tokenID, _ := range share.lastLPFeesPerShare {
-		err := statedb.DeletePdexv3ShareLastLpFeePerShare(
-			env.StateDB(), poolPairID, nftID, tokenID.String(),
-		)
-		if err != nil {
-			return err
+
+	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+			if err != nil {
+				return err
+			}
+			if _, found := share.lastLPFeesPerShare[*tokenHash]; !found {
+				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
+
 	return nil
 }
 
