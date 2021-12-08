@@ -253,12 +253,15 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSecondHalfSubstituteList(candid
 		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
 		randomOffset := 0
 		lengthSubstitute := len(b.shardSubstitute[shardID])
-		pivot := lengthSubstitute * 10 / 9
 		if lengthSubstitute != 0 {
-			randomOffset = calculateNewSubstitutePosition(candidate, rand, pivot+1)
-			// if shard substitute got only one key, it will assign new key to the 1 position
-			if pivot == 0 {
-				pivot = 1
+			tempPivot := float64(lengthSubstitute) * 9 / 10
+			pivot := int(tempPivot)
+			if tempPivot-float64(pivot) >= 0.5 {
+				pivot++
+			}
+			randomMaxRange := lengthSubstitute - pivot
+			if randomMaxRange > 0 {
+				randomOffset = calculateNewSubstitutePosition(candidate, rand, randomMaxRange)
 			}
 			randomOffset += pivot
 			if randomOffset > lengthSubstitute {

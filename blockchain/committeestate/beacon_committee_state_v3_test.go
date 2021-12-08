@@ -1450,6 +1450,41 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *test
 				AddShardSubstituteAdded(0, []string{key2}),
 		},
 		{
+			name: "substitute list has one key",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key2},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key2, key3},
+							1: []string{key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key3},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key3}),
+		},
+		{
 			name: "substitute list is not empty",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
@@ -1538,7 +1573,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *test
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key5, key6, key8, key2, key7, key9, key4},
+							0: []string{key5, key2, key4, key6, key7, key9, key8},
 							1: []string{key},
 						},
 					},
@@ -1573,7 +1608,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *test
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key5, key6, key8, key2, key7, key9, key10, key4, key12, key11},
+							0: []string{key5, key6, key8, key2, key7, key9, key10, key11, key12, key4},
 							1: []string{key},
 						},
 					},
@@ -1588,6 +1623,41 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *test
 			},
 			want: NewCommitteeChange().
 				AddShardSubstituteAdded(0, []string{key10, key11, key12}),
+		},
+		{
+			name: "substitute list is not empty, > 1 candidate 3",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14, key15},
+							1: []string{key0},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					assignRule: NewAssignRuleV2(),
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14, key16, key15},
+							1: []string{key0},
+						},
+					},
+				},
+				syncPool: map[byte][]string{},
+			},
+			args: args{
+				candidates:      []string{key16},
+				rand:            1000,
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key16}),
 		},
 	}
 	for _, tt := range tests {
