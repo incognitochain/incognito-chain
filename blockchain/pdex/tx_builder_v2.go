@@ -232,7 +232,7 @@ func buildUserMintNftTx(
 	var otaReceiverStr, status, txReqID string
 	var amount uint64
 	switch inst[1] {
-	case common.Pdexv3RejectUserMintNftStatus:
+	case common.Pdexv3RejectStringStatus:
 		refundInst := instruction.NewRejectUserMintNft()
 		err := refundInst.FromStringSlice(inst)
 		if err != nil {
@@ -243,7 +243,7 @@ func buildUserMintNftTx(
 		otaReceiverStr = refundInst.OtaReceiver()
 		amount = refundInst.Amount()
 		txReqID = refundInst.TxReqID().String()
-	case common.Pdexv3AcceptUserMintNftStatus:
+	case common.Pdexv3AcceptStringStatus:
 		acceptInst := instruction.NewAcceptUserMintNft()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
@@ -288,7 +288,7 @@ func buildStakingTx(
 	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta) {
 		return tx, fmt.Errorf("Expect inst metaType to be %v but get %s", metadataCommon.Pdexv3StakingRequestMeta, inst[0])
 	}
-	if inst[1] != common.Pdexv3RejectStakingStatus {
+	if inst[1] != common.Pdexv3RejectStringStatus {
 		return tx, nil
 	}
 
@@ -306,7 +306,7 @@ func buildStakingTx(
 	if err != nil {
 		return tx, err
 	}
-	metaData := metadataPdexv3.NewStakingResponseWithValue(common.Pdexv3RejectStakingStatus, rejectInst.TxReqID().String())
+	metaData := metadataPdexv3.NewStakingResponseWithValue(common.Pdexv3RejectStringStatus, rejectInst.TxReqID().String())
 	tx, err = buildMintTokenTx(
 		rejectInst.TokenID(), rejectInst.Amount(),
 		otaReceiver, producerPrivateKey, transactionStateDB, metaData)
@@ -469,7 +469,7 @@ func buildUnstakingTx(
 		return tx, err
 	}
 	metaData := metadataPdexv3.NewUnstakingResponseWithValue(
-		common.Pdexv3AcceptUnstakingStatus, acceptInst.TxReqID().String(),
+		common.Pdexv3AcceptStringStatus, acceptInst.TxReqID().String(),
 	)
 	tx, err = buildMintTokenTx(
 		acceptInst.StakingPoolID(), acceptInst.Amount(),

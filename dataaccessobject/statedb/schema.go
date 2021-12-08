@@ -87,6 +87,7 @@ var (
 	pdexv3StakerLastRewardPerSharePrefix    = []byte("pdexv3-staker-lastrewardpershare-")
 	pdexv3PoolPairMakingVolumePrefix        = []byte("pdexv3-poolpair-makingvolume-")
 	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
+	pdexv3MintAccessTokenStatusPrefix       = []byte("pdexv3-mintaccesstoken-status-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -729,6 +730,11 @@ func GetPdexv3StakerLastRewardPerShare() []byte {
 //
 func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
 	return pdexv3WithdrawLiquidityStatusPrefix
+}
+
+// pDex v3 prefix for mintnft status
+func Pdexv3UserMintPdexAccessTokenStatusPrefix() []byte {
+	return pdexv3MintAccessTokenStatusPrefix
 }
 
 // pDex v3 prefix for mintnft status

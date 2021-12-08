@@ -180,12 +180,8 @@ const (
 )
 
 const (
-	Pdexv3RejectUserMintNftStatus = "rejected"
-	Pdexv3AcceptUserMintNftStatus = "accept"
-	Pdexv3RejectStakingStatus     = "rejected"
-	Pdexv3AcceptStakingStatus     = "accept"
-	Pdexv3RejectUnstakingStatus   = "rejected"
-	Pdexv3AcceptUnstakingStatus   = "accept"
+	Pdexv3RejectStringStatus = "rejected"
+	Pdexv3AcceptStringStatus = "accept"
 
 	Pdexv3AcceptStatus = byte(1)
 	Pdexv3RejectStatus = byte(2)

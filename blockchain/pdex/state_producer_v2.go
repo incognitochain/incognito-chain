@@ -1422,3 +1422,44 @@ func (sp *stateProducerV2) withdrawStakingReward(
 
 	return instructions, pools, nil
 }
+
+func (sp *stateProducerV2) mintAccessTokens(
+	txs []metadata.Transaction,
+	minPrvForMintAccessTokenAmount uint64,
+) ([][]string, uint64, error) {
+	instructions := [][]string{}
+	burningPRVAmount := uint64(0)
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		metaData, _ := tx.GetMetadata().(*metadataPdexv3.MintAccessTokenRequest)
+		txReqID := *tx.Hash()
+		inst := []string{}
+		var err error
+
+		otaReceiver, err := metaData.OtaReceiver().String()
+		if err != nil {
+			return instructions, burningPRVAmount, err
+		}
+
+		if metaData.Amount() != minPrvForMintAccessTokenAmount {
+			inst, err = instruction.NewRejectMintAccessTokenWithValue(
+				otaReceiver, metaData.Amount(), shardID, txReqID,
+			).StringSlice()
+			if err != nil {
+				return instructions, burningPRVAmount, err
+			}
+		} else {
+			inst, err = instruction.NewAcceptMintAccessTokenWithValue(
+				metaData.Amount(), otaReceiver, shardID, txReqID,
+			).StringSlice()
+			if err != nil {
+				return instructions, burningPRVAmount, err
+			}
+			burningPRVAmount += metaData.Amount()
+		}
+		instructions = append(instructions, inst)
+	}
+
+	return instructions, burningPRVAmount, nil
+}

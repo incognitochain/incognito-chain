@@ -18,9 +18,9 @@ type AddLiquidityRequest struct {
 	pairHash    string
 	otaReceiver string // refund pToken
 	tokenID     string
+	AccessOption
 	tokenAmount uint64
 	amplifier   uint // only set for the first contribution
-	AccessOption
 	metadataCommon.MetadataBase
 }
 
@@ -154,9 +154,9 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 		PairHash    string `json:"PairHash"`
 		OtaReceiver string `json:"OtaReceiver"` // receive pToken
 		TokenID     string `json:"TokenID"`
+		AccessOption
 		TokenAmount uint64 `json:"TokenAmount"`
 		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
-		AccessOption
 		metadataCommon.MetadataBase
 	}{
 		PoolPairID:   request.poolPairID,
@@ -181,9 +181,9 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 		PairHash    string `json:"PairHash"`
 		OtaReceiver string `json:"OtaReceiver"` // receive pToken
 		TokenID     string `json:"TokenID"`
+		AccessOption
 		TokenAmount uint64 `json:"TokenAmount"`
 		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
-		AccessOption
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)

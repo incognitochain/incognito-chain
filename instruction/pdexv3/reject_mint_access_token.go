@@ -9,19 +9,21 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
-type RejectUserMintNft struct {
+type RejectMintAccessToken struct {
 	otaReceiver string
 	amount      uint64
 	shardID     byte
 	txReqID     common.Hash
 }
 
-func NewRejectUserMintNft() *RejectUserMintNft {
-	return &RejectUserMintNft{}
+func NewRejectMintAccessToken() *RejectMintAccessToken {
+	return &RejectMintAccessToken{}
 }
 
-func NewRejectUserMintNftWithValue(otaReceiver string, amount uint64, shardID byte, txReqID common.Hash) *RejectUserMintNft {
-	return &RejectUserMintNft{
+func NewRejectMintAccessTokenWithValue(
+	otaReceiver string, amount uint64, shardID byte, txReqID common.Hash,
+) *RejectMintAccessToken {
+	return &RejectMintAccessToken{
 		otaReceiver: otaReceiver,
 		amount:      amount,
 		shardID:     shardID,
@@ -29,12 +31,12 @@ func NewRejectUserMintNftWithValue(otaReceiver string, amount uint64, shardID by
 	}
 }
 
-func (r *RejectUserMintNft) FromStringSlice(source []string) error {
+func (r *RejectMintAccessToken) FromStringSlice(source []string) error {
 	if len(source) != 3 {
 		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
 	}
-	if source[0] != strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta) {
-		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, source[0])
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
+		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3MintAccessTokenRequestMeta, source[0])
 	}
 	if source[1] != common.Pdexv3RejectStringStatus {
 		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3RejectStringStatus, source[1])
@@ -46,9 +48,9 @@ func (r *RejectUserMintNft) FromStringSlice(source []string) error {
 	return nil
 }
 
-func (r *RejectUserMintNft) StringSlice() ([]string, error) {
+func (r *RejectMintAccessToken) StringSlice() ([]string, error) {
 	res := []string{}
-	res = append(res, strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta))
+	res = append(res, strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta))
 	res = append(res, common.Pdexv3RejectStringStatus)
 	data, err := json.Marshal(r)
 	if err != nil {
@@ -58,7 +60,7 @@ func (r *RejectUserMintNft) StringSlice() ([]string, error) {
 	return res, nil
 }
 
-func (r *RejectUserMintNft) MarshalJSON() ([]byte, error) {
+func (r *RejectMintAccessToken) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		OtaReceiver string      `json:"OtaReceiver"`
 		Amount      uint64      `json:"Amount"`
@@ -76,7 +78,7 @@ func (r *RejectUserMintNft) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (r *RejectUserMintNft) UnmarshalJSON(data []byte) error {
+func (r *RejectMintAccessToken) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		OtaReceiver string      `json:"OtaReceiver"`
 		Amount      uint64      `json:"Amount"`
@@ -94,18 +96,18 @@ func (r *RejectUserMintNft) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RejectUserMintNft) OtaReceiver() string {
+func (r *RejectMintAccessToken) OtaReceiver() string {
 	return r.otaReceiver
 }
 
-func (r *RejectUserMintNft) Amount() uint64 {
+func (r *RejectMintAccessToken) Amount() uint64 {
 	return r.amount
 }
 
-func (r *RejectUserMintNft) ShardID() byte {
+func (r *RejectMintAccessToken) ShardID() byte {
 	return r.shardID
 }
 
-func (r *RejectUserMintNft) TxReqID() common.Hash {
+func (r *RejectMintAccessToken) TxReqID() common.Hash {
 	return r.txReqID
 }

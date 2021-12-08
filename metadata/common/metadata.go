@@ -112,6 +112,7 @@ type BeaconViewRetriever interface {
 	IsValidPdexv3StakingPool(string) error
 	IsValidPdexv3UnstakingAmount(string, string, uint64) error
 	IsValidPdexv3ShareAmount(string, string, uint64) error
+	IsValidPdexv3MintAccessTokenAmount(uint64) error
 }
 
 type ShardViewRetriever interface {
@@ -457,6 +458,8 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3WithdrawStakingRewardRequestMeta:
 		return true
 	case Pdexv3WithdrawStakingRewardResponseMeta:
+		return true
+	case Pdexv3MintAccessTokenRequestMeta:
 		return true
 	default:
 		return false

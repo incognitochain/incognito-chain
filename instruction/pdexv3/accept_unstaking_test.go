@@ -51,7 +51,7 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
-					common.Pdexv3AcceptUnstakingStatus,
+					common.Pdexv3AcceptStringStatus,
 					string(data),
 				},
 			},
@@ -63,7 +63,7 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-					common.Pdexv3AcceptUnstakingStatus,
+					common.Pdexv3AcceptStringStatus,
 					string(data),
 				},
 			},
@@ -155,7 +155,7 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-				common.Pdexv3AcceptUnstakingStatus,
+				common.Pdexv3AcceptStringStatus,
 				string(data),
 			},
 			wantErr: false,

@@ -44,7 +44,7 @@ func TestRejectUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
-					common.Pdexv3RejectUnstakingStatus,
+					common.Pdexv3RejectStringStatus,
 					string(data),
 				},
 			},
@@ -56,7 +56,7 @@ func TestRejectUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-					common.Pdexv3RejectUnstakingStatus,
+					common.Pdexv3RejectStringStatus,
 					string(data),
 				},
 			},
@@ -113,7 +113,7 @@ func TestRejectUnstaking_StringSlice(t *testing.T) {
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-				common.Pdexv3RejectStakingStatus,
+				common.Pdexv3RejectStringStatus,
 				string(data),
 			},
 			wantErr: false,
