@@ -117,7 +117,7 @@ type consensusParam struct {
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	EnableSlashingHeightV2    uint64   `mapstructure:"enable_slashing_height_v2"`
 	StakingFlowV3Height       uint64   `mapstructure:"staking_flow_v3_height"`
-	StakingFlowV31Height      uint64   `mapstructure:"staking_flow_v3_1_height"`
+	StakingFlowV3_1Height     uint64   `mapstructure:"staking_flow_v3_1_height"`
 	Lemma2Height              uint64   `mapstructure:"lemma2_height"`
 	ByzantineDetectorHeight   uint64   `mapstructure:"byzantine_detector_height"`
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`

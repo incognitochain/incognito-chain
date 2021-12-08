@@ -253,14 +253,14 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSecondHalfSubstituteList(candid
 		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
 		randomOffset := 0
 		lengthSubstitute := len(b.shardSubstitute[shardID])
-		half := lengthSubstitute / 2
+		pivot := lengthSubstitute * 10 / 9
 		if lengthSubstitute != 0 {
-			randomOffset = calculateNewSubstitutePosition(candidate, rand, half+1)
+			randomOffset = calculateNewSubstitutePosition(candidate, rand, pivot+1)
 			// if shard substitute got only one key, it will assign new key to the 1 position
-			if half == 0 {
-				half = 1
+			if pivot == 0 {
+				pivot = 1
 			}
-			randomOffset += half
+			randomOffset += pivot
 			if randomOffset > lengthSubstitute {
 				randomOffset = lengthSubstitute
 			}
@@ -388,7 +388,7 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 
-	if env.BeaconHeight < config.Param().ConsensusParam.StakingFlowV31Height {
+	if env.BeaconHeight < config.Param().ConsensusParam.StakingFlowV3_1Height {
 		committeeChange = b.
 			assignRandomlyToSubstituteList(
 				finishSyncInstruction.PublicKeys,

@@ -264,6 +264,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 		blackList        map[string]*rawdb_consensus.BlackListValidator
 		voteInTimeSlot   map[string]map[int64]*BFTVote
 		smallestTimeSlot map[string]map[uint64]int64
+		validRecentVote  map[string]*BFTVote
 		committeeHandler CommitteeChainHandler
 	}
 	type args struct {
@@ -283,6 +284,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				voteInTimeSlot:   nil,
 				smallestTimeSlot: nil,
 				committeeHandler: nil,
+				validRecentVote:  make(map[string]*BFTVote),
 			},
 			args: args{
 				bftVote:      key0VoteHeight10_1,
@@ -310,6 +312,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				voteInTimeSlot:   nil,
 				smallestTimeSlot: nil,
 				committeeHandler: nil,
+				validRecentVote:  make(map[string]*BFTVote),
 			},
 			args: args{
 				bftVote:      key0VoteHeight10_1,
@@ -340,6 +343,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
 					},
 				},
+				validRecentVote:  make(map[string]*BFTVote),
 				committeeHandler: nil,
 			},
 			args: args{
@@ -359,6 +363,9 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
 					},
 				},
+				validRecentVote: map[string]*BFTVote{
+					key0VoteHeight10_1.Validator: key0VoteHeight10_2,
+				},
 				committeeHandler: nil,
 			},
 		},
@@ -377,6 +384,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
 					},
 				},
+				validRecentVote:  make(map[string]*BFTVote),
 				committeeHandler: nil,
 			},
 			args: args{
@@ -402,6 +410,9 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key1VoteHeight10_3.BlockHeight: key1VoteHeight10_3.ProduceTimeSlot,
 					},
 				},
+				validRecentVote: map[string]*BFTVote{
+					key0VoteHeight10_1.Validator: key1VoteHeight10_3,
+				},
 				committeeHandler: nil,
 			},
 		},
@@ -412,6 +423,7 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 				blackList:                    tt.fields.blackList,
 				voteInTimeSlot:               tt.fields.voteInTimeSlot,
 				smallestBlockProduceTimeSlot: tt.fields.smallestTimeSlot,
+				validRecentVote:              tt.fields.validRecentVote,
 			}
 			b.addNewVote(diskDB, tt.args.bftVote, tt.args.validatorErr)
 			for k, v := range b.blackList {

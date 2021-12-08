@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -839,6 +840,7 @@ func initTestParams() {
 }
 
 var _ = func() (_ struct{}) {
+	config.AbortParam()
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()

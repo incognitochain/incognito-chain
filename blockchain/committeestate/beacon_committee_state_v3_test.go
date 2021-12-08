@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 	"strings"
 	"sync"
@@ -2293,7 +2294,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 
 func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 	initTestParams()
-
+	config.Param().ConsensusParam.StakingFlowV3_1Height = 10
 	finalMutex := &sync.RWMutex{}
 
 	type fields struct {
@@ -2597,6 +2598,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
+					BeaconHeight: 0,
 					ActiveShards: 2,
 					BeaconInstructions: [][]string{
 						instruction.NewFinishSyncInstructionWithValue(1, []string{key15}).ToString(),
@@ -3003,7 +3005,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *testing.T) {
 
 	initTestParams()
-
+	config.Param().ConsensusParam.StakingFlowV3_1Height = 10
 	finalMutex := &sync.RWMutex{}
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
