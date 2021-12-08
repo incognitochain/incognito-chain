@@ -1503,7 +1503,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *test
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key2, key6, key4},
+							0: []string{key2, key4, key6},
 							1: []string{key},
 						},
 					},
@@ -3005,7 +3005,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *testing.T) {
 
 	initTestParams()
-	config.Param().ConsensusParam.StakingFlowV3_1Height = 10
+	config.Param().ConsensusParam.StakingFlowV3_1Height = 500000 + 1
 	finalMutex := &sync.RWMutex{}
 
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})

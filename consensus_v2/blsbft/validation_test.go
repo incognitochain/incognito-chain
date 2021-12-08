@@ -75,3 +75,23 @@ func TestDecodeAndValidateSig(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDecodeAndValidateSig2(t *testing.T) {
+	validationData := "{\"ProducerBLSSig\":\"5AEdXis2S+kgEWtJyDntHMNdxZYSBtwcUwwnQWtM4ZcD50sFXYQlLpeiWL+UrRPM/ZsikRoTSB804qz9dwchbwE=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2,3,4,5,6,7,8],\"AggSig\":\"AkvERY41fIyrzIgE8GEBxx4AfqGDmT1a1Pn5M1FL7xc=\",\"BridgeSig\":[\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"],\"PortalSig\":null}"
+	committeeKey := "121VhftSAygpEJZ6i9jGk4NRJ4vRhsn34JdidHNRfk8Ro248nkHn3JQiKAZYBjjGgELu9GGWprgXiZVGbSn7ERq7hg1v3JwJRVnE2JnfACLtY3PKPc4cVTmTb4xF4C6m8ueDJHmVDCGs64YaPQLvKBX1GXgcKJoRvem66nqi2qiDm9QMEecmhu5qoyXGB1XxT82pMBX3Y1vja2x7QATXcz5ZKo5sgMLV7rcDjMfNgfYsVQSL1uQQCzCVrSkuhaBfRwbZmod8zM83UY4zApVnJrXWEGgMQVxzzihCcGSCoPVg7pbNy8yVXuM7RNhDevAJ6imTS7MBcjUijJ44pDs6SWiePHodH1A33a2PoP7rcdpyrMjPat9aqWRvjC9XLNCiSscBHMhGubd12BTrpdqqpsP6Srd5RYrPNt1yfBMjkr3EAc21"
+
+	valData, err := consensustypes.DecodeValidationData(validationData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	producerKey := incognitokey.CommitteePublicKey{}
+	err = producerKey.FromBase58(committeeKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash, _ := common.Hash{}.NewHashFromStr("a5ffbce0a13398527beccc4354e13e9e8650a7eea921eecc7842ce7cf8d8aafa")
+	if err := validateSingleBriSig(hash, valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+		t.Fatal(err)
+	}
+}
