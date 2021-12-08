@@ -160,6 +160,8 @@ func (p PortalBTCTokenProcessor) MergeBatches(batchTxs []*BroadcastTx) []*Broadc
 	mergedBatches := []*BroadcastTx{}
 	if len(batchTxs) == 0 {
 		return mergedBatches
+	} else if len(batchTxs) == 1 {
+		return batchTxs
 	}
 
 	tmpBatchUTXOs := batchTxs[0].UTXOs
