@@ -589,7 +589,7 @@ func Test_swapRuleV2_getSwapOutOffset(t *testing.T) {
 				numberOfFixedValidator: 4,
 				minCommitteeSize:       4,
 			},
-			want: 1,
+			want: 2,
 		},
 	}
 	for _, tt := range tests {

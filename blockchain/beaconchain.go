@@ -196,22 +196,41 @@ func (chain *BeaconChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
+	if version >= types.LEMMA2_VERSION {
+		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, err
+		}
+		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.Timestamp)
+
+		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
+			newBlock.Header.Producer == newBlock.Header.Proposer &&
+			previousProposeTimeSlot+1 == currentTimeSlot {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
+	}
 
 	return newBlock, nil
 }
 
 //this function for version 2
-func (chain *BeaconChain) CreateNewBlockFromOldBlock(
-	oldBlock types.BlockInterface, proposer string,
-	startTime int64,
-	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash,
-) (types.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.BeaconBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
+
+	if newBlock.Header.Version >= types.LEMMA2_VERSION {
+		if isValidRePropose {
+			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+		} else {
+			newBlock.Header.FinalityHeight = 0
+		}
+	}
 	return newBlock, nil
 }
 
@@ -246,6 +265,14 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")
+}
+func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {
+	panic("this function is not supported on beacon chain")
+}
+
+func (chain *BeaconChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
+	block, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
+	return block, err
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -359,12 +386,9 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
-func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(
-	ts int64,
-	committees []incognitokey.CommitteePublicKey,
-) (incognitokey.CommitteePublicKey, int, error) {
+func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
-	return committees[id], id, nil
+	return committees[id], id
 }
 
 func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
@@ -424,4 +448,8 @@ func (chain *BeaconChain) CommitteeEngineVersion() int {
 
 func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 	return fmt.Sprintf("%s-%d", hash.String(), shardID)
+}
+
+func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
+	return nil
 }

@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -27,7 +29,6 @@ import (
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	stats "github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -333,9 +334,8 @@ func (serverObj *Server) NewServer(
 		return err
 	}
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
-	if err != nil {
-		return err
-	}
+	fixedNodes := serverObj.blockChain.GetShardFixedNodes()
+	blsbft.ByzantineDetectorObject.SetFixedNodes(fixedNodes)
 	go poolManager.Start(relayShards)
 
 	//set bc obj for monitor
@@ -559,13 +559,6 @@ func (serverObj *Server) NewServer(
 			serverObj.PublishNodeState()
 		}
 	}()
-
-	//Init Metric Tool
-	//if cfg.MetricUrl != "" {
-	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	//	metrics.InitMetricTool(&grafana)
-	//}
-	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
 
 	return nil
 }

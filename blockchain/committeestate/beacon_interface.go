@@ -86,6 +86,8 @@ func NewSplitRewardEnvironmentMultiset(
 		PercentCustodianReward:    percentCustodianReward,
 		DAOPercent:                DAOPercent,
 		MaxSubsetCommittees:       maxSubsetsCommittee,
+		ShardCommittee:            shardCommittee,
+		BeaconCommittee:           beaconCommittee,
 	}
 }
 func NewSplitRewardEnvironmentV1(
