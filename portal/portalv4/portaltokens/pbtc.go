@@ -472,6 +472,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 	// sort UTXOs ascending by beaconHeight
 	sortedUnshieldReqs := p.sortUnshieldReqsByBeaconHeightAscending(waitingUnshieldReqs)
 
+	remainUnshieldReqs := []unshieldItem{}
 	// choose UTXO(s) for each waiting unshielding requests
 	// create one batch for one unshielding request
 	for _, unshieldReq := range sortedUnshieldReqs {
@@ -479,6 +480,7 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 		if err != nil {
 			Logger.log.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
 				unshieldReq.value.GetUnshieldID(), err)
+			remainUnshieldReqs = append(remainUnshieldReqs, unshieldReq)
 			continue
 		}
 		chosenUtxoObjs := []*statedb.UTXO{}
@@ -506,6 +508,9 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 
 	// appending tiny into batch txs
 	batchTxs = p.AppendTinyUTXOs(batchTxs, sortedUTXOs, tinyValueThreshold, minUTXOs)
+
+	// appending remain unshielding request (if any)
+	batchTxs = p.AppendWaitingUnshieldRequests(batchTxs, remainUnshieldReqs, waitingUnshieldReqs)
 
 	return batchTxs, nil
 }
