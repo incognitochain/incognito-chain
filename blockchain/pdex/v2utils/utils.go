@@ -2,6 +2,8 @@ package v2utils
 
 import (
 	"math/big"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type MintNftStatus struct {
@@ -125,4 +127,29 @@ func SplitTradingReward(
 	}
 
 	return ammReward.Uint64(), orderRewards
+}
+
+func SplitOrderRewardLiquidityMining(
+	volume map[string]*big.Int, amount *big.Int, tokenID common.Hash,
+) map[string]uint64 {
+	sumVolume := new(big.Int).SetUint64(0)
+	for _, v := range volume {
+		sumVolume.Add(sumVolume, v)
+	}
+
+	orderRewards := map[string]uint64{}
+	for nftID, v := range volume {
+		orderReward := new(big.Int).SetUint64(0)
+		if v.Cmp(new(big.Int).SetUint64(0)) > 0 {
+			orderReward = new(big.Int).Mul(amount, v)
+			orderReward.Div(orderReward, sumVolume)
+		}
+
+		orderRewards[nftID] = orderReward.Uint64()
+
+		sumVolume.Sub(sumVolume, v)
+		amount.Sub(amount, orderReward)
+	}
+
+	return orderRewards
 }

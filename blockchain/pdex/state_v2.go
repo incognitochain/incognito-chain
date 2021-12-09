@@ -203,6 +203,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.stakingPoolStates,
 			)
+		case metadataCommon.Pdexv3DistributeMiningOrderRewardMeta:
+			s.poolPairs, err = s.processor.distributeMiningOrderReward(
+				env.StateDB(),
+				inst,
+				s.poolPairs,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -433,6 +439,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			env.Reward(),
 			s.params,
 			s.poolPairs,
+			true,
 		)
 		if err != nil {
 			return instructions, err
@@ -456,6 +463,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			burningPRVAmount,
 			s.params,
 			s.poolPairs,
+			false,
 		)
 		if err != nil {
 			return instructions, err
