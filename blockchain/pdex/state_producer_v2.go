@@ -516,9 +516,10 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		// when accessing using NftID, check that the nftID exists
-		_, accessByNFT := nftIDs[currentOrderReq.NftID.String()]
+		accessID := common.Hash(currentOrderReq.NextOTA.Bytes())
+		accessByNFT := currentOrderReq.UseNft()
 		if accessByNFT {
+			accessID = currentOrderReq.NftID
 			// check that the nftID has not exceeded its order count limit
 			if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
 				Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
@@ -594,7 +595,7 @@ TransactionLoop:
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
 			OrderID:        orderID,
-			NftID:          currentOrderReq.NftID,
+			NftID:          accessID,
 			Token0Rate:     token0Rate,
 			Token1Rate:     token1Rate,
 			Token0Balance:  token0Balance,
@@ -628,8 +629,14 @@ TransactionLoop:
 		}
 
 		// when accessing using NftID, mint NFT in response
-		nftReceiver, accessByNFT := currentOrderReq.Receiver[currentOrderReq.NftID]
+		accessID := common.Hash(currentOrderReq.BurntOTA.Bytes())
+		accessByNFT := currentOrderReq.UseNft()
 		if accessByNFT {
+			accessID = currentOrderReq.NftID
+			nftReceiver, exists := currentOrderReq.Receiver[currentOrderReq.NftID]
+			if !exists {
+				return result, pairs, fmt.Errorf("Unexpected missing receiver for NftID %s", currentOrderReq.NftID.String())
+			}
 			recvStr, _ := nftReceiver.String() // error handled in tx validation
 			mintInstruction, err := instruction.NewMintNftWithValue(
 				currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
@@ -661,7 +668,7 @@ TransactionLoop:
 		orderID := currentOrderReq.OrderID
 		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
-				if ord.NftID() == currentOrderReq.NftID {
+				if ord.NftID() == accessID {
 					if !accessByNFT {
 						if currentOrderReq.NextOTA == nil {
 							Logger.log.Warnf("Unexpected invalid access for order %s", orderID)

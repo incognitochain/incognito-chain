@@ -1417,7 +1417,7 @@ func createPdexv3AddOrderRequestTransaction(
 	md, _ := metadataPdexv3.NewAddOrderRequest(
 		mdReader.TokenToSell, mdReader.PoolPairID, uint64(mdReader.SellAmount),
 		uint64(mdReader.MinAcceptableAmount), nil,
-		mdReader.NftID, metadataCommon.Pdexv3AddOrderRequestMeta,
+		metadataPdexv3.AccessOption{NftID: mdReader.NftID}, metadataCommon.Pdexv3AddOrderRequestMeta,
 	)
 
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
@@ -1511,7 +1511,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 
 	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
 		mdReader.PoolPairID, mdReader.OrderID, uint64(mdReader.Amount),
-		nil, mdReader.NftID, mdReader.NextOTA, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
+		nil, metadataPdexv3.AccessOption{NftID: mdReader.NftID}, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
 
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 	if md.NftID == common.PRVCoinID {

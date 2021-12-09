@@ -17,7 +17,7 @@ type AddOrderRequest struct {
 	SellAmount          uint64                              `json:"SellAmount"`
 	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
 	Receiver            map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
-	NftID               common.Hash                         `json:"NftID"`
+	AccessOption
 	metadataCommon.MetadataBase
 }
 
@@ -27,7 +27,7 @@ func NewAddOrderRequest(
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	recv map[common.Hash]privacy.OTAReceiver,
-	nftID common.Hash,
+	accessOption AccessOption,
 	metaType int,
 ) (*AddOrderRequest, error) {
 	r := &AddOrderRequest{
@@ -36,7 +36,7 @@ func NewAddOrderRequest(
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		Receiver:            recv,
-		NftID:               nftID,
+		AccessOption:        accessOption,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -44,31 +44,14 @@ func NewAddOrderRequest(
 	return r, nil
 }
 
-func (req AddOrderRequest) NextAccessOTA() *AccessOTA {
-	result := AccessOTA{}
-	err := result.FromBytes([32]byte(req.NftID))
-	if err != nil {
-		return nil
-	}
-	return &result
-}
-
 func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
 	if err != nil {
 		return false, err
 	}
-	
-	err = beaconViewRetriever.IsValidNftID(req.NftID.String())
+	err = req.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
-		if req.NextAccessOTA() == nil {
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
-		valid, err1 := ValidPdexv3Access(nil, *req.NextAccessOTA(), tx, common.ConfidentialAssetID, transactionStateDB)
-		if valid {
-			return true, nil
-		}
-		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
+		return false, err
 	}
 	return true, nil
 }
