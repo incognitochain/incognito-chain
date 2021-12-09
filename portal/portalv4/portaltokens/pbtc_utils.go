@@ -236,3 +236,44 @@ func (p PortalBTCTokenProcessor) AppendTinyUTXOs(
 	}
 	return batchTxs
 }
+
+func (p PortalBTCTokenProcessor) AppendWaitingUnshieldRequests(
+	batchTxs []*BroadcastTx, remainUnshieldReqs []unshieldItem,
+	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
+) []*BroadcastTx {
+	if len(remainUnshieldReqs) == 0 {
+		return batchTxs
+	}
+	indexRemainUnshieldReq := 0
+	for _, batch := range batchTxs {
+		totalUTXOAmt := uint64(0)
+		totalUnshieldAmt := uint64(0)
+		for _, u := range batch.UTXOs {
+			totalUTXOAmt += u.GetOutputAmount()
+		}
+		for _, unshieldID := range batch.UnshieldIDs {
+			unshieldKey := statedb.GenerateWaitingUnshieldRequestObjectKey(p.PortalTokenID, unshieldID).String()
+			totalUnshieldAmt += p.ConvertIncToExternalAmount(waitingUnshieldReqs[unshieldKey].GetAmount())
+		}
+
+		if totalUTXOAmt <= totalUnshieldAmt {
+			continue
+		}
+		remainUTXOAmt := totalUTXOAmt - totalUnshieldAmt
+		nextIndexRemainUnshieldReq := indexRemainUnshieldReq
+		for i := indexRemainUnshieldReq; i < len(remainUnshieldReqs); i++ {
+			rUnshield := remainUnshieldReqs[i].value
+			if p.IsAcceptableTxSize(len(batch.UTXOs), len(batch.UnshieldIDs)+2) &&
+				rUnshield.GetAmount() <= remainUTXOAmt {
+				batch.UnshieldIDs = append(batch.UnshieldIDs, rUnshield.GetUnshieldID())
+				remainUTXOAmt -= rUnshield.GetAmount()
+				nextIndexRemainUnshieldReq = i + 1
+			} else {
+				nextIndexRemainUnshieldReq = i
+				break
+			}
+		}
+		indexRemainUnshieldReq = nextIndexRemainUnshieldReq
+	}
+	return batchTxs
+}
