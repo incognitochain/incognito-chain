@@ -346,15 +346,13 @@ func (sp *stateProducerV2) mintReward(
 		}
 
 		orderRewardBPS := params.OrderLiquidityMiningBPS[pairID]
-		orderRewardAmt := new(big.Int).Mul(pairReward, new(big.Int).SetUint64(uint64(orderRewardBPS)))
-		orderRewardAmt.Div(orderRewardAmt, new(big.Int).SetUint64(uint64(BPS)))
-		lpRewardAmt := new(big.Int).Sub(pairReward, orderRewardAmt)
-		lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
+		lpRewardAmt := new(big.Int).Set(pairReward)
 
 		if isLiquidityMining && orderRewardBPS > 0 {
-			if pair.makingVolume == nil || pair.makingVolume[pair.state.Token0ID()] == nil || len(pair.makingVolume[pair.state.Token0ID()].volume) == 0 {
-				lpRewardAmt.Add(lpRewardAmt, orderRewardAmt)
-			} else {
+			orderRewardAmt := new(big.Int).Mul(pairReward, new(big.Int).SetUint64(uint64(orderRewardBPS)))
+			orderRewardAmt.Div(orderRewardAmt, new(big.Int).SetUint64(uint64(BPS)))
+
+			if len(pair.makingVolume[pair.state.Token0ID()].volume) != 0 {
 				orderRewards := v2.SplitOrderRewardLiquidityMining(
 					pair.makingVolume[pair.state.Token0ID()].volume,
 					orderRewardAmt, tokenID,
@@ -366,6 +364,7 @@ func (sp *stateProducerV2) mintReward(
 					}
 					pair.orderRewards[nftID].AddReward(tokenID, reward)
 				}
+				lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
 
 				delete(pair.makingVolume, pair.state.Token0ID())
 
@@ -373,9 +372,7 @@ func (sp *stateProducerV2) mintReward(
 					pairID, pair.state.Token0ID(), orderRewardAmt.Uint64(), tokenID,
 				)...)
 			}
-			if pair.makingVolume == nil || pair.makingVolume[pair.state.Token1ID()] == nil || len(pair.makingVolume[pair.state.Token1ID()].volume) == 0 {
-				lpRewardAmt.Add(lpRewardAmt, orderRewardAmt)
-			} else {
+			if len(pair.makingVolume[pair.state.Token1ID()].volume) != 0 {
 				orderRewards := v2.SplitOrderRewardLiquidityMining(
 					pair.makingVolume[pair.state.Token1ID()].volume,
 					orderRewardAmt, tokenID,
@@ -387,6 +384,7 @@ func (sp *stateProducerV2) mintReward(
 					}
 					pair.orderRewards[nftID].AddReward(tokenID, reward)
 				}
+				lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
 
 				delete(pair.makingVolume, pair.state.Token1ID())
 
@@ -980,6 +978,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		if isExistedOrderReward {
+			delete(poolPair.orderRewards, metaData.NftID.String())
 			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}
 

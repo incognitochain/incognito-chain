@@ -828,9 +828,9 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 		}
 
-		order, isExisted := poolPair.orderRewards[actionData.NftID.String()]
+		_, isExisted = poolPair.orderRewards[actionData.NftID.String()]
 		if isExisted {
-			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
+			delete(poolPair.orderRewards, actionData.NftID.String())
 		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
