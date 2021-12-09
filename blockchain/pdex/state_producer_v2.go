@@ -1048,9 +1048,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
 			identityID = metaData.AccessOption.NftID.String()
 		} else {
-			data := metaData.AccessOption.BurntOTA.Bytes()
-			var hash common.Hash
-			err := json.Unmarshal(data[:], &hash)
+			hash, err := metaData.AccessOption.BurntOTAHash()
 			if err != nil {
 				Logger.log.Warnf("tx %v burntOTA is invalid", tx.Hash().String())
 				res = append(res, rejectInsts...)
@@ -1080,9 +1078,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			continue
 		}
 		if !accessByNFT {
-			data := metaData.AccessOption.NextOTA.Bytes()
-			var hash common.Hash
-			err := json.Unmarshal(data[:], &hash)
+			hash, err := metaData.AccessOption.NextOTAHash()
 			if err != nil {
 				Logger.log.Warnf("tx %v nextOTA is invalid", tx.Hash().String())
 				res = append(res, rejectInsts...)

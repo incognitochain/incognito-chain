@@ -186,3 +186,17 @@ func (a *AccessOption) IsEmpty(isWithdrawRequest bool) bool {
 func (a *AccessOption) UseNft() bool {
 	return !a.NftID.IsZeroValue()
 }
+
+func (a *AccessOption) NextOTAHash() (common.Hash, error) {
+	data := a.NextOTA.Bytes()
+	var hash common.Hash
+	err := json.Unmarshal(data[:], &hash)
+	return hash, err
+}
+
+func (a *AccessOption) BurntOTAHash() (common.Hash, error) {
+	data := a.BurntOTA.Bytes()
+	var hash common.Hash
+	err := json.Unmarshal(data[:], &hash)
+	return hash, err
+}
