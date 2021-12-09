@@ -245,10 +245,10 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 	return committeeChange
 }
 
-//assignRandomlyToSecondHalfSubstituteList assign candidates to pending list
+//assignRandomlyToEndOfSubstituteList assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
-func (b *BeaconCommitteeStateV3) assignRandomlyToSecondHalfSubstituteList(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
+func (b *BeaconCommitteeStateV3) assignRandomlyToEndOfSubstituteList(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
 	for _, candidate := range candidates {
 		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
 		randomOffset := 0
@@ -400,7 +400,7 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 				committeeChange)
 	} else {
 		committeeChange = b.
-			assignRandomlyToSecondHalfSubstituteList(
+			assignRandomlyToEndOfSubstituteList(
 				finishSyncInstruction.PublicKeys,
 				env.RandomNumber,
 				byte(finishSyncInstruction.ChainID),

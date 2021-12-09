@@ -1666,7 +1666,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSecondHalfSubstituteList(t *test
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			if got := b.assignRandomlyToSecondHalfSubstituteList(tt.args.candidates, tt.args.rand, tt.args.shardID, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+			if got := b.assignRandomlyToEndOfSubstituteList(tt.args.candidates, tt.args.rand, tt.args.shardID, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV3.assignToPending() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(b.shardSubstitute, tt.fieldsAfterProcess.beaconCommitteeStateSlashingBase.shardSubstitute) {
