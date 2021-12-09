@@ -1020,7 +1020,6 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		txReqID := *tx.Hash()
 
 		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
-
 		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessByNFT)
 		if err != nil {
 			return res, poolPairs, err
@@ -1044,18 +1043,21 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 
 		var share *Share
+		identityID := utils.EmptyString
 		if accessByNFT {
 			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
+			identityID = metaData.AccessOption.NftID.String()
 		} else {
 			data := metaData.AccessOption.BurntOTA.Bytes()
 			var hash common.Hash
 			err := json.Unmarshal(data[:], &hash)
 			if err != nil {
-				Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
+				Logger.log.Warnf("tx %v burntOTA is invalid", tx.Hash().String())
 				res = append(res, rejectInsts...)
 				continue
 			}
 			share, ok = rootPoolPair.shares[hash.String()]
+			identityID = hash.String()
 		}
 
 		if share == nil || !ok {
@@ -1070,7 +1072,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.AccessOption.NftID.String(), metaData.ShareAmount(), beaconHeight,
+			identityID, metaData.ShareAmount(), beaconHeight,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
@@ -1078,7 +1080,20 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			continue
 		}
 		if !accessByNFT {
-
+			data := metaData.AccessOption.NextOTA.Bytes()
+			var hash common.Hash
+			err := json.Unmarshal(data[:], &hash)
+			if err != nil {
+				Logger.log.Warnf("tx %v nextOTA is invalid", tx.Hash().String())
+				res = append(res, rejectInsts...)
+				continue
+			}
+			err = poolPair.updateNftIndex(identityID, hash.String())
+			if err != nil {
+				Logger.log.Warnf("tx %v update nft index error %v", tx.Hash().String(), err)
+				res = append(res, rejectInsts...)
+				continue
+			}
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(

@@ -7,11 +7,12 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type AcceptWithdrawLiquidity struct {
-	poolPairID  string
-	nftID       common.Hash
+	poolPairID string
+	metadataPdexv3.AccessOption
 	tokenID     common.Hash
 	tokenAmount uint64
 	shareAmount uint64
@@ -26,20 +27,21 @@ func NewAcceptWithdrawLiquidity() *AcceptWithdrawLiquidity {
 
 func NewAcceptWithdrawLiquidityWithValue(
 	poolPairID string,
-	nftID, tokenID common.Hash,
+	tokenID common.Hash,
 	tokenAmount, shareAmount uint64,
 	otaReceiver string,
 	txReqID common.Hash, shardID byte,
+	accessOption metadataPdexv3.AccessOption,
 ) *AcceptWithdrawLiquidity {
 	return &AcceptWithdrawLiquidity{
-		poolPairID:  poolPairID,
-		nftID:       nftID,
-		txReqID:     txReqID,
-		shardID:     shardID,
-		tokenID:     tokenID,
-		tokenAmount: tokenAmount,
-		shareAmount: shareAmount,
-		otaReceiver: otaReceiver,
+		poolPairID:   poolPairID,
+		AccessOption: accessOption,
+		txReqID:      txReqID,
+		shardID:      shardID,
+		tokenID:      tokenID,
+		tokenAmount:  tokenAmount,
+		shareAmount:  shareAmount,
+		otaReceiver:  otaReceiver,
 	}
 }
 
@@ -71,8 +73,8 @@ func (a *AcceptWithdrawLiquidity) StringSlice() ([]string, error) {
 
 func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID  string      `json:"PoolPairID"`
-		NftID       common.Hash `json:"NftID"`
+		PoolPairID string `json:"PoolPairID"`
+		metadataPdexv3.AccessOption
 		TokenID     common.Hash `json:"TokenID"`
 		TokenAmount uint64      `json:"TokenAmount"`
 		ShareAmount uint64      `json:"ShareAmount"`
@@ -80,14 +82,14 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
 	}{
-		PoolPairID:  a.poolPairID,
-		NftID:       a.nftID,
-		TokenID:     a.tokenID,
-		TokenAmount: a.tokenAmount,
-		ShareAmount: a.shareAmount,
-		OtaReceiver: a.otaReceiver,
-		TxReqID:     a.txReqID,
-		ShardID:     a.shardID,
+		PoolPairID:   a.poolPairID,
+		AccessOption: a.AccessOption,
+		TokenID:      a.tokenID,
+		TokenAmount:  a.tokenAmount,
+		ShareAmount:  a.shareAmount,
+		OtaReceiver:  a.otaReceiver,
+		TxReqID:      a.txReqID,
+		ShardID:      a.shardID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -97,8 +99,8 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 
 func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID  string      `json:"PoolPairID"`
-		NftID       common.Hash `json:"NftID"`
+		PoolPairID string `json:"PoolPairID"`
+		metadataPdexv3.AccessOption
 		TokenID     common.Hash `json:"TokenID"`
 		TokenAmount uint64      `json:"TokenAmount"`
 		OtaReceiver string      `json:"OtaReceiver"`
@@ -113,7 +115,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	a.tokenID = temp.TokenID
 	a.tokenAmount = temp.TokenAmount
 	a.poolPairID = temp.PoolPairID
-	a.nftID = temp.NftID
+	a.AccessOption = temp.AccessOption
 	a.shareAmount = temp.ShareAmount
 	a.otaReceiver = temp.OtaReceiver
 	a.txReqID = temp.TxReqID
@@ -127,10 +129,6 @@ func (a *AcceptWithdrawLiquidity) TxReqID() common.Hash {
 
 func (a *AcceptWithdrawLiquidity) ShardID() byte {
 	return a.shardID
-}
-
-func (a *AcceptWithdrawLiquidity) NftID() common.Hash {
-	return a.nftID
 }
 
 func (a *AcceptWithdrawLiquidity) PoolPairID() string {

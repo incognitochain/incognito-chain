@@ -725,3 +725,23 @@ func (p *PoolPairState) updateToDB(
 	}
 	return nil
 }
+
+func (p *PoolPairState) updateNftIndex(oldNftID, newNftID string) error {
+	for tokenID, makingVolume := range p.makingVolume {
+		p.makingVolume[tokenID] = makingVolume.updateNftIndex(oldNftID, newNftID)
+	}
+	newShare, err := p.shares[oldNftID].updateNftIndex(oldNftID, newNftID)
+	if err != nil {
+		return err
+	}
+	p.shares[newNftID] = newShare
+	p.orderRewards[newNftID] = p.orderRewards[oldNftID]
+	delete(p.orderRewards, oldNftID)
+	newOrderbook, err := p.orderbook.updateNftIndex(oldNftID, newNftID)
+	if err != nil {
+		return err
+	}
+	p.orderbook = *newOrderbook
+
+	return nil
+}

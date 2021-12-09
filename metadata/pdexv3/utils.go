@@ -171,7 +171,7 @@ func (a *AccessOption) IsValid(
 		return nil
 	}
 	if a.BurntOTA != nil || a.NextOTA != nil {
-		return errors.New("NftID and nextOTA can not be availability at the same time")
+		return errors.New("NftID and nextOTA can not be exist at the same time")
 	}
 	return nil
 }

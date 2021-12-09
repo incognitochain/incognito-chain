@@ -574,9 +574,21 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
 		return poolPairs, nil, err
 	}
-	share, ok := poolPair.shares[acceptWithdrawLiquidity.NftID().String()]
+	identityID := utils.EmptyString
+	if acceptWithdrawLiquidity.AccessOption.UseNft() {
+		identityID = acceptWithdrawLiquidity.AccessOption.NftID.String()
+	} else {
+		data := acceptWithdrawLiquidity.AccessOption.BurntOTA.Bytes()
+		var hash common.Hash
+		err := json.Unmarshal(data[:], &hash)
+		if err != nil {
+			return poolPairs, nil, err
+		}
+		identityID = hash.String()
+	}
+	share, ok := poolPair.shares[identityID]
 	if !ok || share == nil {
-		err := fmt.Errorf("Can't find nftID %s", acceptWithdrawLiquidity.NftID().String())
+		err := fmt.Errorf("Can't find LP id %s", identityID)
 		return poolPairs, nil, err
 	}
 	poolPair.updateSingleTokenAmount(
@@ -590,10 +602,22 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	var withdrawStatus *v2.WithdrawStatus
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
 		err = poolPair.updateShareValue(
-			acceptWithdrawLiquidity.ShareAmount(), beaconHeight,
-			acceptWithdrawLiquidity.NftID().String(), subOperator)
+			acceptWithdrawLiquidity.ShareAmount(), beaconHeight, identityID, subOperator,
+		)
 		if err != nil {
 			return poolPairs, nil, err
+		}
+		if !acceptWithdrawLiquidity.AccessOption.UseNft() {
+			data := acceptWithdrawLiquidity.AccessOption.NextOTA.Bytes()
+			var hash common.Hash
+			err := json.Unmarshal(data[:], &hash)
+			if err != nil {
+				return poolPairs, nil, err
+			}
+			err = poolPair.updateNftIndex(identityID, hash.String())
+			if err != nil {
+				return poolPairs, nil, err
+			}
 		}
 		withdrawStatus = &v2.WithdrawStatus{
 			Status:       common.Pdexv3AcceptStatus,

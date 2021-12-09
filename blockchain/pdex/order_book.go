@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	v2 "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
@@ -156,4 +157,18 @@ func (ob *Orderbook) NftIDs() map[string]string {
 		result[ord.Id()] = ord.NftID().String()
 	}
 	return result
+}
+
+func (od *Orderbook) updateNftIndex(oldNftID, newNftID string) (*Orderbook, error) {
+	for i, order := range od.orders {
+		if order.NftID().String() == oldNftID {
+			nftHash, err := common.Hash{}.NewHashFromStr(newNftID)
+			if err != nil {
+				return od, err
+			}
+			od.orders[i].SetNftID(*nftHash)
+			break
+		}
+	}
+	return od, nil
 }

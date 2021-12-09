@@ -23,9 +23,8 @@ func BuildRejectWithdrawLiquidityInstructions(
 	}
 	res = append(res, inst)
 	if shouldMintNft {
-		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
 		inst, err = instruction.NewMintNftWithValue(
-			*nftHash, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
+			metaData.NftID, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 		if err != nil {
 			return res, err
@@ -43,17 +42,14 @@ func BuildAcceptWithdrawLiquidityInstructions(
 	shouldMintNft bool,
 ) ([][]string, error) {
 	res := [][]string{}
-	nftHash, err := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
-	if err != nil {
-		return res, err
-	}
 	if metaData.OtaReceivers()[token0ID.String()] == utils.EmptyString {
 		return res, errors.New("invalid ota receivers")
 	}
 	inst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		metaData.PoolPairID(), *nftHash,
+		metaData.PoolPairID(),
 		token0ID, token0Amount, shareAmount,
 		metaData.OtaReceivers()[token0ID.String()], txReqID, shardID,
+		metaData.AccessOption,
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -63,9 +59,10 @@ func BuildAcceptWithdrawLiquidityInstructions(
 		return res, errors.New("invalid ota receivers")
 	}
 	inst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		metaData.PoolPairID(), *nftHash,
+		metaData.PoolPairID(),
 		token1ID, token1Amount, shareAmount,
 		metaData.OtaReceivers()[token1ID.String()], txReqID, shardID,
+		metaData.AccessOption,
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -74,7 +71,7 @@ func BuildAcceptWithdrawLiquidityInstructions(
 
 	if shouldMintNft {
 		inst, err := instruction.NewMintNftWithValue(
-			*nftHash, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID).
+			metaData.NftID, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID).
 			StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 		if err != nil {
 			return res, err
