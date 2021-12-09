@@ -1007,10 +1007,11 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
-	beaconHeight uint64,
+	beaconHeight uint64, stakingPoolStates map[string]*StakingPoolState,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
+	map[string]*StakingPoolState,
 	error,
 ) {
 	res := [][]string{}
@@ -1022,7 +1023,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
 		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessByNFT)
 		if err != nil {
-			return res, poolPairs, err
+			return res, poolPairs, stakingPoolStates, err
 		}
 
 		if metaData.AccessOption.IsEmpty(true) {
@@ -1086,9 +1087,13 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			}
 			err = poolPair.updateNftIndex(identityID, hash.String())
 			if err != nil {
-				Logger.log.Warnf("tx %v update nft index error %v", tx.Hash().String(), err)
+				Logger.log.Warnf("tx %v update nft index pool pair state error %v", tx.Hash().String(), err)
 				res = append(res, rejectInsts...)
 				continue
+			}
+			for stakingPoolID, stakingPoolState := range stakingPoolStates {
+				stakingPoolState.updateNftIndex(identityID, hash.String())
+				stakingPoolStates[stakingPoolID] = stakingPoolState
 			}
 		}
 
@@ -1105,7 +1110,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		res = append(res, insts...)
 		poolPairs[metaData.PoolPairID()] = poolPair
 	}
-	return res, poolPairs, nil
+	return res, poolPairs, stakingPoolStates, nil
 }
 
 func (sp *stateProducerV2) userMintNft(
@@ -1172,20 +1177,20 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		_, found = nftIDs[metaData.NftID()]
-		if metaData.NftID() == utils.EmptyString || !found {
+		_, found = nftIDs[metaData.AccessOption.NftID.String()]
+		if metaData.AccessOption.NftID.String() == utils.EmptyString || !found {
 			Logger.log.Warnf("tx %v not found nftID ", tx.Hash().String())
 			res = append(res, rejectInst)
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight, addOperator)
+		err = stakingPoolState.updateLiquidity(metaData.AccessOption.NftID.String(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v update liquidity err %v ", tx.Hash().String(), err)
 			res = append(res, rejectInst)
 			continue
 		}
-		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
 		if err != nil {
 			return res, stakingPoolStates, err
 		}
@@ -1223,13 +1228,13 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, rejectInsts...)
 			continue
 		}
-		_, found = nftIDs[metaData.NftID()]
-		if metaData.NftID() == utils.EmptyString || !found {
+		_, found = nftIDs[metaData.AccessOption.NftID.String()]
+		if metaData.AccessOption.NftID.String() == utils.EmptyString || !found {
 			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
-		staker, found := rootStakingPoolState.stakers[metaData.NftID()]
+		staker, found := rootStakingPoolState.stakers[metaData.AccessOption.NftID.String()]
 		if !found || staker == nil {
 			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
 			res = append(res, rejectInsts...)
@@ -1241,7 +1246,7 @@ func (sp *stateProducerV2) unstaking(
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
+		err = stakingPoolState.updateLiquidity(metaData.AccessOption.NftID.String(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
@@ -1252,10 +1257,10 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, rejectInsts...)
 			continue
 		}
-		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
+		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
 		insts, err := v2.BuildAcceptUnstakingInstructions(
 			*stakingPoolID, *nftHash, metaData.UnstakingAmount(),
-			metaData.OtaReceivers()[metaData.NftID()],
+			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()],
 			metaData.OtaReceivers()[metaData.StakingPoolID()],
 			txReqID, shardID,
 		)

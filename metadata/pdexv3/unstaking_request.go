@@ -7,17 +7,17 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type UnstakingRequest struct {
 	metadataCommon.MetadataBase
-	stakingPoolID   string
-	otaReceivers    map[string]string
-	nftID           string
+	stakingPoolID string
+	otaReceivers  map[string]string
+	AccessOption
 	unstakingAmount uint64
 }
 
@@ -30,16 +30,17 @@ func NewUnstakingRequest() *UnstakingRequest {
 }
 
 func NewUnstakingRequestWithValue(
-	stakingPoolID, nftID string,
+	stakingPoolID string,
 	otaReceivers map[string]string,
 	unstakingAmount uint64,
+	accessOption AccessOption,
 ) *UnstakingRequest {
 	return &UnstakingRequest{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 		},
 		stakingPoolID:   stakingPoolID,
-		nftID:           nftID,
+		AccessOption:    accessOption,
 		otaReceivers:    otaReceivers,
 		unstakingAmount: unstakingAmount,
 	}
@@ -53,12 +54,44 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, true)
 	if err != nil {
 		return false, err
 	}
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
+	}
+	identityID := common.Hash{}
+	expectBurntTokenID := common.Hash{}
+	if request.AccessOption.UseNft() {
+		if request.otaReceivers[request.AccessOption.NftID.String()] == utils.EmptyString {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID's ota receiver can not be empty"))
+		}
+		expectBurntTokenID = request.AccessOption.NftID
+		identityID = request.AccessOption.NftID
+		if identityID == common.PRVCoinID {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("NftID can not be prv"))
+		}
+	} else {
+		expectBurntTokenID = common.PdexAccessCoinID
+		identityID, err = request.AccessOption.BurntOTAHash()
+		if err != nil {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
+	}
+	if !bytes.Equal(burnedTokenID[:], expectBurntTokenID[:]) {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
+	}
+	if burnCoin.GetValue() != 1 {
+		err := fmt.Errorf("Burnt amount is not valid expect %v but get %v", 1, burnCoin.GetValue())
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if tx.GetType() != common.TxCustomTokenPrivacyType {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
+	}
 	err = beaconViewRetriever.IsValidPdexv3UnstakingAmount(
-		request.stakingPoolID, request.nftID, request.unstakingAmount,
+		request.stakingPoolID, identityID.String(), request.unstakingAmount,
 	)
 	if err != nil {
 		return false, err
@@ -83,16 +116,6 @@ func (request *UnstakingRequest) ValidateSanityData(
 	if stakingPoolID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
 	}
-	nftID, err := common.Hash{}.NewHashFromStr(request.nftID)
-	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if nftID.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID should not be empty"))
-	}
-	if request.otaReceivers[request.nftID] == utils.EmptyString {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID's ota receiver can not be empty"))
-	}
 	for tokenID, otaReceiverStr := range request.otaReceivers {
 		_, err := common.Hash{}.NewHashFromStr(tokenID)
 		if err != nil {
@@ -114,23 +137,6 @@ func (request *UnstakingRequest) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("shareAmount can not be 0"))
 	}
 
-	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
-	if err != nil || !isBurned {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
-	}
-	if !bytes.Equal(burnedTokenID[:], nftID[:]) {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
-	}
-	if burnCoin.GetValue() != 1 {
-		err := fmt.Errorf("Burnt amount is not valid expect %v but get %v", 1, burnCoin.GetValue())
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if tx.GetType() != common.TxCustomTokenPrivacyType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
-	}
-	if nftID.String() == common.PRVCoinID.String() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Invalid NftID"))
-	}
 	return true, true, nil
 }
 
@@ -150,14 +156,14 @@ func (request *UnstakingRequest) CalculateSize() uint64 {
 
 func (request *UnstakingRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		StakingPoolID   string            `json:"StakingPoolID"`
-		NftID           string            `json:"NftID"`
+		StakingPoolID string `json:"StakingPoolID"`
+		AccessOption
 		OtaReceivers    map[string]string `json:"OtaReceivers"`
 		UnstakingAmount uint64            `json:"UnstakingAmount"`
 		metadataCommon.MetadataBase
 	}{
 		StakingPoolID:   request.stakingPoolID,
-		NftID:           request.nftID,
+		AccessOption:    request.AccessOption,
 		OtaReceivers:    request.otaReceivers,
 		UnstakingAmount: request.unstakingAmount,
 		MetadataBase:    request.MetadataBase,
@@ -170,8 +176,8 @@ func (request *UnstakingRequest) MarshalJSON() ([]byte, error) {
 
 func (request *UnstakingRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		StakingPoolID   string            `json:"StakingPoolID"`
-		NftID           string            `json:"NftID"`
+		StakingPoolID string `json:"StakingPoolID"`
+		AccessOption
 		OtaReceivers    map[string]string `json:"OtaReceivers"`
 		UnstakingAmount uint64            `json:"UnstakingAmount"`
 		metadataCommon.MetadataBase
@@ -181,7 +187,7 @@ func (request *UnstakingRequest) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	request.stakingPoolID = temp.StakingPoolID
-	request.nftID = temp.NftID
+	request.AccessOption = temp.AccessOption
 	request.otaReceivers = temp.OtaReceivers
 	request.unstakingAmount = temp.UnstakingAmount
 	request.MetadataBase = temp.MetadataBase
@@ -198,10 +204,6 @@ func (request *UnstakingRequest) OtaReceivers() map[string]string {
 
 func (request *UnstakingRequest) UnstakingAmount() uint64 {
 	return request.unstakingAmount
-}
-
-func (request *UnstakingRequest) NftID() string {
-	return request.nftID
 }
 
 func (request *UnstakingRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

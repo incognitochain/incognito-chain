@@ -55,7 +55,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, false)
+	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, true)
 	if err != nil {
 		return false, err
 	}

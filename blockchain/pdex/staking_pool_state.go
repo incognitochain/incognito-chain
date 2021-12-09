@@ -332,3 +332,10 @@ func (s *StakingPoolState) updateToDB(
 	}
 	return nil
 }
+
+func (s *StakingPoolState) updateNftIndex(oldNftID, newNftID string) {
+	if staker, found := s.stakers[oldNftID]; found {
+		s.stakers[newNftID] = staker
+		delete(s.stakers, oldNftID)
+	}
+}

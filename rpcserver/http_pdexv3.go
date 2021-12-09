@@ -729,7 +729,7 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		NftID             string       `json:"NftID"`
+		NftID             common.Hash  `json:"NftID"`
 		TokenID           string       `json:"TokenID"`
 		PoolPairID        string       `json:"PoolPairID"`
 		PairHash          string       `json:"PairHash"`
@@ -743,8 +743,7 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 	}
 
 	// tempory code
-	nftHash, _ := common.Hash{}.NewHashFromStr(mdReader.NftID)
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, *nftHash)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, mdReader.NftID)
 	//
 
 	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
@@ -1644,8 +1643,12 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
+	//temporary code
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, common.Hash{})
+	//
+
 	md := metadataPdexv3.NewStakingRequestWithValue(
-		mdReader.StakingPoolID, mdReader.NftID, otaReceiverStr, uint64(mdReader.Amount),
+		mdReader.StakingPoolID, otaReceiverStr, uint64(mdReader.Amount), *accessOption,
 	)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.StakingPoolID)
 	if err != nil {
@@ -1804,15 +1807,20 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 	otaReceivers[mdReader.StakingPoolID] = otaReceiverUnstakingTokenStr
+
+	//temporary code
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, common.Hash{})
+	//
+
 	md := metadataPdexv3.NewUnstakingRequestWithValue(
-		mdReader.StakingPoolID, mdReader.NftID, otaReceivers, uint64(mdReader.Amount),
+		mdReader.StakingPoolID, otaReceivers, uint64(mdReader.Amount), *accessOption,
 	)
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
-	if md.NftID() == common.PRVIDStr {
+	if md.AccessOption.NftID.String() == common.PRVIDStr {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("Cannot use PRV for withdrawLiquidity tx"))
 	}
-	nftID, err := common.Hash{}.NewHashFromStr(md.NftID())
+	nftID, err := common.Hash{}.NewHashFromStr(md.AccessOption.NftID.String())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}

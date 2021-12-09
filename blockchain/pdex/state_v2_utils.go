@@ -136,10 +136,14 @@ func (share *Share) updateNftIndex(oldNftID, newNftID string) (*Share, error) {
 	if err != nil {
 		return nil, err
 	}
-	share.tradingFees[*newNftHash] = share.tradingFees[*oldNftHash]
-	delete(share.tradingFees, *oldNftHash)
-	share.lastLPFeesPerShare[*newNftHash] = share.lastLPFeesPerShare[*oldNftHash]
-	delete(share.lastLPFeesPerShare, *oldNftHash)
+	if tradingFee, found := share.tradingFees[*oldNftHash]; found {
+		share.tradingFees[*newNftHash] = tradingFee
+		delete(share.tradingFees, *oldNftHash)
+	}
+	if lastLPFeesPerShare, found := share.lastLPFeesPerShare[*oldNftHash]; found {
+		share.lastLPFeesPerShare[*newNftHash] = lastLPFeesPerShare
+		delete(share.lastLPFeesPerShare, *oldNftHash)
+	}
 	return share, nil
 }
 

@@ -189,14 +189,12 @@ func (a *AccessOption) UseNft() bool {
 
 func (a *AccessOption) NextOTAHash() (common.Hash, error) {
 	data := a.NextOTA.Bytes()
-	var hash common.Hash
-	err := json.Unmarshal(data[:], &hash)
-	return hash, err
+	hash, err := common.Hash{}.NewHash(data[:])
+	return *hash, err
 }
 
 func (a *AccessOption) BurntOTAHash() (common.Hash, error) {
 	data := a.BurntOTA.Bytes()
-	var hash common.Hash
-	err := json.Unmarshal(data[:], &hash)
-	return hash, err
+	hash, err := common.Hash{}.NewHash(data[:])
+	return *hash, err
 }

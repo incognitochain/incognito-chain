@@ -523,18 +523,19 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	inst []string,
 	poolPairs map[string]*PoolPairState,
 	beaconHeight uint64,
-) (map[string]*PoolPairState, error) {
+	stakingPoolStates map[string]*StakingPoolState,
+) (map[string]*PoolPairState, map[string]*StakingPoolState, error) {
 	var err error
 	switch inst[1] {
 	case common.PDEWithdrawalRejectedChainStatus:
 		_, err = sp.rejectWithdrawLiquidity(stateDB, inst)
 	case common.PDEWithdrawalAcceptedChainStatus:
-		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight)
+		poolPairs, stakingPoolStates, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight, stakingPoolStates)
 	}
 	if err != nil {
-		return poolPairs, err
+		return poolPairs, stakingPoolStates, err
 	}
-	return poolPairs, err
+	return poolPairs, stakingPoolStates, err
 }
 
 func (sp *stateProcessorV2) rejectWithdrawLiquidity(
@@ -563,16 +564,17 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	inst []string,
 	poolPairs map[string]*PoolPairState,
 	beaconHeight uint64,
-) (map[string]*PoolPairState, *v2.WithdrawStatus, error) {
+	stakingPoolStates map[string]*StakingPoolState,
+) (map[string]*PoolPairState, map[string]*StakingPoolState, *v2.WithdrawStatus, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
 	err := acceptWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
-		return poolPairs, nil, err
+		return poolPairs, stakingPoolStates, nil, err
 	}
 	poolPair, ok := poolPairs[acceptWithdrawLiquidity.PoolPairID()]
 	if !ok || poolPair == nil {
 		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
-		return poolPairs, nil, err
+		return poolPairs, stakingPoolStates, nil, err
 	}
 	identityID := utils.EmptyString
 	if acceptWithdrawLiquidity.AccessOption.UseNft() {
@@ -582,14 +584,14 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		var hash common.Hash
 		err := json.Unmarshal(data[:], &hash)
 		if err != nil {
-			return poolPairs, nil, err
+			return poolPairs, stakingPoolStates, nil, err
 		}
 		identityID = hash.String()
 	}
 	share, ok := poolPair.shares[identityID]
 	if !ok || share == nil {
 		err := fmt.Errorf("Can't find LP id %s", identityID)
-		return poolPairs, nil, err
+		return poolPairs, stakingPoolStates, nil, err
 	}
 	poolPair.updateSingleTokenAmount(
 		acceptWithdrawLiquidity.TokenID(),
@@ -605,18 +607,22 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			acceptWithdrawLiquidity.ShareAmount(), beaconHeight, identityID, subOperator,
 		)
 		if err != nil {
-			return poolPairs, nil, err
+			return poolPairs, stakingPoolStates, nil, err
 		}
 		if !acceptWithdrawLiquidity.AccessOption.UseNft() {
 			data := acceptWithdrawLiquidity.AccessOption.NextOTA.Bytes()
 			var hash common.Hash
 			err := json.Unmarshal(data[:], &hash)
 			if err != nil {
-				return poolPairs, nil, err
+				return poolPairs, stakingPoolStates, nil, err
 			}
 			err = poolPair.updateNftIndex(identityID, hash.String())
 			if err != nil {
-				return poolPairs, nil, err
+				return poolPairs, stakingPoolStates, nil, err
+			}
+			for stakingPoolID, stakingPoolState := range stakingPoolStates {
+				stakingPoolState.updateNftIndex(identityID, hash.String())
+				stakingPoolStates[stakingPoolID] = stakingPoolState
 			}
 		}
 		withdrawStatus = &v2.WithdrawStatus{
@@ -634,7 +640,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			contentBytes,
 		)
 	}
-	return poolPairs, withdrawStatus, err
+	return poolPairs, stakingPoolStates, withdrawStatus, err
 }
 
 func (sp *stateProcessorV2) addOrder(
