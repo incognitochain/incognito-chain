@@ -46,7 +46,7 @@ func (sp *stateProducerV2) addLiquidity(
 			incomingContribution, metaData.PairHash(),
 		)
 		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
-		if metaData.AccessOption.IsEmpty(false) || !accessByNFT {
+		if !accessByNFT && metaData.AccessOption.UseNft() {
 			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
@@ -1028,6 +1028,11 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		if metaData.AccessOption.IsEmpty(true) {
 			Logger.log.Warnf("tx %v accessOption is not valid", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if !accessByNFT && metaData.AccessOption.UseNft() {
+			Logger.log.Warnf("tx %v can not find nftID", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
