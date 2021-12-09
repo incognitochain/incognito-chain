@@ -171,7 +171,7 @@ func (a *AccessOption) IsValid(
 		return nil
 	}
 	if a.BurntOTA != nil || a.NextOTA != nil {
-		return errors.New("NftID and nextOTA can not be availability at the same time")
+		return errors.New("NftID and nextOTA can not be exist at the same time")
 	}
 	return nil
 }
@@ -185,4 +185,18 @@ func (a *AccessOption) IsEmpty(isWithdrawRequest bool) bool {
 
 func (a *AccessOption) UseNft() bool {
 	return !a.NftID.IsZeroValue()
+}
+
+func (a *AccessOption) NextOTAHash() (common.Hash, error) {
+	data := a.NextOTA.Bytes()
+	var hash common.Hash
+	err := json.Unmarshal(data[:], &hash)
+	return hash, err
+}
+
+func (a *AccessOption) BurntOTAHash() (common.Hash, error) {
+	data := a.BurntOTA.Bytes()
+	var hash common.Hash
+	err := json.Unmarshal(data[:], &hash)
+	return hash, err
 }

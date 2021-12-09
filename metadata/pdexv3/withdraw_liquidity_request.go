@@ -59,26 +59,29 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
+	}
 	identityID := common.Hash{}
+	expectBurntTokenID := common.Hash{}
 	if request.AccessOption.UseNft() {
 		if request.otaReceivers[request.AccessOption.NftID.String()] == utils.EmptyString {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID's ota receiver can not be empty"))
 		}
+		expectBurntTokenID = request.AccessOption.NftID
 		identityID = request.AccessOption.NftID
 		if identityID == common.PRVCoinID {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("NftID can not be prv"))
 		}
 	} else {
-		identityID = common.PdexAccessCoinID
-		if identityID != common.PdexAccessCoinID {
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Burn coin need to be pdex access token"))
+		expectBurntTokenID = common.PdexAccessCoinID
+		identityID, err = request.AccessOption.BurntOTAHash()
+		if err != nil {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
 	}
-	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
-	if err != nil || !isBurned {
-		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
-	}
-	if !bytes.Equal(burnedTokenID[:], identityID[:]) {
+	if !bytes.Equal(burnedTokenID[:], expectBurntTokenID[:]) {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
 	}
 	if burnCoin.GetValue() != 1 {

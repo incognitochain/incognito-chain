@@ -127,6 +127,22 @@ func (share *Share) getDiff(
 	return newShareChange
 }
 
+func (share *Share) updateNftIndex(oldNftID, newNftID string) (*Share, error) {
+	oldNftHash, err := common.Hash{}.NewHashFromStr(oldNftID)
+	if err != nil {
+		return nil, err
+	}
+	newNftHash, err := common.Hash{}.NewHashFromStr(newNftID)
+	if err != nil {
+		return nil, err
+	}
+	share.tradingFees[*newNftHash] = share.tradingFees[*oldNftHash]
+	delete(share.tradingFees, *oldNftHash)
+	share.lastLPFeesPerShare[*newNftHash] = share.lastLPFeesPerShare[*oldNftHash]
+	delete(share.lastLPFeesPerShare, *oldNftHash)
+	return share, nil
+}
+
 type Staker struct {
 	liquidity           uint64
 	rewards             map[common.Hash]uint64
@@ -444,4 +460,12 @@ func (makingVolume *MakingVolume) getDiff(
 		newMakingVolumeChange.Volume = v2utils.GetChangedElementsFromMapStringBigInt(makingVolume.volume, compareMakingVolume.volume)
 	}
 	return newMakingVolumeChange
+}
+
+func (makingVolume *MakingVolume) updateNftIndex(oldNftID, newNftID string) *MakingVolume {
+	if volume, found := makingVolume.volume[oldNftID]; found {
+		makingVolume.volume[newNftID] = volume
+		delete(makingVolume.volume, oldNftID)
+	}
+	return makingVolume
 }
