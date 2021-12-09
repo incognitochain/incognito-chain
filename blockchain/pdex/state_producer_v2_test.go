@@ -956,6 +956,21 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	assert.Nil(t, err)
 	//
 
+	invalidOtaReceivers := map[string]string{
+		nftID:             validOTAReceiver0,
+		token0ID.String(): validOTAReceiver1,
+	}
+
+	// invalid otaReceivers tx
+	invalidOtaReceiversMetadata := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
+		poolPairID, nftID, invalidOtaReceivers, 100,
+	)
+	invalidOtaReceiversTx := &metadataMocks.Transaction{}
+	invalidOtaReceiversTx.On("GetMetadata").Return(invalidOtaReceiversMetadata)
+	invalidOtaReceiversTx.On("GetValidationEnv").Return(valEnv)
+	invalidOtaReceiversTx.On("Hash").Return(txHash)
+	//
+
 	type fields struct {
 		stateProducerBase stateProducerBase
 	}
@@ -1255,6 +1270,59 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					orderRewards: map[string]*OrderReward{},
 					makingVolume: map[common.Hash]*MakingVolume{},
 					orderbook:    Orderbook{[]*Order{}},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Invalid ota receivers",
+			fields: fields{},
+			args: args{
+				txs: []metadata.Transaction{invalidOtaReceiversTx},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 150, 600,
+							big.NewInt(0).SetUint64(300),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook: Orderbook{[]*Order{}},
+					},
+				},
+				nftIDs: map[string]uint64{
+					nftID: 100,
+				},
+				beaconHeight: 20,
+			},
+			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
+			want1: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 150, 600,
+						big.NewInt(0).SetUint64(300),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,

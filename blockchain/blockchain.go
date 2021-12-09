@@ -118,15 +118,30 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = (config.OutCoinByOTAKeyDb != nil)
+	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
 	if EnableIndexingCoinByOTAKey {
-		var err error
-		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken)
+		allTokens := make(map[common.Hash]interface{})
+		tokenStates, err := blockchain.ListAllPrivacyCustomTokenAndPRV()
+		if err != nil {
+			return err
+		}
+		for tokenID, _ := range tokenStates {
+			allTokens[tokenID] = true
+		}
+
+		outcoinIndexer, err = coinIndexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerToken, allTokens)
 		if err != nil {
 			return err
 		}
 		if config.IndexerWorkers > 0 {
-			go outcoinIndexer.Start()
+			txDbs := make([]*statedb.StateDB, 0)
+			bestBlocks := make([]uint64, 0)
+			for shard := 0; shard < common.MaxShardNumber; shard++{
+				txDbs = append(txDbs, blockchain.GetBestStateTransactionStateDB(byte(shard)))
+				bestBlocks = append(bestBlocks, blockchain.GetBestStateShard(byte(shard)).ShardHeight)
+			}
+			cfg := &coinIndexer.IndexerInitialConfig{TxDbs: txDbs, BestBlocks: bestBlocks}
+			go outcoinIndexer.Start(cfg)
 		}
 	}
 	return nil
@@ -145,14 +160,22 @@ func (blockchain *BlockChain) InitChainState() error {
 	if err != nil {
 		return err
 	}
-	if err := blockchain.RestoreBeaconViews(); err != nil {
-		Logger.log.Error("debug restore beacon fail, init", err)
+	//check if bestview is not stored, then init
+	bcDB := blockchain.GetBeaconChainDatabase()
+	if _, err := rawdbv2.GetBeaconViews(bcDB); err != nil {
 		err := blockchain.initBeaconState()
 		if err != nil {
-			Logger.log.Error("debug beacon state init error")
+			Logger.log.Error("debug beacon state init error", err)
+			return err
+		}
+	} else {
+		//if restore fail, return err
+		if err := blockchain.RestoreBeaconViews(); err != nil {
+			Logger.log.Error("debug restore beacon fail, init", err)
 			return err
 		}
 	}
+
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
 
 	finishsync.NewDefaultFinishSyncMsgPool()
@@ -187,14 +210,22 @@ func (blockchain *BlockChain) InitChainState() error {
 		if err != nil {
 			return err
 		}
-		if err := blockchain.RestoreShardViews(shardID); err != nil {
-			Logger.log.Error("debug restore shard fail, init")
+
+		//check if bestview is not stored, then init
+		if _, err := rawdbv2.GetShardBestState(blockchain.GetShardChainDatabase(shardID), shardID); err != nil {
 			err := blockchain.InitShardState(shardID)
 			if err != nil {
-				Logger.log.Error("debug shard state init error")
+				Logger.log.Error("debug shard state init error", err)
+				return err
+			}
+		} else {
+			//if restore fail, return err
+			if err := blockchain.RestoreShardViews(shardID); err != nil {
+				Logger.log.Error("debug restore shard fail, init", err)
 				return err
 			}
 		}
+
 		sBestState := blockchain.ShardChain[shardID].GetBestState()
 		txDB := sBestState.GetCopiedTransactionStateDB()
 

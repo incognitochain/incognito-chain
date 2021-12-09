@@ -257,6 +257,35 @@ func InitPoolPairIDsFromDB(stateDB *statedb.StateDB) ([]string, error) {
 	return res, nil
 }
 
+func InitIntermediatePoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
+	res := make(map[string]*PoolPairState)
+	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	for poolPairID, poolPairState := range poolPairsStates {
+		lpFeesPerShare, err := statedb.GetPdexv3PoolPairLpFeesPerShares(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		protocolFees, err := statedb.GetPdexv3PoolPairProtocolFees(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		stakingPoolFees, err := statedb.GetPdexv3PoolPairStakingPoolFees(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		poolPair := NewPoolPairStateWithValue(
+			poolPairState.Value(), nil, Orderbook{},
+			lpFeesPerShare, protocolFees, stakingPoolFees,
+			map[common.Hash]*MakingVolume{}, map[string]*OrderReward{},
+		)
+		res[poolPairID] = poolPair
+	}
+	return res, nil
+}
+
 func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
 	res := make(map[string]*PoolPairState)
 	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
@@ -302,8 +331,21 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 				orderReward[nftID].uncollectedRewards[tokenID] = amount
 			}
 		}
+		orderbook := &Orderbook{[]*Order{}}
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range orderMap {
+			v := item.Value()
+			orderbook.InsertOrder(&v)
+		}
+		shares, err := initShares(poolPairID, stateDB)
+		if err != nil {
+			return nil, err
+		}
 		poolPair := NewPoolPairStateWithValue(
-			poolPairState.Value(), nil, Orderbook{},
+			poolPairState.Value(), shares, Orderbook{},
 			lpFeesPerShare, protocolFees, stakingPoolFees,
 			makingVolume, orderReward,
 		)
@@ -392,8 +434,21 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			orderReward[nftID].uncollectedRewards[tokenID] = amount
 		}
 	}
+	orderbook := &Orderbook{[]*Order{}}
+	orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairID)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range orderMap {
+		v := item.Value()
+		orderbook.InsertOrder(&v)
+	}
+	shares, err := initShares(poolPairID, stateDB)
+	if err != nil {
+		return nil, err
+	}
 	return NewPoolPairStateWithValue(
-		poolPairState.Value(), nil, Orderbook{},
+		poolPairState.Value(), shares, *orderbook,
 		lpFeesPerShare, protocolFees, stakingPoolFees,
 		makingVolume, orderReward,
 	), nil

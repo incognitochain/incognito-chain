@@ -1117,7 +1117,9 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			token0Amount, token1Amount, shareAmount,
 			txReqID, shardID)
 		if err != nil {
-			return res, poolPairs, err
+			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
 		}
 		res = append(res, insts...)
 		poolPairs[metaData.PoolPairID()] = poolPair
@@ -1261,6 +1263,11 @@ func (sp *stateProducerV2) unstaking(
 		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if metaData.OtaReceivers()[metaData.StakingPoolID()] == utils.EmptyString {
+			Logger.log.Warnf("tx %v ota receiver is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
