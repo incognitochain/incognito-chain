@@ -53,7 +53,7 @@ func (state *Pdexv3PoolPairLpFeePerShareState) UnmarshalJSON(data []byte) error 
 func (state *Pdexv3PoolPairLpFeePerShareState) Clone() *Pdexv3PoolPairLpFeePerShareState {
 	return &Pdexv3PoolPairLpFeePerShareState{
 		tokenID: state.tokenID,
-		value:   big.NewInt(0).SetBytes(state.value.Bytes()),
+		value:   big.NewInt(0).Set(state.value),
 	}
 }
 

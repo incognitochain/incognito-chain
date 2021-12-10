@@ -44,6 +44,8 @@ type PoolPairChange struct {
 	LpFeesPerShare  map[string]bool
 	ProtocolFees    map[string]bool
 	StakingPoolFees map[string]bool
+	MakingVolume    map[string]*MakingVolumeChange
+	OrderRewards    map[string]*OrderRewardChange
 }
 
 func NewPoolPairChange() *PoolPairChange {
@@ -53,6 +55,8 @@ func NewPoolPairChange() *PoolPairChange {
 		LpFeesPerShare:  make(map[string]bool),
 		ProtocolFees:    make(map[string]bool),
 		StakingPoolFees: make(map[string]bool),
+		MakingVolume:    make(map[string]*MakingVolumeChange),
+		OrderRewards:    make(map[string]*OrderRewardChange),
 	}
 }
 
@@ -66,5 +70,25 @@ func NewShareChange() *ShareChange {
 	return &ShareChange{
 		TradingFees:        make(map[string]bool),
 		LastLPFeesPerShare: make(map[string]bool),
+	}
+}
+
+type MakingVolumeChange struct {
+	Volume map[string]bool
+}
+
+func NewMakingVolumeChange() *MakingVolumeChange {
+	return &MakingVolumeChange{
+		Volume: make(map[string]bool),
+	}
+}
+
+type OrderRewardChange struct {
+	UncollectedReward map[string]bool
+}
+
+func NewOrderRewardChange() *OrderRewardChange {
+	return &OrderRewardChange{
+		UncollectedReward: make(map[string]bool),
 	}
 }

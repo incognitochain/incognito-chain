@@ -431,10 +431,41 @@ func (sp *stateProcessorV2) trade(
 			}
 
 			for tokenID, amount := range md.RewardEarned[index] {
-				pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = reserveState.AddFee(
-					tokenID, amount, BaseLPFeesPerShare,
-					pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
+				// split reward between LPs and LOPs by weighted ratio
+				ratio := uint(0)
+				if params.OrderMiningRewardRatioBPS != nil {
+					bps, ok := params.OrderMiningRewardRatioBPS[pairID]
+					if ok {
+						ratio = bps
+					}
+				}
+
+				remain := new(big.Int).SetUint64(0)
+
+				// add staking pools and protocol fees
+				pair.protocolFees, pair.stakingPoolFees, remain = reserveState.AddStakingAndProtocolFee(
+					tokenID, new(big.Int).SetUint64(amount), pair.protocolFees, pair.stakingPoolFees,
 					params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
+				)
+
+				ammReward, orderRewards := v2.SplitTradingReward(
+					remain, ratio, BPS,
+					md.PairChanges[index], md.OrderChanges[index],
+					pair.orderbook.NftIDs(),
+				)
+
+				// add reward to LOPs
+				for nftID, reward := range orderRewards {
+					if _, ok := pair.orderRewards[nftID]; !ok {
+						pair.orderRewards[nftID] = NewOrderReward()
+					}
+					pair.orderRewards[nftID].AddReward(tokenID, reward)
+				}
+
+				// add reward to LPs
+				pair.lpFeesPerShare = reserveState.AddLPFee(
+					tokenID, new(big.Int).SetUint64(ammReward), BaseLPFeesPerShare,
+					pair.lpFeesPerShare,
 				)
 			}
 
@@ -772,17 +803,15 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		}
 
 		share, isExisted := poolPair.shares[actionData.NftID.String()]
-		if !isExisted {
-			msg := fmt.Sprintf("Could not find share %s for withdrawal", actionData.NftID.String())
-			Logger.log.Errorf(msg)
-			return pairs, errors.New(msg)
+		if isExisted {
+			// update state after fee withdrawal
+			share.tradingFees = resetKeyValueToZero(share.tradingFees)
+			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 		}
 
-		// update state after fee withdrawal
-		share.tradingFees = resetKeyValueToZero(share.tradingFees)
-		share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-		for tokenID, value := range poolPair.lpFeesPerShare {
-			share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
+		order, isExisted := poolPair.orderRewards[actionData.NftID.String()]
+		if isExisted {
+			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
@@ -913,12 +942,11 @@ func (sp *stateProcessorV2) mintBlockReward(
 
 	pairReward := actionData.Amount
 
-	pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees = v2utils.NewTradingPairWithValue(
+	pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
 		&pair.state,
-	).AddFee(
-		actionData.TokenID, pairReward, BaseLPFeesPerShare,
-		pair.lpFeesPerShare, pair.protocolFees, pair.stakingPoolFees,
-		0, 0, []common.Hash{},
+	).AddLPFee(
+		actionData.TokenID, new(big.Int).SetUint64(pairReward), BaseLPFeesPerShare,
+		pair.lpFeesPerShare,
 	)
 
 	return pairs, err

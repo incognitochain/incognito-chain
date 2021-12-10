@@ -22,14 +22,16 @@ type Params struct {
 	MaxOrdersPerNft                 uint            // max orders per nft
 	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
 	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
+	OrderMiningRewardRatioBPS       map[string]uint // map: pool ID -> ratio of LOP rewards compare with LP rewards (0.1% ~ 10 BPS)
 }
 
 func NewParams() *Params {
 	return &Params{
-		FeeRateBPS:               map[string]uint{},
-		PDEXRewardPoolPairsShare: map[string]uint{},
-		StakingPoolsShare:        map[string]uint{},
-		StakingRewardTokens:      []common.Hash{},
+		FeeRateBPS:                map[string]uint{},
+		PDEXRewardPoolPairsShare:  map[string]uint{},
+		StakingPoolsShare:         map[string]uint{},
+		StakingRewardTokens:       []common.Hash{},
+		OrderMiningRewardRatioBPS: map[string]uint{},
 	}
 }
 
@@ -47,6 +49,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		MaxOrdersPerNft:                 paramsState.MaxOrdersPerNft(),
 		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
 		MinPRVReserveTradingRate:        paramsState.MinPRVReserveTradingRate(),
+		OrderMiningRewardRatioBPS:       paramsState.OrderMiningRewardRatioBPS(),
 	}
 }
 
@@ -66,9 +69,14 @@ func (p *Params) Clone() *Params {
 	for k, v := range p.StakingPoolsShare {
 		clonedStakingPoolsShare[k] = v
 	}
+	clonedOrderMiningRewardRatioBPS := map[string]uint{}
+	for k, v := range p.OrderMiningRewardRatioBPS {
+		clonedOrderMiningRewardRatioBPS[k] = v
+	}
 	result.FeeRateBPS = clonedFeeRateBPS
 	result.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
 	result.StakingPoolsShare = clonedStakingPoolsShare
+	result.OrderMiningRewardRatioBPS = clonedOrderMiningRewardRatioBPS
 
 	return result
 }
@@ -113,6 +121,15 @@ func isValidPdexv3Params(
 			return false, fmt.Sprintf("%v", err)
 		}
 	}
+	for pairID, ratioBPS := range params.OrderMiningRewardRatioBPS {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v does not exist", pairID)
+		}
+		if ratioBPS > BPS/2 {
+			return false, fmt.Sprintf("Order mining reward ratio of pair %v is too high", pairID)
+		}
+	}
 	return true, ""
 }
 
@@ -140,6 +157,9 @@ func (params *Params) readConfig() *Params {
 	}
 	if res.PDEXRewardPoolPairsShare == nil {
 		res.PDEXRewardPoolPairsShare = make(map[string]uint)
+	}
+	if res.OrderMiningRewardRatioBPS == nil {
+		res.OrderMiningRewardRatioBPS = make(map[string]uint)
 	}
 	return res
 }
