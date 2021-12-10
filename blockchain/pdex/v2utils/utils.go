@@ -138,17 +138,18 @@ func SplitOrderRewardLiquidityMining(
 	}
 
 	orderRewards := map[string]uint64{}
+	remain := new(big.Int).Set(amount)
 	for nftID, v := range volume {
 		orderReward := new(big.Int).SetUint64(0)
 		if v.Cmp(new(big.Int).SetUint64(0)) > 0 {
-			orderReward = new(big.Int).Mul(amount, v)
+			orderReward = new(big.Int).Mul(remain, v)
 			orderReward.Div(orderReward, sumVolume)
 		}
 
 		orderRewards[nftID] = orderReward.Uint64()
 
 		sumVolume.Sub(sumVolume, v)
-		amount.Sub(amount, orderReward)
+		remain.Sub(remain, orderReward)
 	}
 
 	return orderRewards

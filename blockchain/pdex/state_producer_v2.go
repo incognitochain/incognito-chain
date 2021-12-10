@@ -348,13 +348,14 @@ func (sp *stateProducerV2) mintReward(
 		orderRewardBPS := params.OrderLiquidityMiningBPS[pairID]
 		lpRewardAmt := new(big.Int).Set(pairReward)
 
-		if isLiquidityMining && orderRewardBPS > 0 {
+		if isLiquidityMining && orderRewardBPS > 0 && pair.makingVolume != nil {
 			orderRewardAmt := new(big.Int).Mul(pairReward, new(big.Int).SetUint64(uint64(orderRewardBPS)))
 			orderRewardAmt.Div(orderRewardAmt, new(big.Int).SetUint64(uint64(BPS)))
 
-			if len(pair.makingVolume[pair.state.Token0ID()].volume) != 0 {
+			makingVolumeToken0 := pair.makingVolume[pair.state.Token0ID()]
+			if makingVolumeToken0 != nil && makingVolumeToken0.volume != nil && len(makingVolumeToken0.volume) != 0 {
 				orderRewards := v2.SplitOrderRewardLiquidityMining(
-					pair.makingVolume[pair.state.Token0ID()].volume,
+					makingVolumeToken0.volume,
 					orderRewardAmt, tokenID,
 				)
 
@@ -372,9 +373,10 @@ func (sp *stateProducerV2) mintReward(
 					pairID, pair.state.Token0ID(), orderRewardAmt.Uint64(), tokenID,
 				)...)
 			}
-			if len(pair.makingVolume[pair.state.Token1ID()].volume) != 0 {
+			makingVolumeToken1 := pair.makingVolume[pair.state.Token1ID()]
+			if makingVolumeToken1 != nil && makingVolumeToken1.volume != nil && len(makingVolumeToken1.volume) != 0 {
 				orderRewards := v2.SplitOrderRewardLiquidityMining(
-					pair.makingVolume[pair.state.Token1ID()].volume,
+					makingVolumeToken1.volume,
 					orderRewardAmt, tokenID,
 				)
 
