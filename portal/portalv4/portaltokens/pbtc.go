@@ -478,8 +478,8 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 	for _, unshieldReq := range sortedUnshieldReqs {
 		chosenUtxos, chosenIndices, err := p.ChooseUTXOsForUnshieldReq(sortedUTXOs, unshieldReq.value.GetAmount())
 		if err != nil {
-			// Logger.log.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
-			// 	unshieldReq.value.GetUnshieldID(), err)
+			Logger.log.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
+				unshieldReq.value.GetUnshieldID(), err)
 			remainUnshieldReqs = append(remainUnshieldReqs, unshieldReq)
 			continue
 		}
@@ -487,7 +487,6 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
 		for _, u := range chosenUtxos {
 			chosenUtxoObjs = append(chosenUtxoObjs, u.value)
 		}
-		fmt.Printf("Unshield: %v - utxos %+v\n", unshieldReq.value.GetUnshieldID(), chosenUtxoObjs)
 		batchTxs = append(batchTxs, &BroadcastTx{
 			UTXOs:       chosenUtxoObjs,
 			UnshieldIDs: []string{unshieldReq.value.GetUnshieldID()},
