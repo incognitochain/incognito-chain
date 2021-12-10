@@ -53,9 +53,9 @@ consensus_param:
   consensus_v2_epoch: 15290
   staking_flow_v2_height: 2051863
   enable_slashing_height: 2087789
-  assign_rule_v3_height: 3026751
-  enable_slashing_height_v2: 3071502
-  staking_flow_v3_height: 3344220
+  assign_rule_v3_height: 2823522
+  enable_slashing_height_v2: 2823650
+  staking_flow_v3_height: 2823780
   block_producing_v3_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
@@ -64,7 +64,7 @@ beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 2085
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 1148608
-bc_height_break_point_privacy_v2: 2868392
+bc_height_break_point_privacy_v2: 2823446
 coin_v2_lowest_height: 2400000
 enable_feature_flags:
   - PortalRelaying: 1
@@ -78,4 +78,3 @@ geth_param:
   port: ""
 bsc_param:
   host: "https://data-seed-prebsc-2-s1.binance.org:8545"
-
