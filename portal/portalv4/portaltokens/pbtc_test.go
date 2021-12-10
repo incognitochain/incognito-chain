@@ -309,18 +309,18 @@ func TestMatchUTXOsAndUnshieldIDsNew(t *testing.T) {
 			MultipleTokenAmount: 10,
 			ExternalInputSize:   2,
 			ExternalOutputSize:  1,
-			ExternalTxMaxSize:   6,
+			ExternalTxMaxSize:   30,
 		},
 		ChainParam:    &chaincfg.MainNetParams,
 		PortalTokenID: "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696",
 	}
-	thresholdTinyValue := uint64(2)
-	minUTXOs := uint64(2)
+	thresholdTinyValue := uint64(4)
+	minUTXOs := uint64(3)
 
 	// utxoAmts := []uint64{1, 8, 4, 5, 2, 7, 12, 15, 3, 2, 3}
 	// unshieldAmts := []uint64{30, 60, 250, 50, 90, 40}
-	utxoAmts := []uint64{100, 20}
-	unshieldAmts := []uint64{30, 60, 40, 50}
+	utxoAmts := []uint64{100, 2, 3, 1}
+	unshieldAmts := []uint64{70, 90, 80, 40}
 	// 3 => 7 => (15, 12) => 5 => (8,1)
 
 	type batch struct {
