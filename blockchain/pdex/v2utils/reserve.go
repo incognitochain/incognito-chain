@@ -150,7 +150,7 @@ func (tp *TradingPair) ApplyReserveChanges(change0, change1 *big.Int) error {
 	// sign check : changes must have opposite signs or both be zero
 	if change0.Sign()*change1.Sign() >= 0 {
 		if !(change0.Sign() == 0 && change1.Sign() == 0) {
-			return fmt.Errorf("Invalid signs for reserve changes")
+			return fmt.Errorf("Invalid signs for reserve changes %v, %v", change0, change1)
 		}
 	}
 
