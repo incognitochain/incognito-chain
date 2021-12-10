@@ -133,7 +133,7 @@ func isValidPdexv3Params(
 			return false, fmt.Sprintf("%v", err)
 		}
 	}
-	if params.DefaultOrderTradingRewardRatioBPS >= BPS/2 {
+	if params.DefaultOrderTradingRewardRatioBPS > BPS {
 		return false, "Default order trading reward ratio is too high"
 	}
 	for pairID, ratioBPS := range params.OrderTradingRewardRatioBPS {
