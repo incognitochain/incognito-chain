@@ -3,6 +3,7 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"reflect"
 	"sync"
@@ -112,6 +113,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	}
 	msgType := msg.MessageType()
 	subs := cm.Subscriber.GetMsgToTopics()
+	fmt.Println(">>>> subs", subs)
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess
