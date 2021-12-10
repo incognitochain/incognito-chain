@@ -152,6 +152,9 @@ func (p PortalBTCTokenProcessor) ChooseUTXOsForUnshieldReq(
 			break
 		}
 	}
+	if chosenAmt < unshieldAmount {
+		return []utxoItem{}, []int{}, fmt.Errorf("Not enough utxos for unshielding amount %v\n", unshieldAmount)
+	}
 
 	return chosenUTXOs, chosenIndices, nil
 }
@@ -217,12 +220,17 @@ func (p PortalBTCTokenProcessor) AppendTinyUTXOs(
 ) []*BroadcastTx {
 	indexUTXO := len(sortedUTXOs) - 1
 	tmpIndexUTXO := indexUTXO
+	fmt.Printf("indexUTXO: %v\n", indexUTXO)
+	fmt.Printf("minUTXOs: %v\n", minUTXOs)
 	for _, batch := range batchTxs {
 		// only append tiny utxo when number of utxos in vault greater than minUTXOs param
 		if uint64(indexUTXO+1) <= minUTXOs {
 			return batchTxs
 		}
 		maxUTXOsCanPick := indexUTXO + 1 - int(minUTXOs)
+		// if maxUTXOsCanPick == 0 {
+		// 	continue
+		// }
 		numTinyUTXOs := p.CalculateTinyUTXONumber(batch, maxUTXOsCanPick)
 		for j := indexUTXO; j >= 0 && numTinyUTXOs > 0; j-- {
 			if sortedUTXOs[j].value.GetOutputAmount() > thresholdTinyValue {
