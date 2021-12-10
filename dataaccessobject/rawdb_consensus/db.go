@@ -54,7 +54,7 @@ func GetByzantineBlackListKey(validator string) []byte {
 func GetProposeHistoryPrefix(chainID int) []byte {
 	temp := make([]byte, len(proposeHistoryPrefix))
 	copy(temp, proposeHistoryPrefix)
-	key := append(temp, common.IntToBytes(chainID)...)
+	key := append(temp, common.Int32ToBytes(int32(chainID))...)
 	key = append(key, splitter...)
 	return key
 }
@@ -68,7 +68,7 @@ func GetProposeHistoryKey(chainID int, timeSlot uint64) []byte {
 func GetReceiveBlockByHeightPrefix(chainID int) []byte {
 	temp := make([]byte, len(receiveBlockByHeightPrefix))
 	copy(temp, receiveBlockByHeightPrefix)
-	key := append(temp, common.IntToBytes(chainID)...)
+	key := append(temp, common.Int32ToBytes(int32(chainID))...)
 	key = append(key, splitter...)
 	return key
 }
@@ -82,7 +82,7 @@ func GetReceiveBlockByHeightKey(chainID int, height uint64) []byte {
 func GetReceiveBlockByHashPrefix(chainID int) []byte {
 	temp := make([]byte, len(receiveBlockByHashPrefix))
 	copy(temp, receiveBlockByHashPrefix)
-	key := append(temp, common.IntToBytes(chainID)...)
+	key := append(temp, common.Int32ToBytes(int32(chainID))...)
 	key = append(key, splitter...)
 	return key
 }
@@ -96,7 +96,7 @@ func GetReceiveBlockByHashKey(chainID int, blockHash string) []byte {
 func GetVoteHistoryPrefix(chainID int) []byte {
 	temp := make([]byte, len(voteHistoryPrefix))
 	copy(temp, voteHistoryPrefix)
-	key := append(temp, common.IntToBytes(chainID)...)
+	key := append(temp, common.Int32ToBytes(int32(chainID))...)
 	key = append(key, splitter...)
 	return key
 }
