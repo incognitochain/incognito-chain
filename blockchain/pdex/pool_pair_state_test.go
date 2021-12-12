@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -1016,6 +1017,169 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			}
 			if !reflect.DeepEqual(p.orderbook, tt.fieldsAfterProcess.orderbook) {
 				t.Errorf("fieldsAfterProcess got = %v, want %v", p.orderbook, tt.fieldsAfterProcess.orderbook)
+			}
+		})
+	}
+}
+
+func TestPoolPairState_getDiff(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+
+	state := rawdbv2.NewPdexv3PoolPairWithValue(
+		*token0ID, *token1ID, 200, 100, 400,
+		big.NewInt(200), big.NewInt(800), 20000,
+	)
+	compareState := rawdbv2.NewPdexv3PoolPairWithValue(
+		*token0ID, *token1ID, 200, 100, 400,
+		big.NewInt(200), big.NewInt(800), 20000,
+	)
+
+	type fields struct {
+		makingVolume    map[common.Hash]*MakingVolume
+		state           rawdbv2.Pdexv3PoolPair
+		shares          map[string]*Share
+		orderRewards    map[string]*OrderReward
+		orderbook       Orderbook
+		lpFeesPerShare  map[common.Hash]*big.Int
+		protocolFees    map[common.Hash]uint64
+		stakingPoolFees map[common.Hash]uint64
+	}
+	type args struct {
+		poolPairID      string
+		comparePoolPair *PoolPairState
+		poolPairChange  *v2utils.PoolPairChange
+		stateChange     *v2utils.StateChange
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *v2utils.PoolPairChange
+		want1  *v2utils.StateChange
+	}{
+		{
+			name: "Delete share, share reward, order reward, making volume",
+			fields: fields{
+				makingVolume: map[common.Hash]*MakingVolume{
+					common.PRVCoinID: &MakingVolume{
+						volume: map[string]*big.Int{
+							common.PRVIDStr: big.NewInt(300),
+						},
+					},
+					common.PDEXCoinID: &MakingVolume{
+						volume: map[string]*big.Int{},
+					},
+				},
+				state:  *state,
+				shares: map[string]*Share{},
+				orderRewards: map[string]*OrderReward{
+					common.PRVIDStr: &OrderReward{
+						uncollectedRewards: Reward{
+							common.PRVCoinID: 300,
+						},
+					},
+				},
+				orderbook:       Orderbook{},
+				lpFeesPerShare:  map[common.Hash]*big.Int{},
+				protocolFees:    map[common.Hash]uint64{},
+				stakingPoolFees: map[common.Hash]uint64{},
+			},
+			args: args{
+				poolPairID:     "id",
+				poolPairChange: v2utils.NewPoolPairChange(),
+				stateChange:    v2utils.NewStateChange(),
+				comparePoolPair: &PoolPairState{
+					makingVolume: map[common.Hash]*MakingVolume{
+						common.PRVCoinID: &MakingVolume{
+							volume: map[string]*big.Int{
+								common.PRVIDStr: big.NewInt(200),
+							},
+						},
+						common.PDEXCoinID: &MakingVolume{
+							volume: map[string]*big.Int{
+								common.PDEXIDStr: big.NewInt(200),
+							},
+						},
+					},
+					state:  *compareState,
+					shares: map[string]*Share{},
+					orderRewards: map[string]*OrderReward{
+						common.PRVIDStr: &OrderReward{
+							uncollectedRewards: Reward{
+								common.PRVCoinID: 100,
+							},
+						},
+						common.PDEXIDStr: &OrderReward{
+							uncollectedRewards: Reward{
+								common.PDEXCoinID: 100,
+							},
+						},
+					},
+					orderbook:       Orderbook{},
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+				},
+			},
+			want: &v2utils.PoolPairChange{
+				IsChanged:       false,
+				Shares:          map[string]*v2utils.ShareChange{},
+				OrderIDs:        map[string]bool{},
+				LpFeesPerShare:  map[string]bool{},
+				ProtocolFees:    map[string]bool{},
+				StakingPoolFees: map[string]bool{},
+				MakingVolume: map[string]*v2utils.MakingVolumeChange{
+					common.PRVIDStr: &v2utils.MakingVolumeChange{
+						Volume: map[string]bool{
+							common.PRVIDStr: true,
+						},
+					},
+					common.PDEXIDStr: &v2utils.MakingVolumeChange{
+						Volume: map[string]bool{
+							common.PDEXIDStr: true,
+						},
+					},
+				},
+				OrderRewards: map[string]*v2utils.OrderRewardChange{
+					common.PRVIDStr: &v2utils.OrderRewardChange{
+						UncollectedReward: map[string]bool{
+							common.PRVIDStr: true,
+						},
+					},
+					common.PDEXIDStr: &v2utils.OrderRewardChange{
+						UncollectedReward: map[string]bool{
+							common.PDEXIDStr: true,
+						},
+					},
+				},
+			},
+			want1: &v2utils.StateChange{
+				PoolPairs:    map[string]*v2utils.PoolPairChange{},
+				StakingPools: map[string]*v2utils.StakingPoolChange{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &PoolPairState{
+				makingVolume:    tt.fields.makingVolume,
+				state:           tt.fields.state,
+				shares:          tt.fields.shares,
+				orderRewards:    tt.fields.orderRewards,
+				orderbook:       tt.fields.orderbook,
+				lpFeesPerShare:  tt.fields.lpFeesPerShare,
+				protocolFees:    tt.fields.protocolFees,
+				stakingPoolFees: tt.fields.stakingPoolFees,
+			}
+			got, got1 := p.getDiff(tt.args.poolPairID, tt.args.comparePoolPair, tt.args.poolPairChange, tt.args.stateChange)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PoolPairState.getDiff() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("PoolPairState.getDiff() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

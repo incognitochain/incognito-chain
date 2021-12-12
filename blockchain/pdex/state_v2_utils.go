@@ -392,11 +392,13 @@ func (orderReward *OrderReward) Clone() *OrderReward {
 }
 
 func (orderReward *OrderReward) getDiff(
-	nftID string,
 	compareOrderReward *OrderReward,
 	orderRewardChange *v2utils.OrderRewardChange,
 ) *v2utils.OrderRewardChange {
 	newOrderRewardChange := orderRewardChange
+	if newOrderRewardChange == nil {
+		newOrderRewardChange = v2utils.NewOrderRewardChange()
+	}
 	if compareOrderReward == nil {
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
@@ -404,7 +406,7 @@ func (orderReward *OrderReward) getDiff(
 	} else {
 		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
 	}
-	return orderRewardChange
+	return newOrderRewardChange
 }
 
 type MakingVolume struct {
@@ -458,11 +460,13 @@ func (makingVolume *MakingVolume) Clone() *MakingVolume {
 }
 
 func (makingVolume *MakingVolume) getDiff(
-	nftID string,
 	compareMakingVolume *MakingVolume,
 	makingVolumeChange *v2utils.MakingVolumeChange,
 ) *v2utils.MakingVolumeChange {
 	newMakingVolumeChange := makingVolumeChange
+	if newMakingVolumeChange == nil {
+		newMakingVolumeChange = v2utils.NewMakingVolumeChange()
+	}
 	if compareMakingVolume == nil {
 		for nftID := range makingVolume.volume {
 			newMakingVolumeChange.Volume[nftID] = true
