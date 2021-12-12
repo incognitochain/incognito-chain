@@ -981,7 +981,6 @@ func (sp *stateProducerV2) withdrawLPFee(
 
 		if isExistedOrderReward {
 			delete(poolPair.orderRewards, metaData.NftID.String())
-			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
 		}
 
 		instructions = append(instructions, acceptedInst...)
