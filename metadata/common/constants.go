@@ -178,6 +178,7 @@ const (
 	Pdexv3DistributeStakingRewardMeta       = 305
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
+	Pdexv3DistributeMiningOrderRewardMeta   = 308
 )
 
 var minerCreatedMetaTypes = []int{

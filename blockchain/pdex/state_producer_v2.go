@@ -306,6 +306,7 @@ func (sp *stateProducerV2) mintReward(
 	mintingAmount uint64,
 	params *Params,
 	pairs map[string]*PoolPairState,
+	isLiquidityMining bool,
 ) ([][]string, map[string]*PoolPairState, error) {
 	instructions := [][]string{}
 
@@ -344,13 +345,64 @@ func (sp *stateProducerV2) mintReward(
 			continue
 		}
 
+		orderRewardBPS := params.OrderLiquidityMiningBPS[pairID]
+		lpRewardAmt := new(big.Int).Set(pairReward)
+
+		if isLiquidityMining && orderRewardBPS > 0 && pair.makingVolume != nil {
+			orderRewardAmt := new(big.Int).Mul(pairReward, new(big.Int).SetUint64(uint64(orderRewardBPS)))
+			orderRewardAmt.Div(orderRewardAmt, new(big.Int).SetUint64(uint64(BPS)))
+
+			makingVolumeToken0 := pair.makingVolume[pair.state.Token0ID()]
+			if makingVolumeToken0 != nil && makingVolumeToken0.volume != nil && len(makingVolumeToken0.volume) != 0 {
+				orderRewards := v2.SplitOrderRewardLiquidityMining(
+					makingVolumeToken0.volume,
+					orderRewardAmt, tokenID,
+				)
+
+				for nftID, reward := range orderRewards {
+					if _, ok := pair.orderRewards[nftID]; !ok {
+						pair.orderRewards[nftID] = NewOrderReward()
+					}
+					pair.orderRewards[nftID].AddReward(tokenID, reward)
+				}
+				lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
+
+				delete(pair.makingVolume, pair.state.Token0ID())
+
+				instructions = append(instructions, v2utils.BuildDistributeMiningOrderRewardInsts(
+					pairID, pair.state.Token0ID(), orderRewardAmt.Uint64(), tokenID,
+				)...)
+			}
+			makingVolumeToken1 := pair.makingVolume[pair.state.Token1ID()]
+			if makingVolumeToken1 != nil && makingVolumeToken1.volume != nil && len(makingVolumeToken1.volume) != 0 {
+				orderRewards := v2.SplitOrderRewardLiquidityMining(
+					makingVolumeToken1.volume,
+					orderRewardAmt, tokenID,
+				)
+
+				for nftID, reward := range orderRewards {
+					if _, ok := pair.orderRewards[nftID]; !ok {
+						pair.orderRewards[nftID] = NewOrderReward()
+					}
+					pair.orderRewards[nftID].AddReward(tokenID, reward)
+				}
+				lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
+
+				delete(pair.makingVolume, pair.state.Token1ID())
+
+				instructions = append(instructions, v2utils.BuildDistributeMiningOrderRewardInsts(
+					pairID, pair.state.Token1ID(), orderRewardAmt.Uint64(), tokenID,
+				)...)
+			}
+		}
+
 		pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
 			&pair.state,
 		).AddLPFee(
-			tokenID, pairReward, BaseLPFeesPerShare,
+			tokenID, lpRewardAmt, BaseLPFeesPerShare,
 			pair.lpFeesPerShare)
 
-		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, pairReward.Uint64(), tokenID)...)
+		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, lpRewardAmt.Uint64(), tokenID)...)
 	}
 
 	return instructions, pairs, nil
@@ -928,7 +980,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		if isExistedOrderReward {
-			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
+			delete(poolPair.orderRewards, metaData.NftID.String())
 		}
 
 		instructions = append(instructions, acceptedInst...)

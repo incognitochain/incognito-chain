@@ -133,7 +133,7 @@ func isValidPdexv3Params(
 			return false, fmt.Sprintf("%v", err)
 		}
 	}
-	if params.DefaultOrderTradingRewardRatioBPS > BPS/2 {
+	if params.DefaultOrderTradingRewardRatioBPS > BPS {
 		return false, "Default order trading reward ratio is too high"
 	}
 	for pairID, ratioBPS := range params.OrderTradingRewardRatioBPS {
@@ -150,7 +150,7 @@ func isValidPdexv3Params(
 		if !isExisted {
 			return false, fmt.Sprintf("Pair %v does not exist", pairID)
 		}
-		if ratioBPS > BPS/2 {
+		if ratioBPS >= BPS/2 {
 			return false, fmt.Sprintf("Order liquidity mining BPS of pair %v is too high", pairID)
 		}
 	}

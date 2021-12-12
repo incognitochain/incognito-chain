@@ -828,9 +828,9 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 		}
 
-		order, isExisted := poolPair.orderRewards[actionData.NftID.String()]
+		_, isExisted = poolPair.orderRewards[actionData.NftID.String()]
 		if isExisted {
-			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
+			delete(poolPair.orderRewards, actionData.NftID.String())
 		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
@@ -1251,4 +1251,48 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 		Logger.log.Errorf("PDex v3 Withdrawal Staking Reward Fee: An error occurred while tracking request tx - Error: %v", err)
 	}
 	return pools, err
+}
+
+func (sp *stateProcessorV2) distributeMiningOrderReward(stateDB *statedb.StateDB,
+	inst []string,
+	pairs map[string]*PoolPairState,
+) (map[string]*PoolPairState, error) {
+	if len(inst) != 4 {
+		msg := fmt.Sprintf("Length of instruction is not valid expect %v but get %v", 4, len(inst))
+		Logger.log.Errorf(msg)
+		return pairs, errors.New(msg)
+	}
+
+	// unmarshal instructions content
+	var actionData metadataPdexv3.DistributeMiningOrderRewardContent
+	err := json.Unmarshal([]byte(inst[3]), &actionData)
+	if err != nil {
+		msg := fmt.Sprintf("Could not unmarshal instruction content %v - Error: %v\n", inst[3], err)
+		Logger.log.Errorf(msg)
+		return pairs, err
+	}
+
+	pair, isExisted := pairs[actionData.PoolPairID]
+	if !isExisted {
+		msg := fmt.Sprintf("Could not find pair %s for minting order reward", actionData.PoolPairID)
+		Logger.log.Errorf(msg)
+		return pairs, fmt.Errorf(msg)
+	}
+
+	orderRewards := v2.SplitOrderRewardLiquidityMining(
+		pair.makingVolume[actionData.MakingTokenID].volume,
+		new(big.Int).SetUint64(actionData.Amount),
+		actionData.TokenID,
+	)
+
+	for nftID, reward := range orderRewards {
+		if _, ok := pair.orderRewards[nftID]; !ok {
+			pair.orderRewards[nftID] = NewOrderReward()
+		}
+		pair.orderRewards[nftID].AddReward(actionData.TokenID, reward)
+	}
+
+	delete(pair.makingVolume, actionData.MakingTokenID)
+
+	return pairs, nil
 }
