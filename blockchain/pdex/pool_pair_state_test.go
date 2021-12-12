@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -1016,6 +1017,98 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			}
 			if !reflect.DeepEqual(p.orderbook, tt.fieldsAfterProcess.orderbook) {
 				t.Errorf("fieldsAfterProcess got = %v, want %v", p.orderbook, tt.fieldsAfterProcess.orderbook)
+			}
+		})
+	}
+}
+
+func TestPoolPairState_getDiff(t *testing.T) {
+	type fields struct {
+		makingVolume    map[common.Hash]*MakingVolume
+		state           rawdbv2.Pdexv3PoolPair
+		shares          map[string]*Share
+		orderRewards    map[string]*OrderReward
+		orderbook       Orderbook
+		lpFeesPerShare  map[common.Hash]*big.Int
+		protocolFees    map[common.Hash]uint64
+		stakingPoolFees map[common.Hash]uint64
+	}
+	type args struct {
+		poolPairID      string
+		comparePoolPair *PoolPairState
+		poolPairChange  *v2utils.PoolPairChange
+		stateChange     *v2utils.StateChange
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *v2utils.PoolPairChange
+		want1  *v2utils.StateChange
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &PoolPairState{
+				makingVolume:    tt.fields.makingVolume,
+				state:           tt.fields.state,
+				shares:          tt.fields.shares,
+				orderRewards:    tt.fields.orderRewards,
+				orderbook:       tt.fields.orderbook,
+				lpFeesPerShare:  tt.fields.lpFeesPerShare,
+				protocolFees:    tt.fields.protocolFees,
+				stakingPoolFees: tt.fields.stakingPoolFees,
+			}
+			got, got1 := p.getDiff(tt.args.poolPairID, tt.args.comparePoolPair, tt.args.poolPairChange, tt.args.stateChange)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PoolPairState.getDiff() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("PoolPairState.getDiff() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func TestPoolPairState_updateToDB(t *testing.T) {
+	type fields struct {
+		makingVolume    map[common.Hash]*MakingVolume
+		state           rawdbv2.Pdexv3PoolPair
+		shares          map[string]*Share
+		orderRewards    map[string]*OrderReward
+		orderbook       Orderbook
+		lpFeesPerShare  map[common.Hash]*big.Int
+		protocolFees    map[common.Hash]uint64
+		stakingPoolFees map[common.Hash]uint64
+	}
+	type args struct {
+		env            StateEnvironment
+		poolPairID     string
+		poolPairChange *v2utils.PoolPairChange
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &PoolPairState{
+				makingVolume:    tt.fields.makingVolume,
+				state:           tt.fields.state,
+				shares:          tt.fields.shares,
+				orderRewards:    tt.fields.orderRewards,
+				orderbook:       tt.fields.orderbook,
+				lpFeesPerShare:  tt.fields.lpFeesPerShare,
+				protocolFees:    tt.fields.protocolFees,
+				stakingPoolFees: tt.fields.stakingPoolFees,
+			}
+			if err := p.updateToDB(tt.args.env, tt.args.poolPairID, tt.args.poolPairChange); (err != nil) != tt.wantErr {
+				t.Errorf("PoolPairState.updateToDB() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

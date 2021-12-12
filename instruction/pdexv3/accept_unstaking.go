@@ -7,15 +7,16 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type AcceptUnstaking struct {
 	stakingPoolID common.Hash
-	nftID         common.Hash
-	amount        uint64
-	otaReceiver   string
-	txReqID       common.Hash
-	shardID       byte
+	metadataPdexv3.AccessOption
+	amount      uint64
+	otaReceiver string
+	txReqID     common.Hash
+	shardID     byte
 }
 
 func NewAcceptUnstaking() *AcceptUnstaking {
@@ -23,14 +24,15 @@ func NewAcceptUnstaking() *AcceptUnstaking {
 }
 
 func NewAcceptUnstakingWithValue(
-	stakingPoolID, nftID common.Hash,
+	stakingPoolID common.Hash,
 	amount uint64,
 	otaReceiver string,
 	txReqID common.Hash, shardID byte,
+	accessOption metadataPdexv3.AccessOption,
 ) *AcceptUnstaking {
 	return &AcceptUnstaking{
 		stakingPoolID: stakingPoolID,
-		nftID:         nftID,
+		AccessOption:  accessOption,
 		txReqID:       txReqID,
 		shardID:       shardID,
 		amount:        amount,
@@ -67,14 +69,14 @@ func (a *AcceptUnstaking) StringSlice() ([]string, error) {
 func (a *AcceptUnstaking) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		StakingPoolID common.Hash `json:"StakingPoolID"`
-		NftID         common.Hash `json:"NftID"`
-		Amount        uint64      `json:"Amount"`
-		OtaReceiver   string      `json:"OtaReceiver"`
-		TxReqID       common.Hash `json:"TxReqID"`
-		ShardID       byte        `json:"ShardID"`
+		metadataPdexv3.AccessOption
+		Amount      uint64      `json:"Amount"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		ShardID     byte        `json:"ShardID"`
 	}{
 		StakingPoolID: a.stakingPoolID,
-		NftID:         a.nftID,
+		AccessOption:  a.AccessOption,
 		Amount:        a.amount,
 		OtaReceiver:   a.otaReceiver,
 		TxReqID:       a.txReqID,
@@ -89,17 +91,17 @@ func (a *AcceptUnstaking) MarshalJSON() ([]byte, error) {
 func (a *AcceptUnstaking) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		StakingPoolID common.Hash `json:"StakingPoolID"`
-		NftID         common.Hash `json:"NftID"`
-		Amount        uint64      `json:"Amount"`
-		OtaReceiver   string      `json:"OtaReceiver"`
-		TxReqID       common.Hash `json:"TxReqID"`
-		ShardID       byte        `json:"ShardID"`
+		metadataPdexv3.AccessOption
+		Amount      uint64      `json:"Amount"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		ShardID     byte        `json:"ShardID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	a.nftID = temp.NftID
+	a.AccessOption = temp.AccessOption
 	a.amount = temp.Amount
 	a.stakingPoolID = temp.StakingPoolID
 	a.otaReceiver = temp.OtaReceiver
@@ -114,10 +116,6 @@ func (a *AcceptUnstaking) TxReqID() common.Hash {
 
 func (a *AcceptUnstaking) ShardID() byte {
 	return a.shardID
-}
-
-func (a *AcceptUnstaking) NftID() common.Hash {
-	return a.nftID
 }
 
 func (a *AcceptUnstaking) StakingPoolID() common.Hash {

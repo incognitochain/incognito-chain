@@ -19,36 +19,44 @@ func BuildRejectUnstakingInstructions(
 		return res, err
 	}
 	res = append(res, rejectInst)
-	nftHash, _ := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
-	mintNftInst, err := instruction.NewMintNftWithValue(
-		*nftHash, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
-	).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-	if err != nil {
-		return res, err
+	if metaData.AccessOption.UseNft() {
+		mintNftInst, err := instruction.NewMintNftWithValue(
+			metaData.AccessOption.NftID,
+			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
+		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
+		if err != nil {
+			return res, err
+		}
+		res = append(res, mintNftInst)
 	}
-	res = append(res, mintNftInst)
+
 	return res, nil
 }
 
 func BuildAcceptUnstakingInstructions(
-	stakingPoolID, nftID common.Hash,
+	stakingPoolID common.Hash, accessOption metadataPdexv3.AccessOption,
 	unstakingAmount uint64,
 	otaReceiverNft, otaReceiverUnstakingToken string,
 	txReqID common.Hash, shardID byte,
+	identityID common.Hash,
 ) ([][]string, error) {
 	res := [][]string{}
 	acceptInst, err := instruction.NewAcceptUnstakingWithValue(
-		stakingPoolID, nftID, unstakingAmount, otaReceiverUnstakingToken, txReqID, shardID,
+		stakingPoolID, unstakingAmount, otaReceiverUnstakingToken, txReqID, shardID, accessOption,
 	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, acceptInst)
-	mintNftInst, err := instruction.NewMintNftWithValue(nftID, otaReceiverNft, shardID, txReqID).
-		StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-	if err != nil {
-		return res, err
+	if accessOption.UseNft() {
+		mintNftInst, err := instruction.NewMintNftWithValue(
+			accessOption.NftID, otaReceiverNft, shardID, txReqID,
+		).
+			StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
+		if err != nil {
+			return res, err
+		}
+		res = append(res, mintNftInst)
 	}
-	res = append(res, mintNftInst)
 	return res, nil
 }

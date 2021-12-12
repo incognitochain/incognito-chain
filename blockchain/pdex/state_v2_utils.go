@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type Share struct {
@@ -472,4 +473,32 @@ func (makingVolume *MakingVolume) updateNftIndex(oldNftID, newNftID string) *Mak
 		delete(makingVolume.volume, oldNftID)
 	}
 	return makingVolume
+}
+
+func updateNftIndex(
+	accessOption metadataPdexv3.AccessOption,
+	poolPairStates map[string]*PoolPairState, stakingPoolStates map[string]*StakingPoolState,
+) (map[string]*PoolPairState, map[string]*StakingPoolState, error) {
+	if !accessOption.UseNft() {
+		oldNftID, err := accessOption.NextOTAHash()
+		if err != nil {
+			return poolPairStates, stakingPoolStates, err
+		}
+		newNftID, err := accessOption.NextOTAHash()
+		if err != nil {
+			return poolPairStates, stakingPoolStates, err
+		}
+		for poolPairID, poolPairState := range poolPairStates {
+			err = poolPairState.updateNftIndex(oldNftID.String(), newNftID.String())
+			if err != nil {
+				return poolPairStates, stakingPoolStates, err
+			}
+			poolPairStates[poolPairID] = poolPairState
+		}
+		for stakingPoolID, stakingPoolState := range stakingPoolStates {
+			stakingPoolState.updateNftIndex(oldNftID.String(), newNftID.String())
+			stakingPoolStates[stakingPoolID] = stakingPoolState
+		}
+	}
+	return poolPairStates, stakingPoolStates, nil
 }

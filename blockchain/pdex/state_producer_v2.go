@@ -839,9 +839,8 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if !ok {
 			return instructions, pairs, errors.New("Can not parse withdrawal LP fee metadata")
 		}
-
-		_, isExisted := metaData.Receivers[metaData.NftID]
-		if !isExisted {
+		_, accessByNFT := metaData.Receivers[metaData.NftID]
+		if !accessByNFT && metaData.AccessOption.UseNft() {
 			return instructions, pairs, fmt.Errorf("NFT receiver not found in WithdrawalLPFeeRequest")
 		}
 		addressStr, err := metaData.Receivers[metaData.NftID].String()
@@ -1020,17 +1019,11 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
 
-		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
-		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessByNFT)
+		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 		if err != nil {
 			return res, poolPairs, stakingPoolStates, err
 		}
-
-		if metaData.AccessOption.IsEmpty(true) {
-			Logger.log.Warnf("tx %v accessOption is not valid", tx.Hash().String())
-			res = append(res, rejectInsts...)
-			continue
-		}
+		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
 		if !accessByNFT && metaData.AccessOption.UseNft() {
 			Logger.log.Warnf("tx %v can not find nftID", tx.Hash().String())
 			res = append(res, rejectInsts...)
@@ -1040,11 +1033,19 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if !ok || rootPoolPair == nil {
 			Logger.log.Warnf("tx %v PoolPairID is not found", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 		if rootPoolPair.isEmpty() {
 			Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 
@@ -1058,6 +1059,10 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			if err != nil {
 				Logger.log.Warnf("tx %v burntOTA is invalid", tx.Hash().String())
 				res = append(res, rejectInsts...)
+				poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+				if err != nil {
+					Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+				}
 				continue
 			}
 			share, ok = rootPoolPair.shares[hash.String()]
@@ -1067,11 +1072,19 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if share == nil || !ok {
 			Logger.log.Warnf("tx %v not found LP", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 		if share.amount == 0 || metaData.ShareAmount() == 0 {
 			Logger.log.Warnf("tx %v share amount is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 		poolPair := rootPoolPair.Clone()
@@ -1081,38 +1094,31 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
+			poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
-		}
-		if !accessByNFT {
-			hash, err := metaData.AccessOption.NextOTAHash()
-			if err != nil {
-				Logger.log.Warnf("tx %v nextOTA is invalid", tx.Hash().String())
-				res = append(res, rejectInsts...)
-				continue
-			}
-			err = poolPair.updateNftIndex(identityID, hash.String())
-			if err != nil {
-				Logger.log.Warnf("tx %v update nft index pool pair state error %v", tx.Hash().String(), err)
-				res = append(res, rejectInsts...)
-				continue
-			}
-			for stakingPoolID, stakingPoolState := range stakingPoolStates {
-				stakingPoolState.updateNftIndex(identityID, hash.String())
-				stakingPoolStates[stakingPoolID] = stakingPoolState
-			}
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
 			*metaData,
 			poolPair.state.Token0ID(), poolPair.state.Token1ID(),
 			token0Amount, token1Amount, shareAmount,
-			txReqID, shardID, accessByNFT)
+			txReqID, shardID)
 		if err != nil {
 			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
 			continue
 		}
 		res = append(res, insts...)
+		poolPairs, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairs, stakingPoolStates)
+		if err != nil {
+			Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+
 		poolPairs[metaData.PoolPairID()] = poolPair
 	}
 	return res, poolPairs, stakingPoolStates, nil
@@ -1182,25 +1188,33 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		_, found = nftIDs[metaData.AccessOption.NftID.String()]
-		if metaData.AccessOption.NftID.String() == utils.EmptyString || !found {
+		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
+		if !accessByNFT && metaData.AccessOption.UseNft() {
 			Logger.log.Warnf("tx %v not found nftID ", tx.Hash().String())
 			res = append(res, rejectInst)
 			continue
 		}
+		identityID := common.Hash{}
+		if metaData.AccessOption.UseNft() {
+			identityID = metaData.AccessOption.NftID
+		} else {
+			identityID, err = metaData.AccessOption.NextOTAHash()
+			if err != nil {
+				Logger.log.Warnf("tx %v next ota is invalid", tx.Hash().String())
+				res = append(res, rejectInst)
+				continue
+			}
+		}
+
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(metaData.AccessOption.NftID.String(), metaData.TokenAmount(), beaconHeight, addOperator)
+		err = stakingPoolState.updateLiquidity(identityID.String(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v update liquidity err %v ", tx.Hash().String(), err)
 			res = append(res, rejectInst)
 			continue
 		}
-		nftHash, err := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
-		if err != nil {
-			return res, stakingPoolStates, err
-		}
 		inst, err := instruction.NewAcceptStakingWtihValue(
-			*nftHash, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+			identityID, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 		).StringSlice()
 		if err != nil {
 			return res, stakingPoolStates, err
@@ -1215,67 +1229,110 @@ func (sp *stateProducerV2) unstaking(
 	txs []metadata.Transaction,
 	nftIDs map[string]uint64,
 	stakingPoolStates map[string]*StakingPoolState,
+	poolPairStates map[string]*PoolPairState,
 	beaconHeight uint64,
-) ([][]string, map[string]*StakingPoolState, error) {
+) ([][]string, map[string]*StakingPoolState, map[string]*PoolPairState, error) {
 	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UnstakingRequest)
 		txReqID := *tx.Hash()
 		stakingPoolID, _ := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
-		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
 		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
 		if err != nil {
-			return res, stakingPoolStates, err
+			return res, stakingPoolStates, poolPairStates, err
 		}
+		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
+		if !accessByNFT && metaData.AccessOption.UseNft() {
+			Logger.log.Warnf("tx %v can not find nftID", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		identityID := common.Hash{}
+		if metaData.AccessOption.UseNft() {
+			identityID = metaData.AccessOption.NftID
+		} else {
+			identityID, err = metaData.AccessOption.BurntOTAHash()
+			if err != nil {
+				Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
+				res = append(res, rejectInsts...)
+				poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+				if err != nil {
+					Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+				}
+				continue
+			}
+		}
+		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
 		if !found || rootStakingPoolState == nil {
 			Logger.log.Warnf("tx %v not found poolPair", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
-		_, found = nftIDs[metaData.AccessOption.NftID.String()]
-		if metaData.AccessOption.NftID.String() == utils.EmptyString || !found {
-			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
-			res = append(res, rejectInsts...)
-			continue
-		}
-		staker, found := rootStakingPoolState.stakers[metaData.AccessOption.NftID.String()]
+		staker, found := rootStakingPoolState.stakers[identityID.String()]
 		if !found || staker == nil {
 			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 		if staker.liquidity == 0 || metaData.UnstakingAmount() == 0 || rootStakingPoolState.liquidity == 0 {
 			Logger.log.Warnf("tx %v unstaking amount is 0", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(metaData.AccessOption.NftID.String(), metaData.UnstakingAmount(), beaconHeight, subOperator)
+		err = stakingPoolState.updateLiquidity(identityID.String(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
+			poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
 		if metaData.OtaReceivers()[metaData.StakingPoolID()] == utils.EmptyString {
 			Logger.log.Warnf("tx %v ota receiver is invalid", tx.Hash().String())
 			res = append(res, rejectInsts...)
+			poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+			if err != nil {
+				Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			}
 			continue
 		}
-		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.AccessOption.NftID.String())
+		poolPairStates, stakingPoolStates, err = updateNftIndex(metaData.AccessOption, poolPairStates, stakingPoolStates)
+		if err != nil {
+			Logger.log.Warnf("tx %v Can not update nft index", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
 		insts, err := v2.BuildAcceptUnstakingInstructions(
-			*stakingPoolID, *nftHash, metaData.UnstakingAmount(),
+			*stakingPoolID, metaData.AccessOption, metaData.UnstakingAmount(),
 			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()],
 			metaData.OtaReceivers()[metaData.StakingPoolID()],
-			txReqID, shardID,
+			txReqID, shardID, identityID,
 		)
 		if err != nil {
-			return res, stakingPoolStates, err
+			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
+			res = append(res, rejectInsts...)
+			continue
 		}
 		res = append(res, insts...)
 		stakingPoolStates[metaData.StakingPoolID()] = stakingPoolState
 	}
-	return res, stakingPoolStates, nil
+	return res, stakingPoolStates, poolPairStates, nil
 }
 
 func (sp *stateProducerV2) distributeStakingReward(

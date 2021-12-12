@@ -580,9 +580,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	if acceptWithdrawLiquidity.AccessOption.UseNft() {
 		identityID = acceptWithdrawLiquidity.AccessOption.NftID.String()
 	} else {
-		data := acceptWithdrawLiquidity.AccessOption.BurntOTA.Bytes()
-		var hash common.Hash
-		err := json.Unmarshal(data[:], &hash)
+		hash, err := acceptWithdrawLiquidity.AccessOption.BurntOTAHash()
 		if err != nil {
 			return poolPairs, stakingPoolStates, nil, err
 		}
@@ -610,9 +608,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			return poolPairs, stakingPoolStates, nil, err
 		}
 		if !acceptWithdrawLiquidity.AccessOption.UseNft() {
-			data := acceptWithdrawLiquidity.AccessOption.NextOTA.Bytes()
-			var hash common.Hash
-			err := json.Unmarshal(data[:], &hash)
+			hash, err := acceptWithdrawLiquidity.AccessOption.NextOTAHash()
 			if err != nil {
 				return poolPairs, stakingPoolStates, nil, err
 			}
@@ -1121,50 +1117,75 @@ func (sp *stateProcessorV2) staking(
 func (sp *stateProcessorV2) unstaking(
 	stateDB *statedb.StateDB,
 	inst []string, nftIDs map[string]uint64, stakingPoolStates map[string]*StakingPoolState,
+	poolPairStates map[string]*PoolPairState,
 	beaconHeight uint64,
-) (map[string]*StakingPoolState, *v2.UnstakingStatus, error) {
+) (map[string]*StakingPoolState, map[string]*PoolPairState, *v2.UnstakingStatus, error) {
 	if len(inst) < 2 {
-		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
+		return stakingPoolStates, poolPairStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
 	}
 	var status byte
-	var nftID, stakingPoolID string
+	var stakingPoolID string
 	var txReqID common.Hash
 	var liquidity uint64
+	identityID := common.Hash{}
 	switch inst[1] {
 	case common.Pdexv3AcceptStringStatus:
 		acceptInst := instruction.NewAcceptUnstaking()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
-			return stakingPoolStates, nil, err
+			return stakingPoolStates, poolPairStates, nil, err
 		}
 		txReqID = acceptInst.TxReqID()
 		status = common.Pdexv3AcceptStatus
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Amount()
-		nftID = acceptInst.NftID().String()
+		if acceptInst.AccessOption.UseNft() {
+			identityID = acceptInst.AccessOption.NftID
+		} else {
+			identityID, err = acceptInst.AccessOption.BurntOTAHash()
+			if err != nil {
+				return stakingPoolStates, poolPairStates, nil, err
+			}
+		}
 		stakingPoolState := stakingPoolStates[stakingPoolID]
-		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, subOperator)
+		err = stakingPoolState.updateLiquidity(
+			identityID.String(), liquidity, beaconHeight, subOperator,
+		)
 		if err != nil {
-			return stakingPoolStates, nil, err
+			return stakingPoolStates, poolPairStates, nil, err
+		}
+		if !acceptInst.AccessOption.UseNft() {
+			hash, err := acceptInst.AccessOption.NextOTAHash()
+			if err != nil {
+				return stakingPoolStates, poolPairStates, nil, err
+			}
+			for poolPairID, poolPairState := range poolPairStates {
+				err = poolPairState.updateNftIndex(identityID.String(), hash.String())
+				if err != nil {
+					return stakingPoolStates, poolPairStates, nil, err
+				}
+				poolPairStates[poolPairID] = poolPairState
+			}
+			stakingPoolState.updateNftIndex(identityID.String(), hash.String())
 		}
 	case common.Pdexv3RejectStringStatus:
 		rejectInst := instruction.NewRejectUnstaking()
 		err := rejectInst.FromStringSlice(inst)
 		if err != nil {
-			return stakingPoolStates, nil, err
+			return stakingPoolStates, poolPairStates, nil, err
 		}
 		txReqID = rejectInst.TxReqID()
 		status = common.Pdexv3RejectStatus
 	}
 	unstakingStatus := v2.UnstakingStatus{
 		Status:        status,
-		NftID:         nftID,
+		NftID:         identityID.String(),
 		StakingPoolID: stakingPoolID,
 		Liquidity:     liquidity,
 	}
 	data, err := json.Marshal(unstakingStatus)
 	if err != nil {
-		return stakingPoolStates, nil, err
+		return stakingPoolStates, poolPairStates, nil, err
 	}
 	err = statedb.TrackPdexv3Status(
 		stateDB,
@@ -1172,7 +1193,7 @@ func (sp *stateProcessorV2) unstaking(
 		txReqID.Bytes(),
 		data,
 	)
-	return stakingPoolStates, &unstakingStatus, nil
+	return stakingPoolStates, poolPairStates, &unstakingStatus, nil
 }
 
 func (sp *stateProcessorV2) distributeStakingReward(

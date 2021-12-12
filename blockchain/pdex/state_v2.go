@@ -192,8 +192,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, beaconHeight,
 			)
 		case metadataCommon.Pdexv3UnstakingRequestMeta:
-			s.stakingPoolStates, _, err = s.processor.unstaking(
-				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, beaconHeight,
+			s.stakingPoolStates, s.poolPairs, _, err = s.processor.unstaking(
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, s.poolPairs, beaconHeight,
 			)
 
 		case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
@@ -340,8 +340,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, withdrawOrderInstructions...)
 
 	var unstakingInstructions [][]string
-	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
-		unstakingTxs, s.nftIDs, s.stakingPoolStates, beaconHeight,
+	unstakingInstructions, s.stakingPoolStates, s.poolPairs, err = s.producer.unstaking(
+		unstakingTxs, s.nftIDs, s.stakingPoolStates, s.poolPairs, beaconHeight,
 	)
 	if err != nil {
 		return instructions, err
@@ -617,7 +617,7 @@ func NewContributionWithMetaData(
 	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
 
 	identityID := common.Hash{}
-	if !metaData.AccessOption.NftID.IsZeroValue() {
+	if metaData.AccessOption.UseNft() {
 		identityID = metaData.AccessOption.NftID
 	} else {
 		temp := metaData.AccessOption.NextOTA.Bytes()
