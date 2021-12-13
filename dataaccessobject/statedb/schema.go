@@ -120,32 +120,25 @@ var (
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 	switch role {
 	case NextEpochShardCandidate:
-		temp := []byte(string(nextShardCandidatePrefix))
-		h := common.HashH(temp)
+		h := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 		return h[:][:prefixHashKeyLength]
 	case CurrentEpochShardCandidate:
-		temp := []byte(string(currentShardCandidatePrefix))
-		h := common.HashH(temp)
+		h := []byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
 		return h[:][:prefixHashKeyLength]
 	case NextEpochBeaconCandidate:
-		temp := []byte(string(nextBeaconCandidatePrefix))
-		h := common.HashH(temp)
+		h := []byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
 		return h[:][:prefixHashKeyLength]
 	case CurrentEpochBeaconCandidate:
-		temp := []byte(string(currentBeaconCandidatePrefix))
-		h := common.HashH(temp)
+		h := []byte{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
 		return h[:][:prefixHashKeyLength]
 	case SubstituteValidator:
-		temp := []byte(string(substitutePrefix) + strconv.Itoa(shardID))
-		h := common.HashH(temp)
+		h := append([]byte{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}, byte(shardID))
 		return h[:][:prefixHashKeyLength]
 	case CurrentValidator:
-		temp := []byte(string(committeePrefix) + strconv.Itoa(shardID))
-		h := common.HashH(temp)
+		h := append([]byte{6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6}, byte(shardID))
 		return h[:][:prefixHashKeyLength]
 	case SyncingValidators:
-		temp := []byte(string(syncingValidatorsPrefix) + strconv.Itoa(shardID))
-		h := common.HashH(temp)
+		h := append([]byte{7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7}, byte(shardID))
 		return h[:][:prefixHashKeyLength]
 	default:
 		panic("role not exist: " + strconv.Itoa(role))
@@ -169,7 +162,7 @@ func GetCommitteeTermKey(stakerPublicKey []byte) common.Hash {
 }
 
 func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
-	h := common.HashH(stakerInfoPrefix)
+	h := []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
 	finalHash, err := common.Hash{}.NewHash(final)
 	if err != nil {
@@ -267,42 +260,42 @@ func GetTokenTransactionPrefix(tokenID common.Hash) []byte {
 }
 
 func GetWaitingPDEContributionPrefix() []byte {
-	h := common.HashH(waitingPDEContributionPrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetPDEPoolPairPrefix() []byte {
-	h := common.HashH(pdePoolPrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 1, 1, 1, 1, 1, 1}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetPDESharePrefix() []byte {
-	h := common.HashH(pdeSharePrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 2, 2, 2, 2, 2, 2}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetPDETradingFeePrefix() []byte {
-	h := common.HashH(pdeTradingFeePrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 3, 3, 3, 3, 3, 3}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetPDEStatusPrefix() []byte {
-	h := common.HashH(pdeStatusPrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetBridgeEthTxPrefix() []byte {
-	h := common.HashH(bridgeEthTxPrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 5, 5, 5, 5, 5, 5}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetBridgeBSCTxPrefix() []byte {
-	h := common.HashH(bridgeBSCTxPrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 6, 6, 6, 6, 6, 6}
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetBridgePRVEVMPrefix() []byte {
-	h := common.HashH(bridgePRVEVMPrefix)
+	h := []byte{8, 8, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7}
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -627,7 +620,7 @@ var _ = func() (_ struct{}) {
 	m := make(map[string]string)
 	prefixs := [][]byte{}
 	// Current validator
-	for i := -1; i < 256; i++ {
+	for i := 0; i < 256; i++ {
 		temp := GetCommitteePrefixWithRole(CurrentValidator, i)
 		prefixs = append(prefixs, temp)
 		if v, ok := m[string(temp)]; ok {
@@ -636,7 +629,7 @@ var _ = func() (_ struct{}) {
 		m[string(temp)] = "shard-com-" + strconv.Itoa(i)
 	}
 	// Substitute validator
-	for i := -1; i < 256; i++ {
+	for i := 0; i < 256; i++ {
 		temp := GetCommitteePrefixWithRole(SubstituteValidator, i)
 		prefixs = append(prefixs, temp)
 		if v, ok := m[string(temp)]; ok {
