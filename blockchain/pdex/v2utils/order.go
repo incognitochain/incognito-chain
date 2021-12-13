@@ -19,6 +19,7 @@ func (order *MatchingOrder) UnmarshalJSON(data []byte) error {
 
 type OrderBookIterator interface {
 	NextOrder(tradeDirection byte) (*MatchingOrder, string, error)
+	NftIDs() map[string]string
 }
 
 // BuyAmountFromOrder() computes the theoretical (by rate) output amount given incoming trade's sell amount. Order balance only needs to be non-zero since it can be partially matched
@@ -176,7 +177,7 @@ func (order *MatchingOrder) ApplyBalanceChanges(change0, change1 *big.Int) error
 	// sign check : changes must have opposite signs or both be zero
 	if change0.Sign()*change1.Sign() >= 0 {
 		if !(change0.Sign() == 0 && change1.Sign() == 0) {
-			return fmt.Errorf("Invalid signs for reserve changes")
+			return fmt.Errorf("Invalid signs for order changes %v, %v", change0, change1)
 		}
 	}
 

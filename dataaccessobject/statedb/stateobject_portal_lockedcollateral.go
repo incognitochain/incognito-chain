@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type LockedCollateralState struct {
@@ -36,7 +37,7 @@ func (lcs *LockedCollateralState) Reset() {
 	lcs.totalLockedCollateralForRewards = 0
 }
 
-func (lcs LockedCollateralState) MarshalJSON() ([]byte, error) {
+func (lcs *LockedCollateralState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		TotalLockedCollateralForRewards uint64
 		LockedCollateralDetail          map[string]uint64
