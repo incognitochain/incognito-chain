@@ -249,7 +249,7 @@ func (cm *ConnManager) keepConnectionAlive() {
 			cm.hwLocker.RLock()
 			if cm.currentHW != nil {
 				Logger.Debugf("Resubscriber to currentHW %v", cm.currentHW.Libp2pAddr)
-				err = cm.Subscriber.Subscribe(true)
+				err = cm.Subscriber.Subscribe(false)
 				if err != nil {
 					Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
 				}
