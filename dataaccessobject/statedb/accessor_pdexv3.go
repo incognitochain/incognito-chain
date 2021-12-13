@@ -243,11 +243,11 @@ func StorePdexv3PoolPairOrderReward(
 }
 
 func DeletePdexv3PoolPairOrderReward(
-	stateDB *StateDB, poolPairID, tokenID string, nftID common.Hash,
+	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, tokenID, nftID)
+	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardObjectType, key) {
-		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v - %v", poolPairID, tokenID, nftID.String())
+		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v - %v", poolPairID, nftID, tokenID.String())
 	}
 	return nil
 }

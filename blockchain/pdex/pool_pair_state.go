@@ -652,11 +652,7 @@ func (p *PoolPairState) updateToDB(
 							return err
 						}
 					} else {
-						nftHash, err := common.Hash{}.NewHashFromStr(nftID)
-						if err != nil {
-							return err
-						}
-						err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, tokenID, *nftHash)
+						err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID, *tokenHash)
 						if err != nil {
 							return err
 						}
@@ -665,11 +661,11 @@ func (p *PoolPairState) updateToDB(
 			}
 		} else {
 			for tokenID, _ := range orderRewardChange.UncollectedReward {
-				nftHash, err := common.Hash{}.NewHashFromStr(nftID)
+				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 				if err != nil {
 					return err
 				}
-				err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, tokenID, *nftHash)
+				err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID, *tokenHash)
 				if err != nil {
 					return err
 				}
