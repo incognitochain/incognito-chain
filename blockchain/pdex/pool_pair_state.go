@@ -583,18 +583,17 @@ func (p *PoolPairState) updateToDB(
 			return err
 		}
 	}
+
 	for nftID, shareChange := range poolPairChange.Shares {
-		if shareChange.IsChanged {
-			if share, found := p.shares[nftID]; found {
-				err := share.updateToDB(env, poolPairID, nftID, shareChange)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := share.deleteFromDB(env, poolPairID, nftID, shareChange)
-				if err != nil {
-					return err
-				}
+		if share, found := p.shares[nftID]; found {
+			err := share.updateToDB(env, poolPairID, nftID, shareChange)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := share.deleteFromDB(env, poolPairID, nftID, shareChange)
+			if err != nil {
+				return err
 			}
 		}
 	}

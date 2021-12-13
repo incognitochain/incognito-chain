@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMakingVolume_getDiff(t *testing.T) {
@@ -108,6 +109,9 @@ func TestOrderReward_getDiff(t *testing.T) {
 }
 
 func TestShare_getDiff(t *testing.T) {
+	tokenID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+
 	type fields struct {
 		amount             uint64
 		tradingFees        map[common.Hash]uint64
@@ -123,7 +127,47 @@ func TestShare_getDiff(t *testing.T) {
 		args   args
 		want   *v2utils.ShareChange
 	}{
-		{},
+		{
+			name: "Store, update and delete fees",
+			fields: fields{
+				amount: 100,
+				tradingFees: map[common.Hash]uint64{
+					common.PRVCoinID: 200,
+					*tokenID:         300,
+				},
+				lastLPFeesPerShare: map[common.Hash]*big.Int{
+					common.PRVCoinID: big.NewInt(200),
+					*tokenID:         big.NewInt(300),
+				},
+			},
+			args: args{
+				compareShare: &Share{
+					amount: 100,
+					tradingFees: map[common.Hash]uint64{
+						common.PRVCoinID:  100,
+						common.PDEXCoinID: 200,
+					},
+					lastLPFeesPerShare: map[common.Hash]*big.Int{
+						common.PRVCoinID:  big.NewInt(100),
+						common.PDEXCoinID: big.NewInt(200),
+					},
+				},
+				shareChange: &v2utils.ShareChange{},
+			},
+			want: &v2utils.ShareChange{
+				IsChanged: false,
+				TradingFees: map[string]bool{
+					common.PRVIDStr:  true,
+					common.PDEXIDStr: true,
+					tokenID.String(): true,
+				},
+				LastLPFeesPerShare: map[string]bool{
+					common.PRVIDStr:  true,
+					common.PDEXIDStr: true,
+					tokenID.String(): true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

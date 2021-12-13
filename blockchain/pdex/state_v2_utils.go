@@ -261,25 +261,51 @@ func (share *Share) updateToDB(
 			return err
 		}
 	}
-	for tokenID, value := range share.tradingFees {
-		if shareChange.TradingFees[tokenID.String()] {
-			err := statedb.StorePdexv3ShareTradingFee(
-				env.StateDB(), poolPairID, nftID,
-				statedb.NewPdexv3ShareTradingFeeStateWithValue(tokenID, value),
-			)
+	for tokenID, isChanged := range shareChange.TradingFees {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 			if err != nil {
 				return err
 			}
+			if tradingFee, found := share.tradingFees[*tokenHash]; found {
+				err := statedb.StorePdexv3ShareTradingFee(
+					env.StateDB(), poolPairID, nftID,
+					statedb.NewPdexv3ShareTradingFeeStateWithValue(*tokenHash, tradingFee),
+				)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := statedb.DeletePdexv3ShareTradingFee(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
-	for tokenID, value := range share.lastLPFeesPerShare {
-		if shareChange.LastLPFeesPerShare[tokenID.String()] {
-			err := statedb.StorePdexv3ShareLastLpFeePerShare(
-				env.StateDB(), poolPairID, nftID,
-				statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(tokenID, value),
-			)
+	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 			if err != nil {
 				return err
+			}
+			if lastLPFeesPerShare, found := share.lastLPFeesPerShare[*tokenHash]; found {
+				err := statedb.StorePdexv3ShareLastLpFeePerShare(
+					env.StateDB(), poolPairID, nftID,
+					statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(*tokenHash, lastLPFeesPerShare),
+				)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -295,41 +321,6 @@ func (share *Share) deleteFromDB(
 	if err != nil {
 		return err
 	}
-
-	for tokenID, isChanged := range shareChange.TradingFees {
-		if isChanged {
-			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
-			if err != nil {
-				return err
-			}
-			if _, found := share.tradingFees[*tokenHash]; !found {
-				err := statedb.DeletePdexv3ShareTradingFee(
-					env.StateDB(), poolPairID, nftID, tokenID,
-				)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
-		if isChanged {
-			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
-			if err != nil {
-				return err
-			}
-			if _, found := share.lastLPFeesPerShare[*tokenHash]; !found {
-				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
-					env.StateDB(), poolPairID, nftID, tokenID,
-				)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
 	return nil
 }
 

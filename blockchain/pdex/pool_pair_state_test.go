@@ -1074,8 +1074,20 @@ func TestPoolPairState_getDiff(t *testing.T) {
 						volume: map[string]*big.Int{},
 					},
 				},
-				state:  *state,
-				shares: map[string]*Share{},
+				state: *state,
+				shares: map[string]*Share{
+					common.PRVIDStr: &Share{
+						amount: 100,
+						tradingFees: map[common.Hash]uint64{
+							common.PRVCoinID: 200,
+							*token0ID:        300,
+						},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{
+							common.PRVCoinID: big.NewInt(200),
+							*token0ID:        big.NewInt(300),
+						},
+					},
+				},
 				orderRewards: map[string]*OrderReward{
 					common.PRVIDStr: &OrderReward{
 						uncollectedRewards: Reward{
@@ -1105,8 +1117,20 @@ func TestPoolPairState_getDiff(t *testing.T) {
 							},
 						},
 					},
-					state:  *compareState,
-					shares: map[string]*Share{},
+					state: *compareState,
+					shares: map[string]*Share{
+						common.PRVIDStr: &Share{
+							amount: 100,
+							tradingFees: map[common.Hash]uint64{
+								common.PRVCoinID:  100,
+								common.PDEXCoinID: 200,
+							},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{
+								common.PRVCoinID:  big.NewInt(100),
+								common.PDEXCoinID: big.NewInt(200),
+							},
+						},
+					},
 					orderRewards: map[string]*OrderReward{
 						common.PRVIDStr: &OrderReward{
 							uncollectedRewards: Reward{
@@ -1126,8 +1150,22 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				},
 			},
 			want: &v2utils.PoolPairChange{
-				IsChanged:       false,
-				Shares:          map[string]*v2utils.ShareChange{},
+				IsChanged: false,
+				Shares: map[string]*v2utils.ShareChange{
+					common.PRVIDStr: &v2utils.ShareChange{
+						IsChanged: false,
+						TradingFees: map[string]bool{
+							common.PRVIDStr:   true,
+							common.PDEXIDStr:  true,
+							token0ID.String(): true,
+						},
+						LastLPFeesPerShare: map[string]bool{
+							common.PRVIDStr:   true,
+							common.PDEXIDStr:  true,
+							token0ID.String(): true,
+						},
+					},
+				},
 				OrderIDs:        map[string]bool{},
 				LpFeesPerShare:  map[string]bool{},
 				ProtocolFees:    map[string]bool{},
@@ -1216,6 +1254,18 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	)
 	assert.Nil(t, err)
 
+	err = statedb.StorePdexv3ShareTradingFee(
+		sDB, "id", common.PRVIDStr,
+		statedb.NewPdexv3ShareTradingFeeStateWithValue(common.PDEXCoinID, 100),
+	)
+
+	assert.Nil(t, err)
+	err = statedb.StorePdexv3ShareLastLpFeePerShare(
+		sDB, "id", common.PRVIDStr,
+		statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(common.PDEXCoinID, big.NewInt(100)),
+	)
+	assert.Nil(t, err)
+
 	type fields struct {
 		makingVolume    map[common.Hash]*MakingVolume
 		state           rawdbv2.Pdexv3PoolPair
@@ -1255,8 +1305,20 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 						volume: map[string]*big.Int{},
 					},
 				},
-				state:  *state,
-				shares: map[string]*Share{},
+				state: *state,
+				shares: map[string]*Share{
+					common.PRVIDStr: &Share{
+						amount: 100,
+						tradingFees: map[common.Hash]uint64{
+							common.PRVCoinID: 200,
+							*token0ID:        300,
+						},
+						lastLPFeesPerShare: map[common.Hash]*big.Int{
+							common.PRVCoinID: big.NewInt(200),
+							*token0ID:        big.NewInt(300),
+						},
+					},
+				},
 				orderRewards: map[string]*OrderReward{
 					common.PRVIDStr: &OrderReward{
 						uncollectedRewards: Reward{
@@ -1280,8 +1342,22 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 					stateDB: sDB,
 				},
 				poolPairChange: &v2utils.PoolPairChange{
-					IsChanged:       false,
-					Shares:          map[string]*v2utils.ShareChange{},
+					IsChanged: false,
+					Shares: map[string]*v2utils.ShareChange{
+						common.PRVIDStr: &v2utils.ShareChange{
+							IsChanged: false,
+							TradingFees: map[string]bool{
+								common.PRVIDStr:   true,
+								common.PDEXIDStr:  true,
+								token0ID.String(): true,
+							},
+							LastLPFeesPerShare: map[string]bool{
+								common.PRVIDStr:   true,
+								common.PDEXIDStr:  true,
+								token0ID.String(): true,
+							},
+						},
+					},
 					OrderIDs:        map[string]bool{},
 					LpFeesPerShare:  map[string]bool{},
 					ProtocolFees:    map[string]bool{},
