@@ -420,7 +420,7 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 				mapForChkDbSpend[coinID] = nil
 			}
 		}
-		if tx.GetType() == common.TxCustomTokenPrivacyType {
+		if (tx.GetType() == common.TxCustomTokenPrivacyType) || (tx.GetType() == common.TxTokenConversionType) {
 			txNormal := tx.(transaction.TransactionToken).GetTxTokenData().TxNormal
 			normalPrf := txNormal.GetProof()
 			if normalPrf == nil {
