@@ -103,11 +103,13 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 }
 
 func (share *Share) getDiff(
-	nftID string,
 	compareShare *Share,
 	shareChange *v2utils.ShareChange,
 ) *v2utils.ShareChange {
 	newShareChange := shareChange
+	if newShareChange == nil {
+		newShareChange = v2utils.NewShareChange()
+	}
 	if compareShare == nil {
 		newShareChange.IsChanged = true
 		for tokenID := range share.tradingFees {
@@ -213,7 +215,7 @@ func (staker *Staker) Clone() *Staker {
 }
 
 func (staker *Staker) getDiff(
-	stakingPoolID, nftID string, compareStaker *Staker, stakerChange *v2utils.StakerChange,
+	compareStaker *Staker, stakerChange *v2utils.StakerChange,
 ) *v2utils.StakerChange {
 	newStakerChange := stakerChange
 	if compareStaker == nil {
@@ -396,9 +398,6 @@ func (orderReward *OrderReward) getDiff(
 	orderRewardChange *v2utils.OrderRewardChange,
 ) *v2utils.OrderRewardChange {
 	newOrderRewardChange := orderRewardChange
-	if newOrderRewardChange == nil {
-		newOrderRewardChange = v2utils.NewOrderRewardChange()
-	}
 	if compareOrderReward == nil {
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true

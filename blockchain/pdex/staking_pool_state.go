@@ -116,7 +116,7 @@ func (s *StakingPoolState) getDiff(
 		}
 		for nftID, staker := range s.stakers {
 			stakerChange := v2utils.NewStakerChange()
-			stakerChange = staker.getDiff(stakingPoolID, nftID, nil, stakerChange)
+			stakerChange = staker.getDiff(nil, stakerChange)
 			stakingPoolChange.Stakers[nftID] = stakerChange
 		}
 	} else {
@@ -124,7 +124,7 @@ func (s *StakingPoolState) getDiff(
 		for nftID, staker := range s.stakers {
 			if m, ok := compareStakingPoolState.stakers[nftID]; !ok || !reflect.DeepEqual(m, staker) {
 				stakerChange := v2utils.NewStakerChange()
-				stakerChange = staker.getDiff(stakingPoolID, nftID, m, stakerChange)
+				stakerChange = staker.getDiff(m, stakerChange)
 				stakingPoolChange.Stakers[nftID] = stakerChange
 			}
 		}

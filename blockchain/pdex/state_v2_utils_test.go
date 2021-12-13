@@ -106,3 +106,35 @@ func TestOrderReward_getDiff(t *testing.T) {
 		})
 	}
 }
+
+func TestShare_getDiff(t *testing.T) {
+	type fields struct {
+		amount             uint64
+		tradingFees        map[common.Hash]uint64
+		lastLPFeesPerShare map[common.Hash]*big.Int
+	}
+	type args struct {
+		compareShare *Share
+		shareChange  *v2utils.ShareChange
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *v2utils.ShareChange
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			share := &Share{
+				amount:             tt.fields.amount,
+				tradingFees:        tt.fields.tradingFees,
+				lastLPFeesPerShare: tt.fields.lastLPFeesPerShare,
+			}
+			if got := share.getDiff(tt.args.compareShare, tt.args.shareChange); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Share.getDiff() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
