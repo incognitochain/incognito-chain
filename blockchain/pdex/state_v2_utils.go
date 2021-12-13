@@ -398,6 +398,9 @@ func (orderReward *OrderReward) getDiff(
 	orderRewardChange *v2utils.OrderRewardChange,
 ) *v2utils.OrderRewardChange {
 	newOrderRewardChange := orderRewardChange
+	if newOrderRewardChange == nil {
+		newOrderRewardChange = v2utils.NewOrderRewardChange()
+	}
 	if compareOrderReward == nil {
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
