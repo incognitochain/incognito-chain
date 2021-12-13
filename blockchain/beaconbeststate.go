@@ -3,26 +3,24 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common/consensus"
-	"github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 )
 
 // BestState houses information about the current best block and other info
@@ -85,7 +83,8 @@ type BeaconBestState struct {
 	SlashStateDBRootHash     common.Hash
 
 	pdeStates     map[uint]pdex.State
-	portalStateV4 *portalprocess.CurrentPortalStateV4
+	portalStateV3 *portalprocessv3.CurrentPortalState
+	portalStateV4 *portalprocessv4.CurrentPortalStateV4
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -468,6 +467,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 		if state != nil {
 			beaconBestState.pdeStates[version] = state.Clone()
 		}
+	}
+	if target.portalStateV3 != nil {
+		beaconBestState.portalStateV3 = target.portalStateV3.Copy()
 	}
 	if target.portalStateV4 != nil {
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()

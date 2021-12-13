@@ -178,6 +178,10 @@ const (
 	Pdexv3DistributeStakingRewardMeta       = 305
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
+
+	// pBSC
+	BurningPBSCForDepositToSCRequestMeta = 326
+	BurningPBSCConfirmForDepositToSCMeta = 152
 )
 
 var minerCreatedMetaTypes = []int{
@@ -314,6 +318,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningBSCConfirmMeta),
 	strconv.Itoa(BurningPRVERC20ConfirmMeta),
 	strconv.Itoa(BurningPRVBEP20ConfirmMeta),
+	strconv.Itoa(BurningPBSCConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{
