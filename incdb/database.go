@@ -27,23 +27,23 @@ type KeyValueWriter interface {
 	Delete(key []byte) error
 }
 
-// Stater wraps the Stat method of a backing data store.
-type Stater interface {
-	// Stat returns a particular internal stat of the database.
-	Stat(property string) (string, error)
-}
+//// Stater wraps the Stat method of a backing data store.
+//type Stater interface {
+//	// Stat returns a particular internal stat of the database.
+//	Stat(property string) (string, error)
+//}
 
-// Compacter wraps the Compact method of a backing data store.
-type Compacter interface {
-	// Compact flattens the underlying data store for the given key range. In essence,
-	// deleted and overwritten versions are discarded, and the data is rearranged to
-	// reduce the cost of operations needed to access them.
-	//
-	// A nil start is treated as a key before all keys in the data store; a nil limit
-	// is treated as a key after all keys in the data store. If both is nil then it
-	// will compact entire data store.
-	Compact(start []byte, limit []byte) error
-}
+//// Compacter wraps the Compact method of a backing data store.
+//type Compacter interface {
+//	// Compact flattens the underlying data store for the given key range. In essence,
+//	// deleted and overwritten versions are discarded, and the data is rearranged to
+//	// reduce the cost of operations needed to access them.
+//	//
+//	// A nil start is treated as a key before all keys in the data store; a nil limit
+//	// is treated as a key after all keys in the data store. If both is nil then it
+//	// will compact entire data store.
+//	Compact(start []byte, limit []byte) error
+//}
 
 // KeyValueStore contains all the methods required to allow handling different
 // key-value data stores backing the high level database.
@@ -52,13 +52,11 @@ type Database interface {
 	KeyValueWriter
 	Batcher
 	Iteratee
-	Stater
-	Compacter
 	io.Closer
-	RemoveBackup(string)
-	Backup(backupFolder string) error
-	LatestBackup(backupFolder string) (int, string)
-	PreloadBackup(backupFile string) error
-	ReOpen() error
-	Clear() error
+	//RemoveBackup(string)
+	//Backup(backupFolder string) error
+	//LatestBackup(backupFolder string) (int, string)
+	//PreloadBackup(backupFile string) error
+	//ReOpen() error
+	//Clear() error
 }

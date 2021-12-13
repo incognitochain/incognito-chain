@@ -112,7 +112,9 @@ func (s *ShardCommitteeStateV2) UpdateCommitteeState(
 	if err != nil {
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-
+	if len(s.shardCommittee) == 0 {
+		panic(1)
+	}
 	return hashes, committeeChange, nil
 }
 
@@ -125,6 +127,7 @@ func getNewShardCommittees(
 func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	env *ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
+
 	for _, newShardCommittee := range env.CommitteesFromBeaconView {
 		flag := false
 		for _, oldShardCommittee := range s.shardCommittee {

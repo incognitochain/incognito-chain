@@ -670,6 +670,7 @@ func (intermediateWriter *IntermediateWriter) Commit(node common.Hash, report bo
 
 	// Move all of the accumulated preimages into a write batch
 	for hash, preimage := range intermediateWriter.preimages {
+
 		if err := batch.Put(intermediateWriter.secureKey(hash[:]), preimage); err != nil {
 			Logger.log.Error("Failed to commit preimage from trie database", "err", err)
 			return err
@@ -682,11 +683,13 @@ func (intermediateWriter *IntermediateWriter) Commit(node common.Hash, report bo
 			batch.Reset()
 		}
 	}
+	fmt.Println(time.Now().String(), "intermediateWriter.preimages", len(intermediateWriter.preimages))
 	// Since we're going to replay trie node writes into the clean cache, flush out
 	// any batched pre-images before continuing.
 	if err := batch.Write(); err != nil {
 		return err
 	}
+	fmt.Println(time.Now().String(), "batch write 1", batch.ValueSize())
 	batch.Reset()
 
 	// Move the trie itself into the batch, flushing if enough data is accumulated
@@ -698,10 +701,12 @@ func (intermediateWriter *IntermediateWriter) Commit(node common.Hash, report bo
 		return err
 	}
 	// Trie mostly committed to disk, flush any batch leftovers
+	fmt.Println(time.Now().String(), "batch write 2", batch.ValueSize())
 	if err := batch.Write(); err != nil {
 		Logger.log.Error("Failed to write trie to disk", "err", err)
 		return err
 	}
+	fmt.Println(time.Now().String(), "batch write 3")
 	// Uncache any leftovers in the last batch
 	intermediateWriter.lock.Lock()
 	defer intermediateWriter.lock.Unlock()

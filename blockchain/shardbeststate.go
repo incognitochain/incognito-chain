@@ -573,13 +573,22 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 		newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(committees)
 		oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 		temp := committeestate.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
+
 		if len(temp) != 0 {
+
 			oldCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
 			if err != nil {
 				return err
 			}
 
 			if oldCommitteeFromBlock.Header.Height >= committeeFinalViewBlock.Header.Height {
+				fmt.Println("newCommitteesPubKeys", newCommitteesPubKeys)
+				fmt.Println("oldCommitteesPubKeys", oldCommitteesPubKeys)
+				fmt.Println("temp", temp)
+				fmt.Println("view CommitteeFromBlock", shardBestState.CommitteeFromBlock())
+				fmt.Println("shard CommitteeFromBlock", shardBlock.Header.CommitteeFromBlock)
+				panic(1)
+
 				return NewBlockChainError(WrongBlockHeightError,
 					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
 						committeeFinalViewBlock.Header.Hash(), oldCommitteeFromBlock.Header.Hash()))
@@ -597,6 +606,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	shardBlock *types.ShardBlock, bc *BlockChain,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
+		Logger.log.Info("debugMetric 1")
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	}
 	switch shardBlock.Header.Version {

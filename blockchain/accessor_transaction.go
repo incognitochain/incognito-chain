@@ -684,6 +684,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 	}
 	// check privacy custom token
 	// sort by index
+	GetTimeMonitor().Tick("fetchTxViewPointFromBlock")
 	indices := []int{}
 	for index := range view.privacyCustomTokenViewPoint {
 		indices = append(indices, int(index))
@@ -752,7 +753,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 			return err
 		}
 	}
-
+	GetTimeMonitor().Tick("StorePrivacy")
 	// updateShardBestState the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the shardBlock.
@@ -760,31 +761,32 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 	if err != nil {
 		return err
 	}
-
+	GetTimeMonitor().Tick("StoreTx 1")
 	err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
-
+	GetTimeMonitor().Tick("StoreTx 2")
 	err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
-
+	GetTimeMonitor().Tick("StoreTx 3 ")
 	err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}
-
+	GetTimeMonitor().Tick("StoreTx 4")
 	err = blockchain.StoreTxByPublicKey(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), view)
-	if err != nil {
-		return err
-	}
-
+	//if err != nil {
+	//	return err
+	//}
+	//GetTimeMonitor().Tick("StoreTx 5")
 	err = blockchain.StoreTxBySerialNumber(shardBlock.Body.Transactions, shardBlock.Header.ShardID)
-	if err != nil {
-		return err
-	}
+	//if err != nil {
+	//	return err
+	//}
+	//GetTimeMonitor().Tick("StoreTx 6")
 	return nil
 }
 

@@ -627,7 +627,7 @@ var _ = func() (_ struct{}) {
 	m := make(map[string]string)
 	prefixs := [][]byte{}
 	// Current validator
-	for i := -1; i < 256; i++ {
+	for i := -1; i < 8; i++ {
 		temp := GetCommitteePrefixWithRole(CurrentValidator, i)
 		prefixs = append(prefixs, temp)
 		if v, ok := m[string(temp)]; ok {
@@ -636,7 +636,7 @@ var _ = func() (_ struct{}) {
 		m[string(temp)] = "shard-com-" + strconv.Itoa(i)
 	}
 	// Substitute validator
-	for i := -1; i < 256; i++ {
+	for i := -1; i < 8; i++ {
 		temp := GetCommitteePrefixWithRole(SubstituteValidator, i)
 		prefixs = append(prefixs, temp)
 		if v, ok := m[string(temp)]; ok {

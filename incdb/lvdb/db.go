@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb/chaindb"
 	"io/ioutil"
 	"log"
 	"os"
@@ -51,13 +52,22 @@ func openDriver(args ...interface{}) (incdb.Database, error) {
 }
 
 func open(dbPath string) (incdb.Database, error) {
-	handles := 256
-	cache := 8
+	handles := 100000
+	cache := 100
+	if dbPath == "/data/mainnet/block/shssard0" {
+		cfg := &chaindb.Config{
+			dbPath,
+			true,
+			true,
+		}
+		return chaindb.NewBadgerDB(cfg)
+	}
+
 	lvdb, err := leveldb.OpenFile(dbPath, &opt.Options{
 		OpenFilesCacheCapacity: handles,
 		BlockCacheCapacity:     cache / 2 * opt.MiB,
 		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
+		Filter:                 filter.NewBloomFilter(12),
 	})
 	if _, corrupted := err.(*lvdbErrors.ErrCorrupted); corrupted {
 		lvdb, err = leveldb.RecoverFile(dbPath, nil)
@@ -113,6 +123,7 @@ func (db *db) Get(key []byte) ([]byte, error) {
 }
 
 func (db *db) Put(key, value []byte) error {
+	fmt.Println("=========== write leveldb leveldb", len(value))
 	if err := db.lvdb.Put(key, value, nil); err != nil {
 		return err
 	}
@@ -186,6 +197,11 @@ type batch struct {
 
 // Put inserts the given value into the batch for later committing.
 func (b *batch) Put(key, value []byte) error {
+	//_, file, no, ok := runtime.Caller(1)
+	//if ok {
+	//	fmt.Printf("called from %s#%d %v %v\n", file, no, key, len(value))
+	//}
+
 	b.b.Put(key, value)
 	b.size += len(value)
 	return nil
@@ -205,6 +221,7 @@ func (b *batch) ValueSize() int {
 
 // Write flushes any accumulated data to disk.
 func (b *batch) Write() error {
+	fmt.Println("=========== write batch leveldb", b.size)
 	return b.db.Write(b.b, nil)
 }
 

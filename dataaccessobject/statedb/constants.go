@@ -73,13 +73,12 @@ const (
 
 	// PRV EVM bridge
 	BridgePRVEVMObjectType = 47
-
 )
 
 // Prefix length
 const (
-	prefixHashKeyLength = 12
-	prefixKeyLength     = 20
+	prefixHashKeyLength = 2
+	prefixKeyLength     = 30
 )
 
 // Committee Role

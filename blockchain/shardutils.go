@@ -16,7 +16,9 @@ import (
 func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
 	beaconBlocks := []*types.BeaconBlock{}
 	for i := from; i <= to; i++ {
+
 		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
+		Logger.log.Info("FetchBeaconBlockFromHeight 0")
 		if err != nil {
 			return nil, err
 		}
@@ -24,11 +26,13 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 		if err != nil {
 			return beaconBlocks, err
 		}
+		Logger.log.Info("FetchBeaconBlockFromHeight 1")
 		beaconBlock := types.BeaconBlock{}
 		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 		if err != nil {
 			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
+		Logger.log.Info("FetchBeaconBlockFromHeight 2")
 		beaconBlocks = append(beaconBlocks, &beaconBlock)
 	}
 	return beaconBlocks, nil

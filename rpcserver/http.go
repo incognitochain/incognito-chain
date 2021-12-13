@@ -293,10 +293,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 			}
 		}
 		if jsonErr == nil {
-			if request.Method == "downloadbackup" {
-				httpServer.handleDownloadBackup(conn, request.Params)
-				return
-			}
 
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.

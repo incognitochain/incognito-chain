@@ -20,7 +20,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -58,17 +57,6 @@ func NewSynckerManager() *SynckerManager {
 
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
-
-	//check preload beacon
-	preloadAddr := configpkg.Config().PreloadAddress
-	if preloadAddr != "" {
-		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
-			fmt.Println(err)
-			Logger.Infof("Preload beacon fail!")
-		} else {
-			config.Blockchain.RestoreBeaconViews()
-		}
-	}
 
 	//init beacon sync process
 	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain)
@@ -127,7 +115,6 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
 	}
 
-	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
 	if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
@@ -162,17 +149,6 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 			}
 
 			if _, ok := wantedShard[byte(sid)]; ok {
-				//check preload shard
-				if preloadAddr != "" {
-					if syncProc.status != RUNNING_SYNC { //run only when start
-						if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
-							fmt.Println(err)
-							Logger.Infof("Preload shard %v fail!", sid)
-						} else {
-							synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
-						}
-					}
-				}
 				syncProc.start()
 			} else {
 				syncProc.stop()

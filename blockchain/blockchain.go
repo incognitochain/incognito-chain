@@ -127,7 +127,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		if config.IndexerWorkers > 0 {
 			txDbs := make([]*statedb.StateDB, 0)
 			bestBlocks := make([]uint64, 0)
-			for shard := 0; shard < common.MaxShardNumber; shard++{
+			for shard := 0; shard < common.MaxShardNumber; shard++ {
 				txDbs = append(txDbs, blockchain.GetBestStateTransactionStateDB(byte(shard)))
 				bestBlocks = append(bestBlocks, blockchain.GetBestStateShard(byte(shard)).ShardHeight)
 			}
@@ -705,6 +705,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")
 		}
+		//fmt.Println("committee", v.GetCommittee())
+		//panic(1)
 	}
 	return nil
 }
