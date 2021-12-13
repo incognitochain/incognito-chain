@@ -2,6 +2,7 @@ package v2utils
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -112,8 +113,20 @@ func SplitTradingReward(
 	weightedMakingAmt.Sub(weightedMakingAmt, weightedAmmMakingAmt)
 	reward.Sub(reward, ammReward)
 
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(weightedOrderMakingAmts))
+	i := 0
+	for k := range weightedOrderMakingAmts {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
 	orderRewards := map[string]uint64{}
-	for nftID, weight := range weightedOrderMakingAmts {
+	for _, nftID := range keys {
+		weight := weightedOrderMakingAmts[nftID]
 		orderReward := new(big.Int).SetUint64(0)
 		if weight.Cmp(new(big.Int).SetUint64(0)) > 0 {
 			orderReward = new(big.Int).Mul(reward, weight)
@@ -137,9 +150,21 @@ func SplitOrderRewardLiquidityMining(
 		sumVolume.Add(sumVolume, v)
 	}
 
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(volume))
+	i := 0
+	for k := range volume {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
 	orderRewards := map[string]uint64{}
 	remain := new(big.Int).Set(amount)
-	for nftID, v := range volume {
+	for _, nftID := range keys {
+		v := volume[nftID]
 		orderReward := new(big.Int).SetUint64(0)
 		if v.Cmp(new(big.Int).SetUint64(0)) > 0 {
 			orderReward = new(big.Int).Mul(remain, v)
