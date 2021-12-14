@@ -79,11 +79,13 @@ func (db *db) ReOpen() error {
 	handles := 1024
 	cache := 8
 	lvdb, err := leveldb.OpenFile(db.dbPath, &opt.Options{
-		OpenFilesCacheCapacity: handles,
-		BlockCacheCapacity:     cache / 8 * opt.MiB,
-		WriteBuffer:            cache / 12 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
-		DisableSeeksCompaction: true,
+		OpenFilesCacheCapacity:       handles,
+		BlockCacheCapacity:           cache / 8 * opt.MiB,
+		WriteBuffer:                  cache / 12 * opt.MiB, // Two of these are used internally
+		Filter:                       filter.NewBloomFilter(10),
+		DisableSeeksCompaction:       true,
+		DisableLargeBatchTransaction: true,
+		DisableCompactionBackoff:     true,
 	})
 	if _, corrupted := err.(*lvdbErrors.ErrCorrupted); corrupted {
 		lvdb, err = leveldb.RecoverFile(db.dbPath, nil)
