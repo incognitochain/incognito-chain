@@ -76,7 +76,7 @@ func (db *db) Close() error {
 }
 
 func (db *db) ReOpen() error {
-	handles := 256
+	handles := 1024
 	cache := 8
 	lvdb, err := leveldb.OpenFile(db.dbPath, &opt.Options{
 		OpenFilesCacheCapacity: handles,
