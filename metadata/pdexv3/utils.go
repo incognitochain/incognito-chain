@@ -34,29 +34,40 @@ func isValidOTAReceiver(receiverAddress privacy.OTAReceiver, expectedShardID byt
 type AccessOTA privacy.Point
 
 func (ota AccessOTA) MarshalJSON() ([]byte, error) {
-	temp := common.Hash((privacy.Point)(ota).ToBytes())
-	return json.Marshal(temp)
+	return json.Marshal(ota.ToBytesS())
 }
 
 func (ota *AccessOTA) UnmarshalJSON(data []byte) error {
-	var temp common.Hash
-	err := json.Unmarshal(data, &temp)
+	var b []byte
+	err := json.Unmarshal(data, &b)
 	if err != nil {
 		return err
 	}
-	p, err := (&privacy.Point{}).FromBytes([32]byte(temp))
-	if p != nil {
-		*ota = AccessOTA(*p)
-	}
-	return err
+	return ota.FromBytesS(b)
 }
 
-func (ota AccessOTA) Bytes() [32]byte {
+func (ota AccessOTA) ToBytes() [32]byte {
 	return privacy.Point(ota).ToBytes()
 }
 
 func (ota *AccessOTA) FromBytes(data [32]byte) error {
 	_, err := (*privacy.Point)(ota).FromBytes(data)
+	return err
+}
+
+func (ota AccessOTA) ToBytesS() []byte {
+	temp := ota.ToBytes()
+	return temp[:]
+}
+
+func (ota *AccessOTA) FromBytesS(data []byte) error {
+	if len(data) != 32 {
+		return fmt.Errorf("Invalid AccessOTA byte length %d", len(data))
+	}
+	var temp [32]byte
+	copy(temp[:], data)
+	*ota = AccessOTA{}
+	err := ota.FromBytes(temp)
 	return err
 }
 
@@ -71,7 +82,7 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 	// check that nextOTA is valid
 	p := (*privacy.Point)(&nextOTA)
 	if !p.PointValid() {
-		return false, fmt.Errorf("invalid point - next AccessOTA %v", nextOTA.Bytes())
+		return false, fmt.Errorf("invalid point - next AccessOTA %x", nextOTA.ToBytesS())
 	}
 	rawPubkey := p.ToBytesS()
 
@@ -185,18 +196,4 @@ func (a *AccessOption) IsEmpty(isWithdrawRequest bool) bool {
 
 func (a *AccessOption) UseNft() bool {
 	return !a.NftID.IsZeroValue()
-}
-
-func (a *AccessOption) NextOTAHash() (common.Hash, error) {
-	data := a.NextOTA.Bytes()
-	var hash common.Hash
-	err := json.Unmarshal(data[:], &hash)
-	return hash, err
-}
-
-func (a *AccessOption) BurntOTAHash() (common.Hash, error) {
-	data := a.BurntOTA.Bytes()
-	var hash common.Hash
-	err := json.Unmarshal(data[:], &hash)
-	return hash, err
 }
