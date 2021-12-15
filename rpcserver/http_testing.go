@@ -457,10 +457,14 @@ func (httpServer *HttpServer) handleEnableFastSyncMode(params interface{}, close
 
 	if shardSyncMode {
 		blockchain.ShardSyncMode = blockchain.FAST_SYNC_MODE
+	} else {
+		blockchain.ShardSyncMode = blockchain.NORMAL_SYNC_MODE
 	}
 
 	if beaconSyncMode {
 		blockchain.BeaconSyncMode = blockchain.FAST_SYNC_MODE
+	} else {
+		blockchain.BeaconSyncMode = blockchain.NORMAL_SYNC_MODE
 	}
 
 	return map[string]interface{}{
