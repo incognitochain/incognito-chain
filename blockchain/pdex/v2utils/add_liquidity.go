@@ -1,9 +1,12 @@
 package v2utils
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 func BuildRefundAddLiquidityInstructions(
@@ -25,7 +28,8 @@ func BuildRefundAddLiquidityInstructions(
 
 func BuildMatchAddLiquidityInstructions(
 	incomingContributionState statedb.Pdexv3ContributionState,
-	poolPairID string, nftID common.Hash,
+	poolPairID string, nftID, txReqID common.Hash, shardID byte,
+	otaReceiver string,
 ) ([][]string, error) {
 	res := [][]string{}
 	inst0, err := instruction.NewMatchAddLiquidityWithValue(incomingContributionState, poolPairID).StringSlice()
@@ -33,6 +37,13 @@ func BuildMatchAddLiquidityInstructions(
 		return res, err
 	}
 	res = append(res, inst0)
+	inst1, err := instruction.NewMintAccessTokenWithValue(
+		otaReceiver, shardID, txReqID,
+	).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	if err != nil {
+		return res, err
+	}
+	res = append(res, inst1)
 	return res, nil
 }
 
@@ -40,7 +51,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	token0ContributionState, token1ContributionState statedb.Pdexv3ContributionState,
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
-	nftID common.Hash,
+	nftID, txReqID common.Hash, shardID byte, otaReceiver string,
 ) ([][]string, error) {
 	res := [][]string{}
 	token0Contribution := token0ContributionState.Value()
@@ -63,5 +74,12 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 		return res, err
 	}
 	res = append(res, matchAndReturnInst1)
+	mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
+		otaReceiver, shardID, txReqID,
+	).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+	if err != nil {
+		return res, err
+	}
+	res = append(res, mintAccessTokenInst)
 	return res, nil
 }

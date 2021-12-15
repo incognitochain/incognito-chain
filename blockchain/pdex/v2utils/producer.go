@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 func GetPDEXRewardsForBlock(
@@ -95,14 +96,15 @@ func BuildWithdrawLPFeeInsts(
 	reqTxID common.Hash,
 	status string,
 ) [][]string {
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, utils.EmptyString)
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
-			PoolPairID: pairID,
-			NftID:      nftID,
-			TokenID:    common.Hash{},
-			Receiver:   metadataPdexv3.ReceiverInfo{},
-			TxReqID:    reqTxID,
-			ShardID:    shardID,
+			PoolPairID:   pairID,
+			AccessOption: *accessOption,
+			TokenID:      common.Hash{},
+			Receiver:     metadataPdexv3.ReceiverInfo{},
+			TxReqID:      reqTxID,
+			ShardID:      shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		inst := []string{
@@ -129,13 +131,13 @@ func BuildWithdrawLPFeeInsts(
 	for i, tokenID := range keys {
 		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
-			PoolPairID: pairID,
-			NftID:      nftID,
-			TokenID:    tokenID,
-			Receiver:   receivers[tokenID],
-			IsLastInst: isLastInstOfReqTx,
-			TxReqID:    reqTxID,
-			ShardID:    shardID,
+			PoolPairID:   pairID,
+			AccessOption: *accessOption,
+			TokenID:      tokenID,
+			Receiver:     receivers[tokenID],
+			IsLastInst:   isLastInstOfReqTx,
+			TxReqID:      reqTxID,
+			ShardID:      shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{
@@ -239,10 +241,11 @@ func BuildWithdrawStakingRewardInsts(
 	reqTxID common.Hash,
 	status string,
 ) [][]string {
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, utils.EmptyString)
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,
-			NftID:         nftID,
+			AccessOption:  *accessOption,
 			TokenID:       common.Hash{},
 			Receiver:      metadataPdexv3.ReceiverInfo{},
 			TxReqID:       reqTxID,
@@ -270,11 +273,12 @@ func BuildWithdrawStakingRewardInsts(
 	})
 
 	insts := [][]string{}
+
 	for i, tokenID := range keys {
 		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,
-			NftID:         nftID,
+			AccessOption:  *accessOption,
 			TokenID:       tokenID,
 			Receiver:      receivers[tokenID],
 			IsLastInst:    isLastInstOfReqTx,

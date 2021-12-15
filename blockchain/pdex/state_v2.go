@@ -202,11 +202,6 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.stakingPoolStates,
 			)
-		case metadataCommon.Pdexv3MintAccessTokenRequestMeta:
-			err = s.processor.mintAccessTokens(
-				env.StateDB(),
-				inst,
-			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -234,7 +229,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	stakingTxs := []metadata.Transaction{}
 	unstakingTxs := []metadata.Transaction{}
 	withdrawStakingRewardTxs := []metadata.Transaction{}
-	mintAccessTokenTxs := []metadata.Transaction{}
 
 	beaconHeight := env.PrevBeaconHeight() + 1
 
@@ -274,8 +268,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				unstakingTxs = append(unstakingTxs, tx)
 			case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
 				withdrawStakingRewardTxs = append(withdrawStakingRewardTxs, tx)
-			case metadataCommon.Pdexv3MintAccessTokenRequestMeta:
-				mintAccessTokenTxs = append(mintAccessTokenTxs, tx)
 			}
 		}
 	}
@@ -462,17 +454,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, mintNftInstructions...)
 
-	mintAccessTokenInstructions := [][]string{}
-	burningPRVAmountByMintAccessToken := uint64(0)
-	mintAccessTokenInstructions, burningPRVAmountByMintAccessToken, err = s.producer.mintAccessTokens(
-		mintAccessTokenTxs, s.params.MinPrvForMintPdexAccessToken,
-	)
-	if err != nil {
-		return instructions, err
-	}
-	instructions = append(instructions, mintAccessTokenInstructions...)
-	burningPRVAmount += burningPRVAmountByMintAccessToken
-
 	if burningPRVAmount > 0 {
 		var mintInstructions [][]string
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
@@ -613,23 +594,25 @@ func (s *stateV2) Reader() StateReader {
 
 func NewContributionWithMetaData(
 	metaData metadataPdexv3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
-) *rawdbv2.Pdexv3Contribution {
-	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
+) (*rawdbv2.Pdexv3Contribution, error) {
+	tokenHash, err := common.Hash{}.NewHashFromStr(metaData.TokenID())
+	if err != nil {
+		return nil, err
+	}
 
-	identityID := common.Hash{}
+	assetID := common.Hash{}
 	if metaData.AccessOption.UseNft() {
-		identityID = metaData.AccessOption.NftID
+		assetID = metaData.AccessOption.NftID
 	} else {
-		temp := metaData.AccessOption.NextOTA.Bytes()
-		identityID.SetBytes(temp[:])
+		assetID = metadataPdexv3.GenAssetID(*metaData.OtaReceivers()[common.PdexAccessCoinID])
 	}
 
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.OtaReceiver(),
-		*tokenHash, txReqID, identityID,
+		*tokenHash, txReqID, assetID,
 		metaData.TokenAmount(), metaData.Amplifier(),
 		shardID,
-	)
+	), nil
 }
 
 func (s *stateV2) WaitingContributions() []byte {
@@ -774,14 +757,6 @@ func (s *stateV2) IsValidShareAmount(poolPairID, nftID string, shareAmount uint6
 	}
 	if shareAmount == 0 || share.Amount() == 0 {
 		return errors.New("share amount or share.Amount() is 0")
-	}
-	return nil
-}
-
-func (s *stateV2) IsValidMintAccessTokenAmount(amount uint64) error {
-	if s.params.MinPrvForMintPdexAccessToken != amount {
-		return fmt.Errorf("Expect mint nft require amount by %v but got %v",
-			s.params.MinPrvForMintPdexAccessToken, amount)
 	}
 	return nil
 }

@@ -13,36 +13,36 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
-type MintAccessTokenResponse struct {
+type MintAccessToken struct {
 	metadataCommon.MetadataBase
 	status  string
 	txReqID string
 }
 
-func NewMintAccessTokenResponse() *MintAccessTokenResponse {
-	return &MintAccessTokenResponse{
+func NewMintAccessToken() *MintAccessToken {
+	return &MintAccessToken{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3MintAccessTokenResponsetMeta,
+			Type: metadataCommon.Pdexv3MintAccessTokenMeta,
 		},
 	}
 }
 
-func NewMintAccessTokenResponseWithValue(status, txReqID string) *MintAccessTokenResponse {
-	return &MintAccessTokenResponse{
+func NewMintAccessTokenWithValue(status, txReqID string) *MintAccessToken {
+	return &MintAccessToken{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.Pdexv3MintAccessTokenResponsetMeta,
+			Type: metadataCommon.Pdexv3MintAccessTokenMeta,
 		},
 		status:  status,
 		txReqID: txReqID,
 	}
 }
 
-func (response *MintAccessTokenResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (response *MintAccessToken) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (response *MintAccessTokenResponse) ValidateTxWithBlockChain(
+func (response *MintAccessToken) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -54,7 +54,7 @@ func (response *MintAccessTokenResponse) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (response *MintAccessTokenResponse) ValidateSanityData(
+func (response *MintAccessToken) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
@@ -74,21 +74,21 @@ func (response *MintAccessTokenResponse) ValidateSanityData(
 	return true, true, nil
 }
 
-func (response *MintAccessTokenResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.Pdexv3MintAccessTokenRequestMeta
+func (response *MintAccessToken) ValidateMetadataByItself() bool {
+	return response.Type == metadataCommon.Pdexv3MintAccessTokenMeta
 }
 
-func (response *MintAccessTokenResponse) Hash() *common.Hash {
+func (response *MintAccessToken) Hash() *common.Hash {
 	rawBytes, _ := json.Marshal(&response)
 	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
-func (response *MintAccessTokenResponse) CalculateSize() uint64 {
+func (response *MintAccessToken) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
-func (response *MintAccessTokenResponse) MarshalJSON() ([]byte, error) {
+func (response *MintAccessToken) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Status  string `json:"Status"`
 		TxReqID string `json:"TxReqID"`
@@ -104,7 +104,7 @@ func (response *MintAccessTokenResponse) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (response *MintAccessTokenResponse) UnmarshalJSON(data []byte) error {
+func (response *MintAccessToken) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Status  string `json:"Status"`
 		TxReqID string `json:"TxReqID"`
@@ -120,11 +120,11 @@ func (response *MintAccessTokenResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (response *MintAccessTokenResponse) TxReqID() string {
+func (response *MintAccessToken) TxReqID() string {
 	return response.txReqID
 }
 
-func (response *MintAccessTokenResponse) Status() string {
+func (response *MintAccessToken) Status() string {
 	return response.status
 }
 
@@ -142,7 +142,7 @@ type rejectMintAccessToken struct {
 	TxReqID     common.Hash `json:"TxReqID"`
 }
 
-func (response *MintAccessTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (response *MintAccessToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,
 	tx metadataCommon.Transaction,
@@ -160,7 +160,7 @@ func (response *MintAccessTokenResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 		}
 		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenMeta) {
 			continue
 		}
 		instContributionStatus := inst[1]

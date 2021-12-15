@@ -14,10 +14,11 @@ import (
 )
 
 type AddLiquidityRequest struct {
-	poolPairID  string // only "" for the first contribution of pool
-	pairHash    string
-	otaReceiver string // refund pToken
-	tokenID     string
+	poolPairID   string // only "" for the first contribution of pool
+	pairHash     string
+	otaReceiver  string                               // refund pToken
+	otaReceivers map[common.Hash]*privacy.OTAReceiver // receive tokens
+	tokenID      string
 	AccessOption
 	tokenAmount uint64
 	amplifier   uint // only set for the first contribution
@@ -37,6 +38,7 @@ func NewAddLiquidityRequestWithValue(
 	poolPairID, pairHash, otaReceiver, tokenID string,
 	tokenAmount uint64, amplifier uint,
 	accessOption *AccessOption,
+	otaReceivers map[common.Hash]*privacy.OTAReceiver,
 ) *AddLiquidityRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
@@ -50,6 +52,7 @@ func NewAddLiquidityRequestWithValue(
 		amplifier:    amplifier,
 		MetadataBase: metadataBase,
 		AccessOption: *accessOption,
+		otaReceivers: otaReceivers,
 	}
 }
 
@@ -62,6 +65,10 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
 	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, false)
+	if err != nil {
+		return false, err
+	}
+	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers)
 	if err != nil {
 		return false, err
 	}
@@ -94,14 +101,6 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 	if tokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("TokenID should not be empty"))
 	}
-	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromString(request.otaReceiver)
-	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if !otaReceiver.IsValid() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("RefundAddress is not valid"))
-	}
 	if request.amplifier < BaseAmplifier {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Amplifier is not valid"))
 	}
@@ -128,9 +127,6 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 	default:
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Not recognize tx type"))
 	}
-	if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
-	}
 	return true, true, nil
 }
 
@@ -150,10 +146,11 @@ func (request *AddLiquidityRequest) CalculateSize() uint64 {
 
 func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash    string `json:"PairHash"`
-		OtaReceiver string `json:"OtaReceiver"` // receive pToken
-		TokenID     string `json:"TokenID"`
+		PoolPairID   string                               `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash     string                               `json:"PairHash"`
+		OtaReceiver  string                               `json:"OtaReceiver,omitempty"` // receive pToken
+		OtaReceivers map[common.Hash]*privacy.OTAReceiver `json:"OtaReceivers,omitempty"`
+		TokenID      string                               `json:"TokenID"`
 		AccessOption
 		TokenAmount uint64 `json:"TokenAmount"`
 		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
@@ -167,6 +164,7 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 		Amplifier:    request.amplifier,
 		AccessOption: request.AccessOption,
 		MetadataBase: request.MetadataBase,
+		OtaReceivers: request.otaReceivers,
 	})
 
 	if err != nil {
@@ -177,10 +175,11 @@ func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 
 func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool
-		PairHash    string `json:"PairHash"`
-		OtaReceiver string `json:"OtaReceiver"` // receive pToken
-		TokenID     string `json:"TokenID"`
+		PoolPairID   string                               `json:"PoolPairID"` // only "" for the first contribution of pool
+		PairHash     string                               `json:"PairHash"`
+		OtaReceiver  string                               `json:"OtaReceiver,omitempty"` // receive pToken
+		OtaReceivers map[common.Hash]*privacy.OTAReceiver `json:"OtaReceivers,omitempty"`
+		TokenID      string                               `json:"TokenID"`
 		AccessOption
 		TokenAmount uint64 `json:"TokenAmount"`
 		Amplifier   uint   `json:"Amplifier"` // only set for the first contribution
@@ -198,6 +197,7 @@ func (request *AddLiquidityRequest) UnmarshalJSON(data []byte) error {
 	request.amplifier = temp.Amplifier
 	request.MetadataBase = temp.MetadataBase
 	request.AccessOption = temp.AccessOption
+	request.otaReceivers = temp.OtaReceivers
 	return nil
 }
 
@@ -211,6 +211,11 @@ func (request *AddLiquidityRequest) PairHash() string {
 
 func (request *AddLiquidityRequest) OtaReceiver() string {
 	return request.otaReceiver
+}
+
+//OtaReceivers read only function
+func (request *AddLiquidityRequest) OtaReceivers() map[common.Hash]*privacy.OTAReceiver {
+	return request.otaReceivers
 }
 
 func (request *AddLiquidityRequest) TokenID() string {

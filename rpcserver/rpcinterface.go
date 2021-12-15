@@ -256,8 +256,6 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3EstimatedStakingPoolReward:            (*HttpServer).handleGetPdexv3EstimatedStakingPoolReward,
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
-	pdexv3MintPdexAccessToken:                      (*HttpServer).handlePdexv3MintPdexAccessToken,
-	pdexv3GetMintAccessTokenStatus:                 (*HttpServer).handleGetPdexv3MintPdexAccessTokenStatus,
 	// end of pdex v3
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,

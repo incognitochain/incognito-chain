@@ -171,7 +171,7 @@ func (txBuilder *TxBuilderV2) Build(
 		} else {
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
-	case metadataCommon.Pdexv3MintAccessTokenRequestMeta:
+	case metadataCommon.Pdexv3MintAccessTokenMeta:
 		if len(inst) == 3 {
 			if len(inst) != 3 {
 				return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
@@ -497,51 +497,35 @@ func buildMintAccessTokenTx(
 	if len(inst) != 3 {
 		return tx, fmt.Errorf("Expect inst length to be %v but get %v", 3, len(inst))
 	}
-	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
-		return tx, fmt.Errorf("Expect inst metaType to be %v but get %s", metadataCommon.Pdexv3MintAccessTokenRequestMeta, inst[0])
+	if inst[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenMeta) {
+		return tx, fmt.Errorf("Expect inst metaType to be %v but get %s", metadataCommon.Pdexv3MintAccessTokenMeta, inst[0])
 	}
 
 	var instShardID byte
 	var tokenID common.Hash
 	var otaReceiverStr, status, txReqID string
 	var amount uint64
-	switch inst[1] {
-	case common.Pdexv3RejectStringStatus:
-		refundInst := instruction.NewRejectMintAccessToken()
-		err := refundInst.FromStringSlice(inst)
-		if err != nil {
-			return tx, err
-		}
-		instShardID = refundInst.ShardID()
-		tokenID = common.PRVCoinID
-		otaReceiverStr = refundInst.OtaReceiver()
-		amount = refundInst.Amount()
-		txReqID = refundInst.TxReqID().String()
-	case common.Pdexv3AcceptStringStatus:
-		acceptInst := instruction.NewAcceptMintAccessToken()
-		err := acceptInst.FromStringSlice(inst)
-		if err != nil {
-			return tx, err
-		}
-		instShardID = acceptInst.ShardID()
-		tokenID = common.PdexAccessCoinID
-		otaReceiverStr = acceptInst.OtaReceiver()
-		amount = 1
-		txReqID = acceptInst.TxReqID().String()
-	default:
-		return tx, errors.New("Can not recognize status")
+	mintAccessTokenInst := instruction.NewMintAccessToken()
+	err := mintAccessTokenInst.FromStringSlice(inst)
+	if err != nil {
+		return tx, err
 	}
+	instShardID = mintAccessTokenInst.ShardID()
+	tokenID = common.PdexAccessCoinID
+	otaReceiverStr = mintAccessTokenInst.OtaReceiver()
+	amount = 1
+	txReqID = mintAccessTokenInst.TxReqID().String()
 	if instShardID != shardID || tokenID.IsZeroValue() {
 		return tx, nil
 	}
 
 	status = inst[1]
 	otaReceiver := privacy.OTAReceiver{}
-	err := otaReceiver.FromString(otaReceiverStr)
+	err = otaReceiver.FromString(otaReceiverStr)
 	if err != nil {
 		return tx, err
 	}
-	metaData := metadataPdexv3.NewMintAccessTokenResponseWithValue(status, txReqID)
+	metaData := metadataPdexv3.NewMintAccessTokenWithValue(status, txReqID)
 	tx, err = buildMintTokenTx(tokenID, amount, otaReceiver, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)

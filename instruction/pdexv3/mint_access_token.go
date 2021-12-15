@@ -9,40 +9,36 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
-type AcceptMintAccessToken struct {
-	burntAmount uint64
+type MintAccessToken struct {
 	otaReceiver string
 	shardID     byte
 	txReqID     common.Hash
 }
 
-func NewAcceptMintAccessToken() *AcceptMintAccessToken {
-	return &AcceptMintAccessToken{}
+func NewMintAccessToken() *MintAccessToken {
+	return &MintAccessToken{}
 }
 
-func NewAcceptMintAccessTokenWithValue(
-	burntAmount uint64,
+func NewMintAccessTokenWithValue(
 	otaReceiver string,
 	shardID byte,
 	txReqID common.Hash,
-) *AcceptMintAccessToken {
-	return &AcceptMintAccessToken{
-		burntAmount: burntAmount,
+) *MintAccessToken {
+	return &MintAccessToken{
 		otaReceiver: otaReceiver,
 		shardID:     shardID,
 		txReqID:     txReqID,
 	}
 }
 
-func (a *AcceptMintAccessToken) FromStringSlice(source []string) error {
+// FromStringSlice verify format [{mint-access-token-metaType}, {action}, {data}]
+// won't verify source[1] will be verify in other place
+func (a *MintAccessToken) FromStringSlice(source []string) error {
 	if len(source) != 3 {
 		return fmt.Errorf("Expect length %v but get %v", 3, len(source))
 	}
-	if source[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta) {
-		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3MintAccessTokenRequestMeta, source[0])
-	}
-	if source[1] != common.Pdexv3AcceptStringStatus {
-		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptStringStatus, source[1])
+	if source[0] != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenMeta) {
+		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3MintAccessTokenMeta, source[0])
 	}
 	err := json.Unmarshal([]byte(source[2]), a)
 	if err != nil {
@@ -51,10 +47,11 @@ func (a *AcceptMintAccessToken) FromStringSlice(source []string) error {
 	return nil
 }
 
-func (a *AcceptMintAccessToken) StringSlice() ([]string, error) {
+// StringSlice format [{mint-access-token-metaType}, {action}, {data}]
+func (a *MintAccessToken) StringSlice(action string) ([]string, error) {
 	res := []string{}
-	res = append(res, strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenRequestMeta))
-	res = append(res, common.Pdexv3AcceptStringStatus)
+	res = append(res, strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenMeta))
+	res = append(res, action)
 	data, err := json.Marshal(a)
 	if err != nil {
 		return res, err
@@ -63,15 +60,13 @@ func (a *AcceptMintAccessToken) StringSlice() ([]string, error) {
 	return res, nil
 }
 
-func (a *AcceptMintAccessToken) MarshalJSON() ([]byte, error) {
+func (a *MintAccessToken) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		OtaReceiver string      `json:"OtaReceiver"`
-		BurntAmount uint64      `json:"BurntAmount"`
 		ShardID     byte        `json:"ShardID"`
 		TxReqID     common.Hash `json:"TxReqID"`
 	}{
 		OtaReceiver: a.otaReceiver,
-		BurntAmount: a.burntAmount,
 		ShardID:     a.shardID,
 		TxReqID:     a.txReqID,
 	})
@@ -81,10 +76,9 @@ func (a *AcceptMintAccessToken) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (a *AcceptMintAccessToken) UnmarshalJSON(data []byte) error {
+func (a *MintAccessToken) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		OtaReceiver string      `json:"OtaReceiver"`
-		BurntAmount uint64      `json:"BurntAmount"`
 		ShardID     byte        `json:"ShardID"`
 		TxReqID     common.Hash `json:"TxReqID"`
 	}{}
@@ -93,24 +87,19 @@ func (a *AcceptMintAccessToken) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	a.otaReceiver = temp.OtaReceiver
-	a.burntAmount = temp.BurntAmount
 	a.shardID = temp.ShardID
 	a.txReqID = temp.TxReqID
 	return nil
 }
 
-func (a *AcceptMintAccessToken) OtaReceiver() string {
+func (a *MintAccessToken) OtaReceiver() string {
 	return a.otaReceiver
 }
 
-func (a *AcceptMintAccessToken) ShardID() byte {
+func (a *MintAccessToken) ShardID() byte {
 	return a.shardID
 }
 
-func (a *AcceptMintAccessToken) TxReqID() common.Hash {
+func (a *MintAccessToken) TxReqID() common.Hash {
 	return a.txReqID
-}
-
-func (a *AcceptMintAccessToken) BurntAmount() uint64 {
-	return a.burntAmount
 }
