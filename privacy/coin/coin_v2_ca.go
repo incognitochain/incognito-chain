@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-const MaxTriesOTA int = 50000
+const MaxAttempts int = 50000
 
 func (coin *CoinV2) ComputeCommitmentCA() (*operation.Point, error) {
 	if coin == nil || coin.GetRandomness() == nil || coin.GetAmount() == nil {
@@ -169,7 +169,7 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 	// publicView := info.PaymentAddress.GetPublicView() // For generating asset tag and concealing output coin
 
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
-	for i := MaxTriesOTA; i > 0; i-- {
+	for i := MaxAttempts; i > 0; i-- {
 		index++
 
 		// Get publickey
@@ -207,6 +207,6 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 			return c, rAsset, nil
 		}
 	}
-	// MaxTriesOTA could be exceeded if the OS's RNG or the statedb is corrupted
-	return nil, nil, fmt.Errorf("Cannot create OTA after %d attempts", MaxTriesOTA)
+	// MaxAttempts could be exceeded if the OS's RNG or the statedb is corrupted
+	return nil, nil, fmt.Errorf("Cannot create OTA after %d attempts", MaxAttempts)
 }
