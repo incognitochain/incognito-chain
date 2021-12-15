@@ -208,10 +208,6 @@ func (a *AccessOption) UseNft() bool {
 	return !a.NftID.IsZeroValue()
 }
 
-func (a *AccessOption) BurntOTAStringify() (string, error) {
-	return "burnt-ota", nil
-}
-
 func (a *AccessOption) AssetHash() (common.Hash, error) {
 	hash, err := common.Hash{}.NewHashFromStr(a.AssetID)
 	return *hash, err

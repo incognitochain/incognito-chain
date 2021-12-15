@@ -75,10 +75,11 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 		}
 	} else {
 		expectBurntTokenID = common.PdexAccessCoinID
-		identityID, err = request.AccessOption.BurntOTAStringify()
-		if err != nil {
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
+		/*identityID, err = request.AccessOption.BurntOTAStringify()*/
+		/*if err != nil {*/
+		/*return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)*/
+		/*}*/
+		//TODO: @tin fix here
 	}
 	if !bytes.Equal(burnedTokenID[:], expectBurntTokenID[:]) {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
