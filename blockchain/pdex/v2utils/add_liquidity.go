@@ -27,12 +27,14 @@ func BuildRefundAddLiquidityInstructions(
 }
 
 func BuildMatchAddLiquidityInstructions(
-	incomingContributionState statedb.Pdexv3ContributionState,
+	waitingContributionState statedb.Pdexv3ContributionState,
 	poolPairID string, nftID, txReqID common.Hash, shardID byte,
-	otaReceiver string,
+	otaReceiver, nextOTA string,
 ) ([][]string, error) {
 	res := [][]string{}
-	inst0, err := instruction.NewMatchAddLiquidityWithValue(incomingContributionState, poolPairID).StringSlice()
+	inst0, err := instruction.NewMatchAddLiquidityWithValue(
+		waitingContributionState, poolPairID, nextOTA,
+	).StringSlice()
 	if err != nil {
 		return res, err
 	}
@@ -51,7 +53,8 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	token0ContributionState, token1ContributionState statedb.Pdexv3ContributionState,
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
-	nftID, txReqID common.Hash, shardID byte, otaReceiver string,
+	nftID, txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
+	nextOTA string, shouldMintAccessToken bool,
 ) ([][]string, error) {
 	res := [][]string{}
 	token0Contribution := token0ContributionState.Value()
@@ -59,7 +62,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst0, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token0ContributionState, shareAmount, returnedToken0ContributionAmount,
 		actualToken1ContributionAmount, returnedToken1ContributionAmount,
-		token1Contribution.TokenID(),
+		token1Contribution.TokenID(), nextOTA,
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -68,18 +71,20 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst1, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token1ContributionState, shareAmount, returnedToken1ContributionAmount,
 		actualToken0ContributionAmount, returnedToken0ContributionAmount,
-		token0Contribution.TokenID(),
+		token0Contribution.TokenID(), nextOTA,
 	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, matchAndReturnInst1)
-	mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
-		otaReceiver, shardID, txReqID,
-	).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
-	if err != nil {
-		return res, err
+	if shouldMintAccessToken {
+		mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
+			otaReceivers[common.PdexAccessCoinID], shardID, txReqID,
+		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+		if err != nil {
+			return res, err
+		}
+		res = append(res, mintAccessTokenInst)
 	}
-	res = append(res, mintAccessTokenInst)
 	return res, nil
 }

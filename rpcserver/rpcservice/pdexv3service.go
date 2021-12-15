@@ -42,17 +42,21 @@ func (blockService BlockService) GetPdexv3ParamsModifyingRequestStatus(reqTxID s
 
 // paramSelector helps to wrap transaction creation steps (v2 only)
 type paramSelector struct {
-	TokenID        common.Hash
-	PRV            *bean.CreateRawTxParam
-	Token          *bean.CreateRawPrivacyTokenTxParam
-	TokenReceivers []*privacy.PaymentInfo
-	Metadata       metadataCommon.Metadata
+	TokenID         common.Hash
+	PRV             *bean.CreateRawTxParam
+	Token           *bean.CreateRawPrivacyTokenTxParam
+	TokenReceivers  []*privacy.PaymentInfo
+	Metadata        metadataCommon.Metadata
+	SpecifiedInputs map[common.Hash]metadataPdexv3.AccessOTA
 }
 
 // SetTokenID, SetTokenReceivers, SetMetadata add necessary data for token tx creation that are missing from the params struct
 func (sel *paramSelector) SetTokenID(id common.Hash)                  { sel.TokenID = id }
 func (sel *paramSelector) SetTokenReceivers(r []*privacy.PaymentInfo) { sel.TokenReceivers = r }
 func (sel *paramSelector) SetMetadata(md metadataCommon.Metadata)     { sel.Metadata = md }
+func (sel *paramSelector) UseSpecifiedInput(tokenID common.Hash, accessOTA metadataPdexv3.AccessOTA) {
+	sel.SpecifiedInputs[tokenID] = accessOTA
+}
 
 // PdexTxService extends TxService with wrappers to build TX with cleaner syntax
 type PdexTxService struct {
@@ -62,7 +66,7 @@ type PdexTxService struct {
 func (svc PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interface{}) (*paramSelector, error) {
 	var err error
 	// token id defaults to PRV
-	sel := paramSelector{TokenID: common.PRVCoinID}
+	sel := paramSelector{TokenID: common.PRVCoinID, SpecifiedInputs: make(map[common.Hash]metadataPdexv3.AccessOTA)}
 	sel.PRV, err = bean.NewCreateRawTxParam(raw)
 	if err != nil {
 		return nil, err
@@ -136,15 +140,22 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
 
-	var totalTokenTransferred uint64
-	for _, payment := range sel.TokenReceivers {
-		totalTokenTransferred += payment.Amount
-	}
-	candidateOutputTokens, _, _, err := svc.chooseBestOutCoinsToSpent(
-		outputTokens, totalTokenTransferred,
-	)
-	if err != nil {
-		return nil, NewRPCError(GetOutputCoinError, err)
+	var candidateOutputTokens []privacy.PlainCoin
+	// only support derivable burn for pTokens
+	if accessOTA, exists := sel.SpecifiedInputs[common.PdexAccessCoinID]; exists {
+		pk := privacy.Point(accessOTA)
+		candidateOutputTokens, err = svc.selectInputCoinWithPubkey(outputTokens, pk)
+	} else {
+		var totalTokenTransferred uint64
+		for _, payment := range sel.TokenReceivers {
+			totalTokenTransferred += payment.Amount
+		}
+		candidateOutputTokens, _, _, err = svc.chooseBestOutCoinsToSpent(
+			outputTokens, totalTokenTransferred,
+		)
+		if err != nil {
+			return nil, NewRPCError(GetOutputCoinError, err)
+		}
 	}
 
 	tokenParams := &transaction.TokenParam{
@@ -188,6 +199,16 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		return nil, NewRPCError(CreateTxDataError, errTx)
 	}
 	return tx, nil
+}
+
+func (svc PdexTxService) selectInputCoinWithPubkey(spendableCoins []privacy.PlainCoin, pubkey privacy.Point) ([]privacy.PlainCoin, error) {
+	for _, c := range spendableCoins {
+		coinpubkey := c.GetPublicKey()
+		if coinpubkey != nil && privacy.IsPointEqual(coinpubkey, &pubkey) {
+			return []privacy.PlainCoin{c}, nil
+		}
+	}
+	return nil, NewRPCError(GetOutputCoinError, fmt.Errorf("No spendable coin with public key %v found", pubkey))
 }
 
 func (blockService BlockService) GetPdexv3WithdrawalLPFeeStatus(reqTxID string) (*metadataPdexv3.WithdrawalLPFeeStatus, error) {

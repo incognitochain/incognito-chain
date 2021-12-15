@@ -9,18 +9,24 @@ import (
 
 //Pdexv3Contribution Real data store to statedb
 type Pdexv3Contribution struct {
-	poolPairID  string
-	otaReceiver string
-	tokenID     common.Hash
-	amount      uint64
-	amplifier   uint
-	txReqID     common.Hash
-	nftID       common.Hash // will be included both nftID and nextOTA
-	shardID     byte
+	poolPairID   string
+	otaReceiver  string
+	otaReceivers map[common.Hash]string
+	tokenID      common.Hash
+	amount       uint64
+	amplifier    uint
+	txReqID      common.Hash
+	nftID        common.Hash // will be included both nftID and nextOTA
+	shardID      byte
+	nextOTA      string
 }
 
 func (contribution *Pdexv3Contribution) NftID() common.Hash {
 	return contribution.nftID
+}
+
+func (contribution *Pdexv3Contribution) SetNftID(nftID common.Hash) {
+	contribution.nftID = nftID
 }
 
 func (contribution *Pdexv3Contribution) ShardID() byte {
@@ -43,6 +49,14 @@ func (contribution *Pdexv3Contribution) OtaReceiver() string {
 	return contribution.otaReceiver
 }
 
+func (contribution *Pdexv3Contribution) NextOTA() string {
+	return contribution.nextOTA
+}
+
+func (contribution *Pdexv3Contribution) SetNextOTA(nextOTA string) {
+	contribution.nextOTA = nextOTA
+}
+
 func (contribution *Pdexv3Contribution) TokenID() common.Hash {
 	return contribution.tokenID
 }
@@ -51,29 +65,38 @@ func (contribution *Pdexv3Contribution) Amount() uint64 {
 	return contribution.amount
 }
 
+//OtaReceivers read only function
+func (contribution *Pdexv3Contribution) OtaReceivers() map[common.Hash]string {
+	return contribution.otaReceivers
+}
+
 func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 	contribution.amount = amount
 }
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID  string      `json:"PoolPairID"`
-		OtaReceiver string      `json:"OtaReceiver"`
-		TokenID     common.Hash `json:"TokenID"`
-		Amount      uint64      `json:"Amount"`
-		Amplifier   uint        `json:"Amplifier"`
-		TxReqID     common.Hash `json:"TxReqID"`
-		NftID       common.Hash `json:"NftID"`
-		ShardID     byte        `json:"ShardID"`
+		PoolPairID   string                 `json:"PoolPairID"`
+		OtaReceiver  string                 `json:"OtaReceiver,omitempty"`
+		TokenID      common.Hash            `json:"TokenID"`
+		Amount       uint64                 `json:"Amount"`
+		Amplifier    uint                   `json:"Amplifier"`
+		TxReqID      common.Hash            `json:"TxReqID"`
+		NftID        common.Hash            `json:"NftID"`
+		ShardID      byte                   `json:"ShardID"`
+		NextOTA      string                 `json:"NextOTA,omitempty"`
+		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
 	}{
-		PoolPairID:  contribution.poolPairID,
-		OtaReceiver: contribution.otaReceiver,
-		TokenID:     contribution.tokenID,
-		Amount:      contribution.amount,
-		TxReqID:     contribution.txReqID,
-		Amplifier:   contribution.amplifier,
-		NftID:       contribution.nftID,
-		ShardID:     contribution.shardID,
+		PoolPairID:   contribution.poolPairID,
+		OtaReceiver:  contribution.otaReceiver,
+		TokenID:      contribution.tokenID,
+		Amount:       contribution.amount,
+		TxReqID:      contribution.txReqID,
+		Amplifier:    contribution.amplifier,
+		NftID:        contribution.nftID,
+		ShardID:      contribution.shardID,
+		NextOTA:      contribution.nextOTA,
+		OtaReceivers: contribution.otaReceivers,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -83,14 +106,16 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 
 func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID  string      `json:"PoolPairID"`
-		OtaReceiver string      `json:"OtaReceiver"`
-		TokenID     common.Hash `json:"TokenID"`
-		Amount      uint64      `json:"Amount"`
-		Amplifier   uint        `json:"Amplifier"`
-		TxReqID     common.Hash `json:"TxReqID"`
-		NftID       common.Hash `json:"NftID"`
-		ShardID     byte        `json:"ShardID"`
+		PoolPairID   string                 `json:"PoolPairID"`
+		OtaReceiver  string                 `json:"OtaReceiver,omitempty"`
+		TokenID      common.Hash            `json:"TokenID"`
+		Amount       uint64                 `json:"Amount"`
+		Amplifier    uint                   `json:"Amplifier"`
+		TxReqID      common.Hash            `json:"TxReqID"`
+		NftID        common.Hash            `json:"NftID"`
+		ShardID      byte                   `json:"ShardID"`
+		NextOTA      string                 `json:"NextOTA,omitempty"`
+		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -104,6 +129,8 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	contribution.amplifier = temp.Amplifier
 	contribution.shardID = temp.ShardID
 	contribution.nftID = temp.NftID
+	contribution.nextOTA = temp.NextOTA
+	contribution.otaReceivers = temp.OtaReceivers
 	return nil
 }
 
@@ -112,6 +139,7 @@ func (contribution *Pdexv3Contribution) Clone() *Pdexv3Contribution {
 		contribution.poolPairID, contribution.otaReceiver,
 		contribution.tokenID, contribution.txReqID, contribution.nftID,
 		contribution.amount, contribution.amplifier, contribution.shardID,
+		contribution.nextOTA, contribution.otaReceivers,
 	)
 }
 
@@ -123,16 +151,19 @@ func NewPdexv3ContributionWithValue(
 	poolPairID, otaReceiver string,
 	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
+	nextOTA string, otaReceivers map[common.Hash]string,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
-		poolPairID:  poolPairID,
-		otaReceiver: otaReceiver,
-		tokenID:     tokenID,
-		amount:      amount,
-		txReqID:     txReqID,
-		nftID:       nftID,
-		amplifier:   amplifier,
-		shardID:     shardID,
+		poolPairID:   poolPairID,
+		otaReceiver:  otaReceiver,
+		tokenID:      tokenID,
+		amount:       amount,
+		txReqID:      txReqID,
+		nftID:        nftID,
+		amplifier:    amplifier,
+		shardID:      shardID,
+		nextOTA:      nextOTA,
+		otaReceivers: otaReceivers,
 	}
 }
 

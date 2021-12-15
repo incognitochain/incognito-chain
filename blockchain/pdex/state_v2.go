@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateV2 struct {
@@ -601,17 +602,32 @@ func NewContributionWithMetaData(
 	}
 
 	assetID := common.Hash{}
+	nextOTA := utils.EmptyString
 	if metaData.AccessOption.UseNft() {
 		assetID = metaData.AccessOption.NftID
 	} else {
-		assetID = metadataPdexv3.GenAssetID(*metaData.OtaReceivers()[common.PdexAccessCoinID])
+		if metaData.AccessOption.AssetID != utils.EmptyString {
+			assetID, err = metaData.AccessOption.AssetHash()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			assetID = metadataPdexv3.GenAssetID(*metaData.OtaReceivers()[common.PdexAccessCoinID])
+			tempNextOTA := metadataPdexv3.AccessOTA{}
+			tempNextOTA.FromBytesS(metaData.OtaReceivers()[common.PdexAccessCoinID].PublicKey.ToBytesS())
+			nextOTA = tempNextOTA.String()
+		}
+	}
+	otaReceivers := make(map[common.Hash]string)
+	for k, v := range metaData.OtaReceivers() {
+		otaReceivers[k], _ = v.String()
 	}
 
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.OtaReceiver(),
 		*tokenHash, txReqID, assetID,
 		metaData.TokenAmount(), metaData.Amplifier(),
-		shardID,
+		shardID, nextOTA, otaReceivers,
 	), nil
 }
 

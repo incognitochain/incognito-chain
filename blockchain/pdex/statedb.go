@@ -198,7 +198,7 @@ func initShares(poolPairID string, stateDB *statedb.StateDB) (map[string]*Share,
 		if err != nil {
 			return nil, err
 		}
-		res[nftID] = NewShareWithValue(shareState.Amount(), tradingFees, lastLPFeesPerShare)
+		res[nftID] = NewShareWithValue(shareState.Amount(), shareState.AccessOTA(), tradingFees, lastLPFeesPerShare)
 	}
 	return res, nil
 }

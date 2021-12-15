@@ -49,8 +49,7 @@ func (sp *stateProducerV2) addLiquidity(
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
 		)
-		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
-		if !accessByNFT && metaData.AccessOption.UseNft() {
+		if metaData.AccessOption.UseNft() {
 			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
@@ -76,8 +75,7 @@ func (sp *stateProducerV2) addLiquidity(
 		)
 		if waitingContribution.TokenID().String() == incomingContribution.TokenID().String() ||
 			waitingContribution.Amplifier() != incomingContribution.Amplifier() ||
-			waitingContribution.PoolPairID() != incomingContribution.PoolPairID() ||
-			waitingContribution.NftID().String() != incomingContribution.NftID().String() {
+			waitingContribution.PoolPairID() != incomingContribution.PoolPairID() {
 			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
 				waitingContributionState, incomingContributionState,
 			)
@@ -97,17 +95,29 @@ func (sp *stateProducerV2) addLiquidity(
 		}
 		rootPoolPair, found := poolPairs[poolPairID]
 		if !found || rootPoolPair == nil {
-			if waitingContribution.PoolPairID() == utils.EmptyString {
+			if waitingContribution.PoolPairID() == utils.EmptyString && !waitingContribution.NftID().IsZeroValue() && !incomingContribution.NftID().IsZeroValue() {
 				newPoolPair := initPoolPairState(waitingContribution, incomingContribution)
 				tempAmt := big.NewInt(0).Mul(
 					big.NewInt(0).SetUint64(waitingContribution.Amount()),
 					big.NewInt(0).SetUint64(incomingContribution.Amount()),
 				)
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-				err := newPoolPair.addShare(
-					incomingContribution.NftID(),
+				if metaData.AccessOption.AssetID != utils.EmptyString {
+					insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+						waitingContributionState, incomingContributionState,
+					)
+					if err != nil {
+						return res, poolPairs, waitingContributions, err
+					}
+					Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
+					res = append(res, insts...)
+					continue
+				}
+				nextOTA, err := newPoolPair.addShare(
+					waitingContribution.NftID(),
 					shareAmount, beaconHeight,
 					waitingContribution.TxReqID().String(),
+					waitingContribution.NextOTA(),
 				)
 				if err != nil {
 					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
@@ -125,8 +135,9 @@ func (sp *stateProducerV2) addLiquidity(
 				}
 				poolPairs[poolPairID] = newPoolPair
 				insts, err := v2utils.BuildMatchAddLiquidityInstructions(
-					incomingContributionState, poolPairID, incomingContribution.NftID(),
-					incomingContribution.TxReqID(), shardID, incomingContribution.OtaReceiver(),
+					waitingContributionState, poolPairID, waitingContribution.NftID(),
+					waitingContribution.TxReqID(), shardID,
+					waitingContribution.OtaReceivers()[common.PdexAccessCoinID], nextOTA,
 				)
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
@@ -146,6 +157,7 @@ func (sp *stateProducerV2) addLiquidity(
 				continue
 			}
 		}
+
 		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
@@ -198,10 +210,10 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
-		err = poolPair.addShare(
-			incomingContribution.NftID(),
+		nextOTA, err := poolPair.addShare(
+			waitingContribution.NftID(),
 			shareAmount, beaconHeight,
-			waitingContribution.TxReqID().String(),
+			waitingContribution.TxReqID().String(), waitingContribution.NextOTA(),
 		)
 		if err != nil {
 			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
@@ -220,8 +232,9 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount,
 			returnedToken1ContributionAmount,
 			actualToken1ContributionAmount,
-			incomingContribution.NftID(),
-			incomingContribution.TxReqID(), shardID, incomingContribution.OtaReceiver(),
+			waitingContribution.NftID(),
+			waitingContribution.TxReqID(), shardID, waitingContribution.OtaReceivers(),
+			nextOTA, waitingContribution.NftID().String() != metaData.NftID.String(),
 		)
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
@@ -524,9 +537,10 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		// when accessing using NftID, check that the nftID exists
-		_, accessByNFT := nftIDs[currentOrderReq.NftID.String()]
+		assetID := common.Hash{}
+		accessByNFT := currentOrderReq.UseNft()
 		if accessByNFT {
+			assetID = currentOrderReq.NftID
 			// check that the nftID has not exceeded its order count limit
 			if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
 				Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
@@ -534,6 +548,14 @@ TransactionLoop:
 				result = append(result, refundInstructions...)
 				continue TransactionLoop
 			}
+		} else {
+			accessReceiver, found := currentOrderReq.Receiver[common.PdexAccessCoinID]
+			if !found {
+				Logger.log.Warnf("AddOrder: can not find pdex access coin receiver")
+				result = append(result, refundInstructions...)
+				continue TransactionLoop
+			}
+			assetID = metadataPdexv3.GenAssetID(accessReceiver)
 		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
@@ -602,7 +624,7 @@ TransactionLoop:
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
 			OrderID:        orderID,
-			NftID:          currentOrderReq.NftID,
+			NftID:          assetID,
 			Token0Rate:     token0Rate,
 			Token1Rate:     token1Rate,
 			Token0Balance:  token0Balance,
@@ -636,8 +658,17 @@ TransactionLoop:
 		}
 
 		// when accessing using NftID, mint NFT in response
-		nftReceiver, accessByNFT := currentOrderReq.Receiver[currentOrderReq.NftID]
+		assetID, err := currentOrderReq.AccessOption.AssetHash()
+		if err != nil {
+			return result, pairs, err
+		}
+		accessByNFT := currentOrderReq.UseNft()
 		if accessByNFT {
+			assetID = currentOrderReq.NftID
+			nftReceiver, exists := currentOrderReq.Receiver[currentOrderReq.NftID]
+			if !exists {
+				return result, pairs, fmt.Errorf("Unexpected missing receiver for NftID %s", currentOrderReq.NftID.String())
+			}
 			recvStr, _ := nftReceiver.String() // error handled in tx validation
 			mintInstruction, err := instruction.NewMintNftWithValue(
 				currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
@@ -669,16 +700,17 @@ TransactionLoop:
 		orderID := currentOrderReq.OrderID
 		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
-				if ord.NftID() == currentOrderReq.NftID {
+				if ord.NftID() == assetID {
 					if !accessByNFT {
-						if currentOrderReq.NextOTA == nil {
+						if currentOrderReq.BurntOTA == nil {
 							Logger.log.Warnf("Unexpected invalid access for order %s", orderID)
 							result = append(result, refundAction.StringSlice())
 							continue TransactionLoop
 						}
+						//TODO: @tiendat comment out here for fix order logic
 						// access successful -> reject also changes NextOTA
-						refundMd.NextOTA = currentOrderReq.NextOTA
-						ord.SetNftID(common.Hash(currentOrderReq.NextOTA.Bytes()))
+						//refundMd.NextOTA = currentOrderReq.NextOTA
+						//ord.SetNftID(common.Hash(currentOrderReq.NextOTA.Bytes()))
 					}
 
 					withdrawResults := make(map[common.Hash]uint64)
@@ -739,7 +771,7 @@ TransactionLoop:
 								Receiver:   currentOrderReq.Receiver[tokenID],
 								TokenID:    tokenID,
 								Amount:     withdrawAmount,
-								NextOTA:    currentOrderReq.NextOTA, // is nil when using NftID
+								//NextOTA:    currentOrderReq.NextOTA, // is nil when using NftID TODO: @tiendat comment out here for fix order logic
 							},
 							*tx.Hash(),
 							byte(tx.GetValidationEnv().ShardID()),
@@ -1076,7 +1108,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			assetID.String(), metaData.ShareAmount(), beaconHeight,
+			assetID.String(), metaData.ShareAmount(), beaconHeight, metaData.AccessOption,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)

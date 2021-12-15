@@ -204,10 +204,11 @@ func (sp *stateProcessorV2) matchContribution(
 		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-	err = poolPair.addShare(
+	_, err = poolPair.addShare(
 		existedWaitingContribution.NftID(),
 		shareAmount, beaconHeight,
 		existedWaitingContribution.TxReqID().String(),
+		matchAddLiquidityInst.NextOTA(),
 	)
 
 	if err != nil {
@@ -286,11 +287,12 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
 		}
-		err = poolPair.addShare(
+		_, err = poolPair.addShare(
 			waitingContribution.NftID(),
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 			waitingContribution.TxReqID().String(),
+			matchAndReturnAddLiquidity.NextOTA(),
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
@@ -597,8 +599,9 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	}
 	var withdrawStatus *v2.WithdrawStatus
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
-		err = poolPair.updateShareValue(
-			acceptWithdrawLiquidity.ShareAmount(), beaconHeight, assetID, subOperator,
+		_, err = poolPair.updateShareValue(
+			acceptWithdrawLiquidity.ShareAmount(), beaconHeight,
+			assetID, utils.EmptyString, subOperator, //TODO: @tin fix here
 		)
 		if err != nil {
 			return poolPairs, stakingPoolStates, nil, err
@@ -734,7 +737,8 @@ func (sp *stateProcessorV2) withdrawOrder(
 				}
 				// set NextOTA
 				if md.NextOTA != nil {
-					ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
+					//TODO: @tiendat comment out here for fix order logic
+					//ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
 				}
 			}
 		}
@@ -758,7 +762,8 @@ func (sp *stateProcessorV2) withdrawOrder(
 			if ord.Id() == md.OrderID {
 				// set NextOTA
 				if md.NextOTA != nil {
-					ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
+					//TODO: @tiendat comment out here for fix order logic
+					//ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
 				}
 			}
 		}

@@ -16,8 +16,7 @@ type WithdrawOrderRequest struct {
 	OrderID    string                              `json:"OrderID"`
 	Amount     uint64                              `json:"Amount"`
 	Receiver   map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
-	NftID      common.Hash                         `json:"NftID"`
-	NextOTA    *AccessOTA                          `json:"NextOTA,omitempty"`
+	AccessOption
 	metadataCommon.MetadataBase
 }
 
@@ -25,17 +24,15 @@ func NewWithdrawOrderRequest(
 	pairID, orderID string,
 	amount uint64,
 	recv map[common.Hash]privacy.OTAReceiver,
-	nftID common.Hash,
-	nextOTA *AccessOTA,
+	accessOption AccessOption,
 	metaType int,
 ) (*WithdrawOrderRequest, error) {
 	r := &WithdrawOrderRequest{
-		PoolPairID: pairID,
-		OrderID:    orderID,
-		Amount:     amount,
-		Receiver:   recv,
-		NftID:      nftID,
-		NextOTA: nextOTA,
+		PoolPairID:   pairID,
+		OrderID:      orderID,
+		Amount:       amount,
+		Receiver:     recv,
+		AccessOption: accessOption,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -43,37 +40,20 @@ func NewWithdrawOrderRequest(
 	return r, nil
 }
 
-func (req WithdrawOrderRequest) BurntAccessOTA() *AccessOTA {
-	result := AccessOTA{}
-	err := result.FromBytes([32]byte(req.NftID))
-	if err != nil {
-		return nil
-	}
-	return &result
-}
-
 func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
 	if err != nil {
 		return false, err
 	}
-
-	_, isReceivingNFT := req.Receiver[req.NftID]
-	err = beaconViewRetriever.IsValidNftID(req.NftID.String())
+	err = req.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, true)
 	if err != nil {
-		if isReceivingNFT || req.NextOTA == nil || req.BurntAccessOTA() == nil {
-			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with OTA. NFT: %v, NextOTA: %v, BurnOTA: %v", tx.Hash().String(), isReceivingNFT, req.NextOTA, req.BurntAccessOTA())
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
-		valid, err1 := ValidPdexv3Access(req.BurntAccessOTA(), *req.NextOTA, tx, common.ConfidentialAssetID, transactionStateDB)
-		if !valid {
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))
-		}
-	} else {
-		if !isReceivingNFT || req.NextOTA != nil {
-			metadataCommon.Logger.Log.Errorf("TX %s: invalid access with NFT. NFT: %v, NextOTA: %v", tx.Hash().String(), isReceivingNFT, req.NextOTA)
-			return false, metadataCommon.NewMetadataTxError(
-				metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid access for NftID"))
+		return false, err
+	}
+
+	if req.UseNft() {
+		_, isReceivingNFT := req.Receiver[req.NftID]
+		if !isReceivingNFT {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid Pdex Access; missing receiver for NftID %s", req.NftID.String()))
 		}
 		// Burned coin check
 		isBurn, burnedPRVCoin, burnedCoin, burnedTokenID, err := tx.GetTxFullBurnData()
@@ -95,8 +75,6 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 					metadataCommon.PDEInvalidMetadataValueError,
 					fmt.Errorf("Burned token invalid - must be %v only", req.NftID))
 			}
-
-			// accept any positive governance-NFT amount
 			if burnedCoin.GetValue() <= 0 {
 				return false, metadataCommon.NewMetadataTxError(
 					metadataCommon.PDEInvalidMetadataValueError,

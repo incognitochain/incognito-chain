@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type PoolPairState struct {
@@ -270,9 +271,9 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 func (p *PoolPairState) addShare(
 	nftID common.Hash,
 	amount, beaconHeight uint64,
-	txHash string,
-) error {
-	return p.updateShareValue(amount, beaconHeight, nftID.String(), addOperator)
+	txHash, nextOTA string,
+) (string, error) {
+	return p.updateShareValue(amount, beaconHeight, nftID.String(), nextOTA, addOperator)
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -381,6 +382,7 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 func (p *PoolPairState) deductShare(
 	nftID string,
 	shareAmount, beaconHeight uint64,
+	accessOption metadataPdexv3.AccessOption,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -406,28 +408,29 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, subOperator)
+	_, err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, utils.EmptyString, subOperator) //TODO: @tin fix here
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
 func (p *PoolPairState) updateShareValue(
-	shareAmount, beaconHeight uint64, nftID string, operator byte,
-) error {
+	shareAmount, beaconHeight uint64, nftID, nextOTA string, operator byte,
+) (string, error) {
 	share, found := p.shares[nftID]
 	if !found {
 		if operator == subOperator {
-			return errors.New("Deduct nil share amount")
+			return utils.EmptyString, errors.New("Deduct nil share amount")
 		}
 		share = NewShare()
 	} else {
 		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
 		if err != nil {
-			return fmt.Errorf("Invalid nftID: %s", nftID)
+			return utils.EmptyString, fmt.Errorf("Invalid nftID: %s", nftID)
 		}
 		share.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
 		if err != nil {
-			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
+			return utils.EmptyString, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
+		nextOTA = share.nextOTA
 	}
 
 	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
@@ -438,17 +441,21 @@ func (p *PoolPairState) updateShareValue(
 	var err error
 	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)
 	if err != nil {
-		return errors.New("newShare.amount is out of range")
+		return utils.EmptyString, errors.New("newShare.amount is out of range")
 	}
+	if nextOTA == utils.EmptyString {
+		nextOTA = share.nextOTA
+	}
+	share.nextOTA = nextOTA
 
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
 	if err != nil {
-		return errors.New("poolPairShareAmount is out of range")
+		return utils.EmptyString, errors.New("poolPairShareAmount is out of range")
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
 
 	p.shares[nftID] = share
-	return nil
+	return nextOTA, nil
 }
 
 func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64, operator byte) error {

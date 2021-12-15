@@ -116,9 +116,9 @@ func DeletePdexv3WaitingContributions(
 
 func StorePdexv3Share(
 	stateDB *StateDB, poolPairID string, nftID common.Hash,
-	amount uint64, tradingFees map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int,
+	amount uint64, burntOTA string,
 ) error {
-	state := NewPdexv3ShareStateWithValue(nftID, amount, tradingFees, lastLPFeesPerShare)
+	state := NewPdexv3ShareStateWithValue(nftID, amount, burntOTA)
 	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID.String())
 	return stateDB.SetStateObject(Pdexv3ShareObjectType, key, state)
 }

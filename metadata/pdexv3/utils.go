@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -35,30 +36,46 @@ func isValidOTAReceiver(receiverAddress privacy.OTAReceiver, expectedShardID byt
 type AccessOTA privacy.Point
 
 func (ota AccessOTA) MarshalJSON() ([]byte, error) {
-	temp := common.Hash((privacy.Point)(ota).ToBytes())
-	return json.Marshal(temp)
+	return json.Marshal(ota.ToBytesS())
 }
 
 func (ota *AccessOTA) UnmarshalJSON(data []byte) error {
-	var temp common.Hash
-	err := json.Unmarshal(data, &temp)
+	var b []byte
+	err := json.Unmarshal(data, &b)
 	if err != nil {
 		return err
 	}
-	p, err := (&privacy.Point{}).FromBytes([32]byte(temp))
-	if p != nil {
-		*ota = AccessOTA(*p)
-	}
-	return err
+	return ota.FromBytesS(b)
 }
 
-func (ota AccessOTA) Bytes() [32]byte {
+func (ota AccessOTA) ToBytes() [32]byte {
 	return privacy.Point(ota).ToBytes()
 }
 
 func (ota *AccessOTA) FromBytes(data [32]byte) error {
 	_, err := (*privacy.Point)(ota).FromBytes(data)
 	return err
+}
+
+func (ota AccessOTA) ToBytesS() []byte {
+	temp := ota.ToBytes()
+	return temp[:]
+}
+
+func (ota *AccessOTA) FromBytesS(data []byte) error {
+	if len(data) != 32 {
+		return fmt.Errorf("Invalid AccessOTA byte length %d", len(data))
+	}
+	var temp [32]byte
+	copy(temp[:], data)
+	*ota = AccessOTA{}
+	err := ota.FromBytes(temp)
+	return err
+}
+
+func (ota *AccessOTA) String() string {
+	rawBytes := ota.ToBytesS()
+	return base58.Base58Check{}.NewEncode(rawBytes, common.ZeroByte)
 }
 
 type BurnInputReader interface {
@@ -72,7 +89,7 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 	// check that nextOTA is valid
 	p := (*privacy.Point)(&nextOTA)
 	if !p.PointValid() {
-		return false, fmt.Errorf("invalid point - next AccessOTA %v", nextOTA.Bytes())
+		return false, fmt.Errorf("invalid point - next AccessOTA %x", nextOTA.ToBytesS())
 	}
 	rawPubkey := p.ToBytesS()
 
@@ -134,7 +151,7 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 }
 
 type AccessOption struct {
-	NftID    common.Hash `json:"NftID"` // can not omitempty
+	NftID    common.Hash `json:"NftID,omitempty"`
 	BurntOTA *AccessOTA  `json:"BurntOTA,omitempty"`
 	AssetID  string      `json:"AssetID,omitempty"`
 }
@@ -159,14 +176,17 @@ func (a *AccessOption) IsValid(
 ) error {
 	err := beaconViewRetriever.IsValidNftID(a.NftID.String())
 	if err != nil {
-		if isWithdrawRequest {
-			if a.AssetID == utils.EmptyString || a.BurntOTA == nil {
-				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("burnt OTA or assetID is null")))
-			}
+		if a.AssetID != utils.EmptyString {
 			_, err = a.AssetHash()
 			if err != nil {
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 			}
+		}
+		if isWithdrawRequest {
+			if a.BurntOTA == nil {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("burnt OTA or assetID is null")))
+			}
+
 			/*valid, err1 := ValidPdexv3Access(a.BurntOTA, tx, common.ConfidentialAssetID, transactionStateDB)*/
 			/*if !valid {*/
 			/*return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))*/
@@ -198,6 +218,9 @@ func (a *AccessOption) AssetHash() (common.Hash, error) {
 }
 
 func (a *AccessOption) ValidateOtaReceivers(tx metadataCommon.Transaction, otaReceiver string, otaReceivers map[common.Hash]*privacy.OTAReceiver) error {
+	if otaReceivers == nil && otaReceiver == utils.EmptyString {
+		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not be null at the same time"))
+	}
 	if otaReceivers != nil && otaReceiver != utils.EmptyString {
 		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not be existed at the same time"))
 	}
@@ -226,7 +249,7 @@ func (a *AccessOption) ValidateOtaReceivers(tx metadataCommon.Transaction, otaRe
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shard id and tx shard id need to be similar"))
 			}
 		}
-		if !isExistedPdexAccessToken {
+		if !isExistedPdexAccessToken && a.AssetID == utils.EmptyString {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("is not existed pdex access token in otaReceivers"))
 		}
 	}
