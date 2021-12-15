@@ -54,3 +54,13 @@ var (
 	beaconStoreBlockTimer                   = metrics.NewRegisteredTimer("beacon/storeblock", nil)
 	beaconUpdateBestStateTimer              = metrics.NewRegisteredTimer("beacon/updatebeststate", nil)
 )
+
+var (
+	BeaconSyncMode = NORMAL_SYNC_MODE
+	ShardSyncMode  = NORMAL_SYNC_MODE
+)
+
+const (
+	FAST_SYNC_MODE   = "fast-sync"
+	NORMAL_SYNC_MODE = "normal-sync"
+)

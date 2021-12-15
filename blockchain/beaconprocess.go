@@ -977,17 +977,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-	if err != nil {
-		return err
-	}
 
 	newBestState.ConsensusStateDBRootHash = consensusRootHash
 	featureRootHash, err := newBestState.featureStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
 	if err != nil {
 		return err
 	}
@@ -996,24 +988,35 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
-	if err != nil {
-		return err
-	}
 	newBestState.RewardStateDBRootHash = rewardRootHash
 	slashRootHash, err := newBestState.slashStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
-	if err != nil {
-		return err
-	}
 	newBestState.SlashStateDBRootHash = slashRootHash
-	newBestState.consensusStateDB.ClearObjects()
-	newBestState.rewardStateDB.ClearObjects()
-	newBestState.featureStateDB.ClearObjects()
-	newBestState.slashStateDB.ClearObjects()
+	if BeaconSyncMode == NORMAL_SYNC_MODE || (BeaconSyncMode == FAST_SYNC_MODE && beaconBlock.Header.Height%10000 == 0) {
+		err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
+		if err != nil {
+			return err
+		}
+		err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+		if err != nil {
+			return err
+		}
+		err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
+		if err != nil {
+			return err
+		}
+		err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
+		if err != nil {
+			return err
+		}
+		newBestState.consensusStateDB.ClearObjects()
+		newBestState.rewardStateDB.ClearObjects()
+		newBestState.featureStateDB.ClearObjects()
+		newBestState.slashStateDB.ClearObjects()
+	}
+
 	//statedb===========================END
 
 	batch := blockchain.GetBeaconChainDatabase().NewBatch()

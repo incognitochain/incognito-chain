@@ -443,6 +443,49 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 	}, nil
 }
 
+func (httpServer *HttpServer) handleEnableFastSyncMode(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	shardSyncMode, ok := arrayParams[0].(bool)
+	beaconSyncMode, ok := arrayParams[1].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	if shardSyncMode {
+		blockchain.ShardSyncMode = blockchain.FAST_SYNC_MODE
+	}
+
+	if beaconSyncMode {
+		blockchain.BeaconSyncMode = blockchain.FAST_SYNC_MODE
+	}
+
+	return map[string]interface{}{
+		"Beacon": blockchain.BeaconSyncMode,
+		"Shard":  blockchain.ShardSyncMode,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleSetFullValidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	fullValidation, ok := arrayParams[0].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	config.Config().IsFullValidation = fullValidation
+	return map[string]interface{}{
+		"IsFullValidation": config.Config().IsFullValidation,
+	}, nil
+}
+
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardIDParam := int(arrayParams[0].(float64))
