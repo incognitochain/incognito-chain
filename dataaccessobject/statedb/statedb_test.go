@@ -84,7 +84,7 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	stateDB.SetStateObject(TestObjectType, keys[1], values[1])
 	stateDB.SetStateObject(TestObjectType, keys[2], values[2])
 	rootHash, _ := stateDB.Commit(true)
-	stateDB.Database().TrieDB().Commit(rootHash, false)
+	stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 
 	v0, err := stateDB.getTestObject(keys[0])
 	if err != nil {
@@ -131,7 +131,7 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	stateDB.MarkDeleteStateObject(TestObjectType, keys[4])
 
 	rootHash2, _ := stateDB.Commit(true)
-	stateDB.Database().TrieDB().Commit(rootHash2, false)
+	stateDB.Database().TrieDB().Commit(rootHash2, false, nil)
 
 	v0, err = stateDB.getTestObject(keys[0])
 	v1, err = stateDB.getTestObject(keys[1])
@@ -472,7 +472,7 @@ func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
 	if bytes.Compare(rootHash.Bytes(), emptyRoot.Bytes()) == 0 {
 		panic("root hash is empty")
 	}
-	err = warperDBStatedbTest.TrieDB().Commit(rootHash, false)
+	err = warperDBStatedbTest.TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}

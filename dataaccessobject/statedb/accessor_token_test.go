@@ -127,7 +127,7 @@ func TestStateDB_StorePrivacyToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func TestStateDB_StorePrivacyTokenTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,7 +415,7 @@ func TestStateDB_ListPrivacyToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -523,7 +523,7 @@ func TestStateDB_GetPrivacyTokenTxs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -667,7 +667,7 @@ func TestStateDB_PrivacyTokenIDExisted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

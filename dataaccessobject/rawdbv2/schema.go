@@ -419,3 +419,14 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 
 	return append(prefixHash, valueHash[:][:txBySerialNumberPrefixKeyLength]...)
 }
+
+var (
+	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
+)
+
+// preimageKey = PreimagePrefix + hash
+func preimageKey(hash common.Hash) []byte {
+	temp := make([]byte, len(PreimagePrefix))
+	copy(temp, PreimagePrefix)
+	return append(temp, hash.Bytes()...)
+}

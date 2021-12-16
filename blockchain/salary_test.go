@@ -525,7 +525,7 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 				t.Errorf("addShardRewardRequestToBeacon() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			rootHash, _ := sDB.Commit(true)
-			_ = sDB.Database().TrieDB().Commit(rootHash, false)
+			_ = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		})
 	}
 	reward, err := statedb.GetRewardOfShardByEpoch(sDB, 1, 0, common.PRVCoinID)

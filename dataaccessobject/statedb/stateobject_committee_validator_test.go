@@ -47,7 +47,7 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +94,7 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash2, false)
+	err = sDB.Database().TrieDB().Commit(rootHash2, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -390,7 +390,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -716,7 +716,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -879,7 +879,7 @@ func BenchmarkStateDB_GetCommitteeState1In1(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}

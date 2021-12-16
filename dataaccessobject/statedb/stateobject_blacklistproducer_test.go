@@ -28,7 +28,7 @@ func storeBlackListProducer(initRoot common.Hash, warperDB DatabaseAccessWarper,
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -114,7 +114,7 @@ func TestStateDB_GetAllBlackListProducerStateMultipleRootHash(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash1, false)
+	err = sDB.Database().TrieDB().Commit(rootHash1, false, nil)
 	if err != nil {
 		panic(err)
 	}

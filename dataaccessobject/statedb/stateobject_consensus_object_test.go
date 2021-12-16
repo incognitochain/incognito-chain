@@ -32,7 +32,7 @@ func storeCommitteeObjectOneShardForTestConsensus(role int, initRoot common.Hash
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}

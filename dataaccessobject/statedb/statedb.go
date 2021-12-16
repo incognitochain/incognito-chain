@@ -136,9 +136,11 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
 	}
 	// Write the account trie changes, measuing the amount of wasted time
-	return stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
+	root, _, err := stateDB.trie.Commit(func(paths [][]byte, hexpath []byte, leaf []byte, parent common.Hash) error {
 		return nil
 	})
+
+	return root, err
 }
 
 // Database return current database access warper
@@ -2050,7 +2052,6 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 	}
 	return NewBridgeBSCTxState(), false, nil
 }
-
 
 // ================================= PRV EVM (ERC20/BEP20) OBJECT =======================================
 func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState, bool, error) {

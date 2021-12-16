@@ -313,7 +313,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBeaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
-	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil)
 	if err != nil {
 		return err
 	}

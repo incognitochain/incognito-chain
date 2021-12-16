@@ -819,7 +819,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	)
 
 	rootHash, _ := sDB.Commit(true)
-	sDB.Database().TrieDB().Commit(rootHash, false)
+	sDB.Database().TrieDB().Commit(rootHash, false, nil)
 
 	committeeChangeSlashingForceSwapOut := NewCommitteeChange()
 	committeeChangeSlashingForceSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -1581,13 +1581,13 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 	)
 
 	rootHash, _ := sDB.Commit(true)
-	sDB.Database().TrieDB().Commit(rootHash, false)
+	sDB.Database().TrieDB().Commit(rootHash, false, nil)
 
 	rootHash2, _ := sDB2.Commit(true)
-	sDB2.Database().TrieDB().Commit(rootHash2, false)
+	sDB2.Database().TrieDB().Commit(rootHash2, false, nil)
 
 	rootHash3, _ := sDB3.Commit(true)
-	sDB3.Database().TrieDB().Commit(rootHash3, false)
+	sDB3.Database().TrieDB().Commit(rootHash3, false, nil)
 
 	type fields struct {
 		beaconCommitteeStateSlashingBase

@@ -170,7 +170,7 @@ func TestGetRewardOfShardByEpochV3(t *testing.T) {
 		}
 	}
 	rootHash, _ := sDB.Commit(true)
-	_ = sDB.Database().TrieDB().Commit(rootHash, true)
+	_ = sDB.Database().TrieDB().Commit(rootHash, true, nil)
 
 	type args struct {
 		stateDB  *StateDB
@@ -407,7 +407,7 @@ func TestGetAllTokenIDForRewardV3(t *testing.T) {
 		}
 	}
 	rootHash, _ := sDB.Commit(true)
-	_ = sDB.Database().TrieDB().Commit(rootHash, true)
+	_ = sDB.Database().TrieDB().Commit(rootHash, true, nil)
 
 	type args struct {
 		stateDB *StateDB
@@ -566,7 +566,7 @@ func TestGetRewardOfShardByEpoch(t *testing.T) {
 		}
 	}
 	rootHash, _ := sDB.Commit(true)
-	_ = sDB.Database().TrieDB().Commit(rootHash, true)
+	_ = sDB.Database().TrieDB().Commit(rootHash, true, nil)
 
 	type args struct {
 		stateDB *StateDB
@@ -686,7 +686,7 @@ func TestGetAllTokenIDForReward(t *testing.T) {
 		}
 	}
 	rootHash, _ := sDB.Commit(true)
-	_ = sDB.Database().TrieDB().Commit(rootHash, true)
+	_ = sDB.Database().TrieDB().Commit(rootHash, true, nil)
 
 	type args struct {
 		stateDB *StateDB
@@ -761,7 +761,7 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -780,7 +780,7 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -804,7 +804,7 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -28,7 +28,7 @@ func storeCommitteeReward(initRoot common.Hash, warperDB DatabaseAccessWarper) (
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +88,7 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

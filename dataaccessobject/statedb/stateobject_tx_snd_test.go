@@ -38,7 +38,7 @@ func storeSNDerivator(initRoot common.Hash, db DatabaseAccessWarper, limit int) 
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func TestStateDB_StoreAndGetSNDerivatorrState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

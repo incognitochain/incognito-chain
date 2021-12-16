@@ -995,19 +995,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	newBestState.SlashStateDBRootHash = slashRootHash
 	if BeaconSyncMode == NORMAL_SYNC_MODE || (BeaconSyncMode == FAST_SYNC_MODE && beaconBlock.Header.Height%10000 == 0) {
-		err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
+		err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false, nil)
 		if err != nil {
 			return err
 		}
-		err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+		err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil)
 		if err != nil {
 			return err
 		}
-		err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
+		err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false, nil)
 		if err != nil {
 			return err
 		}
-		err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
+		err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false, nil)
 		if err != nil {
 			return err
 		}

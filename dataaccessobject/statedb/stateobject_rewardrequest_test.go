@@ -33,7 +33,7 @@ func storeRewardRequest(initRoot common.Hash, warperDB DatabaseAccessWarper, epo
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +90,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash2, false)
+	err = sDB.Database().TrieDB().Commit(rootHash2, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -156,7 +156,7 @@ func TestStateDB_AddShardRewardRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestStateDB_AddShardRewardRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestStateDB_AddShardRewardRequest5000(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = stateDB.Database().TrieDB().Commit(rootHash, false)
+		err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -247,7 +247,7 @@ func TestStateDB_GetAllTokenIDForReward(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = stateDB.Database().TrieDB().Commit(rootHash, false)
+		err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

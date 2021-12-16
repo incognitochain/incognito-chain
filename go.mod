@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.38.0
 	github.com/0xBahamoot/go-bigcompressor v1.0.5
 	github.com/0xsirrush/color v1.7.0
+	github.com/VictoriaMetrics/fastcache v1.8.0
 	github.com/allegro/bigcache v1.2.1
 	github.com/aristanetworks/goarista v0.0.0-20190704150520-f44d68189fd7 // indirect
 	github.com/binance-chain/go-sdk v1.1.3

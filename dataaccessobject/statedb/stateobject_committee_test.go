@@ -28,7 +28,7 @@ func TestStateDB_TestChangeAutoStaking(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +38,7 @@ func TestStateDB_TestChangeAutoStaking(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash2, false)
+	err = sDB.Database().TrieDB().Commit(rootHash2, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
-// Database wraps access to tries and contract code.
+// IntermediateWriter wraps access to tries and contract code.
 type DatabaseAccessWarper interface {
 	// OpenTrie opens the main account trie.
 	//OpenTrie(root common.Hash) (Trie, error)
@@ -48,7 +48,7 @@ type Trie interface {
 
 	// Commit writes all nodes to the trie's memory database, tracking the internal
 	// and external (for account tries) references.
-	Commit(onleaf trie.LeafCallback) (common.Hash, error)
+	Commit(onleaf trie.LeafCallback) (common.Hash, int, error)
 
 	// NodeIterator returns an iterator that returns nodes of the trie. Iteration
 	// starts at the key after the given start key.

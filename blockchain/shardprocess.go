@@ -1182,24 +1182,26 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	err = newShardState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil) // Save data to disk database
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
 	if ShardSyncMode == NORMAL_SYNC_MODE || (ShardSyncMode == FAST_SYNC_MODE && shardBlock.Header.Height%10000 == 0) {
-		err = newShardState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
+		err = newShardState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false, nil)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		err = newShardState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false) // Save data to disk database
+		err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false, nil)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
+		err = newShardState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false, nil)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		err = newShardState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		err = newShardState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
+		err = newShardState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false, nil)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
