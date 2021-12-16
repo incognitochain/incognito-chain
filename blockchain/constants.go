@@ -57,7 +57,7 @@ var (
 
 var (
 	BeaconSyncMode = NORMAL_SYNC_MODE
-	ShardSyncMode  = NORMAL_SYNC_MODE
+	ShardSyncMode  = FAST_SYNC_MODE
 )
 
 const (

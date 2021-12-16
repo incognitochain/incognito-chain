@@ -1182,37 +1182,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	newShardState.SlashStateDBRootHash = slashRootHash
 
-	err = newShardState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil) // Save data to disk database
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-
-	if ShardSyncMode == NORMAL_SYNC_MODE || (ShardSyncMode == FAST_SYNC_MODE && shardBlock.Header.Height%10000 == 0) {
-		err = newShardState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		err = newShardState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		err = newShardState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		newShardState.consensusStateDB.ClearObjects()
-		newShardState.transactionStateDB.ClearObjects()
-		newShardState.featureStateDB.ClearObjects()
-		newShardState.rewardStateDB.ClearObjects()
-		newShardState.slashStateDB.ClearObjects()
-	}
-
-	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
 	sRH := ShardRootHash{
 		ConsensusStateDBRootHash:   consensusRootHash,
 		FeatureStateDBRootHash:     featureRootHash,
@@ -1221,10 +1192,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		TransactionStateDBRootHash: transactionRootHash,
 	}
 
-	if err := rawdbv2.StoreShardRootsHash(batchData, shardID, blockHash, sRH); err != nil {
+	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
+
+	if err := newShardState.CommitTrieToDisk(batchData, sRH, false); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)

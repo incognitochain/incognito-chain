@@ -703,3 +703,43 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 
 	return beaconHeight, nil
 }
+
+func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, sRH ShardRootHash, force bool) error {
+
+	var err error
+
+	if force || ShardSyncMode == NORMAL_SYNC_MODE || (ShardSyncMode == FAST_SYNC_MODE && shardBestState.ShardHeight%10000 == 0) {
+		err = shardBestState.consensusStateDB.Database().TrieDB().Commit(sRH.ConsensusStateDBRootHash, false, nil) // Save data to disk database
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		err = shardBestState.slashStateDB.Database().TrieDB().Commit(sRH.SlashStateDBRootHash, false, nil)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		err = shardBestState.transactionStateDB.Database().TrieDB().Commit(sRH.TransactionStateDBRootHash, false, nil)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		err = shardBestState.featureStateDB.Database().TrieDB().Commit(sRH.FeatureStateDBRootHash, false, nil)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		err = shardBestState.rewardStateDB.Database().TrieDB().Commit(sRH.RewardStateDBRootHash, false, nil)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		shardBestState.consensusStateDB.ClearObjects()
+		shardBestState.transactionStateDB.ClearObjects()
+		shardBestState.featureStateDB.ClearObjects()
+		shardBestState.rewardStateDB.ClearObjects()
+		shardBestState.slashStateDB.ClearObjects()
+		Logger.log.Infof("SHARD %+v | Commit trie to disk, height %+v, hash %+v", shardBestState.ShardID, shardBestState.ShardHeight, shardBestState.BestBlockHash)
+	}
+
+	if err := rawdbv2.StoreShardRootsHash(batch, shardBestState.ShardID, shardBestState.BestBlockHash, sRH); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
+	return nil
+}

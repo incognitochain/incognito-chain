@@ -994,32 +994,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 	newBestState.SlashStateDBRootHash = slashRootHash
-	if BeaconSyncMode == NORMAL_SYNC_MODE || (BeaconSyncMode == FAST_SYNC_MODE && beaconBlock.Header.Height%10000 == 0) {
-		err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		newBestState.consensusStateDB.ClearObjects()
-		newBestState.rewardStateDB.ClearObjects()
-		newBestState.featureStateDB.ClearObjects()
-		newBestState.slashStateDB.ClearObjects()
-	}
 
-	//statedb===========================END
-
-	batch := blockchain.GetBeaconChainDatabase().NewBatch()
 	//State Root Hash
 	bRH := BeaconRootHash{
 		ConsensusStateDBRootHash: consensusRootHash,
@@ -1027,9 +1002,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		RewardStateDBRootHash:    rewardRootHash,
 		SlashStateDBRootHash:     slashRootHash,
 	}
+	//statedb===========================END
+	batch := blockchain.GetBeaconChainDatabase().NewBatch()
 
-	if err := rawdbv2.StoreBeaconRootsHash(batch, blockHash, bRH); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+	if err := newBestState.CommitTrieToDisk(batch, bRH); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
 	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {

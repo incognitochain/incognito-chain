@@ -627,6 +627,8 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Error(err)
 	}
 
+	serverObj.blockChain.Stop()
+
 	//Stop the output coin indexer
 	if blockchain.GetCoinIndexer() != nil {
 		blockchain.GetCoinIndexer().Stop()

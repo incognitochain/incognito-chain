@@ -347,6 +347,96 @@ func (blockchain *BlockChain) initBeaconState() error {
 	return nil
 }
 
+func (bc *BlockChain) Stop() {
+	Logger.log.Info("Blockchain Stop")
+	if ShardSyncMode == FAST_SYNC_MODE {
+		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
+		for i, shardChain := range bc.ShardChain {
+			bc.ShardChain[i].insertLock.Lock()
+			defer bc.ShardChain[i].insertLock.Unlock()
+
+			Logger.log.Infof("Blockchain Stop, start commit shard %+v in fast sync mode", i)
+			shardBestState := shardChain.GetBestState()
+			// consensus root hash
+			consensusRootHash, err := shardBestState.consensusStateDB.Commit(true) // Store data to memory
+			if err != nil {
+				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
+				return
+			}
+			shardBestState.ConsensusStateDBRootHash = consensusRootHash
+			// transaction root hash
+			transactionRootHash, err := shardBestState.transactionStateDB.Commit(true)
+			if err != nil {
+				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
+				return
+			}
+			shardBestState.TransactionStateDBRootHash = transactionRootHash
+			// feature root hash
+			featureRootHash, err := shardBestState.featureStateDB.Commit(true)
+			if err != nil {
+				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
+				return
+			}
+			shardBestState.FeatureStateDBRootHash = featureRootHash
+			// reward root hash
+			rewardRootHash, err := shardBestState.rewardStateDB.Commit(true)
+			if err != nil {
+				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
+				return
+			}
+			shardBestState.RewardStateDBRootHash = rewardRootHash
+			// slash root hash
+			slashRootHash, err := shardBestState.slashStateDB.Commit(true)
+			if err != nil {
+				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
+				return
+			}
+			shardBestState.SlashStateDBRootHash = slashRootHash
+
+			shardID := shardBestState.ShardID
+			batch := bc.GetShardChainDatabase(shardID).NewBatch()
+			sRH := ShardRootHash{
+				ConsensusStateDBRootHash:   shardBestState.ConsensusStateDBRootHash,
+				FeatureStateDBRootHash:     shardBestState.FeatureStateDBRootHash,
+				RewardStateDBRootHash:      shardBestState.RewardStateDBRootHash,
+				SlashStateDBRootHash:       shardBestState.SlashStateDBRootHash,
+				TransactionStateDBRootHash: shardBestState.TransactionStateDBRootHash,
+			}
+			err = shardBestState.CommitTrieToDisk(batch, sRH, true)
+			if err != nil {
+				Logger.log.Error("Blockchain Stop, commit shard best state for fast sync mode error: ", err)
+				return
+			}
+			for _, view := range shardChain.GetAllView() {
+				shardView := view.(*ShardBestState)
+				if shardView.BestBlockHash == shardBestState.BestBlockHash {
+					continue
+				}
+				shardView.ConsensusStateDBRootHash = shardBestState.ConsensusStateDBRootHash
+				shardView.FeatureStateDBRootHash = shardBestState.FeatureStateDBRootHash
+				shardView.RewardStateDBRootHash = shardBestState.RewardStateDBRootHash
+				shardView.SlashStateDBRootHash = shardBestState.SlashStateDBRootHash
+				shardView.TransactionStateDBRootHash = shardBestState.TransactionStateDBRootHash
+				if err := rawdbv2.StoreShardRootsHash(batch, shardID, shardView.BestBlockHash, sRH); err != nil {
+					Logger.log.Error("Blockchain Stop, commit other view for fast sync mode error: ", err)
+					return
+				}
+			}
+
+			if err := bc.BackupShardViews(batch, shardID); err != nil {
+				Logger.log.Error("Blockchain Stop, backup shard view for for fast sync mode error: ", err)
+				return
+			}
+			if err := batch.Write(); err != nil {
+				Logger.log.Error("Blockchain Stop, batch write for fast sync mode error: ", err)
+				return
+			}
+			Logger.log.Infof("Blockchain Stop, finish commit shard %+v in fast sync mode", i)
+		}
+		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
+	}
+}
+
 func (blockchain *BlockChain) GetClonedBeaconBestState() (*BeaconBestState, error) {
 	result := NewBeaconBestState()
 	err := result.cloneBeaconBestStateFrom(blockchain.GetBeaconBestState())

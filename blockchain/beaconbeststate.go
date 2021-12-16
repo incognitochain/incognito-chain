@@ -1135,3 +1135,35 @@ func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize m
 
 	return increaseMaxCommitteeSize[key]
 }
+
+func (beaconBestState *BeaconBestState) CommitTrieToDisk(batch incdb.Batch, bRH BeaconRootHash) error {
+	err := beaconBestState.consensusStateDB.Database().TrieDB().Commit(beaconBestState.ConsensusStateDBRootHash, false, nil)
+	if err != nil {
+		return err
+	}
+	beaconBestState.consensusStateDB.ClearObjects()
+
+	if BeaconSyncMode == NORMAL_SYNC_MODE || (BeaconSyncMode == FAST_SYNC_MODE && beaconBestState.BeaconHeight%10000 == 0) {
+		err = beaconBestState.slashStateDB.Database().TrieDB().Commit(bRH.SlashStateDBRootHash, false, nil)
+		if err != nil {
+			return err
+		}
+		err = beaconBestState.featureStateDB.Database().TrieDB().Commit(bRH.FeatureStateDBRootHash, false, nil)
+		if err != nil {
+			return err
+		}
+		err = beaconBestState.rewardStateDB.Database().TrieDB().Commit(bRH.RewardStateDBRootHash, false, nil)
+		if err != nil {
+			return err
+		}
+		beaconBestState.rewardStateDB.ClearObjects()
+		beaconBestState.featureStateDB.ClearObjects()
+		beaconBestState.slashStateDB.ClearObjects()
+	}
+
+	if err := rawdbv2.StoreBeaconRootsHash(batch, beaconBestState.BestBlockHash, bRH); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
+	return nil
+}
