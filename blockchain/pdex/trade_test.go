@@ -31,6 +31,7 @@ var (
 	testDB                     *statedb.StateDB
 	logger                     common.Logger
 	DefaultTestMaxOrdersPerNft uint = 20
+	subtestPrefix = "accessota/"
 )
 
 func init() {
@@ -440,7 +441,7 @@ func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 }
 
 func mustReadTestcases(filename string) []Testcase {
-	raw, err := ioutil.ReadFile("testdata/" + filename)
+	raw, err := ioutil.ReadFile("testdata/" + subtestPrefix + filename)
 	if err != nil {
 		panic(err)
 	}
@@ -453,7 +454,7 @@ func mustReadTestcases(filename string) []Testcase {
 }
 
 func mustReadState(filename string, paramsFiles ...string) *stateV2 {
-	raw, err := ioutil.ReadFile("testdata/" + filename)
+	raw, err := ioutil.ReadFile("testdata/" + subtestPrefix + filename)
 	if err != nil {
 		panic(err)
 	}

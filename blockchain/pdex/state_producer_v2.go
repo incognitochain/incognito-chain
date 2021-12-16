@@ -536,10 +536,12 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		assetID := common.Hash{}
+		var nftID *common.Hash = nil
+		var ota []byte = nil
+		var mintAccessInstruction []string // only minting access token when accepted
 		accessByNFT := currentOrderReq.UseNft()
 		if accessByNFT {
-			assetID = *currentOrderReq.NftID
+			nftID = currentOrderReq.NftID
 			// check that the nftID has not exceeded its order count limit
 			if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
 				Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
@@ -550,11 +552,18 @@ TransactionLoop:
 		} else {
 			accessReceiver, found := currentOrderReq.Receiver[common.PdexAccessCoinID]
 			if !found {
-				Logger.log.Warnf("AddOrder: can not find pdex access coin receiver")
+				Logger.log.Warnf("AddOrder: cannot find pdex access coin receiver")
 				result = append(result, refundInstructions...)
 				continue TransactionLoop
 			}
-			assetID = metadataPdexv3.GenAssetID(accessReceiver)
+			ota = accessReceiver.PublicKey.ToBytesS()
+			recvStr, _ := accessReceiver.String() // receivers created using UnmarshalJSON are valid
+			mintAccessInstruction, err = instruction.NewMintAccessTokenWithValue(
+				recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
+			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddOrderRequestMeta))
+			if err != nil {
+				return result, pairs, err
+			}
 		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
@@ -623,7 +632,8 @@ TransactionLoop:
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
 			OrderID:        orderID,
-			NftID:          assetID,
+			NftID:          nftID,
+			AccessOTA:      ota,
 			Token0Rate:     token0Rate,
 			Token1Rate:     token1Rate,
 			Token0Balance:  token0Balance,
@@ -638,6 +648,9 @@ TransactionLoop:
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 		result = append(result, acceptedAction.StringSlice())
+		if mintAccessInstruction != nil {
+			result = append(result, mintAccessInstruction)
+		}
 	}
 
 	Logger.log.Warnf("AddOrder instructions: %v", result)

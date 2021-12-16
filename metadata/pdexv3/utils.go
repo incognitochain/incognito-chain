@@ -102,7 +102,7 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 		return false, fmt.Errorf("next AccessOTA %s does not exist", p.String())
 	}
 	if otaStatus == statedb.OTA_STATUS_OCCUPIED {
-		return false, fmt.Errorf("next AccessOTA %s has invalid status %v", statedb.OTA_STATUS_OCCUPIED)
+		return false, fmt.Errorf("next AccessOTA has invalid status %v", statedb.OTA_STATUS_OCCUPIED)
 	}
 
 	if burnOTA == nil {
@@ -125,7 +125,7 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 			return false, fmt.Errorf("burnt AccessOTA %s does not exist", burnOTAPoint.String())
 		}
 		if otaStatus == statedb.OTA_STATUS_OCCUPIED {
-			return false, fmt.Errorf("burnt AccessOTA %s has invalid status %v", statedb.OTA_STATUS_OCCUPIED)
+			return false, fmt.Errorf("burnt AccessOTA has invalid status %v", statedb.OTA_STATUS_OCCUPIED)
 		}
 
 		// check that burnOTA is a tx input. Param tx cannot be nil
@@ -204,7 +204,7 @@ func (a *AccessOption) IsEmpty() bool {
 }
 
 func (a *AccessOption) UseNft() bool {
-	return !a.NftID.IsZeroValue()
+	return a.NftID != nil && !a.NftID.IsZeroValue()
 }
 
 func (a *AccessOption) ValidateOtaReceivers(tx metadataCommon.Transaction, otaReceiver string, otaReceivers map[common.Hash]*privacy.OTAReceiver) error {

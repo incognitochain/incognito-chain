@@ -1,0 +1,44 @@
+[{
+    "name": "Produce accepted add order request",
+    "data": {
+        "metadata": {
+            "TokenToSell": "0000000000000000000000000000000000000000000000000000000000000100",
+            "PoolPairID": "pair0",
+            "SellAmount": 1050,
+            "MinAcceptableAmount": 800,
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R",
+                "0000000000000000000000000000000000000000000000000000000000000007": "15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub"
+            },
+            "Type": 287
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["287", "1", "0", "54b4fa944e0c7f84e74fcc55325b7c5db4b14979456711fc7c5440e4cea047aa", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"54b4fa944e0c7f84e74fcc55325b7c5db4b14979456711fc7c5440e4cea047aa\",\"AccessOTA\":\"XBN6OuSTzqDnmzsINPnQbP2UWmSrQmnDzyC6RzXEDu0=\",\"Token0Rate\":1050,\"Token1Rate\":800,\"Token0Balance\":1050,\"Token1Balance\":0,\"TradeDirection\":0,\"Receiver\":[\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R\"]}}"],
+            ["308", "287", "{\"OtaReceiver\":\"15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub\",\"ShardID\":0,\"TxReqID\":\"54b4fa944e0c7f84e74fcc55325b7c5db4b14979456711fc7c5440e4cea047aa\"}"]
+        ]
+    }
+}, {
+    "name": "Produce refunded add order request - pair not found",
+    "data": {
+        "metadata": {
+            "TokenToSell": "0000000000000000000000000000000000000000000000000000000000000100",
+            "PoolPairID": "pair0nvm",
+            "SellAmount": 1050,
+            "MinAcceptableAmount": 800,
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R",
+                "0000000000000000000000000000000000000000000000000000000000000007": "15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub"
+            },
+            "Type": 287
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["287", "0", "0", "c2db3b2d8edfd20de3c663201245aace297354b1787f8641fb761804c0a8daf2", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"Amount\":1050}}"]
+        ]
+    }
+}]

@@ -648,9 +648,11 @@ func (sp *stateProcessorV2) addOrder(
 			return pairs, fmt.Errorf("Cannot find pair %s for new order", md.PoolPairID)
 		}
 
-		// fee for this request is deducted right away, while the fee stored in the order itself
-		// starts from 0 and will accumulate over time
-		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, md.NftID, md.Token0Rate, md.Token1Rate,
+		rk := common.HashH(md.AccessOTA)
+		if md.NftID != nil {
+			rk = *md.NftID
+		}
+		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, rk, md.AccessOTA, md.Token0Rate, md.Token1Rate,
 			md.Token0Balance, md.Token1Balance, md.TradeDirection, md.Receiver)
 		pair.orderbook.InsertOrder(newOrder)
 		// write changes to state
