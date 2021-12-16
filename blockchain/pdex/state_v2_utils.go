@@ -137,6 +137,7 @@ func (share *Share) getDiff(
 
 type Staker struct {
 	liquidity           uint64
+	accessOTA           string
 	rewards             map[common.Hash]uint64
 	lastRewardsPerShare map[common.Hash]*big.Int
 }
@@ -161,13 +162,19 @@ func (staker *Staker) Rewards() map[common.Hash]uint64 {
 	return res
 }
 
+func (staker *Staker) AccessOTA() string {
+	return staker.accessOTA
+}
+
 func (staker *Staker) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Liquidity           uint64                   `json:"Liquidity"`
+		AccessOTA           string                   `json:"AccessOTA,omitempty"`
 		Rewards             map[common.Hash]uint64   `json:"Rewards"`
 		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{
 		Liquidity:           staker.liquidity,
+		AccessOTA:           staker.accessOTA,
 		Rewards:             staker.rewards,
 		LastRewardsPerShare: staker.lastRewardsPerShare,
 	})
@@ -180,6 +187,7 @@ func (staker *Staker) MarshalJSON() ([]byte, error) {
 func (staker *Staker) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Liquidity          uint64                   `json:"Liquidity"`
+		AccessOTA          string                   `json:"AccessOTA,omitempty"`
 		Rewards            map[common.Hash]uint64   `json:"Rewards"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{}
@@ -187,6 +195,7 @@ func (staker *Staker) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	staker.accessOTA = temp.AccessOTA
 	staker.liquidity = temp.Liquidity
 	staker.rewards = temp.Rewards
 	staker.lastRewardsPerShare = temp.LastLPFeesPerShare
@@ -200,8 +209,12 @@ func NewStaker() *Staker {
 	}
 }
 
-func NewStakerWithValue(liquidity uint64, rewards map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int) *Staker {
+func NewStakerWithValue(
+	liquidity uint64, accessOTA string,
+	rewards map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int,
+) *Staker {
 	return &Staker{
+		accessOTA:           accessOTA,
 		liquidity:           liquidity,
 		rewards:             rewards,
 		lastRewardsPerShare: lastLPFeesPerShare,
@@ -211,6 +224,7 @@ func NewStakerWithValue(liquidity uint64, rewards map[common.Hash]uint64, lastLP
 func (staker *Staker) Clone() *Staker {
 	res := NewStaker()
 	res.liquidity = staker.liquidity
+	res.accessOTA = staker.accessOTA
 	for k, v := range staker.rewards {
 		res.rewards[k] = v
 	}

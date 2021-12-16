@@ -132,13 +132,13 @@ func (s *StakingPoolState) getDiff(
 	return newStakingPoolChange
 }
 
-func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight uint64, operator byte) error {
+func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight uint64, accessOTA string, operator byte) error {
 	staker, found := s.stakers[nftID]
 	if !found {
 		if operator == subOperator {
 			return errors.New("remove liquidity from invalid staker")
 		}
-		s.stakers[nftID] = NewStakerWithValue(liquidity, make(map[common.Hash]uint64), s.RewardsPerShare())
+		s.stakers[nftID] = NewStakerWithValue(liquidity, accessOTA, make(map[common.Hash]uint64), s.RewardsPerShare())
 	} else {
 		tempLiquidity, err := executeOperationUint64(staker.liquidity, liquidity, operator)
 		if err != nil {
@@ -281,8 +281,11 @@ func (s *StakingPoolState) updateToDB(
 			}
 			if staker, found := s.stakers[nftID]; found {
 				if stakerChange.IsChanged {
-					err := statedb.StorePdexv3Staker(env.StateDB(), stakingPoolID, nftID,
-						statedb.NewPdexv3StakerStateWithValue(*nftHash, staker.liquidity),
+					err := statedb.StorePdexv3Staker(
+						env.StateDB(), stakingPoolID, nftID,
+						statedb.NewPdexv3StakerStateWithValue(
+							*nftHash, staker.liquidity, staker.accessOTA,
+						),
 					)
 					if err != nil {
 						return err

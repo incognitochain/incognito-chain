@@ -28,6 +28,7 @@ type AddLiquidityRequest struct {
 func NewAddLiquidity() *AddLiquidityRequest {
 	return &AddLiquidityRequest{
 		AccessOption: *NewAccessOption(),
+		otaReceivers: make(map[common.Hash]*privacy.OTAReceiver),
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3AddLiquidityRequestMeta,
 		},
@@ -71,6 +72,13 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers)
 	if err != nil {
 		return false, err
+	}
+	tokenHash, err := common.Hash{}.NewHashFromStr(request.tokenID)
+	if err != nil {
+		return false, err
+	}
+	if _, found := request.otaReceivers[*tokenHash]; !found {
+		return false, errors.New("Can not find otaReceiver for burnt tokenID")
 	}
 	if request.poolPairID != utils.EmptyString {
 		err := beaconViewRetriever.IsValidPoolPairID(request.poolPairID)

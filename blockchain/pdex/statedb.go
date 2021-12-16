@@ -220,7 +220,9 @@ func initStakers(stakingPoolID string, stateDB *statedb.StateDB) (map[string]*St
 		if err != nil {
 			return res, totalLiquidity, err
 		}
-		res[nftID] = NewStakerWithValue(stakerState.Liquidity(), rewards, lastRewardsPerShare)
+		res[nftID] = NewStakerWithValue(
+			stakerState.Liquidity(), stakerState.AccessOTA(), rewards, lastRewardsPerShare,
+		)
 	}
 	return res, totalLiquidity, nil
 }

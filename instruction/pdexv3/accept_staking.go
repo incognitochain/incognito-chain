@@ -13,6 +13,7 @@ type AcceptStaking struct {
 	nftID         common.Hash
 	stakingPoolID common.Hash
 	liquidity     uint64
+	accessOTA     string
 	shardID       byte
 	txReqID       common.Hash
 }
@@ -20,10 +21,11 @@ type AcceptStaking struct {
 func NewAcceptStaking() *AcceptStaking { return &AcceptStaking{} }
 
 func NewAcceptStakingWtihValue(
-	nftID, stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64,
+	nftID, stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA string,
 ) *AcceptStaking {
 	return &AcceptStaking{
 		nftID:         nftID,
+		accessOTA:     accessOTA,
 		stakingPoolID: stakingPoolID,
 		txReqID:       txReqID,
 		shardID:       shardID,
@@ -65,6 +67,7 @@ func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 		NftID         common.Hash `json:"NftID"`
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
+		AccessOTA     string      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{
@@ -72,6 +75,7 @@ func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 		StakingPoolID: a.stakingPoolID,
 		ShardID:       a.shardID,
 		Liquidity:     a.liquidity,
+		AccessOTA:     a.accessOTA,
 		TxReqID:       a.txReqID,
 	})
 	if err != nil {
@@ -85,6 +89,7 @@ func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 		NftID         common.Hash `json:"NftID"`
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
+		AccessOTA     string      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{}
@@ -97,7 +102,12 @@ func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 	a.nftID = temp.NftID
 	a.shardID = temp.ShardID
 	a.txReqID = temp.TxReqID
+	a.accessOTA = temp.AccessOTA
 	return nil
+}
+
+func (a *AcceptStaking) AccessOTA() string {
+	return a.accessOTA
 }
 
 func (a *AcceptStaking) Liquidity() uint64 {

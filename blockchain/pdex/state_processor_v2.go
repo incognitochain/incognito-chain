@@ -578,15 +578,15 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
 		return poolPairs, stakingPoolStates, nil, err
 	}
-	assetID := utils.EmptyString
+	accessID := utils.EmptyString
 	if acceptWithdrawLiquidity.AccessOption.UseNft() {
-		assetID = acceptWithdrawLiquidity.AccessOption.NftID.String()
+		accessID = acceptWithdrawLiquidity.AccessOption.NftID.String()
 	} else {
-		assetID = acceptWithdrawLiquidity.AccessOption.AssetID.String()
+		accessID = acceptWithdrawLiquidity.AccessOption.AccessID.String()
 	}
-	share, ok := poolPair.shares[assetID]
+	share, ok := poolPair.shares[accessID]
 	if !ok || share == nil {
-		err := fmt.Errorf("Can't find LP id %s", assetID)
+		err := fmt.Errorf("Can't find LP id %s", accessID)
 		return poolPairs, stakingPoolStates, nil, err
 	}
 	poolPair.updateSingleTokenAmount(
@@ -601,7 +601,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
 		_, err = poolPair.updateShareValue(
 			acceptWithdrawLiquidity.ShareAmount(), beaconHeight,
-			assetID, utils.EmptyString, subOperator, //TODO: @tin fix here
+			accessID, utils.EmptyString, subOperator, //TODO: @tin fix here
 		)
 		if err != nil {
 			return poolPairs, stakingPoolStates, nil, err
@@ -1069,7 +1069,7 @@ func (sp *stateProcessorV2) staking(
 		liquidity = acceptInst.Liquidity()
 		nftID = acceptInst.NftID().String()
 		stakingPoolState := stakingPoolStates[stakingPoolID]
-		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, addOperator)
+		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, acceptInst.AccessOTA(), addOperator)
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
@@ -1116,7 +1116,7 @@ func (sp *stateProcessorV2) unstaking(
 	var stakingPoolID string
 	var txReqID common.Hash
 	var liquidity uint64
-	assetID := common.Hash{}
+	accessID := common.Hash{}
 	switch inst[1] {
 	case common.Pdexv3AcceptStringStatus:
 		acceptInst := instruction.NewAcceptUnstaking()
@@ -1129,13 +1129,13 @@ func (sp *stateProcessorV2) unstaking(
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Amount()
 		if acceptInst.AccessOption.UseNft() {
-			assetID = *acceptInst.AccessOption.NftID
+			accessID = *acceptInst.AccessOption.NftID
 		} else {
-			assetID = *acceptInst.AccessOption.AssetID
+			accessID = *acceptInst.AccessOption.AccessID
 		}
 		stakingPoolState := stakingPoolStates[stakingPoolID]
 		err = stakingPoolState.updateLiquidity(
-			assetID.String(), liquidity, beaconHeight, subOperator,
+			accessID.String(), liquidity, beaconHeight, utils.EmptyString, subOperator, //TODO: @tin fix here
 		)
 		if err != nil {
 			return stakingPoolStates, poolPairStates, nil, err
@@ -1151,7 +1151,7 @@ func (sp *stateProcessorV2) unstaking(
 	}
 	unstakingStatus := v2.UnstakingStatus{
 		Status:        status,
-		NftID:         assetID.String(),
+		NftID:         accessID.String(),
 		StakingPoolID: stakingPoolID,
 		Liquidity:     liquidity,
 	}

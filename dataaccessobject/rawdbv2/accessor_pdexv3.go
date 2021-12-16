@@ -16,7 +16,7 @@ type Pdexv3Contribution struct {
 	amount       uint64
 	amplifier    uint
 	txReqID      common.Hash
-	nftID        common.Hash // will be included both nftID and assetID
+	nftID        common.Hash // will be included both nftID and accessID
 	shardID      byte
 	accessOTA    string
 }
@@ -333,7 +333,7 @@ func (o *Pdexv3Order) TradeDirection() byte   { return o.tradeDirection }
 func (o *Pdexv3Order) Token0Receiver() string { return o.receiver[0] }
 func (o *Pdexv3Order) Token1Receiver() string { return o.receiver[1] }
 func (o *Pdexv3Order) AccessOTA() []byte      { return o.accessOTA }
-func (o *Pdexv3Order) RewardKey() common.Hash     { return o.nftID }
+func (o *Pdexv3Order) RewardKey() common.Hash { return o.nftID }
 
 // SetToken0Balance() changes the token0 balance of this order. Only balances can be updated,
 // while rates, id & trade direction cannot

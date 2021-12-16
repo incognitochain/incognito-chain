@@ -153,18 +153,18 @@ func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.
 type AccessOption struct {
 	NftID    *common.Hash `json:"NftID,omitempty"`
 	BurntOTA *AccessOTA   `json:"BurntOTA,omitempty"`
-	AssetID  *common.Hash `json:"AssetID,omitempty"`
+	AccessID *common.Hash `json:"AccessID,omitempty"`
 }
 
 func NewAccessOption() *AccessOption {
 	return &AccessOption{}
 }
 
-func NewAccessOptionWithValue(burntOTA *AccessOTA, nftID, assetID *common.Hash) *AccessOption {
+func NewAccessOptionWithValue(burntOTA *AccessOTA, nftID, accessID *common.Hash) *AccessOption {
 	return &AccessOption{
 		BurntOTA: burntOTA,
 		NftID:    nftID,
-		AssetID:  assetID,
+		AccessID: accessID,
 	}
 }
 
@@ -176,14 +176,14 @@ func (a *AccessOption) IsValid(
 ) error {
 	err := beaconViewRetriever.IsValidNftID(a.NftID.String())
 	if err != nil {
-		if a.AssetID != nil {
-			if a.AssetID.IsZeroValue() {
-				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("assetID can not be zero value"))
+		if a.AccessID != nil {
+			if a.AccessID.IsZeroValue() {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("accessID can not be zero value"))
 			}
 		}
 		if isWithdrawRequest {
 			if a.BurntOTA == nil {
-				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("burnt OTA or assetID is null")))
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, errors.New("burnt OTA or accessID is null")))
 			}
 
 			/*valid, err1 := ValidPdexv3Access(a.BurntOTA, tx, common.ConfidentialAssetID, transactionStateDB)*/
@@ -193,14 +193,14 @@ func (a *AccessOption) IsValid(
 		}
 		return nil
 	}
-	if a.BurntOTA != nil || a.AssetID != nil {
-		return errors.New("NftID and (burnOTA or assetID) can not exist at the same time")
+	if a.BurntOTA != nil || a.AccessID != nil {
+		return errors.New("NftID and (burnOTA or accessID) can not exist at the same time")
 	}
 	return nil
 }
 
 func (a *AccessOption) IsEmpty() bool {
-	return a.NftID.IsZeroValue() && a.BurntOTA == nil && a.AssetID.IsZeroValue()
+	return a.NftID.IsZeroValue() && a.BurntOTA == nil && a.AccessID.IsZeroValue()
 }
 
 func (a *AccessOption) UseNft() bool {
@@ -242,14 +242,20 @@ func (a *AccessOption) ValidateOtaReceivers(tx metadataCommon.Transaction, otaRe
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shard id and tx shard id need to be the same"))
 			}
 		}
-		if !isExistedPdexAccessToken && a.AssetID == nil {
+		if !isExistedPdexAccessToken && a.AccessID == nil {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("is not existed pdex access token in otaReceivers"))
 		}
 	}
 	return nil
 }
 
-func GenAssetID(otaReceiver privacy.OTAReceiver) common.Hash {
+func GenAccessID(otaReceiver privacy.OTAReceiver) common.Hash {
 	pubKey := otaReceiver.PublicKey.ToBytes()
 	return common.HashH(pubKey[:])
+}
+
+func GenAccessOTA(otaReceiver privacy.OTAReceiver) string {
+	tempAccessOTA := AccessOTA{}
+	tempAccessOTA.FromBytesS(otaReceiver.PublicKey.ToBytesS())
+	return tempAccessOTA.String()
 }

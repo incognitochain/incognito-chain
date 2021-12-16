@@ -206,7 +206,7 @@ func buildRefundContributionTxv2(
 		refundContributionValue.TxReqID().String(),
 	)
 	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromString(refundContributionValue.OtaReceiver())
+	err = otaReceiver.FromString(refundContributionValue.OtaReceivers()[refundContributionValue.TokenID()])
 	if err != nil {
 		return tx, err
 	}
