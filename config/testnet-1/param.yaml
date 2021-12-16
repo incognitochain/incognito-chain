@@ -58,9 +58,9 @@ consensus_param:
   assign_rule_v3_height: 2823522
   enable_slashing_height_v2: 2823650
   staking_flow_v3_height: 2823780
-  lemma2_height: 2884002
+  lemma2_height: 2868685
   block_producing_v3_height: 1000000000000
-  byzantine_detector_height: 2886522
+  byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1280
