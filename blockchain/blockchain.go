@@ -355,8 +355,8 @@ func (bc *BlockChain) Stop() {
 			bc.ShardChain[i].insertLock.Lock()
 			defer bc.ShardChain[i].insertLock.Unlock()
 
-			Logger.log.Infof("Blockchain Stop, start commit shard %+v in fast sync mode", i)
 			shardBestState := shardChain.GetBestState()
+			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 			// consensus root hash
 			consensusRootHash, err := shardBestState.consensusStateDB.Commit(true) // Store data to memory
 			if err != nil {
@@ -431,7 +431,7 @@ func (bc *BlockChain) Stop() {
 				Logger.log.Error("Blockchain Stop, batch write for fast sync mode error: ", err)
 				return
 			}
-			Logger.log.Infof("Blockchain Stop, finish commit shard %+v in fast sync mode", i)
+			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 		}
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
 	}

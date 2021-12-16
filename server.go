@@ -84,6 +84,7 @@ type Server struct {
 	highway      *peerv2.ConnManager
 
 	cQuit     chan struct{}
+	wg        *sync.WaitGroup
 	cNewPeers chan *peer.Peer
 }
 
@@ -205,6 +206,7 @@ func (serverObj *Server) NewServer(
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.cQuit = make(chan struct{})
+	serverObj.wg = new(sync.WaitGroup)
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
@@ -482,6 +484,8 @@ func (serverObj *Server) NewServer(
 			Blockchain: serverObj.blockChain,
 			Consensus:  serverObj.consensusEngine,
 			MiningKey:  serverObj.miningKeys,
+			CQuit:      serverObj.cQuit,
+			Wg:         serverObj.wg,
 		})
 
 	// Start up persistent peers.
@@ -627,8 +631,6 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Error(err)
 	}
 
-	serverObj.blockChain.Stop()
-
 	//Stop the output coin indexer
 	if blockchain.GetCoinIndexer() != nil {
 		blockchain.GetCoinIndexer().Stop()
@@ -636,6 +638,8 @@ func (serverObj *Server) Stop() error {
 
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
+	serverObj.wg.Wait()
+	serverObj.blockChain.Stop()
 	return nil
 }
 

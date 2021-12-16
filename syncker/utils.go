@@ -16,7 +16,7 @@ const STOP_SYNC = "stop_sync"
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
-func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
+func InsertBatchBlock(chain Chain, blocks []types.BlockInterface, cQuit chan struct{}) (int, error) {
 	sameCommitteeBlock := blocks
 
 	validatorRootHashChange := func(blk interface{}) bool {

@@ -42,6 +42,8 @@ type ShardSyncProcess struct {
 	consensus             peerv2.ConsensusData
 	lock                  *sync.RWMutex
 	lastInsert            string
+	cQuit                 chan struct{}
+	wg                    *sync.WaitGroup
 }
 
 func NewShardSyncProcess(
@@ -51,6 +53,8 @@ func NewShardSyncProcess(
 	beaconChain BeaconChainInterface,
 	chain ShardChainInterface,
 	consensus peerv2.ConsensusData,
+	cQuit chan struct{},
+	wg *sync.WaitGroup,
 ) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -70,8 +74,9 @@ func NewShardSyncProcess(
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
-
-		actionCh: make(chan func()),
+		cQuit:            cQuit,
+		wg:               wg,
+		actionCh:         make(chan func()),
 	}
 	s.crossShardSyncProcess = NewCrossShardSyncProcess(network, bc, s, beaconChain)
 
@@ -208,6 +213,13 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 func (s *ShardSyncProcess) syncShardProcess() {
 	for {
+		select {
+		case <-s.cQuit:
+			Logger.Logger.Info(">>>>>>>>>>>>>>>> shard ", s.shardID)
+			s.wg.Done()
+			return
+		default:
+		}
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
 			s.isCatchUp = false
@@ -218,7 +230,6 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		for peerID, pState := range s.getShardPeerStates() {
 			requestCnt += s.streamFromPeer(peerID, pState)
 		}
-
 		if requestCnt > 0 {
 			s.isCatchUp = false
 		} else {
@@ -339,6 +350,8 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	insertTime := time.Now()
 	for {
 		select {
+		case <-s.cQuit:
+			return
 		case blk := <-ch:
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
@@ -356,7 +369,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				insertBlkCnt := 0
 				for {
 					time1 := time.Now()
-					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
+					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer, s.cQuit); err != nil {
 						Logger.Errorf("Fail to Insert Batch Block, %+v", err)
 						return
 					} else {
