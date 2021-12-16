@@ -30,5 +30,4 @@ type StateValidator interface {
 	IsValidStakingPool(tokenID string) error
 	IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error
 	IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error
-	IsValidMintAccessTokenAmount(amount uint64) error
 }

@@ -22,7 +22,6 @@ type Pdexv3Params struct {
 	autoWithdrawOrderLimitAmount    uint
 	minPRVReserveTradingRate        uint64
 	orderMiningRewardRatioBPS       map[string]uint
-	minPrvForMintPdexAccessToken    uint64
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -67,10 +66,6 @@ func (pp Pdexv3Params) OrderMiningRewardRatioBPS() map[string]uint {
 	return pp.orderMiningRewardRatioBPS
 }
 
-func (pp Pdexv3Params) MinPrvForMintPdexAccessToken() uint64 {
-	return pp.minPrvForMintPdexAccessToken
-}
-
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		DefaultFeeRateBPS               uint
@@ -86,7 +81,6 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		AutoWithdrawOrderLimitAmount    uint
 		MinPRVReserveTradingRate        uint64
 		OrderMiningRewardRatioBPS       map[string]uint
-		MinPrvForMintPdexAccessToken    uint64
 	}{
 		DefaultFeeRateBPS:               pp.defaultFeeRateBPS,
 		FeeRateBPS:                      pp.feeRateBPS,
@@ -101,7 +95,6 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		AutoWithdrawOrderLimitAmount:    pp.autoWithdrawOrderLimitAmount,
 		MinPRVReserveTradingRate:        pp.minPRVReserveTradingRate,
 		OrderMiningRewardRatioBPS:       pp.orderMiningRewardRatioBPS,
-		MinPrvForMintPdexAccessToken:    pp.minPrvForMintPdexAccessToken,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -124,7 +117,6 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		AutoWithdrawOrderLimitAmount    uint
 		MinPRVReserveTradingRate        uint64
 		OrderMiningRewardRatioBPS       map[string]uint
-		MinPrvForMintPdexAccessToken    uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -146,7 +138,6 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		temp.OrderMiningRewardRatioBPS = make(map[string]uint)
 	}
 	pp.orderMiningRewardRatioBPS = temp.OrderMiningRewardRatioBPS
-	pp.minPrvForMintPdexAccessToken = temp.MinPrvForMintPdexAccessToken
 	return nil
 }
 
@@ -168,7 +159,6 @@ func NewPdexv3ParamsWithValue(
 	autoWithdrawOrderLimitAmount uint,
 	minPRVReserveTradingRate uint64,
 	orderMiningRewardRatioBPS map[string]uint,
-	minPrvForMintPdexAccessToken uint64,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:               defaultFeeRateBPS,
@@ -184,7 +174,6 @@ func NewPdexv3ParamsWithValue(
 		autoWithdrawOrderLimitAmount:    autoWithdrawOrderLimitAmount,
 		minPRVReserveTradingRate:        minPRVReserveTradingRate,
 		orderMiningRewardRatioBPS:       orderMiningRewardRatioBPS,
-		minPrvForMintPdexAccessToken:    minPrvForMintPdexAccessToken,
 	}
 }
 

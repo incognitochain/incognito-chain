@@ -608,10 +608,6 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3MintAccessTokenAmount(amount uint64) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidMintAccessTokenAmount(amount)
-}
-
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	sC := make(map[byte][]incognitokey.CommitteePublicKey)
 	sPV := make(map[byte][]incognitokey.CommitteePublicKey)

@@ -23,7 +23,6 @@ type Params struct {
 	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
 	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
 	OrderMiningRewardRatioBPS       map[string]uint // map: pool ID -> ratio of LOP rewards compare with LP rewards (0.1% ~ 10 BPS)
-	MinPrvForMintPdexAccessToken    uint64          // amount prv for minting pdex access token
 }
 
 func NewParams() *Params {
@@ -51,7 +50,6 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
 		MinPRVReserveTradingRate:        paramsState.MinPRVReserveTradingRate(),
 		OrderMiningRewardRatioBPS:       paramsState.OrderMiningRewardRatioBPS(),
-		MinPrvForMintPdexAccessToken:    paramsState.MinPrvForMintPdexAccessToken(),
 	}
 }
 
@@ -150,7 +148,6 @@ func (params *Params) readConfig() *Params {
 		MaxOrdersPerNft:                 config.Param().PDexParams.Params.MaxOrdersPerNft,
 		AutoWithdrawOrderLimitAmount:    config.Param().PDexParams.Params.AutoWithdrawOrderLimitAmount,
 		MinPRVReserveTradingRate:        config.Param().PDexParams.Params.MinPRVReserveTradingRate,
-		MinPrvForMintPdexAccessToken:    config.Param().PDexParams.Params.MinPrvForMintPdexAccessToken,
 	}
 	if res.FeeRateBPS == nil {
 		res.FeeRateBPS = make(map[string]uint)

@@ -46,7 +46,6 @@ func StorePdexv3Params(
 	autoWithdrawOrderLimitAmount uint,
 	minPRVReserveTradingRate uint64,
 	orderMiningRewardRatioBPS map[string]uint,
-	minPrvForMintPdexAccessToken uint64,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
@@ -63,7 +62,6 @@ func StorePdexv3Params(
 		autoWithdrawOrderLimitAmount,
 		minPRVReserveTradingRate,
 		orderMiningRewardRatioBPS,
-		minPrvForMintPdexAccessToken,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {

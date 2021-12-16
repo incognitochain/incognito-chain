@@ -190,7 +190,7 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			value := contribution.Value()
 			shardIDFromInst = value.ShardID()
 			txReqIDFromInst = value.TxReqID()
-			receiverAddrStrFromInst = value.OtaReceiver()
+			receiverAddrStrFromInst = value.OtaReceivers()[value.TokenID()]
 			receivingTokenIDStr = value.TokenID().String()
 			receivingAmtFromInst = value.Amount()
 		case common.PDEContributionMatchedNReturnedChainStatus:
@@ -205,7 +205,7 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			value := contribution.Value()
 			shardIDFromInst = value.ShardID()
 			txReqIDFromInst = value.TxReqID()
-			receiverAddrStrFromInst = value.OtaReceiver()
+			receiverAddrStrFromInst = value.OtaReceivers()[value.TokenID()]
 			receivingTokenIDStr = value.TokenID().String()
 			receivingAmtFromInst = matchAndReturnAddLiquidity.ReturnAmount
 		default:

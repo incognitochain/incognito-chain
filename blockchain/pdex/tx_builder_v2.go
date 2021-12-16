@@ -379,8 +379,9 @@ func buildMatchAndReturnContributionTxv2(
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
 	refundAddress := privacy.OTAReceiver{}
-	err = refundAddress.FromString(matchAndReturnContributionValue.OtaReceiver())
+	err = refundAddress.FromString(matchAndReturnContributionValue.OtaReceivers()[matchAndReturnContributionValue.TokenID()])
 	if err != nil {
+		Logger.log.Info("[pdex] err:", err)
 		return res, err
 	}
 	res, err = buildMintTokenTx(

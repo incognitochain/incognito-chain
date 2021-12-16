@@ -227,6 +227,9 @@ func (a *AccessOption) ValidateOtaReceivers(tx metadataCommon.Transaction, otaRe
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 		}
 	} else {
+		if otaReceivers == nil || len(otaReceivers) == 0 {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers can not be null or empty"))
+		}
 		isExistedPdexAccessToken := false
 		for k, v := range otaReceivers {
 			if k == common.PdexAccessCoinID {

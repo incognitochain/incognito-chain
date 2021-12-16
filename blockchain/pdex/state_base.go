@@ -105,10 +105,6 @@ func (s *stateBase) IsValidShareAmount(poolPairID, nftID string, shareAmount uin
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidMintAccessTokenAmount(amount uint64) error {
-	panic("Implement this fucntion")
-}
-
 func (s *stateBase) Validator() StateValidator {
 	panic("Implement this function")
 }
