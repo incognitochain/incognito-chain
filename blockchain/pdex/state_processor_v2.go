@@ -464,7 +464,7 @@ func (sp *stateProcessorV2) trade(
 				}
 
 				// add volume to LOPs
-				if params.DAOContributingPercent > 0 {
+				if _, ok := params.PDEXRewardPoolPairsShare[pairID]; ok && params.DAOContributingPercent > 0 {
 					if _, ok := pair.makingVolume[makingToken]; !ok {
 						pair.makingVolume[makingToken] = NewMakingVolume()
 					}

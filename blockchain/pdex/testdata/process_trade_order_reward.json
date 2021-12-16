@@ -55,6 +55,13 @@
                                 "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8": 200
                             }
                         }
+                    },
+                    "makingvolume": {
+                        "7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121": {
+                            "Volume": {
+                                "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902": 942
+                            }
+                        }
                     }
                 }
             }
@@ -112,7 +119,12 @@
                             }
                         ]
                     },
-                    "orderrewards": {}
+                    "orderrewards": {},
+                    "makingvolume": {
+                        "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8": {
+                            "Volume": {}
+                        }
+                    }
                 }
             }
         }
@@ -171,6 +183,13 @@
                         "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902": {
                             "UncollectedRewards": {
                                 "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8": 172
+                            }
+                        }
+                    },
+                    "makingvolume": {
+                        "7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121": {
+                            "Volume": {
+                                "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902": 1217
                             }
                         }
                     }

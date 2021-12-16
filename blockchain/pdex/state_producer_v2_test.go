@@ -1724,16 +1724,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 					protocolFees:    map[common.Hash]uint64{},
 					stakingPoolFees: map[common.Hash]uint64{},
 					shares:          map[string]*Share{},
-					orderRewards: map[string]*OrderReward{
-						nftID: &OrderReward{
-							uncollectedRewards: Reward{
-								*token0ID: 0,
-								*token1ID: 0,
-							},
-						},
-					},
-					makingVolume: map[common.Hash]*MakingVolume{},
-					orderbook:    Orderbook{[]*Order{}},
+					orderRewards:    map[string]*OrderReward{},
+					makingVolume:    map[common.Hash]*MakingVolume{},
+					orderbook:       Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1812,14 +1805,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							},
 						},
 					},
-					orderRewards: map[string]*OrderReward{
-						nftID: &OrderReward{
-							uncollectedRewards: Reward{
-								*token0ID: 0,
-								*token1ID: 0,
-							},
-						},
-					},
+					orderRewards: map[string]*OrderReward{},
 					makingVolume: map[common.Hash]*MakingVolume{},
 					orderbook:    Orderbook{[]*Order{}},
 				},

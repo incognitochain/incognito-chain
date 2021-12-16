@@ -114,6 +114,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		if poolPair.orderRewards == nil {
 			poolPair.orderRewards = map[string]*OrderReward{}
 		}
+		// init making volume
+		if poolPair.makingVolume == nil {
+			poolPair.makingVolume = map[common.Hash]*MakingVolume{}
+		}
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -296,6 +300,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		// init order rewards
 		if poolPair.orderRewards == nil {
 			poolPair.orderRewards = map[string]*OrderReward{}
+		}
+		// init making volume
+		if poolPair.makingVolume == nil {
+			poolPair.makingVolume = map[common.Hash]*MakingVolume{}
 		}
 	}
 

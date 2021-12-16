@@ -518,7 +518,7 @@ func (sp *stateProducerV2) trade(
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
 			addOrderReward(changedPair.orderRewards, orderRewardsChanges[index])
-			if params.DAOContributingPercent > 0 {
+			if _, ok := params.PDEXRewardPoolPairsShare[pairID]; ok && params.DAOContributingPercent > 0 {
 				addMakingVolume(changedPair.makingVolume, orderMakingChanges[index])
 			}
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
