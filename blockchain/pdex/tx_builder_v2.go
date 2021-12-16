@@ -381,7 +381,6 @@ func buildMatchAndReturnContributionTxv2(
 	refundAddress := privacy.OTAReceiver{}
 	err = refundAddress.FromString(matchAndReturnContributionValue.OtaReceivers()[matchAndReturnContributionValue.TokenID()])
 	if err != nil {
-		Logger.log.Info("[pdex] err:", err)
 		return res, err
 	}
 	res, err = buildMintTokenTx(
@@ -389,7 +388,7 @@ func buildMatchAndReturnContributionTxv2(
 		refundAddress, producerPrivateKey, transactionStateDB, metaData,
 	)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted add liquidity response tx: %+v", err)
 	}
 	return res, err
 }
@@ -464,7 +463,6 @@ func buildUnstakingTx(
 	acceptInst := instruction.AcceptUnstaking{}
 	err := acceptInst.FromStringSlice(inst)
 	if err != nil {
-		Logger.log.Debug("[pdex] err:", err)
 		return tx, nil
 	}
 

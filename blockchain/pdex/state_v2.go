@@ -601,7 +601,7 @@ func NewContributionWithMetaData(
 	}
 
 	assetID := common.Hash{}
-	nextOTA := utils.EmptyString
+	accessOTA := utils.EmptyString
 	if metaData.AccessOption.UseNft() {
 		assetID = *metaData.AccessOption.NftID
 	} else {
@@ -609,9 +609,9 @@ func NewContributionWithMetaData(
 			assetID = *metaData.AccessOption.AssetID
 		} else {
 			assetID = metadataPdexv3.GenAssetID(*metaData.OtaReceivers()[common.PdexAccessCoinID])
-			tempNextOTA := metadataPdexv3.AccessOTA{}
-			tempNextOTA.FromBytesS(metaData.OtaReceivers()[common.PdexAccessCoinID].PublicKey.ToBytesS())
-			nextOTA = tempNextOTA.String()
+			tempAccessOTA := metadataPdexv3.AccessOTA{}
+			tempAccessOTA.FromBytesS(metaData.OtaReceivers()[common.PdexAccessCoinID].PublicKey.ToBytesS())
+			accessOTA = tempAccessOTA.String()
 		}
 	}
 	otaReceivers := make(map[common.Hash]string)
@@ -623,7 +623,7 @@ func NewContributionWithMetaData(
 		metaData.PoolPairID(), metaData.OtaReceiver(),
 		*tokenHash, txReqID, assetID,
 		metaData.TokenAmount(), metaData.Amplifier(),
-		shardID, nextOTA, otaReceivers,
+		shardID, accessOTA, otaReceivers,
 	), nil
 }
 
