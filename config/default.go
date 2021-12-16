@@ -60,6 +60,7 @@ var MainnetParam = &param{
 		AssignRuleV3Height:        1410217,
 		EnableSlashingHeightV2:    1498517,
 		StakingFlowV3Height:       1519263,
+		NotUseBurnedCoins:         1e9,
 		BlockProducingV3Height:    1e9,
 		Timeslot:                  40,
 		EpochBreakPointSwapNewKey: []uint64{1917},

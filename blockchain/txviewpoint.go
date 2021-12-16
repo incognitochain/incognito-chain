@@ -20,6 +20,7 @@ import (
 type TxViewPoint struct {
 	tokenID           *common.Hash
 	height            uint64
+	beaconHeight      uint64
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 
@@ -46,10 +47,11 @@ type TxViewPoint struct {
 }
 
 // NewTxViewPoint Create a TxNormal view point, which contains data about serialNumbers and commitments
-func NewTxViewPoint(shardID byte, height uint64) *TxViewPoint {
+func NewTxViewPoint(shardID byte, bHeight, height uint64) *TxViewPoint {
 	result := &TxViewPoint{
 		shardID:                     shardID,
 		height:                      height,
+		beaconHeight:                bHeight,
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
 		otaDeclarations:             []transaction.OTADeclaration{},
@@ -231,7 +233,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				}
 
 				tokenData := tx.GetTxTokenData()
-				subView := NewTxViewPoint(block.Header.ShardID, block.Header.Height)
+				subView := NewTxViewPoint(block.Header.ShardID, block.Header.BeaconHeight, block.Header.Height)
 				subView.tokenID = &tokenData.PropertyID
 				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPointFromProof(stateDB, subView.shardID, tokenData.TxNormal.GetProof(), subView.tokenID)
 				if errP != nil {
@@ -392,7 +394,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(stateDB *stated
 			}
 			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
 				for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
-					subView := NewTxViewPoint(block.Header.ShardID, block.Header.Height)
+					subView := NewTxViewPoint(block.Header.ShardID, block.Header.BeaconHeight, block.Header.Height)
 					temp, err := common.Hash{}.NewHash(tokenPrivacyData.PropertyID.GetBytes())
 					if err != nil {
 						return err

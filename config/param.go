@@ -56,8 +56,8 @@ type param struct {
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
-	PRVERC20ContractAddressStr       string             `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
-    PRVBEP20ContractAddressStr       string             `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
 }
 
 type genesisParam struct {
@@ -116,6 +116,7 @@ type consensusParam struct {
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	EnableSlashingHeightV2    uint64   `mapstructure:"enable_slashing_height_v2"`
 	StakingFlowV3Height       uint64   `mapstructure:"staking_flow_v3_height"`
+	NotUseBurnedCoins         uint64   `mapstructure:"force_not_use_burned_coins"`
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
