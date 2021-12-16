@@ -96,7 +96,9 @@ func TestProduceOrder(t *testing.T) {
 
 			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
 			// manually add nftID
-			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			if testdata.Metadata.NftID != nil {
+				testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			}
 
 			instructions, err := testState.BuildInstructions(env)
 			NoError(t, err)
