@@ -16,9 +16,9 @@ type Pdexv3Contribution struct {
 	amount       uint64
 	amplifier    uint
 	txReqID      common.Hash
-	nftID        common.Hash // will be included both nftID and nextOTA
+	nftID        common.Hash // will be included both nftID and assetID
 	shardID      byte
-	nextOTA      string
+	accessOTA    string
 }
 
 func (contribution *Pdexv3Contribution) NftID() common.Hash {
@@ -49,12 +49,8 @@ func (contribution *Pdexv3Contribution) OtaReceiver() string {
 	return contribution.otaReceiver
 }
 
-func (contribution *Pdexv3Contribution) NextOTA() string {
-	return contribution.nextOTA
-}
-
-func (contribution *Pdexv3Contribution) SetNextOTA(nextOTA string) {
-	contribution.nextOTA = nextOTA
+func (contribution *Pdexv3Contribution) AccessOTA() string {
+	return contribution.accessOTA
 }
 
 func (contribution *Pdexv3Contribution) TokenID() common.Hash {
@@ -84,7 +80,7 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 		TxReqID      common.Hash            `json:"TxReqID"`
 		NftID        common.Hash            `json:"NftID"`
 		ShardID      byte                   `json:"ShardID"`
-		NextOTA      string                 `json:"NextOTA,omitempty"`
+		AccessOTA    string                 `json:"AccessOTA,omitempty"`
 		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
 	}{
 		PoolPairID:   contribution.poolPairID,
@@ -95,7 +91,7 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 		Amplifier:    contribution.amplifier,
 		NftID:        contribution.nftID,
 		ShardID:      contribution.shardID,
-		NextOTA:      contribution.nextOTA,
+		AccessOTA:    contribution.accessOTA,
 		OtaReceivers: contribution.otaReceivers,
 	})
 	if err != nil {
@@ -114,7 +110,7 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 		TxReqID      common.Hash            `json:"TxReqID"`
 		NftID        common.Hash            `json:"NftID"`
 		ShardID      byte                   `json:"ShardID"`
-		NextOTA      string                 `json:"NextOTA,omitempty"`
+		AccessOTA    string                 `json:"AccessOTA,omitempty"`
 		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -129,7 +125,7 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	contribution.amplifier = temp.Amplifier
 	contribution.shardID = temp.ShardID
 	contribution.nftID = temp.NftID
-	contribution.nextOTA = temp.NextOTA
+	contribution.accessOTA = temp.AccessOTA
 	contribution.otaReceivers = temp.OtaReceivers
 	return nil
 }
@@ -139,7 +135,7 @@ func (contribution *Pdexv3Contribution) Clone() *Pdexv3Contribution {
 		contribution.poolPairID, contribution.otaReceiver,
 		contribution.tokenID, contribution.txReqID, contribution.nftID,
 		contribution.amount, contribution.amplifier, contribution.shardID,
-		contribution.nextOTA, contribution.otaReceivers,
+		contribution.accessOTA, contribution.otaReceivers,
 	)
 }
 
@@ -151,7 +147,7 @@ func NewPdexv3ContributionWithValue(
 	poolPairID, otaReceiver string,
 	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
-	nextOTA string, otaReceivers map[common.Hash]string,
+	accessOTA string, otaReceivers map[common.Hash]string,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
 		poolPairID:   poolPairID,
@@ -162,7 +158,7 @@ func NewPdexv3ContributionWithValue(
 		nftID:        nftID,
 		amplifier:    amplifier,
 		shardID:      shardID,
-		nextOTA:      nextOTA,
+		accessOTA:    accessOTA,
 		otaReceivers: otaReceivers,
 	}
 }

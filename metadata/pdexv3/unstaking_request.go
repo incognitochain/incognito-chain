@@ -68,9 +68,9 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 		if request.otaReceivers[request.AccessOption.NftID.String()] == utils.EmptyString {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID's ota receiver can not be empty"))
 		}
-		expectBurntTokenID = request.AccessOption.NftID
+		expectBurntTokenID = *request.AccessOption.NftID
 		identityID = request.AccessOption.NftID.String()
-		if request.AccessOption.NftID == common.PRVCoinID {
+		if *request.AccessOption.NftID == common.PRVCoinID {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("NftID can not be prv"))
 		}
 	} else {

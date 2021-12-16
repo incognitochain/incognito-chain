@@ -208,7 +208,7 @@ func (sp *stateProcessorV2) matchContribution(
 		existedWaitingContribution.NftID(),
 		shareAmount, beaconHeight,
 		existedWaitingContribution.TxReqID().String(),
-		matchAddLiquidityInst.NextOTA(),
+		matchAddLiquidityInst.AccessOTA(),
 	)
 
 	if err != nil {
@@ -292,7 +292,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 			waitingContribution.TxReqID().String(),
-			matchAndReturnAddLiquidity.NextOTA(),
+			matchAndReturnAddLiquidity.AccessOTA(),
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
@@ -582,7 +582,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	if acceptWithdrawLiquidity.AccessOption.UseNft() {
 		assetID = acceptWithdrawLiquidity.AccessOption.NftID.String()
 	} else {
-		assetID = acceptWithdrawLiquidity.AccessOption.AssetID
+		assetID = acceptWithdrawLiquidity.AccessOption.AssetID.String()
 	}
 	share, ok := poolPair.shares[assetID]
 	if !ok || share == nil {
@@ -1127,12 +1127,9 @@ func (sp *stateProcessorV2) unstaking(
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Amount()
 		if acceptInst.AccessOption.UseNft() {
-			assetID = acceptInst.AccessOption.NftID
+			assetID = *acceptInst.AccessOption.NftID
 		} else {
-			assetID, err = acceptInst.AccessOption.AssetHash()
-			if err != nil {
-				return stakingPoolStates, poolPairStates, nil, err
-			}
+			assetID = *acceptInst.AccessOption.AssetID
 		}
 		stakingPoolState := stakingPoolStates[stakingPoolID]
 		err = stakingPoolState.updateLiquidity(

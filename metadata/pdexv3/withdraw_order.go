@@ -51,7 +51,7 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 	}
 
 	if req.UseNft() {
-		_, isReceivingNFT := req.Receiver[req.NftID]
+		_, isReceivingNFT := req.Receiver[*req.NftID]
 		if !isReceivingNFT {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid Pdex Access; missing receiver for NftID %s", req.NftID.String()))
 		}
@@ -62,7 +62,7 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Burned coins not found in trade request - %v", err))
 		}
-		if *burnedTokenID != req.NftID {
+		if *burnedTokenID != *req.NftID {
 			return false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Burned nftID mismatch - %v vs %v on metadata", *burnedTokenID, req.NftID))

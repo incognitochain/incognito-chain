@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 func GetPDEXRewardsForBlock(
@@ -96,7 +95,7 @@ func BuildWithdrawLPFeeInsts(
 	reqTxID common.Hash,
 	status string,
 ) [][]string {
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, utils.EmptyString)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, nil)
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
 			PoolPairID:   pairID,
@@ -241,7 +240,7 @@ func BuildWithdrawStakingRewardInsts(
 	reqTxID common.Hash,
 	status string,
 ) [][]string {
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, utils.EmptyString)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, nil)
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,

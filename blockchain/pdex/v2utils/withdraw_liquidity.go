@@ -23,7 +23,7 @@ func BuildRejectWithdrawLiquidityInstructions(
 	res = append(res, inst)
 	if metaData.AccessOption.UseNft() {
 		inst, err = instruction.NewMintNftWithValue(
-			metaData.NftID, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
+			*metaData.NftID, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 		if err != nil {
 			return res, err
@@ -69,7 +69,7 @@ func BuildAcceptWithdrawLiquidityInstructions(
 
 	if metaData.AccessOption.UseNft() {
 		inst, err := instruction.NewMintNftWithValue(
-			metaData.NftID, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID).
+			*metaData.NftID, metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID).
 			StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 		if err != nil {
 			return res, err

@@ -69,8 +69,8 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 	burningAmt := burnedCoin.GetValue()
 	expectBurntTokenID := common.Hash{}
 	if withdrawal.AccessOption.UseNft() {
-		expectBurntTokenID = withdrawal.NftID
-		_, isExisted := withdrawal.Receivers[withdrawal.NftID]
+		expectBurntTokenID = *withdrawal.NftID
+		_, isExisted := withdrawal.Receivers[*withdrawal.NftID]
 		if !isExisted {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
 		}

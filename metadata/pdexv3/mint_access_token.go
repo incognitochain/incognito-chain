@@ -61,9 +61,6 @@ func (response *MintAccessToken) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	if response.status != common.Pdexv3AcceptStringStatus && response.status != common.Pdexv3RejectStringStatus {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
-	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
 	if err != nil {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
@@ -129,15 +126,7 @@ func (response *MintAccessToken) Status() string {
 }
 
 type acceptMintAccessToken struct {
-	BurntAmount uint64      `json:"BurntAmount"`
 	OtaReceiver string      `json:"OtaReceiver"`
-	ShardID     byte        `json:"ShardID"`
-	TxReqID     common.Hash `json:"TxReqID"`
-}
-
-type rejectMintAccessToken struct {
-	OtaReceiver string      `json:"OtaReceiver"`
-	Amount      uint64      `json:"Amount"`
 	ShardID     byte        `json:"ShardID"`
 	TxReqID     common.Hash `json:"TxReqID"`
 }
@@ -163,10 +152,6 @@ func (response *MintAccessToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.Pdexv3MintAccessTokenMeta) {
 			continue
 		}
-		instContributionStatus := inst[1]
-		if instContributionStatus != response.status || (instContributionStatus != common.Pdexv3AcceptStringStatus && instContributionStatus != common.Pdexv3RejectStringStatus) {
-			continue
-		}
 
 		contentBytes := []byte(inst[2])
 
@@ -174,35 +159,18 @@ func (response *MintAccessToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var tokenID common.Hash
 		var otaReceiverStr, txReqID string
 		var amount uint64
-		switch inst[1] {
-		case common.Pdexv3RejectStringStatus:
-			var instContent rejectMintAccessToken
-			err := json.Unmarshal(contentBytes, &instContent)
-			if err != nil {
-				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				continue
-			}
-			instShardID = instContent.ShardID
-			tokenID = common.PRVCoinID
-			otaReceiverStr = instContent.OtaReceiver
-			amount = instContent.Amount
-			txReqID = instContent.TxReqID.String()
-		case common.Pdexv3AcceptStringStatus:
-			var instContent acceptMintAccessToken
-			err := json.Unmarshal(contentBytes, &instContent)
-			if err != nil {
-				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				continue
-			}
-			instShardID = instContent.ShardID
-			tokenID = common.PdexAccessCoinID
-			otaReceiverStr = instContent.OtaReceiver
-			amount = 1
-			txReqID = instContent.TxReqID.String()
-		default:
+		var instContent acceptMintAccessToken
+		err := json.Unmarshal(contentBytes, &instContent)
+		if err != nil {
+			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
+		instShardID = instContent.ShardID
+		tokenID = common.PdexAccessCoinID
+		otaReceiverStr = instContent.OtaReceiver
+		amount = 1
+		txReqID = instContent.TxReqID.String()
 
 		if response.TxReqID() != txReqID || shardID != instShardID {
 			continue
@@ -238,8 +206,8 @@ func (response *MintAccessToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		metadataCommon.Logger.Log.Debugf("no Pdexv3 user mint access token instruction tx %s", tx.Hash().String())
-		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 user mint access token instruction tx %s", tx.Hash().String()))
+		metadataCommon.Logger.Log.Debugf("no Pdexv3 mint access token instruction tx %s", tx.Hash().String())
+		return false, fmt.Errorf(fmt.Sprintf("no Pdexv3 mint access token instruction tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil

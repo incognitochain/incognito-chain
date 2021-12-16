@@ -12,7 +12,7 @@ import (
 
 type Share struct {
 	amount             uint64
-	nextOTA            string
+	accessOTA          string
 	tradingFees        map[common.Hash]uint64
 	lastLPFeesPerShare map[common.Hash]*big.Int
 }
@@ -47,13 +47,13 @@ func NewShare() *Share {
 
 func NewShareWithValue(
 	amount uint64,
-	nextOTA string,
+	accessOTA string,
 	tradingFees map[common.Hash]uint64,
 	lastLPFeesPerShare map[common.Hash]*big.Int,
 ) *Share {
 	return &Share{
 		amount:             amount,
-		nextOTA:            nextOTA,
+		accessOTA:          accessOTA,
 		tradingFees:        tradingFees,
 		lastLPFeesPerShare: lastLPFeesPerShare,
 	}
@@ -61,7 +61,7 @@ func NewShareWithValue(
 
 func (share *Share) Clone() *Share {
 	res := NewShare()
-	res.nextOTA = share.nextOTA
+	res.accessOTA = share.accessOTA
 	res.amount = share.amount
 	res.tradingFees = map[common.Hash]uint64{}
 	for k, v := range share.tradingFees {
@@ -77,11 +77,11 @@ func (share *Share) Clone() *Share {
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Amount             uint64                   `json:"Amount"`
-		NextOTA            string                   `json:"NextOTA,omitempty"`
+		AccessOTA          string                   `json:"AccessOTA,omitempty"`
 		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{
-		NextOTA:            share.nextOTA,
+		AccessOTA:          share.accessOTA,
 		Amount:             share.amount,
 		TradingFees:        share.tradingFees,
 		LastLPFeesPerShare: share.lastLPFeesPerShare,
@@ -95,7 +95,7 @@ func (share *Share) MarshalJSON() ([]byte, error) {
 func (share *Share) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Amount             uint64                   `json:"Amount"`
-		NextOTA            string                   `json:"NextOTA,omitempty"`
+		AccessOTA          string                   `json:"AccessOTA,omitempty"`
 		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{}
@@ -103,7 +103,7 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	share.nextOTA = temp.NextOTA
+	share.accessOTA = temp.AccessOTA
 	share.amount = temp.Amount
 	share.tradingFees = temp.TradingFees
 	share.lastLPFeesPerShare = temp.LastLPFeesPerShare
@@ -261,7 +261,7 @@ func (share *Share) updateToDB(
 		err = statedb.StorePdexv3Share(
 			env.StateDB(), poolPairID,
 			*nftID,
-			share.amount, share.nextOTA,
+			share.amount, share.accessOTA,
 		)
 		if err != nil {
 			return err

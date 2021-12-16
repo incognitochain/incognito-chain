@@ -271,9 +271,9 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 func (p *PoolPairState) addShare(
 	nftID common.Hash,
 	amount, beaconHeight uint64,
-	txHash, nextOTA string,
+	txHash, accessOTA string,
 ) (string, error) {
-	return p.updateShareValue(amount, beaconHeight, nftID.String(), nextOTA, addOperator)
+	return p.updateShareValue(amount, beaconHeight, nftID.String(), accessOTA, addOperator)
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -413,7 +413,7 @@ func (p *PoolPairState) deductShare(
 }
 
 func (p *PoolPairState) updateShareValue(
-	shareAmount, beaconHeight uint64, nftID, nextOTA string, operator byte,
+	shareAmount, beaconHeight uint64, nftID, accessOTA string, operator byte,
 ) (string, error) {
 	share, found := p.shares[nftID]
 	if !found {
@@ -430,7 +430,7 @@ func (p *PoolPairState) updateShareValue(
 		if err != nil {
 			return utils.EmptyString, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
-		nextOTA = share.nextOTA
+		accessOTA = share.accessOTA
 	}
 
 	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
@@ -443,10 +443,10 @@ func (p *PoolPairState) updateShareValue(
 	if err != nil {
 		return utils.EmptyString, errors.New("newShare.amount is out of range")
 	}
-	if nextOTA == utils.EmptyString {
-		nextOTA = share.nextOTA
+	if accessOTA == utils.EmptyString {
+		accessOTA = share.accessOTA
 	}
-	share.nextOTA = nextOTA
+	share.accessOTA = accessOTA
 
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
 	if err != nil {
@@ -455,7 +455,7 @@ func (p *PoolPairState) updateShareValue(
 	p.state.SetShareAmount(poolPairShareAmount)
 
 	p.shares[nftID] = share
-	return nextOTA, nil
+	return accessOTA, nil
 }
 
 func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64, operator byte) error {

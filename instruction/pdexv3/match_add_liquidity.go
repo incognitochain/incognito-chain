@@ -13,7 +13,7 @@ import (
 type MatchAddLiquidity struct {
 	contribution  statedb.Pdexv3ContributionState
 	newPoolPairID string
-	nextOTA       string
+	accessOTA     string
 }
 
 func NewMatchAddLiquidity() *MatchAddLiquidity {
@@ -22,12 +22,12 @@ func NewMatchAddLiquidity() *MatchAddLiquidity {
 
 func NewMatchAddLiquidityWithValue(
 	contribution statedb.Pdexv3ContributionState,
-	newPoolPairID, nextOTA string,
+	newPoolPairID, accessOTA string,
 ) *MatchAddLiquidity {
 	return &MatchAddLiquidity{
 		contribution:  contribution,
 		newPoolPairID: newPoolPairID,
-		nextOTA:       nextOTA,
+		accessOTA:     accessOTA,
 	}
 }
 
@@ -64,11 +64,11 @@ func (m *MatchAddLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Contribution  *statedb.Pdexv3ContributionState `json:"Contribution"`
 		NewPoolPairID string                           `json:"NewPoolPairID"`
-		NextOTA       string                           `json:"NextOTA,omitempty"`
+		AccessOTA     string                           `json:"AccessOTA,omitempty"`
 	}{
 		Contribution:  &m.contribution,
 		NewPoolPairID: m.newPoolPairID,
-		NextOTA:       m.nextOTA,
+		AccessOTA:     m.accessOTA,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -80,7 +80,7 @@ func (m *MatchAddLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Contribution  *statedb.Pdexv3ContributionState `json:"Contribution"`
 		NewPoolPairID string                           `json:"NewPoolPairID"`
-		NextOTA       string                           `json:"NextOTA,omitempty"`
+		AccessOTA     string                           `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -90,7 +90,7 @@ func (m *MatchAddLiquidity) UnmarshalJSON(data []byte) error {
 		m.contribution = *temp.Contribution
 	}
 	m.newPoolPairID = temp.NewPoolPairID
-	m.nextOTA = temp.NextOTA
+	m.accessOTA = temp.AccessOTA
 	return nil
 }
 
@@ -98,8 +98,8 @@ func (m *MatchAddLiquidity) NewPoolPairID() string {
 	return m.newPoolPairID
 }
 
-func (m *MatchAddLiquidity) NextOTA() string {
-	return m.nextOTA
+func (m *MatchAddLiquidity) AccessOTA() string {
+	return m.accessOTA
 }
 
 func (m *MatchAddLiquidity) Contribution() statedb.Pdexv3ContributionState {

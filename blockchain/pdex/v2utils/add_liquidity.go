@@ -28,7 +28,7 @@ func BuildRefundAddLiquidityInstructions(
 
 func BuildMatchAddLiquidityInstructions(
 	waitingContributionState statedb.Pdexv3ContributionState,
-	poolPairID string, nftID, txReqID common.Hash, shardID byte,
+	poolPairID string, txReqID common.Hash, shardID byte,
 	otaReceiver, nextOTA string,
 ) ([][]string, error) {
 	res := [][]string{}
@@ -53,7 +53,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	token0ContributionState, token1ContributionState statedb.Pdexv3ContributionState,
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
-	nftID, txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
+	txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
 	nextOTA string, shouldMintAccessToken bool,
 ) ([][]string, error) {
 	res := [][]string{}

@@ -21,7 +21,7 @@ func BuildRejectUnstakingInstructions(
 	res = append(res, rejectInst)
 	if metaData.AccessOption.UseNft() {
 		mintNftInst, err := instruction.NewMintNftWithValue(
-			metaData.AccessOption.NftID,
+			*metaData.AccessOption.NftID,
 			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
 		if err != nil {
@@ -50,7 +50,7 @@ func BuildAcceptUnstakingInstructions(
 	res = append(res, acceptInst)
 	if accessOption.UseNft() {
 		mintNftInst, err := instruction.NewMintNftWithValue(
-			accessOption.NftID, otaReceiverNft, shardID, txReqID,
+			*accessOption.NftID, otaReceiverNft, shardID, txReqID,
 		).
 			StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
 		if err != nil {

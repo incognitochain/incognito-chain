@@ -532,7 +532,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		receivers[*tokenID] = receiver
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, *nftID, utils.EmptyString)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, nil)
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
@@ -720,19 +720,9 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		return nil, isPRV, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
 	}
 
-	otaReceiver := privacy.OTAReceiver{}
-	err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiverStr, err := otaReceiver.String()
-	if err != nil {
-		return nil, isPRV, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		NftID             common.Hash  `json:"NftID"`
+		AssetID           *common.Hash `json:"AssetID"`
 		TokenID           string       `json:"TokenID"`
 		PoolPairID        string       `json:"PoolPairID"`
 		PairHash          string       `json:"PairHash"`
@@ -745,19 +735,32 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	// tempory code
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, mdReader.NftID, utils.EmptyString)
-	//
-
-	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
-		mdReader.PoolPairID, mdReader.PairHash, otaReceiverStr, mdReader.TokenID,
-		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier), accessOption,
-		map[common.Hash]*privacy.OTAReceiver{},
-	)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, &common.Hash{}, mdReader.AssetID)
+	tokenList := []common.Hash{}
+	if mdReader.AssetID == nil {
+		tokenList = append(tokenList, common.PdexAccessCoinID)
+	}
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.TokenID)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+	tokenList = append(tokenList, *tokenHash)
+	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenList, keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	otaReceivers := make(map[common.Hash]*privacy.OTAReceiver)
+	for k, v := range recv {
+		otaReceivers[k] = &v
+	}
+
+	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
+		mdReader.PoolPairID, mdReader.PairHash, utils.EmptyString, mdReader.TokenID,
+		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier), accessOption,
+		otaReceivers,
+	)
+
 	paramSelect.SetTokenID(*tokenHash)
 	isPRV = md.TokenID() == common.PRVIDStr
 	paramSelect.SetMetadata(md)
@@ -941,11 +944,11 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 		mdReader.PoolPairID, otaReceivers, uint64(mdReader.ShareAmount), nil,
 	)
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
-	if md.AccessOption.NftID == common.PRVCoinID {
+	if *md.AccessOption.NftID == common.PRVCoinID {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("Cannot use PRV for withdrawLiquidity tx"))
 	}
-	paramSelect.SetTokenID(md.AccessOption.NftID)
+	paramSelect.SetTokenID(*md.AccessOption.NftID)
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -1421,7 +1424,7 @@ func createPdexv3AddOrderRequestTransaction(
 	md, _ := metadataPdexv3.NewAddOrderRequest(
 		mdReader.TokenToSell, mdReader.PoolPairID, uint64(mdReader.SellAmount),
 		uint64(mdReader.MinAcceptableAmount), nil,
-		metadataPdexv3.AccessOption{NftID: mdReader.NftID}, metadataCommon.Pdexv3AddOrderRequestMeta,
+		metadataPdexv3.AccessOption{NftID: &mdReader.NftID}, metadataCommon.Pdexv3AddOrderRequestMeta,
 	)
 
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
@@ -1517,22 +1520,22 @@ func createPdexv3WithdrawOrderRequestTransaction(
 		nil, mdReader.AccessOption, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
 
 	// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
-	if md.NftID == common.PRVCoinID {
+	if *md.NftID == common.PRVCoinID {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
 	}
 	if mdReader.UseNft() {
-		paramSelect.SetTokenID(md.NftID)
+		paramSelect.SetTokenID(*md.NftID)
 	} else {
 		paramSelect.SetTokenID(common.PdexAccessCoinID)
 		if mdReader.BurntOTA == nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			fmt.Errorf("BurntOTA missing for pdex access-via-OTA"))
+				fmt.Errorf("BurntOTA missing for pdex access-via-OTA"))
 		}
 		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
 	}
-	
-	tokenList := append(mdReader.WithdrawTokenIDs, md.NftID)
+
+	tokenList := append(mdReader.WithdrawTokenIDs, *md.NftID)
 	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
 	if err != nil {
@@ -1658,7 +1661,7 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 	}
 
 	//temporary code
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, common.Hash{}, utils.EmptyString)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, nil)
 	//
 
 	md := metadataPdexv3.NewStakingRequestWithValue(
@@ -1823,7 +1826,7 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 	otaReceivers[mdReader.StakingPoolID] = otaReceiverUnstakingTokenStr
 
 	//temporary code
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, common.Hash{}, utils.EmptyString)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nil, nil)
 	//
 
 	md := metadataPdexv3.NewUnstakingRequestWithValue(
@@ -2130,7 +2133,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawStakingReward(p
 		receivers[*tokenID] = receiver
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, *nftID, utils.EmptyString)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, nil)
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalStakingRewardRequest(
 		metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,

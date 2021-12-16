@@ -604,13 +604,10 @@ func NewContributionWithMetaData(
 	assetID := common.Hash{}
 	nextOTA := utils.EmptyString
 	if metaData.AccessOption.UseNft() {
-		assetID = metaData.AccessOption.NftID
+		assetID = *metaData.AccessOption.NftID
 	} else {
-		if metaData.AccessOption.AssetID != utils.EmptyString {
-			assetID, err = metaData.AccessOption.AssetHash()
-			if err != nil {
-				return nil, err
-			}
+		if metaData.AccessOption.AssetID != nil {
+			assetID = *metaData.AccessOption.AssetID
 		} else {
 			assetID = metadataPdexv3.GenAssetID(*metaData.OtaReceivers()[common.PdexAccessCoinID])
 			tempNextOTA := metadataPdexv3.AccessOTA{}
