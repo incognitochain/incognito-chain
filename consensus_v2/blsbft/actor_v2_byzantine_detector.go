@@ -108,6 +108,7 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error {
 
 	if vote.isEmptyDataForByzantineDetector() {
+		b.logger.Debug("Empty data to validate Byzantine vote")
 		return nil
 	}
 
@@ -138,7 +139,7 @@ func (b *ByzantineDetector) Validate(bestViewHeight uint64, vote *BFTVote) error
 
 	b.addNewVote(rawdb_consensus.GetConsensusDatabase(), vote, err)
 
-	if config.Param().ConsensusParam.ByzantineDetectorHeight >= bestViewHeight {
+	if config.Param().ConsensusParam.ByzantineDetectorHeight < bestViewHeight {
 		return err
 	}
 
@@ -217,6 +218,7 @@ func (b ByzantineDetector) checkFixedNodes(validator string) bool {
 func (b ByzantineDetector) checkBlackListValidator(bftVote *BFTVote) error {
 
 	if b.checkFixedNodes(bftVote.Validator) {
+		b.logger.Debugf("Validator %+v in byzantine detector black list but allow vote because of it's fixed node", bftVote.Validator)
 		return nil
 	}
 
