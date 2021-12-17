@@ -284,7 +284,7 @@ func (b ByzantineDetector) voteForSmallerBlockHeight(newVote *BFTVote) error {
 		return nil
 	}
 
-	if newVote.CommitteeFromBlock != newVote.CommitteeFromBlock {
+	if newVote.CommitteeFromBlock != recentVote.CommitteeFromBlock {
 		return nil
 	}
 
