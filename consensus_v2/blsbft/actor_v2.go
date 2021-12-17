@@ -1019,7 +1019,12 @@ func (a *actorV2) proposeShardBlock(
 		}
 	}
 	isRePropose := true
-	if block == nil || (block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees)) {
+	if block == nil {
+		isRePropose = false
+	}
+	if block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees) {
+		a.logger.Debugf("SHARD %+v, old block %+v, Attempt to create new block because of committee change",
+			a.chainID, block.GetHeight())
 		isRePropose = false
 	}
 
