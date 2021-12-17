@@ -16,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -31,7 +30,7 @@ var (
 	testDB                     *statedb.StateDB
 	logger                     common.Logger
 	DefaultTestMaxOrdersPerNft uint = 20
-	subtestPrefix = "accessota/"
+	subtestPrefix                   = "accessota/"
 )
 
 func init() {
@@ -351,27 +350,28 @@ func TestProduceFeeInPRVTrade(t *testing.T) {
 	}
 }
 
+type fakeBurnTx struct {
+	transaction.TxVersion2
+}
+
+func (tx *fakeBurnTx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
+	return true, &privacy.CoinV2{}, nil, nil, nil
+}
+
 func mockTxsForProducer(mds []metadataCommon.Metadata, shardID byte, burningPRV bool) StateEnvironment {
 	var txLst []metadataCommon.Transaction
 	for _, md := range mds {
-		// for compatibility within tests, use the actual Hash() function; mock others when necessary
 		mytx := &transaction.TxVersion2{}
 		valEnv := tx_generic.DefaultValEnv()
 		valEnv = tx_generic.WithShardID(valEnv, int(shardID))
 		mytx.SetMetadata(md)
+		mytx.SetValidationEnv(valEnv)
 
-		mocktx := &metadataMocks.Transaction{}
-		mocktx.On("GetMetadata").Return(md)
-		mocktx.On("GetMetadataType").Return(md.GetType())
-		mocktx.On("GetValidationEnv").Return(valEnv)
-		mocktx.On("Hash").Return(mytx.Hash())
-		// default for trade: set isBurn to true, fee is in sellToken
-		var burnedPRVCoin privacy.Coin = &privacy.CoinV2{}
-		if !burningPRV {
-			burnedPRVCoin = nil
+		var tx metadataCommon.Transaction = mytx
+		if burningPRV {
+			tx = &fakeBurnTx{*mytx}
 		}
-		mocktx.On("GetTxFullBurnData").Return(true, burnedPRVCoin, nil, nil, nil)
-		txLst = append(txLst, mocktx)
+		txLst = append(txLst, tx)
 	}
 
 	return NewStateEnvBuilder().
