@@ -63,24 +63,20 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil || !isBurned {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDENotBurningTxError, err)
 	}
-	identityID := utils.EmptyString
+	accessID := utils.EmptyString
 	expectBurntTokenID := common.Hash{}
 	if request.AccessOption.UseNft() {
 		if request.otaReceivers[request.AccessOption.NftID.String()] == utils.EmptyString {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("NftID's ota receiver can not be empty"))
 		}
 		expectBurntTokenID = *request.AccessOption.NftID
-		identityID = request.AccessOption.NftID.String()
+		accessID = request.AccessOption.NftID.String()
 		if *request.AccessOption.NftID == common.PRVCoinID {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("NftID can not be prv"))
 		}
 	} else {
 		expectBurntTokenID = common.PdexAccessCoinID
-		/*identityID, err = request.AccessOption.BurntOTAStringify()*/
-		/*if err != nil {*/
-		/*return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)*/
-		/*}*/
-		//TODO: @tin fix here
+		accessID = request.AccessOption.AccessID.String()
 	}
 	if !bytes.Equal(burnedTokenID[:], expectBurntTokenID[:]) {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
@@ -93,7 +89,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
 
-	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, identityID, request.shareAmount)
+	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, accessID, request.shareAmount)
 	if err != nil {
 		return false, err
 	}
@@ -113,10 +109,14 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 	if request.poolPairID == utils.EmptyString {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Pool pair id should not be empty"))
 	}
+	existPdexAccessToken := false
 	for tokenID, otaReceiverStr := range request.otaReceivers {
-		_, err := common.Hash{}.NewHashFromStr(tokenID)
+		tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 		if err != nil {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
+		if *tokenHash == common.PdexAccessCoinID {
+			existPdexAccessToken = true
 		}
 		otaReceiver := privacy.OTAReceiver{}
 		err = otaReceiver.FromString(otaReceiverStr)
@@ -129,6 +129,9 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 		if otaReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 		}
+	}
+	if !existPdexAccessToken {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers need to have otaReceiver for pdex access coin"))
 	}
 	if request.shareAmount == 0 {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("shareAmount can not be 0"))

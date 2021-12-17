@@ -1,12 +1,12 @@
 package pdexv3
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -74,8 +74,15 @@ func (ota *AccessOTA) FromBytesS(data []byte) error {
 }
 
 func (ota *AccessOTA) String() string {
-	rawBytes := ota.ToBytesS()
-	return base58.Base58Check{}.NewEncode(rawBytes, common.ZeroByte)
+	return base64.StdEncoding.EncodeToString(ota.ToBytesS())
+}
+
+func (ota *AccessOTA) FromString(str string) error {
+	temp, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return err
+	}
+	return ota.FromBytesS(temp)
 }
 
 type BurnInputReader interface {
