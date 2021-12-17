@@ -3,6 +3,7 @@ package tx_ver2
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -156,6 +157,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 	indexes := make([][]*big.Int, ringSize)
 	ring := make([][]*privacy.Point, ringSize)
 	var lastTwoColumnsCommitmentToZero []*privacy.Point
+	attempts := 0
 	for i := 0; i < ringSize; i++ {
 		sumInputs := new(privacy.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
@@ -185,24 +187,39 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j++ {
-				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, common.ConfidentialAssetID, rowIndexes[j].Uint64(), shardID)
-				if err != nil {
-					utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
-					return nil, nil, nil, err
-				}
 				coinDB := new(privacy.CoinV2)
-				if err := coinDB.SetBytes(coinBytes); err != nil {
-					utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
-					return nil, nil, nil, err
+				for attempts < privacy.MaxPrivacyAttempts { // The chance of infinite loop is negligible
+					rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
+					coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, common.ConfidentialAssetID, rowIndexes[j].Uint64(), shardID)
+					if err != nil {
+						utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
+						return nil, nil, nil, err
+					}
+
+					if err = coinDB.SetBytes(coinBytes); err != nil {
+						utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
+						return nil, nil, nil, err
+					}
+
+					if coinDB.GetAssetTag() == nil {
+						utils.Logger.Log.Errorf("CA error: missing asset tag for signing in DB coin - %v", coinBytes)
+						err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : a CA coin in DB does not have asset tag"))
+						return nil, nil, nil, err
+					}
+
+					// we do not use burned coins since they will reduce the privacy level of the transaction.
+					if !wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						break
+					}
+					attempts++
 				}
+
+				if attempts == privacy.MaxPrivacyAttempts {
+					return nil, nil, nil, fmt.Errorf("cannot form decoys CA")
+				}
+
 				row[j] = coinDB.GetPublicKey()
 				sumInputs.Add(sumInputs, coinDB.GetCommitment())
-				if coinDB.GetAssetTag() == nil {
-					utils.Logger.Log.Errorf("CA error: missing asset tag for signing in DB coin - %v", coinBytes)
-					err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : a CA coin in DB does not have asset tag"))
-					return nil, nil, nil, err
-				}
 				sumInputAssetTags.Add(sumInputAssetTags, coinDB.GetAssetTag())
 			}
 		}
@@ -420,7 +437,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 	if tokenID == nil {
 		tokenID = &common.PRVCoinID
 	}
-	for i := privacy.MaxTriesOTA; i > 0; i-- {
+	for i := privacy.MaxPrivacyAttempts; i > 0; i-- {
 		c, sharedSecret, err := privacy.NewCoinCA(paymentInfo, tokenID)
 		if tokenID != nil && sharedSecret != nil && c != nil && c.GetAssetTag() != nil {
 			utils.Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s\n", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
@@ -447,7 +464,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 			return c, sharedSecret, nil
 		}
 	}
-	// MaxTriesOTA could be exceeded if the OS's RNG or the statedb is corrupted
-	utils.Logger.Log.Errorf("Cannot create unique OTA after %d attempts", privacy.MaxTriesOTA)
+	// MaxPrivacyAttempts could be exceeded if the OS's RNG or the statedb is corrupted
+	utils.Logger.Log.Errorf("Cannot create unique OTA after %d attempts", privacy.MaxPrivacyAttempts)
 	return nil, nil, errors.New("Cannot create unique OTA")
 }

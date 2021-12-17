@@ -136,6 +136,13 @@ const (
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
+	getFinalityProof           = "getfinalityproof"
+	setConsensusRule           = "setconsensusrule"
+	getConsensusRule           = "getconsensusrule"
+	getByzantineDetectorInfo   = "getbyzantinedetectorinfo"
+	removeByzantineDetector    = "removebyzantinedetector"
+	getConsensusData           = "getconsensusdata"
+	getProposerIndex           = "getproposerindex"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"

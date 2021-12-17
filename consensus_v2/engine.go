@@ -185,6 +185,8 @@ func NewConsensusEngine() *Engine {
 		consensusName: common.BlsConsensus,
 		version:       make(map[int]int),
 	}
+	blsbft.ByzantineDetectorObject = blsbft.NewByzantineDetector(Logger.Log)
+	go blsbft.ByzantineDetectorObject.Loop()
 	return engine
 }
 
@@ -313,6 +315,10 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 
 	if chainHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
 		return types.BLOCK_PRODUCINGV3_VERSION
+	}
+
+	if chainHeight >= config.Param().ConsensusParam.Lemma2Height {
+		return types.LEMMA2_VERSION
 	}
 
 	if chainHeight >= config.Param().ConsensusParam.StakingFlowV3Height {

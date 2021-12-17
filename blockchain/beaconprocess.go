@@ -581,6 +581,13 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		beaconBestState.NumberOfShardBlock[shardID] = beaconBestState.NumberOfShardBlock[shardID] + uint(len(shardStates))
 	}
 
+	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize,
+		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, beaconBlock.Header.Height)
+	if newMaxCommitteeSize != beaconBestState.MaxShardCommitteeSize {
+		Logger.log.Infof("Beacon Height %+v, Hash %+v, found new max committee size %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash(), newMaxCommitteeSize)
+		beaconBestState.MaxShardCommitteeSize = newMaxCommitteeSize
+	}
+
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getNewShardCommitteeFlattenList())

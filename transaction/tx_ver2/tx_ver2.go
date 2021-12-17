@@ -319,6 +319,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 	indexes := make([][]*big.Int, ringSize)
 	ring := make([][]*privacy.Point, ringSize)
 	var commitmentToZero *privacy.Point
+	attempts := 0
 	for i := 0; i < ringSize; i++ {
 		sumInputs := new(privacy.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
@@ -337,22 +338,28 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j++ {
-				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
-				if err != nil {
-					utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
-					return nil, nil, nil, err
-				}
 				coinDB := new(privacy.CoinV2)
-				if err := coinDB.SetBytes(coinBytes); err != nil {
-					utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
-					return nil, nil, nil, err
-				}
+				for attempts < privacy.MaxPrivacyAttempts { // The chance of infinite loop is negligible
+					rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
+					coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
+					if err != nil {
+						utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
+						return nil, nil, nil, err
+					}
 
-				// we do not use burned coins since they will reduce the privacy level of the transaction.
-				if common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
-					j--
-					continue
+					if err = coinDB.SetBytes(coinBytes); err != nil {
+						utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
+						return nil, nil, nil, err
+					}
+
+					// we do not use burned coins since they will reduce the privacy level of the transaction.
+					if !common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						break
+					}
+					attempts++
+				}
+				if attempts == privacy.MaxPrivacyAttempts {
+					return nil, nil, nil, fmt.Errorf("cannot form decoys")
 				}
 
 				row[j] = coinDB.GetPublicKey()

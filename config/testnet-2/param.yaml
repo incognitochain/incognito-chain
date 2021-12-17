@@ -25,6 +25,8 @@ committee_size:
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
+  increase_max_shard_committee_size:
+    - 1000000000000: 48
 block_time:
   min_beacon_block_interval: 10s
   max_beacon_block_creation: 8s
@@ -57,7 +59,9 @@ consensus_param:
   enable_slashing_height_v2: 3068072
   staking_flow_v3_height: 3335020
   force_not_use_burned_coins: 1000000000000
+  lemma2_height: 1000000000000
   block_producing_v3_height: 1000000000000
+  byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1280
@@ -79,3 +83,4 @@ geth_param:
   port: ""
 bsc_param:
   host: "https://data-seed-prebsc-2-s1.binance.org:8545"
+is_enable_bpv3_stats: false
