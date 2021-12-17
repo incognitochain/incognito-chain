@@ -722,7 +722,7 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		AccessID          *common.Hash `json:"AccessID"`
+		metadataPdexv3.AccessOption
 		TokenID           string       `json:"TokenID"`
 		PoolPairID        string       `json:"PoolPairID"`
 		PairHash          string       `json:"PairHash"`
@@ -735,30 +735,44 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, &common.Hash{}, mdReader.AccessID)
-	tokenList := []common.Hash{}
-	if mdReader.AccessID == nil {
-		tokenList = append(tokenList, common.PdexAccessCoinID)
-	}
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, mdReader.NftID, mdReader.AccessID)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.TokenID)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
-	tokenList = append(tokenList, *tokenHash)
-	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
-		tokenList, keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceivers := make(map[common.Hash]*privacy.OTAReceiver)
-	for k, v := range recv {
-		otaReceivers[k] = &v
+	var otaReceivers map[common.Hash]privacy.OTAReceiver
+	otaReceiverStr := utils.EmptyString
+	if mdReader.NftID != nil {
+		otaReceiver := privacy.OTAReceiver{}
+		err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		otaReceiverStr, err = otaReceiver.String()
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+	} else {
+		otaReceivers = make(map[common.Hash]privacy.OTAReceiver)
+		tokenList := []common.Hash{}
+		if mdReader.AccessID == nil {
+			tokenList = append(tokenList, common.PdexAccessCoinID)
+		}
+		tokenList = append(tokenList, *tokenHash)
+		recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
+			tokenList, keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		for k, v := range recv {
+			otaReceivers[k] = v
+		}
 	}
 
 	md := metadataPdexv3.NewAddLiquidityRequestWithValue(
-		mdReader.PoolPairID, mdReader.PairHash, utils.EmptyString, mdReader.TokenID,
-		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier), accessOption,
-		otaReceivers,
+		mdReader.PoolPairID, mdReader.PairHash, otaReceiverStr, mdReader.TokenID,
+		uint64(mdReader.ContributedAmount), uint(mdReader.Amplifier),
+		accessOption, otaReceivers,
 	)
 
 	paramSelect.SetTokenID(*tokenHash)
@@ -1638,7 +1652,7 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		AccessID      *common.Hash `json:"AccessID"`
+		metadataPdexv3.AccessOption
 		StakingPoolID string       `json:"StakingPoolID"`
 		Amount        Uint64Reader `json:"Amount"`
 	}{}
@@ -1648,28 +1662,42 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, &common.Hash{}, mdReader.AccessID)
-	tokenList := []common.Hash{}
-	if mdReader.AccessID == nil {
-		tokenList = append(tokenList, common.PdexAccessCoinID)
-	}
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, mdReader.NftID, mdReader.AccessID)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.StakingPoolID)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
-	tokenList = append(tokenList, *tokenHash)
-	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
-		tokenList, keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceivers := make(map[common.Hash]*privacy.OTAReceiver)
-	for k, v := range recv {
-		otaReceivers[k] = &v
+	var otaReceivers map[common.Hash]privacy.OTAReceiver
+	otaReceiverStr := utils.EmptyString
+	if mdReader.NftID != nil {
+		otaReceiver := privacy.OTAReceiver{}
+		err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		otaReceiverStr, err = otaReceiver.String()
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+	} else {
+		otaReceivers = make(map[common.Hash]privacy.OTAReceiver)
+		tokenList := []common.Hash{}
+		if mdReader.AccessID == nil {
+			tokenList = append(tokenList, common.PdexAccessCoinID)
+		}
+		tokenList = append(tokenList, *tokenHash)
+		recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
+			tokenList, keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		for k, v := range recv {
+			otaReceivers[k] = v
+		}
 	}
 
 	md := metadataPdexv3.NewStakingRequestWithValue(
-		mdReader.StakingPoolID, utils.EmptyString, uint64(mdReader.Amount),
+		mdReader.StakingPoolID, otaReceiverStr, uint64(mdReader.Amount),
 		*accessOption, otaReceivers,
 	)
 

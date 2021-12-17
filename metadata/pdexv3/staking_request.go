@@ -10,13 +10,14 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type StakingRequest struct {
 	metadataCommon.MetadataBase
 	tokenID      string
 	otaReceiver  string
-	otaReceivers map[common.Hash]*privacy.OTAReceiver // receive tokens
+	otaReceivers map[common.Hash]privacy.OTAReceiver // receive tokens
 	AccessOption
 	tokenAmount uint64
 }
@@ -24,7 +25,7 @@ type StakingRequest struct {
 func NewStakingRequest() *StakingRequest {
 	return &StakingRequest{
 		AccessOption: *NewAccessOption(),
-		otaReceivers: make(map[common.Hash]*privacy.OTAReceiver),
+		otaReceivers: make(map[common.Hash]privacy.OTAReceiver),
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3StakingRequestMeta,
 		},
@@ -33,7 +34,7 @@ func NewStakingRequest() *StakingRequest {
 
 func NewStakingRequestWithValue(
 	tokenID, otaReceiver string, tokenAmount uint64, accessOption AccessOption,
-	otaReceivers map[common.Hash]*privacy.OTAReceiver,
+	otaReceivers map[common.Hash]privacy.OTAReceiver,
 ) *StakingRequest {
 	return &StakingRequest{
 		MetadataBase: metadataCommon.MetadataBase{
@@ -59,16 +60,13 @@ func (request *StakingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers)
-	if err != nil {
-		return false, err
-	}
 	tokenHash, err := common.Hash{}.NewHashFromStr(request.tokenID)
 	if err != nil {
 		return false, err
 	}
-	if _, found := request.otaReceivers[*tokenHash]; !found {
-		return false, errors.New("Can not find otaReceiver for burnt tokenID")
+	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash)
+	if err != nil {
+		return false, err
 	}
 	err = beaconViewRetriever.IsValidPdexv3StakingPool(request.tokenID)
 	if err != nil {
@@ -136,9 +134,9 @@ func (request *StakingRequest) CalculateSize() uint64 {
 
 func (request *StakingRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		OtaReceiver  string                               `json:"OtaReceiver,omitempty"`
-		OtaReceivers map[common.Hash]*privacy.OTAReceiver `json:"OtaReceivers,omitempty"`
-		TokenID      string                               `json:"TokenID"`
+		OtaReceiver  string                              `json:"OtaReceiver,omitempty"`
+		OtaReceivers map[common.Hash]privacy.OTAReceiver `json:"OtaReceivers,omitempty"`
+		TokenID      string                              `json:"TokenID"`
 		AccessOption
 		TokenAmount uint64 `json:"TokenAmount"`
 		metadataCommon.MetadataBase
@@ -158,9 +156,9 @@ func (request *StakingRequest) MarshalJSON() ([]byte, error) {
 
 func (request *StakingRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		OtaReceiver  string                               `json:"OtaReceiver,omitempty"`
-		OtaReceivers map[common.Hash]*privacy.OTAReceiver `json:"OtaReceivers,omitempty"`
-		TokenID      string                               `json:"TokenID"`
+		OtaReceiver  string                              `json:"OtaReceiver,omitempty"`
+		OtaReceivers map[common.Hash]privacy.OTAReceiver `json:"OtaReceivers,omitempty"`
+		TokenID      string                              `json:"TokenID"`
 		AccessOption
 		TokenAmount uint64 `json:"TokenAmount"`
 		metadataCommon.MetadataBase
@@ -179,7 +177,7 @@ func (request *StakingRequest) UnmarshalJSON(data []byte) error {
 }
 
 //OtaReceivers read only function
-func (request *StakingRequest) OtaReceivers() map[common.Hash]*privacy.OTAReceiver {
+func (request *StakingRequest) OtaReceivers() map[common.Hash]privacy.OTAReceiver {
 	return request.otaReceivers
 }
 
@@ -197,13 +195,26 @@ func (request *StakingRequest) TokenAmount() uint64 {
 
 func (request *StakingRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	for tokenID, val := range request.otaReceivers {
-		if tokenID != common.PRVCoinID {
-			tokenID = common.ConfidentialAssetID
+	if request.otaReceiver != utils.EmptyString {
+		currentTokenID := common.ConfidentialAssetID
+		if request.TokenID() == common.PRVIDStr {
+			currentTokenID = common.PRVCoinID
 		}
+		otaReceiver := privacy.OTAReceiver{}
+		otaReceiver.FromString(request.otaReceiver)
 		result = append(result, metadataCommon.OTADeclaration{
-			PublicKey: val.PublicKey.ToBytes(), TokenID: tokenID,
+			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
 		})
+	}
+	if request.otaReceivers != nil {
+		for tokenID, val := range request.otaReceivers {
+			if tokenID != common.PRVCoinID {
+				tokenID = common.ConfidentialAssetID
+			}
+			result = append(result, metadataCommon.OTADeclaration{
+				PublicKey: val.PublicKey.ToBytes(), TokenID: tokenID,
+			})
+		}
 	}
 	return result
 }
