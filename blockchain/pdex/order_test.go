@@ -107,6 +107,40 @@ func TestProduceOrder(t *testing.T) {
 	}
 }
 
+func TestProduceWithdrawOrder(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Metadata metadataPdexv3.WithdrawOrderRequest `json:"metadata"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("produce_withdraw_order.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
+
+			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
+			// manually add nftID
+			if testdata.Metadata.NftID != nil {
+				testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			}
+
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+			Equal(t, expected, TestResult{instructions})
+		})
+	}
+}
+
 func TestAutoWithdraw(t *testing.T) {
 	setTestTradeConfig()
 	type TestData struct {

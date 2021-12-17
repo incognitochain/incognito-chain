@@ -737,10 +737,9 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 					}
 				}
-				// set NextOTA
-				if md.NextOTA != nil {
-					//TODO: @tiendat comment out here for fix order logic
-					//ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
+				// set next AccessOTA to state if one is present on the instruction
+				if len(md.AccessOTA) > 0 {
+					ord.SetAccessOTA(md.AccessOTA)
 				}
 			}
 		}
@@ -762,10 +761,9 @@ func (sp *stateProcessorV2) withdrawOrder(
 		}
 		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == md.OrderID {
-				// set NextOTA
-				if md.NextOTA != nil {
-					//TODO: @tiendat comment out here for fix order logic
-					//ord.SetNftID(common.Hash(md.NextOTA.Bytes()))
+				// set next AccessOTA to state if one is present on the instruction
+				if len(md.AccessOTA) > 0 {
+					ord.SetAccessOTA(md.AccessOTA)
 				}
 			}
 		}

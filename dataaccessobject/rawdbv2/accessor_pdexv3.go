@@ -339,7 +339,6 @@ func (o *Pdexv3Order) RewardKey() common.Hash { return o.nftID }
 // while rates, id & trade direction cannot
 func (o *Pdexv3Order) SetToken0Balance(b uint64) { o.token0Balance = b }
 func (o *Pdexv3Order) SetToken1Balance(b uint64) { o.token1Balance = b }
-func (o *Pdexv3Order) SetNftID(id common.Hash)   { o.nftID = id }
 func (o *Pdexv3Order) SetAccessOTA(b []byte)     { o.accessOTA = b }
 
 func NewPdexv3OrderWithValue(

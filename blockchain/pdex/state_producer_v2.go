@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -681,9 +682,22 @@ TransactionLoop:
 		if !ok {
 			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
+		// default to reject
+		refundMd := &metadataPdexv3.RejectedWithdrawOrder{
+			PoolPairID: currentOrderReq.PoolPairID,
+			OrderID:    currentOrderReq.OrderID,
+		}
+		refundAction := instruction.NewAction(
+			refundMd,
+			*tx.Hash(),
+			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
+		)
 
+		var mintAccessInstruction []string // only minting access token when accepted
+		var nextAccessOTA []byte
+		var err error
 		// when accessing using NftID, mint NFT in response
-		accessID := *currentOrderReq.AccessOption.AccessID
+		var accessID common.Hash
 		accessByNFT := currentOrderReq.UseNft()
 		if accessByNFT {
 			accessID = *currentOrderReq.NftID
@@ -699,18 +713,23 @@ TransactionLoop:
 			if err != nil {
 				return result, pairs, err
 			}
+		} else {
+			accessID = *currentOrderReq.AccessOption.AccessID
+			accessReceiver, found := currentOrderReq.Receiver[common.PdexAccessCoinID]
+			if !found {
+				Logger.log.Warnf("WithdrawOrder: cannot find pdex access coin receiver")
+				result = append(result, refundAction.StringSlice())
+				continue TransactionLoop
+			}
+			nextAccessOTA = accessReceiver.PublicKey.ToBytesS()
+			recvStr, _ := accessReceiver.String() // receivers created using UnmarshalJSON are valid
+			mintAccessInstruction, err = instruction.NewMintAccessTokenWithValue(
+				recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
+			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
+			if err != nil {
+				return result, pairs, err
+			}
 		}
-
-		// default to reject
-		refundMd := &metadataPdexv3.RejectedWithdrawOrder{
-			PoolPairID: currentOrderReq.PoolPairID,
-			OrderID:    currentOrderReq.OrderID,
-		}
-		refundAction := instruction.NewAction(
-			refundMd,
-			*tx.Hash(),
-			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
-		)
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
 		if !exists {
@@ -729,10 +748,15 @@ TransactionLoop:
 							result = append(result, refundAction.StringSlice())
 							continue TransactionLoop
 						}
-						//TODO: @tiendat comment out here for fix order logic
-						// access successful -> reject also changes NextOTA
-						//refundMd.NextOTA = currentOrderReq.NextOTA
-						//ord.SetNftID(common.Hash(currentOrderReq.NextOTA.Bytes()))
+						if !bytes.Equal(currentOrderReq.BurntOTA.ToBytesS(), ord.AccessOTA()) {
+							Logger.log.Warnf("Incorrect AccessOTA %s burned for order %s", currentOrderReq.BurntOTA.String(), orderID)
+							result = append(result, refundAction.StringSlice())
+							continue TransactionLoop
+						}
+						// access successful -> always mint access token & change NextOTA in state
+						result = append(result, mintAccessInstruction)
+						refundMd.AccessOTA = nextAccessOTA
+						ord.SetAccessOTA(nextAccessOTA)
 					}
 
 					withdrawResults := make(map[common.Hash]uint64)
@@ -793,7 +817,7 @@ TransactionLoop:
 								Receiver:   currentOrderReq.Receiver[tokenID],
 								TokenID:    tokenID,
 								Amount:     withdrawAmount,
-								//NextOTA:    currentOrderReq.NextOTA, // is nil when using NftID TODO: @tiendat comment out here for fix order logic
+								AccessOTA:  nextAccessOTA, // is nil when using NftID
 							},
 							*tx.Hash(),
 							byte(tx.GetValidationEnv().ShardID()),
