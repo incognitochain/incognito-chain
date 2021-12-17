@@ -40,7 +40,7 @@ type ByzantineDetector struct {
 	blackList                    map[string]*rawdb_consensus.BlackListValidator // validator => reason for blacklist
 	voteInTimeSlot               map[string]map[int64]*BFTVote                  // validator => timeslot => vote
 	validRecentVote              map[string]*BFTVote
-	smallestBlockProduceTimeSlot map[string]map[uint64]int64 // validator => height => timeslot
+	smallestBlockProduceTimeSlot map[string]map[uint64]*BFTVote // validator => height => timeslot
 	logger                       common.Logger
 	mu                           *sync.RWMutex
 }
@@ -66,7 +66,7 @@ func NewByzantineDetector(logger common.Logger) *ByzantineDetector {
 		logger:                       logger,
 		blackList:                    blackListValidators,
 		voteInTimeSlot:               make(map[string]map[int64]*BFTVote),
-		smallestBlockProduceTimeSlot: make(map[string]map[uint64]int64),
+		smallestBlockProduceTimeSlot: make(map[string]map[uint64]*BFTVote),
 		validRecentVote:              make(map[string]*BFTVote),
 		mu:                           new(sync.RWMutex),
 	}
@@ -80,7 +80,7 @@ func (b ByzantineDetector) GetByzantineDetectorInfo() map[string]interface{} {
 	blackList := make(map[string]*rawdb_consensus.BlackListValidator)
 	voteInTimeSlot := make(map[string]map[int64]*BFTVote)
 	validRecentVote := make(map[string]*BFTVote)
-	smallestBlockProduceTimeSlot := make(map[string]map[uint64]int64)
+	smallestBlockProduceTimeSlot := make(map[string]map[uint64]*BFTVote)
 
 	for k, v := range b.blackList {
 		blackList[k] = v
@@ -258,12 +258,16 @@ func (b ByzantineDetector) voteForHigherTimeSlotSameHeight(newVote *BFTVote) err
 		return nil
 	}
 
-	blockTimeSlot, ok := smallestTimeSlotBlock[newVote.BlockHeight]
+	smallestTimeSlotVote, ok := smallestTimeSlotBlock[newVote.BlockHeight]
 	if !ok {
 		return nil
 	}
 
-	if newVote.ProduceTimeSlot > blockTimeSlot {
+	if newVote.CommitteeFromBlock != smallestTimeSlotVote.CommitteeFromBlock {
+		return nil
+	}
+
+	if newVote.ProduceTimeSlot > smallestTimeSlotVote.ProduceTimeSlot {
 		return fmt.Errorf("error name: %+v,"+
 			"block height: %+v, bigger vote: %+v, smallest vote: %+v",
 			ErrVoteForHigherTimeSlot, newVote.BlockHeight, newVote, smallestTimeSlotBlock)
@@ -326,14 +330,16 @@ func (b *ByzantineDetector) addNewVote(database incdb.Database, newVote *BFTVote
 	b.voteInTimeSlot[newVote.Validator][newVote.ProposeTimeSlot] = newVote
 
 	if b.smallestBlockProduceTimeSlot == nil {
-		b.smallestBlockProduceTimeSlot = make(map[string]map[uint64]int64)
+		b.smallestBlockProduceTimeSlot = make(map[string]map[uint64]*BFTVote)
 	}
 	_, ok2 := b.smallestBlockProduceTimeSlot[newVote.Validator]
 	if !ok2 {
-		b.smallestBlockProduceTimeSlot[newVote.Validator] = make(map[uint64]int64)
+		b.smallestBlockProduceTimeSlot[newVote.Validator] = make(map[uint64]*BFTVote)
 	}
-	if res, ok := b.smallestBlockProduceTimeSlot[newVote.Validator][newVote.BlockHeight]; !ok || (ok && newVote.ProduceTimeSlot < res) {
-		b.smallestBlockProduceTimeSlot[newVote.Validator][newVote.BlockHeight] = newVote.ProduceTimeSlot
+	if oldVote, ok := b.smallestBlockProduceTimeSlot[newVote.Validator][newVote.BlockHeight]; !ok ||
+		(ok && newVote.ProduceTimeSlot < oldVote.ProduceTimeSlot) ||
+		(ok && newVote.CommitteeFromBlock != oldVote.CommitteeFromBlock) {
+		b.smallestBlockProduceTimeSlot[newVote.Validator][newVote.BlockHeight] = newVote
 	}
 
 	b.validRecentVote[newVote.Validator] = newVote
