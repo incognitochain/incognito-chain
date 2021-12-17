@@ -38,7 +38,7 @@ func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropo
 type IProposeMessageRule interface {
 	HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error)
 	CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error)
-	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool)
+	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string)
 	HandleCleanMem(finalView uint64)
 	FinalityProof() map[string]map[int64]string
 }
@@ -83,8 +83,8 @@ func (p ProposeRuleLemma1) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 	return bftPropose, nil
 }
 
-func (p ProposeRuleLemma1) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool) {
-	return NewFinalityProof(), false
+func (p ProposeRuleLemma1) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string) {
+	return NewFinalityProof(), false, ""
 }
 
 type ProposeRuleLemma2 struct {
@@ -414,14 +414,14 @@ func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 	return bftPropose, nil
 }
 
-func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool) {
+func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string) {
 	if block == nil {
-		return NewFinalityProof(), false
+		return NewFinalityProof(), false, "block is nil"
 	}
 
 	finalityData, ok := p.nextBlockFinalityProof[block.GetPrevHash().String()]
 	if !ok {
-		return NewFinalityProof(), false
+		return NewFinalityProof(), false, "finality proof not found"
 	}
 
 	finalityProof := NewFinalityProof()
@@ -430,18 +430,18 @@ func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, cur
 	producerTimeTimeSlot := common.CalculateTimeSlot(producerTime)
 
 	if currentTimeSlot-producerTimeTimeSlot > MAX_FINALITY_PROOF {
-		return finalityProof, false
+		return finalityProof, false, fmt.Sprintf("exceed max finality proof, required %+v proofs", currentTimeSlot-producerTimeTimeSlot)
 	}
 
 	for i := producerTimeTimeSlot; i < currentTimeSlot; i++ {
 		reProposeHashSignature, ok := finalityData[i]
 		if !ok {
-			return NewFinalityProof(), false
+			return NewFinalityProof(), false, "invalid re-propose hash signature"
 		}
 		finalityProof.AddProof(reProposeHashSignature)
 	}
 
-	return finalityProof, true
+	return finalityProof, true, ""
 }
 
 type NoHandleProposeMessageRule struct {
@@ -462,8 +462,8 @@ func (n NoHandleProposeMessageRule) CreateProposeBFTMessage(env *SendProposeBloc
 	return new(BFTPropose), errors.New("using no handle propose message rule")
 }
 
-func (n NoHandleProposeMessageRule) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool) {
-	return NewFinalityProof(), false
+func (n NoHandleProposeMessageRule) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string) {
+	return NewFinalityProof(), false, ""
 }
 
 func (n NoHandleProposeMessageRule) HandleCleanMem(finalView uint64) {

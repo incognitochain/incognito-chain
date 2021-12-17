@@ -636,29 +636,39 @@ func (a *actorV2) run() error {
 					}
 
 					var finalityProof = NewFinalityProof()
-					var isValidRePropose bool = false
+					var isEnoughLemma2Proof bool = false
+					var failReason = ""
 					if proposeBlockInfo.block != nil {
-						finalityProof, isValidRePropose = a.ruleDirector.builder.ProposeMessageRule().
+						finalityProof, isEnoughLemma2Proof, failReason = a.ruleDirector.builder.ProposeMessageRule().
 							GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
+						a.logger.Infof("Timeslot %+v, height %+v | Attempt to re-propose block height %+v, hash %+v, produce timeslot %+v,"+
+							" is enough finality proof %+v, false reason %+v",
+							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1,
+							proposeBlockInfo.block.GetHeight(), *proposeBlockInfo.block.Hash(),
+							proposeBlockInfo.block.GetProduceTime(), isEnoughLemma2Proof, failReason)
+					} else {
+						a.logger.Infof("Timeslot %+v, height %+v | Attempt to create new block",
+							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1)
 					}
+
 					if createdBlk, err := a.proposeBlock(
 						userProposeKey,
 						proposerPk,
 						proposeBlockInfo,
 						committees,
 						committeeViewHash,
-						isValidRePropose,
+						isEnoughLemma2Proof,
 					); err != nil {
 						a.logger.Error(UnExpectedError, errors.New("can't propose block"), err)
 					} else {
-						if isValidRePropose {
+						if isEnoughLemma2Proof {
 							a.logger.Infof("Get Finality Proof | New Block %+v, %+v, Finality Proof %+v",
 								createdBlk.GetHeight(), createdBlk.Hash().String(), finalityProof.ReProposeHashSignature)
 						}
 
 						env := NewSendProposeBlockEnvironment(
 							finalityProof,
-							isValidRePropose,
+							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
 						)
