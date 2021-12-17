@@ -118,7 +118,6 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	var err error
 	var isReProposeFirstBlockNextHeight = false
 	var isFirstBlockNextHeight = false
-
 	isFirstBlockNextHeight = p.isFirstBlockNextHeight(env.previousBlock, env.block)
 	if isFirstBlockNextHeight {
 		err := p.verifyLemma2FirstBlockNextHeight(proposeMsg, env.block)

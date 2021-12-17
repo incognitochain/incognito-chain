@@ -810,7 +810,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		return err
 	}
 	v.block.(blockValidation).AddValidationField(validationData)
-
+	isInsertWithPreviousData := false
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -822,24 +822,23 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			previousProposeBlockInfo.block.GetValidationField(),
 			previousProposeBlockInfo.Votes)
 		if err != nil {
-			a.logger.Error(err)
-			return err
+			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+		} else {
+			previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
+			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
+				return err
+			}
+			isInsertWithPreviousData = true
+			previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
+			a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
+				v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
+
+			if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
+				a.logger.Errorf("clean receive block by hash error %+v", err)
+			}
 		}
-
-		previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
-		if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
-			return err
-		}
-
-		previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
-		a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
-			v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
-
-		if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
-			a.logger.Errorf("clean receive block by hash error %+v", err)
-		}
-	} else {
-
+	}
+	if !isInsertWithPreviousData {
 		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 			return err
 		}
