@@ -49,7 +49,7 @@ func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transactio
 	if err != nil {
 		return false, err
 	}
-	err = req.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, false)
+	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, false)
 	if err != nil {
 		return false, err
 	}

@@ -57,7 +57,7 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
-	err := withdrawal.AccessOption.IsValid(tx, beaconViewRetriever, db, true)
+	err := withdrawal.AccessOption.IsValid(tx, withdrawal.Receivers, beaconViewRetriever, db, true)
 	if err != nil {
 		return false, err
 	}
