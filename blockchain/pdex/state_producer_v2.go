@@ -125,16 +125,17 @@ func (sp *stateProducerV2) addLiquidity(
 					res = append(res, insts...)
 					continue
 				}
-				accessOTAReceiver := utils.EmptyString
-				if value, found := waitingContribution.OtaReceivers()[common.PdexAccessCoinID]; !found {
-					accessOTAReceiver = value
+				accessCoinReceiver := utils.EmptyString
+				if value, found := waitingContribution.OtaReceivers()[common.PdexAccessCoinID]; found {
+					accessCoinReceiver = value
 				}
+
 				poolPairs[poolPairID] = newPoolPair
 				insts, err := v2utils.BuildMatchAddLiquidityInstructions(
 					incomingContributionState, poolPairID,
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
-					accessOTAReceiver, accessOTA,
-					waitingContribution.OtaReceiver() != utils.EmptyString,
+					accessCoinReceiver, accessOTA,
+					waitingContribution.AccessOTA() != utils.EmptyString && waitingContribution.OtaReceiver() == utils.EmptyString,
 				)
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
@@ -1265,7 +1266,7 @@ func (sp *stateProducerV2) staking(
 			return res, stakingPoolStates, err
 		}
 		res = append(res, inst)
-		if metaData.AccessOption.AccessID == nil && metaData.NftID == nil {
+		if metaData.AccessOption.AccessID == nil && metaData.AccessOption.NftID == nil {
 			otaReceiver, _ = metaData.OtaReceivers()[common.PdexAccessCoinID].String() //verify in metadata of tx
 			inst, err = instruction.NewMintAccessTokenWithValue(
 				otaReceiver, shardID, txReqID,
@@ -1273,6 +1274,7 @@ func (sp *stateProducerV2) staking(
 			if err != nil {
 				return res, stakingPoolStates, err
 			}
+			res = append(res, inst)
 		}
 		stakingPoolStates[metaData.TokenID()] = stakingPoolState
 	}
