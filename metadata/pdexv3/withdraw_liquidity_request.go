@@ -55,7 +55,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, true)
+	err := request.AccessOption.IsValid(tx, request.getParsedOtaReceivers(), beaconViewRetriever, transactionStateDB, true)
 	if err != nil {
 		return false, err
 	}
@@ -218,6 +218,18 @@ func (request *WithdrawLiquidityRequest) GetOTADeclarations() []metadataCommon.O
 		result = append(result, metadataCommon.OTADeclaration{
 			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: tokenHash,
 		})
+	}
+	return result
+}
+
+// requires passing sanity check
+func (request *WithdrawLiquidityRequest) getParsedOtaReceivers() map[common.Hash]privacy.OTAReceiver {
+	result := make(map[common.Hash]privacy.OTAReceiver)
+	for k, v := range request.otaReceivers {
+		tokenID, _ := common.Hash{}.NewHashFromStr(k)
+		recv := &privacy.OTAReceiver{}
+		recv.FromString(v)
+		result[*tokenID] = *recv
 	}
 	return result
 }

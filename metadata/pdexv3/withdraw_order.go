@@ -45,7 +45,7 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 	if err != nil {
 		return false, err
 	}
-	err = req.AccessOption.IsValid(tx, beaconViewRetriever, transactionStateDB, true)
+	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, true)
 	if err != nil {
 		return false, err
 	}

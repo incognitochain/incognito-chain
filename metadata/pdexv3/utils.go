@@ -89,69 +89,47 @@ type BurnInputReader interface {
 	DerivableBurnInput(*statedb.StateDB) (map[common.Hash]privacy.Point, error)
 }
 
-func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA AccessOTA, tx metadataCommon.Transaction, accessTokenID common.Hash, transactionStateDB *statedb.StateDB) (bool, error) {
-	if accessTokenID != common.PRVCoinID {
-		accessTokenID = common.ConfidentialAssetID
-	}
+func ValidPdexv3Access(burnOTA *AccessOTA, nextOTA privacy.Point, tx metadataCommon.Transaction, transactionStateDB *statedb.StateDB) (bool, error) {
 	// check that nextOTA is valid
-	p := (*privacy.Point)(&nextOTA)
-	if !p.PointValid() {
+	if !nextOTA.PointValid() {
 		return false, fmt.Errorf("invalid point - next AccessOTA %x", nextOTA.ToBytesS())
 	}
-	rawPubkey := p.ToBytesS()
 
-	exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, accessTokenID, rawPubkey)
-	if err != nil {
-		return false, err
-	}
-	// allow only OTAs from stored coins & not OTA-declarations
-	if !exists {
-		return false, fmt.Errorf("next AccessOTA %s does not exist", p.String())
-	}
-	if otaStatus == statedb.OTA_STATUS_OCCUPIED {
-		return false, fmt.Errorf("next AccessOTA has invalid status %v", statedb.OTA_STATUS_OCCUPIED)
-	}
+	// reject OTAs already in db; already checked with txs double-spend verification
+	// exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, common.ConfidentialAssetID, rawPubkey)
+	// if err != nil {
+	// 	return false, err
+	// }
+	// if exists {
+	// 	return false, fmt.Errorf("next AccessOTA %v already exists", nextOTA)
+	// }
 
 	if burnOTA == nil {
 		// accept metadata that declare nextAccessOTA the 1st time
 		return true, nil
 	}
 	// check that burnOTA is valid
-	{
-		burnOTAPoint := (*privacy.Point)(burnOTA)
-		if !burnOTAPoint.PointValid() {
-			return false, fmt.Errorf("invalid point - burnt AccessOTA")
-		}
-		rawPubkey := burnOTAPoint.ToBytesS()
+	burnOTAPoint := (*privacy.Point)(burnOTA)
+	if !burnOTAPoint.PointValid() {
+		return false, fmt.Errorf("invalid point - burnt AccessOTA")
+	}
 
-		exists, otaStatus, err := statedb.HasOnetimeAddress(transactionStateDB, accessTokenID, rawPubkey)
-		if err != nil {
-			return false, err
-		}
-		if !exists {
-			return false, fmt.Errorf("burnt AccessOTA %s does not exist", burnOTAPoint.String())
-		}
-		if otaStatus == statedb.OTA_STATUS_OCCUPIED {
-			return false, fmt.Errorf("burnt AccessOTA has invalid status %v", statedb.OTA_STATUS_OCCUPIED)
-		}
-
-		// check that burnOTA is a tx input. Param tx cannot be nil
-		btx, ok := tx.(BurnInputReader)
-		if !ok {
-			return false, fmt.Errorf("cannot identify burn input for tx %s", tx.Hash().String())
-		}
-		burnMap, err := btx.DerivableBurnInput(transactionStateDB)
-		if err != nil {
-			return false, fmt.Errorf("cannot identify burn input for tx %s: %v", tx.Hash().String(), err)
-		}
-		if burnInputCoinPubkey, exists := burnMap[common.PdexAccessCoinID]; !exists || !privacy.IsPointEqual(burnOTAPoint, &burnInputCoinPubkey) {
-			return false, fmt.Errorf("burn missing: tx %s must burn AccessOTA %s from metadata", tx.Hash().String(), burnOTAPoint.String())
-		}
-		// check that burn output is PdexAccess, with sufficient amount
-		isBurn, _, burnedTokenCoin, burnedTokenID, err := tx.GetTxFullBurnData()
-		if !isBurn || *burnedTokenID != common.PdexAccessCoinID || burnedTokenCoin.GetValue() < MinPdexv3AccessBurn {
-			return false, fmt.Errorf("invalid burn output (%v, %d) for Pdexv3 Access", burnedTokenID, burnedTokenCoin.GetValue())
-		}
+	// check that burnOTA is a tx input. Param tx cannot be nil
+	btx, ok := tx.(BurnInputReader)
+	if !ok {
+		return false, fmt.Errorf("cannot identify burn input for tx %s", tx.Hash().String())
+	}
+	burnMap, err := btx.DerivableBurnInput(transactionStateDB)
+	if err != nil {
+		return false, fmt.Errorf("cannot identify burn input for tx %s: %v", tx.Hash().String(), err)
+	}
+	if burnInputCoinPubkey, exists := burnMap[common.PdexAccessCoinID]; !exists || !privacy.IsPointEqual(burnOTAPoint, &burnInputCoinPubkey) {
+		return false, fmt.Errorf("burn missing: tx %s must burn AccessOTA %s from metadata", tx.Hash().String(), burnOTAPoint.String())
+	}
+	// check that burn output is PdexAccess, with sufficient amount
+	isBurn, _, burnedTokenCoin, burnedTokenID, err := tx.GetTxFullBurnData()
+	if !isBurn || *burnedTokenID != common.PdexAccessCoinID || burnedTokenCoin.GetValue() < MinPdexv3AccessBurn {
+		return false, fmt.Errorf("invalid burn output (%v, %d) for Pdexv3 Access", burnedTokenID, burnedTokenCoin.GetValue())
 	}
 
 	return true, nil
@@ -177,41 +155,40 @@ func NewAccessOptionWithValue(burntOTA *AccessOTA, nftID, accessID *common.Hash)
 
 func (a *AccessOption) IsValid(
 	tx metadataCommon.Transaction,
+	receivers map[common.Hash]privacy.OTAReceiver,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	transactionStateDB *statedb.StateDB,
 	isWithdrawRequest bool,
 ) error {
-	isValidNft := false
 	if a.NftID != nil {
-		if a.NftID.IsZeroValue() {
-			return errors.New("nftID is zero value")
+		if a.NftID.IsZeroValue() || beaconViewRetriever.IsValidNftID(a.NftID.String()) != nil {
+			return fmt.Errorf("invalid NftID %s", a.NftID.String())
 		}
-		err := beaconViewRetriever.IsValidNftID(a.NftID.String())
-		if err == nil {
-			isValidNft = true
-		}
-	}
-	if !isValidNft {
-		if a.AccessID != nil {
-			if a.AccessID.IsZeroValue() {
-				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("accessID can not be zero value"))
-			}
-		}
-		if isWithdrawRequest {
-			if a.BurntOTA == nil {
-				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("burnt OTA or accessID is null")))
-			}
-
-			/*valid, err1 := ValidPdexv3Access(a.BurntOTA, tx, common.ConfidentialAssetID, transactionStateDB)*/
-			/*if !valid {*/
-			/*return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v - %v", err, err1))*/
-			/*}*/
+		if a.BurntOTA != nil || a.AccessID != nil {
+			return fmt.Errorf("invalid AccessOTA (%v, %v) when using NftID; expect none", a.BurntOTA, a.AccessID)
 		}
 	} else {
-		if a.BurntOTA != nil || a.AccessID != nil {
-			return errors.New("NftID and (burnOTA or accessID) can not exist at the same time")
+		if isWithdrawRequest {
+			if a.AccessID == nil || a.AccessID.IsZeroValue() {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("invalid AccessID (zero value)"))
+			}
+			if a.BurntOTA == nil {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("burnt OTA missing")))
+			}
+		}
+		if receivers == nil {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("OTA receivers missing")))
+		}
+		accessReceiver, exists := receivers[common.PdexAccessCoinID]
+		if !exists {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("accessReceiver missing")))
+		}
+		valid, err := ValidPdexv3Access(a.BurntOTA, accessReceiver.PublicKey, tx, transactionStateDB)
+		if !valid {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
 	}
+
 	return nil
 }
 
