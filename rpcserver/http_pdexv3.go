@@ -917,7 +917,6 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceivers[common.PdexAccessIDStr] = otaReceiverPdexAccessCoinStr
 	otaReceiverToken0 := privacy.OTAReceiver{}
 	err = otaReceiverToken0.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
@@ -955,11 +954,25 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	otaReceivers[poolPairState.Token1ID().String()] = otaReceiverToken1Str
 
 	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, nil, mdReader.AccessID)
-
+	if mdReader.UseNft() {
+		paramSelect.SetTokenID(*mdReader.NftID)
+		// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
+		if *mdReader.NftID == common.PRVCoinID {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
+		}
+	} else {
+		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		otaReceivers[common.PdexAccessIDStr] = otaReceiverPdexAccessCoinStr
+		if mdReader.BurntOTA == nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("BurntOTA missing for pdex access-via-OTA"))
+		}
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
+	}
 	md := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		mdReader.PoolPairID, otaReceivers, uint64(mdReader.ShareAmount), accessOption,
 	)
-	paramSelect.SetTokenID(common.PdexAccessCoinID)
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -1674,7 +1687,7 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 	}
 	var otaReceivers map[common.Hash]privacy.OTAReceiver
 	otaReceiverStr := utils.EmptyString
-	if mdReader.NftID != nil {
+	if mdReader.UseNft() {
 		otaReceiver := privacy.OTAReceiver{}
 		err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
 		if err != nil {
@@ -1686,7 +1699,7 @@ func (httpServer *HttpServer) createPdexv3StakingRequestTransaction(
 		}
 	} else {
 		otaReceivers = make(map[common.Hash]privacy.OTAReceiver)
-		tokenList := []common.Hash{}
+		var tokenList []common.Hash
 		if mdReader.AccessID == nil {
 			tokenList = append(tokenList, common.PdexAccessCoinID)
 		}
@@ -1847,7 +1860,6 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	otaReceivers[common.PdexAccessIDStr] = otaReceiverPdexAccessCoinStr
 	otaReceiverUnstakingToken := privacy.OTAReceiver{}
 	err = otaReceiverUnstakingToken.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
@@ -1861,6 +1873,22 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 
 	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, nil, mdReader.AccessID)
 
+	if mdReader.UseNft() {
+		paramSelect.SetTokenID(*mdReader.NftID)
+		// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
+		if *mdReader.NftID == common.PRVCoinID {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
+		}
+	} else {
+		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		otaReceivers[common.PdexAccessIDStr] = otaReceiverPdexAccessCoinStr
+		if mdReader.BurntOTA == nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("BurntOTA missing for pdex access-via-OTA"))
+		}
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
+	}
 	md := metadataPdexv3.NewUnstakingRequestWithValue(
 		mdReader.StakingPoolID, otaReceivers, uint64(mdReader.Amount), *accessOption,
 	)
