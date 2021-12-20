@@ -1129,11 +1129,14 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if err != nil {
 			return res, poolPairs, stakingPoolStates, err
 		}
-		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
-		if !accessByNFT && metaData.AccessOption.UseNft() {
-			Logger.log.Warnf("tx %v can not find nftID", tx.Hash().String())
-			res = append(res, rejectInsts...)
-			continue
+
+		if metaData.AccessOption.UseNft() {
+			_, validNFT := nftIDs[metaData.AccessOption.NftID.String()]
+			if !validNFT {
+				Logger.log.Warnf("tx %v cannot find nftID", tx.Hash().String())
+				res = append(res, rejectInsts...)
+				continue
+			}
 		}
 		rootPoolPair, ok := poolPairs[metaData.PoolPairID()]
 		if !ok || rootPoolPair == nil {
@@ -1333,15 +1336,15 @@ func (sp *stateProducerV2) unstaking(
 		if err != nil {
 			return res, stakingPoolStates, poolPairStates, err
 		}
-		_, accessByNFT := nftIDs[metaData.AccessOption.NftID.String()]
-		if !accessByNFT && metaData.AccessOption.UseNft() {
-			Logger.log.Warnf("tx %v can not find nftID", tx.Hash().String())
-			res = append(res, rejectInsts...)
-			continue
-		}
 		accessID := common.Hash{}
 		if metaData.AccessOption.UseNft() {
 			accessID = *metaData.AccessOption.NftID
+			_, validNFT := nftIDs[accessID.String()]
+			if !validNFT {
+				Logger.log.Warnf("tx %v cannot find nftID", tx.Hash().String())
+				res = append(res, rejectInsts...)
+				continue
+			}
 		} else {
 			accessID = *metaData.AccessOption.AccessID
 		}

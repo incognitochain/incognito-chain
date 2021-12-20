@@ -56,6 +56,7 @@ func (sel *paramSelector) SetTokenReceivers(r []*privacy.PaymentInfo) { sel.Toke
 func (sel *paramSelector) SetMetadata(md metadataCommon.Metadata)     { sel.Metadata = md }
 func (sel *paramSelector) UseSpecifiedInput(tokenID common.Hash, accessOTA metadataPdexv3.AccessOTA) {
 	sel.SpecifiedInputs[tokenID] = accessOTA
+	sel.Token.HasPrivacyToken = false
 }
 
 // PdexTxService extends TxService with wrappers to build TX with cleaner syntax
