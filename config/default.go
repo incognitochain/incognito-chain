@@ -146,7 +146,7 @@ var Testnet1Param = &param{
 		EnableSlashingHeightV2:    3071502,
 		StakingFlowV3Height:       1e9,
 		BlockProducingV3Height:    1e9,
-		Lemma2Height:              1e9,
+		Lemma2Height:              2868685,
 		ByzantineDetectorHeight:   1e9,
 		Timeslot:                  10,
 		EpochBreakPointSwapNewKey: []uint64{1280},
