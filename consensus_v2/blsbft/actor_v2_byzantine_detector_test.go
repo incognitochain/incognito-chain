@@ -161,7 +161,7 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 	type fields struct {
 		blackList        map[string]*rawdb_consensus.BlackListValidator
 		voteInTimeSlot   map[string]map[int64]*BFTVote
-		smallestTimeSlot map[string]map[uint64]int64
+		smallestTimeSlot map[string]map[uint64]*BFTVote
 		committeeHandler CommitteeChainHandler
 	}
 	type args struct {
@@ -176,8 +176,8 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 		{
 			name: "first vote in a specific height",
 			fields: fields{
-				smallestTimeSlot: map[string]map[uint64]int64{
-					blsKeys[0]: make(map[uint64]int64),
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
+					blsKeys[0]: make(map[uint64]*BFTVote),
 				},
 			},
 			args: args{
@@ -192,9 +192,9 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 		{
 			name: "second vote smaller timeslot in a specific height",
 			fields: fields{
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					blsKeys[0]: {
-						10: 163394559,
+						10: &BFTVote{ProduceTimeSlot: 163394559},
 					},
 				},
 			},
@@ -210,9 +210,9 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 		{
 			name: "second vote higher timeslot in a specific height",
 			fields: fields{
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					blsKeys[0]: {
-						10: 163394559,
+						10: &BFTVote{ProduceTimeSlot: 163394559},
 					},
 				},
 			},
@@ -224,6 +224,26 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "second vote higher timeslot in a specific height but different committee",
+			fields: fields{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
+					blsKeys[0]: {
+						10: &BFTVote{ProduceTimeSlot: 163394559,
+							CommitteeFromBlock: common.HashH([]byte{0})},
+					},
+				},
+			},
+			args: args{
+				bftVote: &BFTVote{
+					Validator:          blsKeys[0],
+					ProduceTimeSlot:    163394560,
+					BlockHeight:        10,
+					CommitteeFromBlock: common.HashH([]byte{1}),
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -243,27 +263,38 @@ func TestByzantineDetector_voteForHigherTimeSlotSameHeight(t *testing.T) {
 func TestByzantineDetector_addNewVote(t *testing.T) {
 
 	key0VoteHeight10_1 := &BFTVote{
-		Validator:       blsKeys[0],
-		BlockHeight:     10,
-		ProduceTimeSlot: 163394560,
-		ProposeTimeSlot: 163394560,
+		Validator:          blsKeys[0],
+		BlockHeight:        10,
+		ProduceTimeSlot:    163394560,
+		ProposeTimeSlot:    163394560,
+		CommitteeFromBlock: common.HashH([]byte{0}),
 	}
 	key0VoteHeight10_2 := &BFTVote{
-		Validator:       blsKeys[0],
-		BlockHeight:     10,
-		ProduceTimeSlot: 163394560,
-		ProposeTimeSlot: 163394561,
+		Validator:          blsKeys[0],
+		BlockHeight:        10,
+		ProduceTimeSlot:    163394560,
+		ProposeTimeSlot:    163394561,
+		CommitteeFromBlock: common.HashH([]byte{0}),
 	}
-	key1VoteHeight10_3 := &BFTVote{
-		Validator:       blsKeys[1],
-		BlockHeight:     10,
-		ProduceTimeSlot: 163394562,
-		ProposeTimeSlot: 163394562,
+	key0VoteHeight10_3 := &BFTVote{
+		Validator:          blsKeys[0],
+		BlockHeight:        10,
+		ProduceTimeSlot:    163394562,
+		ProposeTimeSlot:    163394562,
+		CommitteeFromBlock: common.HashH([]byte{1}),
 	}
+	key1VoteHeight10_1 := &BFTVote{
+		Validator:          blsKeys[1],
+		BlockHeight:        10,
+		ProduceTimeSlot:    163394562,
+		ProposeTimeSlot:    163394562,
+		CommitteeFromBlock: common.HashH([]byte{0}),
+	}
+
 	type fields struct {
 		blackList        map[string]*rawdb_consensus.BlackListValidator
 		voteInTimeSlot   map[string]map[int64]*BFTVote
-		smallestTimeSlot map[string]map[uint64]int64
+		smallestTimeSlot map[string]map[uint64]*BFTVote
 		validRecentVote  map[string]*BFTVote
 		committeeHandler CommitteeChainHandler
 	}
@@ -297,9 +328,9 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_1.ProduceTimeSlot: key0VoteHeight10_1,
 					},
 				},
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
-						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1,
 					},
 				},
 				committeeHandler: nil,
@@ -338,9 +369,9 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_1.ProduceTimeSlot: key0VoteHeight10_1,
 					},
 				},
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
-						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1,
 					},
 				},
 				validRecentVote:  make(map[string]*BFTVote),
@@ -358,9 +389,9 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
 					},
 				},
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
-						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1,
 					},
 				},
 				validRecentVote: map[string]*BFTVote{
@@ -379,16 +410,16 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
 					},
 				},
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
-						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1,
 					},
 				},
 				validRecentVote:  make(map[string]*BFTVote),
 				committeeHandler: nil,
 			},
 			args: args{
-				bftVote:      key1VoteHeight10_3,
+				bftVote:      key1VoteHeight10_1,
 				validatorErr: nil,
 			},
 			fieldAfterProcess: fields{
@@ -398,20 +429,64 @@ func TestByzantineDetector_addNewVote(t *testing.T) {
 						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
 						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
 					},
-					key1VoteHeight10_3.Validator: {
-						key1VoteHeight10_3.ProposeTimeSlot: key1VoteHeight10_3,
+					key1VoteHeight10_1.Validator: {
+						key1VoteHeight10_1.ProposeTimeSlot: key1VoteHeight10_1,
 					},
 				},
-				smallestTimeSlot: map[string]map[uint64]int64{
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
 					key0VoteHeight10_1.Validator: {
-						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1.ProduceTimeSlot,
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1,
 					},
-					key1VoteHeight10_3.Validator: {
-						key1VoteHeight10_3.BlockHeight: key1VoteHeight10_3.ProduceTimeSlot,
+					key1VoteHeight10_1.Validator: {
+						key1VoteHeight10_1.BlockHeight: key1VoteHeight10_1,
 					},
 				},
 				validRecentVote: map[string]*BFTVote{
-					key0VoteHeight10_1.Validator: key1VoteHeight10_3,
+					key0VoteHeight10_1.Validator: key1VoteHeight10_1,
+				},
+				committeeHandler: nil,
+			},
+		},
+		{
+			name: "add new data with no error 3_same height higher timeslot but different committee",
+			fields: fields{
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*BFTVote{
+					key0VoteHeight10_1.Validator: {
+						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
+						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
+					},
+				},
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
+					key0VoteHeight10_1.Validator: {
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_1,
+					},
+				},
+				validRecentVote: map[string]*BFTVote{
+					key0VoteHeight10_1.Validator: key0VoteHeight10_2,
+				},
+				committeeHandler: nil,
+			},
+			args: args{
+				bftVote:      key0VoteHeight10_3,
+				validatorErr: nil,
+			},
+			fieldAfterProcess: fields{
+				blackList: make(map[string]*rawdb_consensus.BlackListValidator),
+				voteInTimeSlot: map[string]map[int64]*BFTVote{
+					key0VoteHeight10_1.Validator: {
+						key0VoteHeight10_1.ProposeTimeSlot: key0VoteHeight10_1,
+						key0VoteHeight10_2.ProposeTimeSlot: key0VoteHeight10_2,
+						key0VoteHeight10_3.ProposeTimeSlot: key0VoteHeight10_3,
+					},
+				},
+				smallestTimeSlot: map[string]map[uint64]*BFTVote{
+					key0VoteHeight10_1.Validator: {
+						key0VoteHeight10_1.BlockHeight: key0VoteHeight10_3,
+					},
+				},
+				validRecentVote: map[string]*BFTVote{
+					key0VoteHeight10_1.Validator: key0VoteHeight10_3,
 				},
 				committeeHandler: nil,
 			},

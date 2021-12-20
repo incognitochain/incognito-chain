@@ -458,7 +458,7 @@ func (chain *ShardChain) GetSigningCommittees(
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		res = FilterSigningCommitteeV3(committees, proposerIndex)
 	} else {
-		res = committees
+		res = append(res, committees...)
 	}
 	return res
 }

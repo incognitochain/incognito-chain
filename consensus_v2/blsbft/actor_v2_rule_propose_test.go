@@ -2214,7 +2214,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				nextBlockFinalityProof: tt.fields.nextBlockFinalityProof,
 				chain:                  tt.fields.chain,
 			}
-			got, got1 := p.GetValidFinalityProof(tt.args.block, tt.args.currentTimeSlot)
+			got, got1, _ := p.GetValidFinalityProof(tt.args.block, tt.args.currentTimeSlot)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetValidFinalityProof() got = %v, want %v", got, tt.want)
 			}

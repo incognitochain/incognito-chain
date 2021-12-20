@@ -636,29 +636,39 @@ func (a *actorV2) run() error {
 					}
 
 					var finalityProof = NewFinalityProof()
-					var isValidRePropose bool = false
+					var isEnoughLemma2Proof bool = false
+					var failReason = ""
 					if proposeBlockInfo.block != nil {
-						finalityProof, isValidRePropose = a.ruleDirector.builder.ProposeMessageRule().
+						finalityProof, isEnoughLemma2Proof, failReason = a.ruleDirector.builder.ProposeMessageRule().
 							GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
+						a.logger.Infof("Timeslot %+v, height %+v | Attempt to re-propose block height %+v, hash %+v, produce timeslot %+v,"+
+							" is enough finality proof %+v, false reason %+v",
+							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1,
+							proposeBlockInfo.block.GetHeight(), *proposeBlockInfo.block.Hash(),
+							proposeBlockInfo.block.GetProduceTime(), isEnoughLemma2Proof, failReason)
+					} else {
+						a.logger.Infof("Timeslot %+v, height %+v | Attempt to create new block",
+							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1)
 					}
+
 					if createdBlk, err := a.proposeBlock(
 						userProposeKey,
 						proposerPk,
 						proposeBlockInfo,
 						committees,
 						committeeViewHash,
-						isValidRePropose,
+						isEnoughLemma2Proof,
 					); err != nil {
 						a.logger.Error(UnExpectedError, errors.New("can't propose block"), err)
 					} else {
-						if isValidRePropose {
+						if isEnoughLemma2Proof {
 							a.logger.Infof("Get Finality Proof | New Block %+v, %+v, Finality Proof %+v",
 								createdBlk.GetHeight(), createdBlk.Hash().String(), finalityProof.ReProposeHashSignature)
 						}
 
 						env := NewSendProposeBlockEnvironment(
 							finalityProof,
-							isValidRePropose,
+							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
 						)
@@ -810,7 +820,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		return err
 	}
 	v.block.(blockValidation).AddValidationField(validationData)
-
+	isInsertWithPreviousData := false
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -822,24 +832,23 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			previousProposeBlockInfo.block.GetValidationField(),
 			previousProposeBlockInfo.Votes)
 		if err != nil {
-			a.logger.Error(err)
-			return err
+			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+		} else {
+			previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
+			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
+				return err
+			}
+			isInsertWithPreviousData = true
+			previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
+			a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
+				v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
+
+			if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
+				a.logger.Errorf("clean receive block by hash error %+v", err)
+			}
 		}
-
-		previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
-		if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
-			return err
-		}
-
-		previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
-		a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
-			v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
-
-		if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
-			a.logger.Errorf("clean receive block by hash error %+v", err)
-		}
-	} else {
-
+	}
+	if !isInsertWithPreviousData {
 		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 			return err
 		}
@@ -1010,7 +1019,12 @@ func (a *actorV2) proposeShardBlock(
 		}
 	}
 	isRePropose := true
-	if block == nil || (block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees)) {
+	if block == nil {
+		isRePropose = false
+	}
+	if block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees) {
+		a.logger.Debugf("SHARD %+v, old block %+v, Attempt to create new block because of committee change",
+			a.chainID, block.GetHeight())
 		isRePropose = false
 	}
 

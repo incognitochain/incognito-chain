@@ -76,7 +76,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		currentCommitteePublicKeys        = []string{}
 		currentCommitteePublicKeysStructs = []incognitokey.CommitteePublicKey{}
 		committeeFromBlockHash            = common.Hash{}
-		beaconProcessView                 *BeaconBestState
+		beaconProcessHeight               uint64
 		err                               error
 	)
 
@@ -87,11 +87,16 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
-	beaconProcessView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
-	beaconProcessHeight := beaconProcessView.GetHeight()
-	if beaconProcessHeight > shardBestState.BeaconHeight && beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+
+	getBeaconFinalHeightForProcess := func() uint64 {
+		view := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+		height := view.GetHeight()
+		if height > shardBestState.BeaconHeight && height-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+			height = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+		}
+		return height
 	}
+	beaconProcessHeight = getBeaconFinalHeightForProcess()
 
 	if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
 		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV3Height {
@@ -108,8 +113,13 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			return nil, errors.New("Waiting For Beacon Produce Block")
+			time.Sleep(time.Duration(common.TIMESLOT / 4))
+			beaconProcessHeight = getBeaconFinalHeightForProcess()
+			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
+				return nil, errors.New("Waiting For Beacon Produce Block")
+			}
 		}
+
 		currentCommitteePublicKeysStructs = committees
 		committeeFinalViewBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFinalViewHash)
 		if err != nil {
