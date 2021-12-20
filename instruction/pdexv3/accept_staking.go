@@ -7,10 +7,11 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type AcceptStaking struct {
-	nftID         common.Hash
+	metadataPdexv3.AccessOption
 	stakingPoolID common.Hash
 	liquidity     uint64
 	accessOTA     string
@@ -21,15 +22,16 @@ type AcceptStaking struct {
 func NewAcceptStaking() *AcceptStaking { return &AcceptStaking{} }
 
 func NewAcceptStakingWtihValue(
-	nftID, stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA string,
+	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA string,
+	accessOption metadataPdexv3.AccessOption,
 ) *AcceptStaking {
 	return &AcceptStaking{
-		nftID:         nftID,
 		accessOTA:     accessOTA,
 		stakingPoolID: stakingPoolID,
 		txReqID:       txReqID,
 		shardID:       shardID,
 		liquidity:     liquidity,
+		AccessOption:  accessOption,
 	}
 }
 
@@ -64,14 +66,14 @@ func (a *AcceptStaking) StringSlice() ([]string, error) {
 
 func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID         common.Hash `json:"NftID"`
+		metadataPdexv3.AccessOption
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
 		AccessOTA     string      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{
-		NftID:         a.nftID,
+		AccessOption:  a.AccessOption,
 		StakingPoolID: a.stakingPoolID,
 		ShardID:       a.shardID,
 		Liquidity:     a.liquidity,
@@ -86,7 +88,7 @@ func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 
 func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID         common.Hash `json:"NftID"`
+		metadataPdexv3.AccessOption
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
 		AccessOTA     string      `json:"AccessOTA,omitempty"`
@@ -99,7 +101,7 @@ func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 	}
 	a.stakingPoolID = temp.StakingPoolID
 	a.liquidity = temp.Liquidity
-	a.nftID = temp.NftID
+	a.AccessOption = temp.AccessOption
 	a.shardID = temp.ShardID
 	a.txReqID = temp.TxReqID
 	a.accessOTA = temp.AccessOTA
@@ -127,5 +129,5 @@ func (a *AcceptStaking) TxReqID() common.Hash {
 }
 
 func (a *AcceptStaking) NftID() common.Hash {
-	return a.nftID
+	return *a.AccessOption.NftID
 }

@@ -609,7 +609,10 @@ func NewContributionWithMetaData(
 			accessID = *metaData.AccessOption.AccessID
 		} else {
 			accessID = metadataPdexv3.GenAccessID(metaData.OtaReceivers()[common.PdexAccessCoinID])
-			accessOTA = metadataPdexv3.GenAccessOTA(metaData.OtaReceivers()[common.PdexAccessCoinID])
+			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.OtaReceivers()[common.PdexAccessCoinID])
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	otaReceivers := make(map[common.Hash]string)

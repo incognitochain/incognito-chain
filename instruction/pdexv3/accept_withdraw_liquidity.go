@@ -19,6 +19,7 @@ type AcceptWithdrawLiquidity struct {
 	otaReceiver string
 	txReqID     common.Hash
 	shardID     byte
+	accessOTA   string
 }
 
 func NewAcceptWithdrawLiquidity() *AcceptWithdrawLiquidity {
@@ -32,6 +33,7 @@ func NewAcceptWithdrawLiquidityWithValue(
 	otaReceiver string,
 	txReqID common.Hash, shardID byte,
 	accessOption metadataPdexv3.AccessOption,
+	accessOTA string,
 ) *AcceptWithdrawLiquidity {
 	return &AcceptWithdrawLiquidity{
 		poolPairID:   poolPairID,
@@ -42,6 +44,7 @@ func NewAcceptWithdrawLiquidityWithValue(
 		tokenAmount:  tokenAmount,
 		shareAmount:  shareAmount,
 		otaReceiver:  otaReceiver,
+		accessOTA:    accessOTA,
 	}
 }
 
@@ -81,6 +84,7 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		OtaReceiver string      `json:"OtaReceiver"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
+		AccessOTA   string      `json:"AccessOTA,omitempty"`
 	}{
 		PoolPairID:   a.poolPairID,
 		AccessOption: a.AccessOption,
@@ -90,6 +94,7 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		OtaReceiver:  a.otaReceiver,
 		TxReqID:      a.txReqID,
 		ShardID:      a.shardID,
+		AccessOTA:    a.accessOTA,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -107,6 +112,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 		ShareAmount uint64      `json:"ShareAmount"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
+		AccessOTA   string      `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -120,6 +126,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	a.otaReceiver = temp.OtaReceiver
 	a.txReqID = temp.TxReqID
 	a.shardID = temp.ShardID
+	a.accessOTA = temp.AccessOTA
 	return nil
 }
 
@@ -149,4 +156,8 @@ func (a *AcceptWithdrawLiquidity) ShareAmount() uint64 {
 
 func (a *AcceptWithdrawLiquidity) OtaReceiver() string {
 	return a.otaReceiver
+}
+
+func (a *AcceptWithdrawLiquidity) AccessOTA() string {
+	return a.accessOTA
 }

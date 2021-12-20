@@ -132,7 +132,9 @@ func (s *StakingPoolState) getDiff(
 	return newStakingPoolChange
 }
 
-func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight uint64, accessOTA string, operator byte) error {
+func (s *StakingPoolState) updateLiquidity(
+	nftID string, liquidity, beaconHeight uint64, accessOTA string, operator byte,
+) error {
 	staker, found := s.stakers[nftID]
 	if !found {
 		if operator == subOperator {
@@ -154,6 +156,9 @@ func (s *StakingPoolState) updateLiquidity(nftID string, liquidity, beaconHeight
 		}
 		staker.lastRewardsPerShare = s.RewardsPerShare()
 		staker.liquidity = tempLiquidity
+		if operator == subOperator {
+			staker.accessOTA = accessOTA
+		}
 	}
 	var tempLiquidity uint64
 	switch operator {

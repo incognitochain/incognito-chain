@@ -937,7 +937,22 @@ func (sp *stateProducerV2) withdrawLPFee(
 			return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
 		}
 
-		instructions = append(instructions, mintNftInstStr)
+		if metaData.AccessOption.UseNft() {
+			instructions = append(instructions, mintNftInstStr)
+		} else {
+			otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
+			if err != nil {
+				return instructions, pairs, err
+			}
+			mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
+				otaReceiverStr, shardID, txReqID,
+			).
+				StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+			if err != nil {
+				return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
+			}
+			instructions = append(instructions, mintAccessTokenInst)
+		}
 
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
@@ -955,18 +970,25 @@ func (sp *stateProducerV2) withdrawLPFee(
 			continue
 		}
 
+		accessID := common.Hash{}
+		if metaData.AccessOption.UseNft() {
+			accessID = *metaData.NftID
+		} else {
+			accessID = *metaData.AccessID
+		}
+
 		lpReward := map[common.Hash]uint64{}
-		share, isExistedShare := poolPair.shares[metaData.NftID.String()]
+		share, isExistedShare := poolPair.shares[accessID.String()]
 		if isExistedShare {
 			// compute amount of received LP reward
-			lpReward, err = poolPair.RecomputeLPFee(*metaData.NftID)
+			lpReward, err = poolPair.RecomputeLPFee(accessID)
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
 		}
 
 		orderReward := map[common.Hash]uint64{}
-		order, isExistedOrderReward := poolPair.orderRewards[metaData.NftID.String()]
+		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
 		if isExistedOrderReward {
 			// compute amount of received LOP reward
 			orderReward = order.uncollectedRewards
@@ -1127,12 +1149,17 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		var share *Share
 		accessID := common.Hash{}
+		accessOTA := utils.EmptyString
 		if metaData.AccessOption.UseNft() {
 			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
 			accessID = *metaData.AccessOption.NftID
 		} else {
 			accessID = *metaData.AccessOption.AccessID
 			share, ok = rootPoolPair.shares[accessID.String()]
+			accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
+			if err != nil {
+				return res, poolPairs, stakingPoolStates, err
+			}
 		}
 
 		if share == nil || !ok {
@@ -1148,6 +1175,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
 			accessID.String(), metaData.ShareAmount(), beaconHeight, metaData.AccessOption,
+			accessOTA,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
@@ -1159,7 +1187,8 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			*metaData,
 			poolPair.state.Token0ID(), poolPair.state.Token1ID(),
 			token0Amount, token1Amount, shareAmount,
-			txReqID, shardID)
+			txReqID, shardID, accessOTA,
+		)
 		if err != nil {
 			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
@@ -1248,7 +1277,12 @@ func (sp *stateProducerV2) staking(
 				accessID = *metaData.AccessOption.AccessID
 			} else {
 				accessID = metadataPdexv3.GenAccessID(metaData.OtaReceivers()[common.PdexAccessCoinID])
-				accessOTA = metadataPdexv3.GenAccessOTA(metaData.OtaReceivers()[common.PdexAccessCoinID])
+				accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.OtaReceivers()[common.PdexAccessCoinID])
+				if err != nil {
+					Logger.log.Warnf("tx %v can not gen ota", tx.Hash().String())
+					res = append(res, rejectInst)
+					continue
+				}
 			}
 		}
 
@@ -1260,7 +1294,8 @@ func (sp *stateProducerV2) staking(
 			continue
 		}
 		inst, err := instruction.NewAcceptStakingWtihValue(
-			accessID, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(), accessOTA,
+			*stakingTokenHash, txReqID, shardID, metaData.TokenAmount(), accessOTA,
+			metaData.AccessOption,
 		).StringSlice()
 		if err != nil {
 			return res, stakingPoolStates, err
@@ -1328,7 +1363,14 @@ func (sp *stateProducerV2) unstaking(
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(accessID.String(), metaData.UnstakingAmount(), beaconHeight, utils.EmptyString, subOperator) //TODO: @tin fix here
+		accessOTA := utils.EmptyString
+		if !metaData.UseNft() {
+			accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
+			if err != nil {
+				return res, stakingPoolStates, poolPairStates, err
+			}
+		}
+		err = stakingPoolState.updateLiquidity(accessID.String(), metaData.UnstakingAmount(), beaconHeight, accessOTA, subOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
@@ -1340,10 +1382,8 @@ func (sp *stateProducerV2) unstaking(
 			continue
 		}
 		insts, err := v2.BuildAcceptUnstakingInstructions(
-			*stakingPoolID, metaData.AccessOption, metaData.UnstakingAmount(),
-			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()],
-			metaData.OtaReceivers()[metaData.StakingPoolID()],
-			txReqID, shardID, accessID,
+			*stakingPoolID, *metaData,
+			txReqID, shardID, accessID, accessOTA,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)

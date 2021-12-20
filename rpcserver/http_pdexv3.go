@@ -908,34 +908,6 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	}
 
 	otaReceivers := make(map[string]string)
-	otaReceiverPdexAccessCoin := privacy.OTAReceiver{}
-	err = otaReceiverPdexAccessCoin.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiverPdexAccessCoinStr, err := otaReceiverPdexAccessCoin.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceivers[common.PdexAccessIDStr] = otaReceiverPdexAccessCoinStr
-	otaReceiverToken0 := privacy.OTAReceiver{}
-	err = otaReceiverToken0.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiverToken0Str, err := otaReceiverToken0.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiverToken1 := privacy.OTAReceiver{}
-	err = otaReceiverToken1.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiverToken1Str, err := otaReceiverToken1.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
 	beaconBestView, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
@@ -951,15 +923,41 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 		return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
 	}
 	poolPairState := poolPair.State()
-	otaReceivers[poolPairState.Token0ID().String()] = otaReceiverToken0Str
-	otaReceivers[poolPairState.Token1ID().String()] = otaReceiverToken1Str
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, nil, mdReader.AccessID)
+	tokenList := []string{}
+	if mdReader.NftID == nil {
+		tokenList = append(tokenList, common.PdexAccessIDStr)
+	}
+	tokenList = append(tokenList, poolPairState.Token0ID().String())
+	tokenList = append(tokenList, poolPairState.Token1ID().String())
+	for _, v := range tokenList {
+		otaReceiver := privacy.OTAReceiver{}
+		err := otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		otaReceiverStr, err := otaReceiver.String()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		otaReceivers[v] = otaReceiverStr
+	}
+
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
 
 	md := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		mdReader.PoolPairID, otaReceivers, uint64(mdReader.ShareAmount), accessOption,
 	)
-	paramSelect.SetTokenID(common.PdexAccessCoinID)
+	if mdReader.UseNft() {
+		paramSelect.SetTokenID(*md.NftID)
+	} else {
+		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		if mdReader.BurntOTA == nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("BurntOTA missing for pdex access-via-OTA"))
+		}
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
+	}
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -1833,33 +1831,39 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
 	otaReceivers := make(map[string]string)
-	otaReceiverPdexAccessCoin := privacy.OTAReceiver{}
-	err = otaReceiverPdexAccessCoin.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	tokenList := []string{}
+	if mdReader.NftID == nil {
+		tokenList = append(tokenList, common.PdexAccessIDStr)
 	}
-	otaReceiverPdexAccessCoinStr, err := otaReceiverPdexAccessCoin.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	tokenList = append(tokenList, mdReader.StakingPoolID)
+	for _, v := range tokenList {
+		otaReceiver := privacy.OTAReceiver{}
+		err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		otaReceiverStr, err := otaReceiver.String()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		otaReceivers[v] = otaReceiverStr
 	}
-	otaReceivers[common.PdexAccessIDStr] = otaReceiverPdexAccessCoinStr
-	otaReceiverUnstakingToken := privacy.OTAReceiver{}
-	err = otaReceiverUnstakingToken.FromAddress(keyWallet.KeySet.PaymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceiverUnstakingTokenStr, err := otaReceiverUnstakingToken.String()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-	}
-	otaReceivers[mdReader.StakingPoolID] = otaReceiverUnstakingTokenStr
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, nil, mdReader.AccessID)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
 
 	md := metadataPdexv3.NewUnstakingRequestWithValue(
 		mdReader.StakingPoolID, otaReceivers, uint64(mdReader.Amount), *accessOption,
 	)
-	paramSelect.SetTokenID(common.PdexAccessCoinID)
+	if mdReader.UseNft() {
+		paramSelect.SetTokenID(*md.NftID)
+	} else {
+		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		if mdReader.BurntOTA == nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("BurntOTA missing for pdex access-via-OTA"))
+		}
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
+	}
 	paramSelect.SetMetadata(md)
 
 	// get burning address

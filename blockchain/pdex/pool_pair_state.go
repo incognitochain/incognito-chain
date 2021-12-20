@@ -383,6 +383,7 @@ func (p *PoolPairState) deductShare(
 	nftID string,
 	shareAmount, beaconHeight uint64,
 	accessOption metadataPdexv3.AccessOption,
+	accessOTA string,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -408,7 +409,7 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	_, err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, utils.EmptyString, subOperator) //TODO: @tin fix here
+	_, err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, accessOTA, subOperator)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
@@ -458,7 +459,9 @@ func (p *PoolPairState) updateShareValue(
 	return accessOTA, nil
 }
 
-func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64, operator byte) error {
+func (p *PoolPairState) updateReserveData(
+	amount0, amount1, shareAmount uint64, operator byte,
+) error {
 	err := p.updateSingleTokenAmount(p.state.Token0ID(), amount0, shareAmount, operator)
 	if err != nil {
 		return err
@@ -525,11 +528,11 @@ func (p *PoolPairState) updateSingleTokenAmount(
 }
 
 func (p *PoolPairState) RecomputeLPFee(
-	nftID common.Hash,
+	accessID common.Hash,
 ) (map[common.Hash]uint64, error) {
 	result := map[common.Hash]uint64{}
 
-	curShare, ok := p.shares[nftID.String()]
+	curShare, ok := p.shares[accessID.String()]
 	if !ok {
 		return nil, fmt.Errorf("Share not found")
 	}

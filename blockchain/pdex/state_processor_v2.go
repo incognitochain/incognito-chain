@@ -601,7 +601,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
 		_, err = poolPair.updateShareValue(
 			acceptWithdrawLiquidity.ShareAmount(), beaconHeight,
-			accessID, utils.EmptyString, subOperator, //TODO: @tin fix here
+			accessID, acceptWithdrawLiquidity.AccessOTA(), subOperator,
 		)
 		if err != nil {
 			return poolPairs, stakingPoolStates, nil, err
@@ -1126,14 +1126,19 @@ func (sp *stateProcessorV2) unstaking(
 		status = common.Pdexv3AcceptStatus
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Amount()
+		accessOTA := utils.EmptyString
 		if acceptInst.AccessOption.UseNft() {
 			accessID = *acceptInst.AccessOption.NftID
 		} else {
 			accessID = *acceptInst.AccessOption.AccessID
+			accessOTA, err = metadataPdexv3.GenAccessOTAByStr(acceptInst.AccessOTA())
+			if err != nil {
+				return stakingPoolStates, poolPairStates, nil, err
+			}
 		}
 		stakingPoolState := stakingPoolStates[stakingPoolID]
 		err = stakingPoolState.updateLiquidity(
-			accessID.String(), liquidity, beaconHeight, utils.EmptyString, subOperator, //TODO: @tin fix here
+			accessID.String(), liquidity, beaconHeight, accessOTA, subOperator,
 		)
 		if err != nil {
 			return stakingPoolStates, poolPairStates, nil, err

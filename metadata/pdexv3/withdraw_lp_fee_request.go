@@ -74,7 +74,6 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 		if !isExisted {
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
 		}
-
 	} else {
 		expectBurntTokenID = common.PdexAccessCoinID
 	}
