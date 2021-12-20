@@ -145,17 +145,13 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		isValidLemma2,
 	)
 
-	if !isValidLemma2 {
-		p.logger.Infof("Receive Invalid Block for lemma 2, env.block %+v, %+v",
-			env.block.GetHeight(), env.block.Hash().String())
-	}
+	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, finality height %+v, isValidLemma2 %+v",
+		env.block.GetHeight(), env.block.Hash().String(), env.block.GetFinalityHeight(), isValidLemma2)
 
 	if isValidLemma2 {
 		if err := p.addFinalityProof(env.block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof); err != nil {
 			return nil, err
 		}
-		p.logger.Infof("Receive Valid Block for lemma 2, env.block %+v, %+v",
-			env.block.GetHeight(), env.block.Hash().String())
 	}
 
 	return proposeBlockInfo, nil
