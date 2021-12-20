@@ -161,7 +161,7 @@ var Testnet1Param = &param{
 		"PortalV4":       1,
 	},
 	BCHeightBreakPointPortalV3: 1328816,
-	TxPoolVersion:              0,
+	TxPoolVersion:              1,
 	GethParam: gethParam{
 		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
 		Protocol: "https",
@@ -245,7 +245,7 @@ var Tesnet2Param = &param{
 		"PortalV4":       30225,
 	},
 	BCHeightBreakPointPortalV3: 1328816,
-	TxPoolVersion:              0,
+	TxPoolVersion:              1,
 	GethParam: gethParam{
 		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
 		Protocol: "https",
