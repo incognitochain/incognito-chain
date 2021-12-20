@@ -205,7 +205,9 @@ func TestOrderOverNftIDLimit(t *testing.T) {
 
 			env := skipToProduce(mds, 0)
 			// manually add nftID
-			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			if testdata.Metadata.NftID != nil {
+				testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			}
 			// set order count per NFT to 2 for this test
 			testState.params.MaxOrdersPerNft = 2
 
