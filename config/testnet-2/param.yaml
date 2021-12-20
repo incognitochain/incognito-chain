@@ -58,6 +58,7 @@ consensus_param:
   assign_rule_v3_height: 3023315
   enable_slashing_height_v2: 3068072
   staking_flow_v3_height: 3335020
+  force_not_use_burned_coins: 1000000000000
   lemma2_height: 1000000000000
   block_producing_v3_height: 1000000000000
   byzantine_detector_height: 1000000000000
@@ -75,7 +76,7 @@ enable_feature_flags:
   - PortalV3: 0
   - PortalV4: 30225
 portal_v3_height: 1328816
-tx_pool_version: 0
+tx_pool_version: 1
 geth_param:
   host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
   protocol: "https"

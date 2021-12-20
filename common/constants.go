@@ -206,3 +206,8 @@ const (
 )
 
 var TIMESLOT = uint64(0) //need to be set when init chain
+
+var (
+	BurningAddressByte  []byte
+	BurningAddressByte2 []byte
+)

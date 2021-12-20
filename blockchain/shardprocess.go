@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
@@ -932,11 +932,12 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	if len(txs) == 0 {
 		return nil
 	}
-	isEmpty := blockchain.config.TempTxPool.EmptyPool()
-	if !isEmpty {
-		panic("TempTxPool Is not Empty")
-	}
-	defer blockchain.config.TempTxPool.EmptyPool()
+	st := time.Now()
+	// isEmpty := blockchain.config.TempTxPool.EmptyPool()
+	// if !isEmpty {
+	// 	panic("TempTxPool Is not Empty")
+	// }
+	// defer blockchain.config.TempTxPool.EmptyPool()
 
 	//isRelatedCommittee := false
 	//for _, tx := range txs {
@@ -953,7 +954,10 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 		return err
 	}
-	return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, beaconHeight, beaconHash, curView)
+	st = time.Now()
+	err = blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, beaconHeight, beaconHash, curView)
+	Logger.log.Infof("[validatetxs] verifyTransactionIndividuallyFromNewBlock cost %v", time.Since(st))
+	return err
 }
 func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 	for _, tx := range txs {
@@ -990,7 +994,9 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 		}
 		defer blockchain.config.TempTxPool.EmptyPool()
 		listTxs := []metadata.Transaction{}
+		txDB := curView.GetCopiedTransactionStateDB()
 		for _, tx := range txs {
+			tx.LoadData(txDB)
 			if tx.IsSalaryTx() {
 				_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, int64(beaconHeight), curView)
 				if err != nil {

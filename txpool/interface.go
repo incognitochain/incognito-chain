@@ -109,8 +109,9 @@ type TxVerifier interface {
 		tx metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,
 	) (bool, error)
-	LoadCommitmentForTxs(
-		txs []metadata.Transaction,
+	PrepareDataForTxs(
+		validTxs []metadata.Transaction,
+		newTxs []metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,
 	) (bool, error)
 	UpdateTransactionStateDB(
