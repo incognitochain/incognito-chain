@@ -56,8 +56,9 @@ var (
 )
 
 var (
-	BeaconSyncMode = NORMAL_SYNC_MODE
-	ShardSyncMode  = FAST_SYNC_MODE
+	BeaconSyncMode              = NORMAL_SYNC_MODE
+	ShardSyncMode               = FAST_SYNC_MODE
+	ShardStateDBCommitBatchSize = uint64(5000)
 )
 
 const (

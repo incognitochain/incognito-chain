@@ -707,8 +707,44 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, sRH ShardRootHash, force bool) error {
 
 	var err error
+	var (
+		nodesTx, imgsTx = shardBestState.transactionStateDB.Database().TrieDB().Size()
+		//nodesSlash, imgsSlash         = shardBestState.slashStateDB.Database().TrieDB().Size()
+		//nodesFeature, imgsFeature     = shardBestState.featureStateDB.Database().TrieDB().Size()
+		//nodesReward, imgsReward       = shardBestState.rewardStateDB.Database().TrieDB().Size()
+		//nodesConsensus, imgsConsensus = shardBestState.consensusStateDB.Database().TrieDB().Size()
+		limit = common.StorageSize(5 * 1024 * 1024 * 1024)
+	)
+	Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
+		shardBestState.ShardID, nodesTx, limit, imgsTx, common.StorageSize(4*1024*1024))
+	if nodesTx > limit || imgsTx > 4*1024*1024 {
+		shardBestState.transactionStateDB.Database().TrieDB().Cap((limit - incdb.IdealBatchSize))
+	}
+	//Logger.log.Debugf("SHARD %+v | Slash Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
+	//	shardBestState.ShardID, nodesSlash, limit, imgsSlash, common.StorageSize(4*1024*1024))
+	//if nodesSlash > limit || imgsSlash > 4*1024*1024 {
+	//	shardBestState.slashStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
+	//}
+	//
+	//Logger.log.Debugf("SHARD %+v | Feature Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
+	//	shardBestState.ShardID, nodesFeature, limit, imgsFeature, common.StorageSize(4*1024*1024))
+	//if nodesFeature > limit || imgsFeature > 4*1024*1024 {
+	//	shardBestState.featureStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
+	//}
+	//
+	//Logger.log.Debugf("SHARD %+v | Reward Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
+	//	shardBestState.ShardID, nodesReward, limit, imgsReward, common.StorageSize(4*1024*1024))
+	//if nodesReward > limit || imgsReward > 4*1024*1024 {
+	//	shardBestState.rewardStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
+	//}
+	//
+	//Logger.log.Debugf("SHARD %+v | Consensus Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
+	//	shardBestState.ShardID, nodesConsensus, limit, imgsConsensus, common.StorageSize(4*1024*1024))
+	//if nodesConsensus > limit || imgsConsensus > 4*1024*1024 {
+	//	shardBestState.consensusStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
+	//}
 
-	if force || ShardSyncMode == NORMAL_SYNC_MODE || (ShardSyncMode == FAST_SYNC_MODE && shardBestState.ShardHeight%10000 == 0) {
+	if force || ShardSyncMode == NORMAL_SYNC_MODE || (ShardSyncMode == FAST_SYNC_MODE && shardBestState.ShardHeight%ShardStateDBCommitBatchSize == 0) {
 		err = shardBestState.consensusStateDB.Database().TrieDB().Commit(sRH.ConsensusStateDBRootHash, false, nil) // Save data to disk database
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
@@ -734,7 +770,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, sRH Sh
 		shardBestState.featureStateDB.ClearObjects()
 		shardBestState.rewardStateDB.ClearObjects()
 		shardBestState.slashStateDB.ClearObjects()
-		Logger.log.Infof("SHARD %+v | Commit trie to disk, height %+v, hash %+v", shardBestState.ShardID, shardBestState.ShardHeight, shardBestState.BestBlockHash)
+		Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, shardBestState.ShardHeight, shardBestState.BestBlockHash)
 	}
 
 	if err := rawdbv2.StoreShardRootsHash(batch, shardBestState.ShardID, shardBestState.BestBlockHash, sRH); err != nil {
