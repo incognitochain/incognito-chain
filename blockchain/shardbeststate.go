@@ -156,7 +156,7 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
 	var err error
-	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
@@ -704,22 +704,10 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 	return beaconHeight, nil
 }
 
-func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, sRH ShardRootHash, force bool) error {
+func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *BlockChain, sRH ShardRootHash, force bool) error {
 
-	var err error
-	var (
-		nodesTx, imgsTx = shardBestState.transactionStateDB.Database().TrieDB().Size()
-		//nodesSlash, imgsSlash         = shardBestState.slashStateDB.Database().TrieDB().Size()
-		//nodesFeature, imgsFeature     = shardBestState.featureStateDB.Database().TrieDB().Size()
-		//nodesReward, imgsReward       = shardBestState.rewardStateDB.Database().TrieDB().Size()
-		//nodesConsensus, imgsConsensus = shardBestState.consensusStateDB.Database().TrieDB().Size()
-		limit = common.StorageSize(5 * 1024 * 1024 * 1024)
-	)
-	Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
-		shardBestState.ShardID, nodesTx, limit, imgsTx, common.StorageSize(4*1024*1024))
-	if nodesTx > limit || imgsTx > 4*1024*1024 {
-		shardBestState.transactionStateDB.Database().TrieDB().Cap((limit - incdb.IdealBatchSize))
-	}
+	triedb := shardBestState.transactionStateDB.Database().TrieDB()
+
 	//Logger.log.Debugf("SHARD %+v | Slash Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
 	//	shardBestState.ShardID, nodesSlash, limit, imgsSlash, common.StorageSize(4*1024*1024))
 	//if nodesSlash > limit || imgsSlash > 4*1024*1024 {
@@ -744,38 +732,97 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, sRH Sh
 	//	shardBestState.consensusStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
 	//}
 
-	if force || ShardSyncMode == NORMAL_SYNC_MODE || (ShardSyncMode == FAST_SYNC_MODE && shardBestState.ShardHeight%ShardStateDBCommitBatchSize == 0) {
-		err = shardBestState.consensusStateDB.Database().TrieDB().Commit(sRH.ConsensusStateDBRootHash, false, nil) // Save data to disk database
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
+	// use for archive mode or force to do so
+	if force || ShardSyncMode == NORMAL_SYNC_MODE {
+		if err := shardBestState.commitTrieToDisk(sRH); err != nil {
+			return err
 		}
-		err = shardBestState.slashStateDB.Database().TrieDB().Commit(sRH.SlashStateDBRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
+	} else {
+		// Full but not archive node, do proper garbage collection
+		triedb.Reference(sRH.TransactionStateDBRootHash, common.Hash{}) // metadata reference to keep trie alive
+		triedb.Reference(sRH.ConsensusStateDBRootHash, common.Hash{})
+		triedb.Reference(sRH.SlashStateDBRootHash, common.Hash{})
+		triedb.Reference(sRH.FeatureStateDBRootHash, common.Hash{})
+		triedb.Reference(sRH.RewardStateDBRootHash, common.Hash{})
+		bc.config.triegc.Push(sRH, -int64(shardBestState.ShardHeight))
+		if current := shardBestState.ShardHeight; current >= BlockTriesInMemory {
+			var (
+				nodes, imgs = triedb.Size()
+			)
+			Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, trieNodeLimit %+v, img %+v, trieImgLimit %+v",
+				shardBestState.ShardID, nodes, trieNodeLimit, imgs, common.StorageSize(4*1024*1024))
+			// all statedb object use the same low-level triedb
+
+			if nodes > trieNodeLimit || imgs > trieImgsLimit {
+				triedb.Cap((trieNodeLimit - incdb.IdealBatchSize))
+			}
+
+			if current%BlockTriesInMemory == 0 {
+				if err := shardBestState.commitTrieToDisk(sRH); err != nil {
+					return err
+				}
+			}
+
+			chosen := current / BlockTriesInMemory * BlockTriesInMemory
+			// Garbage collect anything below our required write retention
+			// Dereference could takes time and block the insertion process
+			for !bc.config.triegc.Empty() {
+				oldSRH, number := bc.config.triegc.Pop()
+				if uint64(-number) > chosen {
+					bc.config.triegc.Push(oldSRH, number)
+					break
+				}
+				Logger.log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v", shardBestState.ShardID, current, chosen, number)
+				triedb.Dereference(oldSRH.(ShardRootHash).TransactionStateDBRootHash)
+				triedb.Dereference(oldSRH.(ShardRootHash).ConsensusStateDBRootHash)
+				triedb.Dereference(oldSRH.(ShardRootHash).SlashStateDBRootHash)
+				triedb.Dereference(oldSRH.(ShardRootHash).FeatureStateDBRootHash)
+				triedb.Dereference(oldSRH.(ShardRootHash).RewardStateDBRootHash)
+			}
+			postNodes, postImgs := triedb.Size()
+			if nodes-postNodes > 0 || imgs-postImgs > 0 {
+				Logger.log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v", shardBestState.ShardID, current, nodes-postNodes, imgs-postImgs)
+			}
 		}
-		err = shardBestState.transactionStateDB.Database().TrieDB().Commit(sRH.TransactionStateDBRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		err = shardBestState.featureStateDB.Database().TrieDB().Commit(sRH.FeatureStateDBRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		err = shardBestState.rewardStateDB.Database().TrieDB().Commit(sRH.RewardStateDBRootHash, false, nil)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		shardBestState.consensusStateDB.ClearObjects()
-		shardBestState.transactionStateDB.ClearObjects()
-		shardBestState.featureStateDB.ClearObjects()
-		shardBestState.rewardStateDB.ClearObjects()
-		shardBestState.slashStateDB.ClearObjects()
-		Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, shardBestState.ShardHeight, shardBestState.BestBlockHash)
 	}
 
 	if err := rawdbv2.StoreShardRootsHash(batch, shardBestState.ShardID, shardBestState.BestBlockHash, sRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	return nil
+}
+
+func (shardBestState *ShardBestState) commitTrieToDisk(sRH ShardRootHash) error {
+
+	var err error
+
+	err = shardBestState.consensusStateDB.Database().TrieDB().Commit(sRH.ConsensusStateDBRootHash, false, nil) // Save data to disk database
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	err = shardBestState.slashStateDB.Database().TrieDB().Commit(sRH.SlashStateDBRootHash, false, nil)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	err = shardBestState.transactionStateDB.Database().TrieDB().Commit(sRH.TransactionStateDBRootHash, false, nil)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	err = shardBestState.featureStateDB.Database().TrieDB().Commit(sRH.FeatureStateDBRootHash, false, nil)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	err = shardBestState.rewardStateDB.Database().TrieDB().Commit(sRH.RewardStateDBRootHash, false, nil)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
+	shardBestState.consensusStateDB.ClearObjects()
+	shardBestState.transactionStateDB.ClearObjects()
+	shardBestState.featureStateDB.ClearObjects()
+	shardBestState.rewardStateDB.ClearObjects()
+	shardBestState.slashStateDB.ClearObjects()
+	Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, shardBestState.ShardHeight, shardBestState.BestBlockHash)
 
 	return nil
 }

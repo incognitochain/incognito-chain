@@ -544,7 +544,7 @@ func (db *IntermediateWriter) Cap(limit common.StorageSize) error {
 
 	// If the preimage cache got large enough, push to disk. If it's still small
 	// leave for later to deduplicate writes.
-	flushPreimages := db.preimagesSize > 1*1024*1024
+	flushPreimages := db.preimagesSize > 4*1024*1024
 	if flushPreimages {
 		if db.preimages == nil {
 			Logger.log.Error("Attempted to write preimages whilst disabled")

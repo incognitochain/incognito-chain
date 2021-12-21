@@ -855,7 +855,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 	}
 
 	//statedb===========================START
-	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
+	dbAccessWarper := statedb.NewDatabaseAccessWrapperWithConfig(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
@@ -1194,7 +1194,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
 
-	if err := newShardState.CommitTrieToDisk(batchData, sRH, false); err != nil {
+	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, false); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	//statedb===========================END

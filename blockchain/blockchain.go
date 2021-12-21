@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/prque"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
@@ -76,6 +77,8 @@ type Config struct {
 	IndexerToken      string
 	PoolManager       *txpool.PoolManager
 
+	triegc *prque.Prque // Priority queue mapping block numbers to tries to gc
+
 	relayShardLck sync.Mutex
 	usingNewPool  bool
 }
@@ -99,6 +102,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
 	blockchain.config = *config
+	blockchain.config.triegc = prque.New(nil)
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
@@ -402,7 +406,7 @@ func (bc *BlockChain) Stop() {
 				SlashStateDBRootHash:       shardBestState.SlashStateDBRootHash,
 				TransactionStateDBRootHash: shardBestState.TransactionStateDBRootHash,
 			}
-			err = shardBestState.CommitTrieToDisk(batch, sRH, true)
+			err = shardBestState.CommitTrieToDisk(batch, bc, sRH, true)
 			if err != nil {
 				Logger.log.Error("Blockchain Stop, commit shard best state for fast sync mode error: ", err)
 				return

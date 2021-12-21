@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics"
@@ -56,9 +57,11 @@ var (
 )
 
 var (
-	BeaconSyncMode              = NORMAL_SYNC_MODE
-	ShardSyncMode               = FAST_SYNC_MODE
-	ShardStateDBCommitBatchSize = uint64(5000)
+	BeaconSyncMode     = NORMAL_SYNC_MODE
+	ShardSyncMode      = FAST_SYNC_MODE
+	BlockTriesInMemory = uint64(5000)
+	trieNodeLimit      = common.StorageSize(1 * 1024 * 1024 * 1024)
+	trieImgsLimit      = common.StorageSize(4 * 1024 * 1024)
 )
 
 const (

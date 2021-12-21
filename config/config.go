@@ -3,9 +3,11 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -444,4 +446,18 @@ func (c *config) loadConfig() {
 		}
 
 	}
+}
+
+func (c *config) GetShardDataDir(shardID int) string {
+
+	newPath := ""
+
+	prefix := filepath.Join(c.DataDir, c.DatabaseDir)
+	if shardID == common.BeaconChainID {
+		newPath = path.Join(prefix, common.BeaconChainDatabaseDirectory)
+	} else {
+		newPath = path.Join(prefix, common.ShardChainDatabaseDirectory+strconv.Itoa(shardID))
+	}
+
+	return newPath
 }
