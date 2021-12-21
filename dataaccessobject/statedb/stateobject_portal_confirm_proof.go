@@ -37,7 +37,7 @@ func NewPortalConfirmProofStateWithValue(txID common.Hash, height uint64) *Porta
 	return &PortalConfirmProofState{txID: txID, height: height}
 }
 
-func (b PortalConfirmProofState) MarshalJSON() ([]byte, error) {
+func (b *PortalConfirmProofState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		TxID   common.Hash
 		Height uint64

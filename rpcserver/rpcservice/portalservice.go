@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 
@@ -140,7 +141,7 @@ func (s *PortalService) CalculateTopupAmountForCustodianState(
 		return 0, err
 	}
 
-	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB, nil)
 	if err != nil {
 		return 0, err
 	}

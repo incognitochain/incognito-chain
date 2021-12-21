@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,8 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"sort"
-	"strings"
 )
 
 /*
@@ -134,7 +135,6 @@ func (httpServer *HttpServer) handleGetPortalCustodianDepositStatus(params inter
 	return status, nil
 }
 
-
 /*
 ====== Custodian deposit collateral v3 (ETH/ERC20)
 */
@@ -218,7 +218,6 @@ func (httpServer *HttpServer) handleGetPortalCustodianDepositStatusV3(params int
 	}
 	return status, nil
 }
-
 
 /*
 ====== Custodian request withdraw collateral (PRV)
@@ -312,7 +311,6 @@ func (httpServer *HttpServer) handleGetCustodianWithdrawRequestStatusByTxId(para
 
 	return result, nil
 }
-
 
 /*
 ====== Custodian request withdraw collateral v3 (ETH/ERC20)
@@ -420,7 +418,6 @@ func (httpServer *HttpServer) handleGetCustodianWithdrawRequestStatusV3ByTxId(pa
 
 	return result, nil
 }
-
 
 /*
 ====== Portal rewards
@@ -542,7 +539,7 @@ func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeCha
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 
-	portalState, err := portalprocessv3.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
+	portalState, err := portalprocessv3.InitCurrentPortalStateFromDB(beaconFeatureStateDB, nil)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, err)
 	}
