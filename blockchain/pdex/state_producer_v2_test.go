@@ -2707,10 +2707,6 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 	token1ID, err := common.Hash{}.NewHashFromStr("456")
 	assert.Nil(t, err)
 
-	lpFeesPerShare1, _ := new(big.Int).SetString("2000000000000000000000", 10)
-	lpFeesPerShare2, _ := new(big.Int).SetString("2333333333333333333333", 10)
-	lpFeesPerShare3, _ := new(big.Int).SetString("2833333333333333333333", 10)
-
 	config.AbortParam()
 	config.Param().PDexParams.ProtocolFundAddress = "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
 
@@ -2791,7 +2787,7 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						big.NewInt(0).SetUint64(2000), 20000,
 					),
 					lpFeesPerShare: map[common.Hash]*big.Int{
-						common.PRVCoinID: lpFeesPerShare1,
+						common.PRVCoinID: convertToLPFeesPerShare(1000000, 500),
 					},
 					protocolFees:    map[common.Hash]uint64{},
 					stakingPoolFees: map[common.Hash]uint64{},
@@ -2872,7 +2868,7 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					lpFeesPerShare: map[common.Hash]*big.Int{
-						common.PRVCoinID: lpFeesPerShare2,
+						common.PRVCoinID: convertToLPFeesPerShare(700000, 300),
 					},
 					protocolFees:    map[common.Hash]uint64{},
 					stakingPoolFees: map[common.Hash]uint64{},
@@ -2964,7 +2960,7 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
 					lpFeesPerShare: map[common.Hash]*big.Int{
-						common.PRVCoinID: lpFeesPerShare3,
+						common.PRVCoinID: convertToLPFeesPerShare(850000, 300),
 					},
 					protocolFees:    map[common.Hash]uint64{},
 					stakingPoolFees: map[common.Hash]uint64{},
