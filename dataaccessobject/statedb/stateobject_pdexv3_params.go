@@ -25,6 +25,7 @@ type Pdexv3Params struct {
 	orderTradingRewardRatioBPS        map[string]uint
 	orderLiquidityMiningBPS           map[string]uint
 	daoContributingPercent            uint
+	orderMiningRewardRatioBPS         map[string]uint
 }
 
 func (pp Pdexv3Params) DefaultFeeRateBPS() uint {
@@ -81,6 +82,10 @@ func (pp Pdexv3Params) DAOContributingPercent() uint {
 	return pp.daoContributingPercent
 }
 
+func (pp Pdexv3Params) OrderMiningRewardRatioBPS() map[string]uint {
+	return pp.orderMiningRewardRatioBPS
+}
+
 func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		DefaultFeeRateBPS                 uint
@@ -99,6 +104,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
+		OrderMiningRewardRatioBPS         map[string]uint
 	}{
 		DefaultFeeRateBPS:                 pp.defaultFeeRateBPS,
 		FeeRateBPS:                        pp.feeRateBPS,
@@ -116,6 +122,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		OrderTradingRewardRatioBPS:        pp.orderTradingRewardRatioBPS,
 		OrderLiquidityMiningBPS:           pp.orderLiquidityMiningBPS,
 		DAOContributingPercent:            pp.daoContributingPercent,
+		OrderMiningRewardRatioBPS:         pp.orderMiningRewardRatioBPS,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -141,6 +148,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
+		OrderMiningRewardRatioBPS         map[string]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -168,6 +176,10 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	}
 	pp.orderLiquidityMiningBPS = temp.OrderLiquidityMiningBPS
 	pp.daoContributingPercent = temp.DAOContributingPercent
+	if temp.OrderMiningRewardRatioBPS == nil {
+		temp.OrderMiningRewardRatioBPS = make(map[string]uint)
+	}
+	pp.orderMiningRewardRatioBPS = temp.OrderMiningRewardRatioBPS
 	return nil
 }
 
@@ -192,6 +204,7 @@ func NewPdexv3ParamsWithValue(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
+	orderMiningRewardRatioBPS map[string]uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
 		defaultFeeRateBPS:                 defaultFeeRateBPS,
@@ -210,6 +223,7 @@ func NewPdexv3ParamsWithValue(
 		orderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
 		orderLiquidityMiningBPS:           orderLiquidityMiningBPS,
 		daoContributingPercent:            daoContributingPercent,
+		orderMiningRewardRatioBPS:         orderMiningRewardRatioBPS,
 	}
 }
 

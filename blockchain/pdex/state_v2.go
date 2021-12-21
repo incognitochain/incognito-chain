@@ -518,6 +518,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.OrderTradingRewardRatioBPS,
 			s.params.OrderLiquidityMiningBPS,
 			s.params.DAOContributingPercent,
+			s.params.OrderMiningRewardRatioBPS,
 		)
 		if err != nil {
 			return err

@@ -49,6 +49,7 @@ func StorePdexv3Params(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
+	orderMiningRewardRatioBPS map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
@@ -68,6 +69,7 @@ func StorePdexv3Params(
 		orderTradingRewardRatioBPS,
 		orderLiquidityMiningBPS,
 		daoContributingPercent,
+		orderMiningRewardRatioBPS,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {

@@ -26,6 +26,7 @@ type Params struct {
 	OrderTradingRewardRatioBPS        map[string]uint // map: pool ID -> the weight of LOP rewards compared with LP rewards (0.1% ~ 10 BPS)
 	OrderLiquidityMiningBPS           map[string]uint // map: pool ID -> order liquidity mining BPS (1500 BPS -> the percent of reward for AMM : buy orders : sell orders will be 70% : 15% : 15%)
 	DAOContributingPercent            uint            // percent of DAO reward that is using for liquidity mining (default: 0%)
+	OrderMiningRewardRatioBPS         map[string]uint // not used yet
 }
 
 func NewParams() *Params {
@@ -36,6 +37,7 @@ func NewParams() *Params {
 		StakingRewardTokens:        []common.Hash{},
 		OrderTradingRewardRatioBPS: map[string]uint{},
 		OrderLiquidityMiningBPS:    map[string]uint{},
+		OrderMiningRewardRatioBPS:  map[string]uint{},
 	}
 }
 
@@ -57,6 +59,7 @@ func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 		OrderTradingRewardRatioBPS:        paramsState.OrderTradingRewardRatioBPS(),
 		OrderLiquidityMiningBPS:           paramsState.OrderLiquidityMiningBPS(),
 		DAOContributingPercent:            paramsState.DAOContributingPercent(),
+		OrderMiningRewardRatioBPS:         paramsState.OrderMiningRewardRatioBPS(),
 	}
 }
 
@@ -84,11 +87,16 @@ func (p *Params) Clone() *Params {
 	for k, v := range p.OrderLiquidityMiningBPS {
 		clonedOrderLiquidityMiningBPS[k] = v
 	}
+	clonedOrderMiningRewardRatioBPS := map[string]uint{}
+	for k, v := range p.OrderMiningRewardRatioBPS {
+		clonedOrderMiningRewardRatioBPS[k] = v
+	}
 	result.FeeRateBPS = clonedFeeRateBPS
 	result.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
 	result.StakingPoolsShare = clonedStakingPoolsShare
 	result.OrderTradingRewardRatioBPS = clonedOrderTradingRewardRatioBPS
 	result.OrderLiquidityMiningBPS = clonedOrderLiquidityMiningBPS
+	result.OrderMiningRewardRatioBPS = clonedOrderMiningRewardRatioBPS
 
 	return result
 }
@@ -193,6 +201,9 @@ func (params *Params) readConfig() *Params {
 	}
 	if res.OrderLiquidityMiningBPS == nil {
 		res.OrderLiquidityMiningBPS = make(map[string]uint)
+	}
+	if res.OrderMiningRewardRatioBPS == nil {
+		res.OrderMiningRewardRatioBPS = make(map[string]uint)
 	}
 	return res
 }

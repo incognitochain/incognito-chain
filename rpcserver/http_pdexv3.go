@@ -229,6 +229,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			OrderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
 			OrderLiquidityMiningBPS:           orderLiquidityMiningBPS,
 			DAOContributingPercent:            uint(daoContributingPercent),
+			OrderMiningRewardRatioBPS:         map[string]uint{},
 		},
 	)
 	if err != nil {
