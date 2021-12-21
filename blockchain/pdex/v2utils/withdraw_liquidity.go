@@ -76,15 +76,6 @@ func BuildAcceptWithdrawLiquidityInstructions(
 			return res, err
 		}
 		res = append(res, inst)
-	} else {
-		inst, err := instruction.NewMintAccessTokenWithValue(
-			metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
-		).
-			StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
-		if err != nil {
-			return res, err
-		}
-		res = append(res, inst)
 	}
 	return res, nil
 }

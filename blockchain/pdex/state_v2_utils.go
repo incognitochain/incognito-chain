@@ -2,12 +2,14 @@ package pdex
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type Share struct {
@@ -139,6 +141,13 @@ func (share *Share) setAccessOTA(accessOTA string) {
 	share.accessOTA = accessOTA
 }
 
+func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) error {
+	if share.accessOTA != burntOTA.String() {
+		return errors.New("Not valid access ota")
+	}
+	return nil
+}
+
 type Staker struct {
 	liquidity           uint64
 	accessOTA           string
@@ -262,6 +271,13 @@ func (staker *Staker) getDiff(
 
 func (staker *Staker) setAccessOTA(accessOTA string) {
 	staker.accessOTA = accessOTA
+}
+
+func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) error {
+	if staker.accessOTA != burntOTA.String() {
+		return errors.New("Not valid access ota")
+	}
+	return nil
 }
 
 func addStakingPoolState(

@@ -28,16 +28,7 @@ func BuildRejectUnstakingInstructions(
 			return res, err
 		}
 		res = append(res, mintNftInst)
-	} else {
-		mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
-			metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
-		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-		if err != nil {
-			return res, err
-		}
-		res = append(res, mintAccessTokenInst)
 	}
-
 	return res, nil
 }
 
@@ -65,14 +56,6 @@ func BuildAcceptUnstakingInstructions(
 			return res, err
 		}
 		res = append(res, mintNftInst)
-	} else {
-		mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
-			metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
-		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-		if err != nil {
-			return res, err
-		}
-		res = append(res, mintAccessTokenInst)
 	}
 	return res, nil
 }
