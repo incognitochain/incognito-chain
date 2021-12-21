@@ -923,21 +923,17 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if !ok {
 			return instructions, pairs, errors.New("Can not parse withdrawal LP fee metadata")
 		}
-		_, accessByNFT := metaData.Receivers[*metaData.NftID]
-		if !accessByNFT && metaData.AccessOption.UseNft() {
-			return instructions, pairs, fmt.Errorf("NFT receiver not found in WithdrawalLPFeeRequest")
-		}
-		addressStr, err := metaData.Receivers[*metaData.NftID].String()
-		if err != nil {
-			return instructions, pairs, fmt.Errorf("NFT receiver invalid in WithdrawalLPFeeRequest")
-		}
-		mintNftInst := instruction.NewMintNftWithValue(*metaData.NftID, addressStr, shardID, txReqID)
-		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
-		if err != nil {
-			return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
-		}
 
 		if metaData.AccessOption.UseNft() {
+			addressStr, err := metaData.Receivers[*metaData.NftID].String()
+			if err != nil {
+				return instructions, pairs, fmt.Errorf("NFT receiver invalid in WithdrawalLPFeeRequest")
+			}
+			mintNftInst := instruction.NewMintNftWithValue(*metaData.NftID, addressStr, shardID, txReqID)
+			mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+			if err != nil {
+				return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
+			}
 			instructions = append(instructions, mintNftInstStr)
 		} else {
 			otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
@@ -946,21 +942,30 @@ func (sp *stateProducerV2) withdrawLPFee(
 			}
 			mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
 				otaReceiverStr, shardID, txReqID,
-			).
-				StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
 			}
 			instructions = append(instructions, mintAccessTokenInst)
 		}
 
+		var err error
+		accessOTA := utils.EmptyString
+		if !metaData.AccessOption.UseNft() {
+			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
+			if err != nil {
+				return instructions, pairs, fmt.Errorf("Can't gen new accessOTA")
+			}
+		}
+
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
-			*metaData.NftID,
+			metaData.AccessOption,
 			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
+			accessOTA,
 		)
 
 		// check conditions
@@ -976,7 +981,6 @@ func (sp *stateProducerV2) withdrawLPFee(
 		} else {
 			accessID = *metaData.AccessID
 		}
-
 		lpReward := map[common.Hash]uint64{}
 		share, isExistedShare := poolPair.shares[accessID.String()]
 		if isExistedShare {
@@ -1022,11 +1026,12 @@ func (sp *stateProducerV2) withdrawLPFee(
 
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
-			*metaData.NftID,
+			metaData.AccessOption,
 			receiversInfo,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
+			accessOTA,
 		)
 
 		// update state after fee withdrawal
@@ -1485,29 +1490,49 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			return instructions, pools, errors.New("Can not parse withdrawal staking reward metadata")
 		}
 
-		_, isExisted := metaData.Receivers[*metaData.NftID]
-		if !isExisted {
-			return instructions, pools, fmt.Errorf("NFT receiver not found in WithdrawalStakingRewardRequest")
-		}
-		addressStr, err := metaData.Receivers[*metaData.NftID].String()
-		if err != nil {
-			return instructions, pools, fmt.Errorf("NFT receiver invalid in WithdrawalStakingRewardRequest")
-		}
-		mintNftInst := instruction.NewMintNftWithValue(*metaData.NftID, addressStr, shardID, txReqID)
-		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
-		if err != nil {
-			return instructions, pools, fmt.Errorf("Can not parse mint NFT instruction")
+		if metaData.AccessOption.UseNft() {
+			addressStr, err := metaData.Receivers[*metaData.NftID].String()
+			if err != nil {
+				return instructions, pools, fmt.Errorf("NFT receiver invalid in WithdrawalStakingRewardRequest")
+			}
+			mintNftInst := instruction.NewMintNftWithValue(*metaData.NftID, addressStr, shardID, txReqID)
+			mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
+			if err != nil {
+				return instructions, pools, fmt.Errorf("Can not parse mint NFT instruction")
+			}
+			instructions = append(instructions, mintNftInstStr)
+		} else {
+			otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
+			if err != nil {
+				return instructions, pools, err
+			}
+			mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
+				otaReceiverStr, shardID, txReqID,
+			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+			if err != nil {
+				return instructions, pools, fmt.Errorf("Can not generate mint access instruction")
+			}
+			instructions = append(instructions, mintAccessTokenInst)
+
 		}
 
-		instructions = append(instructions, mintNftInstStr)
+		var err error
+		accessOTA := utils.EmptyString
+		if !metaData.AccessOption.UseNft() {
+			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
+			if err != nil {
+				return instructions, pools, fmt.Errorf("Can't gen new accessOTA")
+			}
+		}
 
 		rejectInst := v2utils.BuildWithdrawStakingRewardInsts(
 			metaData.StakingPoolID,
-			*metaData.NftID,
+			metaData.AccessOption,
 			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
+			accessOTA,
 		)
 
 		// check conditions
@@ -1555,11 +1580,12 @@ func (sp *stateProducerV2) withdrawStakingReward(
 
 		acceptedInst := v2utils.BuildWithdrawStakingRewardInsts(
 			metaData.StakingPoolID,
-			*metaData.NftID,
+			metaData.AccessOption,
 			receiversInfo,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
+			accessOTA,
 		)
 
 		// update state after fee withdrawal

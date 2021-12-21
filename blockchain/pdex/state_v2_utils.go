@@ -135,6 +135,10 @@ func (share *Share) getDiff(
 	return newShareChange
 }
 
+func (share *Share) setAccessOTA(accessOTA string) {
+	share.accessOTA = accessOTA
+}
+
 type Staker struct {
 	liquidity           uint64
 	accessOTA           string
@@ -254,6 +258,10 @@ func (staker *Staker) getDiff(
 		newStakerChange.Rewards = v2utils.GetChangedElementsFromMapUint64(staker.rewards, compareStaker.rewards)
 	}
 	return newStakerChange
+}
+
+func (staker *Staker) setAccessOTA(accessOTA string) {
+	staker.accessOTA = accessOTA
 }
 
 func addStakingPoolState(
