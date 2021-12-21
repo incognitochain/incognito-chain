@@ -855,7 +855,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 	}
 
 	//statedb===========================START
-	dbAccessWarper := statedb.NewDatabaseAccessWrapperWithConfig(db)
+	dbAccessWarper := statedb.NewDatabaseAccessWrapperWithConfig(db, blockchain.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], blockchain.cacheConfig.trieJournalCacheSize)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err

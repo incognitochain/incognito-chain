@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 
@@ -43,6 +44,7 @@ type BlockChain struct {
 	BeaconChain *BeaconChain
 	ShardChain  []*ShardChain
 	config      Config
+	cacheConfig CacheConfig
 	cQuitSync   chan struct{}
 
 	IsTest bool
@@ -77,10 +79,39 @@ type Config struct {
 	IndexerToken      string
 	PoolManager       *txpool.PoolManager
 
-	triegc *prque.Prque // Priority queue mapping block numbers to tries to gc
-
 	relayShardLck sync.Mutex
 	usingNewPool  bool
+}
+
+type CacheConfig struct {
+	triegc               *prque.Prque // Priority queue mapping block numbers to tries to gc
+	trieJournalPath      map[int]string
+	trieJournalCacheSize int
+	blockTriesInMemory   uint64
+	trieNodeLimit        common.StorageSize
+	trieImgsLimit        common.StorageSize
+}
+
+func NewCacheConfig(config *Config) (CacheConfig, error) {
+	trieJournal := make(map[int]string)
+	for chainID, db := range config.DataBase {
+		filePath := db.GetPath() + "/metadata.bin"
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			_, err := os.Create(filePath)
+			if err != nil {
+				return CacheConfig{}, err
+			}
+		}
+		trieJournal[chainID] = filePath
+	}
+	return CacheConfig{
+		triegc:               prque.New(nil),
+		trieJournalPath:      trieJournal,
+		trieJournalCacheSize: 1024,
+		blockTriesInMemory:   BlockTriesInMemory,
+		trieNodeLimit:        trieNodeLimit,
+		trieImgsLimit:        trieImgsLimit,
+	}, nil
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -102,11 +133,15 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
 	blockchain.config = *config
-	blockchain.config.triegc = prque.New(nil)
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
+	cacheConfig, err := NewCacheConfig(config)
+	if err != nil {
+		return err
+	}
+	blockchain.cacheConfig = cacheConfig
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state

@@ -3,10 +3,8 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
-	"os"
 )
 
 // IntermediateWriter wraps access to tries and contract code.
@@ -74,26 +72,12 @@ func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
 	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
 }
 
-func NewDatabaseAccessWrapperWithConfig(database incdb.Database) DatabaseAccessWarper {
-
-	path := database.GetPath() + "_journal"
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		err := os.MkdirAll(path, 0755)
-		if err != nil {
-			dataaccessobject.Logger.Log.Error("Fail to create journal directory, error %+v", err)
-		}
-	}
-	file, err := os.Create(path + "/metadata.bin")
-	if err != nil {
-		dataaccessobject.Logger.Log.Error("Fail to create journal directory, error %+v", err)
-	}
-	fmt.Println(file, err)
+func NewDatabaseAccessWrapperWithConfig(database incdb.Database, journalPath string, size int) DatabaseAccessWarper {
 
 	return &accessorWarper{
 		iw: trie.NewIntermediateWriterWithConfig(database, &trie.Config{
-			Cache:   1024,
-			Journal: path,
+			Cache:   size,
+			Journal: journalPath,
 		}),
 	}
 }

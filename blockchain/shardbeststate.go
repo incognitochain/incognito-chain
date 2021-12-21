@@ -156,7 +156,7 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
 	var err error
-	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(db)
+	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(db, bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], bc.cacheConfig.trieJournalCacheSize)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
@@ -731,7 +731,11 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 	//if nodesConsensus > limit || imgsConsensus > 4*1024*1024 {
 	//	shardBestState.consensusStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
 	//}
-
+	if bc.cacheConfig.trieJournalPath != nil {
+		if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
+			triedb.SaveCache(path)
+		}
+	}
 	// use for archive mode or force to do so
 	if force || ShardSyncMode == NORMAL_SYNC_MODE {
 		if err := shardBestState.commitTrieToDisk(sRH); err != nil {
@@ -744,32 +748,32 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 		triedb.Reference(sRH.SlashStateDBRootHash, common.Hash{})
 		triedb.Reference(sRH.FeatureStateDBRootHash, common.Hash{})
 		triedb.Reference(sRH.RewardStateDBRootHash, common.Hash{})
-		bc.config.triegc.Push(sRH, -int64(shardBestState.ShardHeight))
-		if current := shardBestState.ShardHeight; current >= BlockTriesInMemory {
+		bc.cacheConfig.triegc.Push(sRH, -int64(shardBestState.ShardHeight))
+		if current := shardBestState.ShardHeight; current >= bc.cacheConfig.blockTriesInMemory {
 			var (
 				nodes, imgs = triedb.Size()
 			)
 			Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, trieNodeLimit %+v, img %+v, trieImgLimit %+v",
-				shardBestState.ShardID, nodes, trieNodeLimit, imgs, common.StorageSize(4*1024*1024))
+				shardBestState.ShardID, nodes, bc.cacheConfig.trieNodeLimit, imgs, common.StorageSize(4*1024*1024))
 			// all statedb object use the same low-level triedb
 
-			if nodes > trieNodeLimit || imgs > trieImgsLimit {
-				triedb.Cap((trieNodeLimit - incdb.IdealBatchSize))
+			if nodes > bc.cacheConfig.trieNodeLimit || imgs > bc.cacheConfig.trieImgsLimit {
+				triedb.Cap((bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize))
 			}
 
-			if current%BlockTriesInMemory == 0 {
+			if current%bc.cacheConfig.blockTriesInMemory == 0 {
 				if err := shardBestState.commitTrieToDisk(sRH); err != nil {
 					return err
 				}
 			}
 
-			chosen := current / BlockTriesInMemory * BlockTriesInMemory
+			chosen := current / bc.cacheConfig.blockTriesInMemory * bc.cacheConfig.blockTriesInMemory
 			// Garbage collect anything below our required write retention
 			// Dereference could takes time and block the insertion process
-			for !bc.config.triegc.Empty() {
-				oldSRH, number := bc.config.triegc.Pop()
+			for !bc.cacheConfig.triegc.Empty() {
+				oldSRH, number := bc.cacheConfig.triegc.Pop()
 				if uint64(-number) > chosen {
-					bc.config.triegc.Push(oldSRH, number)
+					bc.cacheConfig.triegc.Push(oldSRH, number)
 					break
 				}
 				Logger.log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v", shardBestState.ShardID, current, chosen, number)
