@@ -107,7 +107,7 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 	return CacheConfig{
 		triegc:               prque.New(nil),
 		trieJournalPath:      trieJournal,
-		trieJournalCacheSize: 1024,
+		trieJournalCacheSize: trieJournalCacheSize,
 		blockTriesInMemory:   BlockTriesInMemory,
 		trieNodeLimit:        trieNodeLimit,
 		trieImgsLimit:        trieImgsLimit,
