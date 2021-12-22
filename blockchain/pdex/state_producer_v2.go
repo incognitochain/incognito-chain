@@ -77,18 +77,15 @@ func (sp *stateProducerV2) addLiquidity(
 		waitingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			waitingContribution, metaData.PairHash(),
 		)
-		if waitingContribution.TokenID().String() == incomingContribution.TokenID().String() ||
-			waitingContribution.Amplifier() != incomingContribution.Amplifier() ||
-			waitingContribution.PoolPairID() != incomingContribution.PoolPairID() {
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				waitingContributionState, incomingContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
-			Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
-			res = append(res, insts...)
-			continue
+		refundInsts, err := v2utils.BuildRefundAddLiquidityInstructions(
+			waitingContributionState, incomingContributionState,
+		)
+		if err != nil {
+			return res, poolPairs, waitingContributions, err
+		}
+		err = sp.validateContributions(waitingContribution, incomingContribution)
+		if err != nil {
+			Logger.log.Warnf("tx %v is invalid err %v", tx.Hash().String(), err)
 		}
 
 		poolPairID := utils.EmptyString
@@ -107,14 +104,8 @@ func (sp *stateProducerV2) addLiquidity(
 				)
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
 				if metaData.AccessOption.AccessID != nil {
-					insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-						waitingContributionState, incomingContributionState,
-					)
-					if err != nil {
-						return res, poolPairs, waitingContributions, err
-					}
 					Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
-					res = append(res, insts...)
+					res = append(res, refundInsts...)
 					continue
 				}
 				accessOTA, err := newPoolPair.addShare(
@@ -124,17 +115,8 @@ func (sp *stateProducerV2) addLiquidity(
 					waitingContribution.AccessOTA(),
 				)
 				if err != nil {
-					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
-						waitingContribution, metaData.PairHash(),
-					)
-					token1ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
-						incomingContribution, metaData.PairHash(),
-					)
-					insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-						token0ContributionState, token1ContributionState,
-					)
 					Logger.log.Warnf("tx %v add share err %v", tx.Hash().String(), err)
-					res = append(res, insts...)
+					res = append(res, refundInsts...)
 					continue
 				}
 				accessCoinReceiver := utils.EmptyString
@@ -156,14 +138,8 @@ func (sp *stateProducerV2) addLiquidity(
 				res = append(res, insts...)
 				continue
 			} else {
-				insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-					waitingContributionState, incomingContributionState,
-				)
-				if err != nil {
-					return res, poolPairs, waitingContributions, err
-				}
 				Logger.log.Warnf("tx %v init a pool pair with poolPairID is not null", tx.Hash().String())
-				res = append(res, insts...)
+				res = append(res, refundInsts...)
 				continue
 			}
 		}
@@ -179,15 +155,17 @@ func (sp *stateProducerV2) addLiquidity(
 		)
 		if token0Contribution.TokenID().String() != rootPoolPair.state.Token0ID().String() ||
 			token1Contribution.TokenID().String() != rootPoolPair.state.Token1ID().String() {
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
 			Logger.log.Warnf("tx %v contributed tokens is not valid with pool tokens", tx.Hash().String())
-			res = append(res, insts...)
+			res = append(res, refundInsts...)
 			continue
+		}
+		if waitingContribution.AccessOTA() == utils.EmptyString && waitingContribution.OtaReceiver() == utils.EmptyString {
+			if !rootPoolPair.existLP(waitingContribution.NftID().String()) {
+				Logger.log.Warnf("tx %v accessID %v is not in poolPair %v",
+					tx.Hash().String(), waitingContribution.NftID().String(), waitingContribution.PoolPairID())
+				res = append(res, refundInsts...)
+				continue
+			}
 		}
 
 		actualToken0ContributionAmount,
@@ -196,25 +174,13 @@ func (sp *stateProducerV2) addLiquidity(
 			returnedToken1ContributionAmount, err := rootPoolPair.
 			computeActualContributedAmounts(&token0Contribution, &token1Contribution)
 		if err != nil {
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
 			Logger.log.Warnf("tx %v compute contributed amount err %v", tx.Hash().String(), err)
-			res = append(res, insts...)
+			res = append(res, refundInsts...)
 			continue
 		}
 		if actualToken0ContributionAmount == 0 || actualToken1ContributionAmount == 0 {
-			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err != nil {
-				return res, poolPairs, waitingContributions, err
-			}
 			Logger.log.Warnf("tx %v calculate contribution amount equal to 0", tx.Hash().String())
-			res = append(res, insts...)
+			res = append(res, refundInsts...)
 			continue
 		}
 		poolPair := rootPoolPair.Clone()
@@ -223,14 +189,8 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
 		if err != nil {
-			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err1 != nil {
-				return res, poolPairs, waitingContributions, err
-			}
 			Logger.log.Warnf("tx %v add reserve data err %v", tx.Hash().String(), err)
-			res = append(res, insts...)
+			res = append(res, refundInsts...)
 			continue
 		}
 		accessOTA, err := poolPair.addShare(
@@ -239,14 +199,8 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.TxReqID().String(), waitingContribution.AccessOTA(),
 		)
 		if err != nil {
-			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
-				token0ContributionState, token1ContributionState,
-			)
-			if err1 != nil {
-				return res, poolPairs, waitingContributions, err
-			}
 			Logger.log.Warnf("tx %v add share err %v:", tx.Hash().String(), err)
-			res = append(res, insts...)
+			res = append(res, refundInsts...)
 			continue
 		}
 		insts, err := v2utils.BuildMatchAndReturnAddLiquidityInstructions(
@@ -983,7 +937,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
-			if share.isValidAccessOTA(*metaData.AccessOption.BurntOTA) == nil {
+			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
 				if err != nil {
 					return instructions, pairs, err
@@ -1183,7 +1137,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 
 		if !metaData.AccessOption.UseNft() {
-			if share.isValidAccessOTA(*metaData.AccessOption.BurntOTA) == nil {
+			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
 				if err != nil {
 					return res, poolPairs, stakingPoolStates, err
@@ -1319,6 +1273,11 @@ func (sp *stateProducerV2) staking(
 			accessID = *metaData.AccessOption.NftID
 		} else {
 			if metaData.AccessOption.AccessID != nil {
+				if !rootStakingPoolState.existStaker(metaData.AccessOption.AccessID.String()) {
+					Logger.log.Warnf("tx %v can not find accessID", tx.Hash().String())
+					res = append(res, rejectInst)
+					continue
+				}
 				accessID = *metaData.AccessOption.AccessID
 			} else {
 				accessID = metadataPdexv3.GenAccessID(metaData.OtaReceivers()[common.PdexAccessCoinID])
@@ -1404,7 +1363,7 @@ func (sp *stateProducerV2) unstaking(
 		}
 		accessOTA := utils.EmptyString
 		if !metaData.AccessOption.UseNft() {
-			if staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA) == nil {
+			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
 				if err != nil {
 					return res, stakingPoolStates, poolPairStates, err
@@ -1585,7 +1544,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			continue
 		}
 
-		if share.isValidAccessOTA(*metaData.AccessOption.BurntOTA) == nil {
+		if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
 			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
 			if err != nil {
 				return instructions, pools, err

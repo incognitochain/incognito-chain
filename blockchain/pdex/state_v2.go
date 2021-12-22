@@ -709,67 +709,91 @@ func (s *stateV2) Validator() StateValidator {
 	return s
 }
 
-func (s *stateV2) IsValidNftID(nftID string) error {
+func (s *stateV2) IsValidNftID(nftID string) (bool, error) {
 	if _, found := s.nftIDs[nftID]; !found {
-		return fmt.Errorf("%v nftID can not be found", nftID)
+		return false, fmt.Errorf("%v nftID can not be found", nftID)
 	}
-	return nil
+	return true, nil
 }
 
-func (s *stateV2) IsValidPoolPairID(poolPairID string) error {
+func (s *stateV2) IsValidPoolPairID(poolPairID string) (bool, error) {
 	if poolPair, found := s.poolPairs[poolPairID]; poolPair == nil || !found {
-		return fmt.Errorf("%v pool pair id is not valid", poolPairID)
+		return false, fmt.Errorf("%v pool pair id is not valid", poolPairID)
 	}
-	return nil
+	return true, nil
 }
 
-func (s *stateV2) IsValidMintNftRequireAmount(amount uint64) error {
+func (s *stateV2) IsValidMintNftRequireAmount(amount uint64) (bool, error) {
 	if s.params.MintNftRequireAmount != amount {
-		return fmt.Errorf("Expect mint nft require amount by %v but got %v",
+		return false, fmt.Errorf("Expect mint nft require amount by %v but got %v",
 			s.params.MintNftRequireAmount, amount)
 	}
-	return nil
+	return true, nil
 }
 
-func (s *stateV2) IsValidStakingPool(stakingPoolID string) error {
+func (s *stateV2) IsValidStakingPool(stakingPoolID string) (bool, error) {
 	if stakingPool, found := s.stakingPoolStates[stakingPoolID]; stakingPool == nil || !found {
-		return fmt.Errorf("Can not find stakingPoolID %s", stakingPoolID)
+		return false, fmt.Errorf("Can not find stakingPoolID %s", stakingPoolID)
 	}
-	return nil
+	return true, nil
 }
 
-func (s *stateV2) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error {
+func (s *stateV2) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) (bool, error) {
 	stakingPoolState, found := s.stakingPoolStates[tokenID]
 	if !found || stakingPoolState == nil {
-		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
+		return false, fmt.Errorf("Can not find stakingPoolID %s", tokenID)
 	}
 	staker, found := stakingPoolState.Stakers()[nftID]
 	if !found || staker == nil {
-		return fmt.Errorf("Can not find nftID %s", nftID)
+		return false, fmt.Errorf("Can not find nftID %s", nftID)
 	}
 	if staker.Liquidity() < unstakingAmount {
-		return errors.New("unstakingAmount > current staker liquidity")
+		return false, errors.New("unstakingAmount > current staker liquidity")
 	}
 	if staker.Liquidity() == 0 || unstakingAmount == 0 {
-		return errors.New("unstakingAmount or staker.Liquidity is 0")
+		return false, errors.New("unstakingAmount or staker.Liquidity is 0")
 	}
-	return nil
+	return true, nil
 }
 
-func (s *stateV2) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error {
+func (s *stateV2) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) (bool, error) {
 	poolPair, found := s.poolPairs[poolPairID]
 	if !found || poolPair == nil {
-		return fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
+		return false, fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
 	}
 	share, found := poolPair.Shares()[nftID]
 	if !found || share == nil {
-		return fmt.Errorf("Can't not find nftID %s", nftID)
+		return false, fmt.Errorf("Can't not find nftID %s", nftID)
 	}
 	if share.Amount() < shareAmount {
-		return errors.New("shareAmount > current share amount")
+		return false, errors.New("shareAmount > current share amount")
 	}
 	if shareAmount == 0 || share.Amount() == 0 {
-		return errors.New("share amount or share.Amount() is 0")
+		return false, errors.New("share amount or share.Amount() is 0")
 	}
-	return nil
+	return true, nil
+}
+
+func (s *stateV2) IsValidStaker(stakingPoolID, stakerID string) (bool, error) {
+	stakingPool, found := s.stakingPoolStates[stakingPoolID]
+	if stakingPool == nil || !found {
+		return false, fmt.Errorf("Can not find stakingPoolID %s", stakingPoolID)
+	}
+	staker, found := stakingPool.stakers[stakerID]
+	if staker == nil || !found {
+		return false, fmt.Errorf("Can not find stakerID %s", stakerID)
+	}
+	return true, nil
+}
+
+func (s *stateV2) IsValidLP(poolPairID, lpID string) (bool, error) {
+	poolPair, found := s.poolPairs[poolPairID]
+	if !found || poolPair == nil {
+		return false, fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
+	}
+	share, found := poolPair.Shares()[lpID]
+	if !found || share == nil {
+		return false, fmt.Errorf("Can't not find lpID %s", lpID)
+	}
+	return true, nil
 }

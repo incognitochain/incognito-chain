@@ -95,11 +95,7 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateTxWithBlockChain(
 		}
 	}
 
-	err = beaconViewRetriever.IsValidPdexv3StakingPool(withdrawal.StakingPoolID)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return beaconViewRetriever.IsValidPdexv3StakingPool(withdrawal.StakingPoolID)
 }
 
 func (withdrawal WithdrawalStakingRewardRequest) ValidateSanityData(

@@ -133,24 +133,24 @@ func (s *StakingPoolState) getDiff(
 }
 
 func (s *StakingPoolState) updateLiquidity(
-	nftID string, liquidity, beaconHeight uint64, accessOTA string, operator byte,
+	accessID string, liquidity, beaconHeight uint64, accessOTA string, operator byte,
 ) error {
-	staker, found := s.stakers[nftID]
+	staker, found := s.stakers[accessID]
 	if !found {
 		if operator == subOperator {
 			return errors.New("remove liquidity from invalid staker")
 		}
-		s.stakers[nftID] = NewStakerWithValue(liquidity, accessOTA, make(map[common.Hash]uint64), s.RewardsPerShare())
+		s.stakers[accessID] = NewStakerWithValue(liquidity, accessOTA, make(map[common.Hash]uint64), s.RewardsPerShare())
 	} else {
 		tempLiquidity, err := executeOperationUint64(staker.liquidity, liquidity, operator)
 		if err != nil {
 			return err
 		}
-		nftIDHash, err := new(common.Hash).NewHashFromStr(nftID)
+		accessHash, err := new(common.Hash).NewHashFromStr(accessID)
 		if err != nil {
-			return fmt.Errorf("Invalid nftID: %v", nftID)
+			return fmt.Errorf("Invalid accessID: %v", accessID)
 		}
-		staker.rewards, err = s.RecomputeStakingRewards(*nftIDHash)
+		staker.rewards, err = s.RecomputeStakingRewards(*accessHash)
 		if err != nil {
 			return fmt.Errorf("Recompute staking rewards failed: %v", err)
 		}
@@ -339,4 +339,9 @@ func (s *StakingPoolState) updateToDB(
 		}
 	}
 	return nil
+}
+
+func (s *StakingPoolState) existStaker(stakerID string) bool {
+	_, found := s.stakers[stakerID]
+	return found
 }

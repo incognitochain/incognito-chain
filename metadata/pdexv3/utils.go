@@ -158,28 +158,41 @@ func (a *AccessOption) IsValid(
 	receivers map[common.Hash]privacy.OTAReceiver,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	transactionStateDB *statedb.StateDB,
-	isWithdrawRequest bool,
+	isWithdrawalRequest bool,
 ) error {
 	if a.NftID != nil {
-		if a.NftID.IsZeroValue() || beaconViewRetriever.IsValidNftID(a.NftID.String()) != nil {
+		if a.NftID.IsZeroValue() {
 			return fmt.Errorf("invalid NftID %s", a.NftID.String())
+		}
+		ok, err := beaconViewRetriever.IsValidPdexv3NftID(a.NftID.String())
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return fmt.Errorf("NftID %s is not valid", a.NftID.String())
 		}
 		if a.BurntOTA != nil || a.AccessID != nil {
 			return fmt.Errorf("invalid AccessOTA (%v, %v) when using NftID; expect none", a.BurntOTA, a.AccessID)
 		}
 	} else {
-		if isWithdrawRequest {
+		shouldValidateAccessReceiver := false
+		if isWithdrawalRequest {
 			if a.AccessID == nil || a.AccessID.IsZeroValue() {
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("invalid AccessID (zero value)"))
 			}
 			if a.BurntOTA == nil {
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("burnt OTA missing")))
 			}
+			shouldValidateAccessReceiver = true
+		} else {
+			if a.AccessID == nil {
+				shouldValidateAccessReceiver = true
+			}
 		}
 		if receivers == nil {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("OTA receivers missing")))
 		}
-		if isWithdrawRequest || a.AccessID == nil {
+		if shouldValidateAccessReceiver {
 			accessReceiver, exists := receivers[common.PdexAccessCoinID]
 			if !exists {
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("accessReceiver missing")))

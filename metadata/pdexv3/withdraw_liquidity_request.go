@@ -89,11 +89,7 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
 
-	err = beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, accessID, request.shareAmount)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, accessID, request.shareAmount)
 }
 
 func (request *WithdrawLiquidityRequest) ValidateSanityData(

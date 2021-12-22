@@ -737,3 +737,8 @@ func (p *PoolPairState) updateToDB(
 	}
 	return nil
 }
+
+func (p *PoolPairState) existLP(lpID string) bool {
+	_, found := p.shares[lpID]
+	return found
+}

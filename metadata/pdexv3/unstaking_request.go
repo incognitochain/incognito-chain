@@ -88,13 +88,9 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
-	err = beaconViewRetriever.IsValidPdexv3UnstakingAmount(
+	return beaconViewRetriever.IsValidPdexv3UnstakingAmount(
 		request.stakingPoolID, accessID, request.unstakingAmount,
 	)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 func (request *UnstakingRequest) ValidateSanityData(

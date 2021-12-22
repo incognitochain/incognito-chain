@@ -68,9 +68,15 @@ func (request *StakingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPdexv3StakingPool(request.tokenID)
+	ok, err := beaconViewRetriever.IsValidPdexv3StakingPool(request.tokenID)
 	if err != nil {
 		return false, err
+	}
+	if !ok {
+		return ok, fmt.Errorf("StakingPoolID %s is not valid", request.tokenID)
+	}
+	if !request.AccessOption.UseNft() && request.AccessOption.AccessID != nil {
+		return beaconViewRetriever.IsValidPdexv3Staker(request.tokenID, request.AccessID.String())
 	}
 	return true, nil
 }

@@ -141,11 +141,11 @@ func (share *Share) setAccessOTA(accessOTA string) {
 	share.accessOTA = accessOTA
 }
 
-func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) error {
+func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
 	if share.accessOTA != burntOTA.String() {
-		return errors.New("Not valid access ota")
+		return false, errors.New("Not valid access OTA")
 	}
-	return nil
+	return true, nil
 }
 
 type Staker struct {
@@ -273,11 +273,11 @@ func (staker *Staker) setAccessOTA(accessOTA string) {
 	staker.accessOTA = accessOTA
 }
 
-func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) error {
+func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
 	if staker.accessOTA != burntOTA.String() {
-		return errors.New("Not valid access ota")
+		return false, errors.New("Not valid access OTA")
 	}
-	return nil
+	return true, nil
 }
 
 func addStakingPoolState(

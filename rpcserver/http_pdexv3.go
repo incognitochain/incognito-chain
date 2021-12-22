@@ -487,13 +487,35 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 	}
 	poolPairState := poolPair.State()
 
+	var burntOTA *metadataPdexv3.AccessOTA
+	var accessID, nftID *common.Hash
 	nftIDStr, ok := tokenParamsRaw["NftID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
-	}
-	nftID, err := common.Hash{}.NewHashFromStr(nftIDStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
+		accessIDStr, ok := tokenParamsRaw["AccessID"].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("AccessID is invalid"))
+		}
+		accessID, err = common.Hash{}.NewHashFromStr(accessIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		burntOTAStr, ok := tokenParamsRaw["BurntOTA"].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
+		}
+		if burntOTAStr != utils.EmptyString {
+			burntOTA = new(metadataPdexv3.AccessOTA)
+			err := burntOTA.FromString(burntOTAStr)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+			}
+		}
+	} else {
+		Logger.log.Info("[pdex] 6")
+		nftID, err = common.Hash{}.NewHashFromStr(nftIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("NftID is invalid"))
+		}
 	}
 
 	// payment address v2
@@ -507,7 +529,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		poolPairState.Token1ID().String(),
 		common.PRVIDStr,
 		common.PDEXIDStr,
-		nftIDStr,
+	}
+	if nftID != nil {
+		tokenIDs = append(tokenIDs, nftIDStr)
+	} else {
+		tokenIDs = append(tokenIDs, common.PdexAccessIDStr)
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(feeReceiver)
@@ -532,7 +558,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		receivers[*tokenID] = receiver
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, nftID, nil)
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(burntOTA, nftID, accessID)
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,

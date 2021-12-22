@@ -94,12 +94,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
 	}
-
-	err = beaconViewRetriever.IsValidPoolPairID(withdrawal.PoolPairID)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return beaconViewRetriever.IsValidPdexv3PoolPairID(withdrawal.PoolPairID)
 }
 
 func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(

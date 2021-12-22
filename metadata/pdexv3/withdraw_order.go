@@ -41,9 +41,12 @@ func NewWithdrawOrderRequest(
 }
 
 func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
+	ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(req.PoolPairID)
 	if err != nil {
 		return false, err
+	}
+	if !ok {
+		return ok, fmt.Errorf("PoolPairID %s is not valid", req.PoolPairID)
 	}
 	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, true)
 	if err != nil {

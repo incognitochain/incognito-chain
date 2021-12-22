@@ -78,10 +78,16 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 		return false, err
 	}
 	if request.poolPairID != utils.EmptyString {
-		err := beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
-		if err != nil {
-			return false, err
+		ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(request.poolPairID)
+		if err != nil || !ok {
+			if err == nil {
+				err = fmt.Errorf("poolPairID %s is not valid", request.poolPairID)
+			}
+			return ok, err
 		}
+	}
+	if !request.AccessOption.UseNft() && request.AccessOption.AccessID != nil {
+		return beaconViewRetriever.IsValidPdexv3LP(request.poolPairID, request.AccessID.String())
 	}
 	return true, nil
 }
