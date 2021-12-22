@@ -157,11 +157,11 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(db, bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], bc.cacheConfig.trieJournalCacheSize)
-	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
+	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
@@ -706,34 +706,20 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 
 func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *BlockChain, sRH ShardRootHash, force bool) error {
 
-	triedb := shardBestState.transactionStateDB.Database().TrieDB()
+	consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
+	transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
+	featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
+	rewardTrieDB := shardBestState.rewardStateDB.Database().TrieDB()
+	slashTrieDB := shardBestState.slashStateDB.Database().TrieDB()
 
-	//Logger.log.Debugf("SHARD %+v | Slash Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
-	//	shardBestState.ShardID, nodesSlash, limit, imgsSlash, common.StorageSize(4*1024*1024))
-	//if nodesSlash > limit || imgsSlash > 4*1024*1024 {
-	//	shardBestState.slashStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
-	//}
-	//
-	//Logger.log.Debugf("SHARD %+v | Feature Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
-	//	shardBestState.ShardID, nodesFeature, limit, imgsFeature, common.StorageSize(4*1024*1024))
-	//if nodesFeature > limit || imgsFeature > 4*1024*1024 {
-	//	shardBestState.featureStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
-	//}
-	//
-	//Logger.log.Debugf("SHARD %+v | Reward Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
-	//	shardBestState.ShardID, nodesReward, limit, imgsReward, common.StorageSize(4*1024*1024))
-	//if nodesReward > limit || imgsReward > 4*1024*1024 {
-	//	shardBestState.rewardStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
-	//}
-	//
-	//Logger.log.Debugf("SHARD %+v | Consensus Trie Cap. Nodes %+v, limit %+v, img %+v, limit %+v",
-	//	shardBestState.ShardID, nodesConsensus, limit, imgsConsensus, common.StorageSize(4*1024*1024))
-	//if nodesConsensus > limit || imgsConsensus > 4*1024*1024 {
-	//	shardBestState.consensusStateDB.Database().TrieDB().Cap(limit - incdb.IdealBatchSize)
-	//}
 	if bc.cacheConfig.trieJournalPath != nil {
 		if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
-			triedb.SaveCache(path)
+			// the below disk layer is just one => save one time is enough
+			transactionTrieDB.SaveCache(path)
+			//consensusTrieDB.SaveCache(path)
+			//featureTrieDB.SaveCache(path)
+			//rewardTrieDB.SaveCache(path)
+			//slashTrieDB.SaveCache(path)
 		}
 	}
 	// use for archive mode or force to do so
@@ -743,22 +729,22 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
-		triedb.Reference(sRH.TransactionStateDBRootHash, common.Hash{}) // metadata reference to keep trie alive
-		triedb.Reference(sRH.ConsensusStateDBRootHash, common.Hash{})
-		triedb.Reference(sRH.SlashStateDBRootHash, common.Hash{})
-		triedb.Reference(sRH.FeatureStateDBRootHash, common.Hash{})
-		triedb.Reference(sRH.RewardStateDBRootHash, common.Hash{})
+		consensusTrieDB.Reference(sRH.ConsensusStateDBRootHash, common.Hash{})
+		transactionTrieDB.Reference(sRH.TransactionStateDBRootHash, common.Hash{}) // metadata reference to keep trie alive
+		featureTrieDB.Reference(sRH.FeatureStateDBRootHash, common.Hash{})
+		rewardTrieDB.Reference(sRH.RewardStateDBRootHash, common.Hash{})
+		slashTrieDB.Reference(sRH.SlashStateDBRootHash, common.Hash{})
 		bc.cacheConfig.triegc.Push(sRH, -int64(shardBestState.ShardHeight))
 		if current := shardBestState.ShardHeight; current >= bc.cacheConfig.blockTriesInMemory {
 			var (
-				nodes, imgs = triedb.Size()
+				nodes, imgs = transactionTrieDB.Size()
 			)
 			Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, trieNodeLimit %+v, img %+v, trieImgLimit %+v",
 				shardBestState.ShardID, nodes, bc.cacheConfig.trieNodeLimit, imgs, common.StorageSize(4*1024*1024))
 			// all statedb object use the same low-level triedb
 
 			if nodes > bc.cacheConfig.trieNodeLimit || imgs > bc.cacheConfig.trieImgsLimit {
-				triedb.Cap((bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize))
+				transactionTrieDB.Cap((bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize))
 			}
 
 			if current%bc.cacheConfig.blockTriesInMemory == 0 {
@@ -777,13 +763,13 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 					break
 				}
 				Logger.log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v", shardBestState.ShardID, current, chosen, number)
-				triedb.Dereference(oldSRH.(ShardRootHash).TransactionStateDBRootHash)
-				triedb.Dereference(oldSRH.(ShardRootHash).ConsensusStateDBRootHash)
-				triedb.Dereference(oldSRH.(ShardRootHash).SlashStateDBRootHash)
-				triedb.Dereference(oldSRH.(ShardRootHash).FeatureStateDBRootHash)
-				triedb.Dereference(oldSRH.(ShardRootHash).RewardStateDBRootHash)
+				consensusTrieDB.Dereference(oldSRH.(ShardRootHash).ConsensusStateDBRootHash)
+				transactionTrieDB.Dereference(oldSRH.(ShardRootHash).TransactionStateDBRootHash)
+				featureTrieDB.Dereference(oldSRH.(ShardRootHash).FeatureStateDBRootHash)
+				rewardTrieDB.Dereference(oldSRH.(ShardRootHash).RewardStateDBRootHash)
+				slashTrieDB.Dereference(oldSRH.(ShardRootHash).SlashStateDBRootHash)
 			}
-			postNodes, postImgs := triedb.Size()
+			postNodes, postImgs := transactionTrieDB.Size()
 			if nodes-postNodes > 0 || imgs-postImgs > 0 {
 				Logger.log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v", shardBestState.ShardID, current, nodes-postNodes, imgs-postImgs)
 			}

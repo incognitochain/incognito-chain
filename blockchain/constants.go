@@ -59,9 +59,9 @@ var (
 var (
 	BeaconSyncMode       = NORMAL_SYNC_MODE
 	ShardSyncMode        = FAST_SYNC_MODE
-	BlockTriesInMemory   = uint64(1000)
-	trieJournalCacheSize = 256
-	trieNodeLimit        = common.StorageSize(256 * 1024 * 1024)
+	BlockTriesInMemory   = uint64(500)
+	trieJournalCacheSize = 32
+	trieNodeLimit        = common.StorageSize(128 * 1024 * 1024)
 	trieImgsLimit        = common.StorageSize(4 * 1024 * 1024)
 )
 

@@ -393,84 +393,75 @@ func (bc *BlockChain) Stop() {
 		for i, shardChain := range bc.ShardChain {
 			bc.ShardChain[i].insertLock.Lock()
 			defer bc.ShardChain[i].insertLock.Unlock()
-
 			shardBestState := shardChain.GetBestState()
+			shardID := shardBestState.ShardID
+			db := bc.GetShardChainDatabase(shardID)
+			consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
+			transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
+			featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
+			rewardTrieDB := shardBestState.rewardStateDB.Database().TrieDB()
+			slashTrieDB := shardBestState.slashStateDB.Database().TrieDB()
 			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 			// consensus root hash
-			consensusRootHash, err := shardBestState.consensusStateDB.Commit(true) // Store data to memory
-			if err != nil {
-				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
-				return
-			}
-			shardBestState.ConsensusStateDBRootHash = consensusRootHash
-			// transaction root hash
-			transactionRootHash, err := shardBestState.transactionStateDB.Commit(true)
-			if err != nil {
-				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
-				return
-			}
-			shardBestState.TransactionStateDBRootHash = transactionRootHash
-			// feature root hash
-			featureRootHash, err := shardBestState.featureStateDB.Commit(true)
-			if err != nil {
-				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
-				return
-			}
-			shardBestState.FeatureStateDBRootHash = featureRootHash
-			// reward root hash
-			rewardRootHash, err := shardBestState.rewardStateDB.Commit(true)
-			if err != nil {
-				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
-				return
-			}
-			shardBestState.RewardStateDBRootHash = rewardRootHash
-			// slash root hash
-			slashRootHash, err := shardBestState.slashStateDB.Commit(true)
-			if err != nil {
-				Logger.log.Error("Blockchain stop, commit shard best state for sync mode error: ", err)
-				return
-			}
-			shardBestState.SlashStateDBRootHash = slashRootHash
 
-			shardID := shardBestState.ShardID
-			batch := bc.GetShardChainDatabase(shardID).NewBatch()
-			sRH := ShardRootHash{
-				ConsensusStateDBRootHash:   shardBestState.ConsensusStateDBRootHash,
-				FeatureStateDBRootHash:     shardBestState.FeatureStateDBRootHash,
-				RewardStateDBRootHash:      shardBestState.RewardStateDBRootHash,
-				SlashStateDBRootHash:       shardBestState.SlashStateDBRootHash,
-				TransactionStateDBRootHash: shardBestState.TransactionStateDBRootHash,
-			}
-			err = shardBestState.CommitTrieToDisk(batch, bc, sRH, true)
-			if err != nil {
-				Logger.log.Error("Blockchain Stop, commit shard best state for fast sync mode error: ", err)
-				return
-			}
 			for _, view := range shardChain.GetAllView() {
 				shardView := view.(*ShardBestState)
-				if shardView.BestBlockHash == shardBestState.BestBlockHash {
+				sRH, err := GetShardRootsHashByBlockHash(db, shardID, shardView.BestBlockHash)
+				if err != nil {
+					Logger.log.Error("Blockchain Stop, GetShardRootsHashByBlockHash shardID %+v, blockhash %+v,  error: ", shardID, shardView.BestBlockHash, err)
 					continue
 				}
-				shardView.ConsensusStateDBRootHash = shardBestState.ConsensusStateDBRootHash
-				shardView.FeatureStateDBRootHash = shardBestState.FeatureStateDBRootHash
-				shardView.RewardStateDBRootHash = shardBestState.RewardStateDBRootHash
-				shardView.SlashStateDBRootHash = shardBestState.SlashStateDBRootHash
-				shardView.TransactionStateDBRootHash = shardBestState.TransactionStateDBRootHash
-				if err := rawdbv2.StoreShardRootsHash(batch, shardID, shardView.BestBlockHash, sRH); err != nil {
-					Logger.log.Error("Blockchain Stop, commit other view for fast sync mode error: ", err)
-					return
+				if err := consensusTrieDB.Commit(sRH.ConsensusStateDBRootHash, false, nil); err != nil {
+					Logger.log.Errorf("Blockchain Stop, Commit Consensus DB %+v, error %+v", sRH.ConsensusStateDBRootHash, err)
+				}
+				if err := transactionTrieDB.Commit(sRH.TransactionStateDBRootHash, false, nil); err != nil {
+					Logger.log.Errorf("Blockchain Stop, Commit Transaction DB %+v, error %+v", sRH.TransactionStateDBRootHash, err)
+				}
+				if err := featureTrieDB.Commit(sRH.FeatureStateDBRootHash, false, nil); err != nil {
+					Logger.log.Errorf("Blockchain Stop, Commit Feature DB %+v, error %+v", sRH.FeatureStateDBRootHash, err)
+				}
+				if err := rewardTrieDB.Commit(sRH.RewardStateDBRootHash, false, nil); err != nil {
+					Logger.log.Errorf("Blockchain Stop, Commit Reward DB %+v, error %+v", sRH.RewardStateDBRootHash, err)
+				}
+				if err := slashTrieDB.Commit(sRH.SlashStateDBRootHash, false, nil); err != nil {
+					Logger.log.Errorf("Blockchain Stop, Commit Slash DB %+v, error %+v", sRH.SlashStateDBRootHash, err)
 				}
 			}
 
-			if err := bc.BackupShardViews(batch, shardID); err != nil {
-				Logger.log.Error("Blockchain Stop, backup shard view for for fast sync mode error: ", err)
-				return
-			}
-			if err := batch.Write(); err != nil {
-				Logger.log.Error("Blockchain Stop, batch write for fast sync mode error: ", err)
-				return
-			}
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
+			for !bc.cacheConfig.triegc.Empty() {
+				item := bc.cacheConfig.triegc.PopItem().(ShardRootHash)
+				consensusTrieDB.Dereference(item.ConsensusStateDBRootHash)
+				transactionTrieDB.Dereference(item.TransactionStateDBRootHash)
+				featureTrieDB.Dereference(item.FeatureStateDBRootHash)
+				rewardTrieDB.Dereference(item.RewardStateDBRootHash)
+				slashTrieDB.Dereference(item.SlashStateDBRootHash)
+			}
+			if size, _ := consensusTrieDB.Size(); size != 0 {
+				Logger.log.Error("Dangling consensus trie nodes after full cleanup")
+			}
+			if size, _ := transactionTrieDB.Size(); size != 0 {
+				Logger.log.Error("Dangling transaction trie nodes after full cleanup")
+			}
+			if size, _ := featureTrieDB.Size(); size != 0 {
+				Logger.log.Error("Dangling feature trie nodes after full cleanup")
+			}
+			if size, _ := rewardTrieDB.Size(); size != 0 {
+				Logger.log.Error("Dangling reward trie nodes after full cleanup")
+			}
+			if size, _ := slashTrieDB.Size(); size != 0 {
+				Logger.log.Error("Dangling slash trie nodes after full cleanup")
+			}
+			if bc.cacheConfig.trieJournalPath != nil {
+				if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
+					// the below disk layer is just one => save one time is enough
+					transactionTrieDB.SaveCache(path)
+					//consensusTrieDB.SaveCache(path)
+					//featureTrieDB.SaveCache(path)
+					//rewardTrieDB.SaveCache(path)
+					//slashTrieDB.SaveCache(path)
+				}
+			}
 		}
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
 	}
@@ -792,12 +783,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	allViews := []*ShardBestState{}
 	b, err := rawdbv2.GetShardBestState(blockchain.GetShardChainDatabase(shardID), shardID)
 	if err != nil {
-		fmt.Println("debug Cannot see shard best state")
+		Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBestState error %+v", shardID, err)
 		return err
 	}
 	err = json.Unmarshal(b, &allViews)
 	if err != nil {
-		fmt.Println("debug Cannot unmarshall shard best state", string(b))
+		Logger.log.Errorf("RestoreShardBestState shardID %+v, Unmarshal views error %+v", shardID, err)
 		return err
 	}
 	// fmt.Println("debug RestoreShardViews", len(allViews))
@@ -806,13 +797,14 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	for _, v := range allViews {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
-			fmt.Println("block ", block)
-			panic(err)
+			Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBlockByHash error %+v", shardID, err)
+			continue
 		}
 		v.BestBlock = block
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
-			panic(err)
+			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
+			continue
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
@@ -836,6 +828,10 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic("Restart shard views fail")
 		}
 	}
+	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
+		panic("unable to restore any shard best state")
+	}
+
 	return nil
 }
 
