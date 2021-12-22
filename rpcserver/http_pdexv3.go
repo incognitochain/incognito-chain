@@ -927,6 +927,8 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	tokenList := []string{}
 	if mdReader.NftID == nil {
 		tokenList = append(tokenList, common.PdexAccessIDStr)
+	} else {
+		tokenList = append(tokenList, mdReader.NftID.String())
 	}
 	tokenList = append(tokenList, poolPairState.Token0ID().String())
 	tokenList = append(tokenList, poolPairState.Token1ID().String())
@@ -1839,6 +1841,8 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 	tokenList := []string{}
 	if mdReader.NftID == nil {
 		tokenList = append(tokenList, common.PdexAccessIDStr)
+	} else {
+		tokenList = append(tokenList, mdReader.NftID.String())
 	}
 	tokenList = append(tokenList, mdReader.StakingPoolID)
 	for _, v := range tokenList {

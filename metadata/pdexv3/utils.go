@@ -179,13 +179,15 @@ func (a *AccessOption) IsValid(
 		if receivers == nil {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("OTA receivers missing")))
 		}
-		accessReceiver, exists := receivers[common.PdexAccessCoinID]
-		if !exists {
-			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("accessReceiver missing")))
-		}
-		valid, err := ValidPdexv3Access(a.BurntOTA, accessReceiver.PublicKey, tx, transactionStateDB)
-		if !valid {
-			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		if isWithdrawRequest || a.AccessID == nil {
+			accessReceiver, exists := receivers[common.PdexAccessCoinID]
+			if !exists {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("accessReceiver missing")))
+			}
+			valid, err := ValidPdexv3Access(a.BurntOTA, accessReceiver.PublicKey, tx, transactionStateDB)
+			if !valid {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+			}
 		}
 	}
 

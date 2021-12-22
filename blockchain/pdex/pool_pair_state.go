@@ -431,7 +431,9 @@ func (p *PoolPairState) updateShareValue(
 		if err != nil {
 			return utils.EmptyString, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
-		accessOTA = share.accessOTA
+		if operator == addOperator {
+			accessOTA = share.accessOTA
+		}
 	}
 
 	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}

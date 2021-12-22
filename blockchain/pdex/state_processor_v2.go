@@ -1059,7 +1059,7 @@ func (sp *stateProcessorV2) staking(
 		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
 	}
 	var status byte
-	var nftID, stakingPoolID string
+	var accessID, stakingPoolID string
 	var txReqID common.Hash
 	var liquidity uint64
 	switch inst[1] {
@@ -1073,9 +1073,15 @@ func (sp *stateProcessorV2) staking(
 		status = common.Pdexv3AcceptStatus
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Liquidity()
-		nftID = acceptInst.NftID().String()
+		if acceptInst.AccessOption.NftID != nil {
+			accessID = acceptInst.AccessOption.NftID.String()
+		} else {
+			if acceptInst.AccessOption.AccessID != nil {
+				accessID = acceptInst.AccessOption.AccessID.String()
+			}
+		}
 		stakingPoolState := stakingPoolStates[stakingPoolID]
-		err = stakingPoolState.updateLiquidity(nftID, liquidity, beaconHeight, acceptInst.AccessOTA(), addOperator)
+		err = stakingPoolState.updateLiquidity(accessID, liquidity, beaconHeight, acceptInst.AccessOTA(), addOperator)
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
@@ -1092,7 +1098,7 @@ func (sp *stateProcessorV2) staking(
 	}
 	stakingStatus := v2.StakingStatus{
 		Status:        status,
-		NftID:         nftID,
+		NftID:         accessID,
 		StakingPoolID: stakingPoolID,
 		Liquidity:     liquidity,
 	}
@@ -1139,10 +1145,7 @@ func (sp *stateProcessorV2) unstaking(
 			accessID = *acceptInst.AccessOption.NftID
 		} else {
 			accessID = *acceptInst.AccessOption.AccessID
-			accessOTA, err = metadataPdexv3.GenAccessOTAByStr(acceptInst.AccessOTA())
-			if err != nil {
-				return stakingPoolStates, poolPairStates, nil, err
-			}
+			accessOTA = acceptInst.AccessOTA()
 		}
 		stakingPoolState := stakingPoolStates[stakingPoolID]
 		err = stakingPoolState.updateLiquidity(

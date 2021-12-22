@@ -23,9 +23,9 @@ func NewAcceptStaking() *AcceptStaking { return &AcceptStaking{} }
 
 func NewAcceptStakingWtihValue(
 	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA string,
-	accessOption metadataPdexv3.AccessOption,
+	accessOption metadataPdexv3.AccessOption, accessID common.Hash,
 ) *AcceptStaking {
-	return &AcceptStaking{
+	result := &AcceptStaking{
 		accessOTA:     accessOTA,
 		stakingPoolID: stakingPoolID,
 		txReqID:       txReqID,
@@ -33,6 +33,10 @@ func NewAcceptStakingWtihValue(
 		liquidity:     liquidity,
 		AccessOption:  accessOption,
 	}
+	if !accessOption.UseNft() && !accessID.IsZeroValue() {
+		result.AccessOption.AccessID = &accessID
+	}
+	return result
 }
 
 func (a *AcceptStaking) FromStringSlice(source []string) error {

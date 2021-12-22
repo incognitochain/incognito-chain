@@ -1340,7 +1340,7 @@ func (sp *stateProducerV2) staking(
 		}
 		inst, err := instruction.NewAcceptStakingWtihValue(
 			*stakingTokenHash, txReqID, shardID, metaData.TokenAmount(), accessOTA,
-			metaData.AccessOption,
+			metaData.AccessOption, accessID,
 		).StringSlice()
 		if err != nil {
 			return res, stakingPoolStates, err
@@ -1441,7 +1441,7 @@ func (sp *stateProducerV2) unstaking(
 		}
 		insts, err := v2.BuildAcceptUnstakingInstructions(
 			*stakingPoolID, *metaData,
-			txReqID, shardID, accessID, accessOTA,
+			txReqID, shardID, accessOTA,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)

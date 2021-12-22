@@ -130,7 +130,7 @@ func (request *WithdrawLiquidityRequest) ValidateSanityData(
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 		}
 	}
-	if !existPdexAccessToken {
+	if !existPdexAccessToken && !request.AccessOption.UseNft() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers need to have otaReceiver for pdex access coin"))
 	}
 	if request.shareAmount == 0 {
