@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
@@ -86,11 +87,11 @@ func (r PortalSubmitConfirmedTxRequest) ValidateTxWithBlockChain(
 func (r PortalSubmitConfirmedTxRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(PortalV4SubmitConfirmedTxRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4SubmitConfirmedTxRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(PortalV4SubmitConfirmedTxRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4SubmitConfirmedTxRequestMetaError,
 			errors.New("Tx submit confirmed tx request must be version 2"))
 	}
 
@@ -109,7 +110,7 @@ func (r PortalSubmitConfirmedTxRequest) ValidateSanityData(chainRetriever ChainR
 }
 
 func (r PortalSubmitConfirmedTxRequest) ValidateMetadataByItself() bool {
-	return r.Type == PortalV4SubmitConfirmedTxMeta
+	return r.Type == metadataCommon.PortalV4SubmitConfirmedTxMeta
 }
 
 func (r PortalSubmitConfirmedTxRequest) Hash() *common.Hash {
@@ -134,7 +135,7 @@ func (r *PortalSubmitConfirmedTxRequest) BuildReqActions(tx Transaction, chainRe
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalV4SubmitConfirmedTxMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(metadataCommon.PortalV4SubmitConfirmedTxMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

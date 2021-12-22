@@ -1,0 +1,43 @@
+[{
+    "name": "Produce accepted add order request",
+    "data": {
+        "metadata": {
+            "TokenToSell": "0000000000000000000000000000000000000000000000000000000000000100",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000333",
+            "PoolPairID": "pair0",
+            "SellAmount": 1050,
+            "MinAcceptableAmount": 800,
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
+            },
+            "Type": 287
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["287", "1", "0", "8a65ee67e2de4146a0555007599aeb170b720743784f8c51fdcf9f70ecc9d600", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"8a65ee67e2de4146a0555007599aeb170b720743784f8c51fdcf9f70ecc9d600\",\"NftID\":\"0000000000000000000000000000000000000000000000000000000000000333\",\"Token0Rate\":1050,\"Token1Rate\":800,\"Token0Balance\":1050,\"Token1Balance\":0,\"TradeDirection\":0,\"Receiver\":[\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\"]}}"]
+        ]
+    }
+}, {
+    "name": "Produce refunded add order request - pair not found",
+    "data": {
+        "metadata": {
+            "TokenToSell": "0000000000000000000000000000000000000000000000000000000000000100",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000333",
+            "PoolPairID": "pair0nvm",
+            "SellAmount": 1050,
+            "MinAcceptableAmount": 800,
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
+            },
+            "Type": 287
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["287", "0", "0", "c923ce1b686cf674986d221438f96b05b40b438dcf75439afe52ff2e3af32ed0", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"Amount\":1050}}"]
+        ]
+    }
+}]

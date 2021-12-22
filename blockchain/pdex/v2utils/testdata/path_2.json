@@ -1,0 +1,45 @@
+[{
+    "name": "Valid trade over 2-pair path",
+    "data": {
+        "amountIn": 500,
+        "fee": 60,
+        "reserves": [{
+            "Token0RealAmount": 250,
+            "Token1RealAmount": 500,
+            "Token0VirtualAmount": 500,
+            "Token1VirtualAmount": 1000
+        }, {
+            "Token0RealAmount": 1000,
+            "Token1RealAmount": 1900,
+            "Token0VirtualAmount": 3000,
+            "Token1VirtualAmount": 6000
+        }],
+        "tradeDirections": [1, 0],
+        "orders": [
+            [],
+            []
+        ]
+    },
+    "expected": {
+        "instructions": ["285", "1", "0", "0000000000000000000000000000000000000000000000000000000000000000", "{\"Content\":{\"Receiver\":\"15VRBi1S7Pme5bUpHW12HZVjXCTg1FwDM3yoSUjWgGEhVJoLudKwtpQk3iSmwe27ffsj76LLZvyJ9x5tbX44SmKBSzdegpLsNKFc71j4jDxQh1PYSVbVHtTbgMoLvUUReaQWyyoXPvuarV5E\",\"Amount\":314,\"TradePath\":[\"pair0\",\"pair1\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000004\",\"PairChanges\":[[-166,500],[166,-314]],\"RewardEarned\":null,\"OrderChanges\":[{},{}]}}"],
+        "changedReserves": [{
+            "Token0ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token1ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0RealAmount": 84,
+            "Token1RealAmount": 1000,
+            "Token0VirtualAmount": 334,
+            "Token1VirtualAmount": 1500,
+            "Amplifier": 0,
+            "ShareAmount": 0
+        }, {
+            "Token0ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token1ID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0RealAmount": 1166,
+            "Token1RealAmount": 1586,
+            "Token0VirtualAmount": 3166,
+            "Token1VirtualAmount": 5686,
+            "Amplifier": 0,
+            "ShareAmount": 0
+        }]
+    }
+}]

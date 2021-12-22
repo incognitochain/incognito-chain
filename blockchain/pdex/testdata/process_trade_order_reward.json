@@ -1,0 +1,181 @@
+[
+    {
+        "name": "Process accepted trade request - only orders",
+        "data": {
+            "instructions": [
+                ["285", "1", "0", "55f4767dae59b5efa909de86877641ad64dc073b343871a1d85ff88b11ecc96e", "{\"Content\":{\"Receiver\":\"15asTc8khrs8hLREV6ZXnBKYABsqdDht7evepRRadHUS5XmBFPh4Q4RK41PoA6yyE1dgovKHjiYg1FKAW2mG1WcffKigHFru44HRT1t2MryHMWkiFh9e9ttnU7122Ex8HXduu5vUoYNPixJy\",\"Amount\":942,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121\",\"PairChanges\":[[0,0]],\"RewardEarned\":[{\"ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8\":200}],\"OrderChanges\":[{\"01a9ca4ab8f960d38a7258ec9c19b9f1c7dfb1603e919f015f6c33a8652194a1\":[-667,100],\"0f13d1877356e6970a98695d0ad6672c9ee883c1c28aeb5021561039bb9ada79\":[-275,50]}]}}"]
+            ]
+        },
+        "expected": {
+            "poolPairs": {
+                "pair0": {
+                    "state": {
+                        "Token0ID": "7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121",
+                        "Token1ID": "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8",
+                        "Token0RealAmount": 800,
+                        "Token1RealAmount": 1800,
+                        "Token0VirtualAmount": 1600,
+                        "Token1VirtualAmount": 3600,
+                        "Amplifier": 20000,
+                        "ShareAmount": 1200
+                    },
+                    "orderbook": {
+                        "orders": [
+                            {
+                                "Id": "01a9ca4ab8f960d38a7258ec9c19b9f1c7dfb1603e919f015f6c33a8652194a1",
+                                "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                                "Token0Rate": 667,
+                                "Token1Rate": 100,
+                                "Token0Balance": 0,
+                                "Token1Balance": 100,
+                                "TradeDirection": 0,
+                                "Receiver": [
+                                    "16FTF76LyuraMSEg82nawbHvHpwFM2d9fdJniUqFULKELwqfWKseEEgXAEK6EzriMLfCuvqG6pZSuG9DjWNCmtNHyHgnESeeJg61eC3srtEBboMUmtzYMMTkv3rS1nroPHKETMixDnUmKiJ3",
+                                    "162nASm73P9Hm2iQu9x6PprrAghVQEz3gK9dA3UAXTRajCbt22o6MPmBYkcuqWyutJjaqYEfLCr1mApkdXZpreSdt9rE4rgcL9iFYZFtKGvZ2WAHQckEi9Wpzz6m5vGztRetFQQkY6oXay8S"
+                                ]
+                            },
+                            {
+                                "Id": "0f13d1877356e6970a98695d0ad6672c9ee883c1c28aeb5021561039bb9ada79",
+                                "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                                "Token0Rate": 550,
+                                "Token1Rate": 100,
+                                "Token0Balance": 275,
+                                "Token1Balance": 50,
+                                "TradeDirection": 0,
+                                "Receiver": [
+                                    "15WJ3s9WJu1HUyCYnKW85pZBbyhcgdKggvBpnAXVg2dseFC3JZzeizyWWmw4C7TUP3m4g7xoswWNthHG3bWZdyd4VcUwYxAD3nLpXz9EqybwfsNbKT657mtiPrVK1PXoLxh7Lq2ErzjPjoT3",
+                                    "15beryFwexVPeTAEoFY8K7EcUC1hKgSjaTQVm9yMsbw8WvHkmQ83EBmKF9yY5CbsRgjGxrFv8bZVZAv1EAX5VhXcJ7VesgLKmWyTBohfPTXs3GGJx5qaiRezgJ32mtMTFgmWpCg16LRkbdQ7"
+                                ]
+                            }
+                        ]
+                    },
+                    "orderrewards": {
+                        "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902": {
+                            "UncollectedRewards": {
+                                "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8": 200
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    {
+        "name": "Process accepted trade request - only pool",
+        "data": {
+            "instructions": [
+                [
+                    "285", "1", "0", "acdb534bb06afbce3a2ca243c070e0a67ba24f7351554e897ee17d5d69baae20", "{\"Content\":{\"Receiver\":\"16ZUZvCNXg9cjL2PfRq3rJqQC2vT6UF4uRwhxWP5nFdXqunPerDgTD8oLnDCPo4mgmbqqscWRKJYNmomnuNEuBn8wPdUpsVRuY97ud2GGX2Pz2dNpv2BMSghUYQ5MPkeEsCUeNUxLcR9e5VV\",\"Amount\":308,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8\",\"PairChanges\":[[150,-308]],\"RewardEarned\":[{\"7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121\":200}],\"OrderChanges\":[{}]}}"
+                ]
+            ]
+        },
+        "expected": {
+            "poolPairs": {
+                "pair0": {
+                    "state": {
+                        "Token0ID": "7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121",
+                        "Token1ID": "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8",
+                        "Token0RealAmount": 950,
+                        "Token1RealAmount": 1492,
+                        "Token0VirtualAmount": 1750,
+                        "Token1VirtualAmount": 3292,
+                        "Amplifier": 20000,
+                        "ShareAmount": 1200
+                    },
+                    "orderbook": {
+                        "orders": [
+                            {
+                                "Id": "01a9ca4ab8f960d38a7258ec9c19b9f1c7dfb1603e919f015f6c33a8652194a1",
+                                "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                                "Token0Rate": 667,
+                                "Token1Rate": 100,
+                                "Token0Balance": 667,
+                                "Token1Balance": 0,
+                                "TradeDirection": 0,
+                                "Receiver": [
+                                    "16FTF76LyuraMSEg82nawbHvHpwFM2d9fdJniUqFULKELwqfWKseEEgXAEK6EzriMLfCuvqG6pZSuG9DjWNCmtNHyHgnESeeJg61eC3srtEBboMUmtzYMMTkv3rS1nroPHKETMixDnUmKiJ3",
+                                    "162nASm73P9Hm2iQu9x6PprrAghVQEz3gK9dA3UAXTRajCbt22o6MPmBYkcuqWyutJjaqYEfLCr1mApkdXZpreSdt9rE4rgcL9iFYZFtKGvZ2WAHQckEi9Wpzz6m5vGztRetFQQkY6oXay8S"
+                                ]
+                            },
+                            {
+                                "Id": "0f13d1877356e6970a98695d0ad6672c9ee883c1c28aeb5021561039bb9ada79",
+                                "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                                "Token0Rate": 550,
+                                "Token1Rate": 100,
+                                "Token0Balance": 550,
+                                "Token1Balance": 0,
+                                "TradeDirection": 0,
+                                "Receiver": [
+                                    "15WJ3s9WJu1HUyCYnKW85pZBbyhcgdKggvBpnAXVg2dseFC3JZzeizyWWmw4C7TUP3m4g7xoswWNthHG3bWZdyd4VcUwYxAD3nLpXz9EqybwfsNbKT657mtiPrVK1PXoLxh7Lq2ErzjPjoT3",
+                                    "15beryFwexVPeTAEoFY8K7EcUC1hKgSjaTQVm9yMsbw8WvHkmQ83EBmKF9yY5CbsRgjGxrFv8bZVZAv1EAX5VhXcJ7VesgLKmWyTBohfPTXs3GGJx5qaiRezgJ32mtMTFgmWpCg16LRkbdQ7"
+                                ]
+                            }
+                        ]
+                    },
+                    "orderrewards": {}
+                }
+            }
+        }
+    },
+    {
+        "name": "Process accepted trade request - match orders and pool",
+        "data": {
+            "instructions": [
+                ["285", "1", "0", "5ef30d9900e6bcd7bfd071e2aa3572ac12d296acb659f5db4f39e21fa56985d2", "{\"Content\":{\"Receiver\":\"16P4oPKo8aPeaL8xiV3D8gB5Xzx7Nigsipx953Pi6tWHCtjjWqQE5Hw2QSMHMaYiyUNijuJC2QA3FpnvEsJJyAgS8zRBEcXE4RVits4BL3gDCqPM8ey5iXhgkWfkDPLwC1Q38yKwke9M5Q2R\",\"Amount\":1221,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121\",\"PairChanges\":[[-4,10]],\"RewardEarned\":[{\"ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8\":200}],\"OrderChanges\":[{\"01a9ca4ab8f960d38a7258ec9c19b9f1c7dfb1603e919f015f6c33a8652194a1\":[-667,100],\"0f13d1877356e6970a98695d0ad6672c9ee883c1c28aeb5021561039bb9ada79\":[-550,100]}]}}"]
+            ]
+        },
+        "expected": {
+            "poolPairs": {
+                "pair0": {
+                    "state": {
+                        "Token0ID": "7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121",
+                        "Token1ID": "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8",
+                        "Token0RealAmount": 796,
+                        "Token1RealAmount": 1810,
+                        "Token0VirtualAmount": 1596,
+                        "Token1VirtualAmount": 3610,
+                        "Amplifier": 20000,
+                        "ShareAmount": 1200
+                    },
+                    "orderbook": {
+                        "orders": [
+                            {
+                                "Id": "01a9ca4ab8f960d38a7258ec9c19b9f1c7dfb1603e919f015f6c33a8652194a1",
+                                "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                                "Token0Rate": 667,
+                                "Token1Rate": 100,
+                                "Token0Balance": 0,
+                                "Token1Balance": 100,
+                                "TradeDirection": 0,
+                                "Receiver": [
+                                    "16FTF76LyuraMSEg82nawbHvHpwFM2d9fdJniUqFULKELwqfWKseEEgXAEK6EzriMLfCuvqG6pZSuG9DjWNCmtNHyHgnESeeJg61eC3srtEBboMUmtzYMMTkv3rS1nroPHKETMixDnUmKiJ3",
+                                    "162nASm73P9Hm2iQu9x6PprrAghVQEz3gK9dA3UAXTRajCbt22o6MPmBYkcuqWyutJjaqYEfLCr1mApkdXZpreSdt9rE4rgcL9iFYZFtKGvZ2WAHQckEi9Wpzz6m5vGztRetFQQkY6oXay8S"
+                                ]
+                            },
+                            {
+                                "Id": "0f13d1877356e6970a98695d0ad6672c9ee883c1c28aeb5021561039bb9ada79",
+                                "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                                "Token0Rate": 550,
+                                "Token1Rate": 100,
+                                "Token0Balance": 0,
+                                "Token1Balance": 100,
+                                "TradeDirection": 0,
+                                "Receiver": [
+                                    "15WJ3s9WJu1HUyCYnKW85pZBbyhcgdKggvBpnAXVg2dseFC3JZzeizyWWmw4C7TUP3m4g7xoswWNthHG3bWZdyd4VcUwYxAD3nLpXz9EqybwfsNbKT657mtiPrVK1PXoLxh7Lq2ErzjPjoT3",
+                                    "15beryFwexVPeTAEoFY8K7EcUC1hKgSjaTQVm9yMsbw8WvHkmQ83EBmKF9yY5CbsRgjGxrFv8bZVZAv1EAX5VhXcJ7VesgLKmWyTBohfPTXs3GGJx5qaiRezgJ32mtMTFgmWpCg16LRkbdQ7"
+                                ]
+                            }
+                        ]
+                    },
+                    "orderrewards": {
+                        "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902": {
+                            "UncollectedRewards": {
+                                "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8": 172
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+]

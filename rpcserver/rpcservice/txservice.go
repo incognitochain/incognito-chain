@@ -602,7 +602,10 @@ func (txService TxService) BuildConvertV1ToV2Transaction(params *bean.CreateRawT
 	return tx, nil
 }
 
-func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (metadata.Transaction, *RPCError) {
+func (txService TxService) BuildRawTransaction(
+	params *bean.CreateRawTxParam,
+	meta metadata.Metadata,
+) (metadata.Transaction, *RPCError) {
 	Logger.log.Infof("Build Raw Transaction Params: \n %+v", params)
 	// get output coins to spend and real fee
 	inputCoins, realFee, err1 := txService.chooseOutsCoinByKeyset(
@@ -701,7 +704,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 				}
 
 				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 				if err == nil {
 					valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 					tx.SetValidationEnv(valEnv)
@@ -1127,7 +1130,10 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 }
 
 // BuildRawCustomTokenTransaction ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
+	params interface{},
+	metaData metadata.Metadata,
+) (transaction.TransactionToken, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -2018,7 +2024,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 				}
 
 				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 				tx.SetValidationEnv(valEnv)
 				valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
