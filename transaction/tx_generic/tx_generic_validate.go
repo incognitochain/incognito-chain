@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
@@ -82,7 +81,7 @@ func GetTxBurnData(tx metadata.Transaction) (bool, privacy.Coin, *common.Hash, e
 	// 	return false, nil, nil, err
 	// }
 	for _, coin := range outputCoins {
-		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
 			return true, coin, &common.PRVCoinID, nil
 		}
 	}
@@ -179,7 +178,7 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 
 		additionalData["shardID"] = shardID
 
-		ok, err := tx.GetProof().ValidateSanity(additionalData)
+		ok, err := tx.GetProof().ValidateSanity(tx.GetValidationEnv())
 		if !ok || err != nil {
 			s := ""
 			if !ok {

@@ -2,32 +2,33 @@ package tx_ver1
 
 import (
 	"bytes"
-	"fmt"
 	"encoding/json"
-	"unicode"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"os"
 	"testing"
 	"time"
-	"os"
-	"math/rand"
-	"io/ioutil"
+	"unicode"
+
 	// "math/big"
 	// "strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/metadata"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
-	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumberprivacy"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
+	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,12 +40,12 @@ var (
 	maxInputs = 10
 	minInputs = 1
 
-	maxTries = 100
-	numOfLoops = 1
+	maxTries                = 100
+	numOfLoops              = 1
 	hasPrivacyForPRV   bool = true
 	hasPrivacyForToken bool = false
 	shardID            byte = byte(0)
-	numInputs = 5
+	numInputs               = 5
 	// must be 1
 	numOutputs         = 1
 	numTests           = 10
@@ -75,21 +76,21 @@ var (
 	limit100    = 100
 	limit1      = 1
 
-	dummyDB *statedb.StateDB
-	testDB * statedb.StateDB
-	bridgeDB *statedb.StateDB
+	dummyDB          *statedb.StateDB
+	testDB           *statedb.StateDB
+	bridgeDB         *statedb.StateDB
 	dummyPrivateKeys []*key.PrivateKey
-	keySets []*incognitokey.KeySet
-	paymentInfo []*key.PaymentInfo
-	activeLogger common.Logger
-	inactiveLogger common.Logger
+	keySets          []*incognitokey.KeySet
+	paymentInfo      []*key.PaymentInfo
+	activeLogger     common.Logger
+	inactiveLogger   common.Logger
 )
 
 var _ = func() (_ struct{}) {
-// initialize a `test` db in the OS's tempdir
-// and with it, a db access wrapper that reads/writes our transactions
+	// initialize a `test` db in the OS's tempdir
+	// and with it, a db access wrapper that reads/writes our transactions
 	fmt.Println("This runs before init()!")
-	testLogFile, err := os.OpenFile("test-log.txt",os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755)
+	testLogFile, err := os.OpenFile("test-log.txt", os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755)
 
 	inactiveLogger = common.NewBackend(nil).Logger("test", true)
 	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
@@ -106,7 +107,7 @@ var _ = func() (_ struct{}) {
 	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(diskBD)
 	dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	testDB = dummyDB.Copy()
-	bridgeDB  = dummyDB.Copy()
+	bridgeDB = dummyDB.Copy()
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -381,8 +382,8 @@ func createTxPrivacyInitParams(keySet *incognitokey.KeySet, inputCoins []coin.Pl
 	for _, inputCoin := range inputCoins {
 		sumAmount += inputCoin.GetValue()
 	}
-	amount := sumAmount/uint64(numOutputs)
-	for i:= 0; i< numOutputs - 1; i++ {
+	amount := sumAmount / uint64(numOutputs)
+	for i := 0; i < numOutputs-1; i++ {
 		paymentInfos[i] = key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("blahblah"))
 		sumAmount -= amount
 	}
@@ -410,9 +411,9 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	for i:=0; i < numTests; i++ {
-		numOfInputs := RandInt() % (maxInputs - minInputs + 1) + minInputs
-		numOfOutputs := RandInt() % (maxInputs - minInputs + 1) + minInputs
+	for i := 0; i < numTests; i++ {
+		numOfInputs := RandInt()%(maxInputs-minInputs+1) + minInputs
+		numOfOutputs := RandInt()%(maxInputs-minInputs+1) + minInputs
 		coins, err := createAndSaveCoinV1s(100, 0, keySet.PrivateKey, pubKey, dummyDB)
 		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
@@ -420,7 +421,7 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 
 		r := common.RandInt() % (100 - numOfInputs)
 
-		inputCoins := coins[r:r+numOfInputs]
+		inputCoins := coins[r : r+numOfInputs]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, numOfOutputs)
 		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
@@ -432,7 +433,7 @@ func TestTxVersion1_ValidateTransaction(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -448,7 +449,7 @@ func TestTxVersion1_InputCoinReplication(t *testing.T) {
 	pubKey, err := new(operation.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	assert.Equal(t, nil, err, "Cannot parse public key")
 
-	for i:=0; i< numTests; i++ {
+	for i := 0; i < numTests; i++ {
 		coins, err := createAndSaveCoinV1s(100, 2, keySet.PrivateKey, pubKey, dummyDB)
 		assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
@@ -482,7 +483,7 @@ func TestTxVersion1_InputCoinReplication(t *testing.T) {
 		err = tx.proveAndSignCore(txPrivacyParams, paymentWitnessParamPtr)
 		assert.Equal(t, nil, err, "proveAndSignCore returns an error: %v")
 
-		res, err := tx.ValidateSanityData(nil,nil,nil,0)
+		res, err := tx.ValidateSanityData(nil, nil, nil, 0)
 		assert.Equal(t, false, res)
 		if res {
 			assert.Equal(t, true, bytes.Equal(paymentWitnessParamPtr.InputCoins[1].Bytes(), paymentWitnessParamPtr.InputCoins[0].Bytes()))
@@ -501,7 +502,7 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 	coins, err := createAndSaveCoinV1s(numTests*50, 0, keySet.PrivateKey, pubKey, dummyDB)
 	assert.Equal(t, nil, err, "createAndSaevCoinV1s returns an error: %v", err)
 
-	for i:=0;i<numTests;i++ {
+	for i := 0; i < numTests; i++ {
 		//create 2 transactions
 		tx1 := new(Tx)
 		tx2 := new(Tx)
@@ -517,7 +518,7 @@ func TestTxVersion1_BulletProofCommitmentConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx1.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx1.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -592,7 +593,7 @@ func TestTxVersion1_SerialNumberProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx1.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx1.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -665,7 +666,7 @@ func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx1.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx1.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -710,7 +711,7 @@ func TestTxVersion1_OneOutOfManyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx2.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx2.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, false, res)
 	}
@@ -744,7 +745,7 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx1.ValidateTransaction(false, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx1.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 
@@ -777,7 +778,7 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 		assert.Equal(t, true, ok, "cannot parse proof")
 
 		//check that the SNProof has changed
-		if len(oldSNNoPrivacyProof) > 0{
+		if len(oldSNNoPrivacyProof) > 0 {
 			assert.Equal(t, false, bytes.Equal(oldSNNoPrivacyProof[0].Bytes(), proof.GetSerialNumberNoPrivacyProof()[0].Bytes()))
 			proof.SetSerialNumberNoPrivacyProof(oldSNNoPrivacyProof)
 		}
@@ -791,7 +792,7 @@ func TestTxVersion1_SerialNumberNoPrivacyProofConsistency(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res) //This should fail
 
-		res, _, err = tx2.ValidateTransaction(false, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx2.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		//assert.Equal(t, nil, err, "ValidateTransaction returns an error: %v", err)
 		assert.Equal(t, true, res)
 	}
@@ -812,7 +813,7 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 	for i := 0; i < numTests; i++ {
 		//create 2 transactions
 		tx := new(Tx)
-		inputCoins := coins[i*10 : i*10 + 10]
+		inputCoins := coins[i*10 : i*10+10]
 
 		_, txPrivacyParams, err := createTxPrivacyInitParams(keySet, inputCoins, true, 1)
 		assert.Equal(t, nil, err, "createTxPrivacyInitParams returns an error: %v", err)
@@ -839,7 +840,6 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 		proof, ok := tx.Proof.(*zkp.PaymentProof)
 		assert.Equal(t, true, ok, "cannot parse payment proof")
 
-
 		cmOutputValueSum := proof.GetCommitmentOutputValue()
 		cmInputValues := proof.GetCommitmentInputValue()
 		cmInputSND := proof.GetCommitmentInputSND()
@@ -861,7 +861,6 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 		serialNumberProof[0] = tmpSNProof
 		proof.SetSerialNumberProof(serialNumberProof)
 
-
 		tx.SetProof(proof)
 
 		tx.Sig = nil
@@ -873,72 +872,72 @@ func TestTxVersion1_OutputTampered(t *testing.T) {
 		assert.Equal(t, nil, err, "ValidateSanityData returns an error: %v", err)
 		assert.Equal(t, true, res)
 
-		res, _, err = tx.ValidateTransaction(true, dummyDB, dummyDB, 0, &common.PRVCoinID, false, false)
+		res, _, err = tx.ValidateTransaction(nil, dummyDB, dummyDB, 0, &common.PRVCoinID)
 		assert.Equal(t, true, res, err)
 
 	}
 }
 
-func testTxV1JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T){
+func testTxV1JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T) {
 	someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
-	for _,theInvalidTx := range someInvalidTxs{
+	for _, theInvalidTx := range someInvalidTxs {
 		txSpecific, ok := theInvalidTx.(*Tx)
-		if !ok{
+		if !ok {
 			fmt.Println("Skipping a transaction from wrong version")
 			continue
 		}
 		// look for potential panics by calling verify
 		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
 		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		if !isSane{
+		if !isSane {
 			continue
 		}
-		isValid, _ := txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		if !isValid{
+		isValid, _ := txSpecific.ValidateTxByItself(nil, db, nil, nil, shardID, nil, nil)
+		if !isValid {
 			continue
 		}
 		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 
-func testTxTokenV1JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *testing.T){
+func testTxTokenV1JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *testing.T) {
 	someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
-	for _,theInvalidTx := range someInvalidTxs{
+	for _, theInvalidTx := range someInvalidTxs {
 		txSpecific, ok := theInvalidTx.(*TxToken)
-		if !ok{
+		if !ok {
 			fmt.Println("Skipping a transaction from wrong version")
 			continue
 		}
 		// look for potential panics by calling verify
 		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
 		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		if !isSane{
+		if !isSane {
 			continue
 		}
-		isValid, _ := txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
-		if !isValid{
+		isValid, _ := txSpecific.ValidateTxByItself(nil, db, nil, nil, shardID, nil, nil)
+		if !isValid {
 			continue
 		}
 		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 
-func getRandomDigit() rune{
+func getRandomDigit() rune {
 
 	ind := RandInt() % 10
-	return rune(int(rune('0'))+ind)
+	return rune(int(rune('0')) + ind)
 }
 
-func getRandomLetter() rune{
+func getRandomLetter() rune {
 	ind := RandInt() % 52
-	if ind < 26{
-		return rune(int(rune('A'))+ind)
-	}else{
-		return rune(int(rune('a'))+ind-26)
+	if ind < 26 {
+		return rune(int(rune('A')) + ind)
+	} else {
+		return rune(int(rune('a')) + ind - 26)
 	}
 }
 
-func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) []metadata.Transaction{
+func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) []metadata.Transaction {
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
 	reconstructedTx := &Tx{}
@@ -950,43 +949,42 @@ func getCorruptedJsonDeserializedTxs(tx *Tx, maxJsonChanges int, t *testing.T) [
 	// json bytes are readable strings
 	// we try to malleify a letter / digit
 	// if that char is part of a key then it's equivalent to deleting that attribute
-	for i:=0; i<maxJsonChanges; i++{
+	for i := 0; i < maxJsonChanges; i++ {
 		// let the changes stack up many times to exhaust more cases
 		s := string(jsonBytesAgain)
 		theRunes := []rune(s)
 		corruptedIndex := RandInt() % len(theRunes)
-		for j:=maxTries;j>0;j--{
-			if j==0{
-				fmt.Printf("Strange letterless TX with json form : %s\n",s)
+		for j := maxTries; j > 0; j-- {
+			if j == 0 {
+				fmt.Printf("Strange letterless TX with json form : %s\n", s)
 				panic("End")
 			}
-			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]){
+			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]) {
 				break
 			}
 			// not letter -> retry
 			corruptedIndex = RandInt() % len(theRunes)
 		}
 		// replace this letter with a random one
-		if unicode.IsLetter(theRunes[corruptedIndex]){
+		if unicode.IsLetter(theRunes[corruptedIndex]) {
 			theRunes[corruptedIndex] = getRandomLetter()
-		}else{
+		} else {
 			theRunes[corruptedIndex] = getRandomDigit()
 		}
 
-
 		// reconstructedTx, err = NewTransactionFromJsonBytes([]byte(string(theRunes)))
 		err := json.Unmarshal([]byte(string(theRunes)), reconstructedTx)
-		if err != nil{
+		if err != nil {
 			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
 		}
-		result = append(result,reconstructedTx)
+		result = append(result, reconstructedTx)
 	}
 	// fmt.Printf("Made %d dummy faulty txs\n",len(result))
 	return result
 }
 
-func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *testing.T) []tx_generic.TransactionToken{
+func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int, t *testing.T) []tx_generic.TransactionToken {
 	jsonBytes, err := json.Marshal(tx)
 	assert.Equal(t, nil, err)
 	reconstructedTx := &TxToken{}
@@ -996,36 +994,35 @@ func getCorruptedJsonDeserializedTokenTxs(tx *TxToken, maxJsonChanges int,t *tes
 	assert.Equal(t, true, bytes.Equal(jsonBytes, jsonBytesAgain))
 	var result []tx_generic.TransactionToken
 
-	for i:=0; i<maxJsonChanges; i++{
+	for i := 0; i < maxJsonChanges; i++ {
 		s := string(jsonBytesAgain)
 		theRunes := []rune(s)
 		corruptedIndex := RandInt() % len(theRunes)
-		for j:=maxTries;j>0;j--{
-			if j==0{
-				fmt.Printf("Strange letterless TX with json form : %s\n",s)
+		for j := maxTries; j > 0; j-- {
+			if j == 0 {
+				fmt.Printf("Strange letterless TX with json form : %s\n", s)
 				panic("End")
 			}
-			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]){
+			if unicode.IsLetter(theRunes[corruptedIndex]) || unicode.IsDigit(theRunes[corruptedIndex]) {
 				break
 			}
 			// not letter -> retry
 			corruptedIndex = RandInt() % len(theRunes)
 		}
 		// replace this letter with a random one
-		if unicode.IsLetter(theRunes[corruptedIndex]){
+		if unicode.IsLetter(theRunes[corruptedIndex]) {
 			theRunes[corruptedIndex] = getRandomLetter()
-		}else{
+		} else {
 			theRunes[corruptedIndex] = getRandomDigit()
 		}
 
-
 		// reconstructedTx, err = NewTransactionTokenFromJsonBytes([]byte(string(theRunes)))
 		err := json.Unmarshal([]byte(string(theRunes)), reconstructedTx)
-		if err != nil{
+		if err != nil {
 			// fmt.Printf("A byte array failed to deserialize\n")
 			continue
 		}
-		result = append(result,reconstructedTx)
+		result = append(result, reconstructedTx)
 	}
 	return result
 }

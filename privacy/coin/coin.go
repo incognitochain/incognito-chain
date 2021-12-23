@@ -24,6 +24,7 @@ type Coin interface {
 	GetSharedRandom() *operation.Scalar
 	GetSharedConcealRandom() *operation.Scalar
 	GetAssetTag() *operation.Point
+	GetCoinID() [operation.Ed25519KeySize]byte
 
 	// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
 	// Param keyset: (private key, payment address, read only key)
@@ -71,7 +72,7 @@ type PlainCoin interface {
 	ParseKeyImageWithPrivateKey(key.PrivateKey) (*operation.Point, error)
 	ParsePrivateKeyOfCoin(key.PrivateKey) (*operation.Scalar, error)
 
-	ConcealOutputCoin(additionalData interface{}) error
+	ConcealOutputCoin(additionalData *operation.Point) error
 
 	Bytes() []byte
 	SetBytes([]byte) error

@@ -417,7 +417,7 @@ func (chain *BeaconChain) GetSigningCommittees(
 	committees []incognitokey.CommitteePublicKey,
 	blockVersion int,
 ) []incognitokey.CommitteePublicKey {
-	return committees
+	return append([]incognitokey.CommitteePublicKey{}, committees...)
 }
 
 func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {

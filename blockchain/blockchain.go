@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/prque"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -34,7 +35,7 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
@@ -551,7 +552,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 
 		publicKey := coinDB.GetPublicKey()
 		// we do not use burned coins since they will reduce the privacy level of the transaction.
-		if wallet.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
 			i--
 			continue
 		}

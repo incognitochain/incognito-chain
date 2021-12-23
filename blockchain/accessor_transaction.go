@@ -676,7 +676,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 	}
 	var err error
 	bridgeStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
-	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.BeaconHeight, shardBlock.Header.Height)
 	err = view.fetchTxViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
@@ -859,6 +859,9 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 		if err != nil {
 			return err
 		}
+		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
+			continue
+		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
 			// outputs
@@ -922,6 +925,9 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		if err != nil {
 			return err
 		}
+		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
+			continue
+		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
 			// outputs
@@ -964,7 +970,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *types.ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
-	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.BeaconHeight, shardBlock.Header.Height)
 	err := view.fetchCrossTransactionViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock ", err)
