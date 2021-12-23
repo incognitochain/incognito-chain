@@ -93,7 +93,9 @@ type CacheConfig struct {
 }
 
 func NewCacheConfig(config *Config) (CacheConfig, error) {
+
 	trieJournal := make(map[int]string)
+
 	for chainID, db := range config.DataBase {
 		filePath := db.GetPath() + "/metadata.bin"
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -104,14 +106,12 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 		}
 		trieJournal[chainID] = filePath
 	}
-	return CacheConfig{
-		triegc:               prque.New(nil),
-		trieJournalPath:      trieJournal,
-		trieJournalCacheSize: trieJournalCacheSize,
-		blockTriesInMemory:   BlockTriesInMemory,
-		trieNodeLimit:        trieNodeLimit,
-		trieImgsLimit:        trieImgsLimit,
-	}, nil
+
+	cacheConfig := configCache16GB
+	cacheConfig.triegc = prque.New(nil)
+	cacheConfig.trieJournalPath = trieJournal
+
+	return cacheConfig, nil
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -387,12 +387,18 @@ func (blockchain *BlockChain) initBeaconState() error {
 }
 
 func (bc *BlockChain) Stop() {
+
 	Logger.log.Info("Blockchain Stop")
+
 	if ShardSyncMode == FAST_SYNC_MODE {
+
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
+
 		for i, shardChain := range bc.ShardChain {
+
 			bc.ShardChain[i].insertLock.Lock()
 			defer bc.ShardChain[i].insertLock.Unlock()
+
 			shardBestState := shardChain.GetBestState()
 			shardID := shardBestState.ShardID
 			db := bc.GetShardChainDatabase(shardID)
@@ -401,8 +407,8 @@ func (bc *BlockChain) Stop() {
 			featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
 			rewardTrieDB := shardBestState.rewardStateDB.Database().TrieDB()
 			slashTrieDB := shardBestState.slashStateDB.Database().TrieDB()
+
 			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
-			// consensus root hash
 
 			for _, view := range shardChain.GetAllView() {
 				shardView := view.(*ShardBestState)
@@ -429,6 +435,7 @@ func (bc *BlockChain) Stop() {
 			}
 
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
+
 			for !bc.cacheConfig.triegc.Empty() {
 				item := bc.cacheConfig.triegc.PopItem().(ShardRootHash)
 				consensusTrieDB.Dereference(item.ConsensusStateDBRootHash)
@@ -437,6 +444,7 @@ func (bc *BlockChain) Stop() {
 				rewardTrieDB.Dereference(item.RewardStateDBRootHash)
 				slashTrieDB.Dereference(item.SlashStateDBRootHash)
 			}
+
 			if size, _ := consensusTrieDB.Size(); size != 0 {
 				Logger.log.Error("Dangling consensus trie nodes after full cleanup")
 			}
@@ -452,6 +460,7 @@ func (bc *BlockChain) Stop() {
 			if size, _ := slashTrieDB.Size(); size != 0 {
 				Logger.log.Error("Dangling slash trie nodes after full cleanup")
 			}
+
 			if bc.cacheConfig.trieJournalPath != nil {
 				if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
 					// the below disk layer is just one => save one time is enough
@@ -463,6 +472,7 @@ func (bc *BlockChain) Stop() {
 				}
 			}
 		}
+
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
 	}
 }

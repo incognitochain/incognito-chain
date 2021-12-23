@@ -57,12 +57,26 @@ var (
 )
 
 var (
-	BeaconSyncMode       = NORMAL_SYNC_MODE
-	ShardSyncMode        = FAST_SYNC_MODE
-	BlockTriesInMemory   = uint64(500)
-	trieJournalCacheSize = 32
-	trieNodeLimit        = common.StorageSize(128 * 1024 * 1024)
-	trieImgsLimit        = common.StorageSize(4 * 1024 * 1024)
+	BeaconSyncMode = NORMAL_SYNC_MODE
+	ShardSyncMode  = FAST_SYNC_MODE
+	configCache4GB = CacheConfig{
+		trieJournalCacheSize: 32,
+		blockTriesInMemory:   uint64(500),
+		trieNodeLimit:        common.StorageSize(128 * 1024 * 1024),
+		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
+	configCache8GB = CacheConfig{
+		trieJournalCacheSize: 32,
+		blockTriesInMemory:   uint64(1000),
+		trieNodeLimit:        common.StorageSize(256 * 1024 * 1024),
+		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
+	configCache16GB = CacheConfig{
+		trieJournalCacheSize: 32,
+		blockTriesInMemory:   uint64(2000),
+		trieNodeLimit:        common.StorageSize(1024 * 1024 * 1024),
+		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
 )
 
 const (
