@@ -65,7 +65,7 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 		pairHash     string
 		otaReceiver  string
 		tokenID      string
-		nftID        string
+		AccessOption AccessOption
 		tokenAmount  uint64
 		amplifier    uint
 		MetadataBase metadataCommon.MetadataBase
@@ -114,20 +114,6 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			fields: fields{
 				pairHash: "pair hash",
 				tokenID:  "asdb",
-			},
-			args: args{
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Invalid tokenID",
-			fields: fields{
-				pairHash: "pair hash",
-				tokenID:  tokenHash.String(),
-				nftID:    "abacv",
 			},
 			args: args{
 				chainRetriever: validChainRetriever,
@@ -297,7 +283,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				otaReceiver: validOTAReceiver0,
 				amplifier:   10000,
 				tokenAmount: 200,
-				nftID:       tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: tokenHash,
+				},
 			},
 			args: args{
 				tx:             invalidOtaReceiverShardIDTx,
@@ -315,7 +303,9 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				otaReceiver: validOTAReceiver0,
 				amplifier:   10000,
 				tokenAmount: 200,
-				nftID:       tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: tokenHash,
+				},
 			},
 			args: args{
 				tx:             validTx,
@@ -333,7 +323,7 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 				pairHash:     tt.fields.pairHash,
 				otaReceiver:  tt.fields.otaReceiver,
 				tokenID:      tt.fields.tokenID,
-				nftID:        tt.fields.nftID,
+				AccessOption: tt.fields.AccessOption,
 				tokenAmount:  tt.fields.tokenAmount,
 				amplifier:    tt.fields.amplifier,
 				MetadataBase: tt.fields.MetadataBase,

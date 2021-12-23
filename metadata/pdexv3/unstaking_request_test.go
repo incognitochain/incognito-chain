@@ -69,7 +69,7 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 		MetadataBase    metadataCommon.MetadataBase
 		stakingPoolID   string
 		otaReceivers    map[string]string
-		nftID           string
+		AccessOption    AccessOption
 		unstakingAmount uint64
 	}
 	type args struct {
@@ -135,30 +135,15 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "nftID is invalid",
-			fields: fields{
-				MetadataBase: metadataCommon.MetadataBase{
-					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
-				},
-				stakingPoolID: common.PRVIDStr,
-				nftID:         "abc",
-			},
-			args: args{
-
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
 			name: "nftID is empty",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         common.Hash{}.String(),
+				AccessOption: AccessOption{
+					NftID: &common.Hash{},
+				},
 			},
 			args: args{
 
@@ -175,7 +160,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: "abcd",
 				},
@@ -195,7 +182,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -216,7 +205,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -238,7 +229,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -260,7 +253,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -282,7 +277,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -303,7 +300,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -324,7 +323,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -345,7 +346,9 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
 				},
 				stakingPoolID: common.PRVIDStr,
-				nftID:         nftID.String(),
+				AccessOption: AccessOption{
+					NftID: nftID,
+				},
 				otaReceivers: map[string]string{
 					common.PRVIDStr: validOTAReceiver0,
 					nftID.String():  validOTAReceiver0,
@@ -366,7 +369,7 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 				MetadataBase:    tt.fields.MetadataBase,
 				stakingPoolID:   tt.fields.stakingPoolID,
 				otaReceivers:    tt.fields.otaReceivers,
-				nftID:           tt.fields.nftID,
+				AccessOption:    tt.fields.AccessOption,
 				unstakingAmount: tt.fields.unstakingAmount,
 			}
 			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
@@ -389,7 +392,7 @@ func TestUnstakingRequest_ValidateMetadataByItself(t *testing.T) {
 		MetadataBase    metadataCommon.MetadataBase
 		stakingPoolID   string
 		otaReceivers    map[string]string
-		nftID           string
+		AccessOption    AccessOption
 		unstakingAmount uint64
 	}
 	tests := []struct {
@@ -422,7 +425,7 @@ func TestUnstakingRequest_ValidateMetadataByItself(t *testing.T) {
 				MetadataBase:    tt.fields.MetadataBase,
 				stakingPoolID:   tt.fields.stakingPoolID,
 				otaReceivers:    tt.fields.otaReceivers,
-				nftID:           tt.fields.nftID,
+				AccessOption:    tt.fields.AccessOption,
 				unstakingAmount: tt.fields.unstakingAmount,
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {

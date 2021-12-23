@@ -133,12 +133,13 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid OtaReceiver",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: "123",
 			},
 			args: args{
-
 				chainRetriever: validChainRetriever,
 			},
 			want:    false,
@@ -148,8 +149,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Not burn tx",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -163,8 +166,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Burnt Token != tokenID",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -179,8 +184,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Token amount = 0",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -195,13 +202,14 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "requet.tokenAmount != burnCoin.GetValue()",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
-				tx: notMactchAmountTx1,
-
+				tx:             notMactchAmountTx1,
 				chainRetriever: validChainRetriever,
 			},
 			want:    false,
@@ -211,8 +219,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "normatl tx && tokenID != prv",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -227,8 +237,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "custom token tx && tokenID == prv",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -243,8 +255,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "invalid tx type",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -258,8 +272,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid input",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
