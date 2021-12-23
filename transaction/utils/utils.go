@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func NewCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, error) {
@@ -18,7 +17,7 @@ func NewCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 			return nil, err
 		}
 		// If previously created coin is burning address
-		if wallet.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(c.GetPublicKey().ToBytesS()) {
 			return c, nil // No need to check db
 		}
 		// Onetimeaddress should be unique

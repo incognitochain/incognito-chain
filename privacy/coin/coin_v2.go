@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -132,15 +133,15 @@ func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.
 // Conceal the amount of coin using the publicView of the receiver
 //
 //	- AdditionalData: must be the publicView of the receiver
-func (c *CoinV2) ConcealOutputCoin(additionalData interface{}) error {
+func (c *CoinV2) ConcealOutputCoin(additionalData *operation.Point) error {
 	// If this coin is already encrypted or it is created by other person then cannot conceal
 	if c.IsEncrypted() || c.GetSharedConcealRandom() == nil {
 		return nil
 	}
-	publicView, ok := additionalData.(*operation.Point)
-	if !ok {
-		return errors.New("Cannot conceal CoinV2 without receiver view key")
-	}
+	publicView := additionalData
+	// if !ok {
+	// 	return errors.New("Cannot conceal CoinV2 without receiver view key")
+	// }
 
 	rK := new(operation.Point).ScalarMult(publicView, c.GetSharedConcealRandom()) // rK = sharedConcealRandom * publicView
 
@@ -299,6 +300,13 @@ func (c CoinV2) GetShardID() (uint8, error) {
 }
 func (c CoinV2) GetCoinDetailEncrypted() []byte {
 	return c.GetAmount().ToBytesS()
+}
+
+func (c *CoinV2) GetCoinID() [operation.Ed25519KeySize]byte {
+	if c.publicKey != nil {
+		return c.publicKey.ToBytes()
+	}
+	return [operation.Ed25519KeySize]byte{}
 }
 
 func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }

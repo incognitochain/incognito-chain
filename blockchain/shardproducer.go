@@ -392,7 +392,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 			curView,
 			bView,
 			maxSize,
-			24*time.Second,
+			blockCreationLeftOver*4,
 			blockCreationLeftOver,
 		)
 	}

@@ -1,8 +1,9 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -22,19 +23,21 @@ func NewBlkPool(name string, IsOutdatedBlk func(interface{}) bool) *BlkPool {
 	pool.validationDataByHash = make(map[string]string)
 	go pool.Start()
 
-	//remove outdated block in pool, only trigger if pool has more than 1000 blocks
+	// remove outdated block in pool, only trigger if pool has more than 1000 blocks
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
 		for {
 			<-ticker.C
 			//remove block from blkPoolByHash
-			if pool.GetPoolSize() > 100 {
+			outdate := []types.BlockPoolInterface{}
+			if pool.GetPoolSize() > 500 {
 				blkList := pool.GetBlockList()
 				for _, blk := range blkList {
 					if IsOutdatedBlk(blk) {
-						pool.RemoveBlock(blk)
+						outdate = append(outdate, blk)
 					}
 				}
+				pool.RemoveBlocks(outdate)
 			}
 
 			//remove prehash block pointer if it point to nothing
@@ -137,6 +140,15 @@ func (pool *BlkPool) HasHash(hash common.Hash) bool {
 		res <- ok
 	}
 	return <-res
+}
+
+func (pool *BlkPool) RemoveBlocks(blocks []types.BlockPoolInterface) {
+	pool.action <- func() {
+		for _, blk := range blocks {
+			delete(pool.blkPoolByHash, blk.Hash().String())
+			delete(pool.validationDataByHash, blk.GetPrevHash().String())
+		}
+	}
 }
 
 func (pool *BlkPool) RemoveBlock(block types.BlockPoolInterface) {
