@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
+	"github.com/incognitochain/incognito-chain/privacy"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -59,7 +60,7 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		MetadataBase metadataCommon.MetadataBase
 		tokenID      string
 		otaReceiver  string
-		nftID        string
+		AccessOption AccessOption
 		tokenAmount  uint64
 	}
 	type args struct {
@@ -114,24 +115,12 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid NftID",
-			fields: fields{
-				tokenID: tokenHash.String(),
-				nftID:   "asbc",
-			},
-			args: args{
-
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
 			name: "Empty NftID",
 			fields: fields{
 				tokenID: tokenHash.String(),
-				nftID:   common.Hash{}.String(),
+				AccessOption: AccessOption{
+					NftID: &common.Hash{},
+				},
 			},
 			args: args{
 
@@ -288,7 +277,7 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 				MetadataBase: tt.fields.MetadataBase,
 				tokenID:      tt.fields.tokenID,
 				otaReceiver:  tt.fields.otaReceiver,
-				nftID:        tt.fields.nftID,
+				AccessOption: tt.fields.AccessOption,
 				tokenAmount:  tt.fields.tokenAmount,
 			}
 			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
@@ -311,8 +300,9 @@ func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 		MetadataBase metadataCommon.MetadataBase
 		tokenID      string
 		otaReceiver  string
-		nftID        string
-		tokenAmount  uint64
+		otaReceivers map[common.Hash]privacy.OTAReceiver // receive tokens
+		AccessOption
+		tokenAmount uint64
 	}
 	tests := []struct {
 		name   string
@@ -344,7 +334,8 @@ func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 				MetadataBase: tt.fields.MetadataBase,
 				tokenID:      tt.fields.tokenID,
 				otaReceiver:  tt.fields.otaReceiver,
-				nftID:        tt.fields.nftID,
+				otaReceivers: tt.fields.otaReceivers,
+				AccessOption: tt.fields.AccessOption,
 				tokenAmount:  tt.fields.tokenAmount,
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {

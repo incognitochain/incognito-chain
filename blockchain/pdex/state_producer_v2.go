@@ -937,7 +937,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
-			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
+			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
 				if err != nil {
 					return instructions, pairs, err
@@ -1137,7 +1137,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 
 		if !metaData.AccessOption.UseNft() {
-			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
+			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
 				if err != nil {
 					return res, poolPairs, stakingPoolStates, err
@@ -1363,7 +1363,7 @@ func (sp *stateProducerV2) unstaking(
 		}
 		accessOTA := utils.EmptyString
 		if !metaData.AccessOption.UseNft() {
-			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
+			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
 				if err != nil {
 					return res, stakingPoolStates, poolPairStates, err
@@ -1544,7 +1544,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			continue
 		}
 
-		if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err != nil {
+		if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
 			if err != nil {
 				return instructions, pools, err
