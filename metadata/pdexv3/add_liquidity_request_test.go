@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
+	"github.com/incognitochain/incognito-chain/privacy"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -276,26 +278,6 @@ func TestAddLiquidity_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid ota receiver shard id",
-			fields: fields{
-				pairHash:    "pair hash",
-				tokenID:     tokenHash.String(),
-				otaReceiver: validOTAReceiver0,
-				amplifier:   10000,
-				tokenAmount: 200,
-				AccessOption: AccessOption{
-					NftID: tokenHash,
-				},
-			},
-			args: args{
-				tx:             invalidOtaReceiverShardIDTx,
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
 			name: "Valid Input",
 			fields: fields{
 				pairHash:    "pair hash",
@@ -390,6 +372,60 @@ func TestAddLiquidity_ValidateMetadataByItself(t *testing.T) {
 			}
 			if got := al.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("AddLiquidity.ValidateMetadataByItself() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddLiquidityRequest_ValidateTxWithBlockChain(t *testing.T) {
+	type fields struct {
+		poolPairID   string
+		pairHash     string
+		otaReceiver  string
+		otaReceivers map[common.Hash]privacy.OTAReceiver
+		tokenID      string
+		AccessOption AccessOption
+		tokenAmount  uint64
+		amplifier    uint
+		MetadataBase metadataCommon.MetadataBase
+	}
+	type args struct {
+		tx                  metadataCommon.Transaction
+		chainRetriever      metadataCommon.ChainRetriever
+		shardViewRetriever  metadataCommon.ShardViewRetriever
+		beaconViewRetriever metadataCommon.BeaconViewRetriever
+		shardID             byte
+		transactionStateDB  *statedb.StateDB
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &AddLiquidityRequest{
+				poolPairID:   tt.fields.poolPairID,
+				pairHash:     tt.fields.pairHash,
+				otaReceiver:  tt.fields.otaReceiver,
+				otaReceivers: tt.fields.otaReceivers,
+				tokenID:      tt.fields.tokenID,
+				AccessOption: tt.fields.AccessOption,
+				tokenAmount:  tt.fields.tokenAmount,
+				amplifier:    tt.fields.amplifier,
+				MetadataBase: tt.fields.MetadataBase,
+			}
+			got, err := request.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.shardID, tt.args.transactionStateDB)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AddLiquidityRequest.ValidateTxWithBlockChain() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("AddLiquidityRequest.ValidateTxWithBlockChain() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -106,38 +107,6 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 			name: "Empty tokenID",
 			fields: fields{
 				tokenID: common.Hash{}.String(),
-			},
-			args: args{
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Empty NftID",
-			fields: fields{
-				tokenID: tokenHash.String(),
-				AccessOption: AccessOption{
-					NftID: &common.Hash{},
-				},
-			},
-			args: args{
-
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Invalid OtaReceiver",
-			fields: fields{
-				tokenID: tokenHash.String(),
-				AccessOption: AccessOption{
-					NftID: nftHash,
-				},
-				otaReceiver: "123",
 			},
 			args: args{
 				chainRetriever: validChainRetriever,
@@ -356,6 +325,54 @@ func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("StakingRequest.ValidateMetadataByItself() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStakingRequest_ValidateTxWithBlockChain(t *testing.T) {
+	type fields struct {
+		MetadataBase metadataCommon.MetadataBase
+		tokenID      string
+		otaReceiver  string
+		otaReceivers map[common.Hash]privacy.OTAReceiver
+		AccessOption AccessOption
+		tokenAmount  uint64
+	}
+	type args struct {
+		tx                  metadataCommon.Transaction
+		chainRetriever      metadataCommon.ChainRetriever
+		shardViewRetriever  metadataCommon.ShardViewRetriever
+		beaconViewRetriever metadataCommon.BeaconViewRetriever
+		shardID             byte
+		transactionStateDB  *statedb.StateDB
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &StakingRequest{
+				MetadataBase: tt.fields.MetadataBase,
+				tokenID:      tt.fields.tokenID,
+				otaReceiver:  tt.fields.otaReceiver,
+				otaReceivers: tt.fields.otaReceivers,
+				AccessOption: tt.fields.AccessOption,
+				tokenAmount:  tt.fields.tokenAmount,
+			}
+			got, err := request.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.shardID, tt.args.transactionStateDB)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("StakingRequest.ValidateTxWithBlockChain() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("StakingRequest.ValidateTxWithBlockChain() = %v, want %v", got, tt.want)
 			}
 		})
 	}

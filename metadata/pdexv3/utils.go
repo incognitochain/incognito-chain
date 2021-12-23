@@ -165,11 +165,11 @@ func (a *AccessOption) IsValid(
 			return fmt.Errorf("invalid NftID %s", a.NftID.String())
 		}
 		ok, err := beaconViewRetriever.IsValidPdexv3NftID(a.NftID.String())
-		if err != nil {
+		if err != nil || !ok {
+			if err == nil {
+				err = fmt.Errorf("NftID %s is not valid", a.NftID.String())
+			}
 			return err
-		}
-		if !ok {
-			return fmt.Errorf("NftID %s is not valid", a.NftID.String())
 		}
 		if a.BurntOTA != nil || a.AccessID != nil {
 			return fmt.Errorf("invalid AccessOTA (%v, %v) when using NftID; expect none", a.BurntOTA, a.AccessID)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
@@ -223,54 +224,6 @@ func TestUnstakingRequest_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "notBurnTx",
-			fields: fields{
-				MetadataBase: metadataCommon.MetadataBase{
-					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
-				},
-				stakingPoolID: common.PRVIDStr,
-				AccessOption: AccessOption{
-					NftID: nftID,
-				},
-				otaReceivers: map[string]string{
-					common.PRVIDStr: validOTAReceiver0,
-					nftID.String():  validOTAReceiver0,
-				},
-				unstakingAmount: 50,
-			},
-			args: args{
-				tx:             notBurnTx,
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "burnToken is not nft",
-			fields: fields{
-				MetadataBase: metadataCommon.MetadataBase{
-					Type: metadataCommon.Pdexv3UnstakingRequestMeta,
-				},
-				stakingPoolID: common.PRVIDStr,
-				AccessOption: AccessOption{
-					NftID: nftID,
-				},
-				otaReceivers: map[string]string{
-					common.PRVIDStr: validOTAReceiver0,
-					nftID.String():  validOTAReceiver0,
-				},
-				unstakingAmount: 50,
-			},
-			args: args{
-				tx:             notMactchTokenIDTx,
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
 			name: "burnAmount is not 1",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
@@ -430,6 +383,52 @@ func TestUnstakingRequest_ValidateMetadataByItself(t *testing.T) {
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("UnstakingRequest.ValidateMetadataByItself() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUnstakingRequest_ValidateTxWithBlockChain(t *testing.T) {
+	type fields struct {
+		MetadataBase    metadataCommon.MetadataBase
+		stakingPoolID   string
+		otaReceivers    map[string]string
+		AccessOption    AccessOption
+		unstakingAmount uint64
+	}
+	type args struct {
+		tx                  metadataCommon.Transaction
+		chainRetriever      metadataCommon.ChainRetriever
+		shardViewRetriever  metadataCommon.ShardViewRetriever
+		beaconViewRetriever metadataCommon.BeaconViewRetriever
+		shardID             byte
+		transactionStateDB  *statedb.StateDB
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &UnstakingRequest{
+				MetadataBase:    tt.fields.MetadataBase,
+				stakingPoolID:   tt.fields.stakingPoolID,
+				otaReceivers:    tt.fields.otaReceivers,
+				AccessOption:    tt.fields.AccessOption,
+				unstakingAmount: tt.fields.unstakingAmount,
+			}
+			got, err := request.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.shardID, tt.args.transactionStateDB)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UnstakingRequest.ValidateTxWithBlockChain() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("UnstakingRequest.ValidateTxWithBlockChain() = %v, want %v", got, tt.want)
 			}
 		})
 	}
