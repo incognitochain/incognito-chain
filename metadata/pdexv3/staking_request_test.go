@@ -331,6 +331,9 @@ func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 }
 
 func TestStakingRequest_ValidateTxWithBlockChain(t *testing.T) {
+	initTestParam(t)
+	nftID, err := common.Hash{}.NewHashFromStr("123456")
+	assert.Nil(t, err)
 	type fields struct {
 		MetadataBase metadataCommon.MetadataBase
 		tokenID      string
@@ -354,7 +357,21 @@ func TestStakingRequest_ValidateTxWithBlockChain(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "NftID and AccessID exist at same time",
+			fields: fields{
+				MetadataBase: metadataCommon.MetadataBase{
+					Type: metadataCommon.Pdexv3StakingRequestMeta,
+				},
+				AccessOption: AccessOption{
+					NftID:    nftID,
+					AccessID: nftID,
+				},
+			},
+			args:    args{},
+			want:    false,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

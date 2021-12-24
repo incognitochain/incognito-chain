@@ -164,15 +164,15 @@ func (a *AccessOption) IsValid(
 		if a.NftID.IsZeroValue() {
 			return fmt.Errorf("invalid NftID %s", a.NftID.String())
 		}
+		if a.BurntOTA != nil || a.AccessID != nil {
+			return fmt.Errorf("invalid AccessOTA (%v, %v) when using NftID; expect none", a.BurntOTA, a.AccessID)
+		}
 		ok, err := beaconViewRetriever.IsValidPdexv3NftID(a.NftID.String())
 		if err != nil || !ok {
 			if err == nil {
 				err = fmt.Errorf("NftID %s is not valid", a.NftID.String())
 			}
 			return err
-		}
-		if a.BurntOTA != nil || a.AccessID != nil {
-			return fmt.Errorf("invalid AccessOTA (%v, %v) when using NftID; expect none", a.BurntOTA, a.AccessID)
 		}
 	} else {
 		shouldValidateAccessReceiver := false
@@ -189,7 +189,7 @@ func (a *AccessOption) IsValid(
 				shouldValidateAccessReceiver = true
 			}
 		}
-		if receivers == nil {
+		if receivers == nil || len(receivers) == 0 {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("OTA receivers missing")))
 		}
 		if shouldValidateAccessReceiver {
@@ -220,7 +220,7 @@ func (a *AccessOption) ValidateOtaReceivers(
 	otaReceivers map[common.Hash]privacy.OTAReceiver,
 	tokenHash common.Hash,
 ) error {
-	if otaReceivers == nil && otaReceiver == utils.EmptyString {
+	if (otaReceivers == nil || len(otaReceivers) == 0) && otaReceiver == utils.EmptyString {
 		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not be null at the same time"))
 	}
 	if otaReceivers != nil && otaReceiver != utils.EmptyString {
