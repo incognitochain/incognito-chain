@@ -781,7 +781,6 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
-	// fmt.Println("debug BackupShardViews", len(allViews))
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
@@ -789,18 +788,20 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
+
 	allViews := []*ShardBestState{}
+
 	b, err := rawdbv2.GetShardBestState(blockchain.GetShardChainDatabase(shardID), shardID)
 	if err != nil {
 		Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBestState error %+v", shardID, err)
 		return err
 	}
-	err = json.Unmarshal(b, &allViews)
-	if err != nil {
+
+	if err = json.Unmarshal(b, &allViews); err != nil {
 		Logger.log.Errorf("RestoreShardBestState shardID %+v, Unmarshal views error %+v", shardID, err)
 		return err
 	}
-	// fmt.Println("debug RestoreShardViews", len(allViews))
+
 	blockchain.ShardChain[shardID].multiView.Reset()
 
 	for _, v := range allViews {
@@ -834,11 +835,11 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			}
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
-			panic("Restart shard views fail")
+			return errors.New("Restart shard views fail")
 		}
 	}
 	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
-		panic("unable to restore any shard best state")
+		return errors.New("unable to restore any shard best state")
 	}
 
 	return nil
@@ -894,10 +895,6 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------
-
-// func (blockchain *BlockChain) GetNodeMode() string {
-// 	return blockchain.config.NodeMode
-// }
 
 func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}

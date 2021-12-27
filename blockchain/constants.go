@@ -67,14 +67,14 @@ var (
 	}
 	configCache8GB = CacheConfig{
 		trieJournalCacheSize: 32,
-		blockTriesInMemory:   uint64(1000),
-		trieNodeLimit:        common.StorageSize(256 * 1024 * 1024),
+		blockTriesInMemory:   uint64(2000),
+		trieNodeLimit:        common.StorageSize(512 * 1024 * 1024),
 		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
 	}
 	configCache16GB = CacheConfig{
 		trieJournalCacheSize: 32,
-		blockTriesInMemory:   uint64(2000),
-		trieNodeLimit:        common.StorageSize(1024 * 1024 * 1024),
+		blockTriesInMemory:   uint64(10000),
+		trieNodeLimit:        common.StorageSize(2 * 1024 * 1024 * 1024),
 		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
 	}
 )
