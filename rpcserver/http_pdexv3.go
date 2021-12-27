@@ -536,11 +536,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
 	}
 
-	tokenIDs := []string{
-		poolPairState.Token0ID().String(),
-		poolPairState.Token1ID().String(),
-		common.PRVIDStr,
-		nftIDStr,
+	tokenIDs := []common.Hash{
+		poolPairState.Token0ID(),
+		poolPairState.Token1ID(),
+		common.PRVCoinID,
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(feeReceiver)
@@ -551,19 +550,24 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawLPFee(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address is invalid"))
 	}
 
-	receivers := map[common.Hash]privacy.OTAReceiver{}
-	for _, tokenIDStr := range tokenIDs {
-		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
-		}
-		receiver := privacy.OTAReceiver{}
-		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-		}
-		receivers[*tokenID] = receiver
+	// build fee receivers
+	receivers, err := httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenIDs, keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
+
+	// build nftID receiver
+	txParam, err := bean.NewCreateRawPrivacyTokenTxParam(params)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	nftReceiver, err := httpServer.pdexTxService.GenerateOTAReceivers(
+		[]common.Hash{*nftID}, txParam.SenderKeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	receivers[*nftID] = nftReceiver[*nftID]
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
@@ -2110,12 +2114,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawStakingReward(p
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FeeReceiver is invalid"))
 	}
 
-	tokenIDStrs := []string{
-		nftIDStr,
-	}
-
+	tokenIDs := []common.Hash{}
 	for tokenID := range pool.RewardsPerShare() {
-		tokenIDStrs = append(tokenIDStrs, tokenID.String())
+		tokenIDs = append(tokenIDs, tokenID)
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(feeReceiver)
@@ -2126,19 +2127,24 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3WithdrawStakingReward(p
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address is invalid"))
 	}
 
-	receivers := map[common.Hash]privacy.OTAReceiver{}
-	for _, tokenIDStr := range tokenIDStrs {
-		tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TokenID %v is invalid", tokenIDStr))
-		}
-		receiver := privacy.OTAReceiver{}
-		err = receiver.FromAddress(keyWallet.KeySet.PaymentAddress)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
-		}
-		receivers[*tokenID] = receiver
+	// build fee receivers
+	receivers, err := httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenIDs, keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
+
+	// build nftID receiver
+	txParam, err := bean.NewCreateRawPrivacyTokenTxParam(params)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	nftReceiver, err := httpServer.pdexTxService.GenerateOTAReceivers(
+		[]common.Hash{*nftID}, txParam.SenderKeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	receivers[*nftID] = nftReceiver[*nftID]
 
 	meta, err := metadataPdexv3.NewPdexv3WithdrawalStakingRewardRequest(
 		metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,
