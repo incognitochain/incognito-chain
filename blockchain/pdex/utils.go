@@ -625,7 +625,14 @@ func TradePathFromState(
 	var stakingPoolFees []map[common.Hash]uint64
 
 	nextTokenToSell := sellToken
+	tradePathDupMap := make(map[string]bool)
 	for _, pairID := range tradePath {
+		// reject trade path with duplicate pools
+		if tradePathDupMap[pairID] {
+			return nil, nil, nil, nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains duplicate pool %s", pairID)
+		} else {
+			tradePathDupMap[pairID] = true
+		}
 		if pair, exists := pairs[pairID]; exists {
 			pair = pair.Clone() // work on cloned state in case trade is rejected
 			results = append(results, &pair.state)
