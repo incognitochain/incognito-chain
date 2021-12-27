@@ -8,18 +8,22 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAcceptStaking_FromStringSlice(t *testing.T) {
-	acceptStakingInst := NewAcceptStakingWtihValue(
-		common.PRVCoinID, common.PRVCoinID, common.PRVCoinID, 1, 100,
+	acceptStakingInst := NewAcceptStakingWithValue(
+		common.PRVCoinID, common.PRVCoinID, 1, 100, validAccessOTA,
+		metadataPdexv3.AccessOption{
+			NftID: &common.PRVCoinID,
+		},
 	)
 	data, err := json.Marshal(&acceptStakingInst)
 	assert.Nil(t, err)
 
 	type fields struct {
-		nftID         common.Hash
+		metadataPdexv3.AccessOption
 		stakingPoolID common.Hash
 		liquidity     uint64
 		shardID       byte
@@ -67,7 +71,9 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 			},
 			wantErr: false,
 			fieldsAfterProcess: fields{
-				nftID:         common.PRVCoinID,
+				AccessOption: metadataPdexv3.AccessOption{
+					NftID: &common.PRVCoinID,
+				},
 				stakingPoolID: common.PRVCoinID,
 				txReqID:       common.PRVCoinID,
 				liquidity:     100,
@@ -78,7 +84,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AcceptStaking{
-				nftID:         tt.fields.nftID,
+				AccessOption:  tt.fields.AccessOption,
 				stakingPoolID: tt.fields.stakingPoolID,
 				liquidity:     tt.fields.liquidity,
 				shardID:       tt.fields.shardID,
@@ -88,8 +94,8 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 				t.Errorf("AcceptStaking.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr {
-				if !reflect.DeepEqual(tt.fieldsAfterProcess.nftID, a.nftID) {
-					t.Errorf("nftID got = %v, err %v", a.nftID, tt.fieldsAfterProcess.nftID)
+				if !reflect.DeepEqual(tt.fieldsAfterProcess.AccessOption, a.AccessOption) {
+					t.Errorf("nftID got = %v, err %v", a.AccessOption, tt.fieldsAfterProcess.AccessOption)
 					return
 				}
 				if !reflect.DeepEqual(tt.fieldsAfterProcess.stakingPoolID, a.stakingPoolID) {

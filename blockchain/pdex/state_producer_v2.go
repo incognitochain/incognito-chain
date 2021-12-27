@@ -1297,7 +1297,7 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		inst, err := instruction.NewAcceptStakingWtihValue(
+		inst, err := instruction.NewAcceptStakingWithAccessID(
 			*stakingTokenHash, txReqID, shardID, metaData.TokenAmount(), accessOTA,
 			metaData.AccessOption, accessID,
 		).StringSlice()
