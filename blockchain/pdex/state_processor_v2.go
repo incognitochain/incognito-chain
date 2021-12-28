@@ -292,7 +292,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 			waitingContribution.TxReqID().String(),
-			waitingContribution.AccessOTA(),
+			matchAndReturnAddLiquidity.AccessOTA(),
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
