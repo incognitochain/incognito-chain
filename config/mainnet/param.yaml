@@ -78,3 +78,4 @@ pdex_param:
     mint_nft_require_amount: 100
     max_orders_per_nft: 10
     auto_withdraw_order_limit_amount: 30
+    min_prv_reserve_trading_rate: 10000000000000
