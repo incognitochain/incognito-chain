@@ -619,3 +619,57 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingPRVBEP20Req(params
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPLGReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningPLGRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		false,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPLGRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPLGReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPLGForDepositToSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningPLGForDepositToSCRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		false,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPLGForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPLGForDepositToSCReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+	return sendResult, nil
+}

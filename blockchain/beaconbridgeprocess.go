@@ -54,6 +54,10 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 
 		case strconv.Itoa(metadata.BurningBSCConfirmMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.BSCPrefix)
+
+		case strconv.Itoa(metadata.BurningPLGconfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.PLGPrefix)
+
 		}
 		if err != nil {
 			return err

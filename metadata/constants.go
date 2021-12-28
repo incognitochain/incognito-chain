@@ -148,12 +148,12 @@ const (
 	// incognito mode for polygon
 	IssuingPLGRequestMeta  = 327
 	IssuingPLGResponseMeta = 328
-	BurningPLGCRequestMeta = 329
-	BurningPLGConfirmMeta  = 153
+	BurningPLGRequestMeta = 329
+	BurningPLGconfirmMeta  = 153
 
 	// pPLG ( Polygon )
-	BurningPPLGForDepositToSCRequestMeta = 330
-	BurningPPLGConfirmForDepositToSCMeta = 154
+	BurningPLGForDepositToSCRequestMeta = 330
+	BurningPLGConfirmForDepositToSCMeta = 154
 )
 
 var minerCreatedMetaTypes = []int{

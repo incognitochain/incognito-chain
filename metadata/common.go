@@ -79,6 +79,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &BurningRequest{}
 	case BurningPBSCRequestMeta:
 		md = &BurningRequest{}
+	case BurningPLGRequestMeta:
+		md = &BurningRequest{}
+	case BurningPLGForDepositToSCRequestMeta: 
+		md = &BurningRequest{}
 	case BurningPRVBEP20RequestMeta:
 		md = &BurningRequest{}
 	case BurningPRVERC20RequestMeta:
@@ -228,6 +232,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningBSCConfirmMeta),
 	strconv.Itoa(BurningPRVERC20ConfirmMeta),
 	strconv.Itoa(BurningPRVBEP20ConfirmMeta),
+	strconv.Itoa(BurningPLGconfirmMeta),
+	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {
@@ -317,6 +323,8 @@ func buildMetaInfo() {
 		BurningForDepositToSCRequestMeta,
 		BurningForDepositToSCRequestMetaV2,
 		ContractingRequestMeta,
+		BurningPLGRequestMeta,
+		BurningPLGForDepositToSCRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNormal,

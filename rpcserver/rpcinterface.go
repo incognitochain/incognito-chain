@@ -183,6 +183,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningBSCRequest:        (*HttpServer).handleCreateAndSendBurningBSCRequest,
 	createAndSendBurningPRVERC20Request:   (*HttpServer).handleCreateAndSendBurningPRVERC20Request,
 	createAndSendBurningPRVBEP20Request:   (*HttpServer).handleCreateAndSendBurningPRVBEP20Request,
+	createAndSendBurningPLGRequest:		   (*HttpServer).handleCreateAndSendBurningPLGRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -193,6 +194,7 @@ var HttpHandler = map[string]httpHandler{
 	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 	getPRVERC20BurnProof:     (*HttpServer).handleGetPRVERC20BurnProof,
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
+	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -293,8 +295,10 @@ var HttpHandler = map[string]httpHandler{
 
 	// incognnito mode for sc
 	getBurnProofForDepositToSC:                  (*HttpServer).handleGetBurnProofForDepositToSC,
+	getBurnPLGProofForDepositToSC:				 (*HttpServer).handleGetBurnPLGProofForDepositToSC,
 	createAndSendBurningForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
 	createAndSendBurningForDepositToSCRequestV2: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
+	createAndSendBurningPLGForDepositToSCRequest:(*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
 
 	//new pool info
 	getSyncStats:          (*HttpServer).hanldeGetSyncStats,

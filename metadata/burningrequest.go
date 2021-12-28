@@ -90,7 +90,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch &&
 		(bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 || 
 		bReq.Type == BurningPBSCRequestMeta || bReq.Type == BurningPRVERC20RequestMeta || 
-		bReq.Type == BurningPRVBEP20RequestMeta ) {
+		bReq.Type == BurningPRVBEP20RequestMeta || bReq.Type == BurningPLGRequestMeta ||
+		bReq.Type == BurningPLGForDepositToSCRequestMeta ) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
@@ -106,7 +107,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
 	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 || 
 		   bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta ||
-		   bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta 
+		   bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta ||
+		   bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

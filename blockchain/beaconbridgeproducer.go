@@ -72,9 +72,19 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			newInst = [][]string{burningConfirm}
 			
 		case metadata.BurningPRVBEP20RequestMeta:
-			 burningConfirm := []string{}
-			 burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
-			 newInst = [][]string{burningConfirm}
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningPLGRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGconfirmMeta, inst, beaconHeight, common.PLGPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningPLGForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmForDepositToSCMeta, inst, beaconHeight, common.PLGPrefix)
+			newInst = [][]string{burningConfirm}
 
 		default:
 			continue
