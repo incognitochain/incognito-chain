@@ -688,40 +688,46 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	}
 	// Try add tx in to mempool of node
 	hash := tx.Hash()
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	if int(sID) >= len(txService.BlockChain.ShardChain) {
+		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("ShardID %v of tx %v is invalid", sID, hash))
+	}
+	sChain := txService.BlockChain.ShardChain[sID]
+	sView := sChain.GetBestState()
 	if txService.BlockChain.UsingNewPool() {
-		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if int(sID) < len(txService.BlockChain.ShardChain) {
-			sChain := txService.BlockChain.ShardChain[sID]
-			if sChain != nil {
-				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
-				if isDoubleSpend {
-					if !canReplaceOldTx {
-						return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
-					}
+		if sChain != nil {
+			isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
+			if isDoubleSpend {
+				if !canReplaceOldTx {
+					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
 				}
+			}
 
-				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
-				if err == nil {
-					valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
-					tx.SetValidationEnv(valEnv)
-					ok, e := sChain.TxsVerifier.FullValidateTransactions(
-						txService.BlockChain,
-						sView,
-						bcView,
-						[]metadata.Transaction{tx},
-					)
-					if (!ok) || (e != nil) {
-						return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
-					}
-				} else {
-					return nil, nil, byte(0), NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+			if err == nil {
+				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
+				tx.SetValidationEnv(valEnv)
+				ok, e := sChain.TxsVerifier.FullValidateTransactions(
+					txService.BlockChain,
+					sView,
+					bcView,
+					[]metadata.Transaction{tx},
+				)
+				if (!ok) || (e != nil) {
+					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
 				}
 			} else {
-				Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
+				return nil, nil, byte(0), NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
 			}
+		} else {
+			Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
 		}
 	} else {
+		txDB := sView.GetCopiedTransactionStateDB()
+		err := tx.LoadData(txDB)
+		if err != nil {
+			Logger.log.Errorf("Validate tx %v return err %v", hash, err)
+		}
 		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(tx, beaconHeigh)
 		if err != nil {
 			Logger.log.Errorf("Send Raw Transaction Error, try add tx into mempool of node: %+v", err)
