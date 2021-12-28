@@ -2,6 +2,7 @@ package portal
 
 import (
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
@@ -151,32 +152,32 @@ func NewPortalManager() *PortalManager {
 	}
 
 	portalInstProcessorV4 := map[int]portalprocessv4.PortalInstructionProcessorV4{
-		metadata.PortalV4ShieldingRequestMeta: &portalprocessv4.PortalShieldingRequestProcessor{
+		metadataCommon.PortalV4ShieldingRequestMeta: &portalprocessv4.PortalShieldingRequestProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalV4UnshieldingRequestMeta: &portalprocessv4.PortalUnshieldRequestProcessor{
+		metadataCommon.PortalV4UnshieldingRequestMeta: &portalprocessv4.PortalUnshieldRequestProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalV4UnshieldBatchingMeta: &portalprocessv4.PortalUnshieldBatchingProcessor{
+		metadataCommon.PortalV4UnshieldBatchingMeta: &portalprocessv4.PortalUnshieldBatchingProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalV4FeeReplacementRequestMeta: &portalprocessv4.PortalFeeReplacementRequestProcessor{
+		metadataCommon.PortalV4FeeReplacementRequestMeta: &portalprocessv4.PortalFeeReplacementRequestProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalV4SubmitConfirmedTxMeta: &portalprocessv4.PortalSubmitConfirmedTxProcessor{
+		metadataCommon.PortalV4SubmitConfirmedTxMeta: &portalprocessv4.PortalSubmitConfirmedTxProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalV4ConvertVaultRequestMeta: &portalprocessv4.PortalConvertVaultRequestProcessor{
+		metadataCommon.PortalV4ConvertVaultRequestMeta: &portalprocessv4.PortalConvertVaultRequestProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},

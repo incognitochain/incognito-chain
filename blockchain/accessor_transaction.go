@@ -46,7 +46,6 @@ func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin privacy
 	}
 	result, err := outCoin.Decrypt(keySet)
 	if err != nil {
-		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
 		return nil, err
 	}
 	keyImage := result.GetKeyImage()
@@ -717,6 +716,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 					}
 					Logger.log.Info("Store custom token when it is issued", tokenData.PropertyID, tokenData.PropertySymbol, tokenData.PropertyName)
 					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
+					if EnableIndexingCoinByOTAKey {
+						outcoinIndexer.AddTokenID(tokenID)
+					}
 					if err != nil {
 						return err
 					}
