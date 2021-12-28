@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -18,7 +19,7 @@ type IssuingEVMResponse struct {
 	RequestedTxID   common.Hash `json:"RequestedTxID"`
 	UniqTx          []byte      `json:"UniqETHTx"`
 	ExternalTokenID []byte      `json:"ExternalTokenID"`
-	SharedRandom    []byte `json:"SharedRandom,omitempty"`
+	SharedRandom    []byte      `json:"SharedRandom,omitempty"`
 }
 
 type IssuingEVMResAction struct {
@@ -86,7 +87,8 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta) &&
-			instMetaType != strconv.Itoa(IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(IssuingPRVBEP20RequestMeta)) {
+				instMetaType != strconv.Itoa(IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(IssuingPRVBEP20RequestMeta) &&
+				instMetaType != strconv.Itoa(IssuingPLGRequestMeta)) {
 			continue
 		}
 

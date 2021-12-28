@@ -79,9 +79,13 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &BurningRequest{}
 	case BurningPBSCRequestMeta:
 		md = &BurningRequest{}
+	case IssuingPLGRequestMeta:
+		md = &IssuingEVMRequest{}
+	case IssuingPLGResponseMeta:
+		md = &IssuingEVMResponse{}
 	case BurningPLGRequestMeta:
 		md = &BurningRequest{}
-	case BurningPLGForDepositToSCRequestMeta: 
+	case BurningPLGForDepositToSCRequestMeta:
 		md = &BurningRequest{}
 	case BurningPRVBEP20RequestMeta:
 		md = &BurningRequest{}
@@ -293,6 +297,7 @@ func buildMetaInfo() {
 		IssuingBSCResponseMeta,
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
+		IssuingPLGResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 	}
@@ -402,6 +407,7 @@ func buildMetaInfo() {
 		IssuingPRVBEP20RequestMeta,
 		ContractingRequestMeta,
 		InitTokenRequestMeta,
+		IssuingPLGRequestMeta,
 
 		ShardStakingMeta,
 		BeaconStakingMeta,
@@ -493,10 +499,12 @@ func buildMetaInfo() {
 		IssuingPRVBEP20RequestMeta,
 		IssuingPRVERC20RequestMeta,
 		IssuingBSCRequestMeta,
+		IssuingPLGRequestMeta,
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
+		IssuingPLGResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,

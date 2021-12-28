@@ -158,7 +158,8 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingBSCRequestMeta ||
-		iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta {
+		iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta ||
+		iReq.Type == IssuingPLGRequestMeta {
 		return true
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -228,6 +229,10 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		protocol = evmParam.Protocol
 		host = evmParam.Host
 		port = evmParam.Port
+	} else if iReq.Type == IssuingPLGRequestMeta {
+		evmParam := config.Param().PLGParam
+		evmParam.GetFromEnv()
+		host = evmParam.Host
 	} else {
 		return nil, errors.New("[verifyProofAndParseReceipt] invalid metatype")
 	}

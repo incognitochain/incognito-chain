@@ -74,6 +74,8 @@ const (
 	// PRV EVM bridge
 	BridgePRVEVMObjectType = 47
 
+	// Polygon bridge
+	BridgePLGTxObjectType = 48
 )
 
 // Prefix length

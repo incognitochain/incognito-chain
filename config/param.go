@@ -39,6 +39,7 @@ type param struct {
 	EpochParam                       epochParam         `mapstructure:"epoch_param"`
 	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
+	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
 	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
@@ -54,6 +55,7 @@ type param struct {
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	GethParam                        gethParam          `mapstructure:"geth_param"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
+	PLGParam                         plgParam           `mapstructure:"plg_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
@@ -266,5 +268,15 @@ type bscParam struct {
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
 		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
+	}
+}
+
+type plgParam struct {
+	Host string `mapstructure:"host"`
+}
+
+func (plgParam *plgParam) GetFromEnv() {
+	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
+		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
 	}
 }

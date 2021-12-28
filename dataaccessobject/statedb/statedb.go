@@ -2051,7 +2051,6 @@ func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState,
 	return NewBridgeBSCTxState(), false, nil
 }
 
-
 // ================================= PRV EVM (ERC20/BEP20) OBJECT =======================================
 func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState, bool, error) {
 	prvEvmTxState, err := stateDB.getStateObject(BridgePRVEVMObjectType, key)
@@ -2062,4 +2061,16 @@ func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState
 		return prvEvmTxState.GetValue().(*BrigePRVEVMState), true, nil
 	}
 	return NewBrigePRVEVMState(), false, nil
+}
+
+// ================================= BSC bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState, bool, error) {
+	plgTxState, err := stateDB.getStateObject(BridgePLGTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if plgTxState != nil {
+		return plgTxState.GetValue().(*BridgePLGTxState), true, nil
+	}
+	return NewBridgePLGTxState(), false, nil
 }

@@ -136,19 +136,19 @@ const (
 	BurningBSCConfirmMeta  = 253
 
 	// erc20/bep20 for prv token
-	IssuingPRVERC20RequestMeta = 270
+	IssuingPRVERC20RequestMeta  = 270
 	IssuingPRVERC20ResponseMeta = 271
-	IssuingPRVBEP20RequestMeta = 272
+	IssuingPRVBEP20RequestMeta  = 272
 	IssuingPRVBEP20ResponseMeta = 273
-	BurningPRVERC20RequestMeta = 274
+	BurningPRVERC20RequestMeta  = 274
 	BurningPRVERC20ConfirmMeta  = 150
-	BurningPRVBEP20RequestMeta = 275
+	BurningPRVBEP20RequestMeta  = 275
 	BurningPRVBEP20ConfirmMeta  = 151
 
 	// incognito mode for polygon
 	IssuingPLGRequestMeta  = 327
 	IssuingPLGResponseMeta = 328
-	BurningPLGRequestMeta = 329
+	BurningPLGRequestMeta  = 329
 	BurningPLGconfirmMeta  = 153
 
 	// pPLG ( Polygon )
@@ -164,6 +164,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingBSCResponseMeta,
 	IssuingPRVERC20ResponseMeta,
 	IssuingPRVBEP20ResponseMeta,
+	IssuingPLGResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,

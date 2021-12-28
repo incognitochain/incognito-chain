@@ -43,6 +43,9 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadata.IssuingPRVBEP20RequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
+		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
+
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
@@ -324,9 +327,9 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		metaType := tx.GetMetadataType()
 		var err error
 		var reqTxID common.Hash
-		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta || 
+		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
-			metaType == metadata.IssuingPRVBEP20RequestMeta  {
+			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -334,7 +337,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
-			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta {
+			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
+			metaType == metadata.IssuingPLGResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)

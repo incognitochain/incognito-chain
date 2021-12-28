@@ -36,6 +36,7 @@ const (
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
+	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -248,6 +249,10 @@ const (
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError
 	IsPRVEVMTxHashIssuedError
+
+	// Polygon bridge
+	BridgeInsertPLGTxHashIssuedError
+	IsPLGTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -418,7 +423,11 @@ var ErrCodeMessage = map[int]struct {
 
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError: {-15102, "Bridge Insert PRV pegging evm Tx Hash Issued Error"},
-	IsPRVEVMTxHashIssuedError:     {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
+	IsPRVEVMTxHashIssuedError:           {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
+
+	// polygon bridge
+	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
+	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
