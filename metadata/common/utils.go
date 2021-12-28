@@ -96,6 +96,9 @@ func buildMetaInfo() {
 		Pdexv3MintBlockRewardMeta,
 		Pdexv3DistributeStakingRewardMeta,
 		Pdexv3WithdrawStakingRewardResponseMeta,
+		PortalV4ShieldingResponseMeta,
+		PortalV4UnshieldingRequestMeta,
+		PortalV4UnshieldingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNoInput,
