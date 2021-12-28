@@ -80,6 +80,9 @@ func buildMetaInfo() {
 		IssuingPRVBEP20ResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
+
+		Pdexv3MintPDEXGenesisMeta,
+		Pdexv3WithdrawOrderResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNoInput,
@@ -121,7 +124,7 @@ func buildMetaInfo() {
 		Pdexv3WithdrawLPFeeResponseMeta,
 		Pdexv3WithdrawProtocolFeeRequestMeta,
 		Pdexv3WithdrawProtocolFeeResponseMeta,
-		Pdexv3MintPDEXGenesisMeta,
+
 		Pdexv3MintBlockRewardMeta,
 		Pdexv3DistributeStakingRewardMeta,
 		Pdexv3WithdrawStakingRewardRequestMeta,
@@ -166,6 +169,8 @@ func buildMetaInfo() {
 		PortalPortingResponseMeta,
 		PortalCustodianTopupResponseMetaV2,
 		PortalTopUpWaitingPortingResponseMeta,
+		Pdexv3MintPDEXGenesisMeta,
+		Pdexv3WithdrawOrderResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNoInput,
@@ -242,7 +247,7 @@ func buildMetaInfo() {
 		Pdexv3WithdrawLPFeeResponseMeta,
 		Pdexv3WithdrawProtocolFeeRequestMeta,
 		Pdexv3WithdrawProtocolFeeResponseMeta,
-		Pdexv3MintPDEXGenesisMeta,
+
 		Pdexv3MintBlockRewardMeta,
 		Pdexv3DistributeStakingRewardMeta,
 		Pdexv3WithdrawStakingRewardRequestMeta,
