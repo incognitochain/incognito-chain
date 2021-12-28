@@ -8,22 +8,24 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 	acceptUnstakingInst := NewAcceptUnstakingWithValue(
-		common.PRVCoinID, common.PRVCoinID, 50, validOTAReceiver0,
-		common.PRVCoinID, 1,
+		common.PRVCoinID, 50, validOTAReceiver0,
+		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, validAccessOTA,
 	)
 	data, err := json.Marshal(&acceptUnstakingInst)
 	assert.Nil(t, err)
 
 	type fields struct {
 		stakingPoolID common.Hash
-		nftID         common.Hash
+		AccessOption  metadataPdexv3.AccessOption
 		amount        uint64
 		otaReceiver   string
+		accessOTA     string
 		txReqID       common.Hash
 		shardID       byte
 	}
@@ -69,10 +71,13 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 			},
 			wantErr: false,
 			fieldsAfterProcess: fields{
-				nftID:         common.PRVCoinID,
+				AccessOption: metadataPdexv3.AccessOption{
+					NftID: &common.PRVCoinID,
+				},
 				stakingPoolID: common.PRVCoinID,
 				amount:        50,
 				otaReceiver:   validOTAReceiver0,
+				accessOTA:     validAccessOTA,
 				txReqID:       common.PRVCoinID,
 				shardID:       1,
 			},
@@ -82,9 +87,10 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AcceptUnstaking{
 				stakingPoolID: tt.fields.stakingPoolID,
-				nftID:         tt.fields.nftID,
+				AccessOption:  tt.fields.AccessOption,
 				amount:        tt.fields.amount,
 				otaReceiver:   tt.fields.otaReceiver,
+				accessOTA:     tt.fields.accessOTA,
 				txReqID:       tt.fields.txReqID,
 				shardID:       tt.fields.shardID,
 			}
@@ -92,8 +98,8 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 				t.Errorf("AcceptUnstaking.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr {
-				if !reflect.DeepEqual(tt.fieldsAfterProcess.nftID, a.nftID) {
-					t.Errorf("nftID got = %v, err %v", a.nftID, tt.fieldsAfterProcess.nftID)
+				if !reflect.DeepEqual(tt.fieldsAfterProcess.AccessOption, a.AccessOption) {
+					t.Errorf("AccessOption got = %v, err %v", a.AccessOption, tt.fieldsAfterProcess.AccessOption)
 					return
 				}
 				if !reflect.DeepEqual(tt.fieldsAfterProcess.stakingPoolID, a.stakingPoolID) {
@@ -123,17 +129,18 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 
 func TestAcceptUnstaking_StringSlice(t *testing.T) {
 	acceptUnstakingInst := NewAcceptUnstakingWithValue(
-		common.PRVCoinID, common.PRVCoinID, 50, validOTAReceiver0,
-		common.PRVCoinID, 1,
+		common.PRVCoinID, 50, validOTAReceiver0,
+		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, validAccessOTA,
 	)
 	data, err := json.Marshal(&acceptUnstakingInst)
 	assert.Nil(t, err)
 
 	type fields struct {
 		stakingPoolID common.Hash
-		nftID         common.Hash
+		AccessOption  metadataPdexv3.AccessOption
 		amount        uint64
 		otaReceiver   string
+		accessOTA     string
 		txReqID       common.Hash
 		shardID       byte
 	}
@@ -147,11 +154,14 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 			name: "Valid input",
 			fields: fields{
 				stakingPoolID: common.PRVCoinID,
-				nftID:         common.PRVCoinID,
-				amount:        50,
-				otaReceiver:   validOTAReceiver0,
-				txReqID:       common.PRVCoinID,
-				shardID:       1,
+				AccessOption: metadataPdexv3.AccessOption{
+					NftID: &common.PRVCoinID,
+				},
+				amount:      50,
+				otaReceiver: validOTAReceiver0,
+				accessOTA:   validAccessOTA,
+				txReqID:     common.PRVCoinID,
+				shardID:     1,
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
@@ -165,9 +175,10 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AcceptUnstaking{
 				stakingPoolID: tt.fields.stakingPoolID,
-				nftID:         tt.fields.nftID,
+				AccessOption:  tt.fields.AccessOption,
 				amount:        tt.fields.amount,
 				otaReceiver:   tt.fields.otaReceiver,
+				accessOTA:     tt.fields.accessOTA,
 				txReqID:       tt.fields.txReqID,
 				shardID:       tt.fields.shardID,
 			}

@@ -15,9 +15,9 @@ type AcceptUnstaking struct {
 	metadataPdexv3.AccessOption
 	amount      uint64
 	otaReceiver string
+	accessOTA   string
 	txReqID     common.Hash
 	shardID     byte
-	accessOTA   string
 }
 
 func NewAcceptUnstaking() *AcceptUnstaking {

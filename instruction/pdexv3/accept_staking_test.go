@@ -26,6 +26,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 		metadataPdexv3.AccessOption
 		stakingPoolID common.Hash
 		liquidity     uint64
+		accessOTA     string
 		shardID       byte
 		txReqID       common.Hash
 	}
@@ -74,6 +75,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 				AccessOption: metadataPdexv3.AccessOption{
 					NftID: &common.PRVCoinID,
 				},
+				accessOTA:     validAccessOTA,
 				stakingPoolID: common.PRVCoinID,
 				txReqID:       common.PRVCoinID,
 				liquidity:     100,
@@ -87,6 +89,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 				AccessOption:  tt.fields.AccessOption,
 				stakingPoolID: tt.fields.stakingPoolID,
 				liquidity:     tt.fields.liquidity,
+				accessOTA:     tt.fields.accessOTA,
 				shardID:       tt.fields.shardID,
 				txReqID:       tt.fields.txReqID,
 			}
@@ -95,7 +98,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 			}
 			if !tt.wantErr {
 				if !reflect.DeepEqual(tt.fieldsAfterProcess.AccessOption, a.AccessOption) {
-					t.Errorf("nftID got = %v, err %v", a.AccessOption, tt.fieldsAfterProcess.AccessOption)
+					t.Errorf("accessOption got = %v, err %v", a.AccessOption, tt.fieldsAfterProcess.AccessOption)
 					return
 				}
 				if !reflect.DeepEqual(tt.fieldsAfterProcess.stakingPoolID, a.stakingPoolID) {
@@ -120,15 +123,19 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 }
 
 func TestAcceptStaking_StringSlice(t *testing.T) {
-	acceptStakingInst := NewAcceptStakingWtihValue(
-		common.PRVCoinID, common.PRVCoinID, common.PRVCoinID, 1, 100,
+	acceptStakingInst := NewAcceptStakingWithValue(
+		common.PRVCoinID, common.PRVCoinID, 1, 100, validAccessOTA,
+		metadataPdexv3.AccessOption{
+			NftID: &common.PRVCoinID,
+		},
 	)
 	data, err := json.Marshal(&acceptStakingInst)
 	assert.Nil(t, err)
 	type fields struct {
-		nftID         common.Hash
+		AccessOption  metadataPdexv3.AccessOption
 		stakingPoolID common.Hash
 		liquidity     uint64
+		accessOTA     string
 		shardID       byte
 		txReqID       common.Hash
 	}
@@ -141,9 +148,12 @@ func TestAcceptStaking_StringSlice(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				nftID:         common.PRVCoinID,
+				AccessOption: metadataPdexv3.AccessOption{
+					NftID: &common.PRVCoinID,
+				},
 				stakingPoolID: common.PRVCoinID,
 				liquidity:     100,
+				accessOTA:     validAccessOTA,
 				shardID:       1,
 				txReqID:       common.PRVCoinID,
 			},
@@ -158,9 +168,10 @@ func TestAcceptStaking_StringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AcceptStaking{
-				nftID:         tt.fields.nftID,
+				AccessOption:  tt.fields.AccessOption,
 				stakingPoolID: tt.fields.stakingPoolID,
 				liquidity:     tt.fields.liquidity,
+				accessOTA:     tt.fields.accessOTA,
 				shardID:       tt.fields.shardID,
 				txReqID:       tt.fields.txReqID,
 			}

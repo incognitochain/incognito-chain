@@ -17,9 +17,9 @@ type AcceptWithdrawLiquidity struct {
 	tokenAmount uint64
 	shareAmount uint64
 	otaReceiver string
+	accessOTA   string
 	txReqID     common.Hash
 	shardID     byte
-	accessOTA   string
 }
 
 func NewAcceptWithdrawLiquidity() *AcceptWithdrawLiquidity {

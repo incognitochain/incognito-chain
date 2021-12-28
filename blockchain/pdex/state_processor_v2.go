@@ -208,7 +208,7 @@ func (sp *stateProcessorV2) matchContribution(
 		existedWaitingContribution.NftID(),
 		shareAmount, beaconHeight,
 		existedWaitingContribution.TxReqID().String(),
-		matchAddLiquidityInst.AccessOTA(),
+		existedWaitingContribution.AccessOTA(),
 	)
 
 	if err != nil {
@@ -292,7 +292,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
 			waitingContribution.TxReqID().String(),
-			matchAndReturnAddLiquidity.AccessOTA(),
+			waitingContribution.AccessOTA(),
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err

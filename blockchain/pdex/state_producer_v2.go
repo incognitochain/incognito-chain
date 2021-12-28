@@ -108,7 +108,7 @@ func (sp *stateProducerV2) addLiquidity(
 					res = append(res, refundInsts...)
 					continue
 				}
-				accessOTA, err := newPoolPair.addShare(
+				_, err := newPoolPair.addShare(
 					waitingContribution.NftID(),
 					shareAmount, beaconHeight,
 					waitingContribution.TxReqID().String(),
@@ -128,7 +128,7 @@ func (sp *stateProducerV2) addLiquidity(
 				insts, err := v2utils.BuildMatchAddLiquidityInstructions(
 					incomingContributionState, poolPairID,
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
-					accessCoinReceiver, accessOTA,
+					accessCoinReceiver,
 					waitingContribution.AccessOTA() != utils.EmptyString && waitingContribution.OtaReceiver() == utils.EmptyString,
 				)
 				if err != nil {

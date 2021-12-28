@@ -29,11 +29,11 @@ func BuildRefundAddLiquidityInstructions(
 func BuildMatchAddLiquidityInstructions(
 	waitingContributionState statedb.Pdexv3ContributionState,
 	poolPairID string, txReqID common.Hash, shardID byte,
-	otaReceiver, nextOTA string, shouldMintAccessCoin bool,
+	otaReceiver string, shouldMintAccessCoin bool,
 ) ([][]string, error) {
 	res := [][]string{}
 	inst0, err := instruction.NewMatchAddLiquidityWithValue(
-		waitingContributionState, poolPairID, nextOTA,
+		waitingContributionState, poolPairID,
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -56,7 +56,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
 	txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
-	nextOTA string, shouldMintAccessCoin bool,
+	shouldMintAccessCoin bool,
 ) ([][]string, error) {
 	res := [][]string{}
 	token0Contribution := token0ContributionState.Value()
@@ -64,7 +64,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst0, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token0ContributionState, shareAmount, returnedToken0ContributionAmount,
 		actualToken1ContributionAmount, returnedToken1ContributionAmount,
-		token1Contribution.TokenID(), nextOTA,
+		token1Contribution.TokenID(),
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -73,7 +73,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst1, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token1ContributionState, shareAmount, returnedToken1ContributionAmount,
 		actualToken0ContributionAmount, returnedToken0ContributionAmount,
-		token0Contribution.TokenID(), nextOTA,
+		token0Contribution.TokenID(),
 	).StringSlice()
 	if err != nil {
 		return res, err
