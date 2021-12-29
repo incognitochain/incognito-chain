@@ -81,7 +81,7 @@ func (response *MintNftResponse) ValidateSanityData(
 }
 
 func (response *MintNftResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.Pdexv3MintNftRequestMeta
+	return response.Type == metadataCommon.Pdexv3MintNftResponseMeta
 }
 
 func (response *MintNftResponse) Hash() *common.Hash {
