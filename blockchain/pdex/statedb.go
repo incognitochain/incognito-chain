@@ -86,11 +86,32 @@ func initStateV1(
 func initStateV2FromDB(
 	stateDB *statedb.StateDB,
 ) (*stateV2, error) {
+	var params *Params
 	paramsState, err := statedb.GetPdexv3Params(stateDB)
-	params := NewParamsWithValue(paramsState)
-	if err != nil {
-		return nil, err
+	if paramsState == nil || err != nil {
+		params = NewParams()
+		params.readConfig()
+		err = statedb.StorePdexv3Params(stateDB,
+			params.DefaultFeeRateBPS,
+			params.FeeRateBPS,
+			params.PRVDiscountPercent,
+			params.TradingProtocolFeePercent,
+			params.TradingStakingPoolRewardPercent,
+			params.PDEXRewardPoolPairsShare,
+			params.StakingPoolsShare,
+			params.StakingRewardTokens,
+			params.MintNftRequireAmount,
+			params.MaxOrdersPerNft,
+			params.AutoWithdrawOrderLimitAmount,
+			params.MinPRVReserveTradingRate,
+			params.OrderMiningRewardRatioBPS)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		params = NewParamsWithValue(paramsState)
 	}
+
 	waitingContributions, err := statedb.GetPdexv3WaitingContributions(stateDB)
 	if err != nil {
 		return nil, err
