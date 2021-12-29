@@ -132,6 +132,9 @@ func (request *AddLiquidityRequest) ValidateSanityData(
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
 		}
 	case common.TxCustomTokenPrivacyType:
+		if *tokenID == common.PdexAccessCoinID {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("Can not contribute pdex access token"))
+		}
 		if tokenID.String() == common.PRVCoinID.String() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
 		}
