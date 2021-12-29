@@ -149,7 +149,7 @@ const (
 	IssuingPLGRequestMeta  = 327
 	IssuingPLGResponseMeta = 328
 	BurningPLGRequestMeta  = 329
-	BurningPLGconfirmMeta  = 153
+	BurningPLGConfirmMeta  = 153
 
 	// pPLG ( Polygon )
 	BurningPLGForDepositToSCRequestMeta = 330

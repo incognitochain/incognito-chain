@@ -93,7 +93,7 @@ func (httpServer *HttpServer) handleGetPLGBurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningPLGconfirmMeta
+	confirmMeta := metadata.BurningPLGConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 

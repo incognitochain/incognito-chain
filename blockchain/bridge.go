@@ -42,7 +42,7 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 		strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2), 
 		strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
 		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta),
-		strconv.Itoa(metadata.BurningPLGconfirmMeta):
+		strconv.Itoa(metadata.BurningPLGConfirmMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {

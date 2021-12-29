@@ -85,5 +85,5 @@ geth_param:
 bsc_param:
   host: "https://data-seed-prebsc-2-s3.binance.org:8545"
 plg_param:
-    host: ""
+    host: "https://rpc-mumbai.maticvigil.com"
 is_enable_bpv3_stats: false
