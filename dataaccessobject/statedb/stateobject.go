@@ -117,6 +117,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newProcessUnshieldRequestBatchObjectWithValue(db, hash, value)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObjectWithValue(db, hash, value)
+	case BridgePLGTxObjectType:
+		return newBridgePLGTxObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -214,6 +216,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newProcessUnshieldRequestBatchObject(db, hash)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObject(db, hash)
+	case BridgePLGTxObjectType:
+		return newBridgePLGTxObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}
