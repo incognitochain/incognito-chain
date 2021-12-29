@@ -127,7 +127,7 @@ func (share *Share) getDiff(
 			newShareChange.LastLPFeesPerShare[tokenID.String()] = true
 		}
 	} else {
-		if !reflect.DeepEqual(share.amount, compareShare.amount) {
+		if !reflect.DeepEqual(share.amount, compareShare.amount) || !reflect.DeepEqual(share.accessOTA, compareShare.accessOTA) {
 			newShareChange.IsChanged = true
 		}
 		newShareChange.TradingFees = v2utils.GetChangedElementsFromMapUint64(share.tradingFees, compareShare.tradingFees)
@@ -260,7 +260,7 @@ func (staker *Staker) getDiff(
 			newStakerChange.LastRewardsPerShare[tokenID.String()] = true
 		}
 	} else {
-		if staker.liquidity != compareStaker.liquidity {
+		if !reflect.DeepEqual(staker.liquidity, compareStaker.liquidity) || !reflect.DeepEqual(staker.accessOTA, compareStaker.accessOTA) {
 			newStakerChange.IsChanged = true
 		}
 		newStakerChange.LastRewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(staker.lastRewardsPerShare, compareStaker.lastRewardsPerShare)
