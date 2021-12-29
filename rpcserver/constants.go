@@ -206,8 +206,8 @@ const (
 	checkPRVPeggingHashIssued             = "checkpeggedprvhashissued"
 	createAndSendBurningPRVERC20Request   = "createandsendburningprverc20request"
 	createAndSendBurningPRVBEP20Request   = "createandsendburningprvbep20request"
+	createAndSendBurningPLGRequest        = "createandsendburningplgrequest"
 	createAndSendTxWithIssuingPLGReq      = "createandsendtxwithissuingplgreq"
-	createAndSendBurningPLGRequest        = "createAndSendBurningPLGRequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
