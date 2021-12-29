@@ -326,6 +326,18 @@ func buildMetaInfo() {
 
 		WithDrawRewardResponseMeta,
 		ReturnStakingMeta,
+		Pdexv3AddLiquidityResponseMeta,
+		Pdexv3WithdrawLiquidityResponseMeta,
+		Pdexv3TradeResponseMeta,
+		Pdexv3AddOrderResponseMeta,
+		Pdexv3WithdrawOrderResponseMeta,
+		Pdexv3StakingResponseMeta,
+		Pdexv3UnstakingResponseMeta,
+		Pdexv3WithdrawLPFeeResponseMeta,
+		Pdexv3WithdrawProtocolFeeResponseMeta,
+		Pdexv3MintBlockRewardMeta,
+		Pdexv3DistributeStakingRewardMeta,
+		Pdexv3WithdrawStakingRewardResponseMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
