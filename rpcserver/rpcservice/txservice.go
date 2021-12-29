@@ -703,7 +703,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 				}
 			}
 
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
 			if err == nil {
 				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 				tx.SetValidationEnv(valEnv)
