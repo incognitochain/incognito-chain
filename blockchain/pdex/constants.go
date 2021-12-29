@@ -25,11 +25,10 @@ const (
 
 // PDEX token
 const (
-	GenesisMintingAmount = 5000000                  // without mulitply with denominating rate
-	MintingBlockReward   = 45000000                 // without multiply with denominating rate
-	MintingBlocks        = 3600 * 24 * 30 * 60 / 40 // 60 months
-	DecayIntervals       = 30
-	DecayRateBPS         = 500 // 5%
+	MintingBlockReward = 45000000                 // without multiply with denominating rate
+	MintingBlocks      = 3600 * 24 * 30 * 60 / 40 // 60 months
+	DecayIntervals     = 30
+	DecayRateBPS       = 500 // 5%
 )
 
 // nft hash prefix
