@@ -1087,11 +1087,10 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
-	beaconHeight uint64, stakingPoolStates map[string]*StakingPoolState,
+	beaconHeight uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
-	map[string]*StakingPoolState,
 	error,
 ) {
 	res := [][]string{}
@@ -1102,7 +1101,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 		if err != nil {
-			return res, poolPairs, stakingPoolStates, err
+			return res, poolPairs, err
 		}
 
 		if metaData.AccessOption.UseNft() {
@@ -1142,13 +1141,13 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
 				if err != nil {
-					return res, poolPairs, stakingPoolStates, err
+					return res, poolPairs, err
 				}
 				inst, err := instruction.NewMintAccessTokenWithValue(
 					metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
 				).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
 				if err != nil {
-					return res, poolPairs, stakingPoolStates, err
+					return res, poolPairs, err
 				}
 				res = append(res, inst)
 			} else {
@@ -1191,7 +1190,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		res = append(res, insts...)
 		poolPairs[metaData.PoolPairID()] = poolPair
 	}
-	return res, poolPairs, stakingPoolStates, nil
+	return res, poolPairs, nil
 }
 
 func (sp *stateProducerV2) userMintNft(
@@ -1326,9 +1325,8 @@ func (sp *stateProducerV2) unstaking(
 	txs []metadata.Transaction,
 	nftIDs map[string]uint64,
 	stakingPoolStates map[string]*StakingPoolState,
-	poolPairStates map[string]*PoolPairState,
 	beaconHeight uint64,
-) ([][]string, map[string]*StakingPoolState, map[string]*PoolPairState, error) {
+) ([][]string, map[string]*StakingPoolState, error) {
 	res := [][]string{}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
@@ -1337,7 +1335,7 @@ func (sp *stateProducerV2) unstaking(
 		stakingPoolID, _ := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
 		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
 		if err != nil {
-			return res, stakingPoolStates, poolPairStates, err
+			return res, stakingPoolStates, err
 		}
 		accessID := common.Hash{}
 		if metaData.AccessOption.UseNft() {
@@ -1368,13 +1366,13 @@ func (sp *stateProducerV2) unstaking(
 			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
 				if err != nil {
-					return res, stakingPoolStates, poolPairStates, err
+					return res, stakingPoolStates, err
 				}
 				inst, err := instruction.NewMintAccessTokenWithValue(
 					metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
 				).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
 				if err != nil {
-					return res, stakingPoolStates, poolPairStates, err
+					return res, stakingPoolStates, err
 				}
 				res = append(res, inst)
 			} else {
@@ -1412,7 +1410,7 @@ func (sp *stateProducerV2) unstaking(
 		res = append(res, insts...)
 		stakingPoolStates[metaData.StakingPoolID()] = stakingPoolState
 	}
-	return res, stakingPoolStates, poolPairStates, nil
+	return res, stakingPoolStates, nil
 }
 
 func (sp *stateProducerV2) distributeStakingReward(

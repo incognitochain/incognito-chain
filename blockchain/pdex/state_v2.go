@@ -157,8 +157,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.waitingContributions, s.deletedWaitingContributions,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
-			s.poolPairs, s.stakingPoolStates, err = s.processor.withdrawLiquidity(
-				env.StateDB(), inst, s.poolPairs, beaconHeight, s.stakingPoolStates,
+			s.poolPairs, err = s.processor.withdrawLiquidity(
+				env.StateDB(), inst, s.poolPairs, beaconHeight,
 			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
@@ -193,8 +193,8 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, beaconHeight,
 			)
 		case metadataCommon.Pdexv3UnstakingRequestMeta:
-			s.stakingPoolStates, s.poolPairs, _, err = s.processor.unstaking(
-				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, s.poolPairs, beaconHeight,
+			s.stakingPoolStates, _, err = s.processor.unstaking(
+				env.StateDB(), inst, s.nftIDs, s.stakingPoolStates, beaconHeight,
 			)
 
 		case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
@@ -314,8 +314,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, withdrawProtocolFeeInstructions...)
 
 	withdrawLiquidityInstructions := [][]string{}
-	withdrawLiquidityInstructions, s.poolPairs, s.stakingPoolStates, err = s.producer.withdrawLiquidity(
-		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, beaconHeight, s.stakingPoolStates,
+	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
+		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, beaconHeight,
 	)
 	if err != nil {
 		return instructions, err
@@ -333,8 +333,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, withdrawOrderInstructions...)
 
 	var unstakingInstructions [][]string
-	unstakingInstructions, s.stakingPoolStates, s.poolPairs, err = s.producer.unstaking(
-		unstakingTxs, s.nftIDs, s.stakingPoolStates, s.poolPairs, beaconHeight,
+	unstakingInstructions, s.stakingPoolStates, err = s.producer.unstaking(
+		unstakingTxs, s.nftIDs, s.stakingPoolStates, beaconHeight,
 	)
 	if err != nil {
 		return instructions, err

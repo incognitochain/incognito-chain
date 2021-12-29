@@ -398,9 +398,11 @@ func TestPoolPairState_deductShare(t *testing.T) {
 		stakingPoolFees map[common.Hash]uint64
 	}
 	type args struct {
-		nftID        string
+		accessID     string
 		shareAmount  uint64
 		beaconHeight uint64
+		accessOption metadataPdexv3.AccessOption
+		accessOTA    string
 	}
 	tests := []struct {
 		name               string
@@ -435,7 +437,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				stakingPoolFees: map[common.Hash]uint64{},
 			},
 			args: args{
-				nftID:        nftID,
+				accessID:     nftID,
 				shareAmount:  100,
 				beaconHeight: 20,
 			},
@@ -487,7 +489,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				stakingPoolFees: map[common.Hash]uint64{},
 			},
 			args: args{
-				nftID:        nftID,
+				accessID:     nftID,
 				shareAmount:  100,
 				beaconHeight: 20,
 			},
@@ -527,7 +529,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				protocolFees:    tt.fields.protocolFees,
 				stakingPoolFees: tt.fields.stakingPoolFees,
 			}
-			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount, tt.args.beaconHeight)
+			got, got1, got2, err := p.deductShare(tt.args.accessID, tt.args.shareAmount, tt.args.beaconHeight, tt.args.accessOption, tt.args.accessOTA)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PoolPairState.deductShare() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -380,12 +380,12 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 }
 
 func (p *PoolPairState) deductShare(
-	nftID string,
+	accessID string,
 	shareAmount, beaconHeight uint64,
 	accessOption metadataPdexv3.AccessOption,
 	accessOTA string,
 ) (uint64, uint64, uint64, error) {
-	share := p.shares[nftID]
+	share := p.shares[accessID]
 	if shareAmount == 0 || share.amount == 0 {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
@@ -409,25 +409,25 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	_, err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, accessOTA, subOperator)
+	_, err = p.updateShareValue(tempShareAmount, beaconHeight, accessID, accessOTA, subOperator)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
 func (p *PoolPairState) updateShareValue(
-	shareAmount, beaconHeight uint64, nftID, accessOTA string, operator byte,
+	shareAmount, beaconHeight uint64, accessID, accessOTA string, operator byte,
 ) (string, error) {
-	share, found := p.shares[nftID]
+	share, found := p.shares[accessID]
 	if !found {
 		if operator == subOperator {
 			return utils.EmptyString, errors.New("Deduct nil share amount")
 		}
 		share = NewShare()
 	} else {
-		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
+		accessIDBytes, err := common.Hash{}.NewHashFromStr(accessID)
 		if err != nil {
-			return utils.EmptyString, fmt.Errorf("Invalid nftID: %s", nftID)
+			return utils.EmptyString, fmt.Errorf("Invalid accessID: %s", accessID)
 		}
-		share.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
+		share.tradingFees, err = p.RecomputeLPFee(*accessIDBytes)
 		if err != nil {
 			return utils.EmptyString, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
@@ -457,7 +457,7 @@ func (p *PoolPairState) updateShareValue(
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
 
-	p.shares[nftID] = share
+	p.shares[accessID] = share
 	return accessOTA, nil
 }
 

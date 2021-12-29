@@ -525,19 +525,18 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	inst []string,
 	poolPairs map[string]*PoolPairState,
 	beaconHeight uint64,
-	stakingPoolStates map[string]*StakingPoolState,
-) (map[string]*PoolPairState, map[string]*StakingPoolState, error) {
+) (map[string]*PoolPairState, error) {
 	var err error
 	switch inst[1] {
 	case common.PDEWithdrawalRejectedChainStatus:
 		_, err = sp.rejectWithdrawLiquidity(stateDB, inst)
 	case common.PDEWithdrawalAcceptedChainStatus:
-		poolPairs, stakingPoolStates, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight, stakingPoolStates)
+		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight)
 	}
 	if err != nil {
-		return poolPairs, stakingPoolStates, err
+		return poolPairs, err
 	}
-	return poolPairs, stakingPoolStates, err
+	return poolPairs, err
 }
 
 func (sp *stateProcessorV2) rejectWithdrawLiquidity(
@@ -566,17 +565,16 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	inst []string,
 	poolPairs map[string]*PoolPairState,
 	beaconHeight uint64,
-	stakingPoolStates map[string]*StakingPoolState,
-) (map[string]*PoolPairState, map[string]*StakingPoolState, *v2.WithdrawStatus, error) {
+) (map[string]*PoolPairState, *v2.WithdrawStatus, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
 	err := acceptWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
-		return poolPairs, stakingPoolStates, nil, err
+		return poolPairs, nil, err
 	}
 	poolPair, ok := poolPairs[acceptWithdrawLiquidity.PoolPairID()]
 	if !ok || poolPair == nil {
 		err := fmt.Errorf("Can't find poolPairID %s", acceptWithdrawLiquidity.PoolPairID())
-		return poolPairs, stakingPoolStates, nil, err
+		return poolPairs, nil, err
 	}
 	accessID := utils.EmptyString
 	if acceptWithdrawLiquidity.AccessOption.UseNft() {
@@ -587,12 +585,15 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	share, ok := poolPair.shares[accessID]
 	if !ok || share == nil {
 		err := fmt.Errorf("Can't find LP id %s", accessID)
-		return poolPairs, stakingPoolStates, nil, err
+		return poolPairs, nil, err
 	}
-	poolPair.updateSingleTokenAmount(
+	err = poolPair.updateSingleTokenAmount(
 		acceptWithdrawLiquidity.TokenID(),
 		acceptWithdrawLiquidity.TokenAmount(), acceptWithdrawLiquidity.ShareAmount(), subOperator,
 	)
+	if err != nil {
+		return poolPairs, nil, err
+	}
 	token0Amount, found := sp.withdrawTxCache[acceptWithdrawLiquidity.TxReqID().String()]
 	if !found {
 		sp.withdrawTxCache[acceptWithdrawLiquidity.TxReqID().String()] = acceptWithdrawLiquidity.TokenAmount()
@@ -604,7 +605,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			accessID, acceptWithdrawLiquidity.AccessOTA(), subOperator,
 		)
 		if err != nil {
-			return poolPairs, stakingPoolStates, nil, err
+			return poolPairs, nil, err
 		}
 		withdrawStatus = &v2.WithdrawStatus{
 			Status:       common.Pdexv3AcceptStatus,
@@ -621,7 +622,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			contentBytes,
 		)
 	}
-	return poolPairs, stakingPoolStates, withdrawStatus, err
+	return poolPairs, withdrawStatus, err
 }
 
 func (sp *stateProcessorV2) addOrder(
@@ -1118,11 +1119,10 @@ func (sp *stateProcessorV2) staking(
 func (sp *stateProcessorV2) unstaking(
 	stateDB *statedb.StateDB,
 	inst []string, nftIDs map[string]uint64, stakingPoolStates map[string]*StakingPoolState,
-	poolPairStates map[string]*PoolPairState,
 	beaconHeight uint64,
-) (map[string]*StakingPoolState, map[string]*PoolPairState, *v2.UnstakingStatus, error) {
+) (map[string]*StakingPoolState, *v2.UnstakingStatus, error) {
 	if len(inst) < 2 {
-		return stakingPoolStates, poolPairStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
+		return stakingPoolStates, nil, fmt.Errorf("Length of inst is invalid %v", len(inst))
 	}
 	var status byte
 	var stakingPoolID string
@@ -1134,7 +1134,7 @@ func (sp *stateProcessorV2) unstaking(
 		acceptInst := instruction.NewAcceptUnstaking()
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
-			return stakingPoolStates, poolPairStates, nil, err
+			return stakingPoolStates, nil, err
 		}
 		txReqID = acceptInst.TxReqID()
 		status = common.Pdexv3AcceptStatus
@@ -1152,13 +1152,13 @@ func (sp *stateProcessorV2) unstaking(
 			accessID.String(), liquidity, beaconHeight, accessOTA, subOperator,
 		)
 		if err != nil {
-			return stakingPoolStates, poolPairStates, nil, err
+			return stakingPoolStates, nil, err
 		}
 	case common.Pdexv3RejectStringStatus:
 		rejectInst := instruction.NewRejectUnstaking()
 		err := rejectInst.FromStringSlice(inst)
 		if err != nil {
-			return stakingPoolStates, poolPairStates, nil, err
+			return stakingPoolStates, nil, err
 		}
 		txReqID = rejectInst.TxReqID()
 		status = common.Pdexv3RejectStatus
@@ -1171,7 +1171,7 @@ func (sp *stateProcessorV2) unstaking(
 	}
 	data, err := json.Marshal(unstakingStatus)
 	if err != nil {
-		return stakingPoolStates, poolPairStates, nil, err
+		return stakingPoolStates, nil, err
 	}
 	err = statedb.TrackPdexv3Status(
 		stateDB,
@@ -1179,7 +1179,7 @@ func (sp *stateProcessorV2) unstaking(
 		txReqID.Bytes(),
 		data,
 	)
-	return stakingPoolStates, poolPairStates, &unstakingStatus, nil
+	return stakingPoolStates, &unstakingStatus, nil
 }
 
 func (sp *stateProcessorV2) distributeStakingReward(

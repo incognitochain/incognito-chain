@@ -19,6 +19,7 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +43,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	firstContributionMetadata := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
 		validOTAReceiver0,
-		token0ID.String(), nftID, 100, 20000,
+		token0ID.String(), 100, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	assert.Nil(t, err)
 	contributionTx := &metadataMocks.Transaction{}
@@ -55,6 +59,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
 			*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	waitingContributionInst := instruction.NewWaitingAddLiquidityWithValue(*waitingContributionStateDB)
@@ -65,7 +70,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	refundContributionSanityMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
 		validOTAReceiver0,
-		token0ID.String(), nftID, 200, 20000,
+		token0ID.String(), 200, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	assert.Nil(t, err)
 	refundContributionSanityTx := &metadataMocks.Transaction{}
@@ -76,6 +84,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
 			*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	refundContributionSanityInst0 := instruction.NewRefundAddLiquidityWithValue(*refundContributionSanityState0)
@@ -84,6 +93,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
 			*token0ID, *secondTxHash, *nftHash, 200, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	refundContributionSanityInst1 := instruction.NewRefundAddLiquidityWithValue(*refundContributionSanityState1)
@@ -93,7 +103,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	// match contribution
 	matchContributionMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash", validOTAReceiver0,
-		token1ID.String(), nftID, 400, 20000,
+		token1ID.String(), 400, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	assert.Nil(t, err)
 	matchContributionTx := &metadataMocks.Transaction{}
@@ -104,6 +117,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
 			*token1ID, *secondTxHash, *nftHash, 400, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	matchContributionInst := instruction.NewMatchAddLiquidityWithValue(*matchContributionState, poolPairID)
@@ -114,7 +128,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchContribution2MetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
 		validOTAReceiver0,
-		token1ID.String(), nftID, 400, 20000,
+		token1ID.String(), 400, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	matchContribution2Tx := &metadataMocks.Transaction{}
 	matchContribution2Tx.On("GetMetadata").Return(matchContribution2MetaData)
@@ -124,6 +141,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
 			*token1ID, *secondTxHash, *nftHash, 400, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	matchContribution2Inst := instruction.NewMatchAddLiquidityWithValue(*matchContribution2State, poolPairID)
@@ -134,7 +152,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	refundContributionAmountMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		poolPairID, "pair_hash",
 		validOTAReceiver0,
-		token1ID.String(), nftID, 0, 20000,
+		token1ID.String(), 0, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	refundContributionAmountTx := &metadataMocks.Transaction{}
 	refundContributionAmountTx.On("GetMetadata").Return(refundContributionAmountMetaData)
@@ -145,6 +166,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	refundContributionAmount0Inst := instruction.NewRefundAddLiquidityWithValue(*refundContributionAmount0State)
@@ -153,6 +175,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 0, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	refundContributionAmount1Inst := instruction.NewRefundAddLiquidityWithValue(*refundContributionAmount1State)
@@ -163,7 +186,10 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	matchAndReturnContributionMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		poolPairID, "pair_hash",
 		validOTAReceiver0,
-		token1ID.String(), nftID, 200, 20000,
+		token1ID.String(), 200, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	matchAndReturnContributionTx := &metadataMocks.Transaction{}
 	matchAndReturnContributionTx.On("GetMetadata").Return(matchAndReturnContributionMetaData)
@@ -174,26 +200,31 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	matchAndReturnContritubtion0Inst := instruction.NewMatchAndReturnAddLiquidityWithValue(
-		*matchAndReturnContribution0State, 100, 0, 200, 0, *token1ID)
+		*matchAndReturnContribution0State, 100, 0, 200, 0, *token1ID, utils.EmptyString)
 	matchAndReturnContritubtion0InstBytes, err := json.Marshal(matchAndReturnContritubtion0Inst)
 	matchAndReturnContribution1State := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 200, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	matchAndReturnContritubtion1Inst := instruction.NewMatchAndReturnAddLiquidityWithValue(
-		*matchAndReturnContribution1State, 100, 0, 50, 0, *token0ID)
+		*matchAndReturnContribution1State, 100, 0, 50, 0, *token0ID, utils.EmptyString)
 	matchAndReturnContritubtion1InstBytes, err := json.Marshal(matchAndReturnContritubtion1Inst)
 	//
 
 	// match and return contribution - 2
 	matchAndReturnContribution2MetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		poolPairID, "pair_hash", validOTAReceiver0,
-		token1ID.String(), nftID, 200, 20000,
+		token1ID.String(), 200, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	matchAndReturnContribution2Tx := &metadataMocks.Transaction{}
 	matchAndReturnContribution2Tx.On("GetMetadata").Return(matchAndReturnContribution2MetaData)
@@ -204,26 +235,31 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	matchAndReturnContritubtion0Inst2 := instruction.NewMatchAndReturnAddLiquidityWithValue(
-		*matchAndReturnContribution0State2, 100, 0, 200, 0, *token1ID)
+		*matchAndReturnContribution0State2, 100, 0, 200, 0, *token1ID, utils.EmptyString)
 	matchAndReturnContritubtion0InstBytes2, err := json.Marshal(matchAndReturnContritubtion0Inst2)
 	matchAndReturnContribution1State2 := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 200, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	matchAndReturnContritubtion1Inst2 := instruction.NewMatchAndReturnAddLiquidityWithValue(
-		*matchAndReturnContribution1State2, 100, 0, 50, 0, *token0ID)
+		*matchAndReturnContribution1State2, 100, 0, 50, 0, *token0ID, utils.EmptyString)
 	matchAndReturnContritubtion1InstBytes2, err := json.Marshal(matchAndReturnContritubtion1Inst2)
 	//
 
 	// out of range materials
 	outOfRangeMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		poolPairID, "pair_hash", validOTAReceiver0,
-		token1ID.String(), nftID, 10000000000000000000, 20000,
+		token1ID.String(), 10000000000000000000, 20000,
+		&metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, nil,
 	)
 	outOfRangeTx := &metadataMocks.Transaction{}
 	outOfRangeTx.On("GetMetadata").Return(outOfRangeMetaData)
@@ -234,6 +270,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token0ID, *thirdTxHash, *nftHash, 10000000000000000000, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	outOfRangeInst0 := instruction.NewRefundAddLiquidityWithValue(*outOfRangeContribution0State)
@@ -242,6 +279,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			poolPairID, validOTAReceiver0,
 			*token1ID, *fourthTxHash, *nftHash, 10000000000000000000, 20000, 1,
+			utils.EmptyString, nil,
 		),
 		"pair_hash")
 	outOfRangeInst1 := instruction.NewRefundAddLiquidityWithValue(*outOfRangeContribution1State)
@@ -297,6 +335,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0,
 					*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+					utils.EmptyString, nil,
 				),
 			},
 			wantErr: false,
@@ -316,6 +355,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -353,6 +393,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -430,6 +471,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -524,6 +566,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -600,6 +643,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -682,6 +726,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 50, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -765,6 +810,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						poolPairID, validOTAReceiver0,
 						*token0ID, *thirdTxHash, *nftHash, 10000000000000000000, 20000, 1,
+						utils.EmptyString, nil,
 					),
 				},
 				nftIDs: map[string]uint64{
@@ -859,7 +905,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//invalidPoolPairID
 	invalidPoolPairIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		"123", nftID, otaReceivers, 100,
+		"123", otaReceivers, 100, &metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 	)
 	invalidPoolPairIDTx := &metadataMocks.Transaction{}
 	invalidPoolPairIDTx.On("GetMetadata").Return(invalidPoolPairIDMetaData)
@@ -888,7 +936,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//invalidNftID
 	invalidNftIDMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, common.PRVIDStr, otaReceivers, 100,
+		poolPairID, otaReceivers, 100, &metadataPdexv3.AccessOption{
+			NftID: &common.PRVCoinID,
+		},
 	)
 	invalidNftIDTx := &metadataMocks.Transaction{}
 	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetaData)
@@ -898,7 +948,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//deductShareAmountFail
 	deductShareAmountFailMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, otaReceivers, 0,
+		poolPairID, otaReceivers, 0, &metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 	)
 	deductShareAmountFailTx := &metadataMocks.Transaction{}
 	deductShareAmountFailTx.On("GetMetadata").Return(deductShareAmountFailMetaData)
@@ -908,7 +960,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//validInput
 	validInputMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, otaReceivers, 100,
+		poolPairID, otaReceivers, 100, &metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 	)
 	validInputTx := &metadataMocks.Transaction{}
 	validInputTx.On("GetMetadata").Return(validInputMetaData)
@@ -918,13 +972,17 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//accept instructions
 	acceptWithdrawLiquidityInst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		poolPairID, *nftHash, *token0ID, 50, 100, validOTAReceiver1,
-		*txHash, 1,
+		poolPairID, *token0ID, 50, 100, validOTAReceiver1,
+		*txHash, 1, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 	acceptWithdrawLiquidityInst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		poolPairID, *nftHash, *token1ID, 200, 100, validOTAReceiver1,
-		*txHash, 1,
+		poolPairID, *token1ID, 200, 100, validOTAReceiver1,
+		*txHash, 1, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 	//
@@ -935,7 +993,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//out of range tx
 	outOfRangeMetaData := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, otaReceivers, 48019194174972302,
+		poolPairID, otaReceivers, 48019194174972302, &metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 	)
 	outOfRangeTx := &metadataMocks.Transaction{}
 	outOfRangeTx.On("GetMetadata").Return(outOfRangeMetaData)
@@ -945,13 +1005,17 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	//accept instructions
 	outOfRangeInst0, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		poolPairID, *nftHash, *token0ID, 250000000000000, 48019194174972302, validOTAReceiver1,
-		*txHash, 1,
+		poolPairID, *token0ID, 250000000000000, 48019194174972302, validOTAReceiver1,
+		*txHash, 1, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 	outOfRangeInst1, err := instruction.NewAcceptWithdrawLiquidityWithValue(
-		poolPairID, *nftHash, *token1ID, 9223372036854775808, 48019194174972302, validOTAReceiver1,
-		*txHash, 1,
+		poolPairID, *token1ID, 9223372036854775808, 48019194174972302, validOTAReceiver1,
+		*txHash, 1, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 	//
@@ -963,7 +1027,9 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 
 	// invalid otaReceivers tx
 	invalidOtaReceiversMetadata := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
-		poolPairID, nftID, invalidOtaReceivers, 100,
+		poolPairID, invalidOtaReceivers, 100, &metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 	)
 	invalidOtaReceiversTx := &metadataMocks.Transaction{}
 	invalidOtaReceiversTx.On("GetMetadata").Return(invalidOtaReceiversMetadata)
@@ -1368,7 +1434,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	// invalidPoolPairID
 	invalidPoolPairIDMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
-		"123", *nftHash, map[common.Hash]privacy.OTAReceiver{
+		"123", metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, map[common.Hash]privacy.OTAReceiver{
 			*nftHash: otaReceiver0,
 		},
 	)
@@ -1382,9 +1450,11 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 
 	// invalid pool pair
 	rejectPoolPairInst := v2utils.BuildWithdrawLPFeeInsts(
-		"123", *nftHash,
+		"123", metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 		map[common.Hash]metadataPdexv3.ReceiverInfo{},
-		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus, utils.EmptyString,
 	)[0]
 	assert.Nil(t, err)
 
@@ -1401,7 +1471,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	// invalidNftID
 	invalidNftIDMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
-		poolPairID, common.PRVCoinID, map[common.Hash]privacy.OTAReceiver{
+		poolPairID, metadataPdexv3.AccessOption{
+			NftID: &common.PRVCoinID,
+		}, map[common.Hash]privacy.OTAReceiver{
 			common.PRVCoinID: otaReceiver0,
 		},
 	)
@@ -1411,16 +1483,20 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	invalidNftIDTx.On("Hash").Return(txHash)
 
 	rejectNftIDInst := v2utils.BuildWithdrawLPFeeInsts(
-		poolPairID, common.PRVCoinID,
+		poolPairID, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
 		map[common.Hash]metadataPdexv3.ReceiverInfo{},
-		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus, utils.EmptyString,
 	)[0]
 	assert.Nil(t, err)
 
 	// validInput
 	validInputMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
-		poolPairID, *nftHash, map[common.Hash]privacy.OTAReceiver{
+		poolPairID, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, map[common.Hash]privacy.OTAReceiver{
 			*nftHash:  otaReceiver0,
 			*token0ID: otaReceiver0,
 			*token1ID: otaReceiver1,
@@ -1433,7 +1509,10 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 
 	// accept instructions
 	acceptWithdrawLPInstsOnlyLP := v2utils.BuildWithdrawLPFeeInsts(
-		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+		poolPairID, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
+		map[common.Hash]metadataPdexv3.ReceiverInfo{
 			*token0ID: {
 				Address: otaReceiver0,
 				Amount:  300,
@@ -1443,10 +1522,13 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				Amount:  1200,
 			},
 		},
-		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus, utils.EmptyString,
 	)
 	acceptWithdrawLPInstsOnlyOrderReward := v2utils.BuildWithdrawLPFeeInsts(
-		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+		poolPairID, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		},
+		map[common.Hash]metadataPdexv3.ReceiverInfo{
 			*token0ID: {
 				Address: otaReceiver0,
 				Amount:  150,
@@ -1456,10 +1538,12 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				Amount:  250,
 			},
 		},
-		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus, utils.EmptyString,
 	)
 	acceptWithdrawLPInstsBothReward := v2utils.BuildWithdrawLPFeeInsts(
-		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+		poolPairID, metadataPdexv3.AccessOption{
+			NftID: nftHash,
+		}, map[common.Hash]metadataPdexv3.ReceiverInfo{
 			*token0ID: {
 				Address: otaReceiver0,
 				Amount:  450,
@@ -1469,7 +1553,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				Amount:  1450,
 			},
 		},
-		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus, utils.EmptyString,
 	)
 
 	type fields struct {
@@ -2174,14 +2258,16 @@ func Test_stateProducerV2_staking(t *testing.T) {
 	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
 	assert.Nil(t, err)
 
-	acceptInst, err := instruction.NewAcceptStakingWtihValue(
-		*nftHash1, common.PRVCoinID, *txReqID, 1, 100,
+	acceptInst, err := instruction.NewAcceptStakingWithValue(
+		common.PRVCoinID, *txReqID, 1, 100, utils.EmptyString, metadataPdexv3.AccessOption{
+			NftID: nftHash1,
+		},
 	).StringSlice()
 	assert.Nil(t, err)
 
 	//invalidStakingPoolID
 	invalidStakingPoolIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		"abcd", nftID1, validOTAReceiver0, 100,
+		"abcd", validOTAReceiver0, 100, metadataPdexv3.AccessOption{NftID: nftHash1}, nil,
 	)
 	invalidStakingPoolIDTx := &metadataMocks.Transaction{}
 	invalidStakingPoolIDTx.On("GetMetadata").Return(invalidStakingPoolIDMetadata)
@@ -2196,24 +2282,9 @@ func Test_stateProducerV2_staking(t *testing.T) {
 	assert.Nil(t, err)
 	//
 
-	//invalid nftID
-	invalidNftIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		common.PRVIDStr, "abdc", validOTAReceiver0, 100,
-	)
-	invalidNftIDTx := &metadataMocks.Transaction{}
-	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetadata)
-	valEnv1 := tx_generic.DefaultValEnv()
-	valEnv1 = tx_generic.WithShardID(valEnv1, 1)
-	invalidNftIDTx.On("GetValidationEnv").Return(valEnv1)
-	invalidNftIDTx.On("Hash").Return(txReqID)
-	invalidNftIDRejectInst, err := instruction.NewRejectStakingWithValue(
-		validOTAReceiver0, common.PRVCoinID, *txReqID, 1, 100,
-	).StringSlice()
-	//
-
 	//not found stakingPoolID
 	notFoundStakingPoolIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		txReqID.String(), nftID1, validOTAReceiver0, 100,
+		txReqID.String(), validOTAReceiver0, 100, metadataPdexv3.AccessOption{NftID: nftHash1}, nil,
 	)
 	notFoundStakingPoolIDTx := &metadataMocks.Transaction{}
 	notFoundStakingPoolIDTx.On("GetMetadata").Return(notFoundStakingPoolIDMetadata)
@@ -2228,7 +2299,7 @@ func Test_stateProducerV2_staking(t *testing.T) {
 
 	//not found nftID
 	notFoundNftIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		common.PRVIDStr, txReqID.String(), validOTAReceiver0, 100,
+		common.PRVIDStr, validOTAReceiver0, 100, metadataPdexv3.AccessOption{NftID: txReqID}, nil,
 	)
 	notFoundNftIDTx := &metadataMocks.Transaction{}
 	notFoundNftIDTx.On("GetMetadata").Return(notFoundNftIDMetadata)
@@ -2244,7 +2315,7 @@ func Test_stateProducerV2_staking(t *testing.T) {
 
 	//validTx
 	validMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		common.PRVIDStr, nftID1, validOTAReceiver0, 100,
+		common.PRVIDStr, validOTAReceiver0, 100, metadataPdexv3.AccessOption{NftID: nftHash1}, nil,
 	)
 	validTx := &metadataMocks.Transaction{}
 	validTx.On("GetMetadata").Return(validMetadata)
@@ -2289,29 +2360,6 @@ func Test_stateProducerV2_staking(t *testing.T) {
 			want: [][]string{invalidStakingPoolIDRejectInst},
 			want1: map[string]*StakingPoolState{
 				common.PRVIDStr: &StakingPoolState{
-					stakers: map[string]*Staker{},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Invalid NftID",
-			args: args{
-				txs: []metadata.Transaction{invalidNftIDTx},
-				nftIDs: map[string]uint64{
-					nftID1: 100,
-				},
-				stakingPoolStates: map[string]*StakingPoolState{
-					common.PRVIDStr: &StakingPoolState{
-						stakers: map[string]*Staker{},
-					},
-				},
-				beaconHeight: 10,
-			},
-			want: [][]string{invalidNftIDRejectInst},
-			want1: map[string]*StakingPoolState{
-				common.PRVIDStr: &StakingPoolState{
-
 					stakers: map[string]*Staker{},
 				},
 			},
@@ -2421,8 +2469,6 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 	assert.Nil(t, err)
 	nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 	assert.Nil(t, err)
-	//tokenHash, err := common.Hash{}.NewHashFromStr("123456")
-	//assert.Nil(t, err)
 
 	mintNft1Inst, err := instruction.NewMintNftWithValue(
 		*nftHash1, validOTAReceiver0, 1, *txReqID,
@@ -2444,7 +2490,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 
 	//invalidStakingPoolID
 	invalidStakingPoolIDMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
-		"abcd", nftID1, otaReceivers, 50,
+		"abcd", otaReceivers, 50, metadataPdexv3.AccessOption{NftID: nftHash1},
 	)
 	invalidStakingPoolIDTx := &metadataMocks.Transaction{}
 	invalidStakingPoolIDTx.On("GetMetadata").Return(invalidStakingPoolIDMetadata)
@@ -2458,7 +2504,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 
 	//Not found nftID
 	invalidNftIDMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
-		common.PRVIDStr, nftID, otaReceivers, 50,
+		common.PRVIDStr, otaReceivers, 50, metadataPdexv3.AccessOption{NftID: nftHash},
 	)
 	invalidNftIDTx := &metadataMocks.Transaction{}
 	invalidNftIDTx.On("GetMetadata").Return(invalidNftIDMetadata)
@@ -2471,7 +2517,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 
 	//invalidAmount
 	invalidAmountMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
-		common.PRVIDStr, nftID1, otaReceivers, 300,
+		common.PRVIDStr, otaReceivers, 300, metadataPdexv3.AccessOption{NftID: nftHash1},
 	)
 	invalidAmountTx := &metadataMocks.Transaction{}
 	invalidAmountTx.On("GetMetadata").Return(invalidAmountMetadata)
@@ -2484,7 +2530,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 
 	//validTx
 	validMetadata := metadataPdexv3.NewUnstakingRequestWithValue(
-		common.PRVIDStr, nftID1, otaReceivers, 50,
+		common.PRVIDStr, otaReceivers, 50, metadataPdexv3.AccessOption{NftID: nftHash1},
 	)
 	validTx := &metadataMocks.Transaction{}
 	validTx.On("GetMetadata").Return(validMetadata)
@@ -2495,7 +2541,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 	//
 
 	acceptInst, err := instruction.NewAcceptUnstakingWithValue(
-		common.PRVCoinID, *nftHash1, 50, validOTAReceiver1, *txReqID, 1,
+		common.PRVCoinID, 50, validOTAReceiver1, *txReqID, 1, metadataPdexv3.AccessOption{NftID: nftHash1}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 
