@@ -697,7 +697,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 		poolPairID, *token0ID, 50, 100, validOTAReceiver0,
 		*txHash, 1, metadataPdexv3.AccessOption{
 			NftID: nftHash,
-		}, validAccessOTA,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 
@@ -706,7 +706,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 		poolPairID, *token1ID, 200, 100, validOTAReceiver1,
 		*txHash, 1, metadataPdexv3.AccessOption{
 			NftID: nftHash,
-		}, validAccessOTA,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 
@@ -1134,7 +1134,7 @@ func Test_stateProcessorV2_staking(t *testing.T) {
 	).StringSlice()
 	assert.Nil(t, err)
 	acceptInst, err := instruction.NewAcceptStakingWithValue(
-		common.PRVCoinID, *txReqID, 1, 100, validAccessOTA, metadataPdexv3.AccessOption{
+		common.PRVCoinID, *txReqID, 1, 100, utils.EmptyString, metadataPdexv3.AccessOption{
 			NftID: nftHash1,
 		},
 	).StringSlice()
@@ -1266,7 +1266,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 		poolPairID, *token1ID, 200, 100, validOTAReceiver1,
 		*txHash, 1, metadataPdexv3.AccessOption{
 			NftID: nftHash,
-		}, validAccessOTA,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 
@@ -1275,13 +1275,13 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 		poolPairID, *token1ID, 100, 50, validOTAReceiver1,
 		*txHash, 1, metadataPdexv3.AccessOption{
 			NftID: nftHash,
-		}, validAccessOTA,
+		}, utils.EmptyString,
 	).StringSlice()
 	acceptWithdrawLiquidityInst3, err := instruction.NewAcceptWithdrawLiquidityWithValue(
 		poolPairID, *token1ID, 200, 100, validOTAReceiver1,
 		*txHash, 1, metadataPdexv3.AccessOption{
 			NftID: nft1Hash,
-		}, validAccessOTA,
+		}, utils.EmptyString,
 	).StringSlice()
 
 	initDB()
@@ -1675,9 +1675,9 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 	rejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
 	assert.Nil(t, err)
 	acceptInst, err := instruction.NewAcceptUnstakingWithValue(
-		common.PRVCoinID, 50, validOTAReceiver0, *txReqID, 1, metadataPdexv3.AccessOption{
+		common.PRVCoinID, 50, utils.EmptyString, *txReqID, 1, metadataPdexv3.AccessOption{
 			NftID: nftHash1,
-		}, validAccessOTA,
+		}, utils.EmptyString,
 	).StringSlice()
 	assert.Nil(t, err)
 

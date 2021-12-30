@@ -16,7 +16,7 @@ type Pdexv3Contribution struct {
 	amount       uint64
 	amplifier    uint
 	txReqID      common.Hash
-	nftID        common.Hash // will be included both nftID and accessID
+	nftID        common.Hash // prsent for nftID or accessID
 	shardID      byte
 	accessOTA    string
 }

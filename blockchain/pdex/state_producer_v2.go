@@ -86,6 +86,8 @@ func (sp *stateProducerV2) addLiquidity(
 		err = sp.validateContributions(waitingContribution, incomingContribution)
 		if err != nil {
 			Logger.log.Warnf("tx %v is invalid err %v", tx.Hash().String(), err)
+			res = append(res, refundInsts...)
+			continue
 		}
 
 		poolPairID := utils.EmptyString
@@ -120,8 +122,10 @@ func (sp *stateProducerV2) addLiquidity(
 					continue
 				}
 				accessCoinReceiver := utils.EmptyString
-				if value, found := waitingContribution.OtaReceivers()[common.PdexAccessCoinID]; found {
-					accessCoinReceiver = value
+				if waitingContribution.OtaReceivers() != nil {
+					if value, found := waitingContribution.OtaReceivers()[common.PdexAccessCoinID]; found {
+						accessCoinReceiver = value
+					}
 				}
 
 				poolPairs[poolPairID] = newPoolPair

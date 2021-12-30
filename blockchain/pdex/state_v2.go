@@ -602,9 +602,14 @@ func NewContributionWithMetaData(
 
 	accessID := common.Hash{}
 	accessOTA := utils.EmptyString
+	var otaReceivers map[common.Hash]string
 	if metaData.AccessOption.UseNft() {
 		accessID = *metaData.AccessOption.NftID
 	} else {
+		otaReceivers = make(map[common.Hash]string)
+		for k, v := range metaData.OtaReceivers() {
+			otaReceivers[k], _ = v.String()
+		}
 		if metaData.AccessOption.AccessID != nil {
 			accessID = *metaData.AccessOption.AccessID
 		} else {
@@ -614,10 +619,6 @@ func NewContributionWithMetaData(
 				return nil, err
 			}
 		}
-	}
-	otaReceivers := make(map[common.Hash]string)
-	for k, v := range metaData.OtaReceivers() {
-		otaReceivers[k], _ = v.String()
 	}
 
 	return rawdbv2.NewPdexv3ContributionWithValue(

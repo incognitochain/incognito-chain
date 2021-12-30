@@ -880,7 +880,7 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				t.Errorf("stateProducerV2.addLiquidity() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("stateProducerV2.addLiquidity() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("stateProducerV2.addLiquidity() got2 = %v, want %v", got2["pair_hash"], tt.want2["pair_hash"])
 			}
 		})
 	}
@@ -1484,7 +1484,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 
 	rejectNftIDInst := v2utils.BuildWithdrawLPFeeInsts(
 		poolPairID, metadataPdexv3.AccessOption{
-			NftID: nftHash,
+			NftID: &common.PRVCoinID,
 		},
 		map[common.Hash]metadataPdexv3.ReceiverInfo{},
 		1, *txHash, metadataPdexv3.RequestRejectedChainStatus, utils.EmptyString,

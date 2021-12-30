@@ -1165,9 +1165,11 @@ func (sp *stateProcessorV2) unstaking(
 	}
 	unstakingStatus := v2.UnstakingStatus{
 		Status:        status,
-		NftID:         accessID.String(),
 		StakingPoolID: stakingPoolID,
 		Liquidity:     liquidity,
+	}
+	if !accessID.IsZeroValue() {
+		unstakingStatus.NftID = accessID.String()
 	}
 	data, err := json.Marshal(unstakingStatus)
 	if err != nil {

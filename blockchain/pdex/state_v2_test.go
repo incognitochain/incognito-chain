@@ -142,7 +142,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 	stakingTx.On("GetValidationEnv").Return(valEnv2)
 	stakingTx.On("Hash").Return(txReqID)
 	stakingInst, err := instruction.NewAcceptStakingWithValue(
-		*nftHash1, *txReqID, 1, 100, utils.EmptyString, metadataPdexv3.AccessOption{NftID: nftHash1},
+		common.PRVCoinID, *txReqID, 1, 100, utils.EmptyString, metadataPdexv3.AccessOption{NftID: nftHash1},
 	).StringSlice()
 	assert.Nil(t, err)
 	//
@@ -2027,7 +2027,7 @@ func Test_stateV2_Process(t *testing.T) {
 							rawdbv2.NewPdexv3OrderWithValue(
 								firstTxHash.String(),
 								*nftHash1,
-								[]byte{},
+								nil,
 								10, 35, 10, 0, 0,
 								[2]string{
 									validOTAReceiver0,
@@ -2037,7 +2037,7 @@ func Test_stateV2_Process(t *testing.T) {
 							rawdbv2.NewPdexv3OrderWithValue(
 								secondTxHash.String(),
 								*nftHash1,
-								[]byte{},
+								nil,
 								9, 40, 0, 40, 1,
 								[2]string{
 									validOTAReceiver0,

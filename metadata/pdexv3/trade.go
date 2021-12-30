@@ -63,6 +63,11 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
 	}
 
+	if req.TokenToSell == common.PdexAccessCoinID {
+		return false, false, metadataCommon.NewMetadataTxError(
+			metadataCommon.PDEInvalidMetadataValueError, errors.New("Can not sell pdex access token"))
+	}
+
 	// OTAReceiver check
 	for _, item := range req.Receiver {
 		if !item.IsValid() {
