@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"sort"
 	"strconv"
@@ -242,7 +241,7 @@ func (sp *stateProducerV2) mintPDEXGenesis() ([][]string, error) {
 
 	mintingPDEXGenesisContent := metadataPdexv3.MintPDEXGenesisContent{
 		MintingPaymentAddress: receivingAddressStr,
-		MintingAmount:         uint64(GenesisMintingAmount * math.Pow(10, common.PDEXDenominatingDecimal)),
+		MintingAmount:         1,
 		ShardID:               shardID,
 	}
 	mintingPDEXGenesisContentBytes, _ := json.Marshal(mintingPDEXGenesisContent)
