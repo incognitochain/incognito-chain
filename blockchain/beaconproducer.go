@@ -504,8 +504,23 @@ func addFinishInstruction(
 }
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
+	syncValidator := curView.GetSyncingValidatorsString()
 
-	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(curView.GetSyncingValidatorsString())
+	//get valid waiting validator
+	validWaitingValidator := map[byte][]string{}
+	for sid, validators := range syncValidator {
+		halfPendingCycle := uint64(len(curView.GetShardPendingValidator()[sid]) / 4)
+		for _, validator := range validators {
+			info, exists, err := curView.GetStakerInfo(validator)
+			if !exists || err != nil {
+				panic("Error when generateFinishSyncInstruction. This must not occur!")
+			}
+			if curView.BeaconHeight >= info.BeaconConfirmHeight()+halfPendingCycle*config.Param().EpochParam.NumberOfBlockInEpoch {
+				validWaitingValidator[sid] = append(validWaitingValidator[sid], validator)
+			}
+		}
+	}
+	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(validWaitingValidator, curView.BeaconHeight)
 	instructions := [][]string{}
 
 	for _, finishSyncInstruction := range finishSyncInstructions {

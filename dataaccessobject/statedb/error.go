@@ -118,6 +118,7 @@ const (
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
 	StoreSyncingValidatorsError
+	SaveStopAutoStakerInfoError
 
 	DeleteBeaconCommitteeError
 	DeleteOneShardCommitteeError
@@ -305,6 +306,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
 	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
+	SaveStopAutoStakerInfoError:            {-3016, "Store Stop Autostake Info Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},
@@ -418,7 +420,7 @@ var ErrCodeMessage = map[int]struct {
 
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError: {-15102, "Bridge Insert PRV pegging evm Tx Hash Issued Error"},
-	IsPRVEVMTxHashIssuedError:     {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
+	IsPRVEVMTxHashIssuedError:           {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

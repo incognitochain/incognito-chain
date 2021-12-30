@@ -273,7 +273,9 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 		b.rewardReceiver,
 		b.autoStake,
 		b.stakingTx,
+		env.BeaconHeight,
 	)
+
 	if err != nil {
 		return []string{}, newShardCandidates, err
 	}
@@ -415,6 +417,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.rewardReceiver,
 		b.autoStake,
 		b.stakingTx,
+		env.BeaconHeight,
 	)
 	return err
 }
@@ -424,13 +427,14 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreStakerInfo(
-		env.ConsensusStateDB,
-		stopAutoStakingIncognitoKey,
-		b.rewardReceiver,
-		b.autoStake,
-		b.stakingTx,
-	)
+
+	if len(stopAutoStakingIncognitoKey) != 0 {
+		err := statedb.SaveStopAutoStakerInfo(env.ConsensusStateDB, stopAutoStakingIncognitoKey, b.autoStake)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
