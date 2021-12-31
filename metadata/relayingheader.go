@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -76,26 +77,26 @@ func (rh RelayingHeader) ValidateSanityData(chainRetriever ChainRetriever, shard
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(rh.IncogAddressStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("sender address is incorrect"))
+		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("sender address is incorrect"))
 	}
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if _, err := AssertPaymentAddressAndTxVersion(incogAddr, tx.GetVersion()); err != nil {
-		return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("sender address is incorrect"))
+		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("sender address is incorrect"))
 	}
 
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("tx push header relaying must be TxNormalType"))
+		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("tx push header relaying must be TxNormalType"))
 	}
 
 	// check block height
 	if rh.BlockHeight < 1 {
-		return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("BlockHeight must be greater than 0"))
+		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("BlockHeight must be greater than 0"))
 	}
 
 	// check header
 	headerBytes, err := base64.StdEncoding.DecodeString(rh.Header)
 	if err != nil || len(headerBytes) == 0 {
-		return false, false, NewMetadataTxError(RelayingHeaderMetaError, errors.New("header is invalid"))
+		return false, false, NewMetadataTxError(metadataCommon.RelayingHeaderMetaError, errors.New("header is invalid"))
 	}
 
 	return true, true, nil

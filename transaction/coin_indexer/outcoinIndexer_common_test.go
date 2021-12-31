@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/key"
-	"sync"
 	"testing"
 )
 
@@ -53,35 +51,6 @@ func TestCoinIndexer_getIdxParamsForIndexing(t *testing.T) {
 		fmt.Printf("%v, #workers %v, #splits: %v\n", res, remainingWorkers, total)
 
 		fmt.Printf("END TEST %v\n\n", i)
-	}
-}
-
-func TestCoinIndexer_cloneCachedCoins(t *testing.T) {
-	for i := 0; i < numTest; i++ {
-		fmt.Printf("===== TEST %v =====\n", i)
-		//Prepare data
-		ci := CoinIndexer{}
-		ci.cachedCoinPubKeys = make(map[string]interface{})
-		ci.mtx = new(sync.RWMutex)
-
-		testSize := common.RandInt() % 10000
-		for len(ci.cachedCoinPubKeys) < testSize {
-			pubKeyStr := privacy.RandomPoint().String()
-			ci.cachedCoinPubKeys[pubKeyStr] = true
-		}
-
-		clonedCache := ci.cloneCachedCoins()
-		if len(clonedCache) != testSize {
-			panic("")
-		}
-
-		for otaStr := range clonedCache {
-			if _, ok := ci.cachedCoinPubKeys[otaStr]; !ok {
-				panic(fmt.Errorf("key %v not found\n", otaStr))
-			}
-		}
-
-		fmt.Printf("===== END TEST %v =====\n\n", i)
 	}
 }
 

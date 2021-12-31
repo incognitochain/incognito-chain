@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -168,4 +170,27 @@ func NewTLSCertPair(organization string, validUntil time.Time, extraHosts []stri
 // building for systems that do not allow access to net.InterfaceAddrs().
 func interfaceAddrs() ([]net.Addr, error) {
 	return net.InterfaceAddrs()
+}
+
+// Uint64Reader wraps the unmarshaling of uint64 numbers from both integer & string formats.
+type Uint64Reader uint64
+
+func (u Uint64Reader) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u)
+}
+func (u *Uint64Reader) UnmarshalJSON(raw []byte) error {
+	var theNum uint64
+	err := json.Unmarshal(raw, &theNum)
+	if err != nil {
+		var theStr string
+		err := json.Unmarshal(raw, &theStr)
+		if err != nil {
+			return fmt.Errorf("Error unmarshalling number %s - must be uint64 or string", string(raw))
+		}
+		temp, err := strconv.ParseUint(theStr, 10, 64)
+		*u = Uint64Reader(temp)
+		return err
+	}
+	*u = Uint64Reader(theNum)
+	return err
 }

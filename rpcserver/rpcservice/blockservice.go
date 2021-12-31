@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -169,7 +170,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		result.Round = shardBlock.Header.Round
 		result.CrossShardBitMap = []int{}
 		result.Instruction = shardBlock.Body.Instructions
-		instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height)
+		instructions, _, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
 		if err == nil {
 			result.Instruction = append(result.Instruction, instructions...)
 		}
@@ -311,7 +312,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 			res.CrossShardBitMap = []int{}
 			res.Instruction = shardBlock.Body.Instructions
 			res.CommitteeFromBlock = shardBlock.Header.CommitteeFromBlock
-			instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height)
+			instructions, _, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
 			if err == nil {
 				res.Instruction = append(res.Instruction, instructions...)
 			}
@@ -1270,7 +1271,7 @@ func (blockService BlockService) GetCustodianTopupWaitingPortingStatusV3(txID st
 }
 
 func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string, collateralTokenID string, beaconHeight uint64, stateDB *statedb.StateDB) (map[string]uint64, error) {
-	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB, nil)
 	if err != nil {
 		return nil, err
 	}

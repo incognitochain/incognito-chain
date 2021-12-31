@@ -3,12 +3,14 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -51,7 +53,7 @@ func (httpServer *HttpServer) handleGetPRVERC20BurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningPRVERC20ConfirmMeta
+	confirmMeta := metadataCommon.BurningPRVERC20ConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
@@ -64,7 +66,7 @@ func (httpServer *HttpServer) handleGetPRVBEP20BurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningPRVBEP20ConfirmMeta
+	confirmMeta := metadataCommon.BurningPRVBEP20ConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
@@ -80,6 +82,22 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	confirmMeta := metadata.BurningConfirmForDepositToSCMeta
 	if onBeacon {
 		confirmMeta = metadata.BurningConfirmForDepositToSCMetaV2
+	}
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetBurnPBSCProofForDepositToSC returns a proof of a tx burning pBSC to deposit to SC
+func (httpServer *HttpServer) handleGetBurnPBSCProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningConfirmForDepositToSCMeta
+	if onBeacon {
+		confirmMeta = metadata.BurningPBSCConfirmForDepositToSCMeta
 	}
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
@@ -309,6 +327,8 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 	return burningAddress, nil
 }
 
+//Notice: this function is used when getting proof
+//make sure it will get from final view
 func getSingleBeaconBlockByHeight(bc *blockchain.BlockChain, height uint64) (*types.BeaconBlock, error) {
 	beaconBlock, err := bc.GetBeaconBlockByView(bc.BeaconChain.GetFinalView(), height)
 	if err != nil {

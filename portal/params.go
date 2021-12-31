@@ -416,7 +416,7 @@ var mainnetPortalParam = PortalParams{
 			MaxFeePercentageForEachStep: 25, // ~ 25% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
 			MaxUnshieldFees: map[string]uint64{
-				MainnetPortalV4BTCID: 500000, // pbtc
+				MainnetPortalV4BTCID: 5000000, // pbtc
 			},
 			PortalV4TokenIDs: []string{
 				MainnetPortalV4BTCID,
@@ -560,7 +560,7 @@ func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcess
 				MultipleTokenAmount: 10,
 				ExternalInputSize:   192,
 				ExternalOutputSize:  43,
-				ExternalTxMaxSize:   5120,
+				ExternalTxMaxSize:   51200,
 			},
 			ChainParam:    &chaincfg.MainNetParams,
 			PortalTokenID: MainnetPortalV4BTCID,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -59,7 +60,7 @@ func (iRes PortalShieldingResponse) ValidateSanityData(chainRetriever ChainRetri
 
 func (iRes PortalShieldingResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalV4ShieldingResponseMeta
+	return iRes.Type == metadataCommon.PortalV4ShieldingResponseMeta
 }
 
 func (iRes PortalShieldingResponse) Hash() *common.Hash {
@@ -94,7 +95,7 @@ func (iRes PortalShieldingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalV4ShieldingRequestMeta) {
+			instMetaType != strconv.Itoa(metadataCommon.PortalV4ShieldingRequestMeta) {
 			continue
 		}
 

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -1621,8 +1620,8 @@ func (serverObj *Server) PublishNodeState() error {
 		Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 		if validator.State.ChainID == -1 {
 			serverObj.PushMessageToBeacon(msg, nil)
-			b, _ := json.Marshal(msg.(*wire.MessagePeerState).Shards)
-			fmt.Println("[debugshard] shard peer state", string(b))
+			// b, _ := json.Marshal(msg.(*wire.MessagePeerState).Shards)
+			// fmt.Println("[debugshard] shard peer state", string(b))
 		} else {
 			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID))
 		}
@@ -2093,8 +2092,6 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		//check if in committee or pending committee in beacon
 		for _, chain := range s.blockChain.ShardChain {
 			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
-				key, _ := v.ToBase58()
-				Logger.log.Info("[slashing] key:", key)
 				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 					return common.PendingRole, chain.GetShardID()
 				}

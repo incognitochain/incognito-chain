@@ -1,5 +1,5 @@
 name: "local"
-net: 0x22
+net: 0x02
 genesis_param:
   initial_incognito:
     - Version: 1
@@ -31,7 +31,7 @@ block_time:
   min_shard_block_interval: 8s
   max_shard_block_creation: 5s
 staking_amount_shard: 1750000000000
-active_shards: 1
+active_shards: 2
 basic_reward: 400000000
 epoch_param:
   number_of_block_in_epoch: 50
@@ -64,7 +64,7 @@ beacon_height_break_point_burn_addr: 2
 eth_remove_bridge_sig_epoch: 0
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 2
-bc_height_break_point_privacy_v2: 52300
+bc_height_break_point_privacy_v2: 1
 coin_v2_lowest_height: 1
 enable_feature_flags:
   - PortalRelaying: 1
@@ -72,10 +72,22 @@ enable_feature_flags:
   - PortalV4: 1
 portal_v3_height: 1000000000000
 tx_pool_version: 0
-geth_param:
-  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
-  protocol: "https"
-  port: ""
 bsc_param:
   host: "https://data-seed-prebsc-1-s1.binance.org:8545"
+pdex_param:
+  pdex_v3_break_point_height: 11
+  protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  params:
+    default_fee_rate_bps: 30
+    prv_discount_percent: 25
+    trading_protocol_fee_percent: 0
+    trading_staking_pool_reward_percent: 10
+    staking_pool_share: 
+      - "0000000000000000000000000000000000000000000000000000000000000004": 10
+      - "0000000000000000000000000000000000000000000000000000000000000006": 20
+    mint_nft_require_amount: 1000000000
+    max_orders_per_nft: 10
+    auto_withdraw_order_limit_amount: 10
+    min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false

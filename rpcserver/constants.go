@@ -107,6 +107,7 @@ const (
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
 	listCustomToken                              = "listcustomtoken"
 	listPrivacyCustomToken                       = "listprivacycustomtoken"
+	listPrivacyCustomTokenIDs                    = "listprivacycustomtokenids"
 	getPrivacyCustomToken                        = "getprivacycustomtoken"
 	listPrivacyCustomTokenByShard                = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken                 = "getbalanceprivacycustomtoken"
@@ -249,6 +250,39 @@ const (
 	getPDEFeeWithdrawalStatus                  = "getpdefeewithdrawalstatus"
 	convertPDEPrices                           = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
+	//
+
+	// pDex v3
+	pdexv3MintNft                         = "pdexv3_txMintNft"
+	getPdexv3State                        = "pdexv3_getState"
+	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
+	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"
+	pdexv3AddLiquidityV3                  = "pdexv3_txAddLiquidity"
+	pdexv3WithdrawLiquidityV3             = "pdexv3_txWithdrawLiquidity"
+	getPdexv3ContributionStatus           = "pdexv3_getContributionStatus"
+
+	getPdexv3WithdrawLiquidityStatus               = "pdexv3_getWithdrawLiquidityStatus"
+	getPdexv3MintNftStatus                         = "pdexv3_getMintNftStatus"
+	pdexv3TxTrade                                  = "pdexv3_txTrade"
+	pdexv3TxAddOrder                               = "pdexv3_txAddOrder"
+	pdexv3TxWithdrawOrder                          = "pdexv3_txWithdrawOrder"
+	pdexv3GetTradeStatus                           = "pdexv3_getTradeStatus"
+	pdexv3GetAddOrderStatus                        = "pdexv3_getAddOrderStatus"
+	pdexv3GetWithdrawOrderStatus                   = "pdexv3_getWithdrawOrderStatus"
+	pdexv3Staking                                  = "pdexv3_txStake"
+	pdexv3Unstaking                                = "pdexv3_txUnstake"
+	pdexv3GetStakingStatus                         = "pdexv3_getStakingStatus"
+	pdexv3GetUnstakingStatus                       = "pdexv3_getUnstakingStatus"
+	getPdexv3EstimatedLPValue                      = "pdexv3_getEstimatedLPValue"
+	getPdexv3EstimatedLPPoolReward                 = "pdexv3_getEstimatedLPPoolReward"
+	createAndSendTxWithPdexv3WithdrawLPFee         = "pdexv3_txWithdrawLPFee"
+	getPdexv3WithdrawalLPFeeStatus                 = "pdexv3_getWithdrawalLPFeeStatus"
+	createAndSendTxWithPdexv3WithdrawProtocolFee   = "pdexv3_txWithdrawProtocolFee"
+	getPdexv3WithdrawalProtocolFeeStatus           = "pdexv3_getWithdrawalProtocolFeeStatus"
+	getPdexv3EstimatedStakingReward                = "pdexv3_getEstimatedStakingReward"
+	getPdexv3EstimatedStakingPoolReward            = "pdexv3_getEstimatedStakingPoolReward"
+	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
+	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
@@ -312,9 +346,11 @@ const (
 	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
-	getBurnProofForDepositToSC                  = "getburnprooffordeposittosc"
-	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
-	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
+	getBurnProofForDepositToSC                    = "getburnprooffordeposittosc"
+	getBurnPBSCProofForDepositToSC                = "getburnpbscprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest     = "createandsendburningfordeposittoscrequest"
+	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
+	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
 
 	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"

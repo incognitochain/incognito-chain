@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -17,7 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -701,23 +703,34 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, nil, uint64(beaconHeight))
+	pdeState, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight), pdex.BasicVersion)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-
 
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
+
+	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
+	err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	waitingContributions := make(map[string]*rawdbv2.PDEContribution)
+	err = json.Unmarshal(pdeState.Reader().WaitingContributions(), &waitingContributions)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+
 	result := jsonresult.CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
-		PDEPoolPairs:            pdeState.PDEPoolPairs,
-		PDEShares:               pdeState.PDEShares,
-		WaitingPDEContributions: pdeState.WaitingPDEContributions,
-		PDETradingFees:          pdeState.PDETradingFees,
+		PDEPoolPairs:            poolPairs,
+		PDEShares:               pdeState.Reader().Shares(),
+		WaitingPDEContributions: waitingContributions,
+		PDETradingFees:          pdeState.Reader().TradingFees(),
 	}
 	return result, nil
 }
@@ -1245,11 +1258,16 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, nil, latestBeaconHeight)
+	pdeState, err := pdex.InitStateFromDB(beaconFeatureStateDB, latestBeaconHeight, pdex.BasicVersion)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdePoolPairs := pdeState.PDEPoolPairs
+	poolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
+	err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+
 	results := []*ConvertedPrice{}
 	if toTokenIDStr != "all" {
 		convertedPrice := convertPrice(
@@ -1257,7 +1275,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 			toTokenIDStr,
 			fromTokenIDStr,
 			convertingAmt,
-			pdePoolPairs,
+			poolPairs,
 		)
 		if convertedPrice == nil {
 			return results, nil
@@ -1265,7 +1283,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 		return append(results, convertedPrice), nil
 	}
 	// compute price of "from" token against all tokens else
-	for poolPairKey, poolPair := range pdePoolPairs {
+	for poolPairKey, poolPair := range poolPairs {
 		if !strings.Contains(poolPairKey, fromTokenIDStr) {
 			continue
 		}
@@ -1276,7 +1294,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 				poolPair.Token2IDStr,
 				fromTokenIDStr,
 				convertingAmt,
-				pdePoolPairs,
+				poolPairs,
 			)
 		} else if poolPair.Token2IDStr == fromTokenIDStr {
 			convertedPrice = convertPrice(
@@ -1284,7 +1302,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 				poolPair.Token1IDStr,
 				fromTokenIDStr,
 				convertingAmt,
-				pdePoolPairs,
+				poolPairs,
 			)
 		}
 		if convertedPrice == nil {
@@ -1614,7 +1632,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
 		}
 	}
-
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)

@@ -3,6 +3,7 @@ package rpcservice
 import (
 	"bytes"
 	"fmt"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -204,8 +205,7 @@ func NewBurningRequestMetadata(
 }
 
 func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
-	gethParam := config.Param().GethParam
-	gethParam.GetFromEnv()
+	gethParam := config.Config().GethParam
 	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)
 }
 
@@ -218,11 +218,11 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	if err != nil {
 		return nil, byte(0), err
 	}
-	if keyWallet.KeySet.PrivateKey != nil{
+	if keyWallet.KeySet.PrivateKey != nil {
 		return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
-	} else{
+	} else {
 		pk := keyWallet.KeySet.OTAKey.GetPublicSpend()
-		if pk ==nil {
+		if pk == nil {
 			return nil, byte(0), errors.New("OTA Public Key not found")
 		}
 		pkb := pk.ToBytesS()

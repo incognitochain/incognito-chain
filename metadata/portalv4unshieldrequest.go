@@ -12,6 +12,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type PortalUnshieldRequest struct {
@@ -100,66 +101,66 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 
 	// check tx type
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("tx burn ptoken must be TxCustomTokenPrivacyType"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, errors.New("tx burn ptoken must be TxCustomTokenPrivacyType"))
 	}
 
 	// check ota address string and tx random is valid
-	_, err, ver := checkIncognitoAddress(uReq.OTAPubKeyStr, uReq.TxRandomStr)
+	_, err, ver := metadataCommon.CheckIncognitoAddress(uReq.OTAPubKeyStr, uReq.TxRandomStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError,
 			fmt.Errorf("payment address string or txrandom is not corrrect format %v", err))
 	}
 
 	// check tx version
 	if int8(ver) != tx.GetVersion() {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError,
 			fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion()))
 	}
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError,
 			errors.New("Tx unshielding request must be version 2"))
 	}
 
 	// check tx burn or not
 	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
 	if err != nil || !isBurn {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("this is not burn tx. Error %v", err))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("this is not burn tx. Error %v", err))
 	}
 	burningAmt := burnedCoin.GetValue()
 	burningTokenID := burnedToken.String()
 
 	// validate tokenID
 	if uReq.TokenID != burningTokenID {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to burning tokenID in tx"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to burning tokenID in tx"))
 	}
 	// check tokenId is portal token or not
 	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
 	}
 
 	// validate burning amount
 	// check unshielding amount is equal to burning amount
 	if uReq.UnshieldAmount != burningAmt {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("burning amount %v should be equal to unshielding amount"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, errors.New("burning amount %v should be equal to unshielding amount"))
 	}
 
 	// check unshielding amount is not less then minimum unshielding amount
 	minUnshieldAmount := chainRetriever.GetPortalV4MinUnshieldAmount(uReq.TokenID, beaconHeight)
 	if uReq.UnshieldAmount < minUnshieldAmount {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("unshielding amount should be larger or equal to %v", minUnshieldAmount))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("unshielding amount should be larger or equal to %v", minUnshieldAmount))
 	}
 
 	// validate RemoteAddress
 	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(uReq.TokenID, uReq.RemoteAddress, beaconHeight, common.PortalVersion4)
 	if err != nil || !isValidRemoteAddress {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", uReq.RemoteAddress, uReq.TokenID, err))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", uReq.RemoteAddress, uReq.TokenID, err))
 	}
 
 	return true, true, nil
 }
 
 func (uReq PortalUnshieldRequest) ValidateMetadataByItself() bool {
-	return uReq.Type == PortalV4UnshieldingRequestMeta
+	return uReq.Type == metadataCommon.PortalV4UnshieldingRequestMeta
 }
 
 func (uReq PortalUnshieldRequest) Hash() *common.Hash {
@@ -186,7 +187,7 @@ func (uReq *PortalUnshieldRequest) BuildReqActions(tx Transaction, chainRetrieve
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalV4UnshieldingRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(metadataCommon.PortalV4UnshieldingRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
