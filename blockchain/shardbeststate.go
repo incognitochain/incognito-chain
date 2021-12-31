@@ -723,7 +723,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 		}
 	}
 	// use for archive mode or force to do so
-	if force || ShardSyncMode == NORMAL_SYNC_MODE {
+	if force || ShardSyncMode == ARCHIVE_SYNC_MODE {
 		if err := shardBestState.commitTrieToDisk(sRH); err != nil {
 			return err
 		}

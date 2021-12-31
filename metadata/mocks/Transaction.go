@@ -34,6 +34,20 @@ func (_m *Transaction) CalculateTxValue() uint64 {
 	return r0
 }
 
+// CheckData provides a mock function with given fields: db
+func (_m *Transaction) CheckData(db *statedb.StateDB) error {
+	ret := _m.Called(db)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*statedb.StateDB) error); ok {
+		r0 = rf(db)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // CheckTxVersion provides a mock function with given fields: _a0
 func (_m *Transaction) CheckTxVersion(_a0 int8) bool {
 	ret := _m.Called(_a0)
@@ -605,8 +619,8 @@ func (_m *Transaction) ListSerialNumbersHashH() []common.Hash {
 	return r0
 }
 
-// LoadCommitment provides a mock function with given fields: db
-func (_m *Transaction) LoadCommitment(db *statedb.StateDB) error {
+// LoadData provides a mock function with given fields: db
+func (_m *Transaction) LoadData(db *statedb.StateDB) error {
 	ret := _m.Called(db)
 
 	var r0 error
@@ -700,27 +714,6 @@ func (_m *Transaction) UnmarshalJSON(data []byte) error {
 	}
 
 	return r0
-}
-
-// ValidateDoubleSpendWithBlockChain provides a mock function with given fields: stateDB
-func (_m *Transaction) ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error) {
-	ret := _m.Called(stateDB)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(*statedb.StateDB) bool); ok {
-		r0 = rf(stateDB)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(*statedb.StateDB) error); ok {
-		r1 = rf(stateDB)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // ValidateDoubleSpendWithBlockchain provides a mock function with given fields: _a0, _a1, _a2
@@ -851,20 +844,20 @@ func (_m *Transaction) ValidateTxByItself(_a0 map[string]bool, _a1 *statedb.Stat
 	return r0, r1
 }
 
-// ValidateTxCorrectness provides a mock function with given fields:
-func (_m *Transaction) ValidateTxCorrectness() (bool, error) {
-	ret := _m.Called()
+// ValidateTxCorrectness provides a mock function with given fields: db
+func (_m *Transaction) ValidateTxCorrectness(db *statedb.StateDB) (bool, error) {
+	ret := _m.Called(db)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(*statedb.StateDB) bool); ok {
+		r0 = rf(db)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(*statedb.StateDB) error); ok {
+		r1 = rf(db)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -970,27 +963,6 @@ func (_m *Transaction) VerifyMinerCreatedTxBeforeGettingInBlock(_a0 *metadata.Mi
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*metadata.MintData, byte, metadata.ChainRetriever, *metadata.AccumulatedValues, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) error); ok {
 		r1 = rf(_a0, _a1, _a2, _a3, _a4, _a5)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// VerifySigTx provides a mock function with given fields:
-func (_m *Transaction) VerifySigTx() (bool, error) {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

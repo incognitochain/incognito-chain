@@ -106,7 +106,7 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 		trieJournal[chainID] = filePath
 	}
 
-	cacheConfig := configCache16GB
+	cacheConfig := configCache32GB
 	cacheConfig.triegc = prque.New(nil)
 	cacheConfig.trieJournalPath = trieJournal
 
@@ -389,7 +389,7 @@ func (bc *BlockChain) Stop() {
 
 	Logger.log.Info("Blockchain Stop")
 
-	if ShardSyncMode == FAST_SYNC_MODE {
+	if ShardSyncMode == FULL_SYNC_MODE {
 
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
 

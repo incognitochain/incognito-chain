@@ -456,15 +456,15 @@ func (httpServer *HttpServer) handleEnableFastSyncMode(params interface{}, close
 	}
 
 	if shardSyncMode {
-		blockchain.ShardSyncMode = blockchain.FAST_SYNC_MODE
+		blockchain.ShardSyncMode = blockchain.FULL_SYNC_MODE
 	} else {
-		blockchain.ShardSyncMode = blockchain.NORMAL_SYNC_MODE
+		blockchain.ShardSyncMode = blockchain.ARCHIVE_SYNC_MODE
 	}
 
 	if beaconSyncMode {
-		blockchain.BeaconSyncMode = blockchain.FAST_SYNC_MODE
+		blockchain.BeaconSyncMode = blockchain.FULL_SYNC_MODE
 	} else {
-		blockchain.BeaconSyncMode = blockchain.NORMAL_SYNC_MODE
+		blockchain.BeaconSyncMode = blockchain.ARCHIVE_SYNC_MODE
 	}
 
 	return map[string]interface{}{
@@ -488,6 +488,47 @@ func (httpServer *HttpServer) handleSetFullValidation(params interface{}, closeC
 	return map[string]interface{}{
 		"IsFullValidation": config.Config().IsFullValidation,
 	}, nil
+}
+
+func (httpServer *HttpServer) handleGetRootHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+
+	tempChainID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+	chainID := int(tempChainID)
+
+	tempBlockHash, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Hash Value"))
+	}
+	blockHash := common.Hash{}.NewHashFromStr2(tempBlockHash)
+
+	if chainID == -1 {
+		res, err := blockchain.GetBeaconRootsHashByBlockHash(
+			httpServer.config.BlockChain.BeaconChain.GetChainDatabase(),
+			blockHash,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		return res, nil
+	} else {
+		res, err := blockchain.GetShardRootsHashByBlockHash(
+			httpServer.config.BlockChain.ShardChain[chainID].GetChainDatabase(),
+			byte(chainID),
+			blockHash,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		return res, nil
+	}
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

@@ -60,6 +60,8 @@ type NodeIterator interface {
 	// Hash returns the hash of the current node.
 	Hash() common.Hash
 
+	Node() interface{}
+
 	// Parent returns the hash of the parent of the current node. The hash may be the one
 	// grandparent if the immediate parent is an internal node with no hash.
 	Parent() common.Hash
@@ -135,6 +137,13 @@ func (it *nodeIterator) Hash() common.Hash {
 		return common.Hash{}
 	}
 	return it.stack[len(it.stack)-1].hash
+}
+
+func (it *nodeIterator) Node() interface{} {
+	if len(it.stack) == 0 {
+		return common.Hash{}
+	}
+	return it.stack[len(it.stack)-1].node
 }
 
 func (it *nodeIterator) Parent() common.Hash {
@@ -387,6 +396,10 @@ func (it *differenceIterator) Hash() common.Hash {
 	return it.b.Hash()
 }
 
+func (it *differenceIterator) Node() interface{} {
+	return it.b.Node()
+}
+
 func (it *differenceIterator) Parent() common.Hash {
 	return it.b.Parent()
 }
@@ -492,6 +505,10 @@ func NewUnionIterator(iters []NodeIterator) (NodeIterator, *int) {
 
 func (it *unionIterator) Hash() common.Hash {
 	return (*it.items)[0].Hash()
+}
+
+func (it *unionIterator) Node() interface{} {
+	return (*it.items)[0].Node()
 }
 
 func (it *unionIterator) Parent() common.Hash {

@@ -120,6 +120,7 @@ var HttpHandler = map[string]httpHandler{
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
 	enableFastSyncMode:         (*HttpServer).handleEnableFastSyncMode,
 	setFullValidation:          (*HttpServer).handleSetFullValidation,
+	getRootHash:                (*HttpServer).handleGetRootHash,
 	//=================================
 
 	// Beststate

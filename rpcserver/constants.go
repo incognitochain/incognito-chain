@@ -145,6 +145,7 @@ const (
 	getProposerIndex           = "getproposerindex"
 	enableFastSyncMode         = "enablefastsyncmode"
 	setFullValidation          = "setfullvalidation"
+	getRootHash                = "getroothash"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"

@@ -148,6 +148,11 @@ func (stateDB *StateDB) Database() DatabaseAccessWarper {
 	return stateDB.db
 }
 
+// Database return current database access warper
+func (stateDB *StateDB) Trie() Trie {
+	return stateDB.trie
+}
+
 // Copy duplicate statedb and return new statedb instance
 func (stateDB *StateDB) Copy() *StateDB {
 	return &StateDB{
