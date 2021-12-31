@@ -54,7 +54,7 @@ private_key: "" #
 accelerator: false #
 p2p_private_key: "" #
 force_backup: false #
-is_full_validation: true
+is_full_validation: false
 geth_param:
   host: "https://eth-fullnode.incognito.org"
   protocol: ""
