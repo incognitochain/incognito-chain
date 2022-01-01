@@ -402,9 +402,10 @@ type Testcase struct {
 
 // format a pool, discarding data irrelevant to this test
 type PoolFormatter struct {
-	State        *rawdbv2.Pdexv3PoolPair `json:"state"`
-	Orderbook    Orderbook               `json:"orderbook"`
-	OrderRewards map[string]*OrderReward `json:"orderrewards"`
+	State        *rawdbv2.Pdexv3PoolPair       `json:"state"`
+	Orderbook    Orderbook                     `json:"orderbook"`
+	OrderRewards map[string]*OrderReward       `json:"orderrewards"`
+	MakingVolume map[common.Hash]*MakingVolume `json:"makingvolume"`
 }
 
 type StateFormatter struct {
@@ -422,6 +423,7 @@ func (sf *StateFormatter) State(params *Params) *stateV2 {
 			state:          *v.State,
 			orderbook:      v.Orderbook,
 			orderRewards:   v.OrderRewards,
+			makingVolume:   v.MakingVolume,
 			lpFeesPerShare: map[common.Hash]*big.Int{},
 		}
 	}
@@ -435,6 +437,7 @@ func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 			State:        &v.state,
 			Orderbook:    v.orderbook,
 			OrderRewards: v.orderRewards,
+			MakingVolume: v.makingVolume,
 		}
 	}
 	return sf

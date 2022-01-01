@@ -24,6 +24,13 @@ type MintBlockRewardContent struct {
 	TokenID    common.Hash `json:"TokenID"`
 }
 
+type DistributeMiningOrderRewardContent struct {
+	PoolPairID    string      `json:"PoolPairID"`
+	MakingTokenID common.Hash `json:"MakingTokenID"`
+	Amount        uint64      `json:"Amount"`
+	TokenID       common.Hash `json:"TokenID"`
+}
+
 type MintPDEXGenesisContent struct {
 	MintingPaymentAddress string `json:"MintingPaymentAddress"`
 	MintingAmount         uint64 `json:"MintingAmount"`

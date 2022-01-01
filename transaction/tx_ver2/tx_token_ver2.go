@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/wallet"
 
 	"math"
 	"sort"
@@ -101,6 +100,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 	result.Sig = clonedSig
 	result.SigPubKey = clonedPk
 	result.Info = clonedInfo
+	result.SetValidationEnv(txPRV.GetValidationEnv())
 
 	return result
 }
@@ -113,6 +113,7 @@ type TxToken struct {
 	Tx             Tx                  `json:"Tx"`
 	TokenData      TxTokenDataVersion2 `json:"TxTokenPrivacyData"`
 	cachedTxNormal *Tx
+	valEnv         *tx_generic.ValidationEnv
 }
 
 // Hash returns the hash of this object.
@@ -180,7 +181,7 @@ func (txToken *TxToken) GetTxNormal() metadata.Transaction {
 		return txToken.cachedTxNormal
 	}
 	result := makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
-	// tx.cachedTxNormal = result
+	txToken.cachedTxNormal = result
 	return result
 }
 
@@ -604,10 +605,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 	// Reform Ring
 	sumOutputCoinsWithFee := tx_generic.CalculateSumOutputsWithFee(txFee.GetProof().GetOutputCoins(), txFee.GetTxFee())
-	ring, err := getRingFromSigPubKeyAndLastColumnCommitment(
-		txFee.GetSigPubKey(), sumOutputCoinsWithFee,
-		transactionStateDB, shardID, tokenID,
-	)
+	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txFee.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
@@ -1096,7 +1094,7 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
 		// Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1109,7 +1107,7 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 
 	for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
 		// Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1275,7 +1273,7 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 	if txToken.GetTxBase().GetProof() != nil {
 		for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
 			// Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+			if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1287,7 +1285,7 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 	if txToken.GetTxNormal().GetProof() != nil {
 		for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
 			// Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+			if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())

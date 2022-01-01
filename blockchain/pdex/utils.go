@@ -625,7 +625,14 @@ func TradePathFromState(
 	var stakingPoolFees []map[common.Hash]uint64
 
 	nextTokenToSell := sellToken
+	tradePathDupMap := make(map[string]bool)
 	for _, pairID := range tradePath {
+		// reject trade path with duplicate pools
+		if tradePathDupMap[pairID] {
+			return nil, nil, nil, nil, nil, nil, nextTokenToSell, fmt.Errorf("Path contains duplicate pool %s", pairID)
+		} else {
+			tradePathDupMap[pairID] = true
+		}
 		if pair, exists := pairs[pairID]; exists {
 			pair = pair.Clone() // work on cloned state in case trade is rejected
 			results = append(results, &pair.state)
@@ -969,6 +976,21 @@ func addOrderReward(
 			}
 
 			base[nftID].AddReward(tokenID, amt)
+		}
+	}
+	return base
+}
+
+func addMakingVolume(
+	base map[common.Hash]*MakingVolume, additional map[common.Hash]map[string]*big.Int,
+) map[common.Hash]*MakingVolume {
+	for tokenID, volume := range additional {
+		for nftID, amt := range volume {
+			if _, ok := base[tokenID]; !ok {
+				base[tokenID] = NewMakingVolume()
+			}
+
+			base[tokenID].AddVolume(nftID, amt)
 		}
 	}
 	return base

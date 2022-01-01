@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -160,11 +160,18 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	validUnstakePublicKeys := make(map[string]bool)
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
+	pdexReward := uint64(0)
 
 	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
 
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
+		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, nil, NewBlockChainError(CloneBeaconBestStateError, err)
+		}
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(
+			featureStateDB,
+			cloneBeaconBestState.portalStateV3)
 		if err != nil {
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
@@ -175,12 +182,21 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
 
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+		isSplitRewardForPdex := curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
+
+		pdexRewardPercent := uint(0)
+		if isSplitRewardForPdex {
+			pdexRewardPercent = curView.pdeStates[pdex.AmplifierVersion].Reader().Params().DAOContributingPercent
+		}
+
+		rewardByEpochInstruction, rewardForCustodianByEpoch, pdexReward, err = blockchain.buildRewardInstructionByEpoch(
 			curView,
 			newBeaconBlock.Header.Height,
 			curView.Epoch,
 			isSplitRewardForCustodian,
 			percentCustodianRewards,
+			isSplitRewardForPdex,
+			pdexRewardPercent,
 			newBeaconBlock.Header.Version,
 		)
 		if err != nil {
@@ -242,6 +258,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		portalParams,
 		shardStates,
 		allPdexv3Txs,
+		pdexReward,
 	)
 
 	if err != nil {

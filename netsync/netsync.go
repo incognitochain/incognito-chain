@@ -36,6 +36,9 @@ type NetSync struct {
 	cMessage chan interface{}
 	cQuit    chan struct{}
 
+	cTxMessage chan wire.Message
+	cpuUsage   float64
+
 	config *NetSyncConfig
 	cache  *NetSyncCache
 
@@ -76,6 +79,7 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 	netSync.config = cfg
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{}, 1000)
+	netSync.cTxMessage = make(chan wire.Message, 1000)
 
 	// init cache
 	blockCache := cache.New(messageLiveTime, messageCleanupInterval)
@@ -122,7 +126,9 @@ func (netSync *NetSync) Start() error {
 	}
 	Logger.log.Debug("Starting sync manager")
 	//netSync.waitgroup.Add(1)
+	go netSync.transactionHandler()
 	go netSync.messageHandler()
+	go netSync.GetCPUUsage()
 	go netSync.cacheLoop()
 	return nil
 }
@@ -198,13 +204,57 @@ out:
 	Logger.log.Debug("Block handler done")
 }
 
+func (netSync *NetSync) GetCPUUsage() {
+	ticker := time.NewTicker(2 * time.Second)
+	idle0, total0 := common.GetCPUSample()
+	defer ticker.Stop()
+	for _ = range ticker.C {
+		idle1, total1 := common.GetCPUSample()
+		idle, total := idle1-idle0, total1-total0
+		netSync.cpuUsage = 100 * float64(total-idle) / float64(total)
+		Logger.log.Infof("TestCPU: CPU Usage %v %v %v", idle, total, netSync.cpuUsage)
+		idle0, total0 = common.GetCPUSample()
+	}
+}
+
+func (netSync *NetSync) transactionHandler() {
+	ticker := time.NewTicker(1 * time.Second)
+	txsrps := 100 // total transaction release per second
+	defer ticker.Stop()
+	queueTx := []wire.Message{}
+	for {
+		select {
+		case msgTx := <-netSync.cTxMessage:
+			queueTx = append(queueTx, msgTx)
+		case <-ticker.C:
+			i := 0
+			if netSync.cpuUsage < 80 {
+				for ; (i < txsrps) && (i < len(queueTx)); i++ {
+					Logger.log.Infof("netSync.cpuUsage %v is low now, send tx to mempool", netSync.cpuUsage)
+					netSync.cMessage <- queueTx[i]
+				}
+				queueTx = queueTx[i:]
+			}
+		}
+	}
+}
+
 func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
+
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
-	netSync.cMessage <- msg
+	if netSync.cpuUsage > 80 {
+		Logger.log.Infof("Received tx %v, cpuUsage too high %v, send to another pool", msg.Transaction.Hash().String(), netSync.cpuUsage)
+		go func(msg *wire.MessageTx) {
+			netSync.cTxMessage <- msg
+		}(msg)
+	} else {
+		Logger.log.Infof("Received tx %v, send to mempool", msg.Transaction.Hash().String(), netSync.cpuUsage)
+		netSync.cMessage <- msg
+	}
 	return nil
 }
 
@@ -214,7 +264,13 @@ func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTx
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
-	netSync.cMessage <- msg
+	if netSync.cpuUsage > 80 {
+		go func(msg *wire.MessageTx) {
+			netSync.cTxMessage <- msg
+		}((*wire.MessageTx)(msg))
+	} else {
+		netSync.cMessage <- msg
+	}
 	return nil
 }
 
@@ -272,12 +328,19 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 			return
 		}
 		if !netSync.usingNewPool {
-			hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
-			if err != nil {
-				Logger.log.Error(err)
+			txDB := sBState.GetCopiedTransactionStateDB()
+			err := tx.LoadData(txDB)
+			if err == nil {
+				hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
+				if err != nil {
+					Logger.log.Errorf("Validate tx %v return err %v", tx.Hash().String(), err)
+				} else {
+					Logger.log.Debugf("Node got hash of transaction %s", hash.String())
+				}
 			} else {
-				Logger.log.Debugf("Node got hash of transaction %s", hash.String())
+				Logger.log.Errorf("Validate tx %v return err %v", tx.Hash().String(), err)
 			}
+
 		} else {
 			tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 			if err != nil {

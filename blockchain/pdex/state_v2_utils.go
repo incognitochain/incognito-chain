@@ -113,11 +113,13 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 }
 
 func (share *Share) getDiff(
-	nftID string,
 	compareShare *Share,
 	shareChange *v2utils.ShareChange,
 ) *v2utils.ShareChange {
 	newShareChange := shareChange
+	if newShareChange == nil {
+		newShareChange = v2utils.NewShareChange()
+	}
 	if compareShare == nil {
 		newShareChange.IsChanged = true
 		for tokenID := range share.tradingFees {
@@ -248,7 +250,7 @@ func (staker *Staker) Clone() *Staker {
 }
 
 func (staker *Staker) getDiff(
-	stakingPoolID, nftID string, compareStaker *Staker, stakerChange *v2utils.StakerChange,
+	compareStaker *Staker, stakerChange *v2utils.StakerChange,
 ) *v2utils.StakerChange {
 	newStakerChange := stakerChange
 	if compareStaker == nil {
@@ -305,25 +307,51 @@ func (share *Share) updateToDB(
 			return err
 		}
 	}
-	for tokenID, value := range share.tradingFees {
-		if shareChange.TradingFees[tokenID.String()] {
-			err := statedb.StorePdexv3ShareTradingFee(
-				env.StateDB(), poolPairID, nftID,
-				statedb.NewPdexv3ShareTradingFeeStateWithValue(tokenID, value),
-			)
+	for tokenID, isChanged := range shareChange.TradingFees {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 			if err != nil {
 				return err
 			}
+			if tradingFee, found := share.tradingFees[*tokenHash]; found {
+				err := statedb.StorePdexv3ShareTradingFee(
+					env.StateDB(), poolPairID, nftID,
+					statedb.NewPdexv3ShareTradingFeeStateWithValue(*tokenHash, tradingFee),
+				)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := statedb.DeletePdexv3ShareTradingFee(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
-	for tokenID, value := range share.lastLPFeesPerShare {
-		if shareChange.LastLPFeesPerShare[tokenID.String()] {
-			err := statedb.StorePdexv3ShareLastLpFeePerShare(
-				env.StateDB(), poolPairID, nftID,
-				statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(tokenID, value),
-			)
+	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 			if err != nil {
 				return err
+			}
+			if lastLPFeesPerShare, found := share.lastLPFeesPerShare[*tokenHash]; found {
+				err := statedb.StorePdexv3ShareLastLpFeePerShare(
+					env.StateDB(), poolPairID, nftID,
+					statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(*tokenHash, lastLPFeesPerShare),
+				)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -338,22 +366,6 @@ func (share *Share) deleteFromDB(
 	err := statedb.DeletePdexv3Share(env.StateDB(), poolPairID, nftID)
 	if err != nil {
 		return err
-	}
-	for tokenID, _ := range share.tradingFees {
-		err := statedb.DeletePdexv3ShareTradingFee(
-			env.StateDB(), poolPairID, nftID, tokenID.String(),
-		)
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, _ := range share.lastLPFeesPerShare {
-		err := statedb.DeletePdexv3ShareLastLpFeePerShare(
-			env.StateDB(), poolPairID, nftID, tokenID.String(),
-		)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -419,11 +431,13 @@ func (orderReward *OrderReward) Clone() *OrderReward {
 }
 
 func (orderReward *OrderReward) getDiff(
-	nftID string,
 	compareOrderReward *OrderReward,
 	orderRewardChange *v2utils.OrderRewardChange,
 ) *v2utils.OrderRewardChange {
 	newOrderRewardChange := orderRewardChange
+	if newOrderRewardChange == nil {
+		newOrderRewardChange = v2utils.NewOrderRewardChange()
+	}
 	if compareOrderReward == nil {
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
@@ -431,7 +445,7 @@ func (orderReward *OrderReward) getDiff(
 	} else {
 		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
 	}
-	return orderRewardChange
+	return newOrderRewardChange
 }
 
 type MakingVolume struct {
@@ -462,6 +476,14 @@ func (makingVolume *MakingVolume) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (makingVolume *MakingVolume) AddVolume(nftID string, amount *big.Int) {
+	oldAmount := big.NewInt(0)
+	if _, ok := makingVolume.volume[nftID]; ok {
+		oldAmount = makingVolume.volume[nftID]
+	}
+	makingVolume.volume[nftID] = big.NewInt(0).Add(oldAmount, amount)
+}
+
 func NewMakingVolume() *MakingVolume {
 	return &MakingVolume{
 		volume: make(map[string]*big.Int),
@@ -477,11 +499,13 @@ func (makingVolume *MakingVolume) Clone() *MakingVolume {
 }
 
 func (makingVolume *MakingVolume) getDiff(
-	nftID string,
 	compareMakingVolume *MakingVolume,
 	makingVolumeChange *v2utils.MakingVolumeChange,
 ) *v2utils.MakingVolumeChange {
 	newMakingVolumeChange := makingVolumeChange
+	if newMakingVolumeChange == nil {
+		newMakingVolumeChange = v2utils.NewMakingVolumeChange()
+	}
 	if compareMakingVolume == nil {
 		for nftID := range makingVolume.volume {
 			newMakingVolumeChange.Volume[nftID] = true

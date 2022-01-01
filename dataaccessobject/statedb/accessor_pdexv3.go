@@ -45,6 +45,10 @@ func StorePdexv3Params(
 	maxOrdersPerNft uint,
 	autoWithdrawOrderLimitAmount uint,
 	minPRVReserveTradingRate uint64,
+	defaultOrderTradingRewardRatioBPS uint,
+	orderTradingRewardRatioBPS map[string]uint,
+	orderLiquidityMiningBPS map[string]uint,
+	daoContributingPercent uint,
 	orderMiningRewardRatioBPS map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
@@ -61,6 +65,10 @@ func StorePdexv3Params(
 		maxOrdersPerNft,
 		autoWithdrawOrderLimitAmount,
 		minPRVReserveTradingRate,
+		defaultOrderTradingRewardRatioBPS,
+		orderTradingRewardRatioBPS,
+		orderLiquidityMiningBPS,
+		daoContributingPercent,
 		orderMiningRewardRatioBPS,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
@@ -237,11 +245,11 @@ func StorePdexv3PoolPairOrderReward(
 }
 
 func DeletePdexv3PoolPairOrderReward(
-	stateDB *StateDB, poolPairID, tokenID string, nftID common.Hash,
+	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, tokenID, nftID)
+	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardObjectType, key) {
-		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v - %v", poolPairID, tokenID, nftID.String())
+		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v - %v", poolPairID, nftID, tokenID.String())
 	}
 	return nil
 }

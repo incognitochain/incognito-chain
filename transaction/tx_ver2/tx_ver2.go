@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
+
+	"math"
+	"math/big"
+	"strconv"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,10 +18,6 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	"math"
-	"math/big"
-	"strconv"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
@@ -323,6 +323,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 	indexes := make([][]*big.Int, ringSize)
 	ring := make([][]*privacy.Point, ringSize)
 	var commitmentToZero *privacy.Point
+	attempts := 0
 	for i := 0; i < ringSize; i++ {
 		sumInputs := new(privacy.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
@@ -341,22 +342,28 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j++ {
-				rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
-				coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
-				if err != nil {
-					utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
-					return nil, nil, nil, err
-				}
 				coinDB := new(privacy.CoinV2)
-				if err := coinDB.SetBytes(coinBytes); err != nil {
-					utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
-					return nil, nil, nil, err
-				}
+				for attempts < privacy.MaxPrivacyAttempts { // The chance of infinite loop is negligible
+					rowIndexes[j], _ = common.RandBigIntMaxRange(lenOTA)
+					coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
+					if err != nil {
+						utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
+						return nil, nil, nil, err
+					}
 
-				// we do not use burned coins since they will reduce the privacy level of the transaction.
-				if wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
-					j--
-					continue
+					if err = coinDB.SetBytes(coinBytes); err != nil {
+						utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
+						return nil, nil, nil, err
+					}
+
+					// we do not use burned coins since they will reduce the privacy level of the transaction.
+					if !common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						break
+					}
+					attempts++
+				}
+				if attempts == privacy.MaxPrivacyAttempts {
+					return nil, nil, nil, fmt.Errorf("cannot form decoys")
 				}
 
 				row[j] = coinDB.GetPublicKey()
@@ -392,7 +399,7 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 
 	// Reform Ring
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
-	ring, err := getRingFromSigPubKeyAndLastColumnCommitment(tx.SigPubKey, sumOutputsWithFee, transactionStateDB, shardID, tokenID)
+	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(tx.GetValidationEnv(), sumOutputsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
@@ -667,8 +674,8 @@ func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash
 	return isBurn, burnedCoin, nil, burnedToken, err
 }
 
-func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+func (tx *Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+	err := tx_generic.MdValidateWithBlockChain(tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 	if err != nil {
 		return err
 	}
@@ -742,7 +749,7 @@ func (tx Tx) ListOTAHashH() []common.Hash {
 	if tx.Proof != nil {
 		for _, outputCoin := range tx.Proof.GetOutputCoins() {
 			// Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+			if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -763,7 +770,7 @@ func (tx Tx) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Has
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range tx.Proof.GetOutputCoins() {
 		// Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
+		if common.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())

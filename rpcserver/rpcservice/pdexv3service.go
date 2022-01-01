@@ -494,7 +494,7 @@ func getPdexv3WaitingContributions(beaconTimeStamp int64, stateDB *statedb.State
 func getPdexv3State(
 	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB,
 ) (interface{}, error) {
-	pDexv3State, err := pdex.InitStateFromDB(stateDB, beaconHeight, pdex.AmplifierVersion)
+	pDexv3State, err := pdex.InitStateV2FromDBWithoutNftIDs(stateDB, beaconHeight)
 	if err != nil {
 		return nil, NewRPCError(GetPdexv3StateError, err)
 	}

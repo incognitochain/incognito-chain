@@ -3,26 +3,25 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-
 	"reflect"
+	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common/consensus"
-	"github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 )
 
 // BestState houses information about the current best block and other info
@@ -85,7 +84,8 @@ type BeaconBestState struct {
 	SlashStateDBRootHash     common.Hash
 
 	pdeStates     map[uint]pdex.State
-	portalStateV4 *portalprocess.CurrentPortalStateV4
+	portalStateV3 *portalprocessv3.CurrentPortalState
+	portalStateV4 *portalprocessv4.CurrentPortalStateV4
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -469,6 +469,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 			beaconBestState.pdeStates[version] = state.Clone()
 		}
 	}
+	if target.portalStateV3 != nil {
+		beaconBestState.portalStateV3 = target.portalStateV3.Copy()
+	}
 	if target.portalStateV4 != nil {
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
 	}
@@ -564,7 +567,8 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 
 	if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
-		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
+
+		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 		Logger.log.Debug("Get Missing Signature with Slashing V2")
 	} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
@@ -723,7 +727,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
-			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
+			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
@@ -748,7 +752,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
 		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-		MaxShardCommitteeSize:            config.Param().CommitteeSize.MaxShardCommitteeSize,
+		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
 			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
@@ -766,7 +770,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
-			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock()
+			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
@@ -785,7 +789,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 		ActiveShards:                     beaconBestState.ActiveShards,
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
-		MaxShardCommitteeSize:            config.Param().CommitteeSize.MaxShardCommitteeSize,
+		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  config.Param().ConsensusParam.StakingFlowV3Height,
@@ -1069,10 +1073,10 @@ func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
 
 }
 
-func (b *BeaconBestState) GetExpectedTotalBlock() map[string]uint {
+func (b *BeaconBestState) GetExpectedTotalBlock(blockVersion int) map[string]uint {
 
 	expectedTotalBlock := make(map[string]uint)
-	expectedBlockForShards := b.CalculateExpectedTotalBlock()
+	expectedBlockForShards := b.CalculateExpectedTotalBlock(blockVersion)
 
 	for shardID, committees := range b.GetShardCommittee() {
 		expectedBlockForShard := expectedBlockForShards[shardID]
@@ -1085,18 +1089,28 @@ func (b *BeaconBestState) GetExpectedTotalBlock() map[string]uint {
 	return expectedTotalBlock
 }
 
-func (b *BeaconBestState) CalculateExpectedTotalBlock() map[byte]uint {
+func (b *BeaconBestState) CalculateExpectedTotalBlock(blockVersion int) map[byte]uint {
 
 	mean := uint(0)
 
-	for _, v := range b.NumberOfShardBlock {
+	subsetNumberOfShardBlock := make(map[byte]uint)
+
+	for shardID, numberOfBlock := range b.NumberOfShardBlock {
+		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+			subsetNumberOfShardBlock[shardID] = numberOfBlock / 2
+		} else {
+			subsetNumberOfShardBlock[shardID] = numberOfBlock
+		}
+	}
+
+	for _, v := range subsetNumberOfShardBlock {
 		mean += v
 	}
 
-	mean = mean / uint(len(b.NumberOfShardBlock))
+	mean = mean / uint(len(subsetNumberOfShardBlock))
 
 	expectedTotalBlock := make(map[byte]uint)
-	for k, v := range b.NumberOfShardBlock {
+	for k, v := range subsetNumberOfShardBlock {
 		if v <= mean {
 			expectedTotalBlock[k] = mean
 		} else {
@@ -1136,4 +1150,34 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	}
 
 	return nonSlashingCommittees
+}
+
+func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize map[uint64]int, beaconHeight uint64) int {
+
+	if len(increaseMaxCommitteeSize) == 0 {
+		return currentMaxCommitteeSize
+	}
+
+	heights := []uint64{}
+	for k, _ := range increaseMaxCommitteeSize {
+		heights = append(heights, k)
+	}
+
+	sort.Slice(heights, func(i, j int) bool {
+		return heights[i] < heights[j]
+	})
+
+	key := uint64(0)
+	// heights is sorted increasing array
+	for _, height := range heights {
+		if beaconHeight >= height {
+			key = height
+		}
+	}
+
+	if key == 0 {
+		return currentMaxCommitteeSize
+	}
+
+	return increaseMaxCommitteeSize[key]
 }

@@ -25,6 +25,8 @@ committee_size:
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
+  increase_max_shard_committee_size:
+    - 1000000000000: 48
 block_time:
   min_beacon_block_interval: 10s
   max_beacon_block_creation: 8s
@@ -53,10 +55,13 @@ consensus_param:
   consensus_v2_epoch: 15290
   staking_flow_v2_height: 2051863
   enable_slashing_height: 2087789
-  assign_rule_v3_height: 3026751
-  enable_slashing_height_v2: 3071502
-  staking_flow_v3_height: 3344220
+  assign_rule_v3_height: 2823522
+  enable_slashing_height_v2: 2823650
+  staking_flow_v3_height: 2823780
+  lemma2_height: 2868685
+  force_not_use_burned_coins: 2922689
   block_producing_v3_height: 1000000000000
+  byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1280
@@ -64,18 +69,18 @@ beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 2085
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 1148608
-bc_height_break_point_privacy_v2: 2868392
+bc_height_break_point_privacy_v2: 2823446
 coin_v2_lowest_height: 2400000
 enable_feature_flags:
   - PortalRelaying: 1
   - PortalV3: 0
   - PortalV4: 1
 portal_v3_height: 1328816
-tx_pool_version: 0
+tx_pool_version: 1
 bsc_param:
-  host: "https://data-seed-prebsc-2-s1.binance.org:8545"
+  host: "https://data-seed-prebsc-2-s2.binance.org:8545"
 pdex_param:
-  pdex_v3_break_point_height: 1000000000000
+  pdex_v3_break_point_height: 2961693
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   params:
@@ -89,3 +94,4 @@ pdex_param:
     max_orders_per_nft: 10
     auto_withdraw_order_limit_amount: 10
     min_prv_reserve_trading_rate: 1000000000000
+is_enable_bpv3_stats: false

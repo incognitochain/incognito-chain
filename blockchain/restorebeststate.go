@@ -23,7 +23,12 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 	beaconBestState.Epoch = block.GetCurrentEpoch()
 	beaconBestState.BestBlockHash = *block.Hash()
 	beaconBestState.PreviousBestBlockHash = block.GetPrevHash()
-
+	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize,
+		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, block.Header.Height)
+	if newMaxCommitteeSize != beaconBestState.MaxShardCommitteeSize {
+		Logger.log.Infof("Beacon Height %+v, Hash %+v, found new max committee size %+v", block.Header.Height, block.Header.Hash(), newMaxCommitteeSize)
+		beaconBestState.MaxShardCommitteeSize = newMaxCommitteeSize
+	}
 	if includeCommittee {
 		err := beaconBestState.restoreCommitteeState(blockchain)
 		if err != nil {

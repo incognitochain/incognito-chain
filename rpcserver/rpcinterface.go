@@ -64,6 +64,7 @@ var HttpHandler = map[string]httpHandler{
 	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 	getBlocksFromHeight:         (*HttpServer).handleGetBlocksFromHeight,
+
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
 	listOutputCoinsFromCache:                (*HttpServer).handleListOutputCoinsFromCache,
@@ -110,7 +111,13 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
-
+	getFinalityProof:           (*HttpServer).handleGetFinalityProof,
+	setConsensusRule:           (*HttpServer).handleSetConsensusRule,
+	getConsensusRule:           (*HttpServer).handleGetConsensusRule,
+	getByzantineDetectorInfo:   (*HttpServer).handleGetByzantineDetectorInfo,
+	removeByzantineDetector:    (*HttpServer).handleRemoveByzantineDetector,
+	getConsensusData:           (*HttpServer).handleGetConsensusData,
+	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
 	//=================================
 
 	// Beststate
@@ -319,9 +326,11 @@ var HttpHandler = map[string]httpHandler{
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
-	getBurnProofForDepositToSC:                  (*HttpServer).handleGetBurnProofForDepositToSC,
-	createAndSendBurningForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
-	createAndSendBurningForDepositToSCRequestV2: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
+	getBurnProofForDepositToSC:                    (*HttpServer).handleGetBurnProofForDepositToSC,
+	getBurnPBSCProofForDepositToSC:                (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+	createAndSendBurningForDepositToSCRequestV2:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
+	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
 
 	//new pool info
 	getSyncStats:          (*HttpServer).hanldeGetSyncStats,

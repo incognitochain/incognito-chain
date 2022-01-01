@@ -37,9 +37,9 @@ const (
 	PedersenPrivateKeyIndex = operation.PedersenPrivateKeyIndex
 	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
 
-	RingSize          = privacy_util.RingSize
-	MaxTriesOTA       = coin.MaxTriesOTA
-	TxRandomGroupSize = coin.TxRandomGroupSize
+	RingSize           = privacy_util.RingSize
+	MaxPrivacyAttempts = coin.MaxAttempts
+	TxRandomGroupSize  = coin.TxRandomGroupSize
 )
 
 var PedCom = operation.PedCom

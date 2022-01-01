@@ -1806,3 +1806,215 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 		})
 	}
 }
+
+func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
+	token0ID, err := common.Hash{}.NewHashFromStr("123")
+	assert.Nil(t, err)
+	token1ID, err := common.Hash{}.NewHashFromStr("456")
+	assert.Nil(t, err)
+
+	mintLOPReward1 := v2utils.BuildDistributeMiningOrderRewardInsts(
+		poolPairID, *token0ID, 150000, common.PRVCoinID,
+	)
+	mintLOPReward2 := v2utils.BuildDistributeMiningOrderRewardInsts(
+		poolPairID, *token1ID, 150000, common.PRVCoinID,
+	)
+
+	initDB()
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+
+	type fields struct {
+		stateProcessorBase stateProcessorBase
+	}
+	type args struct {
+		stateDB   *statedb.StateDB
+		inst      [][]string
+		poolPairs map[string]*PoolPairState
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    map[string]*PoolPairState
+		wantErr bool
+	}{
+		{
+			name:   "Single making token",
+			fields: fields{},
+			args: args{
+				stateDB: sDB,
+				inst:    mintLOPReward1,
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 100, 600,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook:    Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{
+							*token0ID: &MakingVolume{
+								volume: map[string]*big.Int{
+									nftID:  big.NewInt(0).SetUint64(60),
+									nftID1: big.NewInt(0).SetUint64(20),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 100, 600,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{
+						nftID: {
+							uncollectedRewards: map[common.Hash]uint64{
+								common.PRVCoinID: 112500,
+							},
+						},
+						nftID1: {
+							uncollectedRewards: map[common.Hash]uint64{
+								common.PRVCoinID: 37500,
+							},
+						},
+					},
+					makingVolume: map[common.Hash]*MakingVolume{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Double making tokens",
+			fields: fields{},
+			args: args{
+				stateDB: sDB,
+				inst:    [][]string{mintLOPReward1[0], mintLOPReward2[0]},
+				poolPairs: map[string]*PoolPairState{
+					poolPairID: &PoolPairState{
+						state: *rawdbv2.NewPdexv3PoolPairWithValue(
+							*token0ID, *token1ID, 300, 100, 600,
+							big.NewInt(0).SetUint64(200),
+							big.NewInt(0).SetUint64(1200), 20000,
+						),
+						lpFeesPerShare:  map[common.Hash]*big.Int{},
+						protocolFees:    map[common.Hash]uint64{},
+						stakingPoolFees: map[common.Hash]uint64{},
+						shares: map[string]*Share{
+							nftID: &Share{
+								amount:             300,
+								tradingFees:        map[common.Hash]uint64{},
+								lastLPFeesPerShare: map[common.Hash]*big.Int{},
+							},
+						},
+						orderbook:    Orderbook{[]*Order{}},
+						orderRewards: map[string]*OrderReward{},
+						makingVolume: map[common.Hash]*MakingVolume{
+							*token0ID: &MakingVolume{
+								volume: map[string]*big.Int{
+									nftID:  big.NewInt(0).SetUint64(60),
+									nftID1: big.NewInt(0).SetUint64(20),
+								},
+							},
+							*token1ID: &MakingVolume{
+								volume: map[string]*big.Int{
+									nftID:  big.NewInt(0).SetUint64(50),
+									nftID1: big.NewInt(0).SetUint64(100),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]*PoolPairState{
+				poolPairID: &PoolPairState{
+					state: *rawdbv2.NewPdexv3PoolPairWithValue(
+						*token0ID, *token1ID, 300, 100, 600,
+						big.NewInt(0).SetUint64(200),
+						big.NewInt(0).SetUint64(1200), 20000,
+					),
+					lpFeesPerShare:  map[common.Hash]*big.Int{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
+					shares: map[string]*Share{
+						nftID: &Share{
+							amount:             300,
+							tradingFees:        map[common.Hash]uint64{},
+							lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					orderbook: Orderbook{[]*Order{}},
+					orderRewards: map[string]*OrderReward{
+						nftID: {
+							uncollectedRewards: map[common.Hash]uint64{
+								common.PRVCoinID: 162500,
+							},
+						},
+						nftID1: {
+							uncollectedRewards: map[common.Hash]uint64{
+								common.PRVCoinID: 137500,
+							},
+						},
+					},
+					makingVolume: map[common.Hash]*MakingVolume{},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sp := &stateProcessorV2{
+				stateProcessorBase: tt.fields.stateProcessorBase,
+			}
+			poolPairs := tt.args.poolPairs
+			for _, inst := range tt.args.inst {
+				sp.withdrawTxCache = map[string]uint64{}
+				poolPairs, err = sp.distributeMiningOrderReward(tt.args.stateDB, inst, poolPairs)
+				if err != nil {
+					if !tt.wantErr {
+						t.Errorf("stateProcessorV2.distributeMiningOrderReward() error = %v", err)
+					}
+					return
+				}
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("stateProcessorV2.distributeMiningOrderReward() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(poolPairs, tt.want) {
+				t.Errorf("stateProcessorV2.distributeMiningOrderReward() = %v, want %v",
+					getStrPoolPairState(poolPairs[poolPairID]),
+					getStrPoolPairState(tt.want[poolPairID]),
+				)
+			}
+		})
+	}
+}

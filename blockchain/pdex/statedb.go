@@ -492,3 +492,30 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 	}
 	return orderRewards, nil
 }
+
+func InitStateV2FromDBWithoutNftIDs(stateDB *statedb.StateDB, beaconHeight uint64) (*stateV2, error) {
+	if beaconHeight < config.Param().PDexParams.Pdexv3BreakPointHeight {
+		return nil, fmt.Errorf("[pdex] Beacon height %v < Pdexv3BreakPointHeight %v", beaconHeight, config.Param().PDexParams.Pdexv3BreakPointHeight)
+	}
+	paramsState, err := statedb.GetPdexv3Params(stateDB)
+	params := NewParamsWithValue(paramsState)
+	if err != nil {
+		return nil, err
+	}
+	waitingContributions, err := statedb.GetPdexv3WaitingContributions(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	poolPairs, err := initPoolPairStatesFromDB(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	stakingPools, err := initStakingPoolsFromDB(params.StakingPoolsShare, stateDB)
+	if err != nil {
+		return nil, err
+	}
+	return newStateV2WithValue(
+		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
+		poolPairs, params, stakingPools, map[string]uint64{},
+	), nil
+}

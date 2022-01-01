@@ -137,6 +137,13 @@ const (
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
+	getFinalityProof           = "getfinalityproof"
+	setConsensusRule           = "setconsensusrule"
+	getConsensusRule           = "getconsensusrule"
+	getByzantineDetectorInfo   = "getbyzantinedetectorinfo"
+	removeByzantineDetector    = "removebyzantinedetector"
+	getConsensusData           = "getconsensusdata"
+	getProposerIndex           = "getproposerindex"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -347,9 +354,11 @@ const (
 	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
-	getBurnProofForDepositToSC                  = "getburnprooffordeposittosc"
-	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
-	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
+	getBurnProofForDepositToSC                    = "getburnprooffordeposittosc"
+	getBurnPBSCProofForDepositToSC                = "getburnpbscprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest     = "createandsendburningfordeposittoscrequest"
+	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
+	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
 
 	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"

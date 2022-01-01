@@ -313,7 +313,7 @@ func (p *PoolPairState) getDiff(
 		newPoolPairChange.IsChanged = true
 		for nftID, share := range p.shares {
 			shareChange := v2utils.NewShareChange()
-			shareChange = share.getDiff(nftID, nil, shareChange)
+			shareChange = share.getDiff(nil, shareChange)
 			poolPairChange.Shares[nftID] = shareChange
 		}
 		for tokenID := range p.lpFeesPerShare {
@@ -327,12 +327,12 @@ func (p *PoolPairState) getDiff(
 		}
 		for nftID, orderReward := range p.orderRewards {
 			orderRewardChange := v2utils.NewOrderRewardChange()
-			orderRewardChange = orderReward.getDiff(nftID, nil, orderRewardChange)
+			orderRewardChange = orderReward.getDiff(nil, orderRewardChange)
 			poolPairChange.OrderRewards[nftID] = orderRewardChange
 		}
 		for tokenID, makingVolume := range p.makingVolume {
 			makingVolumeChange := v2utils.NewMakingVolumeChange()
-			makingVolumeChange = makingVolume.getDiff(tokenID.String(), nil, makingVolumeChange)
+			makingVolumeChange = makingVolume.getDiff(nil, makingVolumeChange)
 			poolPairChange.MakingVolume[tokenID.String()] = makingVolumeChange
 		}
 		for _, ord := range p.orderbook.orders {
@@ -342,30 +342,12 @@ func (p *PoolPairState) getDiff(
 		if !reflect.DeepEqual(p.state, comparePoolPair.state) {
 			newPoolPairChange.IsChanged = true
 		}
-		for nftID, share := range p.shares {
-			if m, ok := comparePoolPair.shares[nftID]; !ok || !reflect.DeepEqual(m, share) {
-				shareChange := v2utils.NewShareChange()
-				shareChange = share.getDiff(nftID, m, shareChange)
-				poolPairChange.Shares[nftID] = shareChange
-			}
-		}
+		newPoolPairChange.Shares = p.getChangedShares(comparePoolPair.shares)
 		newPoolPairChange.LpFeesPerShare = v2utils.GetChangedElementsFromMapBigInt(p.lpFeesPerShare, comparePoolPair.lpFeesPerShare)
 		newPoolPairChange.ProtocolFees = v2utils.GetChangedElementsFromMapUint64(p.protocolFees, comparePoolPair.protocolFees)
 		newPoolPairChange.StakingPoolFees = v2utils.GetChangedElementsFromMapUint64(p.stakingPoolFees, comparePoolPair.stakingPoolFees)
-		for nftID, orderReward := range p.orderRewards {
-			if m, ok := comparePoolPair.orderRewards[nftID]; !ok || !reflect.DeepEqual(m, orderReward) {
-				orderRewardChange := v2utils.NewOrderRewardChange()
-				orderRewardChange = orderReward.getDiff(nftID, m, orderRewardChange)
-				poolPairChange.OrderRewards[nftID] = orderRewardChange
-			}
-		}
-		for tokenID, makingVolume := range p.makingVolume {
-			if m, ok := comparePoolPair.makingVolume[tokenID]; !ok || !reflect.DeepEqual(m, makingVolume) {
-				makingVolumeChange := v2utils.NewMakingVolumeChange()
-				makingVolumeChange = makingVolume.getDiff(tokenID.String(), m, makingVolumeChange)
-				poolPairChange.MakingVolume[tokenID.String()] = makingVolumeChange
-			}
-		}
+		newPoolPairChange.OrderRewards = p.getChangedOrderRewards(comparePoolPair.orderRewards)
+		newPoolPairChange.MakingVolume = p.getChangedMakingVolume(comparePoolPair.makingVolume)
 		newPoolPairChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newPoolPairChange)
 	}
 	return newPoolPairChange, newStateChange
@@ -613,18 +595,17 @@ func (p *PoolPairState) updateToDB(
 			return err
 		}
 	}
+
 	for nftID, shareChange := range poolPairChange.Shares {
-		if shareChange.IsChanged {
-			if share, found := p.shares[nftID]; found {
-				err := share.updateToDB(env, poolPairID, nftID, shareChange)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := share.deleteFromDB(env, poolPairID, nftID, shareChange)
-				if err != nil {
-					return err
-				}
+		if share, found := p.shares[nftID]; found {
+			err := share.updateToDB(env, poolPairID, nftID, shareChange)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := share.deleteFromDB(env, poolPairID, nftID, shareChange)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -663,49 +644,76 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 
-	for tokenID, makingVolume := range poolPairChange.MakingVolume {
-		tokenHash, _ := common.Hash{}.NewHashFromStr(tokenID)
-		for nftID, isChanged := range makingVolume.Volume {
-			if isChanged {
-				if volume, found := p.makingVolume[*tokenHash].volume[nftID]; found {
-					err = statedb.StorePdexv3PoolPairMakingVolume(
-						env.StateDB(), poolPairID,
-						statedb.NewPdexv3PoolPairMakingVolumeStateWithValue(
-							nftID, *tokenHash, volume,
-						),
-					)
+	for nftID, orderRewardChange := range poolPairChange.OrderRewards {
+		if _, found := p.orderRewards[nftID]; found {
+			for tokenID, isChanged := range orderRewardChange.UncollectedReward {
+				if isChanged {
+					tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 					if err != nil {
 						return err
 					}
-				} else {
-					err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
-					if err != nil {
-						return err
+					if reward, found := p.orderRewards[nftID].uncollectedRewards[*tokenHash]; found {
+						err = statedb.StorePdexv3PoolPairOrderReward(
+							env.StateDB(), poolPairID,
+							statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
+								*tokenHash, nftID, reward,
+							),
+						)
+						if err != nil {
+							return err
+						}
+					} else {
+						err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID, *tokenHash)
+						if err != nil {
+							return err
+						}
 					}
+				}
+			}
+		} else {
+			for tokenID, _ := range orderRewardChange.UncollectedReward {
+				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+				if err != nil {
+					return err
+				}
+				err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID, *tokenHash)
+				if err != nil {
+					return err
 				}
 			}
 		}
 	}
 
-	for nftID, orderReward := range poolPairChange.OrderRewards {
-		for tokenID, isChanged := range orderReward.UncollectedReward {
-			if isChanged {
-				tokenHash, _ := common.Hash{}.NewHashFromStr(tokenID)
-				if reward, found := p.orderRewards[nftID].uncollectedRewards[*tokenHash]; found {
-					err = statedb.StorePdexv3PoolPairOrderReward(
-						env.StateDB(), poolPairID,
-						statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-							*tokenHash, nftID, reward,
-						),
-					)
-					if err != nil {
-						return err
-					}
-				} else {
-					nftHash, _ := common.Hash{}.NewHashFromStr(nftID)
-					err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, tokenID, *nftHash)
-					if err != nil {
-						return err
+	for tokenID, makingVolume := range poolPairChange.MakingVolume {
+		tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+		if err != nil {
+			return err
+		}
+		if _, found := p.makingVolume[*tokenHash]; !found {
+			for nftID, _ := range makingVolume.Volume {
+				err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			for nftID, isChanged := range makingVolume.Volume {
+				if isChanged {
+					if volume, found := p.makingVolume[*tokenHash].volume[nftID]; found {
+						err = statedb.StorePdexv3PoolPairMakingVolume(
+							env.StateDB(), poolPairID,
+							statedb.NewPdexv3PoolPairMakingVolumeStateWithValue(
+								nftID, *tokenHash, volume,
+							),
+						)
+						if err != nil {
+							return err
+						}
+					} else {
+						err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -741,4 +749,37 @@ func (p *PoolPairState) updateToDB(
 func (p *PoolPairState) existLP(lpID string) bool {
 	_, found := p.shares[lpID]
 	return found
+}
+
+func (p *PoolPairState) getChangedOrderRewards(compareOrderReward map[string]*OrderReward) map[string]*v2utils.OrderRewardChange {
+	res := make(map[string]*v2utils.OrderRewardChange)
+	for nftID, orderReward := range p.orderRewards {
+		res[nftID] = orderReward.getDiff(compareOrderReward[nftID], res[nftID])
+	}
+	for nftID, orderReward := range compareOrderReward {
+		res[nftID] = orderReward.getDiff(p.orderRewards[nftID], res[nftID])
+	}
+	return res
+}
+
+func (p *PoolPairState) getChangedMakingVolume(compareMakingVolume map[common.Hash]*MakingVolume) map[string]*v2utils.MakingVolumeChange {
+	res := make(map[string]*v2utils.MakingVolumeChange)
+	for tokenID, makingVolume := range p.makingVolume {
+		res[tokenID.String()] = makingVolume.getDiff(compareMakingVolume[tokenID], res[tokenID.String()])
+	}
+	for tokenID, makingVolume := range compareMakingVolume {
+		res[tokenID.String()] = makingVolume.getDiff(p.makingVolume[tokenID], res[tokenID.String()])
+	}
+	return res
+}
+
+func (p *PoolPairState) getChangedShares(compareShare map[string]*Share) map[string]*v2utils.ShareChange {
+	res := make(map[string]*v2utils.ShareChange)
+	for nftID, share := range p.shares {
+		res[nftID] = share.getDiff(compareShare[nftID], res[nftID])
+	}
+	for nftID, share := range compareShare {
+		res[nftID] = share.getDiff(p.shares[nftID], res[nftID])
+	}
+	return res
 }
