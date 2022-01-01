@@ -114,6 +114,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		if poolPair.orderRewards == nil {
 			poolPair.orderRewards = map[string]*OrderReward{}
 		}
+		// init making volume
+		if poolPair.makingVolume == nil {
+			poolPair.makingVolume = map[common.Hash]*MakingVolume{}
+		}
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -203,6 +207,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				inst,
 				s.stakingPoolStates,
 			)
+		case metadataCommon.Pdexv3DistributeMiningOrderRewardMeta:
+			s.poolPairs, err = s.processor.distributeMiningOrderReward(
+				env.StateDB(),
+				inst,
+				s.poolPairs,
+			)
 		default:
 			Logger.log.Debug("Can not process this metadata")
 		}
@@ -290,6 +300,10 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		// init order rewards
 		if poolPair.orderRewards == nil {
 			poolPair.orderRewards = map[string]*OrderReward{}
+		}
+		// init making volume
+		if poolPair.makingVolume == nil {
+			poolPair.makingVolume = map[common.Hash]*MakingVolume{}
 		}
 	}
 
@@ -426,19 +440,14 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintPDEXGenesisInstructions...)
 	}
 
-	pdexBlockRewards := v2utils.GetPDEXRewardsForBlock(
-		beaconHeight,
-		MintingBlocks, DecayIntervals, PDEXRewardFirstInterval,
-		DecayRateBPS, BPS,
-	)
-
-	if pdexBlockRewards > 0 {
+	if env.Reward() > 0 {
 		var mintInstructions [][]string
 		mintInstructions, s.poolPairs, err = s.producer.mintReward(
-			common.PDEXCoinID,
-			pdexBlockRewards,
+			common.PRVCoinID,
+			env.Reward(),
 			s.params,
 			s.poolPairs,
+			true,
 		)
 		if err != nil {
 			return instructions, err
@@ -462,6 +471,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			burningPRVAmount,
 			s.params,
 			s.poolPairs,
+			false,
 		)
 		if err != nil {
 			return instructions, err
@@ -504,6 +514,10 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.MaxOrdersPerNft,
 			s.params.AutoWithdrawOrderLimitAmount,
 			s.params.MinPRVReserveTradingRate,
+			s.params.DefaultOrderTradingRewardRatioBPS,
+			s.params.OrderTradingRewardRatioBPS,
+			s.params.OrderLiquidityMiningBPS,
+			s.params.DAOContributingPercent,
 			s.params.OrderMiningRewardRatioBPS,
 		)
 		if err != nil {
