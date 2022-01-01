@@ -9,11 +9,16 @@ import (
 	"strconv"
 	"time"
 
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+
+	"github.com/pkg/errors"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
@@ -22,7 +27,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/pkg/errors"
 )
 
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
@@ -157,6 +161,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if preView == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
 		defer cancel()
+		blockchain.config.Syncker.ReceiveBlock(shardBlock, "", "")
 		blockchain.config.Syncker.SyncMissingShardBlock(ctx, "", shardID, preHash)
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
@@ -196,8 +201,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 			return err
 		}
 	}
+	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
 		return err
 	}
@@ -357,7 +362,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) &&
 		(config.Param().Net == config.LocalNet || config.Param().Net != config.TestnetNet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
-		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
+		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot.String(), txRoot.String()))
 	}
 
 	// Verify ShardTx Root
@@ -371,7 +376,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(CrossShardTransactionRootHashError, fmt.Errorf("Expect cross shard transaction root hash %+v", shardBlock.Header.CrossTransactionRoot))
 	}
 	// Verify Action
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
+	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
@@ -938,17 +943,6 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	// 	panic("TempTxPool Is not Empty")
 	// }
 	// defer blockchain.config.TempTxPool.EmptyPool()
-
-	//isRelatedCommittee := false
-	//for _, tx := range txs {
-	//	if tx.GetMetadata() != nil {
-	//		switch tx.GetMetadata().GetType() {
-	//		case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
-	//			isRelatedCommittee = true
-	//			break
-	//		}
-	//	}
-	//}
 	_, beaconHeight, err := blockchain.GetBeaconBlockByHash(beaconHash)
 	if err != nil {
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
@@ -973,7 +967,16 @@ func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight uint64, beaconHash common.Hash, curView *ShardBestState) error {
 	if blockchain.config.usingNewPool {
-		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...))
+		isIncludePdexv3 := false
+		for _, tx := range txs {
+			if tx.GetMetadata() != nil {
+				if metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()) {
+					isIncludePdexv3 = true
+					break
+				}
+			}
+		}
+		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3)
 		if err != nil {
 			Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 			return err
@@ -995,8 +998,14 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 		defer blockchain.config.TempTxPool.EmptyPool()
 		listTxs := []metadata.Transaction{}
 		txDB := curView.GetCopiedTransactionStateDB()
+		whiteListTxs := blockchain.WhiteListTx()
+		jsb, _ := json.Marshal(txs)
+		Logger.log.Info("all transactions from block:", string(jsb))
 		for _, tx := range txs {
 			tx.LoadData(txDB)
+			if ok := whiteListTxs[tx.Hash().String()]; ok {
+				return nil
+			}
 			if tx.IsSalaryTx() {
 				_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, int64(beaconHeight), curView)
 				if err != nil {
@@ -1450,7 +1459,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				}
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
-				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta:
+				metadataCommon.IssuingPRVERC20RequestMeta, metadataCommon.IssuingPRVBEP20RequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

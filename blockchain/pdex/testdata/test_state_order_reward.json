@@ -1,0 +1,50 @@
+{
+    "poolPairs":
+    {
+        "pair0":
+        {
+            "state":
+            {
+                "Token0ID": "7873847116102aeceed701bf60e71d15019cdd06340916c4db7610fb0dd4f121",
+                "Token1ID": "ec3707ca9649c0b9729a8fc2d9de3ee8273cfbba8115e53c59b2eb12388d98f8",
+                "Token0RealAmount": 800,
+                "Token1RealAmount": 1800,
+                "Token0VirtualAmount": 1600,
+                "Token1VirtualAmount": 3600,
+                "Amplifier": 20000,
+                "ShareAmount": 1200
+            },
+            "orderbook":
+            {
+                "orders": [
+                    {
+                        "Id": "01a9ca4ab8f960d38a7258ec9c19b9f1c7dfb1603e919f015f6c33a8652194a1",
+                        "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                        "Token0Rate": 667,
+                        "Token1Rate": 100,
+                        "Token0Balance": 667,
+                        "Token1Balance": 0,
+                        "TradeDirection": 0,
+                        "Receiver": [
+                            "16FTF76LyuraMSEg82nawbHvHpwFM2d9fdJniUqFULKELwqfWKseEEgXAEK6EzriMLfCuvqG6pZSuG9DjWNCmtNHyHgnESeeJg61eC3srtEBboMUmtzYMMTkv3rS1nroPHKETMixDnUmKiJ3",
+                            "162nASm73P9Hm2iQu9x6PprrAghVQEz3gK9dA3UAXTRajCbt22o6MPmBYkcuqWyutJjaqYEfLCr1mApkdXZpreSdt9rE4rgcL9iFYZFtKGvZ2WAHQckEi9Wpzz6m5vGztRetFQQkY6oXay8S"
+                        ]
+                    },
+                    {
+                        "Id": "0f13d1877356e6970a98695d0ad6672c9ee883c1c28aeb5021561039bb9ada79",
+                        "NftID": "c5355aaf8affa18c8edb155a095527f09f0866c3d27960af9bd5e7eb0eec9902",
+                        "Token0Rate": 550,
+                        "Token1Rate": 100,
+                        "Token0Balance": 550,
+                        "Token1Balance": 0,
+                        "TradeDirection": 0,
+                        "Receiver": [
+                            "15WJ3s9WJu1HUyCYnKW85pZBbyhcgdKggvBpnAXVg2dseFC3JZzeizyWWmw4C7TUP3m4g7xoswWNthHG3bWZdyd4VcUwYxAD3nLpXz9EqybwfsNbKT657mtiPrVK1PXoLxh7Lq2ErzjPjoT3",
+                            "15beryFwexVPeTAEoFY8K7EcUC1hKgSjaTQVm9yMsbw8WvHkmQ83EBmKF9yY5CbsRgjGxrFv8bZVZAv1EAX5VhXcJ7VesgLKmWyTBohfPTXs3GGJx5qaiRezgJ32mtMTFgmWpCg16LRkbdQ7"
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}

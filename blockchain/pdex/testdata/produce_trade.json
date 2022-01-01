@@ -1,0 +1,22 @@
+[{
+    "name": "Produce accepted trade request",
+    "data": {
+        "metadata": {
+            "TradePath": ["pair0"],
+            "TokenToSell": "0000000000000000000000000000000000000000000000000000000000000100",
+            "SellAmount": 150,
+            "MinAcceptableAmount": 280,
+            "TradingFee": 40,
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000200": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000100": "15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP"
+            },
+            "Type": 285
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["285", "1", "0", "0791e2307a0a7cb96c52225439c19922baaf6a26c52cd719113cf81e1ebe3144", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":304,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"PairChanges\":[[48,-100]],\"RewardEarned\":[{\"0000000000000000000000000000000000000000000000000000000000000100\":40}],\"OrderChanges\":[{\"0000000000000000000000000000000000000000000000000000000000000aa2\":[102,-204]}]}}"]
+        ]
+    }
+}]

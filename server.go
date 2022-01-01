@@ -2085,8 +2085,6 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		//check if in committee or pending committee in beacon
 		for _, chain := range s.blockChain.ShardChain {
 			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
-				key, _ := v.ToBase58()
-				Logger.log.Info("[slashing] key:", key)
 				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 					return common.PendingRole, chain.GetShardID()
 				}

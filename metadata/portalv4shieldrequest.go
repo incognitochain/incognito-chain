@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -86,35 +87,35 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(shieldingReq.IncogAddressStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if _, err := AssertPaymentAddressAndTxVersion(incogAddr, tx.GetVersion()); err != nil {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	// check proof is not empty
 	if shieldingReq.ShieldingProof == "" {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Shielding proof is empty"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("Shielding proof is empty"))
 	}
 
 	// check tx version and type
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be version 2"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be version 2"))
 	}
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be TxNormalType"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be TxNormalType"))
 	}
 
 	// validate tokenID and shielding proof
 	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, shieldingReq.TokenID, common.PortalVersion4)
 	if !isPortalToken || err != nil {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("TokenID is not supported currently on Portal v4"))
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, errors.New("TokenID is not supported currently on Portal v4"))
 	}
 
 	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(shieldingReq.ShieldingProof)
 	if err != nil {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError,
 			fmt.Errorf("ShieldingProof is invalid sanity %v", err))
 	}
 
@@ -122,7 +123,7 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 }
 
 func (shieldingReq PortalShieldingRequest) ValidateMetadataByItself() bool {
-	return shieldingReq.Type == PortalV4ShieldingRequestMeta
+	return shieldingReq.Type == metadataCommon.PortalV4ShieldingRequestMeta
 }
 
 func (shieldingReq PortalShieldingRequest) Hash() *common.Hash {
@@ -146,7 +147,7 @@ func (shieldingReq *PortalShieldingRequest) BuildReqActions(tx Transaction, chai
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalV4ShieldingRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(metadataCommon.PortalV4ShieldingRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

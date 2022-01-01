@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/config"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
@@ -67,6 +68,12 @@ func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte,
 }
 
 func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
+	isMint, _, _, _ := tx.GetTxMintData()
+	bHeight := tx.GetValidationEnv().BeaconHeight()
+	afterUpgrade := bHeight >= config.Param().BCHeightBreakPointPrivacyV2
+	if afterUpgrade && !isMint {
+		return false, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
+	}
 	if len(tx.SigPubKey) != common.SigPubKeySize {
 		return false, utils.NewTransactionErr(utils.RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
 	}

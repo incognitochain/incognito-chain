@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -301,7 +303,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx))
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -320,7 +322,14 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...))
+	isIncludePdexv3 := false
+	for _, tx := range txs {
+		if metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()) {
+			isIncludePdexv3 = true
+			break
+		}
+	}
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -711,8 +720,13 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	// find replace tx in pool
+	Logger.log.Info("replace by key:", hash)
+	jsb, _ := json.Marshal(tx)
+	Logger.log.Info("tx to replace with:", string(jsb))
 	if txHashToBeReplaced, ok := tp.poolSerialNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
+			Logger.log.Info("txHashToBeReplaced:", txHashToBeReplaced)
+			Logger.log.Info("txDescToBeReplaced:", txDescToBeReplaced)
 			var baseReplaceFee float64
 			var baseReplaceFeeToken float64
 			var replaceFee float64
@@ -1229,7 +1243,7 @@ func (tp *TxPool) calPoolSize() uint64 {
 
 func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int, epoch uint64) (bool, bool) {
 	bc := tp.config.BlockChain
-	for featureFlag, metaTypes := range metadata.FeatureFlagWithMetaTypes {
+	for featureFlag, metaTypes := range metadataCommon.FeatureFlagWithMetaTypes {
 		for _, m := range metaTypes {
 			if metaType != m {
 				continue

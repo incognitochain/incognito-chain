@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
@@ -120,25 +121,25 @@ func hasPortalV4Instruction(instructions [][]string) bool {
 			continue // Not error, just not Portal v4 instruction
 		}
 		switch inst[0] {
-		case strconv.Itoa(metadata.PortalV4ShieldingRequestMeta):
+		case strconv.Itoa(metadataCommon.PortalV4ShieldingRequestMeta):
 			hasPortalV4Instruction = true
 			break
-		case strconv.Itoa(metadata.PortalV4ShieldingResponseMeta):
+		case strconv.Itoa(metadataCommon.PortalV4ShieldingResponseMeta):
 			hasPortalV4Instruction = true
 			break
-		case strconv.Itoa(metadata.PortalV4UnshieldingRequestMeta):
+		case strconv.Itoa(metadataCommon.PortalV4UnshieldingRequestMeta):
 			hasPortalV4Instruction = true
 			break
-		case strconv.Itoa(metadata.PortalV4UnshieldBatchingMeta):
+		case strconv.Itoa(metadataCommon.PortalV4UnshieldBatchingMeta):
 			hasPortalV4Instruction = true
 			break
-		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
+		case strconv.Itoa(metadataCommon.PortalV4FeeReplacementRequestMeta):
 			hasPortalV4Instruction = true
 			break
-		case strconv.Itoa(metadata.PortalV4SubmitConfirmedTxMeta):
+		case strconv.Itoa(metadataCommon.PortalV4SubmitConfirmedTxMeta):
 			hasPortalV4Instruction = true
 			break
-		case strconv.Itoa(metadata.PortalV4ConvertVaultRequestMeta):
+		case strconv.Itoa(metadataCommon.PortalV4ConvertVaultRequestMeta):
 			hasPortalV4Instruction = true
 			break
 		}
@@ -218,6 +219,6 @@ func handleBatchingUnshieldRequests(
 	currentPortalState *CurrentPortalStateV4,
 	portalParams portalv4.PortalParams,
 	ppv4 map[int]PortalInstructionProcessorV4) ([][]string, error) {
-	return ppv4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(
+	return ppv4[metadataCommon.PortalV4UnshieldBatchingMeta].BuildNewInsts(
 		bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParams, nil)
 }

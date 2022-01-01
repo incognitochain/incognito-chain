@@ -52,8 +52,8 @@ type param struct {
 	EnableFeatureFlags               map[string]uint64  `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
-	GethParam                        gethParam          `mapstructure:"geth_param"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
+	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
@@ -241,26 +241,25 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 
 }
 
-type gethParam struct {
-	Host     string `mapstructure:"host"`
-	Protocol string `mapstructure:"protocol"`
-	Port     string `mapstructure:"port"`
-}
-
-func (gethPram *gethParam) GetFromEnv() {
-	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
-	}
-	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
-	}
-	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
-	}
-}
-
 type bscParam struct {
 	Host string `mapstructure:"host"`
+}
+
+type pdexParam struct {
+	Pdexv3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
+	ProtocolFundAddress    string `mapstructure:"protocol_fund_address"`
+	AdminAddress           string `mapstructure:"admin_address"`
+	Params                 struct {
+		DefaultFeeRateBPS               uint            `mapstructure:"default_fee_rate_bps"`
+		PRVDiscountPercent              uint            `mapstructure:"prv_discount_percent"`
+		TradingProtocolFeePercent       uint            `mapstructure:"trading_protocol_fee_percent"`
+		TradingStakingPoolRewardPercent uint            `mapstructure:"trading_staking_pool_reward_percent"`
+		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
+		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
+		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
+		AutoWithdrawOrderLimitAmount    uint            `mapstructure:"auto_withdraw_order_limit_amount"`
+		MinPRVReserveTradingRate        uint64          `mapstructure:"min_prv_reserve_trading_rate"`
+	} `mapstructure:"params"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {

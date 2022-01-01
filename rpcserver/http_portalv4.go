@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -126,7 +127,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	}
 
 	meta, _ := metadata.NewPortalShieldingRequest(
-		metadata.PortalV4ShieldingRequestMeta,
+		metadataCommon.PortalV4ShieldingRequestMeta,
 		tokenID,
 		incognitoAddress,
 		shieldingProof,
@@ -243,7 +244,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
 	}
 
-	meta, err := metadata.NewPortalUnshieldRequest(metadata.PortalV4UnshieldingRequestMeta,
+	meta, err := metadata.NewPortalUnshieldRequest(metadataCommon.PortalV4UnshieldingRequestMeta,
 		otaPublicKeyStr, otaTxRandomStr, portalTokenID, remoteAddress, unshieldAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -488,7 +489,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(para
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("BatchID is invalid"))
 	}
 
-	meta, err := metadata.NewPortalReplacementFeeRequest(metadata.PortalV4FeeReplacementRequestMeta, portalTokenID, batchID, uint(replacementFee))
+	meta, err := metadata.NewPortalReplacementFeeRequest(metadataCommon.PortalV4FeeReplacementRequestMeta, portalTokenID, batchID, uint(replacementFee))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -581,7 +582,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalSubmitConfirmedTx(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("BatchID is invalid"))
 	}
 
-	meta, err := metadata.NewPortalSubmitConfirmedTxRequest(metadata.PortalV4SubmitConfirmedTxMeta, unshieldProof, portalTokenID, batchID)
+	meta, err := metadata.NewPortalSubmitConfirmedTxRequest(metadataCommon.PortalV4SubmitConfirmedTxMeta, unshieldProof, portalTokenID, batchID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -707,7 +708,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalConvertVault(
 	}
 
 	meta, _ := metadata.NewPortalConvertVaultRequest(
-		metadata.PortalV4ConvertVaultRequestMeta,
+		metadataCommon.PortalV4ConvertVaultRequestMeta,
 		tokenID,
 		convertingProof,
 	)

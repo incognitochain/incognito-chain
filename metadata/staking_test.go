@@ -9,11 +9,13 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/metadata/mocks"
+	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
+	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
@@ -231,39 +233,56 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		tx              metadata.Transaction
 	}
 
-	txIsPrivacyError := &mocks.Transaction{}
+	txIsPrivacyError := &metadataCommonMocks.Transaction{}
 	txIsPrivacyError.On("IsPrivacy").Return(true)
 
-	txGetUniqueReceiverError := &mocks.Transaction{}
+	burnCoin := &coinMocks.Coin{}
+	burnCoin.On("GetValue").Return(uint64(1750000000000))
+	config.AbortParam()
+	config.Param().StakingAmountShard = 1750000000000
+
+	txGetUniqueReceiverError := &metadataCommonMocks.Transaction{}
 	txGetUniqueReceiverError.On("IsPrivacy").Return(false)
 	txGetUniqueReceiverError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
+	txGetUniqueReceiverError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txGetUniqueReceiverError.On("GetVersion").Return(int8(1))
 
-	bcrBase58CheckDeserializeError := &mocks.ChainRetriever{}
+	bcrBase58CheckDeserializeError := &metadataCommonMocks.ChainRetriever{}
 	bcrBase58CheckDeserializeError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiipQxBdSVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
-	txBase58CheckDeserializeError := &mocks.Transaction{}
+	txBase58CheckDeserializeError := &metadataCommonMocks.Transaction{}
 	txBase58CheckDeserializeError.On("IsPrivacy").Return(false)
 	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+	txBase58CheckDeserializeError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txBase58CheckDeserializeError.On("GetVersion").Return(int8(1))
 
-	bcrBurningAddressPublicKeyError := &mocks.ChainRetriever{}
+	bcrBurningAddressPublicKeyError := &metadataCommonMocks.ChainRetriever{}
 	bcrBurningAddressPublicKeyError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
-	txBurningAddressPublicKeyError := &mocks.Transaction{}
+	txBurningAddressPublicKeyError := &metadataCommonMocks.Transaction{}
 	txBurningAddressPublicKeyError.On("IsPrivacy").Return(false)
 	txBurningAddressPublicKeyError.On("GetUniqueReceiver").Return(true, []byte{0, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
+	txBurningAddressPublicKeyError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txBurningAddressPublicKeyError.On("GetVersion").Return(int8(1))
 
-	bcrGetStakingAmountShardError := &mocks.ChainRetriever{}
+	bcrGetStakingAmountShardError := &metadataCommonMocks.ChainRetriever{}
 	bcrGetStakingAmountShardError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
 	bcrGetStakingAmountShardError.On("GetStakingAmountShard").Return(uint64(1750000000000))
-	txGetStakingAmountShardError := &mocks.Transaction{}
+	txGetStakingAmountShardError := &metadataCommonMocks.Transaction{}
 	txGetStakingAmountShardError.On("IsPrivacy").Return(false)
 	txGetStakingAmountShardError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1650000000000))
+	txGetStakingAmountShardError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txGetStakingAmountShardError.On("GetVersion").Return(int8(1))
 
-	txGetStakingAmountBeaconError := &mocks.Transaction{}
+	txGetStakingAmountBeaconError := &metadataCommonMocks.Transaction{}
 	txGetStakingAmountBeaconError.On("IsPrivacy").Return(false)
 	txGetStakingAmountBeaconError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1750000000000))
+	txGetStakingAmountBeaconError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txGetStakingAmountBeaconError.On("GetVersion").Return(int8(1))
 
-	txBase58CheckDeserialize2Error := &mocks.Transaction{}
+	txBase58CheckDeserialize2Error := &metadataCommonMocks.Transaction{}
 	txBase58CheckDeserialize2Error.On("IsPrivacy").Return(false)
 	txBase58CheckDeserialize2Error.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(1750000000000))
+	txBase58CheckDeserialize2Error.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+	txBase58CheckDeserialize2Error.On("GetVersion").Return(int8(1))
 
 	tests := []struct {
 		name    string
@@ -432,15 +451,15 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)
-	happyCaseBeaconRetriever := &mocks.BeaconViewRetriever{}
+	happyCaseBeaconRetriever := &metadataCommonMocks.BeaconViewRetriever{}
 	happyCaseBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			nil)
-	stakeAlreadyBeaconRetriever := &mocks.BeaconViewRetriever{}
+	stakeAlreadyBeaconRetriever := &metadataCommonMocks.BeaconViewRetriever{}
 	stakeAlreadyBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{validCommitteePublicKeyStructs[0]}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			nil)
-	getCommitteeErrorBeaconRetriever := &mocks.BeaconViewRetriever{}
+	getCommitteeErrorBeaconRetriever := &metadataCommonMocks.BeaconViewRetriever{}
 	getCommitteeErrorBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			errors.New("get committee error"))
@@ -481,7 +500,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				tx:                  &mocks.Transaction{},
+				tx:                  &metadataCommonMocks.Transaction{},
 				beaconViewRetriever: happyCaseBeaconRetriever,
 				b:                   0,
 				stateDB:             emptyStateDB,
@@ -502,7 +521,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				tx:                  &mocks.Transaction{},
+				tx:                  &metadataCommonMocks.Transaction{},
 				beaconViewRetriever: stakeAlreadyBeaconRetriever,
 				b:                   0,
 				stateDB:             emptyStateDB,
@@ -523,7 +542,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           validCommitteePublicKeys[0],
 			},
 			args: args{
-				tx:                  &mocks.Transaction{},
+				tx:                  &metadataCommonMocks.Transaction{},
 				beaconViewRetriever: getCommitteeErrorBeaconRetriever,
 				b:                   0,
 				stateDB:             emptyStateDB,
@@ -545,7 +564,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				CommitteePublicKey:           invalidCommitteePublicKeys[0],
 			},
 			args: args{
-				tx:                  &mocks.Transaction{},
+				tx:                  &metadataCommonMocks.Transaction{},
 				beaconViewRetriever: happyCaseBeaconRetriever,
 				b:                   0,
 				stateDB:             emptyStateDB,
