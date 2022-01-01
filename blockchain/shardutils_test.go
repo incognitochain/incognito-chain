@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/metadata/mocks"
+	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 )
 
 var (
@@ -42,6 +42,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		bc           *BlockChain
 		shardID      byte
 		shardHeight  uint64
+		beaconHeight uint64
 	}
 
 	validTxHash := []*common.Hash{}
@@ -57,7 +58,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	}
 
 	//staking happy case args start
-	stakingTx1 := &mocks.Transaction{}
+	stakingTx1 := &metadataCommonMocks.Transaction{}
 	var stakingTx1Meta metadata.Metadata
 	stakingTx1Meta = &metadata.StakingMetadata{
 		MetadataBase: metadata.MetadataBase{
@@ -76,7 +77,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	stakingTx1.On("Hash").Return(validTxHash[0])
 
-	stakingTx2 := &mocks.Transaction{}
+	stakingTx2 := &metadataCommonMocks.Transaction{}
 	var stakingTx2Meta metadata.Metadata
 	stakingTx2Meta = &metadata.StakingMetadata{
 		MetadataBase: metadata.MetadataBase{
@@ -94,7 +95,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx2.On("GetMetadata").Times(3).Return(stakingTx2Meta)
 	stakingTx2.On("Hash").Return(validTxHash[1])
 
-	stakingTx3 := &mocks.Transaction{}
+	stakingTx3 := &metadataCommonMocks.Transaction{}
 	var stakingTx3Meta metadata.Metadata
 	stakingTx3Meta = &metadata.StakingMetadata{
 		MetadataBase: metadata.MetadataBase{
@@ -114,7 +115,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	//staking happy case args end
 
 	//stop auto staking case args start
-	stopStakeTx1 := &mocks.Transaction{}
+	stopStakeTx1 := &metadataCommonMocks.Transaction{}
 	var stopStakeTx1Meta metadata.Metadata
 	stopStakeTx1Meta = &metadata.StopAutoStakingMetadata{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
@@ -129,7 +130,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx1.On("GetMetadata").Twice().Return(stopStakeTx1Meta)
 	stopStakeTx1.On("GetMetadata").Times(3).Return(stopStakeTx1Meta)
 
-	stopStakeTx2 := &mocks.Transaction{}
+	stopStakeTx2 := &metadataCommonMocks.Transaction{}
 	var stopStakeTx2Meta metadata.Metadata
 	stopStakeTx2Meta = &metadata.StopAutoStakingMetadata{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
@@ -144,7 +145,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx2.On("GetMetadata").Twice().Return(stopStakeTx2Meta)
 	stopStakeTx2.On("GetMetadata").Times(3).Return(stopStakeTx2Meta)
 
-	stopStakeTx3 := &mocks.Transaction{}
+	stopStakeTx3 := &metadataCommonMocks.Transaction{}
 	var stopStakeTx3Meta metadata.Metadata
 	stopStakeTx3Meta = &metadata.StopAutoStakingMetadata{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
@@ -159,7 +160,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx3.On("GetMetadata").Twice().Return(stopStakeTx3Meta)
 	stopStakeTx3.On("GetMetadata").Times(3).Return(stopStakeTx3Meta) //staking happy case args start
 
-	stakingTx4 := &mocks.Transaction{}
+	stakingTx4 := &metadataCommonMocks.Transaction{}
 	var stakingTx4Meta metadata.Metadata
 	stakingTx4Meta = &metadata.StakingMetadata{
 		MetadataBase: metadata.MetadataBase{
@@ -177,7 +178,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx4.On("GetMetadata").Times(4).Return(stakingTx4Meta)
 	stakingTx4.On("Hash").Return(validTxHash[0])
 
-	stakingTx5 := &mocks.Transaction{}
+	stakingTx5 := &metadataCommonMocks.Transaction{}
 	var stakingTx5Meta metadata.Metadata
 	stakingTx5Meta = &metadata.StakingMetadata{
 		MetadataBase: metadata.MetadataBase{
@@ -195,7 +196,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx5.On("GetMetadata").Times(3).Return(stakingTx5Meta)
 	stakingTx5.On("Hash").Return(validTxHash[1])
 
-	stakingTx6 := &mocks.Transaction{}
+	stakingTx6 := &metadataCommonMocks.Transaction{}
 	var stakingTx6Meta metadata.Metadata
 	stakingTx6Meta = &metadata.StakingMetadata{
 		MetadataBase: metadata.MetadataBase{
@@ -215,7 +216,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	//staking happy case args end
 
 	//stop auto staking case args start
-	stopStakeTx4 := &mocks.Transaction{}
+	stopStakeTx4 := &metadataCommonMocks.Transaction{}
 	var stopStakeTx4Meta metadata.Metadata
 	stopStakeTx4Meta = &metadata.StopAutoStakingMetadata{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
@@ -230,7 +231,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx4.On("GetMetadata").Twice().Return(stopStakeTx4Meta)
 	stopStakeTx4.On("GetMetadata").Times(3).Return(stopStakeTx4Meta)
 
-	stopStakeTx5 := &mocks.Transaction{}
+	stopStakeTx5 := &metadataCommonMocks.Transaction{}
 	var stopStakeTx5Meta metadata.Metadata
 	stopStakeTx5Meta = &metadata.StopAutoStakingMetadata{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
@@ -245,7 +246,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx5.On("GetMetadata").Twice().Return(stopStakeTx5Meta)
 	stopStakeTx5.On("GetMetadata").Times(3).Return(stopStakeTx5Meta)
 
-	stopStakeTx6 := &mocks.Transaction{}
+	stopStakeTx6 := &metadataCommonMocks.Transaction{}
 	var stopStakeTx6Meta metadata.Metadata
 	stopStakeTx6Meta = &metadata.StopAutoStakingMetadata{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
@@ -309,7 +310,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight)
+			gotInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight, tt.args.beaconHeight)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateShardInstructionsFromTransactionAndInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return

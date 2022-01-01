@@ -1,6 +1,12 @@
 package blockchain
 
 import (
+	"io/ioutil"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -16,11 +22,6 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"os"
-	"reflect"
-	"testing"
-	"time"
 )
 
 var (

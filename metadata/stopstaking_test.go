@@ -8,7 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/metadata/mocks"
+	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
+	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 )
 
 func TestNewStopAutoStakingMetadata(t *testing.T) {
@@ -138,40 +139,51 @@ func TestStopAutoStakingMetadata_ValidateSanityData(t *testing.T) {
 		beaconHeight    uint64
 		tx              metadata.Transaction
 	}
-	txIsPrivacyError := &mocks.Transaction{}
-	txIsPrivacyError.On("IsPrivacy").Return(true)
 
-	txGetUniqueReceiverError := &mocks.Transaction{}
+	burnCoin := &coinMocks.Coin{}
+	burnCoin.On("GetValue").Return(uint64(0))
+
+	txIsPrivacyError := &metadataCommonMocks.Transaction{}
+	txIsPrivacyError.On("IsPrivacy").Return(true)
+	txIsPrivacyError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
+
+	txGetUniqueReceiverError := &metadataCommonMocks.Transaction{}
 	txGetUniqueReceiverError.On("IsPrivacy").Return(false)
 	txGetUniqueReceiverError.On("GetUniqueReceiver").Return(false, []byte{}, uint64(0))
+	txGetUniqueReceiverError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
 
-	chainBase58CheckDeserializeError := &mocks.ChainRetriever{}
+	chainBase58CheckDeserializeError := &metadataCommonMocks.ChainRetriever{}
 	chainBase58CheckDeserializeError.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiipQxBdSVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
-	txBase58CheckDeserializeError := &mocks.Transaction{}
+	txBase58CheckDeserializeError := &metadataCommonMocks.Transaction{}
 	txBase58CheckDeserializeError.On("IsPrivacy").Return(false)
 	txBase58CheckDeserializeError.On("GetUniqueReceiver").Return(true, []byte{}, uint64(0))
+	txBase58CheckDeserializeError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
 
-	chainBurningAddressPublicKeyError := &mocks.ChainRetriever{}
+	chainBurningAddressPublicKeyError := &metadataCommonMocks.ChainRetriever{}
 	chainBurningAddressPublicKeyError.On("GetBurningAddress", uint64(0)).Return("12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA")
-	txBurningAddressPublicKeyError := &mocks.Transaction{}
+	txBurningAddressPublicKeyError := &metadataCommonMocks.Transaction{}
 	txBurningAddressPublicKeyError.On("IsPrivacy").Return(false)
 	txBurningAddressPublicKeyError.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(0))
+	txBurningAddressPublicKeyError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
 
-	chainStopAutoStakingMetadataError := &mocks.ChainRetriever{}
+	chainStopAutoStakingMetadataError := &metadataCommonMocks.ChainRetriever{}
 	chainStopAutoStakingMetadataError.On("GetBurningAddress", uint64(0)).Return("12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA")
-	txStopAutoStakingMetadataError := &mocks.Transaction{}
+	txStopAutoStakingMetadataError := &metadataCommonMocks.Transaction{}
 	txStopAutoStakingMetadataError.On("IsPrivacy").Return(false)
 	txStopAutoStakingMetadataError.On("GetUniqueReceiver").Return(true, []byte{127, 76, 149, 36, 97, 166, 59, 24, 204, 39, 108, 209, 42, 199, 106, 173, 88, 95, 221, 184, 142, 215, 198, 51, 10, 150, 125, 89, 73, 86, 24, 0}, uint64(0))
+	txStopAutoStakingMetadataError.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
 
-	txStopAutoStakingMetadataError1 := &mocks.Transaction{}
+	txStopAutoStakingMetadataError1 := &metadataCommonMocks.Transaction{}
 	txStopAutoStakingMetadataError1.On("IsPrivacy").Return(false)
 	txStopAutoStakingMetadataError1.On("GetUniqueReceiver").Return(true, []byte{127, 76, 149, 36, 97, 166, 59, 24, 204, 39, 108, 209, 42, 199, 106, 173, 88, 95, 221, 184, 142, 215, 198, 51, 10, 150, 125, 89, 73, 86, 24, 0}, uint64(1))
+	txStopAutoStakingMetadataError1.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
 
-	chainHappyCase := &mocks.ChainRetriever{}
+	chainHappyCase := &metadataCommonMocks.ChainRetriever{}
 	chainHappyCase.On("GetBurningAddress", uint64(0)).Return("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
-	txHappyCase := &mocks.Transaction{}
+	txHappyCase := &metadataCommonMocks.Transaction{}
 	txHappyCase.On("IsPrivacy").Return(false)
 	txHappyCase.On("GetUniqueReceiver").Return(true, []byte{99, 183, 246, 161, 68, 172, 228, 222, 153, 9, 172, 39, 208, 245, 167, 79, 11, 2, 114, 65, 241, 69, 85, 40, 193, 104, 199, 79, 70, 4, 53, 0}, uint64(0))
+	txHappyCase.On("GetTxBurnData").Return(true, burnCoin, &common.PRVCoinID, nil)
 
 	tests := []struct {
 		name    string
@@ -351,14 +363,14 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		},
 		CommitteePublicKey: validCommitteePublicKeys[1],
 	}
-	stopStakeTx1 := &mocks.Transaction{}
+	stopStakeTx1 := &metadataCommonMocks.Transaction{}
 	stopStakeTx1.On("GetMetadata").Return(stopStakeTx1Meta)
 	stopStakeTx1.On("GetMetadataType").Return(metadata.StopAutoStakingMeta)
 	stopStakeTx1.On("GetSender").Return([]byte("12buoC8Nmh8WbPhSAiF1SSNB8AuxTu3QbX3sSUydqod4y9ws3e3"))
 
-	chain1 := &mocks.ChainRetriever{}
-	beacon1 := &mocks.BeaconViewRetriever{}
-	shard1 := &mocks.ShardViewRetriever{}
+	chain1 := &metadataCommonMocks.ChainRetriever{}
+	beacon1 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard1 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon1.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{}, errors.New("get error"))
 
 	var stopStakeTx2Meta metadata.Metadata
@@ -370,21 +382,21 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		},
 		CommitteePublicKey: validCommitteePublicKeys[2],
 	}
-	stopStakeTx2 := &mocks.Transaction{}
+	stopStakeTx2 := &metadataCommonMocks.Transaction{}
 	stopStakeTx2.On("GetMetadata").Return(stopStakeTx2Meta)
 	stopStakeTx2.On("GetMetadataType").Return(metadata.StopAutoStakingMeta)
 	stopStakeTx2.On("GetSender").Return([]byte("12buoC8Nmh8WbPhSAiF1SSNB8AuxTu3QbX3sSUydqod4y9ws3e3"))
 
-	chain2 := &mocks.ChainRetriever{}
-	beacon2 := &mocks.BeaconViewRetriever{}
-	shard2 := &mocks.ShardViewRetriever{}
+	chain2 := &metadataCommonMocks.ChainRetriever{}
+	beacon2 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard2 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon2.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{""}, nil)
 	emptyMap := make(map[string]string)
 	shard2.On("GetShardStakingTx").Return(emptyMap)
 
-	chain21 := &mocks.ChainRetriever{}
-	beacon21 := &mocks.BeaconViewRetriever{}
-	shard21 := &mocks.ShardViewRetriever{}
+	chain21 := &metadataCommonMocks.ChainRetriever{}
+	beacon21 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard21 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon21.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil)
 	beacon21.On("GetStakerInfo", "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc").Return(
 		&statedb.StakerInfo{},
@@ -394,7 +406,7 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	chain21.On("GetShardStakingTx", byte(0), uint64(1)).Return(emptyMap, errors.New("get staking tx error"))
 	shard21.On("GetShardID").Return(byte(0))
 	shard21.On("GetBeaconHeight").Return(uint64(1))
-	beacon22 := &mocks.BeaconViewRetriever{}
+	beacon22 := &metadataCommonMocks.BeaconViewRetriever{}
 	beacon22.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil)
 	beacon22.On("GetStakerInfo", "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc").Return(
 		&statedb.StakerInfo{},
@@ -410,9 +422,9 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	stakerInfo2.SetAutoStaking(false)
 	stakerInfo2.SetTxStakingID(*stakingTxHash)
 
-	chain3 := &mocks.ChainRetriever{}
-	beacon3 := &mocks.BeaconViewRetriever{}
-	shard3 := &mocks.ShardViewRetriever{}
+	chain3 := &metadataCommonMocks.ChainRetriever{}
+	beacon3 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard3 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon3.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil)
 	beacon3.On("GetStakerInfo", "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc").Return(
 		stakerInfo1,
@@ -425,9 +437,9 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	shard3.On("GetShardID").Return(byte(0))
 	shard3.On("GetBeaconHeight").Return(uint64(1))
 
-	chain4 := &mocks.ChainRetriever{}
-	beacon4 := &mocks.BeaconViewRetriever{}
-	shard4 := &mocks.ShardViewRetriever{}
+	chain4 := &metadataCommonMocks.ChainRetriever{}
+	beacon4 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard4 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon4.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil)
 	beacon4.On("GetStakerInfo", "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc").Return(
 		stakerInfo1,
@@ -442,13 +454,25 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	stakingTxHash2, _ := common.Hash{}.NewHashFromStr("9648b1f460d853d878a3b7ab7a926acab5f45c726de0610221f78a95f333c6dc")
 	chain4.On("GetTransactionByHash", *stakingTxHash2).Return(byte(0), nil, uint64(0), int(0), nil, errors.New("error"))
 
-	stopStakeTx3 := &mocks.Transaction{}
+	stopStakeTx3 := &metadataCommonMocks.Transaction{}
 	stopStakeTx3.On("GetMetadata").Return(stopStakeTx2Meta)
 	stopStakeTx3.On("GetMetadataType").Return(metadata.StopAutoStakingMeta)
 	stopStakeTx3.On("GetSender").Return([]byte("12buoC8Nmh8WbPhSAiF1SSNB8AuxZu3QbX3sSUydqod4y9ws3e3"))
-	chain5 := &mocks.ChainRetriever{}
-	beacon5 := &mocks.BeaconViewRetriever{}
-	shard5 := &mocks.ShardViewRetriever{}
+
+	var stakeTxMeta metadata.Metadata
+	stakeTxMeta = &metadata.StakingMetadata{
+		MetadataBase: metadata.MetadataBase{
+			metadata.ShardStakingMeta,
+		},
+		FunderPaymentAddress: validCommitteePublicKeys[2],
+	}
+
+	stakeTx := &metadataCommonMocks.Transaction{}
+	stakeTx.On("GetMetadata").Return(stakeTxMeta)
+
+	chain5 := &metadataCommonMocks.ChainRetriever{}
+	beacon5 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard5 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon5.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil)
 	beacon5.On("GetStakerInfo", "121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc").Return(
 		stakerInfo1,
@@ -458,15 +482,15 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	chain5.On("GetShardStakingTx", byte(0), uint64(1)).Return(stakingMap1, nil)
 	shard5.On("GetShardID").Return(byte(0))
 	shard5.On("GetBeaconHeight").Return(uint64(1))
-	chain5.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stopStakeTx3, nil)
+	chain5.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stakeTx, nil)
 	autoStakingList := make(map[string]bool)
 	beacon5.On("GetAutoStakingList").Return(autoStakingList)
 
-	stopStakeTx4 := &mocks.Transaction{}
+	stopStakeTx4 := &metadataCommonMocks.Transaction{}
 	stopStakeTx4.On("GetSender").Return([]byte("12buoC8Nmh8WbPhSAiF1SSNB8AuxTu3QbX3sSUydqod4y9ws3e3"))
-	chain6 := &mocks.ChainRetriever{}
-	beacon6 := &mocks.BeaconViewRetriever{}
-	shard6 := &mocks.ShardViewRetriever{}
+	chain6 := &metadataCommonMocks.ChainRetriever{}
+	beacon6 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard6 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon6.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil).
 		Once()
@@ -478,13 +502,13 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	chain6.On("GetShardStakingTx", byte(0), uint64(1)).Return(stakingMap1, nil)
 	shard6.On("GetShardID").Return(byte(0))
 	shard6.On("GetBeaconHeight").Return(uint64(1))
-	chain6.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stopStakeTx4, nil)
+	chain6.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stakeTx, nil)
 	autoStakingList1 := make(map[string]bool)
 	beacon6.On("GetAutoStakingList").Return(autoStakingList1)
 
-	chain7 := &mocks.ChainRetriever{}
-	beacon7 := &mocks.BeaconViewRetriever{}
-	shard7 := &mocks.ShardViewRetriever{}
+	chain7 := &metadataCommonMocks.ChainRetriever{}
+	beacon7 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard7 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon7.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil).
 		Once()
@@ -496,14 +520,14 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	chain7.On("GetShardStakingTx", byte(0), uint64(1)).Return(stakingMap1, nil)
 	shard7.On("GetShardID").Return(byte(0))
 	shard7.On("GetBeaconHeight").Return(uint64(1))
-	chain7.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stopStakeTx4, nil)
+	chain7.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stakeTx, nil)
 	autoStakingList2 := make(map[string]bool)
 	autoStakingList2["121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"] = false
 	beacon7.On("GetAutoStakingList").Return(autoStakingList2)
 
-	chain8 := &mocks.ChainRetriever{}
-	beacon8 := &mocks.BeaconViewRetriever{}
-	shard8 := &mocks.ShardViewRetriever{}
+	chain8 := &metadataCommonMocks.ChainRetriever{}
+	beacon8 := &metadataCommonMocks.BeaconViewRetriever{}
+	shard8 := &metadataCommonMocks.ShardViewRetriever{}
 	beacon8.On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return([]string{"121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"}, nil).
 		Once()
@@ -515,7 +539,7 @@ func TestStopAutoStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	chain8.On("GetShardStakingTx", byte(0), uint64(1)).Return(stakingMap1, nil)
 	shard8.On("GetShardID").Return(byte(0))
 	shard8.On("GetBeaconHeight").Return(uint64(1))
-	chain8.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stopStakeTx4, nil)
+	chain8.On("GetTransactionByHash", *stakingTxHash).Return(byte(0), nil, uint64(0), int(0), stakeTx, nil)
 	autoStakingList3 := make(map[string]bool)
 	autoStakingList3["121VhftSAygpEJZ6i9jGkCFHRkD4yhxxccAqVjQTWR9gy7skM1KcNf3uGLpX1NvojmHqs9bWwsPfvyBmer39YNBPwBHpgXg1Qku4EDhtUBZnGw2PZGMF7DMCrYa27GNS97uA9WC5z55YuCDA4WsnKfoEEuCFDNUN3iSCeUyrQ4SF5smx9CwBYX6AWAMAvNDPKf4tCuc7Wiafv9xkLKuHSFr7jaxBfg4rdaxtwXzR5eMpFDDpiXz6hQmdcee8xSXQRKceiafg9RMiuqLxDzx9tmLKvBD5TJq4G76LB3rrVmsYwMo1fY4RZLpiYn6AstAfca5EVnMeexueSAE5sam3Lsq8mq5poJfsW6KXzAbsmFPSsSjhmQ4wGhSXoKSap331gBMuuy7KtmVwQAPpwuFPo9hi7RBgrrn1ssdCdjYSwE226Ekc"] = true
 	beacon8.On("GetAutoStakingList").Return(autoStakingList3)

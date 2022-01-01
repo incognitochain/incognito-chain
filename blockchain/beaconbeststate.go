@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -52,7 +53,6 @@ type BeaconBestState struct {
 	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
-	Params                  map[string]string    `json:"Params,omitempty"`
 	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
 	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
 	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
@@ -83,7 +83,7 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeState      *CurrentPDEState
+	pdeStates     map[uint]pdex.State
 	portalStateV3 *portalprocessv3.CurrentPortalState
 	portalStateV4 *portalprocessv4.CurrentPortalStateV4
 }
@@ -107,7 +107,8 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 // var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
-	beaconBestState := &BeaconBestState{}
+	beaconBestState := new(BeaconBestState)
+	beaconBestState.pdeStates = make(map[uint]pdex.State)
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
@@ -116,7 +117,6 @@ func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconComm
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
-	beaconBestState.Params = make(map[string]string)
 	beaconBestState.CurrentRandomNumber = -1
 	beaconBestState.MaxBeaconCommitteeSize = config.Param().CommitteeSize.MaxBeaconCommitteeSize
 	beaconBestState.MinBeaconCommitteeSize = config.Param().CommitteeSize.MinBeaconCommitteeSize
@@ -460,8 +460,14 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
-	if target.pdeState != nil {
-		beaconBestState.pdeState = target.pdeState.Copy()
+
+	if beaconBestState.pdeStates == nil {
+		beaconBestState.pdeStates = make(map[uint]pdex.State)
+	}
+	for version, state := range target.pdeStates {
+		if state != nil {
+			beaconBestState.pdeStates[version] = state.Clone()
+		}
 	}
 	if target.portalStateV3 != nil {
 		beaconBestState.portalStateV3 = target.portalStateV3.Copy()
@@ -572,6 +578,38 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	}
 
 	return slashingPenalty
+}
+
+func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
+	return beaconBestState.pdeStates[version]
+}
+
+func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidPoolPairID(poolPairID)
+}
+
+func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidNftID(nftID)
+}
+
+func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidMintNftRequireAmount(amount)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStakingPool(tokenID)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
+	tokenID, nftID string, unstakingAmount uint64,
+) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
+	poolPairID, nftID string, shareAmount uint64,
+) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

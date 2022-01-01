@@ -190,6 +190,9 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	result.Config["NumberOfBlockInEpoch"] = config.Param().EpochParam.NumberOfBlockInEpoch
 	result.Config["RandomTime"] = config.Param().EpochParam.RandomTime
 	result.Config["EnableSlashingHeightV2"] = config.Param().ConsensusParam.EnableSlashingHeightV2
+	result.Config["StakingFlowV3"] = config.Param().ConsensusParam.StakingFlowV3Height
+	result.Config["StakingFlowV2"] = config.Param().ConsensusParam.StakingFlowV2Height
+	result.Config["BlockProducingV3"] = config.Param().ConsensusParam.BlockProducingV3Height
 	result.Config["BlockProducingV3Height"] = config.Param().ConsensusParam.BlockProducingV3Height
 	return result
 }

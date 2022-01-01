@@ -144,6 +144,16 @@ const (
 	GetPortalV4ConvertVaultTxStatusError
 
 	CacheQueueError
+
+	// pdex v3
+	GetPdexv3StateError
+	GenerateOTAFailError
+	GetPdexv3ParamsModyfingStatusError
+	GetPdexv3LPFeeError
+	GetPdexv3StakingRewardError
+	GetPdexv3WithdrawalLPFeeStatusError
+	GetPdexv3WithdrawalProtocolFeeStatusError
+	GetPdexv3WithdrawalStakingRewardStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -276,6 +286,12 @@ var ErrCodeMessage = map[int]struct {
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
 	GetTotalStakerError:                           {-12010, "Get total staker return error"},
 
+	CacheQueueError: {-13001, "Full node cache error"},
+
+	// pDex v3
+	GetPdexv3StateError:                {-14001, "Get pDex V3 state error"},
+	GenerateOTAFailError:               {-14002, "Generate ota fail"},
+	GetPdexv3ParamsModyfingStatusError: {-14003, "Get pDex v3 params modyfing status error"},
 	// Portal v4
 	GetPortalV4ShieldReqStatusError:         {-12501, "Get portal v4 shielding request status error"},
 	GetPortalV4UnshieldReqStatusError:       {-12502, "Get portal v4 unshielding request status error"},
@@ -283,8 +299,6 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
 	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
 	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
-
-	CacheQueueError: {-13001, "Full node cache error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

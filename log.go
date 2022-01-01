@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"os"
 	"sort"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
+
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
@@ -23,6 +25,8 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+
+	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
@@ -81,6 +85,7 @@ var (
 	privacyV2Logger        = backendLog.Logger("Privacy V2 log ", false)
 	instructionLogger      = backendLog.Logger("Instruction log ", false)
 	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
+	pdexLogger             = backendLog.Logger("Pdex log ", false)
 	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
 
 	portalLogger          = backendLog.Logger("Portal log ", false)
@@ -140,6 +145,7 @@ func init() {
 	privacy.LoggerV2.Init(privacyV2Logger)
 	instruction.Logger.Init(instructionLogger)
 	committeestate.Logger.Init(committeeStateLogger)
+	pdex.Logger.Init(pdexLogger)
 
 	portal.Logger.Init(portalLogger)
 	portalrelaying.Logger.Init(portalRelayingLogger)
