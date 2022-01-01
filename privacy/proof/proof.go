@@ -3,6 +3,7 @@ package proof
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/env"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
@@ -26,7 +27,8 @@ type Proof interface {
 	UnmarshalJSON([]byte) error
 
 	IsPrivacy() bool
-	ValidateSanity(interface{}) (bool, error)
+	ValidateSanity(vEnv env.ValidationEnviroment) (bool, error)
 
 	Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error)
+	VerifyV2(vEnv env.ValidationEnviroment, fee uint64) (bool, error)
 }

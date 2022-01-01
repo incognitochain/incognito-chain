@@ -142,13 +142,6 @@ func NewIssuingEVMRequestFromMap(
 }
 
 func (iReq IssuingEVMRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	evmReceipt, err := iReq.verifyProofAndParseReceipt()
-	if err != nil {
-		return false, NewMetadataTxError(IssuingEvmRequestValidateTxWithBlockChainError, err)
-	}
-	if evmReceipt == nil {
-		return false, errors.Errorf("The evm proof's receipt could not be null.")
-	}
 	return true, nil
 }
 
@@ -168,6 +161,15 @@ func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingBSCRequestMeta ||
 		iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
 		return true
+	}
+	evmReceipt, err := iReq.verifyProofAndParseReceipt()
+	if err != nil {
+		Logger.log.Error(NewMetadataTxError(IssuingEvmRequestValidateTxWithBlockChainError, err))
+		return false
+	}
+	if evmReceipt == nil {
+		Logger.log.Error(errors.Errorf("The evm proof's receipt could not be null."))
+		return false
 	}
 	return false
 }

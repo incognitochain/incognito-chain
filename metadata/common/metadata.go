@@ -136,6 +136,10 @@ type ValidationEnviroment interface {
 	BeaconHeight() uint64
 	ConfirmedTime() int64
 	Version() int
+	SigPubKey() []byte
+	HasCA() bool
+	TokenID() common.Hash
+	DBData() [][]byte
 }
 
 // Interface for all type of transaction
@@ -207,10 +211,11 @@ type Transaction interface {
 	SetValidationEnv(ValidationEnviroment)
 	UnmarshalJSON(data []byte) error
 
-	VerifySigTx() (bool, error)
+	// VerifySigTx() (bool, error)
 	ValidateSanityDataByItSelf() (bool, error)
-	ValidateTxCorrectness() (bool, error)
-	LoadCommitment(db *statedb.StateDB) error
+	ValidateTxCorrectness(db *statedb.StateDB) (bool, error)
+	LoadData(db *statedb.StateDB) error
+	CheckData(db *statedb.StateDB) error
 	ValidateSanityDataWithBlockchain(
 		chainRetriever ChainRetriever,
 		shardViewRetriever ShardViewRetriever,
@@ -220,7 +225,6 @@ type Transaction interface {
 		bool,
 		error,
 	)
-	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
 }
 
 type MintData struct {
