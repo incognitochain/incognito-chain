@@ -58,7 +58,7 @@ var (
 
 var (
 	BeaconSyncMode = ARCHIVE_SYNC_MODE
-	ShardSyncMode  = ARCHIVE_SYNC_MODE
+	ShardSyncMode  = FULL_SYNC_MODE
 	configCache4GB = CacheConfig{
 		trieJournalCacheSize: 32,
 		blockTriesInMemory:   uint64(500),
