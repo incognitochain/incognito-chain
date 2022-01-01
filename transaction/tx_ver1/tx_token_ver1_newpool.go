@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -50,6 +51,12 @@ func (tx *TxToken) initEnv() metadata.ValidationEnviroment {
 }
 
 func (tx *TxToken) ValidateSanityDataByItSelf() (bool, error) {
+	isMint, _, _, _ := tx.GetTxMintData()
+	bHeight := tx.GetValidationEnv().BeaconHeight()
+	afterUpgrade := bHeight >= config.Param().BCHeightBreakPointPrivacyV2
+	if afterUpgrade && !isMint {
+		return false, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
+	}
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
 	}
