@@ -16,6 +16,8 @@ committee_size:
   shard_committee_size_key_list_v2: 22
   beacon_committee_size_key_list_v2: 7
   number_of_fixed_shard_block_validators: 22
+  increase_max_shard_committee_size:
+    - 1000000000000: 48
 block_time:
   min_beacon_block_interval: 40s
   max_beacon_block_creation: 10s
@@ -47,7 +49,10 @@ consensus_param:
   assign_rule_v3_height: 1410217
   enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1519263
+  force_not_use_burned_coins: 1000000000000
+  lemma2_height: 1000000000000
   block_producing_v3_height: 1000000000000
+  byzantine_detector_height: 1000000000000
   timeslot: 40
   epoch_break_point_swap_new_key:
     - 1917
@@ -79,3 +84,4 @@ pdex_param:
     max_orders_per_nft: 10
     auto_withdraw_order_limit_amount: 30
     min_prv_reserve_trading_rate: 10000000000000
+is_enable_bpv3_stats: false

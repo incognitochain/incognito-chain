@@ -55,13 +55,10 @@ type Chain interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
-	CreateNewBlockFromOldBlock(
-		oldBlock types.BlockInterface,
-		proposer string,
-		startTime int64,
-		committees []incognitokey.CommitteePublicKey,
-		hash common.Hash) (types.BlockInterface, error)
+	CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error)
+	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	InsertAndBroadcastBlock(block types.BlockInterface) error
+	InsertWithPrevValidationData(types.BlockInterface, string) error
 	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
@@ -75,10 +72,7 @@ type Chain interface {
 	GetFinalViewHash() string
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() int
-	GetProposerByTimeSlotFromCommitteeList(
-		ts int64,
-		committees []incognitokey.CommitteePublicKey,
-	) (incognitokey.CommitteePublicKey, int, error)
+	GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int)
 	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
 	// GetSigningCommitteesFromBestView must be retrieve from a shard view, because it's based on the committee state version
 	GetSigningCommittees(
@@ -87,6 +81,8 @@ type Chain interface {
 		blockVersion int,
 	) []incognitokey.CommitteePublicKey
 	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
+	GetBlockByHash(hash common.Hash) (types.BlockInterface, error)
+	StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error
 }
 
 type CommitteeChainHandler interface {
