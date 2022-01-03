@@ -13,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type PoolPairState struct {
@@ -271,8 +270,8 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 func (p *PoolPairState) addShare(
 	nftID common.Hash,
 	amount, beaconHeight uint64,
-	txHash, accessOTA string,
-) (string, error) {
+	txHash string, accessOTA []byte,
+) ([]byte, error) {
 	return p.updateShareValue(amount, beaconHeight, nftID.String(), accessOTA, addOperator)
 }
 
@@ -365,7 +364,7 @@ func (p *PoolPairState) deductShare(
 	accessID string,
 	shareAmount, beaconHeight uint64,
 	accessOption metadataPdexv3.AccessOption,
-	accessOTA string,
+	accessOTA []byte,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[accessID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -396,22 +395,22 @@ func (p *PoolPairState) deductShare(
 }
 
 func (p *PoolPairState) updateShareValue(
-	shareAmount, beaconHeight uint64, accessID, accessOTA string, operator byte,
-) (string, error) {
+	shareAmount, beaconHeight uint64, accessID string, accessOTA []byte, operator byte,
+) ([]byte, error) {
 	share, found := p.shares[accessID]
 	if !found {
 		if operator == subOperator {
-			return utils.EmptyString, errors.New("Deduct nil share amount")
+			return nil, errors.New("Deduct nil share amount")
 		}
 		share = NewShare()
 	} else {
 		accessIDBytes, err := common.Hash{}.NewHashFromStr(accessID)
 		if err != nil {
-			return utils.EmptyString, fmt.Errorf("Invalid accessID: %s", accessID)
+			return nil, fmt.Errorf("Invalid accessID: %s", accessID)
 		}
 		share.tradingFees, err = p.RecomputeLPFee(*accessIDBytes)
 		if err != nil {
-			return utils.EmptyString, fmt.Errorf("Error when tracking LP reward: %v\n", err)
+			return nil, fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
 		if operator == addOperator {
 			accessOTA = share.accessOTA
@@ -426,19 +425,18 @@ func (p *PoolPairState) updateShareValue(
 	var err error
 	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)
 	if err != nil {
-		return utils.EmptyString, errors.New("newShare.amount is out of range")
+		return nil, errors.New("newShare.amount is out of range")
 	}
-	if accessOTA == utils.EmptyString {
+	if accessOTA == nil {
 		accessOTA = share.accessOTA
 	}
 	share.accessOTA = accessOTA
 
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
 	if err != nil {
-		return utils.EmptyString, errors.New("poolPairShareAmount is out of range")
+		return nil, errors.New("poolPairShareAmount is out of range")
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
-
 	p.shares[accessID] = share
 	return accessOTA, nil
 }

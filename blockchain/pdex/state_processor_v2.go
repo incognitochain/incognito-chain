@@ -1158,7 +1158,7 @@ func (sp *stateProcessorV2) unstaking(
 		status = common.Pdexv3AcceptStatus
 		stakingPoolID = acceptInst.StakingPoolID().String()
 		liquidity = acceptInst.Amount()
-		accessOTA := utils.EmptyString
+		var accessOTA []byte
 		if acceptInst.AccessOption.UseNft() {
 			accessID = *acceptInst.AccessOption.NftID
 		} else {

@@ -133,7 +133,7 @@ func (s *StakingPoolState) getDiff(
 }
 
 func (s *StakingPoolState) updateLiquidity(
-	accessID string, liquidity, beaconHeight uint64, accessOTA string, operator byte,
+	accessID string, liquidity, beaconHeight uint64, accessOTA []byte, operator byte,
 ) error {
 	staker, found := s.stakers[accessID]
 	if !found {

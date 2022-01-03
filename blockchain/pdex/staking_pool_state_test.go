@@ -17,7 +17,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 		accessID     string
 		liquidity    uint64
 		beaconHeight uint64
-		accessOTA    string
+		accessOTA    []byte
 		operator     byte
 	}
 	tests := []struct {

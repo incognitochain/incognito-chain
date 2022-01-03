@@ -93,7 +93,7 @@ func BuildWithdrawLPFeeInsts(
 	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
 	reqTxID common.Hash,
-	status, accessOTA string,
+	status string, accessOTA []byte,
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
@@ -240,7 +240,7 @@ func BuildWithdrawStakingRewardInsts(
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
-	accessOTA string,
+	accessOTA []byte,
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{

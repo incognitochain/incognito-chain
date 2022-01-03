@@ -37,7 +37,7 @@ func BuildAcceptWithdrawLiquidityInstructions(
 	metaData metadataPdexv3.WithdrawLiquidityRequest,
 	token0ID, token1ID common.Hash,
 	token0Amount, token1Amount, shareAmount uint64,
-	txReqID common.Hash, shardID byte, accessOTA string,
+	txReqID common.Hash, shardID byte, accessOTA []byte,
 ) ([][]string, error) {
 	res := [][]string{}
 	if metaData.OtaReceivers()[token0ID.String()] == utils.EmptyString {

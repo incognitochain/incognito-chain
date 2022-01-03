@@ -132,7 +132,7 @@ func (sp *stateProducerV2) addLiquidity(
 					incomingContributionState, poolPairID,
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
 					accessCoinReceiver,
-					waitingContribution.AccessOTA() != utils.EmptyString && waitingContribution.OtaReceiver() == utils.EmptyString,
+					waitingContribution.AccessOTA() != nil && waitingContribution.OtaReceiver() == utils.EmptyString,
 				)
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
@@ -162,7 +162,7 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, refundInsts...)
 			continue
 		}
-		if waitingContribution.AccessOTA() == utils.EmptyString && waitingContribution.OtaReceiver() == utils.EmptyString {
+		if waitingContribution.AccessOTA() == nil && waitingContribution.OtaReceiver() == utils.EmptyString {
 			if !rootPoolPair.existLP(waitingContribution.NftID().String()) {
 				Logger.log.Warnf("tx %v accessID %v is not in poolPair %v",
 					tx.Hash().String(), waitingContribution.NftID().String(), waitingContribution.PoolPairID())
@@ -214,7 +214,7 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken1ContributionAmount,
 			waitingContribution.TxReqID(),
 			waitingContribution.ShardID(), waitingContribution.OtaReceivers(), accessOTA,
-			waitingContribution.AccessOTA() != utils.EmptyString && waitingContribution.OtaReceiver() == utils.EmptyString,
+			waitingContribution.AccessOTA() != nil && waitingContribution.OtaReceiver() == utils.EmptyString,
 		)
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
@@ -963,7 +963,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		var err error
-		accessOTA := utils.EmptyString
+		var accessOTA []byte
 
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
@@ -1180,7 +1180,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 
 		var share *Share
 		accessID := common.Hash{}
-		accessOTA := utils.EmptyString
+		var accessOTA []byte
 		if metaData.AccessOption.UseNft() {
 			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
 			accessID = *metaData.AccessOption.NftID
@@ -1328,7 +1328,7 @@ func (sp *stateProducerV2) staking(
 			continue
 		}
 		accessID := common.Hash{}
-		accessOTA := utils.EmptyString
+		var accessOTA []byte
 		if metaData.AccessOption.UseNft() {
 			accessID = *metaData.AccessOption.NftID
 		} else {
@@ -1420,7 +1420,7 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, rejectInsts...)
 			continue
 		}
-		accessOTA := utils.EmptyString
+		var accessOTA []byte
 		if !metaData.AccessOption.UseNft() {
 			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
 				accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
@@ -1572,7 +1572,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		}
 
 		var err error
-		accessOTA := utils.EmptyString
+		var accessOTA []byte
 		if !metaData.AccessOption.UseNft() {
 			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
 			if err != nil {

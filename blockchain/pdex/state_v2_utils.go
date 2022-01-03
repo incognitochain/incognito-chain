@@ -14,7 +14,7 @@ import (
 
 type Share struct {
 	amount             uint64
-	accessOTA          string
+	accessOTA          []byte
 	tradingFees        map[common.Hash]uint64
 	lastLPFeesPerShare map[common.Hash]*big.Int
 }
@@ -49,7 +49,7 @@ func NewShare() *Share {
 
 func NewShareWithValue(
 	amount uint64,
-	accessOTA string,
+	accessOTA []byte,
 	tradingFees map[common.Hash]uint64,
 	lastLPFeesPerShare map[common.Hash]*big.Int,
 ) *Share {
@@ -79,7 +79,7 @@ func (share *Share) Clone() *Share {
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Amount             uint64                   `json:"Amount"`
-		AccessOTA          string                   `json:"AccessOTA,omitempty"`
+		AccessOTA          []byte                   `json:"AccessOTA,omitempty"`
 		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{
@@ -97,7 +97,7 @@ func (share *Share) MarshalJSON() ([]byte, error) {
 func (share *Share) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Amount             uint64                   `json:"Amount"`
-		AccessOTA          string                   `json:"AccessOTA,omitempty"`
+		AccessOTA          []byte                   `json:"AccessOTA,omitempty"`
 		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 	}{}
@@ -139,12 +139,12 @@ func (share *Share) getDiff(
 	return newShareChange
 }
 
-func (share *Share) setAccessOTA(accessOTA string) {
+func (share *Share) setAccessOTA(accessOTA []byte) {
 	share.accessOTA = accessOTA
 }
 
 func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
-	if share.accessOTA != burntOTA.String() {
+	if !reflect.DeepEqual(share.accessOTA, burntOTA.ToBytesS()) {
 		return false, errors.New("Not valid access OTA")
 	}
 	return true, nil
@@ -152,7 +152,7 @@ func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, e
 
 type Staker struct {
 	liquidity           uint64
-	accessOTA           string
+	accessOTA           []byte
 	rewards             map[common.Hash]uint64
 	lastRewardsPerShare map[common.Hash]*big.Int
 }
@@ -177,14 +177,14 @@ func (staker *Staker) Rewards() map[common.Hash]uint64 {
 	return res
 }
 
-func (staker *Staker) AccessOTA() string {
+func (staker *Staker) AccessOTA() []byte {
 	return staker.accessOTA
 }
 
 func (staker *Staker) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Liquidity           uint64                   `json:"Liquidity"`
-		AccessOTA           string                   `json:"AccessOTA,omitempty"`
+		AccessOTA           []byte                   `json:"AccessOTA,omitempty"`
 		Rewards             map[common.Hash]uint64   `json:"Rewards"`
 		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{
@@ -202,7 +202,7 @@ func (staker *Staker) MarshalJSON() ([]byte, error) {
 func (staker *Staker) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Liquidity          uint64                   `json:"Liquidity"`
-		AccessOTA          string                   `json:"AccessOTA,omitempty"`
+		AccessOTA          []byte                   `json:"AccessOTA,omitempty"`
 		Rewards            map[common.Hash]uint64   `json:"Rewards"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{}
@@ -225,7 +225,7 @@ func NewStaker() *Staker {
 }
 
 func NewStakerWithValue(
-	liquidity uint64, accessOTA string,
+	liquidity uint64, accessOTA []byte,
 	rewards map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int,
 ) *Staker {
 	return &Staker{
@@ -271,12 +271,12 @@ func (staker *Staker) getDiff(
 	return newStakerChange
 }
 
-func (staker *Staker) setAccessOTA(accessOTA string) {
+func (staker *Staker) setAccessOTA(accessOTA []byte) {
 	staker.accessOTA = accessOTA
 }
 
 func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
-	if staker.accessOTA != burntOTA.String() {
+	if !reflect.DeepEqual(staker.accessOTA, burntOTA.ToBytesS()) {
 		return false, errors.New("Not valid access OTA")
 	}
 	return true, nil

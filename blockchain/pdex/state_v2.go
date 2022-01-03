@@ -16,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateV2 struct {
@@ -615,7 +614,7 @@ func NewContributionWithMetaData(
 	}
 
 	accessID := common.Hash{}
-	accessOTA := utils.EmptyString
+	var accessOTA []byte
 	var otaReceivers map[common.Hash]string
 	if metaData.AccessOption.UseNft() {
 		accessID = *metaData.AccessOption.NftID

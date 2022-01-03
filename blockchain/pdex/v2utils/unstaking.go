@@ -34,7 +34,7 @@ func BuildRejectUnstakingInstructions(
 
 func BuildAcceptUnstakingInstructions(
 	stakingPoolID common.Hash, metaData metadataPdexv3.UnstakingRequest,
-	txReqID common.Hash, shardID byte, accessOTA string,
+	txReqID common.Hash, shardID byte, accessOTA []byte,
 ) ([][]string, error) {
 	res := [][]string{}
 	acceptInst, err := instruction.NewAcceptUnstakingWithValue(

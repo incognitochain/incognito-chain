@@ -403,7 +403,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 		shareAmount  uint64
 		beaconHeight uint64
 		accessOption metadataPdexv3.AccessOption
-		accessOTA    string
+		accessOTA    []byte
 	}
 	tests := []struct {
 		name               string

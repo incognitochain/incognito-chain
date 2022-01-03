@@ -56,7 +56,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
 	txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
-	accessOTA string, shouldMintAccessCoin bool,
+	accessOTA []byte, shouldMintAccessCoin bool,
 ) ([][]string, error) {
 	res := [][]string{}
 	token0Contribution := token0ContributionState.Value()

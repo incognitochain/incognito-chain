@@ -25,7 +25,7 @@ func (sp *stateProducerV2) validateContributions(
 		}
 	}
 	if contribution0.OtaReceiver() == utils.EmptyString && contribution1.OtaReceiver() == utils.EmptyString {
-		if contribution0.AccessOTA() == utils.EmptyString && contribution1.AccessOTA() == utils.EmptyString {
+		if contribution0.AccessOTA() == nil && contribution1.AccessOTA() == nil {
 			if contribution0.NftID().String() != contribution1.NftID().String() {
 				return errors.New("contribution 0 and contribution 1 need to be same accessID")
 			}
