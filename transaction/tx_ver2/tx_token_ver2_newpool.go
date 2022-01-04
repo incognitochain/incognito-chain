@@ -76,7 +76,7 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 		}
 	} else {
 		if len(proof.GetInputCoins()) == 0 {
-			if (metaData == nil) && (txToken.GetValidationEnv().TxAction() != common.TxActInit) {
+			if (metaData == nil) && (txn.GetValidationEnv().TxAction() != common.TxActInit) {
 				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", txToken.Hash().String()))
 			}
 			if metaData != nil {

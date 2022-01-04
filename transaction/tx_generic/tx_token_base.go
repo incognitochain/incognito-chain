@@ -442,7 +442,9 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 			return false, errors.Errorf("Metadata is not valid")
 		}
 	}
-	proof := tx.TxTokenData.TxNormal.GetProof()
+	txNormal := tx.TxTokenData.TxNormal
+	proof := txNormal.GetProof()
+
 	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
 		if metaData == nil {
 			utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", tx.Hash().String())
@@ -454,7 +456,7 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 		}
 	} else {
 		if len(proof.GetInputCoins()) == 0 {
-			if (metaData == nil) && (tx.GetValidationEnv().TxAction() != common.TxActInit) {
+			if (metaData == nil) && (txNormal.GetValidationEnv().TxAction() != common.TxActInit) {
 				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
 			}
 			if metaData != nil {
