@@ -470,7 +470,7 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 	}
 	proof = tx.Tx.GetProof()
 	if proof != nil {
-		if len(proof.GetInputCoins()) == 0 {
+		if (len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) != 0) {
 			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v for pay fee for tx %v, can not be mint tx", tx.Tx.Hash().String(), tx.Hash().String()))
 		}
 	}
