@@ -1057,10 +1057,10 @@ func (sp *stateProducerV2) withdrawLPFee(
 					if orderIndex >= 0 {
 						poolPair.orderbook.orders[orderIndex].SetAccessOTA(accessOTA)
 					}
+					instructions = append(instructions, inst)
 				} else {
 					order.accessOTA = accessOTA
 				}
-				instructions = append(instructions, inst)
 			}
 			// compute amount of received LOP reward
 			orderReward = order.uncollectedRewards
