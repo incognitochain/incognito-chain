@@ -59,7 +59,7 @@ consensus_param:
   enable_slashing_height_v2: 3068072
   staking_flow_v3_height: 3335020
   force_not_use_burned_coins: 1000000000000
-  lemma2_height: 1000000000000
+  lemma2_height: 4126069
   block_producing_v3_height: 1000000000000
   byzantine_detector_height: 1000000000000
   timeslot: 10
@@ -88,7 +88,7 @@ pdex_param:
     prv_discount_percent: 25
     trading_protocol_fee_percent: 0
     trading_staking_pool_reward_percent: 10
-    staking_pool_share: 
+    staking_pool_share:
       - "0000000000000000000000000000000000000000000000000000000000000004": 10
       - "0000000000000000000000000000000000000000000000000000000000000006": 20
     mint_nft_require_amount: 1000000000
