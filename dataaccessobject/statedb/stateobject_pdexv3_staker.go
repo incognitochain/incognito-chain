@@ -11,7 +11,7 @@ import (
 type Pdexv3StakerState struct {
 	nftID     common.Hash
 	liquidity uint64
-	accessOTA string
+	accessOTA []byte
 }
 
 func (staker *Pdexv3StakerState) NftID() common.Hash {
@@ -22,7 +22,7 @@ func (staker *Pdexv3StakerState) Liquidity() uint64 {
 	return staker.liquidity
 }
 
-func (staker *Pdexv3StakerState) AccessOTA() string {
+func (staker *Pdexv3StakerState) AccessOTA() []byte {
 	return staker.accessOTA
 }
 
@@ -30,7 +30,7 @@ func (staker *Pdexv3StakerState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		NftID     common.Hash `json:"NftID"`
 		Liquidity uint64      `json:"Liquidity"`
-		AccessOTA string      `json:"AccessOTA,omitempty"`
+		AccessOTA []byte      `json:"AccessOTA,omitempty"`
 	}{
 		NftID:     staker.nftID,
 		Liquidity: staker.liquidity,
@@ -46,7 +46,7 @@ func (staker *Pdexv3StakerState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		NftID     common.Hash `json:"NftID"`
 		Liquidity uint64      `json:"Liquidity"`
-		AccessOTA string      `json:"AccessOTA,omitempty"`
+		AccessOTA []byte      `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -67,7 +67,7 @@ func (staker *Pdexv3StakerState) Clone() *Pdexv3StakerState {
 
 func NewPdexv3StakerState() *Pdexv3StakerState { return &Pdexv3StakerState{} }
 
-func NewPdexv3StakerStateWithValue(nftID common.Hash, liquidity uint64, accessOTA string) *Pdexv3StakerState {
+func NewPdexv3StakerStateWithValue(nftID common.Hash, liquidity uint64, accessOTA []byte) *Pdexv3StakerState {
 	return &Pdexv3StakerState{
 		nftID:     nftID,
 		liquidity: liquidity,

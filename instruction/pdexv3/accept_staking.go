@@ -14,7 +14,7 @@ type AcceptStaking struct {
 	metadataPdexv3.AccessOption
 	stakingPoolID common.Hash
 	liquidity     uint64
-	accessOTA     string
+	accessOTA     []byte
 	shardID       byte
 	txReqID       common.Hash
 }
@@ -22,7 +22,7 @@ type AcceptStaking struct {
 func NewAcceptStaking() *AcceptStaking { return &AcceptStaking{} }
 
 func NewAcceptStakingWithAccessID(
-	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA string,
+	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA []byte,
 	accessOption metadataPdexv3.AccessOption, accessID common.Hash,
 ) *AcceptStaking {
 	if !accessOption.UseNft() && !accessID.IsZeroValue() {
@@ -32,7 +32,7 @@ func NewAcceptStakingWithAccessID(
 }
 
 func NewAcceptStakingWithValue(
-	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA string,
+	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA []byte,
 	accessOption metadataPdexv3.AccessOption,
 ) *AcceptStaking {
 	return &AcceptStaking{
@@ -79,7 +79,7 @@ func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 		metadataPdexv3.AccessOption
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
-		AccessOTA     string      `json:"AccessOTA,omitempty"`
+		AccessOTA     []byte      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{
@@ -101,7 +101,7 @@ func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 		metadataPdexv3.AccessOption
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
-		AccessOTA     string      `json:"AccessOTA,omitempty"`
+		AccessOTA     []byte      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{}
@@ -118,7 +118,7 @@ func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (a *AcceptStaking) AccessOTA() string {
+func (a *AcceptStaking) AccessOTA() []byte {
 	return a.accessOTA
 }
 

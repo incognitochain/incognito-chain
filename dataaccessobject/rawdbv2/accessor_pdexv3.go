@@ -18,7 +18,7 @@ type Pdexv3Contribution struct {
 	txReqID      common.Hash
 	nftID        common.Hash // prsent for nftID or accessID
 	shardID      byte
-	accessOTA    string
+	accessOTA    []byte
 }
 
 func (contribution *Pdexv3Contribution) NftID() common.Hash {
@@ -49,7 +49,7 @@ func (contribution *Pdexv3Contribution) OtaReceiver() string {
 	return contribution.otaReceiver
 }
 
-func (contribution *Pdexv3Contribution) AccessOTA() string {
+func (contribution *Pdexv3Contribution) AccessOTA() []byte {
 	return contribution.accessOTA
 }
 
@@ -80,7 +80,7 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 		TxReqID      common.Hash            `json:"TxReqID"`
 		NftID        common.Hash            `json:"NftID"`
 		ShardID      byte                   `json:"ShardID"`
-		AccessOTA    string                 `json:"AccessOTA,omitempty"`
+		AccessOTA    []byte                 `json:"AccessOTA,omitempty"`
 		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
 	}{
 		PoolPairID:   contribution.poolPairID,
@@ -110,7 +110,7 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 		TxReqID      common.Hash            `json:"TxReqID"`
 		NftID        common.Hash            `json:"NftID"`
 		ShardID      byte                   `json:"ShardID"`
-		AccessOTA    string                 `json:"AccessOTA,omitempty"`
+		AccessOTA    []byte                 `json:"AccessOTA,omitempty"`
 		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -147,7 +147,7 @@ func NewPdexv3ContributionWithValue(
 	poolPairID, otaReceiver string,
 	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
-	accessOTA string, otaReceivers map[common.Hash]string,
+	accessOTA []byte, otaReceivers map[common.Hash]string,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
 		poolPairID:   poolPairID,

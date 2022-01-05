@@ -26,7 +26,7 @@ type WithdrawalStakingRewardContent struct {
 	IsLastInst bool         `json:"IsLastInst"`
 	TxReqID    common.Hash  `json:"TxReqID"`
 	ShardID    byte         `json:"ShardID"`
-	AccessOTA  string       `json:"AccessOTA,omitempty"`
+	AccessOTA  []byte       `json:"AccessOTA,omitempty"`
 }
 
 type WithdrawalStakingRewardStatus struct {

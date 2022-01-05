@@ -373,13 +373,16 @@ func (share *Share) deleteFromDB(
 type Reward map[common.Hash]uint64 // tokenID -> amount
 
 type OrderReward struct {
+	accessOTA          []byte
 	uncollectedRewards Reward
 }
 
 func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
+		AccessOTA          []byte `json:"AccessOTA,omitempty"`
 		UncollectedRewards Reward `json:"UncollectedRewards"`
 	}{
+		AccessOTA:          orderReward.accessOTA,
 		UncollectedRewards: orderReward.uncollectedRewards,
 	})
 	if err != nil {
@@ -390,14 +393,20 @@ func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 
 func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	temp := struct {
+		AccessOTA          []byte `json:"AccessOTA,omitempty"`
 		UncollectedRewards Reward `json:"UncollectedRewards"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	orderReward.accessOTA = temp.AccessOTA
 	orderReward.uncollectedRewards = temp.UncollectedRewards
 	return nil
+}
+
+func (orderReward *OrderReward) AccessOTA() []byte {
+	return orderReward.accessOTA
 }
 
 func (orderReward *OrderReward) UncollectedRewards() Reward {
@@ -422,11 +431,22 @@ func NewOrderReward() *OrderReward {
 	}
 }
 
+func NewOrderRewardWithValue(
+	accessOTA []byte,
+	uncollectedRewards map[common.Hash]uint64,
+) *OrderReward {
+	return &OrderReward{
+		accessOTA:          accessOTA,
+		uncollectedRewards: uncollectedRewards,
+	}
+}
+
 func (orderReward *OrderReward) Clone() *OrderReward {
 	res := NewOrderReward()
 	for k, v := range orderReward.uncollectedRewards {
 		res.uncollectedRewards[k] = v
 	}
+	res.accessOTA = orderReward.accessOTA
 	return res
 }
 
@@ -442,7 +462,11 @@ func (orderReward *OrderReward) getDiff(
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
+		orderRewardChange.IsChanged = true
 	} else {
+		if !reflect.DeepEqual(orderReward.accessOTA, compareOrderReward.accessOTA) {
+			orderRewardChange.IsChanged = true
+		}
 		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
 	}
 	return newOrderRewardChange

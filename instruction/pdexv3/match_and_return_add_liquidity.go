@@ -17,7 +17,7 @@ type MatchAndReturnAddLiquidity struct {
 	existedTokenActualAmount uint64
 	existedTokenReturnAmount uint64
 	existedTokenID           common.Hash
-	accessOTA                string
+	accessOTA                []byte
 }
 
 func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
@@ -27,7 +27,7 @@ func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
 func NewMatchAndReturnAddLiquidityWithValue(
 	contribution statedb.Pdexv3ContributionState,
 	shareAmount, returnAmount, existedTokenActualAmount, existedTokenReturnAmount uint64,
-	existedTokenID common.Hash, accessOTA string,
+	existedTokenID common.Hash, accessOTA []byte,
 ) *MatchAndReturnAddLiquidity {
 	return &MatchAndReturnAddLiquidity{
 		shareAmount:              shareAmount,
@@ -77,7 +77,7 @@ func (m *MatchAndReturnAddLiquidity) MarshalJSON() ([]byte, error) {
 		ExistedTokenActualAmount uint64                           `json:"ExistedTokenActualAmount"`
 		ExistedTokenReturnAmount uint64                           `json:"ExistedTokenReturnAmount"`
 		ExistedTokenID           common.Hash                      `json:"ExistedTokenID"`
-		AccessOTA                string                           `json:"AccessOTA,omitempty"`
+		AccessOTA                []byte                           `json:"AccessOTA,omitempty"`
 	}{
 		ShareAmount:              m.shareAmount,
 		Contribution:             &m.contribution,
@@ -101,7 +101,7 @@ func (m *MatchAndReturnAddLiquidity) UnmarshalJSON(data []byte) error {
 		ExistedTokenActualAmount uint64                           `json:"ExistedTokenActualAmount"`
 		ExistedTokenReturnAmount uint64                           `json:"ExistedTokenReturnAmount"`
 		ExistedTokenID           common.Hash                      `json:"ExistedTokenID"`
-		AccessOTA                string                           `json:"AccessOTA,omitempty"`
+		AccessOTA                []byte                           `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -143,6 +143,6 @@ func (m *MatchAndReturnAddLiquidity) ShareAmount() uint64 {
 	return m.shareAmount
 }
 
-func (m *MatchAndReturnAddLiquidity) AccessOTA() string {
+func (m *MatchAndReturnAddLiquidity) AccessOTA() []byte {
 	return m.accessOTA
 }

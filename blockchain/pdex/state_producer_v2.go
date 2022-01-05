@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"reflect"
 	"sort"
 	"strconv"
 
@@ -997,32 +998,71 @@ func (sp *stateProducerV2) withdrawLPFee(
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
 			if !metaData.AccessOption.UseNft() {
-				if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); ok && err == nil {
-					accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
-					if err != nil {
-						return instructions, pairs, err
-					}
-					otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
-					if err != nil {
-						return instructions, pairs, err
-					}
-					inst, err := instruction.NewMintAccessTokenWithValue(
-						otaReceiverStr, shardID, txReqID,
-					).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
-					if err != nil {
-						return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
-					}
-					instructions = append(instructions, inst)
-				} else {
+				if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); !ok || err != nil {
 					instructions = append(instructions, rejectInst...)
 					continue
 				}
+				accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
+				if err != nil {
+					return instructions, pairs, err
+				}
+				otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
+				if err != nil {
+					return instructions, pairs, err
+				}
+				inst, err := instruction.NewMintAccessTokenWithValue(
+					otaReceiverStr, shardID, txReqID,
+				).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+				if err != nil {
+					return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
+				}
+				instructions = append(instructions, inst)
 			}
 		}
 
 		orderReward := map[common.Hash]uint64{}
 		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
 		if isExistedOrderReward {
+			if !metaData.AccessOption.UseNft() {
+				var orderAccessOTA []byte
+				orderIndex := -1
+				for index, orderbook := range poolPair.orderbook.orders {
+					if orderbook.NftID().String() == accessID.String() {
+						orderAccessOTA = orderbook.AccessOTA()
+						orderIndex = index
+						break
+					}
+				}
+				if orderAccessOTA == nil {
+					orderAccessOTA = order.accessOTA
+				}
+				if !reflect.DeepEqual(orderAccessOTA, metaData.BurntOTA.ToBytesS()) {
+					instructions = append(instructions, rejectInst...)
+					continue
+				}
+				accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
+				if err != nil {
+					return instructions, pairs, err
+				}
+				otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
+				if err != nil {
+					return instructions, pairs, err
+				}
+				inst, err := instruction.NewMintAccessTokenWithValue(
+					otaReceiverStr, shardID, txReqID,
+				).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+				if err != nil {
+					return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
+				}
+				if order.accessOTA == nil {
+					if orderIndex >= 0 {
+						poolPair.orderbook.orders[orderIndex].SetAccessOTA(accessOTA)
+					}
+				} else {
+					order.accessOTA = accessOTA
+				}
+				instructions = append(instructions, inst)
+			}
 			// compute amount of received LOP reward
 			orderReward = order.uncollectedRewards
 		}

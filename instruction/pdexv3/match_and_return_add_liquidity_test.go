@@ -15,6 +15,7 @@ import (
 )
 
 func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
+	initTestParam(t)
 	tokenHash, err := common.Hash{}.NewHashFromStr("abc")
 	assert.Nil(t, err)
 
@@ -22,13 +23,13 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0,
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
-			validAccessOTA, nil,
+			accessOTA.ToBytesS(), nil,
 		), "pair_hash",
 	)
 	inst := NewMatchAndReturnAddLiquidityWithValue(
 		contributionState,
 		100, 100, 200, 100,
-		*tokenHash, validAccessOTA,
+		*tokenHash, accessOTA.ToBytesS(),
 	)
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
@@ -120,18 +121,19 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 }
 
 func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
+	initTestParam(t)
 	tokenHash, _ := common.Hash{}.NewHashFromStr("abc")
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0,
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
-			validAccessOTA, nil,
+			accessOTA.ToBytesS(), nil,
 		), "pair_hash",
 	)
 	inst := NewMatchAndReturnAddLiquidityWithValue(
 		contributionState,
 		100, 100, 200, 100,
-		*tokenHash, validAccessOTA,
+		*tokenHash, accessOTA.ToBytesS(),
 	)
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
@@ -144,7 +146,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		existedTokenReturnAmount uint64
 		existedTokenID           common.Hash
 		nftID                    common.Hash
-		accessOTA                string
+		accessOTA                []byte
 	}
 	tests := []struct {
 		name    string
@@ -162,7 +164,7 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				existedTokenReturnAmount: 100,
 				existedTokenID:           *tokenHash,
 				nftID:                    common.PRVCoinID,
-				accessOTA:                validAccessOTA,
+				accessOTA:                accessOTA.ToBytesS(),
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),

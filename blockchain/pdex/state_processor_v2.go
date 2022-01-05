@@ -734,6 +734,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 
 		for index, ord := range pair.orderbook.orders {
 			if ord.Id() == md.OrderID {
+				orderReward, found := pair.orderRewards[ord.NftID().String()]
 				if md.TokenID == pair.state.Token0ID() {
 					newBalance := ord.Token0Balance() - md.Amount
 					if newBalance > ord.Token0Balance() {
@@ -744,6 +745,9 @@ func (sp *stateProcessorV2) withdrawOrder(
 					// remove order when both balances are cleared
 					if newBalance == 0 && ord.Token1Balance() == 0 {
 						pair.orderbook.RemoveOrder(index)
+						if orderReward != nil && found {
+							orderReward.accessOTA = md.AccessOTA
+						}
 					}
 				} else if md.TokenID == pair.state.Token1ID() {
 					newBalance := ord.Token1Balance() - md.Amount
@@ -755,6 +759,9 @@ func (sp *stateProcessorV2) withdrawOrder(
 					// remove order when both balances are cleared
 					if newBalance == 0 && ord.Token0Balance() == 0 {
 						pair.orderbook.RemoveOrder(index)
+						if orderReward != nil && found {
+							orderReward.accessOTA = md.AccessOTA
+						}
 					}
 				}
 				// set next AccessOTA to state if one is present on the instruction

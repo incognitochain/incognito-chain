@@ -644,6 +644,14 @@ func (p *PoolPairState) updateToDB(
 
 	for nftID, orderRewardChange := range poolPairChange.OrderRewards {
 		if _, found := p.orderRewards[nftID]; found {
+			if orderRewardChange.IsChanged {
+				err := statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
+					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(nftID, p.orderRewards[nftID].accessOTA),
+				)
+				if err != nil {
+					return err
+				}
+			}
 			for tokenID, isChanged := range orderRewardChange.UncollectedReward {
 				if isChanged {
 					tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
@@ -651,17 +659,17 @@ func (p *PoolPairState) updateToDB(
 						return err
 					}
 					if reward, found := p.orderRewards[nftID].uncollectedRewards[*tokenHash]; found {
-						err = statedb.StorePdexv3PoolPairOrderReward(
-							env.StateDB(), poolPairID,
-							statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-								*tokenHash, nftID, reward,
+						err = statedb.StorePdexv3PoolPairOrderRewardDetail(
+							env.StateDB(), poolPairID, nftID,
+							statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
+								*tokenHash, reward,
 							),
 						)
 						if err != nil {
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID, *tokenHash)
+						err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, nftID, *tokenHash)
 						if err != nil {
 							return err
 						}
@@ -669,12 +677,16 @@ func (p *PoolPairState) updateToDB(
 				}
 			}
 		} else {
+			err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID)
+			if err != nil {
+				return err
+			}
 			for tokenID, _ := range orderRewardChange.UncollectedReward {
 				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 				if err != nil {
 					return err
 				}
-				err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID, *tokenHash)
+				err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, nftID, *tokenHash)
 				if err != nil {
 					return err
 				}

@@ -269,19 +269,19 @@ func GenAccessID(otaReceiver privacy.OTAReceiver) common.Hash {
 	return common.HashH(pubKey[:])
 }
 
-func GenAccessOTA(otaReceiver privacy.OTAReceiver) (string, error) {
+func GenAccessOTA(otaReceiver privacy.OTAReceiver) ([]byte, error) {
 	tempAccessOTA := AccessOTA{}
 	err := tempAccessOTA.FromBytesS(otaReceiver.PublicKey.ToBytesS())
-	return tempAccessOTA.String(), err
+	return tempAccessOTA.ToBytesS(), err
 }
 
-func GenAccessOTAByStr(otaReceiver string) (string, error) {
+func GenAccessOTAByStr(otaReceiver string) ([]byte, error) {
 	tempAccessOTA := AccessOTA{}
 	tempOtaReceiver := privacy.OTAReceiver{}
 	err := tempOtaReceiver.FromString(otaReceiver)
 	if err != nil {
-		return utils.EmptyString, err
+		return nil, err
 	}
 	err = tempAccessOTA.FromBytesS(tempOtaReceiver.PublicKey.ToBytesS())
-	return tempAccessOTA.String(), err
+	return tempAccessOTA.ToBytesS(), err
 }

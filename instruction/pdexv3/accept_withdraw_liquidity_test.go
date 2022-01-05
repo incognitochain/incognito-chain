@@ -16,7 +16,7 @@ func TestAcceptWithdrawLiquidity_FromStringSlice(t *testing.T) {
 		tokenAmount  uint64
 		shareAmount  uint64
 		otaReceiver  string
-		accessOTA    string
+		accessOTA    []byte
 		txReqID      common.Hash
 		shardID      byte
 	}
@@ -59,7 +59,7 @@ func TestAcceptWithdrawLiquidity_StringSlice(t *testing.T) {
 		tokenAmount  uint64
 		shareAmount  uint64
 		otaReceiver  string
-		accessOTA    string
+		accessOTA    []byte
 		txReqID      common.Hash
 		shardID      byte
 	}

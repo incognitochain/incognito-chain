@@ -168,7 +168,15 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			for tokenID, amount := range value {
+			if orderReward[nftID] == nil {
+				orderReward[nftID] = NewOrderReward()
+			}
+			orderReward[nftID].accessOTA = value.AccessOTA()
+			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+			if err != nil {
+				return nil, err
+			}
+			for tokenID, amount := range rewardDetail {
 				orderReward[nftID].uncollectedRewards[tokenID] = amount
 			}
 		}
@@ -329,7 +337,12 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			for tokenID, amount := range value {
+			orderReward[nftID].accessOTA = value.AccessOTA()
+			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+			if err != nil {
+				return nil, err
+			}
+			for tokenID, amount := range rewardDetail {
 				orderReward[nftID].uncollectedRewards[tokenID] = amount
 			}
 		}
@@ -423,6 +436,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			makingVolume[tokenID].volume[nftID] = amount
 		}
 	}
+
 	tempOrderReward, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
 	if err != nil {
 		return nil, err
@@ -432,7 +446,12 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 		if orderReward[nftID] == nil {
 			orderReward[nftID] = NewOrderReward()
 		}
-		for tokenID, amount := range value {
+		orderReward[nftID].accessOTA = value.AccessOTA()
+		rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+		if err != nil {
+			return nil, err
+		}
+		for tokenID, amount := range rewardDetail {
 			orderReward[nftID].uncollectedRewards[tokenID] = amount
 		}
 	}
@@ -484,10 +503,15 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 	}
 
 	orderRewards := map[string]*OrderReward{}
-	for orderID, reward := range rewards {
-		orderRewards[orderID] = NewOrderReward()
-		for tokenID, amount := range reward {
-			orderRewards[orderID].uncollectedRewards[tokenID] = amount
+	for nftID, reward := range rewards {
+		orderRewards[nftID] = NewOrderReward()
+		orderRewards[nftID].accessOTA = reward.AccessOTA()
+		rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+		if err != nil {
+			return nil, err
+		}
+		for tokenID, amount := range rewardDetail {
+			orderRewards[nftID].uncollectedRewards[tokenID] = amount
 		}
 	}
 	return orderRewards, nil

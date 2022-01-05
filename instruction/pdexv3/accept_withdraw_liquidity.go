@@ -17,7 +17,7 @@ type AcceptWithdrawLiquidity struct {
 	tokenAmount uint64
 	shareAmount uint64
 	otaReceiver string
-	accessOTA   string
+	accessOTA   []byte
 	txReqID     common.Hash
 	shardID     byte
 }
@@ -33,7 +33,7 @@ func NewAcceptWithdrawLiquidityWithValue(
 	otaReceiver string,
 	txReqID common.Hash, shardID byte,
 	accessOption metadataPdexv3.AccessOption,
-	accessOTA string,
+	accessOTA []byte,
 ) *AcceptWithdrawLiquidity {
 	return &AcceptWithdrawLiquidity{
 		poolPairID:   poolPairID,
@@ -84,7 +84,7 @@ func (a *AcceptWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 		OtaReceiver string      `json:"OtaReceiver"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
-		AccessOTA   string      `json:"AccessOTA,omitempty"`
+		AccessOTA   []byte      `json:"AccessOTA,omitempty"`
 	}{
 		PoolPairID:   a.poolPairID,
 		AccessOption: a.AccessOption,
@@ -112,7 +112,7 @@ func (a *AcceptWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 		ShareAmount uint64      `json:"ShareAmount"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
-		AccessOTA   string      `json:"AccessOTA,omitempty"`
+		AccessOTA   []byte      `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -158,6 +158,6 @@ func (a *AcceptWithdrawLiquidity) OtaReceiver() string {
 	return a.otaReceiver
 }
 
-func (a *AcceptWithdrawLiquidity) AccessOTA() string {
+func (a *AcceptWithdrawLiquidity) AccessOTA() []byte {
 	return a.accessOTA
 }

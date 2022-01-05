@@ -15,7 +15,7 @@ type AcceptUnstaking struct {
 	metadataPdexv3.AccessOption
 	amount      uint64
 	otaReceiver string
-	accessOTA   string
+	accessOTA   []byte
 	txReqID     common.Hash
 	shardID     byte
 }
@@ -30,7 +30,7 @@ func NewAcceptUnstakingWithValue(
 	otaReceiver string,
 	txReqID common.Hash, shardID byte,
 	accessOption metadataPdexv3.AccessOption,
-	accessOTA string,
+	accessOTA []byte,
 ) *AcceptUnstaking {
 	return &AcceptUnstaking{
 		stakingPoolID: stakingPoolID,
@@ -77,7 +77,7 @@ func (a *AcceptUnstaking) MarshalJSON() ([]byte, error) {
 		OtaReceiver string      `json:"OtaReceiver"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
-		AccessOTA   string      `json:"AccessOTA,omitempty"`
+		AccessOTA   []byte      `json:"AccessOTA,omitempty"`
 	}{
 		StakingPoolID: a.stakingPoolID,
 		AccessOption:  a.AccessOption,
@@ -101,7 +101,7 @@ func (a *AcceptUnstaking) UnmarshalJSON(data []byte) error {
 		OtaReceiver string      `json:"OtaReceiver"`
 		TxReqID     common.Hash `json:"TxReqID"`
 		ShardID     byte        `json:"ShardID"`
-		AccessOTA   string      `json:"AccessOTA,omitempty"`
+		AccessOTA   []byte      `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -137,6 +137,6 @@ func (a *AcceptUnstaking) OtaReceiver() string {
 	return a.otaReceiver
 }
 
-func (a *AcceptUnstaking) AccessOTA() string {
+func (a *AcceptUnstaking) AccessOTA() []byte {
 	return a.accessOTA
 }

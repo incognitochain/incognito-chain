@@ -9,17 +9,12 @@ import (
 )
 
 type Pdexv3PoolPairOrderRewardState struct {
-	tokenID common.Hash
-	nftID   string
-	value   uint64
+	nftID     string
+	accessOTA []byte
 }
 
-func (state *Pdexv3PoolPairOrderRewardState) Value() uint64 {
-	return state.value
-}
-
-func (state *Pdexv3PoolPairOrderRewardState) TokenID() common.Hash {
-	return state.tokenID
+func (state *Pdexv3PoolPairOrderRewardState) AccessOTA() []byte {
+	return state.accessOTA
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
@@ -28,13 +23,11 @@ func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
 
 func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID common.Hash `json:"TokenID"`
-		NftID   string      `json:"NftID"`
-		Value   uint64      `json:"Value"`
+		NftID     string `json:"NftID"`
+		AccessOTA []byte `json:"AccessOTA,omitempty"`
 	}{
-		TokenID: state.tokenID,
-		NftID:   state.nftID,
-		Value:   state.value,
+		NftID:     state.nftID,
+		AccessOTA: state.accessOTA,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -44,25 +37,22 @@ func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 
 func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID common.Hash `json:"TokenID"`
-		NftID   string      `json:"NftID"`
-		Value   uint64      `json:"Value"`
+		NftID     string `json:"NftID"`
+		AccessOTA []byte `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	state.tokenID = temp.TokenID
 	state.nftID = temp.NftID
-	state.value = temp.Value
+	state.accessOTA = temp.AccessOTA
 	return nil
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) Clone() *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
-		tokenID: state.tokenID,
-		nftID:   state.nftID,
-		value:   state.value,
+		nftID:     state.nftID,
+		accessOTA: state.accessOTA,
 	}
 }
 
@@ -71,12 +61,11 @@ func NewPdexv3PoolPairOrderRewardState() *Pdexv3PoolPairOrderRewardState {
 }
 
 func NewPdexv3PoolPairOrderRewardStateWithValue(
-	tokenID common.Hash, nftID string, value uint64,
+	nftID string, accessOTA []byte,
 ) *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
-		tokenID: tokenID,
-		nftID:   nftID,
-		value:   value,
+		nftID:     nftID,
+		accessOTA: accessOTA,
 	}
 }
 
@@ -143,9 +132,9 @@ func generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID string) []byte {
 	return h[:prefixHashKeyLength]
 }
 
-func GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID string, tokenID common.Hash) common.Hash {
+func GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID string) common.Hash {
 	prefixHash := generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
-	valueHash := common.HashH(append([]byte(nftID), []byte(tokenID.String())...))
+	valueHash := common.HashH([]byte(nftID))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 

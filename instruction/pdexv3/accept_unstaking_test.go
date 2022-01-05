@@ -13,9 +13,10 @@ import (
 )
 
 func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
+	initTestParam(t)
 	acceptUnstakingInst := NewAcceptUnstakingWithValue(
 		common.PRVCoinID, 50, validOTAReceiver0,
-		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, validAccessOTA,
+		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, accessOTA.ToBytesS(),
 	)
 	data, err := json.Marshal(&acceptUnstakingInst)
 	assert.Nil(t, err)
@@ -25,7 +26,7 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 		AccessOption  metadataPdexv3.AccessOption
 		amount        uint64
 		otaReceiver   string
-		accessOTA     string
+		accessOTA     []byte
 		txReqID       common.Hash
 		shardID       byte
 	}
@@ -77,7 +78,7 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 				stakingPoolID: common.PRVCoinID,
 				amount:        50,
 				otaReceiver:   validOTAReceiver0,
-				accessOTA:     validAccessOTA,
+				accessOTA:     accessOTA.ToBytesS(),
 				txReqID:       common.PRVCoinID,
 				shardID:       1,
 			},
@@ -128,9 +129,10 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 }
 
 func TestAcceptUnstaking_StringSlice(t *testing.T) {
+	initTestParam(t)
 	acceptUnstakingInst := NewAcceptUnstakingWithValue(
 		common.PRVCoinID, 50, validOTAReceiver0,
-		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, validAccessOTA,
+		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, accessOTA.ToBytesS(),
 	)
 	data, err := json.Marshal(&acceptUnstakingInst)
 	assert.Nil(t, err)
@@ -140,7 +142,7 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 		AccessOption  metadataPdexv3.AccessOption
 		amount        uint64
 		otaReceiver   string
-		accessOTA     string
+		accessOTA     []byte
 		txReqID       common.Hash
 		shardID       byte
 	}
@@ -159,7 +161,7 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 				},
 				amount:      50,
 				otaReceiver: validOTAReceiver0,
-				accessOTA:   validAccessOTA,
+				accessOTA:   accessOTA.ToBytesS(),
 				txReqID:     common.PRVCoinID,
 				shardID:     1,
 			},

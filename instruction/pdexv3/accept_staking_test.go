@@ -13,8 +13,9 @@ import (
 )
 
 func TestAcceptStaking_FromStringSlice(t *testing.T) {
+	initTestParam(t)
 	acceptStakingInst := NewAcceptStakingWithValue(
-		common.PRVCoinID, common.PRVCoinID, 1, 100, validAccessOTA,
+		common.PRVCoinID, common.PRVCoinID, 1, 100, accessOTA.ToBytesS(),
 		metadataPdexv3.AccessOption{
 			NftID: &common.PRVCoinID,
 		},
@@ -26,7 +27,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 		metadataPdexv3.AccessOption
 		stakingPoolID common.Hash
 		liquidity     uint64
-		accessOTA     string
+		accessOTA     []byte
 		shardID       byte
 		txReqID       common.Hash
 	}
@@ -75,7 +76,7 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 				AccessOption: metadataPdexv3.AccessOption{
 					NftID: &common.PRVCoinID,
 				},
-				accessOTA:     validAccessOTA,
+				accessOTA:     accessOTA.ToBytesS(),
 				stakingPoolID: common.PRVCoinID,
 				txReqID:       common.PRVCoinID,
 				liquidity:     100,
@@ -123,8 +124,9 @@ func TestAcceptStaking_FromStringSlice(t *testing.T) {
 }
 
 func TestAcceptStaking_StringSlice(t *testing.T) {
+	initTestParam(t)
 	acceptStakingInst := NewAcceptStakingWithValue(
-		common.PRVCoinID, common.PRVCoinID, 1, 100, validAccessOTA,
+		common.PRVCoinID, common.PRVCoinID, 1, 100, accessOTA.ToBytesS(),
 		metadataPdexv3.AccessOption{
 			NftID: &common.PRVCoinID,
 		},
@@ -135,7 +137,7 @@ func TestAcceptStaking_StringSlice(t *testing.T) {
 		AccessOption  metadataPdexv3.AccessOption
 		stakingPoolID common.Hash
 		liquidity     uint64
-		accessOTA     string
+		accessOTA     []byte
 		shardID       byte
 		txReqID       common.Hash
 	}
@@ -153,7 +155,7 @@ func TestAcceptStaking_StringSlice(t *testing.T) {
 				},
 				stakingPoolID: common.PRVCoinID,
 				liquidity:     100,
-				accessOTA:     validAccessOTA,
+				accessOTA:     accessOTA.ToBytesS(),
 				shardID:       1,
 				txReqID:       common.PRVCoinID,
 			},
