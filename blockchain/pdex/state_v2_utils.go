@@ -462,10 +462,10 @@ func (orderReward *OrderReward) getDiff(
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
-		orderRewardChange.IsChanged = true
+		newOrderRewardChange.IsChanged = true
 	} else {
 		if !bytes.Equal(orderReward.accessOTA, compareOrderReward.accessOTA) {
-			orderRewardChange.IsChanged = true
+			newOrderRewardChange.IsChanged = true
 		}
 		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
 	}

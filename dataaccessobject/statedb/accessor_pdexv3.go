@@ -240,21 +240,21 @@ func DeletePdexv3PoolPairStakingPoolFee(
 func StorePdexv3PoolPairOrderReward(
 	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairOrderRewardState,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, state.nftID)
+	key := GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, state.nftID)
 	return stateDB.SetStateObject(Pdexv3PoolPairOrderRewardObjectType, key, state)
 }
 
 func StorePdexv3PoolPairOrderRewardDetail(
 	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3PoolPairOrderRewardDetailState,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardDetailObjectPrefix(poolPairID, nftID, state.tokenID)
+	key := GeneratePdexv3PoolPairOrderRewardDetailObjectKey(poolPairID, nftID, state.tokenID)
 	return stateDB.SetStateObject(Pdexv3PoolPairOrderRewardDetailObjectType, key, state)
 }
 
 func DeletePdexv3PoolPairOrderReward(
 	stateDB *StateDB, poolPairID, nftID string,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID)
+	key := GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, nftID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardObjectType, key) {
 		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v", poolPairID, nftID)
 	}
@@ -264,7 +264,7 @@ func DeletePdexv3PoolPairOrderReward(
 func DeletePdexv3PoolPairOrderRewardDetail(
 	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardDetailObjectPrefix(poolPairID, nftID, tokenID)
+	key := GeneratePdexv3PoolPairOrderRewardDetailObjectKey(poolPairID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardDetailObjectType, key) {
 		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v", poolPairID, nftID)
 	}
@@ -274,14 +274,14 @@ func DeletePdexv3PoolPairOrderRewardDetail(
 func StorePdexv3PoolPairMakingVolume(
 	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairMakingVolumeState,
 ) error {
-	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, state.tokenID, state.nftID)
+	key := GeneratePdexv3PoolPairMakingVolumeObjectKey(poolPairID, state.tokenID, state.nftID)
 	return stateDB.SetStateObject(Pdexv3PoolPairMakingVolumeObjectType, key, state)
 }
 
 func DeletePdexv3PoolPairMakingVolume(
 	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
-	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, tokenID, nftID)
+	key := GeneratePdexv3PoolPairMakingVolumeObjectKey(poolPairID, tokenID, nftID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairMakingVolumeObjectType, key) {
 		return fmt.Errorf("Cannot delete pool pair making volume with ID %v - %v - %v", poolPairID, tokenID.String(), nftID)
 	}

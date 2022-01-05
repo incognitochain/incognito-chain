@@ -132,7 +132,7 @@ func generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID string) []byte {
 	return h[:prefixHashKeyLength]
 }
 
-func GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID string) common.Hash {
+func GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, nftID string) common.Hash {
 	prefixHash := generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
 	valueHash := common.HashH([]byte(nftID))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
