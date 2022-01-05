@@ -107,7 +107,7 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 		trieJournal[chainID] = filePath
 	}
 
-	cacheConfig := configCache32GB
+	cacheConfig := configCache4GB
 	cacheConfig.triegc = prque.New(nil)
 	cacheConfig.trieJournalPath = trieJournal
 
