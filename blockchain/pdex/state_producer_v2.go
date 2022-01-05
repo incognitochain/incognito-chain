@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"reflect"
 	"sort"
 	"strconv"
 
@@ -1036,7 +1035,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 				if orderAccessOTA == nil {
 					orderAccessOTA = order.accessOTA
 				}
-				if !reflect.DeepEqual(orderAccessOTA, metaData.BurntOTA.ToBytesS()) {
+				if !bytes.Equal(orderAccessOTA, metaData.BurntOTA.ToBytesS()) {
 					instructions = append(instructions, rejectInst...)
 					continue
 				}

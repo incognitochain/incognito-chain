@@ -1,10 +1,10 @@
 package pdex
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
-	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
@@ -129,7 +129,7 @@ func (share *Share) getDiff(
 			newShareChange.LastLPFeesPerShare[tokenID.String()] = true
 		}
 	} else {
-		if !reflect.DeepEqual(share.amount, compareShare.amount) || !reflect.DeepEqual(share.accessOTA, compareShare.accessOTA) {
+		if share.amount != compareShare.amount || !bytes.Equal(share.accessOTA, compareShare.accessOTA) {
 			newShareChange.IsChanged = true
 		}
 		newShareChange.TradingFees = v2utils.GetChangedElementsFromMapUint64(share.tradingFees, compareShare.tradingFees)
@@ -144,7 +144,7 @@ func (share *Share) setAccessOTA(accessOTA []byte) {
 }
 
 func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
-	if !reflect.DeepEqual(share.accessOTA, burntOTA.ToBytesS()) {
+	if !bytes.Equal(share.accessOTA, burntOTA.ToBytesS()) {
 		return false, errors.New("Not valid access OTA")
 	}
 	return true, nil
@@ -262,7 +262,7 @@ func (staker *Staker) getDiff(
 			newStakerChange.LastRewardsPerShare[tokenID.String()] = true
 		}
 	} else {
-		if !reflect.DeepEqual(staker.liquidity, compareStaker.liquidity) || !reflect.DeepEqual(staker.accessOTA, compareStaker.accessOTA) {
+		if staker.liquidity != compareStaker.liquidity || !bytes.Equal(staker.accessOTA, compareStaker.accessOTA) {
 			newStakerChange.IsChanged = true
 		}
 		newStakerChange.LastRewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(staker.lastRewardsPerShare, compareStaker.lastRewardsPerShare)
@@ -276,7 +276,7 @@ func (staker *Staker) setAccessOTA(accessOTA []byte) {
 }
 
 func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
-	if !reflect.DeepEqual(staker.accessOTA, burntOTA.ToBytesS()) {
+	if !bytes.Equal(staker.accessOTA, burntOTA.ToBytesS()) {
 		return false, errors.New("Not valid access OTA")
 	}
 	return true, nil
@@ -464,7 +464,7 @@ func (orderReward *OrderReward) getDiff(
 		}
 		orderRewardChange.IsChanged = true
 	} else {
-		if !reflect.DeepEqual(orderReward.accessOTA, compareOrderReward.accessOTA) {
+		if !bytes.Equal(orderReward.accessOTA, compareOrderReward.accessOTA) {
 			orderRewardChange.IsChanged = true
 		}
 		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
