@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/common"
@@ -38,11 +39,11 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
-	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), 
-		strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2), 
+	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
 		strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
-		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta),
-		strconv.Itoa(metadata.BurningPLGConfirmMeta):
+		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningPLGConfirmMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {

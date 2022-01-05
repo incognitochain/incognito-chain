@@ -79,11 +79,6 @@ var MainnetParam = &param{
 	},
 	BCHeightBreakPointPortalV3: 10000000,
 	TxPoolVersion:              0,
-	GethParam: gethParam{
-		Host:     "https://eth-fullnode.incognito.org",
-		Protocol: "",
-		Port:     "",
-	},
 	BSCParam: bscParam{
 		Host: "https://bsc-dataseed.binance.org",
 	},
@@ -164,11 +159,6 @@ var Testnet1Param = &param{
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
-	GethParam: gethParam{
-		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
-		Protocol: "https",
-		Port:     "",
-	},
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
@@ -249,11 +239,6 @@ var Tesnet2Param = &param{
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
-	GethParam: gethParam{
-		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
-		Protocol: "https",
-		Port:     "",
-	},
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
@@ -334,11 +319,6 @@ var LocalParam = &param{
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
-	GethParam: gethParam{
-		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
-		Protocol: "https",
-		Port:     "",
-	},
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
@@ -419,11 +399,6 @@ var LocalDCSParam = &param{
 	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
-	GethParam: gethParam{
-		Host:     "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361",
-		Protocol: "https",
-		Port:     "",
-	},
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},

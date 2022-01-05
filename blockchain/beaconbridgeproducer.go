@@ -56,6 +56,11 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningBSCConfirmMeta, inst, beaconHeight, common.BSCPrefix)
 			newInst = [][]string{burningConfirm}
 
+		case metadata.BurningPBSCForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPBSCConfirmForDepositToSCMeta, inst, beaconHeight, common.BSCPrefix)
+			newInst = [][]string{burningConfirm}
+
 		case metadata.BurningForDepositToSCRequestMeta:
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight, "")
@@ -70,7 +75,7 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVERC20ConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
 			newInst = [][]string{burningConfirm}
-			
+
 		case metadata.BurningPRVBEP20RequestMeta:
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
@@ -181,7 +186,6 @@ func buildBurningPRVEVMConfirmInst(
 	tokenID := rCommon.HexToAddress(tokenIDStr)
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
 	shardID := byte(common.BridgeShardID)
-
 
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)

@@ -602,7 +602,10 @@ func (txService TxService) BuildConvertV1ToV2Transaction(params *bean.CreateRawT
 	return tx, nil
 }
 
-func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (metadata.Transaction, *RPCError) {
+func (txService TxService) BuildRawTransaction(
+	params *bean.CreateRawTxParam,
+	meta metadata.Metadata,
+) (metadata.Transaction, *RPCError) {
 	Logger.log.Infof("Build Raw Transaction Params: \n %+v", params)
 	// get output coins to spend and real fee
 	inputCoins, realFee, err1 := txService.chooseOutsCoinByKeyset(
@@ -702,8 +705,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
 				}
 			}
-
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 			if err == nil {
 				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 				tx.SetValidationEnv(valEnv)
@@ -1133,7 +1135,10 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 }
 
 // BuildRawCustomTokenTransaction ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
+	params interface{},
+	metaData metadata.Metadata,
+) (transaction.TransactionToken, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -2025,7 +2030,8 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 					return nil, nil, NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
 				}
 			}
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
+
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
 			valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 			tx.SetValidationEnv(valEnv)
 			valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
@@ -2046,9 +2052,13 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 		} else {
 			Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
 		}
+
 	} else {
 		txDB := sView.GetCopiedTransactionStateDB()
 		err := tx.LoadData(txDB)
+		if err != nil {
+			Logger.log.Errorf("Validate tx %v return err %v", hash, err)
+		}
 		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(tx, beaconHeigh)
 		if err != nil {
 			Logger.log.Errorf("txService.SendRawPrivacyCustomTokenTransaction Try add tx into mempool of node with err: %+v", err)

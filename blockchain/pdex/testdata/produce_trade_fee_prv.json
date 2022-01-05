@@ -1,0 +1,24 @@
+[{
+    "name": "Produce rejected trade request - fee in PRV",
+    "data": {
+        "metadata": {
+            "TradePath": ["pair0"],
+            "TokenToSell": "0000000000000000000000000000000000000000000000000000000000000100",
+            "SellAmount": 150,
+            "MinAcceptableAmount": 280,
+            "TradingFee": 40,
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000200": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000100": "15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP",
+                "0000000000000000000000000000000000000000000000000000000000000004": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"
+            },
+            "Type": 285
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["285", "0", "0", "7f9cac348d75b7e8b008613ce757badb0ca20648f5d6c4df73ac6f95f99e643a", "{\"Content\":{\"Receiver\":\"15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP\",\"TokenToSell\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"Amount\":150}}"],
+            ["285", "0", "0", "7f9cac348d75b7e8b008613ce757badb0ca20648f5d6c4df73ac6f95f99e643a", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"TokenToSell\":\"0000000000000000000000000000000000000000000000000000000000000004\",\"Amount\":40}}"]
+        ]
+    }
+}]

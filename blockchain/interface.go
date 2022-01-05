@@ -60,6 +60,7 @@ type Syncker interface {
 	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
+	ReceiveBlock(block interface{}, previousValidationData string, peerID string)
 }
 
 type TxsCrawler interface {

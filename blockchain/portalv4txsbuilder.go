@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -40,7 +41,7 @@ func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 		acceptedShieldingReq.IncogAddressStr,
 		acceptedShieldingReq.MintingAmount,
 		acceptedShieldingReq.TokenID,
-		metadata.PortalV4ShieldingResponseMeta,
+		metadataCommon.PortalV4ShieldingResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(acceptedShieldingReq.IncogAddressStr)
@@ -104,7 +105,7 @@ func (curView *ShardBestState) buildPortalRefundedUnshieldingRequestTx(
 		unshieldRequest.TxRandomStr,
 		unshieldRequest.UnshieldAmount,
 		unshieldRequest.TokenID,
-		metadata.PortalV4UnshieldingResponseMeta,
+		metadataCommon.PortalV4UnshieldingResponseMeta,
 	)
 
 	// init salary tx

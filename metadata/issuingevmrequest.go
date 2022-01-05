@@ -224,7 +224,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		evmParam.GetFromEnv()
 		host = evmParam.Host
 	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta {
-		evmParam := config.Param().GethParam
+		evmParam := config.Config().GethParam
 		evmParam.GetFromEnv()
 		protocol = evmParam.Protocol
 		host = evmParam.Host
