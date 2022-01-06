@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 // @@NOTE: This tx is created when migration centralized bridge to portal v4
@@ -79,30 +80,30 @@ func (convertVaultReq PortalConvertVaultRequest) ValidateTxWithBlockChain(
 func (convertVaultReq PortalConvertVaultRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// check proof is not empty
 	if convertVaultReq.ConvertProof == "" {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ConvertVaultRequestMetaError,
 			errors.New("Converting proof is empty"))
 	}
 
 	// check tx version and type
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ConvertVaultRequestMetaError,
 			errors.New("Tx converting vault request must be version 2"))
 	}
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ConvertVaultRequestMetaError,
 			errors.New("Tx converting vault request must be TxNormalType"))
 	}
 
 	// validate tokenID and shielding proof
 	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, convertVaultReq.TokenID, common.PortalVersion4)
 	if !isPortalToken || err != nil {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ConvertVaultRequestMetaError,
 			errors.New("TokenID is not supported currently on Portal v4"))
 	}
 
 	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(convertVaultReq.ConvertProof)
 	if err != nil {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+		return false, false, NewMetadataTxError(metadataCommon.PortalV4ConvertVaultRequestMetaError,
 			fmt.Errorf("ConvertProof is invalid sanity %v", err))
 	}
 
@@ -110,7 +111,7 @@ func (convertVaultReq PortalConvertVaultRequest) ValidateSanityData(chainRetriev
 }
 
 func (convertVaultReq PortalConvertVaultRequest) ValidateMetadataByItself() bool {
-	return convertVaultReq.Type == PortalV4ConvertVaultRequestMeta
+	return convertVaultReq.Type == metadataCommon.PortalV4ConvertVaultRequestMeta
 }
 
 func (convertVaultReq PortalConvertVaultRequest) Hash() *common.Hash {
@@ -134,7 +135,7 @@ func (convertVaultReq *PortalConvertVaultRequest) BuildReqActions(tx Transaction
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalV4ConvertVaultRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(metadataCommon.PortalV4ConvertVaultRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

@@ -86,10 +86,11 @@ type TransactionToken interface {
 	SetValidationEnv(metadata.ValidationEnviroment)
 	UnmarshalJSON(data []byte) error
 
-	VerifySigTx() (bool, error)
+	// VerifySigTx() (bool, error)
 	ValidateSanityDataByItSelf() (bool, error)
-	ValidateTxCorrectness() (bool, error)
-	LoadCommitment(db *statedb.StateDB) error
+	ValidateTxCorrectness(*statedb.StateDB) (bool, error)
+	LoadData(db *statedb.StateDB) error
+	CheckData(db *statedb.StateDB) error
 	ValidateSanityDataWithBlockchain(
 		chainRetriever metadata.ChainRetriever,
 		shardViewRetriever metadata.ShardViewRetriever,
@@ -99,7 +100,6 @@ type TransactionToken interface {
 		bool,
 		error,
 	)
-	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
 }
 
 type TxTokenData struct {

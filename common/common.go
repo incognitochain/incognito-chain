@@ -1,11 +1,12 @@
 package common
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"net"
@@ -17,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
@@ -354,6 +357,16 @@ func BytesToInt(bytesArr []byte) int {
 	return int(numInt.Int64())
 }
 
+// BytesToInt reverts an integer number from 2-byte array
+func BytesToInt64(bytesArr []byte) int64 {
+	if len(bytesArr) != 2 {
+		return 0
+	}
+
+	numInt := new(big.Int).SetBytes(bytesArr)
+	return numInt.Int64()
+}
+
 // BytesToUint32 converts big endian 4-byte array to uint32 number
 func BytesToUint32(b []byte) (uint32, error) {
 	if len(b) != Uint32Size {
@@ -583,6 +596,7 @@ func TokenHashToString(h *Hash) string {
 func TokenStringToHash(s string) (*Hash, error) {
 	return Hash{}.NewHashFromStr(s)
 }
+
 // DecodeETHAddr converts address string (not contain 0x prefix) to 32 bytes slice
 func DecodeETHAddr(addr string) ([]byte, error) {
 	remoteAddr, err := hex.DecodeString(addr)
@@ -606,4 +620,40 @@ func FileExists(name string) bool {
 		}
 	}
 	return true
+}
+
+func IsPublicKeyBurningAddress(publicKey []byte) bool {
+	if bytes.Equal(publicKey, BurningAddressByte) {
+		return true
+	}
+	if bytes.Equal(publicKey, BurningAddressByte2) {
+		return true
+	}
+	return false
+}
+
+func GetCPUSample() (idle, total uint64) {
+	contents, err := ioutil.ReadFile("/proc/stat")
+	if err != nil {
+		return
+	}
+	lines := strings.Split(string(contents), "\n")
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if fields[0] == "cpu" {
+			numFields := len(fields)
+			for i := 1; i < numFields; i++ {
+				val, err := strconv.ParseUint(fields[i], 10, 64)
+				if err != nil {
+					fmt.Println("Error: ", i, fields[i], err)
+				}
+				total += val // tally up all the numbers to get total ticks
+				if i == 4 {  // idle is the 5th field in the cpu line
+					idle = val
+				}
+			}
+			return
+		}
+	}
+	return
 }

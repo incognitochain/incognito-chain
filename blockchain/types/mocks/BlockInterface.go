@@ -44,6 +44,22 @@ func (_m *BlockInterface) CommitteeFromBlock() common.Hash {
 	return r0
 }
 
+// GetAggregateRootHash provides a mock function with given fields:
+func (_m *BlockInterface) GetAggregateRootHash() common.Hash {
+	ret := _m.Called()
+
+	var r0 common.Hash
+	if rf, ok := ret.Get(0).(func() common.Hash); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(common.Hash)
+		}
+	}
+
+	return r0
+}
+
 // GetConsensusType provides a mock function with given fields:
 func (_m *BlockInterface) GetConsensusType() string {
 	ret := _m.Called()
@@ -60,6 +76,20 @@ func (_m *BlockInterface) GetConsensusType() string {
 
 // GetCurrentEpoch provides a mock function with given fields:
 func (_m *BlockInterface) GetCurrentEpoch() uint64 {
+	ret := _m.Called()
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func() uint64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	return r0
+}
+
+// GetFinalityHeight provides a mock function with given fields:
+func (_m *BlockInterface) GetFinalityHeight() uint64 {
 	ret := _m.Called()
 
 	var r0 uint64
@@ -197,6 +227,20 @@ func (_m *BlockInterface) GetRoundKey() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetShardID provides a mock function with given fields:
+func (_m *BlockInterface) GetShardID() int {
+	ret := _m.Called()
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
 	}
 
 	return r0

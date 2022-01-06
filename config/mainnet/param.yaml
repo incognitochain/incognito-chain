@@ -16,6 +16,8 @@ committee_size:
   shard_committee_size_key_list_v2: 22
   beacon_committee_size_key_list_v2: 7
   number_of_fixed_shard_block_validators: 22
+  increase_max_shard_committee_size:
+    - 1000000000000: 48
 block_time:
   min_beacon_block_interval: 40s
   max_beacon_block_creation: 10s
@@ -47,7 +49,10 @@ consensus_param:
   assign_rule_v3_height: 1410217
   enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1519263
+  force_not_use_burned_coins: 1000000000000
+  lemma2_height: 1000000000000
   block_producing_v3_height: 1000000000000
+  byzantine_detector_height: 1000000000000
   timeslot: 40
   epoch_break_point_swap_new_key:
     - 1917
@@ -63,9 +68,20 @@ enable_feature_flags:
   - PortalV4: 4079
 portal_v3_height: 10000000
 tx_pool_version: 0
-geth_param:
-  host: "https://eth-fullnode.incognito.org"
-  protocol: ""
-  port: ""
 bsc_param:
   host: "https://bsc-dataseed.binance.org"
+pdex_param:
+  pdex_v3_break_point_height: 1699680
+  protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
+  admin_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
+  params:
+    default_fee_rate_bps: 25
+    prv_discount_percent: 50
+    trading_protocol_fee_percent: 0
+    trading_staking_pool_reward_percent: 0
+    staking_pool_share: []
+    mint_nft_require_amount: 100
+    max_orders_per_nft: 10
+    auto_withdraw_order_limit_amount: 30
+    min_prv_reserve_trading_rate: 10000000000000
+is_enable_bpv3_stats: false

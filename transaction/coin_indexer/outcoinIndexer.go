@@ -36,6 +36,8 @@ type CoinIndexer struct {
 	isAuthorizedRunning bool
 	cachedCoinPubKeys   *sync.Map
 
+	allTokens map[common.Hash]interface{}
+
 	managedOTAKeys *sync.Map
 	IdxChan        chan *IndexParam
 }
@@ -59,7 +61,7 @@ const (
 
 //nolint:gocritic
 // NewOutCoinIndexer creates CoinIndexer instance.
-func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) (*CoinIndexer, error) {
+func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, allTokens map[common.Hash]interface{}) (*CoinIndexer, error) {
 	accessTokens := make(map[string]bool)
 	authorizedCache := true
 	if numWorkers != 0 && len(accessToken) > 0 {
@@ -151,6 +153,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 		}
 	}
 	utils.Logger.Log.Infof("Number of cached coins: %v\n", numCached)
+	utils.Logger.Log.Infof("Number of privacy tokens: %v\n", len(allTokens))
 
 	ci := &CoinIndexer{
 		numWorkers:          int(numWorkers),
@@ -162,6 +165,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) 
 		isAuthorizedRunning: false,
 		queueSize:           queueSize,
 		idxQueue:            idxQueue,
+		allTokens:           allTokens,
 	}
 
 	return ci, nil
@@ -762,6 +766,28 @@ func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoin
 	}
 
 	return nil
+}
+
+// AddTokenID add a new TokenID to the cache layer.
+func (ci *CoinIndexer) AddTokenID(tokenID common.Hash) {
+	if !tokenID.IsZeroValue() {
+		ci.mtx.Lock()
+		ci.allTokens[tokenID] = true
+		ci.mtx.Unlock()
+		utils.Logger.Log.Infof("Add tokenID %v to cache\n", tokenID.String())
+	}
+}
+
+// GetAllTokenIDs returns all tokenIDs from the cache layer.
+func (ci *CoinIndexer) GetAllTokenIDs() map[common.Hash]interface{} {
+	res := make(map[common.Hash]interface{})
+	ci.mtx.Lock()
+	for tokenId := range ci.allTokens {
+		res[tokenId] = true
+	}
+	ci.mtx.Unlock()
+
+	return res
 }
 
 // Start starts the CoinIndexer in case the authorized cache is employed.

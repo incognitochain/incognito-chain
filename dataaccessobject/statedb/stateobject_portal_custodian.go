@@ -117,7 +117,7 @@ func (cs CustodianState) IsEmptyCollaterals() bool {
 	return true
 }
 
-func (cs CustodianState) MarshalJSON() ([]byte, error) {
+func (cs *CustodianState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		IncognitoAddress       string
 		TotalCollateral        uint64

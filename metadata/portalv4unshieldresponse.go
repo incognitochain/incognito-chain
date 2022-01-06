@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type PortalUnshieldResponse struct {
@@ -39,7 +41,7 @@ func NewPortalV4UnshieldResponse(
 		ReqTxID:        reqTxID,
 		MetadataBase:   metadataBase,
 		OTAPubKeyStr:   requesterAddressStr,
-		TxRandomStr: txRandomStr,
+		TxRandomStr:    txRandomStr,
 		UnshieldAmount: amount,
 		IncTokenID:     tokenID,
 	}
@@ -61,7 +63,7 @@ func (iRes PortalUnshieldResponse) ValidateSanityData(chainRetriever ChainRetrie
 
 func (iRes PortalUnshieldResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalV4UnshieldingResponseMeta
+	return iRes.Type == metadataCommon.PortalV4UnshieldingResponseMeta
 }
 
 func (iRes PortalUnshieldResponse) Hash() *common.Hash {
@@ -95,7 +97,7 @@ func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalV4UnshieldingRequestMeta)) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.PortalV4UnshieldingRequestMeta)) {
 			continue
 		}
 		instReqStatus := inst[2]

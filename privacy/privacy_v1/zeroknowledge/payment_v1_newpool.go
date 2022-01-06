@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/env"
@@ -11,6 +12,86 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/pkg/errors"
 )
+
+func (proof *PaymentProof) CheckCommitmentWithStateDB(commitmentsList [][]byte, db *statedb.StateDB, tokenID *common.Hash, shardID byte) error {
+	Logger.Log.Debugf("CheckCommitmentWithStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
+	for i := 0; i < len(proof.oneOfManyProof); i++ {
+		for j := 0; j < privacy_util.CommitmentRingSize; j++ {
+			index := proof.commitmentIndices[i*privacy_util.CommitmentRingSize+j]
+			commitmentBytes := commitmentsList[i*privacy_util.CommitmentRingSize+j]
+			recheckIndex, err := statedb.GetCommitmentIndex(db, *tokenID, commitmentBytes, shardID)
+			if err != nil || recheckIndex.Uint64() != index {
+				Logger.Log.Errorf("CheckCommitmentWithStateDB: Error when get commitment by index from database", index, err)
+				return errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (proof *PaymentProof) SetCommitment(commitmentsList [][]byte, tokenID *common.Hash, shardID byte) error {
+	Logger.Log.Debugf("LoadCommitmentFromStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
+	if len(commitmentsList) != len(proof.oneOfManyProof)*int(privacy_util.CommitmentRingSize) {
+		return errors.Errorf("Commitments list is invalid")
+	}
+	cmInputSum := make([]*operation.Point, len(proof.oneOfManyProof))
+	var err error
+	for i := 0; i < len(proof.oneOfManyProof); i++ {
+		// Calculate cm input sum
+		cmInputSum[i] = new(operation.Point).Add(proof.commitmentInputSecretKey, proof.commitmentInputValue[i])
+		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputSND[i])
+		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputShardID)
+
+		// get commitments list from CommitmentIndices
+		commitments := make([]*operation.Point, privacy_util.CommitmentRingSize)
+		for j := 0; j < privacy_util.CommitmentRingSize; j++ {
+			index := proof.commitmentIndices[i*privacy_util.CommitmentRingSize+j]
+			commitmentBytes := commitmentsList[i*privacy_util.CommitmentRingSize+j]
+			Logger.Log.Debugf("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
+			commitments[j], err = new(operation.Point).FromBytesS(commitmentBytes)
+			if err != nil {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
+				return errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+			}
+			commitments[j].Sub(commitments[j], cmInputSum[i])
+		}
+		proof.oneOfManyProof[i].Statement.Commitments = commitments
+	}
+	return nil
+}
+
+func (proof *PaymentProof) LoadDataFromStateDB(db *statedb.StateDB, tokenID *common.Hash, shardID byte) ([][]byte, error) {
+	Logger.Log.Debugf("LoadCommitmentFromStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
+	cmInputSum := make([]*operation.Point, len(proof.oneOfManyProof))
+	commitmentList := make([][]byte, len(proof.oneOfManyProof))
+	for i := 0; i < len(proof.oneOfManyProof); i++ {
+		// Calculate cm input sum
+		cmInputSum[i] = new(operation.Point).Add(proof.commitmentInputSecretKey, proof.commitmentInputValue[i])
+		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputSND[i])
+		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputShardID)
+
+		// get commitments list from CommitmentIndices
+		commitments := make([]*operation.Point, privacy_util.CommitmentRingSize)
+		for j := 0; j < privacy_util.CommitmentRingSize; j++ {
+			index := proof.commitmentIndices[i*privacy_util.CommitmentRingSize+j]
+			commitmentBytes, err := statedb.GetCommitmentByIndex(db, *tokenID, index, shardID)
+			Logger.Log.Debugf("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
+			if err != nil {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
+				return nil, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+			}
+			commitments[j], err = new(operation.Point).FromBytesS(commitmentBytes)
+			if err != nil {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
+				return nil, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+			}
+			commitments[j].Sub(commitments[j], cmInputSum[i])
+			commitmentList = append(commitmentList, commitmentBytes)
+		}
+		proof.oneOfManyProof[i].Statement.Commitments = commitments
+	}
+	return commitmentList, nil
+}
 
 func (proof *PaymentProof) LoadCommitmentFromStateDB(db *statedb.StateDB, tokenID *common.Hash, shardID byte) error {
 	Logger.Log.Debugf("LoadCommitmentFromStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
@@ -74,23 +155,20 @@ func (proof PaymentProof) VerifySanityData(
 
 func (proof PaymentProof) VerifyV2(
 	vEnv env.ValidationEnviroment,
-	pubKey key.PublicKey,
 	fee uint64,
 ) (
 	bool,
 	error,
 ) {
 	if !vEnv.IsPrivacy() {
-		return proof.verifyNoPrivacyV2(pubKey, fee, vEnv)
+		return proof.verifyNoPrivacyV2(vEnv.SigPubKey(), fee, vEnv)
 	}
-	return proof.verifyHasPrivacyV2(pubKey, fee, vEnv)
+	return proof.verifyHasPrivacyV2(vEnv.SigPubKey(), fee, vEnv)
 }
 
 func (proof PaymentProof) verifyNoPrivacyV2(
 	pubKey key.PublicKey,
 	fee uint64,
-// shardID byte,
-// tokenID *common.Hash,
 	vEnv env.ValidationEnviroment,
 ) (
 	bool,

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/common/consensus"
@@ -102,13 +103,20 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 	type fields struct {
 		NumberOfShardBlock map[byte]uint
 	}
+	type args struct {
+		blockVersion int
+	}
 	tests := []struct {
 		name   string
 		fields fields
+		args   args
 		want   map[byte]uint
 	}{
 		{
 			name: "moderate different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 100,
@@ -134,6 +142,9 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "big different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -159,6 +170,9 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "only one shard big different compare to shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -184,6 +198,9 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "0 all shard",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 0,
@@ -213,7 +230,7 @@ func TestBeaconBestState_CalculateExpectedTotalBlock(t *testing.T) {
 			b := &BeaconBestState{
 				NumberOfShardBlock: tt.fields.NumberOfShardBlock,
 			}
-			if got := b.CalculateExpectedTotalBlock(); !reflect.DeepEqual(got, tt.want) {
+			if got := b.CalculateExpectedTotalBlock(tt.args.blockVersion); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CalculateExpectedTotalBlock() = %v, want %v", got, tt.want)
 			}
 		})
@@ -224,6 +241,10 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 	type fields struct {
 		NumberOfShardBlock    map[byte]uint
 		beaconCommitteeEngine committeestate.BeaconCommitteeState
+	}
+
+	type args struct {
+		blockVersion int
 	}
 
 	mockCommittee := map[byte][]incognitokey.CommitteePublicKey{
@@ -243,10 +264,14 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
+		args   args
 		want   map[string]uint
 	}{
 		{
 			name: "moderate different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 100,
@@ -281,6 +306,9 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "big different between shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -315,6 +343,9 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "only one shard big different compare to shards",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 10,
@@ -349,6 +380,9 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 		},
 		{
 			name: "0 all shard",
+			args: args{
+				blockVersion: types.SHARD_SFV3_VERSION,
+			},
 			fields: fields{
 				NumberOfShardBlock: map[byte]uint{
 					0: 0,
@@ -388,7 +422,7 @@ func TestBeaconBestState_GetExpectedTotalBlock(t *testing.T) {
 				NumberOfShardBlock:   tt.fields.NumberOfShardBlock,
 				beaconCommitteeState: tt.fields.beaconCommitteeEngine,
 			}
-			if got := b.GetExpectedTotalBlock(); !reflect.DeepEqual(got, tt.want) {
+			if got := b.GetExpectedTotalBlock(tt.args.blockVersion); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetExpectedTotalBlock() = %v, want %v", got, tt.want)
 			}
 		})
@@ -917,6 +951,122 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 			}
 			if _, got := beaconBestState.ExtractFinishSyncingValidators(tt.args.validatorFromUserKeys, tt.args.shardID); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ExtractFinishSyncingValidators() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetMaxCommitteeSize(t *testing.T) {
+	type args struct {
+		currentMaxCommitteeSize  int
+		increaseMaxCommitteeSize map[uint64]int
+		beaconHeight             uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "empty increase max committee size",
+			args: args{
+				currentMaxCommitteeSize:  10,
+				increaseMaxCommitteeSize: make(map[uint64]int),
+				beaconHeight:             100,
+			},
+			want: 10,
+		},
+		{
+			name: "beacon height < increase max committee size break point",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					102: 12,
+				},
+				beaconHeight: 101,
+			},
+			want: 10,
+		},
+		{
+			name: "beacon height = increase max committee size break point",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					102: 12,
+				},
+				beaconHeight: 102,
+			},
+			want: 12,
+		},
+		{
+			name: "beacon height > increase max committee size break point",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					102: 12,
+				},
+				beaconHeight: 103,
+			},
+			want: 12,
+		},
+		{
+			name: "get biggest max committee size",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					100: 12,
+					200: 14,
+					301: 16,
+				},
+				beaconHeight: 301,
+			},
+			want: 16,
+		},
+		{
+			name: "get correct max committee size 1",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					100: 12,
+					200: 14,
+					301: 16,
+				},
+				beaconHeight: 300,
+			},
+			want: 14,
+		},
+		{
+			name: "get correct max committee size 2",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					100: 12,
+					200: 14,
+					301: 16,
+				},
+				beaconHeight: 199,
+			},
+			want: 12,
+		},
+		{
+			name: "get correct max committee size 3",
+			args: args{
+				currentMaxCommitteeSize: 10,
+				increaseMaxCommitteeSize: map[uint64]int{
+					100: 12,
+					200: 14,
+					301: 16,
+					401: 18,
+				},
+				beaconHeight: 200,
+			},
+			want: 14,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetMaxCommitteeSize(tt.args.currentMaxCommitteeSize, tt.args.increaseMaxCommitteeSize, tt.args.beaconHeight); got != tt.want {
+				t.Errorf("GetMaxCommitteeSize() = %v, want %v", got, tt.want)
 			}
 		})
 	}

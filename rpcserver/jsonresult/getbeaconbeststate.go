@@ -11,6 +11,7 @@ import (
 )
 
 type GetBeaconBestState struct {
+	BlockVersion                           int                                          `json:"BlockVersion"`
 	BestBlockHash                          common.Hash                                  `json:"BestBlockHash"`         // The hash of the block.
 	PreviousBestBlockHash                  common.Hash                                  `json:"PreviousBestBlockHash"` // The hash of the block.
 	BestShardHash                          map[byte]common.Hash                         `json:"BestShardHash"`
@@ -64,6 +65,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		MinBeaconCommitteeSize: data.MinBeaconCommitteeSize,
 		ActiveShards:           data.ActiveShards,
 		NumberOfShardBlock:     data.NumberOfShardBlock,
+		BlockVersion:           data.BestBlock.GetVersion(),
 	}
 	result.BestShardHash = make(map[byte]common.Hash)
 	for k, v := range data.BestShardHash {
@@ -188,6 +190,10 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	result.Config["NumberOfBlockInEpoch"] = config.Param().EpochParam.NumberOfBlockInEpoch
 	result.Config["RandomTime"] = config.Param().EpochParam.RandomTime
 	result.Config["EnableSlashingHeightV2"] = config.Param().ConsensusParam.EnableSlashingHeightV2
+	result.Config["StakingFlowV3"] = config.Param().ConsensusParam.StakingFlowV3Height
+	result.Config["StakingFlowV2"] = config.Param().ConsensusParam.StakingFlowV2Height
+	result.Config["BlockProducingV3"] = config.Param().ConsensusParam.BlockProducingV3Height
+	result.Config["BlockProducingV3Height"] = config.Param().ConsensusParam.BlockProducingV3Height
 	return result
 }
 

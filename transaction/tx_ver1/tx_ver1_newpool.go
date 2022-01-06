@@ -2,10 +2,12 @@ package tx_ver1
 
 import (
 	"fmt"
-	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
-	"github.com/incognitochain/incognito-chain/transaction/utils"
 	"strconv"
-	"time"
+
+	"github.com/incognitochain/incognito-chain/config"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 
 	"github.com/pkg/errors"
 
@@ -65,124 +67,21 @@ func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte,
 	return ok, err
 }
 
-func (tx Tx) ValidateDoubleSpendWithBlockChain(
-	stateDB *statedb.StateDB,
-) (bool, error) {
-	tokenID := &common.Hash{}
-	err := tokenID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return false, err
+func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
+	isMint, _, _, _ := tx.GetTxMintData()
+	bHeight := tx.GetValidationEnv().BeaconHeight()
+	afterUpgrade := bHeight >= config.Param().BCHeightBreakPointPrivacyV2
+	if afterUpgrade && !isMint {
+		return false, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
 	}
-	shardID := byte(tx.GetValidationEnv().ShardID())
-
-	if tx.Proof != nil {
-		for _, txInput := range tx.Proof.GetInputCoins() {
-			serialNumber := txInput.GetKeyImage().ToBytesS()
-			ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNumber, shardID)
-			if ok || err != nil {
-				return false, fmt.Errorf("double spend")
-			}
-		}
-		for i, txOutput := range tx.Proof.GetOutputCoins() {
-			if ok, err := checkSNDerivatorExistence(tokenID, txOutput.GetSNDerivator(), stateDB); ok || err != nil {
-				if err != nil {
-					utils.Logger.Log.Error(err)
-				}
-				utils.Logger.Log.Errorf("snd existed: %d\n", i)
-				return false, utils.NewTransactionErr(utils.SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
-			}
-		}
-
-	}
-	return true, nil
-}
-
-func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
-	switch tx.Type {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
-	default:
-		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.Type))
-	}
-
-	// check info field
-	if len(tx.Info) > 512 {
-		return false, utils.NewTransactionErr(utils.RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
-	}
-
-	if tx.Metadata != nil {
-		metaType := tx.Metadata.GetType()
-		txType := tx.GetValidationEnv().TxType()
-		if !metadata.IsAvailableMetaInTxType(metaType, txType) {
-			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
-		}
-	}
-
-	// check tx size
-	actualTxSize := tx.GetTxActualSize()
-	if actualTxSize > common.MaxTxSize {
-		//fmt.Print(actualTxSize, common.MaxTxSize)
-		return false, utils.NewTransactionErr(utils.RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
-	}
-
-	//check version
-	if tx.Version > utils.TxVersion2Number {
-		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, utils.CurrentTxVersion))
-	}
-	// check LockTime before now
-	if int64(tx.LockTime) > time.Now().Unix() {
-		return false, utils.NewTransactionErr(utils.RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.LockTime))
-	}
-
 	if len(tx.SigPubKey) != common.SigPubKeySize {
 		return false, utils.NewTransactionErr(utils.RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
 	}
-
-	metaData := tx.GetMetadata()
-	proof := tx.GetProof()
-	if metaData != nil {
-		if !metaData.ValidateMetadataByItself() {
-			return false, errors.Errorf("Metadata is not valid")
-		}
+	ok, err := tx.TxBase.ValidateSanityDataWithMetadata()
+	if (!ok) || (err != nil) {
+		return false, err
 	}
-
-	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
-		if metaData == nil {
-			utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", tx.Hash().String())
-		} else {
-			metaType := metaData.GetType()
-			if !metadata.NoInputNoOutput(metaType) {
-				utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType)
-			}
-		}
-	} else {
-		if len(proof.GetInputCoins()) == 0 {
-			if (metaData == nil) && (tx.GetValidationEnv().TxAction() != common.TxActInit) {
-				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
-			} else {
-				if metaData != nil {
-					metaType := metaData.GetType()
-					if !metadata.NoInputHasOutput(metaType) {
-						return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
-					}
-				}
-			}
-		}
-		// if len(proof.GetOutputCoins()) == 0 {
-		// 	if metaData != nil {
-		// 		metaType := metaData.GetType()
-		// 		if !metadata.HasInputNoOutput(metaType) {
-		// 			return false, utils.NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
-		// 		}
-		// 	}
-		// }
-		// check sanity of Proof
-		validateSanityOfProof, err := tx.validateSanityDataOfProofV2()
-		if err != nil || !validateSanityOfProof {
-			return false, err
-		}
-	}
-
-	return true, nil
+	return tx.TxBase.ValidateSanityDataByItSelf()
 }
 
 func (tx *Tx) ValidateSanityDataWithBlockchain(
@@ -194,11 +93,10 @@ func (tx *Tx) ValidateSanityDataWithBlockchain(
 	bool,
 	error,
 ) {
-	// Validate SND???
-	// Validate DoubleSpend???
-	if tx.Metadata != nil {
+	meta := tx.GetMetadata()
+	if meta != nil {
 		utils.Logger.Log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx)
+		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx)
 		utils.Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
@@ -207,9 +105,7 @@ func (tx *Tx) ValidateSanityDataWithBlockchain(
 	return true, nil
 }
 
-// func (tx *Tx) ValidateSanityDataWithBlockchain(
-
-func (tx *Tx) LoadCommitment(
+func (tx *Tx) CheckData(
 	db *statedb.StateDB,
 ) error {
 	prf := tx.Proof
@@ -226,14 +122,68 @@ func (tx *Tx) LoadCommitment(
 			}
 		}
 	}
+	txEnv := tx.GetValidationEnv()
 	tokenID := tx.GetTokenID()
-	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, tx.GetValidationEnv())
-	if tx.GetValidationEnv().IsPrivacy() {
+	data := txEnv.DBData()
+	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, txEnv)
+	if txEnv.IsPrivacy() {
 		proofV1, ok := prf.(*privacy.ProofV1)
 		if !ok {
 			return fmt.Errorf("cannot cast payment proofV1")
 		}
-		return proofV1.LoadCommitmentFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
+		err := proofV1.CheckCommitmentWithStateDB(data, db, tokenID, byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return err
+		}
+	} else {
+		for _, iCoin := range prf.GetInputCoins() {
+			ok, err := tx.CheckCMExistence(
+				iCoin.GetCommitment().ToBytesS(),
+				db,
+				byte(tx.GetValidationEnv().ShardID()),
+				tokenID,
+			)
+			if !ok || err != nil {
+				if err != nil {
+					utils.Logger.Log.Error(err)
+				}
+				return utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) LoadData(
+	db *statedb.StateDB,
+) error {
+	prf := tx.Proof
+	if prf == nil {
+		meta := tx.GetMetadata()
+		if meta == nil {
+			return errors.Errorf("This tx has no proof and not a tx for pay fee or tx with metadata")
+		}
+		if meta != nil {
+			if metadata.NoInputNoOutput(meta.GetType()) || metadata.NoInputHasOutput(meta.GetType()) {
+				return nil
+			} else {
+				return errors.Errorf("Invalid tx")
+			}
+		}
+	}
+	txEnv := tx.GetValidationEnv()
+	tokenID := tx.GetTokenID()
+	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, txEnv)
+	if txEnv.IsPrivacy() {
+		proofV1, ok := prf.(*privacy.ProofV1)
+		if !ok {
+			return fmt.Errorf("cannot cast payment proofV1")
+		}
+		data, err := proofV1.LoadDataFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
+		if err != nil {
+			return err
+		}
+		tx.SetValidationEnv(tx_generic.WithDBData(txEnv, data))
 	} else {
 		for _, iCoin := range prf.GetInputCoins() {
 			ok, err := tx.CheckCMExistence(
@@ -254,14 +204,16 @@ func (tx *Tx) LoadCommitment(
 }
 
 func (tx *Tx) ValidateTxCorrectness(
-// transactionStateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
 ) (
 	bool,
 	error,
 ) {
-	if ok, err := tx.VerifySigTx(); (!ok) || (err != nil) {
-		utils.Logger.Log.Errorf("Validate tx %v return %v error %v", tx.Hash().String(), ok, err)
-		return ok, err
+	if (tx.GetValidationEnv().TxType() != common.TxCustomTokenPrivacyType) || (tx.GetValidationEnv().TxAction() != common.TxActInit) {
+		if ok, err := tx.VerifySigTx(); (!ok) || (err != nil) {
+			utils.Logger.Log.Errorf("Validate tx %v return %v error %v", tx.Hash().String(), ok, err)
+			return ok, err
+		}
 	}
 
 	utils.Logger.Log.Debugf("VALIDATING TX........\n")
@@ -274,7 +226,7 @@ func (tx *Tx) ValidateTxCorrectness(
 		if !ok {
 			return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("cannot cast proofV1 for tx %v", tx.Hash().String()))
 		}
-		valid, err = proofV1.VerifyV2(tx.GetValidationEnv(), tx.SigPubKey, tx.Fee)
+		valid, err = proofV1.VerifyV2(tx.GetValidationEnv(), tx.Fee)
 		if !valid {
 			if err != nil {
 				utils.Logger.Log.Error(err)

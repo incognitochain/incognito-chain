@@ -95,13 +95,20 @@ func (r RewardSplitRuleV3) SplitReward(env *SplitRewardEnvironment) (
 	rewardForShardSubset := map[common.Hash]uint64{}
 	rewardForIncDAO := map[common.Hash]uint64{}
 	rewardForCustodian := map[common.Hash]uint64{}
-	lenBeaconCommittees := uint64(len(env.BeaconCommittee))
-	lenShardSubsetCommittees := uint64(len(env.ShardCommittee[env.ShardID]) / int(env.MaxSubsetCommittees))
+	beaconCommitteeSize := uint64(len(env.BeaconCommittee))
+	numberOfShard := len(env.ShardCommittee)
+
+	shardSubsetCommitteeSize := uint64(len(env.ShardCommittee[env.ShardID]) / int(env.MaxSubsetCommittees))
+	// Plus 1 for subset 0 if shard_committee_size id odd
 	if len(env.ShardCommittee[env.ShardID])%int(env.MaxSubsetCommittees) != 0 {
 		if (env.SubsetID % env.MaxSubsetCommittees) == 0 {
-			lenShardSubsetCommittees += uint64(len(env.ShardCommittee[env.ShardID]) % int(env.MaxSubsetCommittees))
+			shardSubsetCommitteeSize += uint64(len(env.ShardCommittee[env.ShardID]) % int(env.MaxSubsetCommittees))
 		}
 	}
+
+	shardSubsetWeight := float64(shardSubsetCommitteeSize)
+	beaconWeight := float64(beaconCommitteeSize) / float64(numberOfShard)
+	totalValidatorWeight := shardSubsetWeight + beaconWeight
 
 	if len(allCoinTotalReward) == 0 {
 		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
@@ -111,9 +118,6 @@ func (r RewardSplitRuleV3) SplitReward(env *SplitRewardEnvironment) (
 	for coinID, totalReward := range allCoinTotalReward {
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
-		shardSubsetWeight := float64(lenShardSubsetCommittees)
-		beaconWeight := float64(lenBeaconCommittees) / float64(len(env.ShardCommittee))
-		totalValidatorWeight := shardSubsetWeight + beaconWeight
 
 		rewardForShardSubset[coinID] = uint64(shardSubsetWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
 		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", coinID.String(), totalRewardForDAOAndCustodians)
