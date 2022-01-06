@@ -503,19 +503,25 @@ func addFinishInstruction(
 	return instructions
 }
 
+func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
+	halfPendingCycle := uint64(len(curView.GetShardPendingValidator()[sid]) / 2)
+	halfPendingCycleEpoch := halfPendingCycle / 4 //this assume an average of 4 nodes will be out pending queue per epoch
+	return halfPendingCycleEpoch
+}
+
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	syncValidator := curView.GetSyncingValidatorsString()
 
 	//get valid waiting validator
 	validWaitingValidator := map[byte][]string{}
 	for sid, validators := range syncValidator {
-		halfPendingCycle := uint64(len(curView.GetShardPendingValidator()[sid]) / 4)
+		halfPendingCycleEpoch := curView.halfPendingCycleEpoch(sid)
 		for _, validator := range validators {
 			info, exists, err := curView.GetStakerInfo(validator)
 			if !exists || err != nil {
 				panic("Error when generateFinishSyncInstruction. This must not occur!")
 			}
-			if curView.BeaconHeight >= info.BeaconConfirmHeight()+halfPendingCycle*config.Param().EpochParam.NumberOfBlockInEpoch {
+			if curView.BeaconHeight >= info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch {
 				validWaitingValidator[sid] = append(validWaitingValidator[sid], validator)
 			}
 		}
@@ -532,20 +538,42 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	return instructions
 }
 
-func (curView *BeaconBestState) filterFinishSyncInstruction(instructions [][]string) ([][]string, [][]string) {
+func (curView *BeaconBestState) filterAndVerifyFinishSyncInstruction(instructions [][]string) ([][]string, error) {
 
-	res := [][]string{}
 	finishSyncInstructions := [][]string{}
 
+	syncValidators := curView.GetSyncingValidatorsString()
 	for _, v := range instructions {
 		if v[0] == instruction.FINISH_SYNC_ACTION {
 			finishSyncInstructions = append(finishSyncInstructions, v)
-		} else {
-			res = append(res, v)
+			//verify staker have valid waiting time
+			for _, validator := range v {
+				info, exists, err := curView.GetStakerInfo(validator)
+				if !exists || err != nil {
+					panic("Error when generateFinishSyncInstruction. This must not occur!")
+				}
+				//loop sync pool, check if validator is exist and having valid waiting time
+				exist := false
+				for sid, vals := range syncValidators {
+					if common.IndexOfStr(validator, vals) != -1 {
+						halfPendingCycleEpoch := curView.halfPendingCycleEpoch(sid)
+						if curView.BeaconHeight < info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch {
+							return nil, fmt.Errorf("Not valid waiting time for syncing validator, current beacon %v, expect valid height %v", curView.BeaconHeight, info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch)
+						} else {
+							exist = true
+						}
+					}
+				}
+
+				//cannot find validator in sync pool
+				if !exist {
+					return nil, fmt.Errorf("Cannot find validator %v in syncing pool", validator)
+				}
+			}
 		}
 	}
 
-	return res, finishSyncInstructions
+	return finishSyncInstructions, nil
 }
 
 func createBeaconSwapActionForKeyListV2(
