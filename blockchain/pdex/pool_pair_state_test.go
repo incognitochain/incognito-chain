@@ -1251,7 +1251,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	err = statedb.StorePdexv3PoolPairOrderReward(
 		sDB, "id",
 		statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-			common.PDEXCoinID, common.PDEXIDStr, 100,
+			common.PDEXIDStr, nil,
 		),
 	)
 	assert.Nil(t, err)
