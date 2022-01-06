@@ -747,7 +747,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 						Logger.log.Info("[pdex] 0")
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
-							orderReward.accessOTA = ord.AccessOTA()
+							orderReward.accessOTA = md.AccessOTA
 						}
 					}
 				} else if md.TokenID == pair.state.Token1ID() {
@@ -761,7 +761,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 					if newBalance == 0 && ord.Token0Balance() == 0 {
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
-							orderReward.accessOTA = ord.AccessOTA()
+							orderReward.accessOTA = md.AccessOTA
 						}
 					}
 				}
