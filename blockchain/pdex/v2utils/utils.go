@@ -22,7 +22,6 @@ type ContributionStatus struct {
 	Token1ContributedAmount uint64 `json:"Token1ContributedAmount"`
 	Token1ReturnedAmount    uint64 `json:"Token1ReturnedAmount"`
 	PoolPairID              string `json:"PoolPairID"`
-	AccessOTA               string `json:"AccessOTA,omitempty"`
 }
 
 type WithdrawStatus struct {
@@ -31,7 +30,6 @@ type WithdrawStatus struct {
 	Token0Amount uint64 `json:"Token0Amount"`
 	Token1ID     string `json:"Token1ID"`
 	Token1Amount uint64 `json:"Token1Amount"`
-	AccessOTA    string `json:"AccessOTA,omitempty"`
 }
 
 type StakingStatus struct {
@@ -39,7 +37,6 @@ type StakingStatus struct {
 	NftID         string `json:"NftID"`
 	StakingPoolID string `json:"StakingPoolID"`
 	Liquidity     uint64 `json:"Liquidity"`
-	AccessOTA     string `json:"AccessOTA,omitempty"`
 }
 
 type UnstakingStatus struct {
@@ -47,7 +44,6 @@ type UnstakingStatus struct {
 	NftID         string `json:"NftID"`
 	StakingPoolID string `json:"StakingPoolID"`
 	Liquidity     uint64 `json:"Liquidity"`
-	AccessOTA     string `json:"AccessOTA,omitempty"`
 }
 
 func getMakingAmountFromChange(change [2]*big.Int) *big.Int {

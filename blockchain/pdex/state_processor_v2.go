@@ -1190,6 +1190,7 @@ func (sp *stateProcessorV2) unstaking(
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
+		accessOTA = acceptInst.AccessOTA()
 	case common.Pdexv3RejectStringStatus:
 		rejectInst := instruction.NewRejectUnstaking()
 		err := rejectInst.FromStringSlice(inst)
