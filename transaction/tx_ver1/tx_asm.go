@@ -140,7 +140,6 @@ func NewTxPrivacyTokenInitParamsForASM(
 	return params
 }
 
-
 // TODO PRIVACY, WILL DO THIS LATER BECAUSE IT IS ASM
 func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	utils.Logger.Log.Debugf("CREATING TX........\n")
@@ -331,7 +330,6 @@ func (tx *TxToken) InitForASM(params *TxPrivacyTokenInitParamsForASM, serverTime
 	//}
 	return nil
 }
-
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
