@@ -3,6 +3,7 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"strconv"
 	"time"
@@ -21,6 +22,8 @@ import (
 // nested states. It's the general query interface to retrieve:
 // * State Object
 type StateDB struct {
+	liteStateDB *LiteStateDB
+
 	db   DatabaseAccessWarper
 	trie Trie
 	//rawdb incdb.Database
@@ -41,6 +44,23 @@ type StateDB struct {
 	StateObjectHashes  time.Duration
 	StateObjectUpdates time.Duration
 	StateObjectCommits time.Duration
+}
+
+func NewLiteStateDB(emptyRoot common.Hash, db incdb.Database) (*StateDB, error) {
+	stateDB := &StateDB{
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}
+
+	stateNode := NewStateNode()
+	stateNode.aggregateHash = &emptyRoot
+	stateDB.liteStateDB = &LiteStateDB{
+		db,
+		stateNode,
+		stateDB,
+	}
+	return stateDB, nil
 }
 
 // New return a new statedb attach with a state root
@@ -121,8 +141,29 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 	}
 }
 
+//this only work for lite statedb, flush key value to rawdb
+func (stateDB *StateDB) CommitToDisk(db incdb.KeyValueWriter, rootHash common.Hash) error {
+	if stateDB.liteStateDB == nil {
+		return errors.New("Must be use with liteStateDB")
+	}
+	return stateDB.liteStateDB.CommitToDisk(db, rootHash)
+}
+
+//this only work for lite statedb, clean finalized mem
+func (stateDB *StateDB) CleanNode(rootHash common.Hash) error {
+	if stateDB.liteStateDB == nil {
+		return errors.New("Must be use with liteStateDB")
+	}
+	stateDB.liteStateDB.Finalized(rootHash)
+	return nil
+}
+
 // Commit writes the state to the underlying in-memory trie database.
 func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
+	if stateDB.liteStateDB != nil {
+		return stateDB.liteStateDB.Commit()
+	}
+
 	// Finalize any pending changes and merge everything into the tries
 	//if metrics.EnabledExpensive {
 	//	defer func(start time.Time) {
@@ -149,6 +190,14 @@ func (stateDB *StateDB) Database() DatabaseAccessWarper {
 
 // Copy duplicate statedb and return new statedb instance
 func (stateDB *StateDB) Copy() *StateDB {
+	if stateDB.liteStateDB != nil {
+		return &StateDB{
+			liteStateDB:         stateDB.liteStateDB.Copy(),
+			stateObjects:        make(map[common.Hash]StateObject),
+			stateObjectsPending: make(map[common.Hash]struct{}),
+			stateObjectsDirty:   make(map[common.Hash]struct{}),
+		}
+	}
 	return &StateDB{
 		db:                  stateDB.db,
 		trie:                stateDB.db.CopyTrie(stateDB.trie),
@@ -179,6 +228,9 @@ func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool 
 // flag set. This is needed by the state journal to revert to the correct self-
 // destructed object instead of wiping all knowledge about the state object.
 func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) (StateObject, error) {
+	if stateDB.liteStateDB != nil {
+		return stateDB.liteStateDB.GetStateObject(objectType, hash)
+	}
 	// Prefer live objects if any is available
 	if obj := stateDB.stateObjects[hash]; obj != nil {
 		return obj, nil
@@ -260,12 +312,19 @@ func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value in
 	if err != nil {
 		return err
 	}
-	stateDB.stateObjectsPending[key] = struct{}{}
+	if stateDB.liteStateDB != nil {
+		stateDB.liteStateDB.SetStateObject(obj)
+	} else {
+		stateDB.stateObjectsPending[key] = struct{}{}
+	}
 	return nil
 }
 
 // MarkDeleteStateObject add new stateobject into statedb
 func (stateDB *StateDB) MarkDeleteStateObject(objectType int, key common.Hash) bool {
+	if stateDB.liteStateDB != nil {
+		return stateDB.liteStateDB.MarkDeleteStateObject(objectType, key)
+	}
 	stateObject, err := stateDB.getStateObject(objectType, key)
 	if err == nil && stateObject != nil {
 		stateObject.MarkDelete()
@@ -306,6 +365,9 @@ func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common
 
 // add state object into statedb struct
 func (stateDB *StateDB) setStateObject(object StateObject) {
+	if stateDB.liteStateDB != nil {
+		stateDB.liteStateDB.SetStateObject(object)
+	}
 	key := object.GetHash()
 	stateDB.stateObjects[key] = object
 }
@@ -314,6 +376,15 @@ func (stateDB *StateDB) setStateObject(object StateObject) {
 // the object is not found or was deleted in this execution context. If you need
 // to differentiate between non-existent/just-deleted, use getDeletedStateObject.
 func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) (StateObject, error) {
+	if stateDB.liteStateDB != nil {
+		if obj, err := stateDB.liteStateDB.GetStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
+			return obj, nil
+		} else if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
 	if obj, err := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
 		return obj, nil
 	} else if err != nil {
@@ -1198,10 +1269,7 @@ func (stateDB *StateDB) getSerialNumberState(key common.Hash) (*SerialNumberStat
 func (stateDB *StateDB) getAllSerialNumberByPrefix(tokenID common.Hash, shardID byte) [][]byte {
 	serialNumberList := [][]byte{}
 	prefix := GetSerialNumberPrefix(tokenID, shardID)
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		serialNumberState := NewSerialNumberState()
@@ -1211,6 +1279,20 @@ func (stateDB *StateDB) getAllSerialNumberByPrefix(tokenID common.Hash, shardID 
 		}
 		serialNumberList = append(serialNumberList, serialNumberState.SerialNumber())
 	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(prefix)
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(prefix)
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
+	}
+
 	return serialNumberList
 }
 
@@ -1257,11 +1339,9 @@ func (stateDB *StateDB) getCommitmentLengthState(key common.Hash) (*big.Int, boo
 }
 
 func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shardID byte) map[string]uint64 {
-	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
-	it := trie.NewIterator(temp)
 	m := make(map[string]uint64)
-	for it.Next() {
-		value := it.Value
+
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newCommitmentState := NewCommitmentState()
@@ -1271,6 +1351,18 @@ func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shard
 		}
 		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.Commitment(), common.Base58Version)
 		m[commitmentString] = newCommitmentState.Index().Uint64()
+	}
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetCommitmentPrefix(tokenID, shardID))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return m
 }
@@ -1288,11 +1380,8 @@ func (stateDB *StateDB) getOutputCoinState(key common.Hash) (*OutputCoinState, b
 }
 
 func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte, publicKey []byte) []*OutputCoinState {
-	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
-	it := trie.NewIterator(temp)
 	outputCoins := []*OutputCoinState{}
-	for it.Next() {
-		value := it.Value
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newOutputCoin := NewOutputCoinState()
@@ -1301,6 +1390,19 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 			panic("wrong expect type")
 		}
 		outputCoins = append(outputCoins, newOutputCoin)
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetOutputCoinPrefix(tokenID, shardID, publicKey))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return outputCoins
 }
@@ -1349,12 +1451,9 @@ func (stateDB *StateDB) getOTACoinLengthState(key common.Hash) (*big.Int, bool, 
 }
 
 func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OTACoinState {
-	temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
-	it := trie.NewIterator(temp)
-	onetimeAddresses := make([]*OTACoinState, 0)
 
-	for it.Next() {
-		value := it.Value
+	onetimeAddresses := make([]*OTACoinState, 0)
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newOnetimeAddress := NewOTACoinState()
@@ -1363,6 +1462,20 @@ func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte
 			panic("wrong expect type")
 		}
 		onetimeAddresses = append(onetimeAddresses, newOnetimeAddress)
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetOTACoinPrefix(tokenID, shardID, height))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
+		it := trie.NewIterator(temp)
+
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return onetimeAddresses
 }
@@ -1380,11 +1493,9 @@ func (stateDB *StateDB) getSNDerivatorState(key common.Hash) (*SNDerivatorState,
 }
 
 func (stateDB *StateDB) getAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]byte {
-	temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
-	it := trie.NewIterator(temp)
 	list := [][]byte{}
-	for it.Next() {
-		value := it.Value
+
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newSNDerivatorState := NewSNDerivatorState()
@@ -1393,6 +1504,19 @@ func (stateDB *StateDB) getAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]
 			panic("wrong expect type")
 		}
 		list = append(list, newSNDerivatorState.Snd())
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetSNDerivatorPrefix(tokenID))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return list
 }
@@ -1428,11 +1552,8 @@ func (stateDB *StateDB) getTokenTxs(tokenID common.Hash) []common.Hash {
 }
 
 func (stateDB *StateDB) getAllTokenWithTxs() map[common.Hash]*TokenState {
-	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
-	it := trie.NewIterator(temp)
 	tokenIDs := make(map[common.Hash]*TokenState)
-	for it.Next() {
-		value := it.Value
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		tokenState := NewTokenState()
@@ -1445,15 +1566,26 @@ func (stateDB *StateDB) getAllTokenWithTxs() map[common.Hash]*TokenState {
 		tokenState.AddTxs(txs)
 		tokenIDs[tokenID] = tokenState
 	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetTokenPrefix())
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetTokenPrefix())
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
+	}
 	return tokenIDs
 }
 
 func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
-	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
-	it := trie.NewIterator(temp)
 	tokenIDs := make(map[common.Hash]*TokenState)
-	for it.Next() {
-		value := it.Value
+
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		tokenState := NewTokenState()
@@ -1463,6 +1595,20 @@ func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
 		}
 		tokenID := tokenState.TokenID()
 		tokenIDs[tokenID] = tokenState
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetTokenPrefix())
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetTokenPrefix())
+		it := trie.NewIterator(temp)
+
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return tokenIDs
 }
