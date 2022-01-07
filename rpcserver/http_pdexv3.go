@@ -233,7 +233,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			OrderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
 			OrderLiquidityMiningBPS:           orderLiquidityMiningBPS,
 			DAOContributingPercent:            uint(daoContributingPercent),
-			MiningRewardPendingBlocks:         uint(miningRewardPendingBlocks),
+			MiningRewardPendingBlocks:         miningRewardPendingBlocks,
 			OrderMiningRewardRatioBPS:         map[string]uint{},
 		},
 	)
@@ -388,7 +388,7 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 			result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
 		}
 
-		uncollectedLPReward, err = pair.RecomputeLPFee(*nftID)
+		uncollectedLPReward, err = pair.RecomputeLPRewards(*nftID)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 		}

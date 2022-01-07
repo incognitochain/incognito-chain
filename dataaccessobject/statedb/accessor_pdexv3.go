@@ -49,7 +49,7 @@ func StorePdexv3Params(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
-	miningRewardPendingBlocks uint,
+	miningRewardPendingBlocks uint64,
 	orderMiningRewardRatioBPS map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()

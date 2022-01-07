@@ -29,7 +29,7 @@ type Pdexv3Params struct {
 	OrderTradingRewardRatioBPS        map[string]uint `json:"OrderTradingRewardRatioBPS,omitempty"`
 	OrderLiquidityMiningBPS           map[string]uint `json:"OrderLiquidityMiningBPS,omitempty"`
 	DAOContributingPercent            uint            `json:"DAOContributingPercent,omitempty"`
-	MiningRewardPendingBlocks         uint            `json:"MiningRewardPendingBlocks,omitempty"`
+	MiningRewardPendingBlocks         uint64          `json:"MiningRewardPendingBlocks,omitempty"`
 	OrderMiningRewardRatioBPS         map[string]uint `json:"OrderMiningRewardRatioBPS,omitempty"`
 }
 

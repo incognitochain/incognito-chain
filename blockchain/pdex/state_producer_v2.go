@@ -29,7 +29,7 @@ type stateProducerV2 struct {
 
 func (sp *stateProducerV2) addLiquidity(
 	txs []metadata.Transaction,
-	beaconHeight uint64,
+	lmLockedBlocks uint64,
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	nftIDs map[string]uint64,
@@ -105,8 +105,8 @@ func (sp *stateProducerV2) addLiquidity(
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
 				err = newPoolPair.addShare(
 					*nftHash,
-					shareAmount, beaconHeight,
-					waitingContribution.TxReqID().String(),
+					shareAmount,
+					lmLockedBlocks,
 				)
 				if err != nil {
 					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
@@ -196,8 +196,8 @@ func (sp *stateProducerV2) addLiquidity(
 		}
 		err = poolPair.addShare(
 			*nftHash,
-			shareAmount, beaconHeight,
-			waitingContribution.TxReqID().String(),
+			shareAmount,
+			lmLockedBlocks,
 		)
 		if err != nil {
 			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
@@ -924,7 +924,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		share, isExistedShare := poolPair.shares[metaData.NftID.String()]
 		if isExistedShare {
 			// compute amount of received LP reward
-			lpReward, err = poolPair.RecomputeLPFee(metaData.NftID)
+			lpReward, err = poolPair.RecomputeLPRewards(metaData.NftID)
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
@@ -1055,7 +1055,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
-	beaconHeight uint64,
+	lmLockedBlocks uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -1102,7 +1102,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
+			metaData.NftID(), metaData.ShareAmount(), lmLockedBlocks,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)

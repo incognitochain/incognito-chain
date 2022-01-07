@@ -16,30 +16,30 @@ import (
 )
 
 type PoolPairState struct {
-	makingVolume            map[common.Hash]*MakingVolume // tokenID -> MakingVolume
-	state                   rawdbv2.Pdexv3PoolPair
-	shares                  map[string]*Share
-	orderRewards            map[string]*OrderReward // nftID -> orderReward
-	orderbook               Orderbook
-	lpFeesPerShare          map[common.Hash]*big.Int
-	protocolFees            map[common.Hash]uint64
-	stakingPoolFees         map[common.Hash]uint64
-	lmLockedRewardsPerShare map[common.Hash]*big.Int
-	lmLockedShare           map[string]map[uint64]uint64
+	makingVolume      map[common.Hash]*MakingVolume // tokenID -> MakingVolume
+	state             rawdbv2.Pdexv3PoolPair
+	shares            map[string]*Share
+	orderRewards      map[string]*OrderReward // nftID -> orderReward
+	orderbook         Orderbook
+	lpFeesPerShare    map[common.Hash]*big.Int
+	lmRewardsPerShare map[common.Hash]*big.Int
+	protocolFees      map[common.Hash]uint64
+	stakingPoolFees   map[common.Hash]uint64
+	lmLockedShare     map[string]map[uint64]uint64
 }
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
-		makingVolume:            make(map[common.Hash]*MakingVolume),
-		orderRewards:            make(map[string]*OrderReward),
-		shares:                  make(map[string]*Share),
-		state:                   *rawdbv2.NewPdexv3PoolPair(),
-		orderbook:               Orderbook{[]*Order{}},
-		lpFeesPerShare:          make(map[common.Hash]*big.Int),
-		protocolFees:            make(map[common.Hash]uint64),
-		stakingPoolFees:         make(map[common.Hash]uint64),
-		lmLockedRewardsPerShare: make(map[common.Hash]*big.Int),
-		lmLockedShare:           make(map[string]map[uint64]uint64),
+		makingVolume:      make(map[common.Hash]*MakingVolume),
+		orderRewards:      make(map[string]*OrderReward),
+		shares:            make(map[string]*Share),
+		state:             *rawdbv2.NewPdexv3PoolPair(),
+		orderbook:         Orderbook{[]*Order{}},
+		lpFeesPerShare:    make(map[common.Hash]*big.Int),
+		lmRewardsPerShare: make(map[common.Hash]*big.Int),
+		protocolFees:      make(map[common.Hash]uint64),
+		stakingPoolFees:   make(map[common.Hash]uint64),
+		lmLockedShare:     make(map[string]map[uint64]uint64),
 	}
 }
 
@@ -84,6 +84,14 @@ func (poolPairState *PoolPairState) State() rawdbv2.Pdexv3PoolPair {
 func (poolPairState *PoolPairState) LpFeesPerShare() map[common.Hash]*big.Int {
 	res := make(map[common.Hash]*big.Int)
 	for k, v := range poolPairState.lpFeesPerShare {
+		res[k] = big.NewInt(0).Set(v)
+	}
+	return res
+}
+
+func (poolPairState *PoolPairState) LmRewardsPerShare() map[common.Hash]*big.Int {
+	res := make(map[common.Hash]*big.Int)
+	for k, v := range poolPairState.lmRewardsPerShare {
 		res[k] = big.NewInt(0).Set(v)
 	}
 	return res
@@ -273,10 +281,10 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 
 func (p *PoolPairState) addShare(
 	nftID common.Hash,
-	amount, beaconHeight uint64,
-	txHash string,
+	amount uint64,
+	lmLockedBlocks uint64,
 ) error {
-	return p.updateShareValue(amount, beaconHeight, nftID.String(), addOperator)
+	return p.updateShareValue(amount, nftID.String(), addOperator, lmLockedBlocks)
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -366,7 +374,7 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 
 func (p *PoolPairState) deductShare(
 	nftID string,
-	shareAmount, beaconHeight uint64,
+	shareAmount, lmLockedBlocks uint64,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -392,12 +400,12 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	err = p.updateShareValue(tempShareAmount, beaconHeight, nftID, subOperator)
+	err = p.updateShareValue(tempShareAmount, nftID, subOperator, lmLockedBlocks)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
 func (p *PoolPairState) updateShareValue(
-	shareAmount, beaconHeight uint64, nftID string, operator byte,
+	shareAmount uint64, nftID string, operator byte, lmLockedBlocks uint64,
 ) error {
 	share, found := p.shares[nftID]
 	if !found {
@@ -410,21 +418,25 @@ func (p *PoolPairState) updateShareValue(
 		if err != nil {
 			return fmt.Errorf("Invalid nftID: %s", nftID)
 		}
-		share.tradingFees, err = p.RecomputeLPFee(*nftIDBytes)
+		share.tradingFees, err = p.RecomputeLPRewards(*nftIDBytes)
 		if err != nil {
 			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
 	}
 
-	share.lastLPFeesPerShare = map[common.Hash]*big.Int{}
-	for tokenID, value := range p.lpFeesPerShare {
-		share.lastLPFeesPerShare[tokenID] = new(big.Int).Set(value)
-	}
+	share.lastLPFeesPerShare = p.LpFeesPerShare()
+	share.lastLmRewardsPerShare = p.LmRewardsPerShare()
 
 	var err error
 	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)
 	if err != nil {
 		return errors.New("newShare.amount is out of range")
+	}
+	if operator == addOperator && lmLockedBlocks > 0 {
+		share.lmLockedAmount, err = executeOperationUint64(share.lmLockedAmount, shareAmount, operator)
+		if err != nil {
+			return errors.New("newShare.lmLockedAmount is out of range")
+		}
 	}
 
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
@@ -432,6 +444,13 @@ func (p *PoolPairState) updateShareValue(
 		return errors.New("poolPairShareAmount is out of range")
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
+	if operator == addOperator && lmLockedBlocks > 0 {
+		poolPairLmLockedShareAmount, err := executeOperationUint64(p.state.LmLockedShareAmount(), shareAmount, operator)
+		if err != nil {
+			return errors.New("poolPairLmLockedShareAmount is out of range")
+		}
+		p.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
+	}
 
 	p.shares[nftID] = share
 	return nil
@@ -503,7 +522,7 @@ func (p *PoolPairState) updateSingleTokenAmount(
 	return nil
 }
 
-func (p *PoolPairState) RecomputeLPFee(
+func (p *PoolPairState) RecomputeLPRewards(
 	nftID common.Hash,
 ) (map[common.Hash]uint64, error) {
 	result := map[common.Hash]uint64{}
@@ -538,6 +557,33 @@ func (p *PoolPairState) RecomputeLPFee(
 			result[tokenID] = reward.Uint64()
 		}
 	}
+
+	curLMRewardsPerShare := p.lmRewardsPerShare
+	oldLMRewardsPerShare := curShare.lastLmRewardsPerShare
+
+	for tokenID := range curLMRewardsPerShare {
+		tradingFee, isExisted := result[tokenID]
+		if !isExisted {
+			tradingFee = 0
+		}
+		oldFees, isExisted := oldLMRewardsPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees := curLMRewardsPerShare[tokenID]
+
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(curShare.amount-curShare.lmLockedAmount))
+		reward = new(big.Int).Div(reward, BaseLPFeesPerShare)
+		reward = new(big.Int).Add(reward, new(big.Int).SetUint64(tradingFee))
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		if reward.Uint64() > 0 {
+			result[tokenID] = reward.Uint64()
+		}
+	}
+
 	return result, nil
 }
 
