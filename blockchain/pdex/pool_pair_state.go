@@ -16,14 +16,15 @@ import (
 )
 
 type PoolPairState struct {
-	makingVolume    map[common.Hash]*MakingVolume // tokenID -> MakingVolume
-	state           rawdbv2.Pdexv3PoolPair
-	shares          map[string]*Share
-	orderRewards    map[string]*OrderReward // nftID -> orderReward
-	orderbook       Orderbook
-	lpFeesPerShare  map[common.Hash]*big.Int
-	protocolFees    map[common.Hash]uint64
-	stakingPoolFees map[common.Hash]uint64
+	makingVolume      map[common.Hash]*MakingVolume // tokenID -> MakingVolume
+	state             rawdbv2.Pdexv3PoolPair
+	shares            map[string]*Share
+	orderRewards      map[string]*OrderReward // nftID -> orderReward
+	orderbook         Orderbook
+	lpFeesPerShare    map[common.Hash]*big.Int
+	protocolFees      map[common.Hash]uint64
+	stakingPoolFees   map[common.Hash]uint64
+	lockedRewardShare map[string]map[common.Hash]uint64
 }
 
 func NewPoolPairState() *PoolPairState {
@@ -186,7 +187,7 @@ func initPoolPairState(contribution0, contribution1 rawdbv2.Pdexv3Contribution) 
 	)
 	poolPairState := rawdbv2.NewPdexv3PoolPairWithValue(
 		contributions[0].TokenID(), contributions[1].TokenID(),
-		0, contributions[0].Amount(), contributions[1].Amount(),
+		0, 0, contributions[0].Amount(), contributions[1].Amount(),
 		token0VirtualAmount, token1VirtualAmount,
 		contributions[0].Amplifier(),
 	)

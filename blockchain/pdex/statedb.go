@@ -3,6 +3,7 @@ package pdex
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -198,7 +199,10 @@ func initShares(poolPairID string, stateDB *statedb.StateDB) (map[string]*Share,
 		if err != nil {
 			return nil, err
 		}
-		res[nftID] = NewShareWithValue(shareState.Amount(), tradingFees, lastLPFeesPerShare)
+		lastLmRewardsPerShare := make(map[common.Hash]*big.Int)
+		res[nftID] = NewShareWithValue(
+			shareState.Amount(), shareState.LmLockedAmount(), tradingFees, lastLPFeesPerShare, lastLmRewardsPerShare,
+		)
 	}
 	return res, nil
 }

@@ -68,15 +68,17 @@ func NewPoolPairChange() *PoolPairChange {
 }
 
 type ShareChange struct {
-	IsChanged          bool
-	TradingFees        map[string]bool
-	LastLPFeesPerShare map[string]bool
+	IsChanged             bool
+	TradingFees           map[string]bool
+	LastLPFeesPerShare    map[string]bool
+	LastLmRewardsPerShare map[string]bool
 }
 
 func NewShareChange() *ShareChange {
 	return &ShareChange{
-		TradingFees:        make(map[string]bool),
-		LastLPFeesPerShare: make(map[string]bool),
+		TradingFees:           make(map[string]bool),
+		LastLPFeesPerShare:    make(map[string]bool),
+		LastLmRewardsPerShare: make(map[string]bool),
 	}
 }
 
