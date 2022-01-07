@@ -16,27 +16,30 @@ import (
 )
 
 type PoolPairState struct {
-	makingVolume      map[common.Hash]*MakingVolume // tokenID -> MakingVolume
-	state             rawdbv2.Pdexv3PoolPair
-	shares            map[string]*Share
-	orderRewards      map[string]*OrderReward // nftID -> orderReward
-	orderbook         Orderbook
-	lpFeesPerShare    map[common.Hash]*big.Int
-	protocolFees      map[common.Hash]uint64
-	stakingPoolFees   map[common.Hash]uint64
-	lockedRewardShare map[string]map[common.Hash]uint64
+	makingVolume            map[common.Hash]*MakingVolume // tokenID -> MakingVolume
+	state                   rawdbv2.Pdexv3PoolPair
+	shares                  map[string]*Share
+	orderRewards            map[string]*OrderReward // nftID -> orderReward
+	orderbook               Orderbook
+	lpFeesPerShare          map[common.Hash]*big.Int
+	protocolFees            map[common.Hash]uint64
+	stakingPoolFees         map[common.Hash]uint64
+	lmLockedRewardsPerShare map[common.Hash]*big.Int
+	lmLockedShare           map[string]map[uint64]uint64
 }
 
 func NewPoolPairState() *PoolPairState {
 	return &PoolPairState{
-		makingVolume:    make(map[common.Hash]*MakingVolume),
-		orderRewards:    make(map[string]*OrderReward),
-		shares:          make(map[string]*Share),
-		state:           *rawdbv2.NewPdexv3PoolPair(),
-		orderbook:       Orderbook{[]*Order{}},
-		lpFeesPerShare:  make(map[common.Hash]*big.Int),
-		protocolFees:    make(map[common.Hash]uint64),
-		stakingPoolFees: make(map[common.Hash]uint64),
+		makingVolume:            make(map[common.Hash]*MakingVolume),
+		orderRewards:            make(map[string]*OrderReward),
+		shares:                  make(map[string]*Share),
+		state:                   *rawdbv2.NewPdexv3PoolPair(),
+		orderbook:               Orderbook{[]*Order{}},
+		lpFeesPerShare:          make(map[common.Hash]*big.Int),
+		protocolFees:            make(map[common.Hash]uint64),
+		stakingPoolFees:         make(map[common.Hash]uint64),
+		lmLockedRewardsPerShare: make(map[common.Hash]*big.Int),
+		lmLockedShare:           make(map[string]map[uint64]uint64),
 	}
 }
 
