@@ -29,10 +29,11 @@ type stateProducerV2 struct {
 
 func (sp *stateProducerV2) addLiquidity(
 	txs []metadata.Transaction,
-	lmLockedBlocks uint64,
+	beaconHeight uint64,
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	nftIDs map[string]uint64,
+	params *Params,
 ) (
 	[][]string, map[string]*PoolPairState, map[string]rawdbv2.Pdexv3Contribution, error,
 ) {
@@ -106,7 +107,8 @@ func (sp *stateProducerV2) addLiquidity(
 				err = newPoolPair.addShare(
 					*nftHash,
 					shareAmount,
-					lmLockedBlocks,
+					beaconHeight,
+					0,
 				)
 				if err != nil {
 					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
@@ -194,9 +196,14 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
+		lmLockedBlocks := uint64(0)
+		if _, exists := params.PDEXRewardPoolPairsShare[poolPairID]; exists {
+			lmLockedBlocks = params.MiningRewardPendingBlocks
+		}
 		err = poolPair.addShare(
 			*nftHash,
 			shareAmount,
+			beaconHeight,
 			lmLockedBlocks,
 		)
 		if err != nil {

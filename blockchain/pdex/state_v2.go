@@ -156,9 +156,10 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.deletedWaitingContributions, err = s.processor.addLiquidity(
 				env.StateDB(),
 				inst,
-				s.params.MiningRewardPendingBlocks,
+				beaconHeight,
 				s.poolPairs,
 				s.waitingContributions, s.deletedWaitingContributions,
+				s.params,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
 			s.poolPairs, err = s.processor.withdrawLiquidity(
@@ -399,10 +400,11 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	addLiquidityInstructions := [][]string{}
 	addLiquidityInstructions, s.poolPairs, s.waitingContributions, err = s.producer.addLiquidity(
 		addLiquidityTxs,
-		s.params.MiningRewardPendingBlocks,
+		beaconHeight,
 		s.poolPairs,
 		s.waitingContributions,
 		s.nftIDs,
+		s.params,
 	)
 	if err != nil {
 		return instructions, err
