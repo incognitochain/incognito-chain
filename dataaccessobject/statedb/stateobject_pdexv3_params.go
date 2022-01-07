@@ -25,6 +25,7 @@ type Pdexv3Params struct {
 	orderTradingRewardRatioBPS        map[string]uint
 	orderLiquidityMiningBPS           map[string]uint
 	daoContributingPercent            uint
+	miningRewardPendingBlocks         uint
 	orderMiningRewardRatioBPS         map[string]uint
 }
 
@@ -82,6 +83,10 @@ func (pp Pdexv3Params) DAOContributingPercent() uint {
 	return pp.daoContributingPercent
 }
 
+func (pp Pdexv3Params) MiningRewardPendingBlocks() uint {
+	return pp.miningRewardPendingBlocks
+}
+
 func (pp Pdexv3Params) OrderMiningRewardRatioBPS() map[string]uint {
 	return pp.orderMiningRewardRatioBPS
 }
@@ -104,6 +109,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
+		MiningRewardPendingBlocks         uint
 		OrderMiningRewardRatioBPS         map[string]uint
 	}{
 		DefaultFeeRateBPS:                 pp.defaultFeeRateBPS,
@@ -122,6 +128,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		OrderTradingRewardRatioBPS:        pp.orderTradingRewardRatioBPS,
 		OrderLiquidityMiningBPS:           pp.orderLiquidityMiningBPS,
 		DAOContributingPercent:            pp.daoContributingPercent,
+		MiningRewardPendingBlocks:         pp.miningRewardPendingBlocks,
 		OrderMiningRewardRatioBPS:         pp.orderMiningRewardRatioBPS,
 	})
 	if err != nil {
@@ -148,6 +155,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
+		MiningRewardPendingBlocks         uint
 		OrderMiningRewardRatioBPS         map[string]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -176,6 +184,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 	}
 	pp.orderLiquidityMiningBPS = temp.OrderLiquidityMiningBPS
 	pp.daoContributingPercent = temp.DAOContributingPercent
+	pp.miningRewardPendingBlocks = temp.MiningRewardPendingBlocks
 	if temp.OrderMiningRewardRatioBPS == nil {
 		temp.OrderMiningRewardRatioBPS = make(map[string]uint)
 	}
@@ -204,6 +213,7 @@ func NewPdexv3ParamsWithValue(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
+	miningRewardPendingBlocks uint,
 	orderMiningRewardRatioBPS map[string]uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{
@@ -223,6 +233,7 @@ func NewPdexv3ParamsWithValue(
 		orderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
 		orderLiquidityMiningBPS:           orderLiquidityMiningBPS,
 		daoContributingPercent:            daoContributingPercent,
+		miningRewardPendingBlocks:         miningRewardPendingBlocks,
 		orderMiningRewardRatioBPS:         orderMiningRewardRatioBPS,
 	}
 }
