@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"path"
 	"reflect"
 	"sort"
 	"time"
@@ -154,14 +155,18 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, fv *ShardBestState, bc *BlockChain) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
-
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("tmp/%v", shardBestState.ShardID))
+	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(p, shardBestState.TransactionStateDBRootHash, fv.TransactionStateDBRootHash, db)
+	if err != nil {
+		return err
+	}
 	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err

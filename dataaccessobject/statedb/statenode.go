@@ -12,27 +12,18 @@ import (
 )
 
 type StateNode struct {
-	stateObjects  map[common.Hash]StateObject
-	previousLink  *StateNode
-	aggregateHash *common.Hash
-	finalized     bool
-	dbCommit      bool
+	stateObjects    map[common.Hash]StateObject
+	previousLink    *StateNode
+	aggregateHash   *common.Hash //!= nil, aslo mean commit from mem to disk
+	finalizedCommit bool
 }
 
 func (s StateNode) GetHash() common.Hash {
 	return *s.aggregateHash
 }
 
-func (s *StateNode) SetTmpCommit(v bool) {
-	s.dbCommit = v
-}
-
 func (s *StateNode) SetPreviousLink(stateNode *StateNode) {
 	s.previousLink = stateNode
-}
-
-func (s *StateNode) SetFinalize(v bool) {
-	s.finalized = v
 }
 
 type SerializeObject struct {
@@ -49,7 +40,6 @@ func NewStateNode() *StateNode {
 		stateObjects:  map[common.Hash]StateObject{},
 		previousLink:  nil,
 		aggregateHash: nil,
-		finalized:     false,
 	}
 }
 
@@ -63,6 +53,7 @@ func (s *StateNode) Serialize() ([]byte, error) {
 		sobj.O = append(sobj.O, byteValue)
 	}
 	sobj.H = s.aggregateHash
+
 	if s.previousLink != nil {
 		sobj.P = s.previousLink.aggregateHash
 	}
@@ -106,9 +97,9 @@ func (sobj *SerializeObject) DeSerialize(data []byte) error {
 	return err
 }
 
-func (s *StateNode) CommitToDisk(dbWriter incdb.KeyValueWriter) error {
+func (s *StateNode) FlushFinalizedToDisk(dbWriter incdb.KeyValueWriter) error {
 	if s.previousLink == nil {
-		if s.finalized {
+		if s.finalizedCommit {
 			return nil
 		}
 
@@ -119,12 +110,12 @@ func (s *StateNode) CommitToDisk(dbWriter incdb.KeyValueWriter) error {
 				return err
 			}
 		}
-		s.finalized = true
+		s.finalizedCommit = true
 
 		return nil
 	}
 
-	err := s.previousLink.CommitToDisk(dbWriter)
+	err := s.previousLink.FlushFinalizedToDisk(dbWriter)
 	if err != nil {
 		return err
 	}

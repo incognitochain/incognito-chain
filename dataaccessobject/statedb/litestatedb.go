@@ -1,13 +1,11 @@
 package statedb
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/syncker/flatfile"
 	"github.com/pkg/errors"
 	"log"
-	"path"
 )
 
 const PREFIX_LITESTATEDB = "litestatedb"
@@ -19,22 +17,15 @@ type LiteStateDB struct {
 	stateDB       *StateDB
 }
 
-func GetFlatFileDatabase(dir string, sid int) (*flatfile.FlatFileManager, error) {
-	p := path.Join(dir, fmt.Sprintf("block/commit_state_%v", sid))
-	ff, err := flatfile.NewFlatFile(p, 100)
-	return ff, err
-}
-
-func NewLiteStateDB(dir string, shardID int, db incdb.Database) (*StateDB, error) {
+func NewLiteStateDB(dir string, root common.Hash, lastState common.Hash, db incdb.Database) (*StateDB, error) {
 	stateDB := &StateDB{
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}
-
 	stateNode := NewStateNode()
 	stateNode.aggregateHash = nil
-	ff, err := GetFlatFileDatabase(dir, shardID)
+	ff, err := flatfile.NewFlatFile(dir, 5000)
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot create flatfile for litestatedb")
 	}
@@ -45,6 +36,15 @@ func NewLiteStateDB(dir string, shardID int, db incdb.Database) (*StateDB, error
 		stateNode,
 		stateDB,
 	}
+
+	if root.IsZeroValue() {
+		return stateDB, nil
+	}
+
+	if !root.IsZeroValue() {
+		stateDB.liteStateDB.restoreStateNode(lastState, root)
+	}
+
 	return stateDB, nil
 }
 
@@ -77,92 +77,80 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 		}
 		return *h, nil
 	}
+
 	return common.Hash{}, err
 
 }
 
-func (stateDB *LiteStateDB) CommitToDisk(dbWriter incdb.KeyValueWriter, stateNodeHash common.Hash) error {
+func (stateDB *LiteStateDB) Finalized(dbWriter incdb.KeyValueWriter, stateNodeHash common.Hash) error {
 
 	//write finalize Key Value to disk
-	stateNode := stateDB.headStateNode
+	stateNode := stateDB.headStateNode.previousLink //current headstatenode dont have aggregatehash, as soon as we commit to calculate agghash, we create new head
 	for {
 		if stateNode == nil {
-			return nil
+			break
 		}
-
 		if stateNode.aggregateHash.String() == stateNodeHash.String() {
-			err := stateNode.CommitToDisk(dbWriter)
+			err := stateNode.FlushFinalizedToDisk(dbWriter)
 			if err != nil {
 				return err
 			}
+			stateNode.previousLink = nil
+			return nil
 		}
 		stateNode = stateNode.previousLink
 	}
 
+	return errors.New("Cannot find finalized hash!")
 }
 
-func RestoreStateNode(dir string, shardID int, finalHash common.Hash, db incdb.Database) (*StateDB, map[common.Hash]*StateNode, error) {
-	ff, err := GetFlatFileDatabase(dir, shardID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	dataChan, _, cancelReadStateNode := ff.ReadRecently()
+func (stateDB *LiteStateDB) restoreStateNode(finalState common.Hash, root common.Hash) error {
+	dataChan, errChan, cancelReadStateNode := stateDB.flatfile.ReadRecently()
 	stateNodeMap := map[common.Hash]*StateNode{}
 	prevMap := map[common.Hash]*common.Hash{}
-	stateDB, err := NewLiteStateDB(dir, int(shardID), db)
-	if err != nil {
-		return nil, nil, err
-	}
 	for {
-		stateByte := <-dataChan
-		stateNode, prevHash, err := stateDB.DeSerializeFromStateNodeData(stateByte)
-		if err != nil {
-			return nil, nil, err
-		}
-		stateNode.SetTmpCommit(true)
-		stateNodeMap[stateNode.GetHash()] = stateNode
-		prevMap[stateNode.GetHash()] = prevHash
+		select {
+		case stateByte := <-dataChan:
+			if len(stateByte) == 0 {
+				goto RESTORE_SUCCESS
+			}
+			stateNode, prevHash, err := stateDB.stateDB.DeSerializeFromStateNodeData(stateByte)
+			if err != nil {
+				return err
+			}
 
-		// dataChan return from latest to oldest, finalHash is the oldest view
-		// as soon as return data is oldest, we have enough state node to rebuild!
-		if stateNode.GetHash().String() == finalHash.String() {
-			stateNode.SetFinalize(true)
-			cancelReadStateNode()
-			break
+			stateNodeMap[stateNode.GetHash()] = stateNode
+			prevMap[stateNode.GetHash()] = prevHash
+
+			if stateNode.aggregateHash.String() == finalState.String() {
+				cancelReadStateNode()
+				goto RESTORE_SUCCESS
+			}
+		case <-errChan:
+			return errors.New("Read data return err")
 		}
+
 	}
-
+RESTORE_SUCCESS:
 	for hash, stateNode := range stateNodeMap {
 		if prevMap[hash] != nil {
 			stateNode.SetPreviousLink(stateNodeMap[*prevMap[hash]])
 		}
 	}
 
-	return stateDB, stateNodeMap, nil
+	//point head to root
+	if _, ok := stateNodeMap[root]; !ok {
+		return errors.New("Cannot find root head")
+	}
+	stateDB.headStateNode = stateNodeMap[root]
+	stateDB.NewStateNode()
+	return nil
 }
 
 func (stateDB *LiteStateDB) NewStateNode() {
 	newNode := NewStateNode()
 	newNode.previousLink = stateDB.headStateNode
 	stateDB.headStateNode = newNode
-}
-
-func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) {
-	defer stateDB.NewStateNode()
-
-	stateNode := stateDB.headStateNode
-	for {
-		if stateNode == nil {
-			return
-		}
-		if stateNode.aggregateHash.String() == stateNodeHash.String() {
-			stateNode.previousLink = nil
-			return
-		}
-		stateNode = stateNode.previousLink
-	}
-
 }
 
 func (stateDB *LiteStateDB) GetStateObject(objectType int, addr common.Hash) (StateObject, error) {

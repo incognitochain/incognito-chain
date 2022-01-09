@@ -132,11 +132,22 @@ func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
 			for j := len(readInfo) - 1; j >= 0; j-- {
 				b := make([]byte, readInfo[j].size)
 				readInfo[j].fd.ReadAt(b, int64(readInfo[j].offset))
+				gz, err := gzip.NewReader(bytes.NewBuffer(b))
+				if err != nil {
+					e <- 1
+					cancel()
+				}
+				rawB, err := ioutil.ReadAll(gz)
+				if err != nil {
+					e <- 1
+					cancel()
+				}
+				gz.Close()
 
 			LOOP:
 				if !closed {
 					select {
-					case c <- b:
+					case c <- rawB:
 						continue
 					default:
 						time.Sleep(time.Millisecond * 10)

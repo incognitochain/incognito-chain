@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
+	"github.com/incognitochain/incognito-chain/syncker/flatfile"
+	"path"
 	"sync"
 	"time"
 
@@ -22,8 +24,9 @@ import (
 )
 
 type ShardChain struct {
-	shardID   int
-	multiView *multiview.MultiView
+	shardID    int
+	multiView  *multiview.MultiView
+	flatfileDB *flatfile.FlatFileManager
 
 	BlockGen    *BlockGenerator
 	Blockchain  *BlockChain
@@ -46,9 +49,15 @@ func NewShardChain(
 	tp txpool.TxPool,
 	tv txpool.TxVerifier,
 ) *ShardChain {
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("rawblock/%v", shardID))
+	ff, err := flatfile.NewFlatFile(p, 5000)
+	if err != nil {
+		panic(err)
+	}
 	return &ShardChain{
 		shardID:     shardID,
 		multiView:   multiView,
+		flatfileDB:  ff,
 		BlockGen:    blockGen,
 		Blockchain:  blockchain,
 		ChainName:   chainName,

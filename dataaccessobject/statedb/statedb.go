@@ -124,36 +124,29 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 	}
 }
 
-//this only work for lite statedb, flush key value to rawdb
-func (stateDB *StateDB) CommitToDisk(db incdb.KeyValueWriter, rootHash common.Hash) error {
+//this only work for lite statedb, flush finalized key value to DB, and truncate branch
+func (stateDB *StateDB) Finalized(db incdb.KeyValueWriter, rootHash common.Hash) error {
 	if stateDB.liteStateDB == nil {
 		return errors.New("Must be use with liteStateDB")
 	}
-	return stateDB.liteStateDB.CommitToDisk(db, rootHash)
-}
-
-//this only work for lite statedb, clean finalized mem
-func (stateDB *StateDB) Finalized(rootHash common.Hash) error {
-	if stateDB.liteStateDB == nil {
-		return errors.New("Must be use with liteStateDB")
-	}
-	stateDB.liteStateDB.Finalized(rootHash)
-	return nil
-}
-
-func (stateDB *StateDB) SetNewStateNode(stateNode *StateNode) error {
-	if stateDB.liteStateDB == nil {
-		return errors.New("Must be use with liteStateDB")
-	}
-	stateDB.liteStateDB.NewStateNode()
-	stateDB.liteStateDB.headStateNode = stateNode
-	return nil
+	return stateDB.liteStateDB.Finalized(db, rootHash)
 }
 
 // Commit writes the state to the underlying in-memory trie database.
 func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	if stateDB.liteStateDB != nil {
-		return stateDB.liteStateDB.Commit()
+		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
+			if stateDB.liteStateDB.headStateNode.previousLink == nil {
+				return common.EmptyRoot, nil
+			}
+			return *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash, nil
+		}
+		h, err := stateDB.liteStateDB.Commit()
+		if err != nil {
+			return common.Hash{}, err
+		}
+		stateDB.liteStateDB.NewStateNode()
+		return h, nil
 	}
 
 	// Finalize any pending changes and merge everything into the tries
