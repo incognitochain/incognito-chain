@@ -55,38 +55,41 @@ var (
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// pdex v3
-	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
-	pdexv3ParamsModifyingPrefix             = []byte("pdexv3-paramsmodifyingstatus-")
-	pdexv3TradeStatusPrefix                 = []byte("pdexv3-trade-status-")
-	pdexv3AddOrderStatusPrefix              = []byte("pdexv3-addorder-status-")
-	pdexv3WithdrawOrderStatusPrefix         = []byte("pdexv3-withdraworder-status-")
-	pdexv3ParamsPrefix                      = []byte("pdexv3-params-")
-	pdexv3WaitingContributionsPrefix        = []byte("pdexv3-waitingContributions-")
-	pdexv3DeletedWaitingContributionsPrefix = []byte("pdexv3-deletedwaitingContributions-")
-	pdexv3PoolPairsPrefix                   = []byte("pdexv3-poolpairs-")
-	pdexv3SharesPrefix                      = []byte("pdexv3-shares-")
-	pdexv3WithdrawalLPFeePrefix             = []byte("pdexv3-withdrawallpfeestatus-")
-	pdexv3WithdrawalProtocolFeePrefix       = []byte("pdexv3-withdrawalprotocolfeestatus-")
-	pdexv3WithdrawalStakingRewardPrefix     = []byte("pdexv3-withdrawalstakingrewardstatus-")
-	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
-	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
-	pdexv3WithdrawLiquidityStatusPrefix     = []byte("pdexv3-withdrawliquidity-statuses-")
-	pdexv3WaitingContributionStatusPrefix   = []byte("pdexv3-waitingContribution-statuses-")
-	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
-	pdexv3StakerPrefix                      = []byte("pdexv3-staker-")
-	pdexv3StakingStatusPrefix               = []byte("pdexv3-staking-status-")
-	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-status-")
-	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-status-")
-	pdexv3PoolPairLpFeePerSharePrefix       = []byte("pdexv3-poolpair-lpfeepershare-")
-	pdexv3PoolPairProtocolFeePrefix         = []byte("pdexv3-poolpair-protocolfee-")
-	pdexv3PoolPairStakingPoolFeePrefix      = []byte("pdexv3-poolpair-stakingpoolfee-")
-	pdexv3ShareTradingFeePrefix             = []byte("pdexv3-share-tradingfee-")
-	pdexv3ShareLastLpFeesPerSharePrefix     = []byte("pdexv3-share-lastlpfeespershare-")
-	pdexv3StakingPoolRewardPerSharePrefix   = []byte("pdexv3-stakingpool-rewardpershare-")
-	pdexv3StakerRewardPrefix                = []byte("pdexv3-staker-reward-")
-	pdexv3StakerLastRewardPerSharePrefix    = []byte("pdexv3-staker-lastrewardpershare-")
-	pdexv3PoolPairMakingVolumePrefix        = []byte("pdexv3-poolpair-makingvolume-")
-	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
+	pdexv3StatusPrefix                         = []byte("pdexv3-status-")
+	pdexv3ParamsModifyingPrefix                = []byte("pdexv3-paramsmodifyingstatus-")
+	pdexv3TradeStatusPrefix                    = []byte("pdexv3-trade-status-")
+	pdexv3AddOrderStatusPrefix                 = []byte("pdexv3-addorder-status-")
+	pdexv3WithdrawOrderStatusPrefix            = []byte("pdexv3-withdraworder-status-")
+	pdexv3ParamsPrefix                         = []byte("pdexv3-params-")
+	pdexv3WaitingContributionsPrefix           = []byte("pdexv3-waitingContributions-")
+	pdexv3DeletedWaitingContributionsPrefix    = []byte("pdexv3-deletedwaitingContributions-")
+	pdexv3PoolPairsPrefix                      = []byte("pdexv3-poolpairs-")
+	pdexv3SharesPrefix                         = []byte("pdexv3-shares-")
+	pdexv3WithdrawalLPFeePrefix                = []byte("pdexv3-withdrawallpfeestatus-")
+	pdexv3WithdrawalProtocolFeePrefix          = []byte("pdexv3-withdrawalprotocolfeestatus-")
+	pdexv3WithdrawalStakingRewardPrefix        = []byte("pdexv3-withdrawalstakingrewardstatus-")
+	pdexv3OrdersPrefix                         = []byte("pdexv3-orders-")
+	pdexv3MintNftPrefix                        = []byte("pdexv3-nfts-")
+	pdexv3WithdrawLiquidityStatusPrefix        = []byte("pdexv3-withdrawliquidity-statuses-")
+	pdexv3WaitingContributionStatusPrefix      = []byte("pdexv3-waitingContribution-statuses-")
+	pdexv3StakingPoolsPrefix                   = []byte("pdexv3-stakingpools-")
+	pdexv3StakerPrefix                         = []byte("pdexv3-staker-")
+	pdexv3StakingStatusPrefix                  = []byte("pdexv3-staking-status-")
+	pdexv3UnstakingStatusPrefix                = []byte("pdexv3-unstaking-status-")
+	pdexv3UserMintNftStatusPrefix              = []byte("pdexv3-usermintnft-status-")
+	pdexv3PoolPairLpFeePerSharePrefix          = []byte("pdexv3-poolpair-lpfeepershare-")
+	pdexv3PoolPairLmLockedRewardPerSharePrefix = []byte("pdexv3-poolpair-lmlockedrewardpershare-")
+	pdexv3PoolPairProtocolFeePrefix            = []byte("pdexv3-poolpair-protocolfee-")
+	pdexv3PoolPairStakingPoolFeePrefix         = []byte("pdexv3-poolpair-stakingpoolfee-")
+	pdexv3ShareTradingFeePrefix                = []byte("pdexv3-share-tradingfee-")
+	pdexv3ShareLastLpFeesPerSharePrefix        = []byte("pdexv3-share-lastlpfeespershare-")
+	pdexv3ShareLastLmRewardPerSharePrefix      = []byte("pdexv3-share-lastlmrewardspershare-")
+	pdexv3StakingPoolRewardPerSharePrefix      = []byte("pdexv3-stakingpool-rewardpershare-")
+	pdexv3StakerRewardPrefix                   = []byte("pdexv3-staker-reward-")
+	pdexv3StakerLastRewardPerSharePrefix       = []byte("pdexv3-staker-lastrewardpershare-")
+	pdexv3PoolPairMakingVolumePrefix           = []byte("pdexv3-poolpair-makingvolume-")
+	pdexv3PoolPairOrderRewardPrefix            = []byte("pdexv3-poolpair-orderreward-")
+	pdexv3PoolPairLmLockedSharePrefix          = []byte("pdexv3-poolpair-lmlockedshare-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -681,6 +684,16 @@ func GetPdexv3PoolPairLpFeePerSharesPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
+func GetPdexv3PoolPairLmLockedRewardPerSharesPrefix() []byte {
+	hash := common.HashH(pdexv3PoolPairLmLockedRewardPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3PoolPairLmLockedSharePrefix() []byte {
+	hash := common.HashH(pdexv3PoolPairLmLockedSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
 func GetPdexv3PoolPairProtocolFeesPrefix() []byte {
 	hash := common.HashH(pdexv3PoolPairProtocolFeePrefix)
 	return hash[:prefixHashKeyLength]
@@ -698,6 +711,11 @@ func GetPdexv3ShareTradingFeesPrefix() []byte {
 
 func GetPdexv3ShareLastLpFeePerSharesPrefix() []byte {
 	hash := common.HashH(pdexv3ShareLastLpFeesPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3ShareLastLmRewardPerSharesPrefix() []byte {
+	hash := common.HashH(pdexv3ShareLastLmRewardPerSharePrefix)
 	return hash[:prefixHashKeyLength]
 }
 

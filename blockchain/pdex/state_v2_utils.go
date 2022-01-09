@@ -341,18 +341,24 @@ func (share *Share) updateToDB(
 					return err
 				}
 			}
+		}
+	}
+	for tokenID, isChanged := range shareChange.LastLmRewardsPerShare {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+			if err != nil {
+				return err
+			}
 			if lastLmRewardsPerShare, found := share.lastLmRewardsPerShare[*tokenHash]; found {
-				//TODO: @tin store to db
-				err := statedb.StorePdexv3ShareLastLpFeePerShare(
+				err := statedb.StorePdexv3ShareLastLmRewardsPerShare(
 					env.StateDB(), poolPairID, nftID,
-					statedb.NewPdexv3ShareLastLpFeePerShareStateWithValue(*tokenHash, lastLmRewardsPerShare),
+					statedb.NewPdexv3ShareLastLmRewardPerShareStateWithValue(*tokenHash, lastLmRewardsPerShare),
 				)
 				if err != nil {
 					return err
 				}
 			} else {
-				//TODO: @tin delete from db
-				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
+				err := statedb.DeletePdexv3ShareLastLmRewardsPerShare(
 					env.StateDB(), poolPairID, nftID, tokenID,
 				)
 				if err != nil {

@@ -45,14 +45,16 @@ func NewStakerChange() *StakerChange {
 }
 
 type PoolPairChange struct {
-	IsChanged       bool
-	Shares          map[string]*ShareChange
-	OrderIDs        map[string]bool
-	LpFeesPerShare  map[string]bool
-	ProtocolFees    map[string]bool
-	StakingPoolFees map[string]bool
-	MakingVolume    map[string]*MakingVolumeChange
-	OrderRewards    map[string]*OrderRewardChange
+	IsChanged               bool
+	Shares                  map[string]*ShareChange
+	OrderIDs                map[string]bool
+	LpFeesPerShare          map[string]bool
+	ProtocolFees            map[string]bool
+	StakingPoolFees         map[string]bool
+	MakingVolume            map[string]*MakingVolumeChange
+	OrderRewards            map[string]*OrderRewardChange
+	LmLockedRewardsPerShare map[string]bool
+	LmLockedShare           map[string]map[uint64]bool
 }
 
 func NewPoolPairChange() *PoolPairChange {
@@ -136,6 +138,46 @@ func GetChangedElementsFromMapBigInt(map0, map1 map[common.Hash]*big.Int) map[st
 
 func GetChangedElementsFromMapStringBigInt(map0, map1 map[string]*big.Int) map[string]bool {
 	res := map[string]bool{}
+	for k, v := range map0 {
+		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k] = true
+		}
+	}
+
+	for k, v := range map1 {
+		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k] = true
+		}
+	}
+	return res
+}
+
+func GetChangedElementsFromMapStringMapUint64(map0, map1 map[string]map[uint64]uint64) map[string]map[uint64]bool {
+	res := map[string]map[uint64]bool{}
+	for k, v := range map0 {
+		res[k] = getChangedElementsFromMapUint64Uint64(v, map1[k])
+	}
+
+	for k, v := range map1 {
+		res[k] = getChangedElementsFromMapUint64Uint64(v, map0[k])
+	}
+	return res
+}
+
+func getChangedElementsFromMapUint64Uint64(map0, map1 map[uint64]uint64) map[uint64]bool {
+	res := map[uint64]bool{}
+	if map1 == nil && map0 != nil {
+		for k := range map0 {
+			res[k] = true
+		}
+		return res
+	}
+	if map0 == nil && map1 != nil {
+		for k := range map1 {
+			res[k] = true
+		}
+		return res
+	}
 	for k, v := range map0 {
 		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
 			res[k] = true
