@@ -1,6 +1,9 @@
 package statedb
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/gob"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -8,25 +11,104 @@ import (
 	"sort"
 )
 
-type stateNode struct {
+type StateNode struct {
 	stateObjects  map[common.Hash]StateObject
-	previousLink  *stateNode
+	previousLink  *StateNode
 	aggregateHash *common.Hash
-	flushDB       bool
+	finalized     bool
+	dbCommit      bool
 }
 
-func NewStateNode() *stateNode {
-	return &stateNode{
+func (s StateNode) GetHash() common.Hash {
+	return *s.aggregateHash
+}
+
+func (s *StateNode) SetTmpCommit(v bool) {
+	s.dbCommit = v
+}
+
+func (s *StateNode) SetPreviousLink(stateNode *StateNode) {
+	s.previousLink = stateNode
+}
+
+func (s *StateNode) SetFinalize(v bool) {
+	s.finalized = v
+}
+
+type SerializeObject struct {
+	O [][]byte     // stateobjects bytes value
+	H *common.Hash //aggregate hash
+	P *common.Hash //previous hash
+}
+
+func init() {
+	gob.Register(SerializeObject{})
+}
+func NewStateNode() *StateNode {
+	return &StateNode{
 		stateObjects:  map[common.Hash]StateObject{},
 		previousLink:  nil,
 		aggregateHash: nil,
-		flushDB:       false,
+		finalized:     false,
 	}
 }
 
-func (s *stateNode) CommitToDisk(dbWriter incdb.KeyValueWriter) error {
+func (s *StateNode) Serialize() ([]byte, error) {
+	sobj := SerializeObject{}
+	for _, obj := range s.stateObjects {
+		var objTypeByte = make([]byte, 8)
+		binary.LittleEndian.PutUint64(objTypeByte, uint64(obj.GetType()))
+		byteValue := append(objTypeByte[:], obj.GetHash().Bytes()...)
+		byteValue = append(byteValue, obj.GetValueBytes()...)
+		sobj.O = append(sobj.O, byteValue)
+	}
+	sobj.H = s.aggregateHash
+	if s.previousLink != nil {
+		sobj.P = s.previousLink.aggregateHash
+	}
+	var cachebuffer bytes.Buffer
+	enc := gob.NewEncoder(&cachebuffer)
+	err := enc.Encode(sobj)
+	return cachebuffer.Bytes(), err
+}
+
+func (stateDB *StateDB) DeSerializeFromStateNodeData(data []byte) (*StateNode, *common.Hash, error) {
+	var sobj = SerializeObject{}
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(&sobj)
+	if err != nil {
+		return nil, nil, err
+	}
+	stateObject := map[common.Hash]StateObject{}
+	for _, objectByte := range sobj.O {
+		var objType uint64
+		err := binary.Read(bytes.NewBuffer(objectByte[:8]), binary.LittleEndian, &objType)
+		if err != nil {
+			return nil, nil, err
+		}
+		key, _ := common.Hash{}.NewHash(objectByte[8:40])
+
+		obj, _, err := stateDB.createStateObjectWithValue(int(objType), *key, objectByte[40:])
+		if err != nil {
+			return nil, nil, err
+		}
+		stateObject[*key] = obj
+	}
+	stateNode := StateNode{}
+	stateNode.stateObjects = stateObject
+	stateNode.aggregateHash = sobj.H
+	return &stateNode, sobj.P, nil
+}
+
+func (sobj *SerializeObject) DeSerialize(data []byte) error {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(&sobj)
+	return err
+}
+
+func (s *StateNode) CommitToDisk(dbWriter incdb.KeyValueWriter) error {
 	if s.previousLink == nil {
-		if s.flushDB {
+		if s.finalized {
 			return nil
 		}
 
@@ -37,7 +119,7 @@ func (s *stateNode) CommitToDisk(dbWriter incdb.KeyValueWriter) error {
 				return err
 			}
 		}
-		s.flushDB = true
+		s.finalized = true
 
 		return nil
 	}
@@ -50,7 +132,8 @@ func (s *stateNode) CommitToDisk(dbWriter incdb.KeyValueWriter) error {
 	return nil
 }
 
-func (s *stateNode) Commit() (*common.Hash, error) {
+func (s *StateNode) Commit() (*common.Hash, error) {
+
 	if s.aggregateHash != nil {
 		return s.aggregateHash, nil
 	}
@@ -78,7 +161,11 @@ func (s *stateNode) Commit() (*common.Hash, error) {
 	})
 
 	if len(sortObjs) > 0 {
-		prevAggHash := s.previousLink.aggregateHash.Bytes()
+		prevAggHash := common.EmptyRoot.Bytes()
+		if s.previousLink != nil {
+			prevAggHash = s.previousLink.aggregateHash.Bytes()
+		}
+
 		for _, obj := range sortObjs {
 			prevAggHash = append(prevAggHash, obj.GetHash().Bytes()...)
 		}

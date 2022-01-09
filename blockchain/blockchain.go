@@ -688,6 +688,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	// fmt.Println("debug RestoreShardViews", len(allViews))
 	blockchain.ShardChain[shardID].multiView.Reset()
 
+	//restore stateobject in the object StateNode
+	txStateDB, stateNodeMap, err := statedb.RestoreStateNode(config.Config().DatabaseDir, int(shardID), allViews[0].TransactionStateDBRootHash, blockchain.GetShardChainDatabase(shardID))
+	if err != nil {
+		return err
+	}
+
 	for _, v := range allViews {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
@@ -695,6 +701,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		v.BestBlock = block
+
+		//init transactionDB
+		txStateDB.Copy()
+		txStateDB.SetNewStateNode(stateNodeMap[v.TransactionStateDBRootHash])
+		v.transactionStateDB = txStateDB
+		// init other stateDB
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
 			panic(err)

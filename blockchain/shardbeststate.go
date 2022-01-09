@@ -161,11 +161,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *B
 	if err != nil {
 		return err
 	}
-	//TODO: neede to use restore transaction state DB from block
-	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(common.EmptyRoot, db)
-	if err != nil {
-		return err
-	}
+
 	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err

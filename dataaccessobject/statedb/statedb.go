@@ -46,23 +46,6 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-func NewLiteStateDB(emptyRoot common.Hash, db incdb.Database) (*StateDB, error) {
-	stateDB := &StateDB{
-		stateObjects:        make(map[common.Hash]StateObject),
-		stateObjectsPending: make(map[common.Hash]struct{}),
-		stateObjectsDirty:   make(map[common.Hash]struct{}),
-	}
-
-	stateNode := NewStateNode()
-	stateNode.aggregateHash = &emptyRoot
-	stateDB.liteStateDB = &LiteStateDB{
-		db,
-		stateNode,
-		stateDB,
-	}
-	return stateDB, nil
-}
-
 // New return a new statedb attach with a state root
 func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	tr, err := db.OpenPrefixTrie(root)
@@ -150,11 +133,20 @@ func (stateDB *StateDB) CommitToDisk(db incdb.KeyValueWriter, rootHash common.Ha
 }
 
 //this only work for lite statedb, clean finalized mem
-func (stateDB *StateDB) CleanNode(rootHash common.Hash) error {
+func (stateDB *StateDB) Finalized(rootHash common.Hash) error {
 	if stateDB.liteStateDB == nil {
 		return errors.New("Must be use with liteStateDB")
 	}
 	stateDB.liteStateDB.Finalized(rootHash)
+	return nil
+}
+
+func (stateDB *StateDB) SetNewStateNode(stateNode *StateNode) error {
+	if stateDB.liteStateDB == nil {
+		return errors.New("Must be use with liteStateDB")
+	}
+	stateDB.liteStateDB.NewStateNode()
+	stateDB.liteStateDB.headStateNode = stateNode
 	return nil
 }
 

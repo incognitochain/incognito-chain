@@ -2,13 +2,9 @@ package flatfile
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -20,38 +16,38 @@ import (
 	"strconv"
 )
 
-func SerializeShardBlock(bc *blockchain.BlockChain) {
-	ff, _ := NewFlatFile("/data/rawblock", 5000)
-	c, _, cancel := ff.ReadRecently()
-	blk := <-c
-	cancel()
-	blockHeight := 2
-	if blk != nil {
-		shardBlock := types.NewShardBlock()
-		err := json.Unmarshal(blk, shardBlock)
-		if err != nil {
-			panic(err)
-		}
-		blockHeight = int(shardBlock.GetHeight() + 1)
-	}
-
-	shardID := byte(0)
-	for {
-		blkhash, err := bc.
-			GetShardBlockHashByHeight(bc.ShardChain[shardID].
-				GetFinalView(), bc.ShardChain[shardID].GetBestView(), uint64(blockHeight))
-		if err != nil {
-			break
-		}
-		data, err := rawdbv2.GetShardBlockByHash(bc.GetShardChainDatabase(shardID), *blkhash)
-		if err != nil {
-			break
-		}
-		blockHeight++
-		ff.Append(data)
-	}
-
-}
+//func SerializeShardBlock(bc *blockchain.BlockChain) {
+//	ff, _ := NewFlatFile("/data/rawblock", 5000)
+//	c, _, cancel := ff.ReadRecently()
+//	blk := <-c
+//	cancel()
+//	blockHeight := 2
+//	if blk != nil {
+//		shardBlock := types.NewShardBlock()
+//		err := json.Unmarshal(blk, shardBlock)
+//		if err != nil {
+//			panic(err)
+//		}
+//		blockHeight = int(shardBlock.GetHeight() + 1)
+//	}
+//
+//	shardID := byte(0)
+//	for {
+//		blkhash, err := bc.
+//			GetShardBlockHashByHeight(bc.ShardChain[shardID].
+//				GetFinalView(), bc.ShardChain[shardID].GetBestView(), uint64(blockHeight))
+//		if err != nil {
+//			break
+//		}
+//		data, err := rawdbv2.GetShardBlockByHash(bc.GetShardChainDatabase(shardID), *blkhash)
+//		if err != nil {
+//			break
+//		}
+//		blockHeight++
+//		ff.Append(data)
+//	}
+//
+//}
 
 type FFI interface {
 	Read(index int) ([]byte, error)
@@ -128,7 +124,6 @@ func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
 	}
 	go func() {
 		for i := len(f.sortedFolder) - 1; i >= 0; i-- {
-			fmt.Println("parse file", i)
 			readInfo, err := f.PasreFile(i)
 			if err != nil {
 				e <- 1
@@ -221,21 +216,25 @@ func (f *FlatFileManager) checkFileSize() (int, error) {
 	return size, nil
 }
 
-func (f *FlatFileManager) Append(bytes []byte) (int, error) {
+func (f *FlatFileManager) Append(data []byte) (int, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
+	//gzip
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	gz.Write(data)
+	gz.Close()
+
 	//append size-bytes into current FD, if max -> create new file, update currentFD
 	var result = make([]byte, 8)
-	binary.LittleEndian.PutUint64(result, uint64(len(bytes)))
+	binary.LittleEndian.PutUint64(result, uint64(b.Len()))
 	n1, err := f.currentFD.Write(result)
 	if err != nil {
 		return 0, err
 	}
-	n2, err := f.currentFD.Write(bytes)
+	n2, err := f.currentFD.Write(b.Bytes())
 	f.currentFileSize++
-	fmt.Println(f.currentFile, "currentFileSize", f.currentFileSize)
 	if f.currentFileSize >= f.fileSizeLimit {
-		fmt.Println("create new file")
 		f.newNextFile()
 	}
 	return n1 + n2, err
