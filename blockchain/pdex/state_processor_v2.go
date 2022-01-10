@@ -624,7 +624,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 			acceptWithdrawLiquidity.NftID().String(),
 			subOperator,
 			0,
-			lmLockedBlocks)
+			0)
 		if err != nil {
 			return poolPairs, nil, err
 		}
