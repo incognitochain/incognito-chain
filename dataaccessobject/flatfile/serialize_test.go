@@ -17,13 +17,21 @@ func TestNewFlatFile(t *testing.T) {
 		return res
 	}
 
-	ff.Append([]byte(genStr("1")))
+	id, _ := ff.Append([]byte(genStr("1")))
+	fmt.Println(id)
 	ff.Append([]byte(genStr("2")))
 	ff.Append([]byte(genStr("3")))
 	ff.Append([]byte(genStr("4")))
 	ff.Append([]byte(genStr("5")))
 	ff.Append([]byte(genStr("6")))
-	ff.Append([]byte(genStr("7")))
+
+	str := []byte(genStr("7"))
+	id, _ = ff.Append(str)
+	fmt.Println(id)
+	fmt.Println("str", str)
+
+	str2, err := ff.Read(id)
+	fmt.Println("read", str2, err)
 
 	c, e, _ := ff.ReadRecently()
 	for {

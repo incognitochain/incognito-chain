@@ -3,8 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
-	"github.com/incognitochain/incognito-chain/syncker/flatfile"
 	"path"
 	"sync"
 	"time"

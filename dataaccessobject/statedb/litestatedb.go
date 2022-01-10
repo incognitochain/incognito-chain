@@ -2,8 +2,8 @@ package statedb
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/syncker/flatfile"
 	"github.com/pkg/errors"
 	"log"
 )

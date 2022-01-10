@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -73,6 +74,7 @@ type ReadInfo struct {
 }
 
 func (f FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
+	//TODO: cache
 	f.lock.RLock()
 	defer f.lock.RUnlock()
 	path := path.Join(f.dataDir, strconv.Itoa(fileID))
@@ -107,7 +109,29 @@ func (f FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
 }
 
 func (f FlatFileManager) Read(index int) ([]byte, error) {
-	panic("implement me")
+	fileID := index / f.fileSizeLimit
+	itemFileIndex := index % f.fileSizeLimit
+
+	readInfo, err := f.PasreFile(fileID)
+	if err != nil {
+		return nil, err
+	}
+	if itemFileIndex >= len(readInfo) {
+		return nil, errors.New(fmt.Sprintf("Cannot read item at index %v", index))
+	}
+
+	b := make([]byte, readInfo[itemFileIndex].size)
+	readInfo[itemFileIndex].fd.ReadAt(b, int64(readInfo[itemFileIndex].offset))
+	gz, err := gzip.NewReader(bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+	rawB, err := ioutil.ReadAll(gz)
+	if err != nil {
+		return nil, err
+	}
+	gz.Close()
+	return rawB, nil
 }
 
 func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
@@ -239,16 +263,18 @@ func (f *FlatFileManager) Append(data []byte) (int, error) {
 	//append size-bytes into current FD, if max -> create new file, update currentFD
 	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint64(result, uint64(b.Len()))
-	n1, err := f.currentFD.Write(result)
+	_, err := f.currentFD.Write(result)
 	if err != nil {
 		return 0, err
 	}
-	n2, err := f.currentFD.Write(b.Bytes())
+	_, err = f.currentFD.Write(b.Bytes())
+
+	addedItemIndex := f.currentFile*f.fileSizeLimit + f.currentFileSize
 	f.currentFileSize++
 	if f.currentFileSize >= f.fileSizeLimit {
 		f.newNextFile()
 	}
-	return n1 + n2, err
+	return addedItemIndex, err
 }
 
 func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
