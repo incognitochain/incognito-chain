@@ -30,12 +30,13 @@ import (
 )
 
 var (
-	shardID            byte = byte(0)
+	shardID byte = byte(0)
 
 	positiveTestsFileName = "./testdata/accepted.txt"
 	negativeTestsFileName = "./testdata/rejected.txt"
-	b58 = base58.Base58Check{}
+	b58                   = base58.Base58Check{}
 )
+
 // variables for initializing stateDB for test
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
@@ -62,12 +63,12 @@ var (
 	limit100    = 100
 	limit1      = 1
 
-	dummyDB *statedb.StateDB
-	chainStorage incdb.Database
+	dummyDB        *statedb.StateDB
+	chainStorage   incdb.Database
 	featureStorage incdb.Database
-	coinReindexer *coinIndexer.CoinIndexer
-	bridgeDB *statedb.StateDB
-	activeLogger common.Logger
+	coinReindexer  *coinIndexer.CoinIndexer
+	bridgeDB       *statedb.StateDB
+	activeLogger   common.Logger
 	inactiveLogger common.Logger
 )
 
@@ -75,7 +76,7 @@ var _ = func() (_ struct{}) {
 	// initialize a `test` db in the OS's tempdir
 	// and with it, a db access wrapper that reads/writes our transactions
 	fmt.Println("This runs before init()!")
-	testLogFile, _ := os.OpenFile("test-log.txt",os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755)
+	testLogFile, _ := os.OpenFile("test-log.txt", os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755)
 
 	inactiveLogger = common.NewBackend(nil).Logger("test", true)
 	activeLogger = common.NewBackend(testLogFile).Logger("test", false)
@@ -86,7 +87,7 @@ var _ = func() (_ struct{}) {
 	// can switch between the 2 loggers to mute logs as one wishes
 	utils.Logger.Init(activeLogger)
 	bulletproofs.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	
+
 	// bridgeDB  = dummyDB.Copy()
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	common.MaxShardNumber = 2
@@ -192,12 +193,11 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 	numOfCoinsPerKey, _ := strconv.Atoi(clargs[1])
 	numOfPrivateKeys := numOfCoinsTotal / numOfCoinsPerKey
 	// numOfReads,_ := strconv.Atoi(clargs[2])
-	
+
 	fmt.Printf("\n------------------CoinV1 Query Benchmark\n")
 	fmt.Printf("Number of coins in db   : %d\n", numOfCoinsTotal)
 	fmt.Printf("Number of coins per key : %d\n", numOfCoinsPerKey)
 	keySets, _ := prepareKeySets(numOfPrivateKeys)
-
 
 	// var coins []*privacy.CoinV1 = make([]*privacy.CoinV1, numOfCoinsPerKey)
 	for _, keySet := range keySets {
@@ -217,7 +217,7 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 			// fmt.Printf("Store coin %x by key %x\n", encryptedCoin.Bytes(), keySet.PaymentAddress.Pk)
 			coinsToBeSaved = append(coinsToBeSaved, encryptedCoin.Bytes())
 		}
-		
+
 		err := statedb.StoreOutputCoins(dummyDB, common.PRVCoinID, keySet.PaymentAddress.Pk, coinsToBeSaved, shardID)
 		assert.Equal(b, nil, err)
 	}
@@ -250,10 +250,10 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 	assert.Equal(b, nil, err)
 }
 
-func storeCoinV2(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, tokenID common.Hash, height uint64){
+func storeCoinV2(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, tokenID common.Hash, height uint64) {
 	coinsInBytes := make([][]byte, 0)
 	otas := make([][]byte, 0)
-	for _,c := range coinsToBeSaved{
+	for _, c := range coinsToBeSaved {
 		// jsb, _ := json.Marshal(c)
 		// fmt.Printf("Coin is %s\n", string(jsb))
 		coinsInBytes = append(coinsInBytes, c.Bytes())
@@ -261,7 +261,7 @@ func storeCoinV2(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, 
 	}
 	// fmt.Printf("Db is %v\n", db)
 	err := statedb.StoreOTACoinsAndOnetimeAddresses(db, tokenID, height, coinsInBytes, otas, shardID)
-	if err!=nil{
+	if err != nil {
 		panic(err)
 	}
 }
@@ -275,11 +275,11 @@ func prepareKeysAndPaymentsV2(count int) ([]*incognitokey.KeySet, []*key.Payment
 	// the paymentInfo slice here will be used to create pastCoins & inputCoins
 	// we populate `value` fields with some arbitrary, big-enough constant (here, 4000*len)
 	// `message` field can be anything
-	dummyPrivateKeys := make([]*key.PrivateKey,count)
-	keySets := make([]*incognitokey.KeySet,len(dummyPrivateKeys))
+	dummyPrivateKeys := make([]*key.PrivateKey, count)
+	keySets := make([]*incognitokey.KeySet, len(dummyPrivateKeys))
 	paymentInfos := make([]*key.PaymentInfo, len(dummyPrivateKeys))
 	for i := 0; i < count; i += 1 {
-		for{
+		for {
 			privateKey := key.GeneratePrivateKey(common.RandBytes(32))
 			dummyPrivateKeys[i] = &privateKey
 			keySets[i] = new(incognitokey.KeySet)
@@ -290,7 +290,7 @@ func prepareKeysAndPaymentsV2(count int) ([]*incognitokey.KeySet, []*key.Payment
 
 			paymentInfos[i] = key.InitPaymentInfo(keySets[i].PaymentAddress, uint64(4000*len(dummyPrivateKeys)), []byte("test in"))
 			pkb := []byte(paymentInfos[i].PaymentAddress.Pk)
-			if common.GetShardIDFromLastByte(pkb[len(pkb)-1])==shardID{
+			if common.GetShardIDFromLastByte(pkb[len(pkb)-1]) == shardID {
 				break
 			}
 		}
@@ -300,21 +300,21 @@ func prepareKeysAndPaymentsV2(count int) ([]*incognitokey.KeySet, []*key.Payment
 }
 
 func getCoinFilterByOTAKey() coinIndexer.CoinMatcher {
-    return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool{
-        entry, exists := kvargs["otaKey"]
-        if !exists{
-            return false
-        }
-        vk, ok := entry.(privacy.OTAKey)
-        if !ok{
-            return false
-        }
-        ks := &incognitokey.KeySet{}
-        ks.OTAKey = vk
+	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool {
+		entry, exists := kvargs["otaKey"]
+		if !exists {
+			return false
+		}
+		vk, ok := entry.(privacy.OTAKey)
+		if !ok {
+			return false
+		}
+		ks := &incognitokey.KeySet{}
+		ks.OTAKey = vk
 
-        pass, _ := c.DoesCoinBelongToKeySet(ks)
-        return pass
-    }
+		pass, _ := c.DoesCoinBelongToKeySet(ks)
+		return pass
+	}
 }
 
 func BenchmarkQueryCoinV2(b *testing.B) {
@@ -332,26 +332,26 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 	maxHeight := uint64(num)
 	numOfPrivateKeys := numOfCoinsTotal / numOfCoinsPerKey
 	// numOfReads,_ := strconv.Atoi(clargs[2])
-	
+
 	fmt.Printf("\n------------------CoinV2 Query Benchmark\n")
 	fmt.Printf("Number of coins in db   : %d\n", numOfCoinsTotal)
 	fmt.Printf("Number of coins per key : %d\n", numOfCoinsPerKey)
-	fmt.Printf("Spread between height 0-%d\n", maxHeight - 1)
+	fmt.Printf("Spread between height 0-%d\n", maxHeight-1)
 
 	keySets, paymentInfos := prepareKeysAndPaymentsV2(numOfPrivateKeys)
 
-	pastCoins := make([]coin.Coin, numOfCoinsPerKey * numOfPrivateKeys)
-	for i, _ := range pastCoins {
-		tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfos[i % numOfPrivateKeys])
+	pastCoins := make([]coin.Coin, numOfCoinsPerKey*numOfPrivateKeys)
+	for i := range pastCoins {
+		tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfos[i%numOfPrivateKeys])
 		assert.Equal(b, nil, err)
 		assert.Equal(b, false, tempCoin.IsEncrypted())
-		tempCoin.ConcealOutputCoin(keySets[i % numOfPrivateKeys].PaymentAddress.GetPublicView())
+		tempCoin.ConcealOutputCoin(keySets[i%numOfPrivateKeys].PaymentAddress.GetPublicView())
 		assert.Equal(b, true, tempCoin.IsEncrypted())
 		assert.Equal(b, true, tempCoin.GetSharedRandom() == nil)
 		// fmt.Printf("Add coin by key %x\n", keySets[i % numOfPrivateKeys].OTAKey)
 		pastCoins[i] = tempCoin
-		storeCoinV2(dummyDB, []coin.Coin{tempCoin}, 0, common.PRVCoinID, uint64(i) % maxHeight)
-	}	
+		storeCoinV2(dummyDB, []coin.Coin{tempCoin}, 0, common.PRVCoinID, uint64(i)%maxHeight)
+	}
 
 	newRoot, err := dummyDB.Commit(true)
 	assert.Equal(b, nil, err)
@@ -385,7 +385,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 		b.ResetTimer()
 		for loop := 0; loop < b.N; loop++ {
 			assert.Equal(b, true, loop < numOfPrivateKeys)
-			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
+			ks := keySets[(reindexFrom+loop)%numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
 			idxParam := coinIndexer.IndexParam{
@@ -409,7 +409,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 		// each loop reads all output coins for a public key
 		b.ResetTimer()
 		for loop := 0; loop < b.N; loop++ {
-			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
+			ks := keySets[(reindexFrom+loop)%numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
 			results, _, err := coinReindexer.GetIndexedOutCoin(otaKey, &common.PRVCoinID, coinDB, shardID)
@@ -420,8 +420,6 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			assert.Equal(b, nil, err)
 		}
 	})
-
-	
 
 	err = chainStorage.Clear()
 	assert.Equal(b, nil, err)
@@ -439,24 +437,24 @@ func BenchmarkReindexCoinV2(b *testing.B) {
 
 	numOfPrivateKeys := numOfCoinsTotal / numOfCoinsPerKey
 	// numOfWorkers,_ := strconv.Atoi(clargs[2])
-	
+
 	fmt.Printf("\n------------------CoinV2 Query Benchmark\n")
 	fmt.Printf("Number of coins in db   : %d\n", numOfCoinsTotal)
 	fmt.Printf("Number of coins per key : %d\n", numOfCoinsPerKey)
 
 	keySets, paymentInfos := prepareKeysAndPaymentsV2(numOfPrivateKeys)
 
-	pastCoins := make([]coin.Coin, numOfCoinsPerKey * numOfPrivateKeys)
-	for i, _ := range pastCoins {
-		tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfos[i % numOfPrivateKeys])
+	pastCoins := make([]coin.Coin, numOfCoinsPerKey*numOfPrivateKeys)
+	for i := range pastCoins {
+		tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfos[i%numOfPrivateKeys])
 		assert.Equal(b, nil, err)
 		assert.Equal(b, false, tempCoin.IsEncrypted())
-		tempCoin.ConcealOutputCoin(keySets[i % numOfPrivateKeys].PaymentAddress.GetPublicView())
+		tempCoin.ConcealOutputCoin(keySets[i%numOfPrivateKeys].PaymentAddress.GetPublicView())
 		assert.Equal(b, true, tempCoin.IsEncrypted())
 		assert.Equal(b, true, tempCoin.GetSharedRandom() == nil)
 		// fmt.Printf("Add coin by key %x\n", keySets[i % numOfPrivateKeys].OTAKey)
 		pastCoins[i] = tempCoin
-	}	
+	}
 	storeCoinV2(dummyDB, pastCoins, 0, common.PRVCoinID, 1)
 
 	newRoot, err := dummyDB.Commit(true)
@@ -468,13 +466,12 @@ func BenchmarkReindexCoinV2(b *testing.B) {
 		panic(err)
 	}
 
-	
 	chosenIndex := rand.Int() % len(keySets)
 	// each loop reads all output coins for a public key
 	b.ResetTimer()
 	for loop := 0; loop < b.N; loop++ {
 		assert.Equal(b, true, loop < numOfPrivateKeys)
-		ks := keySets[(chosenIndex + loop) % numOfPrivateKeys]
+		ks := keySets[(chosenIndex+loop)%numOfPrivateKeys]
 		// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 		otaKey := ks.OTAKey
 		idxParam := coinIndexer.IndexParam{
