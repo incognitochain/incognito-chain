@@ -40,6 +40,7 @@ func (sp *stateProcessorV2) addLiquidity(
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
+	params *Params,
 ) (
 	map[string]*PoolPairState,
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution, error,
@@ -58,7 +59,7 @@ func (sp *stateProcessorV2) addLiquidity(
 		}
 	case common.PDEContributionMatchedChainStatus:
 		waitingContributions, deletedWaitingContributions, poolPairs, _, err = sp.matchContribution(
-			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs)
+			stateDB, inst, beaconHeight, waitingContributions, deletedWaitingContributions, poolPairs, params)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
@@ -66,7 +67,7 @@ func (sp *stateProcessorV2) addLiquidity(
 		waitingContributions,
 			deletedWaitingContributions, poolPairs, _, err = sp.matchAndReturnContribution(
 			stateDB, inst, beaconHeight,
-			waitingContributions, deletedWaitingContributions, poolPairs)
+			waitingContributions, deletedWaitingContributions, poolPairs, params)
 		if err != nil {
 			return poolPairs, waitingContributions, deletedWaitingContributions, err
 		}
@@ -175,6 +176,7 @@ func (sp *stateProcessorV2) matchContribution(
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]*PoolPairState,
+	params *Params,
 ) (
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
 	map[string]*PoolPairState,
@@ -204,10 +206,14 @@ func (sp *stateProcessorV2) matchContribution(
 		big.NewInt(0).SetUint64(matchContributionValue.Amount()),
 	)
 	shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
+	lmLockedBlocks := uint64(0)
+	if _, exists := params.PDEXRewardPoolPairsShare[poolPairID]; exists {
+		lmLockedBlocks = params.MiningRewardPendingBlocks
+	}
 	err = poolPair.addShare(
 		existedWaitingContribution.NftID(),
-		shareAmount, beaconHeight,
-		existedWaitingContribution.TxReqID().String(),
+		shareAmount,
+		beaconHeight, lmLockedBlocks,
 	)
 
 	if err != nil {
@@ -253,6 +259,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	poolPairs map[string]*PoolPairState,
+	params *Params,
 ) (
 	map[string]rawdbv2.Pdexv3Contribution, map[string]rawdbv2.Pdexv3Contribution,
 	map[string]*PoolPairState,
@@ -286,11 +293,15 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
 		}
+		lmLockedBlocks := uint64(0)
+		if _, exists := params.PDEXRewardPoolPairsShare[waitingContribution.PoolPairID()]; exists {
+			lmLockedBlocks = params.MiningRewardPendingBlocks
+		}
 		err = poolPair.addShare(
 			waitingContribution.NftID(),
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight,
-			waitingContribution.TxReqID().String(),
+			lmLockedBlocks,
 		)
 		if err != nil {
 			return waitingContributions, deletedWaitingContributions, poolPairs, nil, err
@@ -541,14 +552,14 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	stateDB *statedb.StateDB,
 	inst []string,
 	poolPairs map[string]*PoolPairState,
-	beaconHeight uint64,
+	lmLockedBlocks uint64,
 ) (map[string]*PoolPairState, error) {
 	var err error
 	switch inst[1] {
 	case common.PDEWithdrawalRejectedChainStatus:
 		_, err = sp.rejectWithdrawLiquidity(stateDB, inst)
 	case common.PDEWithdrawalAcceptedChainStatus:
-		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight)
+		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, lmLockedBlocks)
 	}
 	if err != nil {
 		return poolPairs, err
@@ -581,7 +592,7 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	stateDB *statedb.StateDB,
 	inst []string,
 	poolPairs map[string]*PoolPairState,
-	beaconHeight uint64,
+	lmLockedBlocks uint64,
 ) (map[string]*PoolPairState, *v2.WithdrawStatus, error) {
 	acceptWithdrawLiquidity := instruction.NewAcceptWithdrawLiquidity()
 	err := acceptWithdrawLiquidity.FromStringSlice(inst)
@@ -609,8 +620,11 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 	var withdrawStatus *v2.WithdrawStatus
 	if poolPair.state.Token1ID().String() == acceptWithdrawLiquidity.TokenID().String() {
 		err = poolPair.updateShareValue(
-			acceptWithdrawLiquidity.ShareAmount(), beaconHeight,
-			acceptWithdrawLiquidity.NftID().String(), subOperator)
+			acceptWithdrawLiquidity.ShareAmount(),
+			acceptWithdrawLiquidity.NftID().String(),
+			subOperator,
+			0,
+			lmLockedBlocks)
 		if err != nil {
 			return poolPairs, nil, err
 		}

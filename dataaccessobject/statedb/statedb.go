@@ -2221,7 +2221,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLpFeesPerShare(prefix []byte) (
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateWithPdexv3PoolPairLmLockedRewardPerShare(prefix []byte) (
+func (stateDB *StateDB) iterateWithPdexv3PoolPairLmRewardPerShare(prefix []byte) (
 	map[common.Hash]*big.Int, error,
 ) {
 	res := map[common.Hash]*big.Int{}
@@ -2231,12 +2231,12 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLmLockedRewardPerShare(prefix [
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		lmLockedRewardPerShareState := NewPdexv3PoolPairLmLockedRewardPerShareState()
-		err := json.Unmarshal(newValue, lmLockedRewardPerShareState)
+		lmRewardPerShareState := NewPdexv3PoolPairLmRewardPerShareState()
+		err := json.Unmarshal(newValue, lmRewardPerShareState)
 		if err != nil {
 			return res, err
 		}
-		res[lmLockedRewardPerShareState.tokenID] = lmLockedRewardPerShareState.value
+		res[lmRewardPerShareState.tokenID] = lmRewardPerShareState.value
 	}
 	return res, nil
 }

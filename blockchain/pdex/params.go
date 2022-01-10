@@ -26,7 +26,7 @@ type Params struct {
 	OrderTradingRewardRatioBPS        map[string]uint // map: pool ID -> the weight of LOP rewards compared with LP rewards (0.1% ~ 10 BPS)
 	OrderLiquidityMiningBPS           map[string]uint // map: pool ID -> order liquidity mining BPS (1500 BPS -> the percent of reward for AMM : buy orders : sell orders will be 70% : 15% : 15%)
 	DAOContributingPercent            uint            // percent of DAO reward that is using for liquidity mining (default: 0%)
-	MiningRewardPendingBlocks         uint            // liquidity mining reward of each contribution will be pending for this number of blocks (default: 0)
+	MiningRewardPendingBlocks         uint64          // liquidity mining reward of each contribution will be pending for this number of blocks (default: 0)
 	OrderMiningRewardRatioBPS         map[string]uint // not used yet
 }
 

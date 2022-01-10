@@ -45,27 +45,29 @@ func NewStakerChange() *StakerChange {
 }
 
 type PoolPairChange struct {
-	IsChanged               bool
-	Shares                  map[string]*ShareChange
-	OrderIDs                map[string]bool
-	LpFeesPerShare          map[string]bool
-	ProtocolFees            map[string]bool
-	StakingPoolFees         map[string]bool
-	MakingVolume            map[string]*MakingVolumeChange
-	OrderRewards            map[string]*OrderRewardChange
-	LmLockedRewardsPerShare map[string]bool
-	LmLockedShare           map[string]map[uint64]bool
+	IsChanged         bool
+	Shares            map[string]*ShareChange
+	OrderIDs          map[string]bool
+	LpFeesPerShare    map[string]bool
+	ProtocolFees      map[string]bool
+	StakingPoolFees   map[string]bool
+	MakingVolume      map[string]*MakingVolumeChange
+	OrderRewards      map[string]*OrderRewardChange
+	LmRewardsPerShare map[string]bool
+	LmLockedShare     map[string]map[uint64]bool
 }
 
 func NewPoolPairChange() *PoolPairChange {
 	return &PoolPairChange{
-		Shares:          make(map[string]*ShareChange),
-		OrderIDs:        make(map[string]bool),
-		LpFeesPerShare:  make(map[string]bool),
-		ProtocolFees:    make(map[string]bool),
-		StakingPoolFees: make(map[string]bool),
-		MakingVolume:    make(map[string]*MakingVolumeChange),
-		OrderRewards:    make(map[string]*OrderRewardChange),
+		Shares:            make(map[string]*ShareChange),
+		OrderIDs:          make(map[string]bool),
+		LpFeesPerShare:    make(map[string]bool),
+		LmRewardsPerShare: make(map[string]bool),
+		ProtocolFees:      make(map[string]bool),
+		StakingPoolFees:   make(map[string]bool),
+		MakingVolume:      make(map[string]*MakingVolumeChange),
+		OrderRewards:      make(map[string]*OrderRewardChange),
+		LmLockedShare:     make(map[string]map[uint64]bool),
 	}
 }
 

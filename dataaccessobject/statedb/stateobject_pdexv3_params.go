@@ -25,7 +25,7 @@ type Pdexv3Params struct {
 	orderTradingRewardRatioBPS        map[string]uint
 	orderLiquidityMiningBPS           map[string]uint
 	daoContributingPercent            uint
-	miningRewardPendingBlocks         uint
+	miningRewardPendingBlocks         uint64
 	orderMiningRewardRatioBPS         map[string]uint
 }
 
@@ -83,7 +83,7 @@ func (pp Pdexv3Params) DAOContributingPercent() uint {
 	return pp.daoContributingPercent
 }
 
-func (pp Pdexv3Params) MiningRewardPendingBlocks() uint {
+func (pp Pdexv3Params) MiningRewardPendingBlocks() uint64 {
 	return pp.miningRewardPendingBlocks
 }
 
@@ -109,7 +109,7 @@ func (pp Pdexv3Params) MarshalJSON() ([]byte, error) {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
-		MiningRewardPendingBlocks         uint
+		MiningRewardPendingBlocks         uint64
 		OrderMiningRewardRatioBPS         map[string]uint
 	}{
 		DefaultFeeRateBPS:                 pp.defaultFeeRateBPS,
@@ -155,7 +155,7 @@ func (pp *Pdexv3Params) UnmarshalJSON(data []byte) error {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
-		MiningRewardPendingBlocks         uint
+		MiningRewardPendingBlocks         uint64
 		OrderMiningRewardRatioBPS         map[string]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -213,7 +213,7 @@ func NewPdexv3ParamsWithValue(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
-	miningRewardPendingBlocks uint,
+	miningRewardPendingBlocks uint64,
 	orderMiningRewardRatioBPS map[string]uint,
 ) *Pdexv3Params {
 	return &Pdexv3Params{

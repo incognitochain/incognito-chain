@@ -49,7 +49,7 @@ func StorePdexv3Params(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
-	miningRewardPendingBlocks uint,
+	miningRewardPendingBlocks uint64,
 	orderMiningRewardRatioBPS map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
@@ -194,11 +194,11 @@ func StorePdexv3PoolPairLpFeePerShare(
 	return stateDB.SetStateObject(Pdexv3PoolPairLpFeePerShareObjectType, key, state)
 }
 
-func StorePdexv3PoolPairLmLockedRewardPerShare(
-	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairLmLockedRewardPerShareState,
+func StorePdexv3PoolPairLmRewardPerShare(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairLmRewardPerShareState,
 ) error {
-	key := GeneratePdexv3PoolPairLmLockedRewardPerShareObjectKey(poolPairID, state.tokenID.String())
-	return stateDB.SetStateObject(Pdexv3PoolPairLmLockedRewardPerShareObjectType, key, state)
+	key := GeneratePdexv3PoolPairLmRewardPerShareObjectKey(poolPairID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3PoolPairLmRewardPerShareObjectType, key, state)
 }
 
 func DeletePdexv3PoolPairLpFeePerShare(
@@ -211,12 +211,12 @@ func DeletePdexv3PoolPairLpFeePerShare(
 	return nil
 }
 
-func DeletePdexv3PoolPairLmLockedRewardPerShare(
+func DeletePdexv3PoolPairLmRewardPerShare(
 	stateDB *StateDB, poolPairID, tokenID string,
 ) error {
-	key := GeneratePdexv3PoolPairLmLockedRewardPerShareObjectKey(poolPairID, tokenID)
-	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairLmLockedRewardPerShareObjectType, key) {
-		return fmt.Errorf("Cannot delete poolPairLmLockedRewardPerShare with ID %v - %v", poolPairID, tokenID)
+	key := GeneratePdexv3PoolPairLmRewardPerShareObjectKey(poolPairID, tokenID)
+	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairLmRewardPerShareObjectType, key) {
+		return fmt.Errorf("Cannot delete poolPairLmRewardPerShare with ID %v - %v", poolPairID, tokenID)
 	}
 	return nil
 }
@@ -460,11 +460,11 @@ func GetPdexv3PoolPairLpFeesPerShares(stateDB *StateDB, poolPairID string) (
 	return stateDB.iterateWithPdexv3PoolPairLpFeesPerShare(prefixHash)
 }
 
-func GetPdexv3PoolPairLmLockedRewardPerShares(stateDB *StateDB, poolPairID string) (
+func GetPdexv3PoolPairLmRewardPerShares(stateDB *StateDB, poolPairID string) (
 	map[common.Hash]*big.Int, error,
 ) {
-	prefixHash := generatePdexv3PoolPairLmLockedRewardPerShareObjectPrefix(poolPairID)
-	return stateDB.iterateWithPdexv3PoolPairLmLockedRewardPerShare(prefixHash)
+	prefixHash := generatePdexv3PoolPairLmRewardPerShareObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairLmRewardPerShare(prefixHash)
 }
 
 func GetPdexv3PoolPairProtocolFees(stateDB *StateDB, poolPairID string) (

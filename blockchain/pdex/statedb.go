@@ -172,7 +172,7 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 				orderReward[nftID].uncollectedRewards[tokenID] = amount
 			}
 		}
-		lmLockedRewardsPerShare, err := statedb.GetPdexv3PoolPairLmLockedRewardPerShares(stateDB, poolPairID)
+		lmRewardsPerShare, err := statedb.GetPdexv3PoolPairLmRewardPerShares(stateDB, poolPairID)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), shares, *orderbook,
-			lpFeesPerShare, lmLockedRewardsPerShare, protocolFees, stakingPoolFees,
+			lpFeesPerShare, lmRewardsPerShare, protocolFees, stakingPoolFees,
 			makingVolume, orderReward, lmLockedShare,
 		)
 		res[poolPairID] = poolPair
@@ -290,7 +290,7 @@ func InitIntermediatePoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]
 		if err != nil {
 			return nil, err
 		}
-		lmLockedRewardsPerShare, err := statedb.GetPdexv3PoolPairLmLockedRewardPerShares(stateDB, poolPairID)
+		lmRewardsPerShare, err := statedb.GetPdexv3PoolPairLmRewardPerShares(stateDB, poolPairID)
 		if err != nil {
 			return nil, err
 		}
@@ -301,7 +301,7 @@ func InitIntermediatePoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]
 
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), nil, Orderbook{},
-			lpFeesPerShare, lmLockedRewardsPerShare, protocolFees, stakingPoolFees,
+			lpFeesPerShare, lmRewardsPerShare, protocolFees, stakingPoolFees,
 			map[common.Hash]*MakingVolume{}, map[string]*OrderReward{}, lmLockedShare,
 		)
 		res[poolPairID] = poolPair
@@ -367,7 +367,7 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 		if err != nil {
 			return nil, err
 		}
-		lmLockedRewardsPerShare, err := statedb.GetPdexv3PoolPairLmLockedRewardPerShares(stateDB, poolPairID)
+		lmRewardsPerShare, err := statedb.GetPdexv3PoolPairLmRewardPerShares(stateDB, poolPairID)
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +378,7 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 
 		poolPair := NewPoolPairStateWithValue(
 			poolPairState.Value(), shares, Orderbook{},
-			lpFeesPerShare, lmLockedRewardsPerShare, protocolFees, stakingPoolFees,
+			lpFeesPerShare, lmRewardsPerShare, protocolFees, stakingPoolFees,
 			makingVolume, orderReward, lmLockedShare,
 		)
 		res[poolPairID] = poolPair
@@ -479,7 +479,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 	if err != nil {
 		return nil, err
 	}
-	lmLockedRewardsPerShare, err := statedb.GetPdexv3PoolPairLmLockedRewardPerShares(stateDB, poolPairID)
+	lmRewardsPerShare, err := statedb.GetPdexv3PoolPairLmRewardPerShares(stateDB, poolPairID)
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +490,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 
 	return NewPoolPairStateWithValue(
 		poolPairState.Value(), shares, *orderbook,
-		lpFeesPerShare, lmLockedRewardsPerShare, protocolFees, stakingPoolFees,
+		lpFeesPerShare, lmRewardsPerShare, protocolFees, stakingPoolFees,
 		makingVolume, orderReward, lmLockedShare,
 	), nil
 }
