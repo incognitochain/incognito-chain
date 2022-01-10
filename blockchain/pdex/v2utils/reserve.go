@@ -587,6 +587,33 @@ func (tp *TradingPair) AddLPFee(
 	return rootLpFeesPerShare
 }
 
+func (tp *TradingPair) AddLMRewards(
+	tokenID common.Hash, amount *big.Int, baseLPPerShare *big.Int,
+	rootLmRewardsPerShare map[common.Hash]*big.Int,
+) map[common.Hash]*big.Int {
+	if tp.ShareAmount() == tp.LmLockedShareAmount() {
+		return rootLmRewardsPerShare
+	}
+	oldLMRewardsPerShare, isExisted := rootLmRewardsPerShare[tokenID]
+	if !isExisted {
+		oldLMRewardsPerShare = big.NewInt(0)
+	}
+
+	unlockedShareAmount := new(big.Int).SetUint64(tp.ShareAmount() - tp.LmLockedShareAmount())
+
+	// delta (fee / LP share) = LM Reward * BASE / totalLPShare
+	deltaLMRewardsPerShare := new(big.Int).Mul(amount, baseLPPerShare)
+	deltaLMRewardsPerShare = new(big.Int).Div(deltaLMRewardsPerShare, unlockedShareAmount)
+
+	// update accumulated sum of (fee / LP share)
+	newLPFeesPerShare := new(big.Int).Add(oldLMRewardsPerShare, deltaLMRewardsPerShare)
+	tempLPFeesPerShare := rootLmRewardsPerShare
+	tempLPFeesPerShare[tokenID] = newLPFeesPerShare
+
+	rootLmRewardsPerShare = tempLPFeesPerShare
+	return rootLmRewardsPerShare
+}
+
 func HasInsufficientLiquidity(poolPair rawdbv2.Pdexv3PoolPair) bool {
 	return poolPair.Token0RealAmount() <= 0 || poolPair.Token1RealAmount() <= 0
 }

@@ -402,11 +402,11 @@ func (sp *stateProducerV2) mintReward(
 			}
 		}
 
-		pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
+		pair.lmRewardsPerShare = v2utils.NewTradingPairWithValue(
 			&pair.state,
-		).AddLPFee(
+		).AddLMRewards(
 			tokenID, lpRewardAmt, BaseLPFeesPerShare,
-			pair.lpFeesPerShare)
+			pair.lmRewardsPerShare)
 
 		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, lpRewardAmt.Uint64(), tokenID)...)
 	}

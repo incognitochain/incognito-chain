@@ -975,11 +975,11 @@ func (sp *stateProcessorV2) mintBlockReward(
 
 	pairReward := actionData.Amount
 
-	pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
+	pair.lmRewardsPerShare = v2utils.NewTradingPairWithValue(
 		&pair.state,
-	).AddLPFee(
+	).AddLMRewards(
 		actionData.TokenID, new(big.Int).SetUint64(pairReward), BaseLPFeesPerShare,
-		pair.lpFeesPerShare,
+		pair.lmRewardsPerShare,
 	)
 
 	return pairs, err
