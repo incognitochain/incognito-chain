@@ -17,43 +17,18 @@ import (
 	"strconv"
 )
 
-//func SerializeShardBlock(bc *blockchain.BlockChain) {
-//	ff, _ := NewFlatFile("/data/rawblock", 5000)
-//	c, _, cancel := ff.ReadRecently()
-//	blk := <-c
-//	cancel()
-//	blockHeight := 2
-//	if blk != nil {
-//		shardBlock := types.NewShardBlock()
-//		err := json.Unmarshal(blk, shardBlock)
-//		if err != nil {
-//			panic(err)
-//		}
-//		blockHeight = int(shardBlock.GetHeight() + 1)
-//	}
-//
-//	shardID := byte(0)
-//	for {
-//		blkhash, err := bc.
-//			GetShardBlockHashByHeight(bc.ShardChain[shardID].
-//				GetFinalView(), bc.ShardChain[shardID].GetBestView(), uint64(blockHeight))
-//		if err != nil {
-//			break
-//		}
-//		data, err := rawdbv2.GetShardBlockByHash(bc.GetShardChainDatabase(shardID), *blkhash)
-//		if err != nil {
-//			break
-//		}
-//		blockHeight++
-//		ff.Append(data)
-//	}
-//
-//}
+type FlatFile interface {
+	//append item into flat file, return item index
+	Append([]byte) (int, error)
 
-type FFI interface {
+	//read item in flatfile with specific index (return from append)
 	Read(index int) ([]byte, error)
-	Append([]byte) error
-	ReadRecently(size int) ([][]byte, error)
+
+	//read recent data, return data channel, errpr channel, and cancel function
+	ReadRecently() (dataChan chan []byte, err chan int, cancel func())
+
+	//truncate flat file system
+	Truncate(lastIndex int) error
 }
 
 type FlatFileManager struct {
@@ -71,6 +46,30 @@ type ReadInfo struct {
 	fd     *os.File
 	offset uint64
 	size   uint64
+}
+
+func (ff *FlatFileManager) Truncate(lastIndex int) error {
+	lastFile := lastIndex / ff.fileSizeLimit
+	files, err := ioutil.ReadDir(ff.dataDir)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		name := filepath.Base(f.Name())
+		i, err := strconv.Atoi(name)
+		if err == nil {
+			if i < lastFile {
+				err := os.Remove(path.Join(ff.dataDir, name))
+				fmt.Println(err)
+			}
+		}
+	}
+	newff, err := NewFlatFile(ff.dataDir, ff.fileSizeLimit)
+	if err != nil {
+		return nil
+	}
+	*ff = *newff
+	return nil
 }
 
 func (f FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
@@ -148,7 +147,7 @@ func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
 	}
 	go func() {
 		for i := len(f.sortedFolder) - 1; i >= 0; i-- {
-			readInfo, err := f.PasreFile(i)
+			readInfo, err := f.PasreFile(f.sortedFolder[i])
 			if err != nil {
 				e <- 1
 				cancel()
@@ -308,7 +307,7 @@ func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
 		}
 	}
 	sort.Slice(ff.sortedFolder, func(i, j int) bool {
-		if i > j {
+		if i < j {
 			return true
 		} else {
 			return false
