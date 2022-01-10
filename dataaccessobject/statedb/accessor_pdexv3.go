@@ -266,7 +266,7 @@ func DeletePdexv3PoolPairOrderRewardDetail(
 ) error {
 	key := GeneratePdexv3PoolPairOrderRewardDetailObjectKey(poolPairID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardDetailObjectType, key) {
-		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v", poolPairID, nftID)
+		return fmt.Errorf("Cannot delete pool pair order reward detail with ID %v - %v", poolPairID, nftID)
 	}
 	return nil
 }

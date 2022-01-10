@@ -2645,6 +2645,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 								},
 							},
 							nftID1: {
+								IsChanged: true,
 								UncollectedReward: map[string]bool{
 									common.PRVIDStr: true,
 								},
