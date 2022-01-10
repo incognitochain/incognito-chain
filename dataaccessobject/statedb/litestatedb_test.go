@@ -6,14 +6,19 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"math/rand"
 	"os"
+	"sort"
 	"testing"
 )
 
 func genRandomKV() (common.Hash, []byte) {
-	r := common.RandBytes(32)
-	h := common.HashH(r)
-	return h, r
+	r := [32]byte{}
+	for i := 0; i < 32; i++ {
+		r[i] = byte(rand.Intn(256))
+	}
+	h := common.HashH(r[:])
+	return h, r[:]
 }
 func TestLiteStateDB(t *testing.T) {
 	//init DB and txDB
@@ -30,6 +35,7 @@ func TestLiteStateDB(t *testing.T) {
 	//generate data
 	var randKey []common.Hash
 	var randValue [][]byte
+	rand.Seed(1)
 	for i := 0; i < 100; i++ {
 		k, v := genRandomKV()
 		randKey = append(randKey, k)
@@ -45,6 +51,11 @@ func TestLiteStateDB(t *testing.T) {
 	txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[0], randValue[0])
 	getData, _ := txDB.getTestObject(randKey[0])
 	if !bytes.Equal(getData, randValue[0]) { // must return equal
+		t.Error(errors.New("Cannot store live object to newTxDB"))
+	}
+	txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[1], randValue[1])
+	getData, _ = txDB.getTestObject(randKey[1])
+	if !bytes.Equal(getData, randValue[1]) { // must return equal
 		t.Error(errors.New("Cannot store live object to newTxDB"))
 	}
 
@@ -116,16 +127,71 @@ func TestLiteStateDB(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	txDB.Finalized(db, aggHash3)
-	fmt.Println("aggHash2", aggHash1.String())
-	fmt.Println("aggHash3", aggHash3.String())
+	txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[14], randValue[14])
+	aggHash5, err := txDB.Commit(true)
+	if err != nil {
+		t.Error(err)
+	}
+
+	txDB.Finalized(db, aggHash4)
+
+	//check finalized database
+	iterator := txDB.liteStateDB.db.NewIteratorWithPrefix([]byte(PREFIX_LITESTATEDB))
+	iteratorKeyArray := []string{}
+	dataSizeArray := []string{}
+	for iterator.Next() {
+		k := iterator.Key()
+		h, e := common.Hash{}.NewHash(k[len(PREFIX_LITESTATEDB):])
+		if e != nil {
+			panic(e)
+		}
+		iteratorKeyArray = append(iteratorKeyArray, h.String())
+	}
+
+	for _, key := range randKey[:14] {
+		dataSizeArray = append(dataSizeArray, key.String())
+	}
+	sort.Strings(iteratorKeyArray)
+	sort.Strings(dataSizeArray)
+
+	fmt.Println(iteratorKeyArray)
+	fmt.Println(dataSizeArray)
+
+	if !common.CompareStringArray(iteratorKeyArray, dataSizeArray) {
+		t.Error("Finalized database error!")
+	}
+
+	//iterator on lite statedb
+	iterator = txDB.liteStateDB.NewIteratorwithPrefix([]byte(PREFIX_LITESTATEDB))
+	iteratorKeyArray = []string{}
+	dataSizeArray = []string{}
+	for iterator.Next() {
+		k := iterator.Key()
+		h, e := common.Hash{}.NewHash(k[len(PREFIX_LITESTATEDB):])
+		if e != nil {
+			panic(e)
+		}
+		iteratorKeyArray = append(iteratorKeyArray, h.String())
+	}
+
+	for _, key := range randKey[:15] {
+		dataSizeArray = append(dataSizeArray, key.String())
+	}
+	sort.Strings(iteratorKeyArray)
+	sort.Strings(dataSizeArray)
+	fmt.Println(iteratorKeyArray)
+	fmt.Println(dataSizeArray)
+	if !common.CompareStringArray(iteratorKeyArray, dataSizeArray) {
+		t.Error("Iterator on litestatedb error")
+	}
+
 	//compare restore liteStateDB node link list with current txDB
-	restoreTxDB, err := NewLiteStateDB("./tmp/state", aggHash4, aggHash3, db)
+	restoreTxDB, err := NewLiteStateDB("./tmp/state", aggHash5, aggHash4, db)
 	if err != nil {
 		t.Error(err)
 	}
 	compareStateNodeList(restoreTxDB.liteStateDB.headStateNode.previousLink, txDB.liteStateDB.headStateNode.previousLink, t)
-	fmt.Println("2")
+
 	////compare restore liteStateDB node link list with current newTxDB
 	restoreTxDB, err = NewLiteStateDB("./tmp/state", newAgg, emptyRoot, db)
 	if err != nil {

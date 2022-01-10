@@ -49,7 +49,7 @@ func NewShardChain(
 	tp txpool.TxPool,
 	tv txpool.TxVerifier,
 ) *ShardChain {
-	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("rawblock/%v", shardID))
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawblock", shardID))
 	ff, err := flatfile.NewFlatFile(p, 5000)
 	if err != nil {
 		panic(err)

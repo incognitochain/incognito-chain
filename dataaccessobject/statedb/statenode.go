@@ -98,29 +98,48 @@ func (sobj *SerializeObject) DeSerialize(data []byte) error {
 }
 
 func (s *StateNode) FlushFinalizedToDisk(dbWriter incdb.KeyValueWriter) error {
-	if s.previousLink == nil {
-		if s.finalizedCommit {
-			return nil
+	if s.previousLink != nil {
+		err := s.previousLink.FlushFinalizedToDisk(dbWriter)
+		if err != nil {
+			return err
 		}
+	}
 
-		for addr, obj := range s.stateObjects {
-			log.Println("Write key", addr.String())
-			err := dbWriter.Put(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...), obj.GetValueBytes())
-			if err != nil {
-				return err
-			}
-		}
-		s.finalizedCommit = true
-
+	if s.finalizedCommit {
 		return nil
 	}
 
-	err := s.previousLink.FlushFinalizedToDisk(dbWriter)
-	if err != nil {
-		return err
+	for addr, obj := range s.stateObjects {
+		log.Println("Write key", addr.String())
+		err := dbWriter.Put(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...), obj.GetValueBytes())
+		if err != nil {
+			return err
+		}
+	}
+	s.finalizedCommit = true
+
+	return nil
+
+}
+
+func (s *StateNode) replay(kv map[string][]byte) error {
+	if s.previousLink != nil && s.finalizedCommit == false {
+		err := s.previousLink.replay(kv)
+		if err != nil {
+			return err
+		}
+	}
+
+	if s.finalizedCommit {
+		return nil
+	}
+
+	for addr, obj := range s.stateObjects {
+		kv[string(addr[:])] = obj.GetValueBytes()
 	}
 
 	return nil
+
 }
 
 func (s *StateNode) Commit() (*common.Hash, error) {

@@ -162,7 +162,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, fv *S
 	if err != nil {
 		return err
 	}
-	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("tmp/%v", shardBestState.ShardID))
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/tmp", shardBestState.ShardID))
 	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(p, shardBestState.TransactionStateDBRootHash, fv.TransactionStateDBRootHash, db)
 	if err != nil {
 		return err

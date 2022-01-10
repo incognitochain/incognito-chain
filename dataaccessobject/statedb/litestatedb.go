@@ -196,7 +196,10 @@ func (stateDB *LiteStateDB) MarkDeleteStateObject(objectType int, key common.Has
 /*
 Iterator Interface
 */
-
 func (stateDB *LiteStateDB) NewIteratorwithPrefix(prefix []byte) incdb.Iterator {
-	return stateDB.db.NewIteratorWithPrefix(append([]byte("litestadb"), prefix...))
+	kvMap := map[string][]byte{}
+	stateDB.headStateNode.replay(kvMap)
+	//fmt.Println("kvMap", kvMap)
+	iter := NewLiteStateDBIterator(stateDB.db, prefix, kvMap)
+	return iter
 }
