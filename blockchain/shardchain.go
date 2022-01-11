@@ -65,6 +65,14 @@ func (chain *ShardChain) GetMultiView() *multiview.MultiView {
 	return chain.multiView
 }
 
+func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *ShardChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
+}
+
 func (chain *ShardChain) GetFinalView() multiview.View {
 	return chain.multiView.GetFinalView()
 }

@@ -26,6 +26,12 @@ func AbortParam() {
 	p = &param{}
 }
 
+type AutoEnableFeature struct {
+	MinTriggerBlockHeight int
+	ForceBlockHeight      int
+	RequiredPercentage    int
+}
+
 //param for all variables in incognito node process
 type param struct {
 	Name                             string             `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
@@ -55,13 +61,14 @@ type param struct {
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
+	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
 }
 
 type genesisParam struct {
-	InitialIncognito                            []initialIncognito
+	InitialIncognito                            []InitialIncognito
 	FeePerTxKb                                  uint64 `mapstructure:"fee_per_tx_kb" description:"fee per tx calculate by kb"`
 	ConsensusAlgorithm                          string `mapstructure:"consensus_algorithm"`
 	BlockTimestamp                              string `mapstructure:"block_timestamp"`

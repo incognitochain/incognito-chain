@@ -17,7 +17,7 @@ import (
 )
 
 type ConsensusData interface {
-	GetSyncingValidators() []*consensus.Validator
+	GetValidators() []*consensus.Validator
 	GetOneValidator() *consensus.Validator
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 }
@@ -403,6 +403,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 				wire.CmdCrossShard,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
+				wire.CmdMsgFeatureStat,
 			}
 
 		case common.SyncingRole:
@@ -421,6 +422,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
+				wire.CmdMsgFeatureStat,
 			}
 		}
 
@@ -431,6 +433,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 			wire.CmdPeerState,
 			wire.CmdBlockShard,
 			wire.CmdMsgFinishSync,
+			wire.CmdMsgFeatureStat,
 		}
 	default:
 		containShard := false

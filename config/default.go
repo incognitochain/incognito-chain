@@ -234,6 +234,13 @@ var Tesnet2Param = &param{
 		"PortalV3":       0,
 		"PortalV4":       30225,
 	},
+	AutoEnableFeature: map[string]AutoEnableFeature{
+		"TestFeature": AutoEnableFeature{
+			MinTriggerBlockHeight: 1e9,
+			ForceBlockHeight:      1e9,
+			RequiredPercentage:    80,
+		},
+	},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{

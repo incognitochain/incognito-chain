@@ -331,6 +331,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningForDepositToSCRequestV2:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
 	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
 
+	//feature stat
+	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,
+
 	//new pool info
 	getSyncStats:          (*HttpServer).hanldeGetSyncStats,
 	getBeaconPoolInfo:     (*HttpServer).hanldeGetBeaconPoolInfo,

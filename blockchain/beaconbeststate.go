@@ -61,6 +61,7 @@ type BeaconBestState struct {
 	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
 	NumberOfShardBlock      map[byte]uint        `json:"NumberOfShardBlock"`
+	TriggeredFeature        map[string]uint64    `json:"TriggeredFeature"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -1024,6 +1025,44 @@ func (beaconBestState *BeaconBestState) upgradeBlockProducingV3Config() error {
 	return nil
 }
 
+func (beaconBestState *BeaconBestState) ExtractPendingAndCommittee(validatorFromUserKeys []*consensus.Validator) ([]*consensus.Validator, []string) {
+	if len(validatorFromUserKeys) == 0 {
+		return []*consensus.Validator{}, []string{}
+	}
+	beaconValidators := beaconBestState.beaconCommitteeState.GetBeaconCommittee()
+	shardValidators := beaconBestState.beaconCommitteeState.GetShardCommittee()
+	finishedSyncUserKeys := []*consensus.Validator{}
+	finishedSyncValidators := []string{}
+
+	for _, v := range beaconValidators {
+		blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+		for _, userKey := range validatorFromUserKeys {
+			if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+				finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+				temp, _ := v.ToBase58()
+				finishedSyncValidators = append(finishedSyncValidators, temp)
+				break
+			}
+		}
+	}
+
+	for _, validators := range shardValidators {
+		for _, v := range validators {
+			blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+			for _, userKey := range validatorFromUserKeys {
+				if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+					finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+					temp, _ := v.ToBase58()
+					finishedSyncValidators = append(finishedSyncValidators, temp)
+					break
+				}
+			}
+		}
+	}
+
+	return finishedSyncUserKeys, finishedSyncValidators
+}
+
 func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []*consensus.Validator, shardID byte) ([]*consensus.Validator, []string) {
 	if len(validatorFromUserKeys) == 0 {
 		return []*consensus.Validator{}, []string{}
@@ -1043,7 +1082,6 @@ func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validator
 			}
 		}
 	}
-
 	return finishedSyncUserKeys, finishedSyncValidators
 }
 
@@ -1123,6 +1161,16 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, epoch)
 
 	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
+}
+
+func (curView *BeaconBestState) getUntriggerFeature() []string {
+	unTriggerFeatures := []string{}
+	for f, _ := range config.Param().AutoEnableFeature {
+		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
+			unTriggerFeatures = append(unTriggerFeatures, f)
+		}
+	}
+	return unTriggerFeatures
 }
 
 func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion, slashingCommittees []string) []*statedb.StakerInfoSlashingVersion {
