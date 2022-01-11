@@ -193,6 +193,7 @@ func buildMetaInfo() {
 		Pdexv3MintBlockRewardMeta,
 		Pdexv3DistributeStakingRewardMeta,
 		Pdexv3WithdrawStakingRewardResponseMeta,
+		IssuingPRVERC20ResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNoInput,
@@ -243,6 +244,8 @@ func buildMetaInfo() {
 		ContractingRequestMeta,
 		InitTokenRequestMeta,
 		IssuingPLGRequestMeta,
+		BurningPRVERC20RequestMeta,
+		BurningPRVBEP20RequestMeta,
 
 		ShardStakingMeta,
 		BeaconStakingMeta,
@@ -312,6 +315,7 @@ func buildMetaInfo() {
 	})
 
 	listSNoIn := []int{
+		IssuingPRVERC20ResponseMeta,
 		PDETradeResponseMeta,
 		PDEWithdrawalResponseMeta,
 		PDEContributionResponseMeta,
