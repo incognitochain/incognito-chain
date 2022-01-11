@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/config"
@@ -1459,7 +1457,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				}
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
-				metadataCommon.IssuingPRVERC20RequestMeta, metadataCommon.IssuingPRVBEP20RequestMeta:
+				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
+				metadata.IssuingPLGRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

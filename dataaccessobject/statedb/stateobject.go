@@ -153,6 +153,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairMakingVolumeObjectWithValue(db, hash, value)
 	case Pdexv3PoolPairOrderRewardObjectType:
 		return newPdexv3PoolPairOrderRewardObjectWithValue(db, hash, value)
+	case BridgePLGTxObjectType:
+		return newBridgePLGTxObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -286,6 +288,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairMakingVolumeObject(db, hash)
 	case Pdexv3PoolPairOrderRewardObjectType:
 		return newPdexv3PoolPairOrderRewardObject(db, hash)
+	case BridgePLGTxObjectType:
+		return newBridgePLGTxObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}
