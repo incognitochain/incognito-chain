@@ -117,7 +117,6 @@ package transaction
 // 	// fmt.Printf("Number of outputs      : %d\n", numOfOutputs)
 // 	keySets, _ := prepareKeySets(numOfPrivateKeys)
 
-
 // 	var txsForBenchmark []*TxVersion1
 // 	for i:=0; i < numOfTxs; i++ {
 // 		keySet := keySets[i]
