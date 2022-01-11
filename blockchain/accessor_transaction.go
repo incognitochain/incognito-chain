@@ -46,7 +46,6 @@ func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin privacy
 	}
 	result, err := outCoin.Decrypt(keySet)
 	if err != nil {
-		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
 		return nil, err
 	}
 	keyImage := result.GetKeyImage()
@@ -475,7 +474,14 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 				IsReset:    isReset,
 			}
 
-			outcoinIndexer.IdxChan <- idxParams
+			outcoinIndexer.IdxChan <- &idxParams
+
+			// Add the OTAKey to the CoinIndexer here to avoid missing coins when new blocks arrive
+			err := outcoinIndexer.AddOTAKey(idxParams.OTAKey, coinIndexer.StatusIndexing)
+			if err != nil {
+				Logger.log.Errorf("Adding OTAKey %v error: %v\n", coinIndexer.OTAKeyToRaw(idxParams.OTAKey), err)
+				return err
+			}
 
 			Logger.log.Infof("Authorized OTA Key Submission %x", otaKey)
 			return nil
@@ -670,7 +676,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 	}
 	var err error
 	bridgeStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
-	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.BeaconHeight, shardBlock.Header.Height)
 	err = view.fetchTxViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
@@ -694,6 +700,12 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		case transaction.CustomTokenInit:
 			{
 				tokenID := tokenData.PropertyID
+
+				// Add the tokenID to the cache for fast retrieval.
+				if EnableIndexingCoinByOTAKey {
+					outcoinIndexer.AddTokenID(tokenID)
+				}
+
 				existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 				if !existed {
 					// check is bridge token
@@ -853,6 +865,9 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 		if err != nil {
 			return err
 		}
+		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
+			continue
+		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
 			// outputs
@@ -888,7 +903,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						}
 						return true
 					}
-					outcoinIndexer.ManagedOTAKeys.Range(handler)
+					outcoinIndexer.GetManagedOTAKeys().Range(handler)
 				}
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
@@ -915,6 +930,9 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 		if err != nil {
 			return err
+		}
+		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
+			continue
 		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
@@ -958,7 +976,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *types.ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
-	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.BeaconHeight, shardBlock.Header.Height)
 	err := view.fetchCrossTransactionViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock ", err)

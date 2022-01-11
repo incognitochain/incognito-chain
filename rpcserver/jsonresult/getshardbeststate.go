@@ -7,6 +7,7 @@ import (
 )
 
 type GetShardBestState struct {
+	BlockVersion           int               `json:"BlockVersion"`
 	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
 	BestBeaconHash         common.Hash       `json:"BestBeaconHash"`
 	BeaconHeight           uint64            `json:"BeaconHeight"`
@@ -48,6 +49,7 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
 		BestCrossShard:         data.BestCrossShard,
 		CommitteeFromBlock:     data.CommitteeFromBlock(),
+		BlockVersion:           data.BestBlock.GetVersion(),
 	}
 
 	result.TriggeredFeature = make(map[string]uint64)

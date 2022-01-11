@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -27,7 +29,6 @@ import (
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	stats "github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -334,9 +335,8 @@ func (serverObj *Server) NewServer(
 		return err
 	}
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
-	if err != nil {
-		return err
-	}
+	fixedNodes := serverObj.blockChain.GetShardFixedNodes()
+	blsbft.ByzantineDetectorObject.SetFixedNodes(fixedNodes)
 	go poolManager.Start(relayShards)
 
 	//set bc obj for monitor
@@ -561,13 +561,6 @@ func (serverObj *Server) NewServer(
 		}
 	}()
 
-	//Init Metric Tool
-	//if cfg.MetricUrl != "" {
-	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	//	metrics.InitMetricTool(&grafana)
-	//}
-	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
-
 	return nil
 }
 
@@ -719,9 +712,9 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	serverObj.netSync.Start()
-
 	go serverObj.highway.StartV2(serverObj.blockChain)
+
+	serverObj.netSync.Start()
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
@@ -2102,8 +2095,6 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		//check if in committee or pending committee in beacon
 		for _, chain := range s.blockChain.ShardChain {
 			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
-				key, _ := v.ToBase58()
-				Logger.log.Info("[slashing] key:", key)
 				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 					return common.PendingRole, chain.GetShardID()
 				}

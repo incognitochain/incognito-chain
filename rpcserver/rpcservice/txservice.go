@@ -90,7 +90,7 @@ func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID by
 
 func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
 	if int(shardID) >= common.MaxShardNumber {
-		return nil, fmt.Errorf("shardID %v is out of range [0 - %v]", shardID, common.MaxShardNumber - 1)
+		return nil, fmt.Errorf("shardID %v is out of range [0 - %v]", shardID, common.MaxShardNumber-1)
 	}
 	result := make([]bool, 0)
 	for _, item := range serialNumbersStr {
@@ -300,7 +300,7 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 	// Set the fee to be higher for making sure tx will be confirmed
 	// This is a work-around solution only, and it only applies to the case where unitFeeNativeToken < 0.
 	if unitFeeNativeToken < 0 {
-		realFee += uint64(math.Ceil(float64(numTokenCoins)/2))
+		realFee += uint64(math.Ceil(float64(numTokenCoins) / 2))
 	}
 
 	if totalAmmount == 0 && realFee == 0 {
@@ -602,7 +602,10 @@ func (txService TxService) BuildConvertV1ToV2Transaction(params *bean.CreateRawT
 	return tx, nil
 }
 
-func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (metadata.Transaction, *RPCError) {
+func (txService TxService) BuildRawTransaction(
+	params *bean.CreateRawTxParam,
+	meta metadata.Metadata,
+) (metadata.Transaction, *RPCError) {
 	Logger.log.Infof("Build Raw Transaction Params: \n %+v", params)
 	// get output coins to spend and real fee
 	inputCoins, realFee, err1 := txService.chooseOutsCoinByKeyset(
@@ -688,40 +691,46 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	}
 	// Try add tx in to mempool of node
 	hash := tx.Hash()
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	if int(sID) >= len(txService.BlockChain.ShardChain) {
+		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("ShardID %v of tx %v is invalid", sID, hash))
+	}
+	sChain := txService.BlockChain.ShardChain[sID]
+	sView := sChain.GetBestState()
 	if txService.BlockChain.UsingNewPool() {
-		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if int(sID) < len(txService.BlockChain.ShardChain) {
-			sChain := txService.BlockChain.ShardChain[sID]
-			if sChain != nil {
-				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
-				if isDoubleSpend {
-					if !canReplaceOldTx {
-						return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
-					}
+		if sChain != nil {
+			isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
+			if isDoubleSpend {
+				if !canReplaceOldTx {
+					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
 				}
+			}
 
-				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
-				if err == nil {
-					valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
-					tx.SetValidationEnv(valEnv)
-					ok, e := sChain.TxsVerifier.FullValidateTransactions(
-						txService.BlockChain,
-						sView,
-						bcView,
-						[]metadata.Transaction{tx},
-					)
-					if (!ok) || (e != nil) {
-						return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
-					}
-				} else {
-					return nil, nil, byte(0), NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+			if err == nil {
+				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
+				tx.SetValidationEnv(valEnv)
+				ok, e := sChain.TxsVerifier.FullValidateTransactions(
+					txService.BlockChain,
+					sView,
+					bcView,
+					[]metadata.Transaction{tx},
+				)
+				if (!ok) || (e != nil) {
+					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
 				}
 			} else {
-				Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
+				return nil, nil, byte(0), NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
 			}
+		} else {
+			Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
 		}
 	} else {
+		txDB := sView.GetCopiedTransactionStateDB()
+		err := tx.LoadData(txDB)
+		if err != nil {
+			Logger.log.Errorf("Validate tx %v return err %v", hash, err)
+		}
 		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(tx, beaconHeigh)
 		if err != nil {
 			Logger.log.Errorf("Send Raw Transaction Error, try add tx into mempool of node: %+v", err)
@@ -874,11 +883,11 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 				if !isBridgeToken {
 					// totally invalid token
 					Logger.log.Errorf("BUGLOG invalid TokenID: %v\n", tokenID.String())
-					if len(bridgeTokenIDs) != len(allBridgeTokens){
+					if len(bridgeTokenIDs) != len(allBridgeTokens) {
 						Logger.log.Errorf("BUGLOG something must be wrong here\n")
 					}
 
-					for i:=0;i<len(bridgeTokenIDs);i++{
+					for i := 0; i < len(bridgeTokenIDs); i++ {
 						Logger.log.Infof("BUGLOG tokenID: %v, %v\n", bridgeTokenIDs[i].String(), allBridgeTokens[i].TokenID.String())
 					}
 
@@ -1127,7 +1136,10 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 }
 
 // BuildRawCustomTokenTransaction ...
-func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {
+func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
+	params interface{},
+	metaData metadata.Metadata,
+) (transaction.TransactionToken, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
@@ -1262,7 +1274,6 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 	return txService.BlockChain.GetTransactionHashByReceiver(keySet)
 }
 
-
 func (txService TxService) GetTransactionHashByReceiverV2(
 	paymentAddressParam string,
 	skip, limit uint,
@@ -1345,7 +1356,7 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 		txInfo := TxInfo{
 			BlockHash: blockHash,
 			Tx:        txDetail,
-			TxHash: txHash.String(),
+			TxHash:    txHash.String(),
 		}
 		txInfos = append(txInfos, txInfo)
 	}
@@ -1417,7 +1428,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 		limit = txNum
 	}
 	pagingTxInfos := txInfos[skip:limit]
-	for _, info := range pagingTxInfos{
+	for _, info := range pagingTxInfos {
 		txDetail, err := txService.GetTransactionByHash(info.TxHash)
 		if err != nil {
 			Logger.log.Error("cannot get tx detail from hash %v. Error %v", info.TxHash, err)
@@ -1437,9 +1448,9 @@ func (txService TxService) GetTransactionByReceiverV2(
 		}
 
 		item := jsonresult.ReceivedTransactionV2{
-			TxDetail:        txDetail,
-			FromShardID:     txDetail.ShardID,
-			ReceivedAmounts: receivedAmounts,
+			TxDetail:           txDetail,
+			FromShardID:        txDetail.ShardID,
+			ReceivedAmounts:    receivedAmounts,
 			InputSerialNumbers: inputSerialNumbers,
 		}
 
@@ -1532,7 +1543,7 @@ func (txService TxService) GetEncodedTransactionsByHashes(txHashList []string) (
 
 func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) (map[string]string, *RPCError) {
 	txList := make(map[string]string, 0)
-	if int(shardID) >= common.MaxShardNumber {//If the shardID is not provided, just retrieve with all shards
+	if int(shardID) >= common.MaxShardNumber { //If the shardID is not provided, just retrieve with all shards
 		for _, snStr := range snList {
 			snBytes, _, err := base58.Base58Check{}.Decode(snStr)
 			if err != nil {
@@ -1562,7 +1573,7 @@ func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID
 		}
 		return txList, nil
 
-	} else {//If the shardID is provided, just retrieve within the shard
+	} else { //If the shardID is provided, just retrieve within the shard
 		shardDB := txService.BlockChain.GetShardChainDatabase(shardID)
 
 		for _, snStr := range snList {
@@ -2006,42 +2017,50 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	}
 
 	hash := tx.Hash()
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	if int(sID) >= len(txService.BlockChain.ShardChain) {
+		return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("ShardID %v of tx %v is invalid", sID, hash))
+	}
+	sChain := txService.BlockChain.ShardChain[sID]
+	sView := sChain.GetBestState()
 	if txService.BlockChain.UsingNewPool() {
-		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if int(sID) < len(txService.BlockChain.ShardChain) {
-			sChain := txService.BlockChain.ShardChain[sID]
-			if sChain != nil {
-				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
-				if isDoubleSpend {
-					if !canReplaceOldTx {
-						return nil, nil, NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
-					}
-				}
 
-				sView := sChain.GetBestState()
-				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx))
-				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
-				tx.SetValidationEnv(valEnv)
-				valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
-				tx.GetTxNormal().SetValidationEnv(valEnvCustom)
-				if err == nil {
-					ok, e := sChain.TxsVerifier.FullValidateTransactions(
-						txService.BlockChain,
-						sView,
-						bcView,
-						[]metadata.Transaction{tx},
-					)
-					if (!ok) || (e != nil) {
-						return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
-					}
-				} else {
-					return nil, nil, NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
+		if sChain != nil {
+			isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(tx)
+			if isDoubleSpend {
+				if !canReplaceOldTx {
+					return nil, nil, NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
+				}
+			}
+
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+			valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
+			tx.SetValidationEnv(valEnv)
+			valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
+			tx.GetTxNormal().SetValidationEnv(valEnvCustom)
+			if err == nil {
+				ok, e := sChain.TxsVerifier.FullValidateTransactions(
+					txService.BlockChain,
+					sView,
+					bcView,
+					[]metadata.Transaction{tx},
+				)
+				if (!ok) || (e != nil) {
+					return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
 				}
 			} else {
-				Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
+				return nil, nil, NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
 			}
+		} else {
+			Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
 		}
+
 	} else {
+		txDB := sView.GetCopiedTransactionStateDB()
+		err := tx.LoadData(txDB)
+		if err != nil {
+			Logger.log.Errorf("Validate tx %v return err %v", hash, err)
+		}
 		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(tx, beaconHeigh)
 		if err != nil {
 			Logger.log.Errorf("txService.SendRawPrivacyCustomTokenTransaction Try add tx into mempool of node with err: %+v", err)
@@ -2354,8 +2373,6 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	return &result, nil
 }
 
-
-
 func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (map[string][]string, *RPCError) {
 	txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
 	if err != nil {
@@ -2383,7 +2400,7 @@ func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (
 	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
 			txToken, ok := tx.(transaction.TransactionToken)
-			if !ok{
+			if !ok {
 				return nil, NewRPCError(UnexpectedError, errors.New("tx type is invalid - cast failed"))
 			}
 			inputSerialNumbers, err := GetInputSerialnumber(txToken.GetTxBase().GetProof().GetInputCoins())

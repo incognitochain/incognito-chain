@@ -250,6 +250,7 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 			randomOffset = calculateNewSubstitutePosition(candidate, rand, len(b.shardSubstitute[shardID]))
 		}
 		b.shardSubstitute[shardID] = insertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
+		Logger.log.Infof("insert candidate %+v to substitute, %+v", candidate, randomOffset)
 	}
 	return committeeChange
 }
@@ -404,6 +405,7 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 ) *CommitteeChange {
+	Logger.log.Infof("process finish sync instruction", finishSyncInstruction.ChainID, finishSyncInstruction.PublicKeys)
 	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)

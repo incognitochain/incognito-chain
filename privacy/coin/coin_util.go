@@ -3,11 +3,11 @@ package coin
 import (
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 const (
@@ -140,7 +140,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 
 	// If this is going to burning address then dont need to create ota
-	if wallet.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
+	if common.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
 		publicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 		if err != nil {
 			panic("Something is wrong with info.paymentAddress.pk, burning address should be a valid point")
@@ -181,13 +181,13 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 }
 
 //nolint:revive // skip linter for this long function name
-func CoinV2ArrayToCoinArray(coinArray []*CoinV2) []Coin {
-	res := make([]Coin, len(coinArray))
-	for i := 0; i < len(coinArray); i++ {
-		res[i] = coinArray[i]
-	}
-	return res
-}
+// func CoinV2ArrayToCoinArray(coinArray []*CoinV2) []Coin {
+// 	res := make([]Coin, len(coinArray))
+// 	for i := 0; i < len(coinArray); i++ {
+// 		res[i] = coinArray[i]
+// 	}
+// 	return res
+// }
 
 func NewOTAFromReceiver(receiver key.PaymentAddress) (*operation.Point, *TxRandom, error) {
 	paymentInfo := key.InitPaymentInfo(receiver, 0, []byte{})

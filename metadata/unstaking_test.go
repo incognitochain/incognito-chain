@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/metadata/mocks"
+	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -122,17 +122,17 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 
 	subtitutePublicKeys := []string{key1}
 
-	beaconViewSubtituteCommitteesError := &mocks.BeaconViewRetriever{}
+	beaconViewSubtituteCommitteesError := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewSubtituteCommitteesError.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return([]string{}, errors.New("Can't find public key in list subtitute committees"))
 
-	beaconViewNotFoundSubtituteCommittees := &mocks.BeaconViewRetriever{}
+	beaconViewNotFoundSubtituteCommittees := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewNotFoundSubtituteCommittees.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return([]string{}, nil)
 
-	beaconViewGetStakerInfoError := &mocks.BeaconViewRetriever{}
+	beaconViewGetStakerInfoError := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewGetStakerInfoError.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
@@ -140,7 +140,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("GetStakerInfo", key1).
 		Return(nil, false, errors.New("Can't Get Staker Info From Beacon Chain Database"))
 
-	beaconViewNotFoundStakerInfo := &mocks.BeaconViewRetriever{}
+	beaconViewNotFoundStakerInfo := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewNotFoundStakerInfo.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
@@ -148,7 +148,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("GetStakerInfo", key1).
 		Return(nil, false, nil)
 
-	beaconViewStakerInfoIsNull := &mocks.BeaconViewRetriever{}
+	beaconViewStakerInfoIsNull := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewStakerInfoIsNull.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
@@ -162,7 +162,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	stakerInfo := &statedb.StakerInfo{}
 	stakerInfo.SetTxStakingID(*hash)
 
-	beaconViewNotInCandidateList := &mocks.BeaconViewRetriever{}
+	beaconViewNotInCandidateList := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewNotInCandidateList.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
@@ -173,7 +173,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("CandidateWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{})
 
-	beaconViewValidInput := &mocks.BeaconViewRetriever{}
+	beaconViewValidInput := &metadataCommonMocks.BeaconViewRetriever{}
 	beaconViewValidInput.
 		On("GetAllCommitteeValidatorCandidateFlattenListFromDatabase").
 		Return(subtitutePublicKeys, nil)
@@ -184,27 +184,37 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 		On("CandidateWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{*incKey1})
 
-	stakingTxError := &mocks.Transaction{}
+	var stakeTxMeta metadata.Metadata
+	stakeTxMeta = &metadata.StakingMetadata{
+		MetadataBase: metadata.MetadataBase{
+			metadata.ShardStakingMeta,
+		},
+		FunderPaymentAddress: validCommitteePublicKeys[2],
+	}
+
+	stakingTxError := &metadataCommonMocks.Transaction{}
 	stakingTxError.
 		On("GetSender").
 		Return([]byte{1})
+	stakingTxError.On("GetMetadata").Return(stakeTxMeta)
 
-	stakingTx := &mocks.Transaction{}
+	stakingTx := &metadataCommonMocks.Transaction{}
 	stakingTx.
 		On("GetSender").
 		Return([]byte(key1))
+	stakingTx.On("GetMetadata").Return(stakeTxMeta)
 
-	chainViewGetTxByHashError := &mocks.ChainRetriever{}
+	chainViewGetTxByHashError := &metadataCommonMocks.ChainRetriever{}
 	chainViewGetTxByHashError.
 		On("GetTransactionByHash", *hash).
 		Return(byte(0), common.Hash{}, uint64(0), int(0), nil, errors.New("Can't Get Transaction From Database"))
 
-	chainViewSenderIsNotMatchTxSender := &mocks.ChainRetriever{}
+	chainViewSenderIsNotMatchTxSender := &metadataCommonMocks.ChainRetriever{}
 	chainViewSenderIsNotMatchTxSender.
 		On("GetTransactionByHash", *hash).
 		Return(byte(0), common.Hash{}, uint64(0), int(0), stakingTxError, nil)
 
-	chainViewValidInput := &mocks.ChainRetriever{}
+	chainViewValidInput := &metadataCommonMocks.ChainRetriever{}
 	chainViewValidInput.
 		On("GetTransactionByHash", *hash).
 		Return(byte(0), common.Hash{}, uint64(0), int(0), stakingTx, nil)
@@ -402,8 +412,8 @@ func TestUnStakingMetadata_ValidateSanityData(t *testing.T) {
 
 	initPublicKey()
 
-	privacyTx := mocks.Transaction{}
-	normalTx := mocks.Transaction{}
+	privacyTx := metadataCommonMocks.Transaction{}
+	normalTx := metadataCommonMocks.Transaction{}
 
 	privacyTx.On("IsPrivacy").Return(true)
 	normalTx.On("IsPrivacy").Return(false)

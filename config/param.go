@@ -34,34 +34,34 @@ type AutoEnableFeature struct {
 
 //param for all variables in incognito node process
 type param struct {
-	Name                             string                       `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
-	Net                              uint32                       `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
-	GenesisParam                     *genesisParam                `mapstructure:"genesis_param" description:"genesis params"`
-	CommitteeSize                    committeeSize                `mapstructure:"committee_size"`
-	BlockTime                        blockTime                    `mapstructure:"block_time"`
-	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
-	ActiveShards                     int                          `mapstructure:"active_shards"`
-	BasicReward                      uint64                       `mapstructure:"basic_reward"`
-	EpochParam                       epochParam                   `mapstructure:"epoch_param"`
-	EthContractAddressStr            string                       `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
-	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
-	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
-	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
-	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`
-	ConsensusParam                   consensusParam               `mapstructure:"consensus_param"`
-	BeaconHeightBreakPointBurnAddr   uint64                       `mapstructure:"beacon_height_break_point_burn_addr"`
-	ReplaceStakingTxHeight           uint64                       `mapstructure:"replace_staking_tx_height"`
-	ETHRemoveBridgeSigEpoch          uint64                       `mapstructure:"eth_remove_bridge_sig_epoch"`
-	BCHeightBreakPointNewZKP         uint64                       `mapstructure:"bc_height_break_point_new_zkp"`
-	BCHeightBreakPointPrivacyV2      uint64                       `mapstructure:"bc_height_break_point_privacy_v2"`
-	CoinVersion2LowestHeight         uint64                       `mapstructure:"coin_v2_lowest_height"`
-	EnableFeatureFlags               map[string]uint64            `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
+	Name                             string             `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
+	Net                              uint32             `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
+	GenesisParam                     *genesisParam      `mapstructure:"genesis_param" description:"genesis params"`
+	CommitteeSize                    committeeSize      `mapstructure:"committee_size"`
+	BlockTime                        blockTime          `mapstructure:"block_time"`
+	StakingAmountShard               uint64             `mapstructure:"staking_amount_shard"`
+	ActiveShards                     int                `mapstructure:"active_shards"`
+	BasicReward                      uint64             `mapstructure:"basic_reward"`
+	EpochParam                       epochParam         `mapstructure:"epoch_param"`
+	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
+	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
+	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
+	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
+	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
+	ConsensusParam                   consensusParam     `mapstructure:"consensus_param"`
+	BeaconHeightBreakPointBurnAddr   uint64             `mapstructure:"beacon_height_break_point_burn_addr"`
+	ReplaceStakingTxHeight           uint64             `mapstructure:"replace_staking_tx_height"`
+	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
+	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
+	BCHeightBreakPointPrivacyV2      uint64             `mapstructure:"bc_height_break_point_privacy_v2"`
+	CoinVersion2LowestHeight         uint64             `mapstructure:"coin_v2_lowest_height"`
+	EnableFeatureFlags               map[string]uint64  `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
+	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
+	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
+	BSCParam                         bscParam           `mapstructure:"bsc_param"`
+	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
+	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
-	BCHeightBreakPointPortalV3       uint64                       `mapstructure:"portal_v3_height"`
-	TxPoolVersion                    int                          `mapstructure:"tx_pool_version"`
-	GethParam                        gethParam                    `mapstructure:"geth_param"`
-	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
-	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
@@ -84,15 +84,16 @@ type genesisParam struct {
 }
 
 type committeeSize struct {
-	MaxShardCommitteeSize            int `mapstructure:"max_shard_committee_size"`
-	MinShardCommitteeSize            int `mapstructure:"min_shard_committee_size"`
-	MaxBeaconCommitteeSize           int `mapstructure:"max_beacon_committee_size"`
-	MinBeaconCommitteeSize           int `mapstructure:"min_beacon_committee_size"`
-	InitShardCommitteeSize           int `mapstructure:"init_shard_committee_size"`
-	InitBeaconCommitteeSize          int `mapstructure:"init_beacon_committee_size"`
-	ShardCommitteeSizeKeyListV2      int `mapstructure:"shard_committee_size_key_list_v2"`
-	BeaconCommitteeSizeKeyListV2     int `mapstructure:"beacon_committee_size_key_list_v2"`
-	NumberOfFixedShardBlockValidator int `mapstructure:"number_of_fixed_shard_block_validators"`
+	MaxShardCommitteeSize            int            `mapstructure:"max_shard_committee_size"`
+	MinShardCommitteeSize            int            `mapstructure:"min_shard_committee_size"`
+	MaxBeaconCommitteeSize           int            `mapstructure:"max_beacon_committee_size"`
+	MinBeaconCommitteeSize           int            `mapstructure:"min_beacon_committee_size"`
+	InitShardCommitteeSize           int            `mapstructure:"init_shard_committee_size"`
+	InitBeaconCommitteeSize          int            `mapstructure:"init_beacon_committee_size"`
+	ShardCommitteeSizeKeyListV2      int            `mapstructure:"shard_committee_size_key_list_v2"`
+	BeaconCommitteeSizeKeyListV2     int            `mapstructure:"beacon_committee_size_key_list_v2"`
+	NumberOfFixedShardBlockValidator int            `mapstructure:"number_of_fixed_shard_block_validators"`
+	IncreaseMaxShardCommitteeSize    map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
 type blockTime struct {
@@ -123,6 +124,9 @@ type consensusParam struct {
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	EnableSlashingHeightV2    uint64   `mapstructure:"enable_slashing_height_v2"`
 	StakingFlowV3Height       uint64   `mapstructure:"staking_flow_v3_height"`
+	NotUseBurnedCoins         uint64   `mapstructure:"force_not_use_burned_coins"`
+	Lemma2Height              uint64   `mapstructure:"lemma2_height"`
+	ByzantineDetectorHeight   uint64   `mapstructure:"byzantine_detector_height"`
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
@@ -244,26 +248,25 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 
 }
 
-type gethParam struct {
-	Host     string `mapstructure:"host"`
-	Protocol string `mapstructure:"protocol"`
-	Port     string `mapstructure:"port"`
-}
-
-func (gethPram *gethParam) GetFromEnv() {
-	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
-	}
-	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
-	}
-	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
-	}
-}
-
 type bscParam struct {
 	Host string `mapstructure:"host"`
+}
+
+type pdexParam struct {
+	Pdexv3BreakPointHeight uint64 `mapstructure:"pdex_v3_break_point_height"`
+	ProtocolFundAddress    string `mapstructure:"protocol_fund_address"`
+	AdminAddress           string `mapstructure:"admin_address"`
+	Params                 struct {
+		DefaultFeeRateBPS               uint            `mapstructure:"default_fee_rate_bps"`
+		PRVDiscountPercent              uint            `mapstructure:"prv_discount_percent"`
+		TradingProtocolFeePercent       uint            `mapstructure:"trading_protocol_fee_percent"`
+		TradingStakingPoolRewardPercent uint            `mapstructure:"trading_staking_pool_reward_percent"`
+		StakingPoolsShare               map[string]uint `mapstructure:"staking_pool_share"`
+		MintNftRequireAmount            uint64          `mapstructure:"mint_nft_require_amount"`
+		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
+		AutoWithdrawOrderLimitAmount    uint            `mapstructure:"auto_withdraw_order_limit_amount"`
+		MinPRVReserveTradingRate        uint64          `mapstructure:"min_prv_reserve_trading_rate"`
+	} `mapstructure:"params"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {

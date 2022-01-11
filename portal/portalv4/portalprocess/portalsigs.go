@@ -4,11 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
-	"strconv"
 )
 
 // PortalSig defines sigs of one beacon validator on unshield external tx
@@ -28,7 +30,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 	for _, inst := range insts {
 		metaType := inst[0]
 		switch metaType {
-		case strconv.Itoa(metadata.PortalV4UnshieldBatchingMeta):
+		case strconv.Itoa(metadataCommon.PortalV4UnshieldBatchingMeta):
 			{
 				// unmarshal instructions content
 				var actionData metadata.PortalUnshieldRequestBatchContent
@@ -40,7 +42,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 				hexRawExternalTx = actionData.RawExternalTx
 				utxos = actionData.UTXOs
 			}
-		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
+		case strconv.Itoa(metadataCommon.PortalV4FeeReplacementRequestMeta):
 			{
 				reqStatus := inst[2]
 				if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
