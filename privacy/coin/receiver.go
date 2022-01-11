@@ -50,7 +50,7 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 	}
 	publicSpend := addr.GetPublicSpend()
 	rK := (&operation.Point{}).ScalarMult(publicOTA, otaRand)
-	for i := MaxTriesOTA; i > 0; i-- {
+	for i := MaxAttempts; i > 0; i-- {
 		index++
 		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
 		HrKG := (&operation.Point{}).ScalarMultBase(hash)
@@ -69,7 +69,7 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Cannot generate OTAReceiver after %d attempts", MaxTriesOTA)
+	return fmt.Errorf("Cannot generate OTAReceiver after %d attempts", MaxAttempts)
 }
 
 // FromString() returns a new OTAReceiver parsed from the input string,

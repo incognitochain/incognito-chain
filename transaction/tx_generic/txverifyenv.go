@@ -9,6 +9,7 @@ import (
 type ValidationEnv struct {
 	isPrivacy    bool
 	isConfimed   bool
+	hasCA        bool
 	txType       string
 	txAction     int
 	shardID      int
@@ -16,6 +17,9 @@ type ValidationEnv struct {
 	beaconHeight uint64
 	confimedTime int64
 	version      int
+	sigPubKey    []byte
+	dataFromDB   [][]byte
+	tokenID      common.Hash
 }
 
 func NewValEnv(
@@ -38,12 +42,19 @@ func DefaultValEnv() *ValidationEnv {
 		beaconHeight: 0,
 		confimedTime: 0,
 		txAction:     common.TxActTranfer,
+		version:      0,
 	}
 }
 
 func WithPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
 	vEnv := vE.(*ValidationEnv)
 	vEnv.isPrivacy = true
+	return vEnv
+}
+
+func WithCA(vE metadata.ValidationEnviroment, hasCA bool) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.hasCA = hasCA
 	return vEnv
 }
 
@@ -83,14 +94,41 @@ func WithType(vE metadata.ValidationEnviroment, t string) *ValidationEnv {
 	return vEnv
 }
 
+func WithVersion(vE metadata.ValidationEnviroment, ver int8) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.version = int(ver)
+	return vEnv
+}
+
 func WithAct(vE metadata.ValidationEnviroment, act int) *ValidationEnv {
 	vEnv := vE.(*ValidationEnv)
 	vEnv.txAction = act
 	return vEnv
 }
 
+func WithDBData(vE metadata.ValidationEnviroment, data [][]byte) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.dataFromDB = data
+	return vEnv
+}
+
+func WithTokenID(vE metadata.ValidationEnviroment, tokenID common.Hash) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.tokenID = tokenID
+	return vEnv
+}
+
+func WithSigPubkey(vE metadata.ValidationEnviroment, sigPubkey []byte) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.sigPubKey = sigPubkey
+	return vEnv
+}
+
 func (vE *ValidationEnv) IsPrivacy() bool {
 	return vE.isPrivacy
+}
+func (vE *ValidationEnv) HasCA() bool {
+	return vE.hasCA
 }
 func (vE *ValidationEnv) IsConfimed() bool {
 	return vE.isConfimed
@@ -118,6 +156,18 @@ func (vE *ValidationEnv) TxAction() int {
 	return vE.txAction
 }
 
+func (vE *ValidationEnv) SigPubKey() []byte {
+	return vE.sigPubKey
+}
+
+func (vE *ValidationEnv) TokenID() common.Hash {
+	return vE.tokenID
+}
+
+func (vE *ValidationEnv) DBData() [][]byte {
+	return vE.dataFromDB
+}
+
 func (vE *ValidationEnv) Clone() *ValidationEnv {
 	return &ValidationEnv{
 		isConfimed:   vE.IsConfimed(),
@@ -129,5 +179,9 @@ func (vE *ValidationEnv) Clone() *ValidationEnv {
 		isPrivacy:    vE.IsPrivacy(),
 		txAction:     vE.TxAction(),
 		txType:       vE.TxType(),
+		sigPubKey:    vE.SigPubKey(),
+		hasCA:        vE.HasCA(),
+		tokenID:      vE.TokenID(),
+		dataFromDB:   vE.DBData(),
 	}
 }

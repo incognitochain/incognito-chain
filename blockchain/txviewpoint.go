@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
@@ -19,6 +20,7 @@ import (
 type TxViewPoint struct {
 	tokenID           *common.Hash
 	height            uint64
+	beaconHeight      uint64
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 
@@ -36,22 +38,23 @@ type TxViewPoint struct {
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint // sub tx viewpoint for token
 
 	// This is Token Transaction
-	privacyCustomTokenTxs       map[int32]transaction.TransactionToken
+	privacyCustomTokenTxs map[int32]transaction.TransactionToken
 
-	privacyCustomTokenMetadata  *types.CrossShardTokenPrivacyMetaData
+	privacyCustomTokenMetadata *types.CrossShardTokenPrivacyMetaData
 
 	// use to fetch tx - pubkey
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
 }
 
 // NewTxViewPoint Create a TxNormal view point, which contains data about serialNumbers and commitments
-func NewTxViewPoint(shardID byte, height uint64) *TxViewPoint {
+func NewTxViewPoint(shardID byte, bHeight, height uint64) *TxViewPoint {
 	result := &TxViewPoint{
 		shardID:                     shardID,
 		height:                      height,
+		beaconHeight:                bHeight,
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
-		otaDeclarations: 			 []transaction.OTADeclaration{},
+		otaDeclarations:             []transaction.OTADeclaration{},
 		mapOutputCoins:              make(map[string][]coin.Coin),
 		mapSnD:                      make(map[string][][]byte),
 		tokenID:                     &common.Hash{},
@@ -109,13 +112,13 @@ func (view *TxViewPoint) processFetchTxViewPointFromProof(stateDB *statedb.State
 	inputCoins := proof.GetInputCoins()
 	for _, item := range inputCoins {
 		serialNum := item.GetKeyImage().ToBytesS()
-		ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNum, shardID)
-		if err != nil {
-			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
-		}
-		if !ok {
-			acceptedSerialNumbers = append(acceptedSerialNumbers, serialNum)
-		}
+		// ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNum, shardID)
+		// if err != nil {
+		// 	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+		// }
+		// if !ok {
+		acceptedSerialNumbers = append(acceptedSerialNumbers, serialNum)
+		// }
 	}
 
 	// Process Output Coins (just created UTXO of this transaction)
@@ -124,33 +127,33 @@ func (view *TxViewPoint) processFetchTxViewPointFromProof(stateDB *statedb.State
 	// Outputcoins will be stored as new utxo for next transaction
 	outputCoins := proof.GetOutputCoins()
 	for _, item := range outputCoins {
-		commitment := item.GetCommitment().ToBytesS()
+		// commitment := item.GetCommitment().ToBytesS()
 		pubkey := item.GetPublicKey().ToBytesS()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
-		if err != nil {
-			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+		// ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
+		// if err != nil {
+		// 	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+		// }
+		// if !ok {
+		publicKeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+		if acceptedCommitments[publicKeyStr] == nil {
+			acceptedCommitments[publicKeyStr] = make([][]byte, 0)
 		}
-		if !ok {
-			publicKeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-			if acceptedCommitments[publicKeyStr] == nil {
-				acceptedCommitments[publicKeyStr] = make([][]byte, 0)
-			}
-			// get data for commitments
-			acceptedCommitments[publicKeyStr] = append(acceptedCommitments[publicKeyStr], item.GetCommitment().ToBytesS())
-			// get data for output coin
-			if acceptedOutputcoins[publicKeyStr] == nil {
-				acceptedOutputcoins[publicKeyStr] = make([]coin.Coin, 0)
-			}
-			acceptedOutputcoins[publicKeyStr] = append(acceptedOutputcoins[publicKeyStr], item)
+		// get data for commitments
+		acceptedCommitments[publicKeyStr] = append(acceptedCommitments[publicKeyStr], item.GetCommitment().ToBytesS())
+		// get data for output coin
+		if acceptedOutputcoins[publicKeyStr] == nil {
+			acceptedOutputcoins[publicKeyStr] = make([]coin.Coin, 0)
 		}
+		acceptedOutputcoins[publicKeyStr] = append(acceptedOutputcoins[publicKeyStr], item)
+		// }
 		// get data for Snderivators
 		snD := item.GetSNDerivator()
 		if snD != nil {
-			ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
-			if !ok && err == nil {
-				acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], snD)
-			}
+			// ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
+			// if !ok && err == nil {
+			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], snD)
+			// }
 		} else {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], nil)
 		}
@@ -207,7 +210,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 		case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 			{
 				tx, ok := tx.(transaction.TransactionToken)
-				if !ok{
+				if !ok {
 					return NewBlockChainError(UnExpectedError, errors.New("Error casting to tx token"))
 				}
 				serialNumbers, commitments, outCoins, _, err := view.processFetchTxViewPointFromProof(stateDB, block.Header.ShardID, tx.GetTxBase().GetProof(), prvCoinID)
@@ -230,7 +233,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				}
 
 				tokenData := tx.GetTxTokenData()
-				subView := NewTxViewPoint(block.Header.ShardID, block.Header.Height)
+				subView := NewTxViewPoint(block.Header.ShardID, block.Header.BeaconHeight, block.Header.Height)
 				subView.tokenID = &tokenData.PropertyID
 				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPointFromProof(stateDB, subView.shardID, tokenData.TxNormal.GetProof(), subView.tokenID)
 				if errP != nil {
@@ -310,35 +313,35 @@ func (view *TxViewPoint) processFetchCrossOutputViewPointFromOutputCoins(stateDB
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
 	for _, item := range outputCoins {
-		commitment := item.GetCommitment().ToBytesS()
+		// commitment := item.GetCommitment().ToBytesS()
 		pubkey := item.GetPublicKey().ToBytesS()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
-		if err != nil {
-			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+		// ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
+		// if err != nil {
+		// 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+		// }
+		// if !ok {
+		// pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+		if acceptedCommitments[pubkeyStr] == nil {
+			acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 		}
-		if !ok {
-			pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-			if acceptedCommitments[pubkeyStr] == nil {
-				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
-			}
-			// get data for commitments
-			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.GetCommitment().ToBytesS())
+		// get data for commitments
+		acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.GetCommitment().ToBytesS())
 
-			// get data for output coin
-			if acceptedOutputcoins[pubkeyStr] == nil {
-				acceptedOutputcoins[pubkeyStr] = make([]coin.Coin, 0)
-			}
-			acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], item)
+		// get data for output coin
+		if acceptedOutputcoins[pubkeyStr] == nil {
+			acceptedOutputcoins[pubkeyStr] = make([]coin.Coin, 0)
 		}
+		acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], item)
+		// }
 
 		// get data for Snderivators
 		snD := item.GetSNDerivator()
 		if snD != nil {
-			ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
-			if !ok && err == nil {
-				acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
-			}
+			// ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
+			// if !ok && err == nil {
+			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+			// }
 		}
 	}
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
@@ -391,7 +394,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(stateDB *stated
 			}
 			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
 				for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
-					subView := NewTxViewPoint(block.Header.ShardID, block.Header.Height)
+					subView := NewTxViewPoint(block.Header.ShardID, block.Header.BeaconHeight, block.Header.Height)
 					temp, err := common.Hash{}.NewHash(tokenPrivacyData.PropertyID.GetBytes())
 					if err != nil {
 						return err

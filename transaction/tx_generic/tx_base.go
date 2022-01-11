@@ -539,7 +539,7 @@ func (tx TxBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) erro
 	return nil
 }
 
-func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
+func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -567,7 +567,7 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 	}
 	for _, outCoin := range tx.GetProof().GetOutputCoins() {
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
-		if wallet.IsPublicKeyBurningAddress(otaPublicKey) {
+		if common.IsPublicKeyBurningAddress(otaPublicKey) {
 			continue
 		}
 
