@@ -700,6 +700,12 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		case transaction.CustomTokenInit:
 			{
 				tokenID := tokenData.PropertyID
+
+				// Add the tokenID to the cache for fast retrieval.
+				if EnableIndexingCoinByOTAKey {
+					outcoinIndexer.AddTokenID(tokenID)
+				}
+
 				existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 				if !existed {
 					// check is bridge token
@@ -716,9 +722,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 					}
 					Logger.log.Info("Store custom token when it is issued", tokenData.PropertyID, tokenData.PropertySymbol, tokenData.PropertyName)
 					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
-					if EnableIndexingCoinByOTAKey {
-						outcoinIndexer.AddTokenID(tokenID)
-					}
 					if err != nil {
 						return err
 					}
