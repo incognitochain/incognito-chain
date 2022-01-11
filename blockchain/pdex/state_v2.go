@@ -224,6 +224,39 @@ func (s *stateV2) Process(env StateEnvironment) error {
 	if s.params.IsZeroValue() {
 		s.readConfig()
 	}
+
+	for _, poolPair := range s.poolPairs {
+		for shareID, lockedRecord := range poolPair.lmLockedShare {
+			// check if this share exists
+			if _, ok := poolPair.shares[shareID]; !ok {
+				delete(poolPair.lmLockedShare, shareID)
+				continue
+			}
+			for lockedHeight, lockedAmount := range lockedRecord {
+				if lockedHeight+s.params.MiningRewardPendingBlocks < beaconHeight {
+					delete(lockedRecord, lockedHeight)
+
+					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
+					releaseAmount := lockedAmount
+					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
+						releaseAmount = poolPair.shares[shareID].lmLockedAmount
+					}
+
+					var err error
+					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
+					if err != nil {
+						return errors.New("newShare.lmLockedAmount is out of range")
+					}
+					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
+					if err != nil {
+						return errors.New("poolPairLmLockedShareAmount is out of range")
+					}
+					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
