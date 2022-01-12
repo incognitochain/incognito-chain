@@ -59,7 +59,7 @@ consensus_param:
   assign_rule_v3_height: 3023315
   enable_slashing_height_v2: 3068072
   staking_flow_v3_height: 3335020
-  force_not_use_burned_coins: 1000000000000
+  force_not_use_burned_coins: 4211505
   lemma2_height: 4126069
   block_producing_v3_height: 1000000000000
   byzantine_detector_height: 1000000000000
@@ -77,7 +77,7 @@ enable_feature_flags:
   - PortalV3: 0
   - PortalV4: 30225
 portal_v3_height: 1328816
-tx_pool_version: 1
+tx_pool_version: 0
 bsc_param:
   host: "https://data-seed-prebsc-2-s2.binance.org:8545"
 plg_param:
