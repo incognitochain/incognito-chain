@@ -581,8 +581,6 @@ func (p *PoolPairState) updateSingleTokenAmount(
 func (p *PoolPairState) RecomputeLPRewards(
 	nftID common.Hash,
 ) (map[common.Hash]uint64, error) {
-	result := map[common.Hash]uint64{}
-
 	curShare, ok := p.shares[nftID.String()]
 	if !ok {
 		return nil, fmt.Errorf("Share not found")
@@ -591,8 +589,10 @@ func (p *PoolPairState) RecomputeLPRewards(
 	curLPFeesPerShare := p.lpFeesPerShare
 	oldLPFeesPerShare := curShare.lastLPFeesPerShare
 
+	result := curShare.TradingFees()
+
 	for tokenID := range curLPFeesPerShare {
-		tradingFee, isExisted := curShare.tradingFees[tokenID]
+		tradingFee, isExisted := result[tokenID]
 		if !isExisted {
 			tradingFee = 0
 		}
@@ -639,6 +639,8 @@ func (p *PoolPairState) RecomputeLPRewards(
 			result[tokenID] = reward.Uint64()
 		}
 	}
+
+	fmt.Printf("ERR Reward 2: %+v\n", result)
 
 	return result, nil
 }
