@@ -120,6 +120,39 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		}
 	}
 
+	// unlock LM locked share amount
+	for _, poolPair := range s.poolPairs {
+		for shareID, lockedRecord := range poolPair.lmLockedShare {
+			// check if this share exists
+			if _, ok := poolPair.shares[shareID]; !ok {
+				delete(poolPair.lmLockedShare, shareID)
+				continue
+			}
+			for lockedHeight, lockedAmount := range lockedRecord {
+				if lockedHeight+s.params.MiningRewardPendingBlocks < beaconHeight {
+					delete(lockedRecord, lockedHeight)
+
+					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
+					releaseAmount := lockedAmount
+					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
+						releaseAmount = poolPair.shares[shareID].lmLockedAmount
+					}
+
+					var err error
+					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
+					if err != nil {
+						return errors.New("newShare.lmLockedAmount is out of range")
+					}
+					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
+					if err != nil {
+						return errors.New("poolPairLmLockedShareAmount is out of range")
+					}
+					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
+				}
+			}
+		}
+	}
+
 	for _, inst := range env.BeaconInstructions() {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instructions
@@ -225,38 +258,6 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		s.readConfig()
 	}
 
-	for _, poolPair := range s.poolPairs {
-		for shareID, lockedRecord := range poolPair.lmLockedShare {
-			// check if this share exists
-			if _, ok := poolPair.shares[shareID]; !ok {
-				delete(poolPair.lmLockedShare, shareID)
-				continue
-			}
-			for lockedHeight, lockedAmount := range lockedRecord {
-				if lockedHeight+s.params.MiningRewardPendingBlocks < beaconHeight {
-					delete(lockedRecord, lockedHeight)
-
-					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
-					releaseAmount := lockedAmount
-					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
-						releaseAmount = poolPair.shares[shareID].lmLockedAmount
-					}
-
-					var err error
-					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
-					if err != nil {
-						return errors.New("newShare.lmLockedAmount is out of range")
-					}
-					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
-					if err != nil {
-						return errors.New("poolPairLmLockedShareAmount is out of range")
-					}
-					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
-				}
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -338,6 +339,39 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		// init making volume
 		if poolPair.makingVolume == nil {
 			poolPair.makingVolume = map[common.Hash]*MakingVolume{}
+		}
+	}
+
+	// unlock LM locked share amount
+	for _, poolPair := range s.poolPairs {
+		for shareID, lockedRecord := range poolPair.lmLockedShare {
+			// check if this share exists
+			if _, ok := poolPair.shares[shareID]; !ok {
+				delete(poolPair.lmLockedShare, shareID)
+				continue
+			}
+			for lockedHeight, lockedAmount := range lockedRecord {
+				if lockedHeight+s.params.MiningRewardPendingBlocks < beaconHeight {
+					delete(lockedRecord, lockedHeight)
+
+					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
+					releaseAmount := lockedAmount
+					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
+						releaseAmount = poolPair.shares[shareID].lmLockedAmount
+					}
+
+					var err error
+					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
+					if err != nil {
+						return instructions, err
+					}
+					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
+					if err != nil {
+						return instructions, errors.New("poolPairLmLockedShareAmount is out of range")
+					}
+					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
+				}
+			}
 		}
 	}
 
