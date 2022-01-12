@@ -10,7 +10,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -87,7 +86,8 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta) &&
-				instMetaType != strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta)) {
+				instMetaType != strconv.Itoa(IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(IssuingPRVBEP20RequestMeta) &&
+				instMetaType != strconv.Itoa(IssuingPLGRequestMeta)) {
 			continue
 		}
 

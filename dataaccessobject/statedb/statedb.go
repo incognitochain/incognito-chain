@@ -2425,3 +2425,15 @@ func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState
 	}
 	return NewBrigePRVEVMState(), false, nil
 }
+
+// ================================= BSC bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState, bool, error) {
+	plgTxState, err := stateDB.getStateObject(BridgePLGTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if plgTxState != nil {
+		return plgTxState.GetValue().(*BridgePLGTxState), true, nil
+	}
+	return NewBridgePLGTxState(), false, nil
+}

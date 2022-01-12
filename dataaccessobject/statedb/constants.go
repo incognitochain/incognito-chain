@@ -93,6 +93,9 @@ const (
 	Pdexv3StakerLastRewardPerShareObjectType  = 63
 	Pdexv3PoolPairMakingVolumeObjectType      = 64
 	Pdexv3PoolPairOrderRewardObjectType       = 65
+
+	// Polygon bridge
+	BridgePLGTxObjectType = 66
 )
 
 // Prefix length
