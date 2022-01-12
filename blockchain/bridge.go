@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -42,8 +41,9 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 
 	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
-		strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadataCommon.BurningPRVERC20ConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta):
+		strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
+		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningPLGConfirmMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {

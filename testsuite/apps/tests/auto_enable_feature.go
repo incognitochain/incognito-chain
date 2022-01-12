@@ -41,7 +41,7 @@ func Test_Auto_Enable() {
 
 	//stake node
 	stakers := []account.Account{}
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 40; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 		node.GenerateBlock().NextRound()

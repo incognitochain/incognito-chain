@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/portal"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	"net"
 	"os"
@@ -147,7 +148,7 @@ func (sim *NodeEngine) Init() {
 	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.param
-
+	wallet.InitPublicKeyBurningAddressByte()
 	config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = []string{}
 	config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = []string{}
 	config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = []string{}
@@ -667,8 +668,10 @@ func InitChainParam(cfg Config, customParam func()) *NodeEngine {
 	node := NewStandaloneSimulation("sim", cfg)
 	customParam()
 	node.Init()
+
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
 	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
+
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 	}
