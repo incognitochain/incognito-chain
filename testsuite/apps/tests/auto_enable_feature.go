@@ -36,12 +36,12 @@ func Test_Auto_Enable() {
 		config.Param().ConsensusParam.EpochBreakPointSwapNewKey = []uint64{1e9}
 		config.Config().LimitFee = 0
 		config.Param().PDexParams.Pdexv3BreakPointHeight = 1e9
-		config.Param().TxPoolVersion = 1
+		config.Param().TxPoolVersion = 0
 	})
 
 	//stake node
 	stakers := []account.Account{}
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 1; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 		node.GenerateBlock().NextRound()

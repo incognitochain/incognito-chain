@@ -81,14 +81,13 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
-	dequeueInst := copiedCurView.generateOutdatedDequeueInstruction()
+	//dequeueInst := copiedCurView.generateOutdatedDequeueInstruction()
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
 		*portalParams,
 		allShardBlocks,
-		dequeueInst,
 	)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
@@ -154,7 +153,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	curView *BeaconBestState,
 	portalParams portal.PortalParams,
 	allShardBlocks map[byte][]*types.ShardBlock,
-	dequeueInst *instruction.DequeueInstruction,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -263,14 +261,14 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	shardInstruction.compose()
 
-	outdatedPendingValidator := map[int][]int{}
-	if dequeueInst != nil && len(dequeueInst.DequeueList) > 0 {
-		outdatedPendingValidator = dequeueInst.DequeueList
-	}
+	//outdatedPendingValidator := map[int][]int{}
+	//if dequeueInst != nil && len(dequeueInst.DequeueList) > 0 {
+	//	outdatedPendingValidator = dequeueInst.DequeueList
+	//}
 	instructions, err := curView.GenerateInstruction(
 		newBeaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedRewardInstructions,
-		blockchain, shardStates, outdatedPendingValidator,
+		blockchain, shardStates,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -405,7 +403,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 	acceptedRewardInstructions [][]string,
 	blockchain *BlockChain,
 	shardsState map[byte][]types.ShardState,
-	outdatedPendingValidator map[int][]int,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	instructions = append(instructions, bridgeInstructions...)
@@ -488,12 +485,12 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	} else {
 		//swap outdated pending validator to syncing pool at last height of epoch
-		if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
-			if len(outdatedPendingValidator) > 0 {
-				dequeueInst := instruction.NewDequeueInstructionWithValue(instruction.OUTDATED_DEQUEUE_REASON, outdatedPendingValidator)
-				instructions = append(instructions, dequeueInst.ToString())
-			}
-		}
+		//if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
+		//	if len(outdatedPendingValidator) > 0 {
+		//		dequeueInst := instruction.NewDequeueInstructionWithValue(instruction.OUTDATED_DEQUEUE_REASON, outdatedPendingValidator)
+		//		instructions = append(instructions, dequeueInst.ToString())
+		//	}
+		//}
 
 		//swap validator in committee to pending validator
 		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
@@ -534,48 +531,47 @@ func addFinishInstruction(
 	return instructions
 }
 
-//generate dequeue instruction , to push node into sync pool
-//if node
-func (curView *BeaconBestState) generateOutdatedDequeueInstruction() *instruction.DequeueInstruction {
-
-	expectedContainFeature := []string{}
-	unTriggerFeatures := curView.getUntriggerFeature()
-
-	for _, feature := range unTriggerFeatures {
-		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
-		if !ok {
-			continue
-		}
-		//check timing condition
-		if uint64(autoEnableFeatureInfo.ForceBlockHeight) > curView.BeaconHeight {
-			continue
-		}
-
-		expectedContainFeature = append(expectedContainFeature, feature)
-	}
-
-	//loop all shard pending validators, check if the validator code is latest or not
-	outdatedValidatorIndex := map[int][]int{} // shardID -> idnex
-	for cid := 0; cid < curView.ActiveShards; cid++ {
-		pendingList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardPendingValidator(byte(cid)))
-		committeeList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardCommittee(byte(cid)))
-		if err != nil {
-			Logger.log.Infof("Get Committee from shard %v error %v", cid, err)
-			return nil
-		}
-		for validatorIndex, cpk := range pendingList {
-			if DefaultFeatureStat.containExpectedFeature(cpk, expectedContainFeature) == false {
-				outdatedValidatorIndex[cid] = append(outdatedValidatorIndex[cid], validatorIndex)
-			}
-		}
-		if len(outdatedValidatorIndex[cid]) >= int((float64(len(pendingList)+len(committeeList)))*DEQUEUE_THRESHOLD_PERCENT) {
-			Logger.log.Infof("Chain %v cannot generate dequeue, not enough updated node, outdate %v , validator: %v", cid, len(outdatedValidatorIndex[cid]), (len(pendingList) + len(committeeList)))
-			delete(outdatedValidatorIndex, cid)
-		}
-	}
-
-	return instruction.NewDequeueInstructionWithValue(instruction.OUTDATED_DEQUEUE_REASON, outdatedValidatorIndex)
-}
+////generate dequeue instruction , to push node into sync pool
+//func (curView *BeaconBestState) generateOutdatedDequeueInstruction() *instruction.DequeueInstruction {
+//
+//	expectedContainFeature := []string{}
+//	unTriggerFeatures := curView.getUntriggerFeature()
+//
+//	for _, feature := range unTriggerFeatures {
+//		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
+//		if !ok {
+//			continue
+//		}
+//		//check timing condition
+//		if uint64(autoEnableFeatureInfo.ForceBlockHeight) > curView.BeaconHeight {
+//			continue
+//		}
+//
+//		expectedContainFeature = append(expectedContainFeature, feature)
+//	}
+//
+//	//loop all shard pending validators, check if the validator code is latest or not
+//	outdatedValidatorIndex := map[int][]int{} // shardID -> idnex
+//	for cid := 0; cid < curView.ActiveShards; cid++ {
+//		pendingList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardPendingValidator(byte(cid)))
+//		committeeList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardCommittee(byte(cid)))
+//		if err != nil {
+//			Logger.log.Infof("Get Committee from shard %v error %v", cid, err)
+//			return nil
+//		}
+//		for validatorIndex, cpk := range pendingList {
+//			if DefaultFeatureStat.containExpectedFeature(cpk, expectedContainFeature) == false {
+//				outdatedValidatorIndex[cid] = append(outdatedValidatorIndex[cid], validatorIndex)
+//			}
+//		}
+//		if len(outdatedValidatorIndex[cid]) >= int((float64(len(pendingList)+len(committeeList)))*DEQUEUE_THRESHOLD_PERCENT) {
+//			Logger.log.Infof("Chain %v cannot generate dequeue, not enough updated node, outdate %v , validator: %v", cid, len(outdatedValidatorIndex[cid]), (len(pendingList) + len(committeeList)))
+//			delete(outdatedValidatorIndex, cid)
+//		}
+//	}
+//
+//	return instruction.NewDequeueInstructionWithValue(instruction.OUTDATED_DEQUEUE_REASON, outdatedValidatorIndex)
+//}
 
 func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string, []string) {
 	instructions := [][]string{}
@@ -675,14 +671,14 @@ func filterEnableFeatureInstruction(instructions [][]string) [][]string {
 	return enableFeatureInstructions
 }
 
-func filterDequeueInstruction(instructions [][]string, reason string) (*instruction.DequeueInstruction, error) {
-	for _, v := range instructions {
-		if v[0] == instruction.DEQUEUE && v[1] == reason {
-			return instruction.ValidateAndImportDequeueInstructionFromString(v)
-		}
-	}
-	return nil, nil
-}
+//func filterDequeueInstruction(instructions [][]string, reason string) (*instruction.DequeueInstruction, error) {
+//	for _, v := range instructions {
+//		if v[0] == instruction.DEQUEUE && v[1] == reason {
+//			return instruction.ValidateAndImportDequeueInstructionFromString(v)
+//		}
+//	}
+//	return nil, nil
+//}
 
 func (curView *BeaconBestState) filterFinishSyncInstruction(instructions [][]string) ([][]string, [][]string) {
 

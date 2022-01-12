@@ -338,7 +338,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		Logger.log.Error(err)
 		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
-	dequeueInst, err := filterDequeueInstruction(beaconBlock.Body.Instructions, instruction.OUTDATED_DEQUEUE_REASON)
+	//dequeueInst, err := filterDequeueInstruction(beaconBlock.Body.Instructions, instruction.OUTDATED_DEQUEUE_REASON)
 	if err != nil {
 		return NewBlockChainError(GetDequeueInstructionError, err)
 	}
@@ -347,7 +347,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		curView,
 		*portalParams,
 		allShardBlocks,
-		dequeueInst,
 	)
 
 	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)

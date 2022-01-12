@@ -4,12 +4,12 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-core/peer"
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"os"
 )
 
 type Server struct {
@@ -60,7 +60,7 @@ func (s *Server) GetMinerIncognitoPublickey(publicKey string, keyType string) []
 }
 
 func (s *Server) OnTx(p *peer.PeerConn, msg *wire.MessageTx) {
-	if os.Getenv("TXPOOL_VERSION") == "1" {
+	if config.Param().TxPoolVersion == 1 {
 		sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
 		s.BlockChain.ShardChain[sid].TxPool.GetInbox() <- msg.Transaction
 	} else {
@@ -69,7 +69,7 @@ func (s *Server) OnTx(p *peer.PeerConn, msg *wire.MessageTx) {
 
 }
 func (s *Server) OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
-	if os.Getenv("TXPOOL_VERSION") == "1" {
+	if config.Param().TxPoolVersion == 1 {
 		sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
 		s.BlockChain.ShardChain[sid].TxPool.GetInbox() <- msg.Transaction
 	} else {
