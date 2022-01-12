@@ -402,11 +402,11 @@ func (sp *stateProducerV2) mintReward(
 			}
 		}
 
-		pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
+		pair.lmRewardsPerShare = v2utils.NewTradingPairWithValue(
 			&pair.state,
-		).AddLPFee(
+		).AddLMRewards(
 			tokenID, lpRewardAmt, BaseLPFeesPerShare,
-			pair.lpFeesPerShare)
+			pair.lmRewardsPerShare)
 
 		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, lpRewardAmt.Uint64(), tokenID)...)
 	}
@@ -1109,7 +1109,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.NftID(), metaData.ShareAmount(), lmLockedBlocks,
+			metaData.NftID(), metaData.ShareAmount(),
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)

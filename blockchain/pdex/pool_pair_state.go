@@ -416,8 +416,7 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 }
 
 func (p *PoolPairState) deductShare(
-	nftID string,
-	shareAmount, lmLockedBlocks uint64,
+	nftID string, shareAmount uint64,
 ) (uint64, uint64, uint64, error) {
 	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
@@ -443,7 +442,7 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	err = p.updateShareValue(tempShareAmount, nftID, subOperator, 0, lmLockedBlocks)
+	err = p.updateShareValue(tempShareAmount, nftID, subOperator, 0, 0)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
@@ -492,6 +491,21 @@ func (p *PoolPairState) updateShareValue(
 		}
 		p.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
 		p.addLmLockedShare(nftID, beaconHeight, shareAmount)
+	} else if operator == subOperator {
+		// releaseAmount = min(share.lmLockedAmount, shareAmount)
+		releaseAmount := share.lmLockedAmount
+		if releaseAmount > shareAmount {
+			releaseAmount = shareAmount
+		}
+		share.lmLockedAmount, err = executeOperationUint64(share.lmLockedAmount, releaseAmount, operator)
+		if err != nil {
+			return errors.New("newShare.lmLockedAmount is out of range")
+		}
+		poolPairLmLockedShareAmount, err := executeOperationUint64(p.state.LmLockedShareAmount(), releaseAmount, operator)
+		if err != nil {
+			return errors.New("poolPairLmLockedShareAmount is out of range")
+		}
+		p.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
 	}
 
 	p.shares[nftID] = share
