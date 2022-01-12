@@ -157,10 +157,10 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 }
 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingBSCRequestMeta ||
-		iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta ||
-		iReq.Type == IssuingPLGRequestMeta {
-		return true
+	if iReq.Type != IssuingETHRequestMeta && iReq.Type != IssuingBSCRequestMeta &&
+		iReq.Type != IssuingPRVERC20RequestMeta && iReq.Type != IssuingPRVBEP20RequestMeta &&
+		iReq.Type != IssuingPLGRequestMeta {
+		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
@@ -171,7 +171,7 @@ func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 		Logger.log.Error(errors.Errorf("The evm proof's receipt could not be null."))
 		return false
 	}
-	return false
+	return true
 }
 
 func (iReq IssuingEVMRequest) Hash() *common.Hash {
