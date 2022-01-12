@@ -348,7 +348,11 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
-	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)
+	finishSyncInstruction, err := curView.filterAndVerifyFinishSyncInstruction(beaconBlock.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(FinishSyncInstructionError, err)
+	}
+
 	instructions = addFinishInstruction(instructions, finishSyncInstruction)
 
 	enableFeatureInstructions := filterEnableFeatureInstruction(beaconBlock.Body.Instructions)
@@ -1249,21 +1253,30 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	if beaconBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		return nil
 	}
+
 	stakerKeys := committeeChange.StakerKeys()
-	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
-	committees := append(stakerKeys, stopAutoStakerKeys...)
-	if len(committees) != 0 {
+	if len(stakerKeys) != 0 {
 		err := statedb.StoreStakerInfo(
 			beaconBestState.consensusStateDB,
-			committees,
+			stakerKeys,
 			beaconBestState.beaconCommitteeState.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeState.GetAutoStaking(),
 			beaconBestState.beaconCommitteeState.GetStakingTx(),
+			beaconBestState.BeaconHeight,
 		)
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
+
+	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
+	if len(stopAutoStakerKeys) != 0 {
+		err := statedb.SaveStopAutoStakerInfo(beaconBestState.consensusStateDB, stopAutoStakerKeys, beaconBestState.beaconCommitteeState.GetAutoStaking())
+		if err != nil {
+			return NewBlockChainError(StoreBeaconBlockError, err)
+		}
+	}
+
 	err := statedb.StoreSyncingValidators(beaconBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
 	if err != nil {
 		return err

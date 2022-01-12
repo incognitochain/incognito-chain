@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"fmt"
-	"sort"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
+	"sort"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -634,6 +633,12 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 	return instructions, enableFeature
 }
 
+func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
+	halfPendingCycle := uint64(len(curView.GetShardPendingValidator()[sid]) / 2)
+	halfPendingCycleEpoch := halfPendingCycle / 4 //this assume an average of 4 nodes will be out pending queue per epoch
+	return halfPendingCycleEpoch
+}
+
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	//get validators in sync pool that contain latest code
 	syncVal := make(map[byte][]string)
@@ -648,8 +653,21 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 		syncVal[shardID], _ = incognitokey.CommitteeKeyListToString(validValidator)
 	}
 
-	//generate instruction for validator that finish syncing
-	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(syncVal)
+	//get valid waiting validator
+	validWaitingValidator := map[byte][]string{}
+	for sid, validators := range syncVal {
+		halfPendingCycleEpoch := curView.halfPendingCycleEpoch(sid)
+		for _, validator := range validators {
+			info, exists, err := curView.GetStakerInfo(validator)
+			if !exists || err != nil {
+				panic("Error when generateFinishSyncInstruction. This must not occur!")
+			}
+			if curView.BeaconHeight >= info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch {
+				validWaitingValidator[sid] = append(validWaitingValidator[sid], validator)
+			}
+		}
+	}
+	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(validWaitingValidator, curView.BeaconHeight)
 	instructions := [][]string{}
 
 	for _, finishSyncInstruction := range finishSyncInstructions {
@@ -680,20 +698,49 @@ func filterEnableFeatureInstruction(instructions [][]string) [][]string {
 //	return nil, nil
 //}
 
-func (curView *BeaconBestState) filterFinishSyncInstruction(instructions [][]string) ([][]string, [][]string) {
+func (curView *BeaconBestState) filterAndVerifyFinishSyncInstruction(instructions [][]string) ([][]string, error) {
 
-	res := [][]string{}
 	finishSyncInstructions := [][]string{}
 
+	syncValidators := curView.GetSyncingValidatorsString()
 	for _, v := range instructions {
 		if v[0] == instruction.FINISH_SYNC_ACTION {
+			inst, err := instruction.ValidateAndImportFinishSyncInstructionFromString(v)
+			if err != nil {
+				return nil, err
+			}
 			finishSyncInstructions = append(finishSyncInstructions, v)
-		} else {
-			res = append(res, v)
+
+			//verify staker have valid waiting time
+			for _, validator := range inst.PublicKeys {
+				info, exists, err := curView.GetStakerInfo(validator)
+				if !exists || err != nil {
+					fmt.Println("finishSyncInstructions", v[2])
+					panic("Error when generateFinishSyncInstruction. This must not occur!")
+				}
+
+				//loop sync pool, check if validator is exist and having valid waiting time
+				exist := false
+				for sid, vals := range syncValidators {
+					if common.IndexOfStr(validator, vals) != -1 {
+						halfPendingCycleEpoch := curView.halfPendingCycleEpoch(sid)
+						if curView.BeaconHeight < info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch {
+							return nil, fmt.Errorf("Not valid waiting time for syncing validator, current beacon %v, expect valid height %v", curView.BeaconHeight, info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch)
+						} else {
+							exist = true
+						}
+					}
+				}
+
+				//cannot find validator in sync pool
+				if !exist {
+					return nil, fmt.Errorf("Cannot find validator %v in syncing pool", validator)
+				}
+			}
 		}
 	}
 
-	return res, finishSyncInstructions
+	return finishSyncInstructions, nil
 }
 
 func createBeaconSwapActionForKeyListV2(

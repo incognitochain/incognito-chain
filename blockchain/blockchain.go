@@ -1102,6 +1102,7 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 		validCommitteePublicKeys,
 		syncPool,
 		shardID,
+		blockchain.GetBeaconBestState().BeaconHeight,
 	)
 
 }

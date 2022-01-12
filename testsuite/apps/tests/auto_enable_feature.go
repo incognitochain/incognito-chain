@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 )
@@ -39,57 +36,23 @@ func Test_Auto_Enable() {
 		config.Param().TxPoolVersion = 0
 	})
 
-	//stake node
+	//send PRV and stake
 	stakers := []account.Account{}
 	for i := 0; i < 40; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
-		node.GenerateBlock().NextRound()
 		node.SendPRV(node.GenesisAccount, acc, 1e14)
 		node.GenerateBlock().NextRound()
 		node.GenerateBlock().NextRound()
-
-		fmt.Println("send", acc.Name)
+		node.RPC.Stake(acc)
+		fmt.Println("send PRV and stake", acc.Name)
+		node.GenerateBlock().NextRound()
 		stakers = append(stakers, acc)
 	}
-	for i := 0; i < len(stakers); i++ {
-		acc := stakers[i]
-		node.RPC.Stake(acc)
-		fmt.Println("stake", acc.Name)
-		node.GenerateBlock().NextRound()
 
-		fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
-		shardIDs := []int{-1}
-		shardIDs = append(shardIDs, node.GetBlockchain().GetShardIDs()...)
-		consensusStateDB := node.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).GetBeaconConsensusStateDB()
-		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
-		str, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
-		//fmt.Println("currentEpochShardCandidate", str)
-		str, _ = incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
-		_ = str
-		//fmt.Println("nextEpochShardCandidate", str)
-		substituteValidatorStr := make(map[int][]string)
-		syncingValidatorStr := make(map[int][]string)
-
-		//fmt.Println("syncingValidators", syncingValidators)
-		for shardID, v := range syncingValidators {
-			tempV, _ := incognitokey.CommitteeKeyListToString(v)
-			syncingValidatorStr[int(shardID)] = tempV
-		}
-		for shardID, v := range substituteValidator {
-			tempV, _ := incognitokey.CommitteeKeyListToString(v)
-			substituteValidatorStr[shardID] = tempV
-		}
-		//fmt.Println("substituteValidator", substituteValidatorStr)
-		//fmt.Println("syncingValidatorStr", syncingValidatorStr)
-		if node.GetBlockchain().BeaconChain.CurrentHeight() == 71 {
-			node.Pause()
-		}
-	}
-
-	node.GenerateBlock().NextRound()
-
+	//check pool status
 	for {
+		node.GenerateBlock().NextRound()
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
@@ -97,14 +60,15 @@ func Test_Auto_Enable() {
 			break
 		}
 
-		if height%20 == 1 || height%20 == 11 {
+		if height%20 == 1 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			node.ShowAccountPosition(stakers)
+			//TODO: check account
 		}
-		node.GenerateBlock().NextRound()
 	}
 
 	for {
+
 		node.SendFinishSync(stakers, 0)
 		node.SendFinishSync(stakers, 1)
 		for i, s := range stakers {
@@ -123,17 +87,17 @@ func Test_Auto_Enable() {
 		//epoch := currentBeaconBlock.GetCurrentEpoch()
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
-			//fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
+
 		}
 		node.GenerateBlock().NextRound()
 
-		shard0Block := node.GetBlockchain().GetChain(0).(testsuite.Chain).GetBestView().GetBlock().(*types.ShardBlock)
-		if shard0Block.Header.BeaconHeight%20 == 1 {
-			fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
-		}
+		//shard0Block := node.GetBlockchain().GetChain(0).(testsuite.Chain).GetBestView().GetBlock().(*types.ShardBlock)
+		//if shard0Block.Header.BeaconHeight%20 == 1 {
+		//	fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
+		//}
 	}
-
+	node.Pause()
 	for {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
