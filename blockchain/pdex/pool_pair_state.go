@@ -183,8 +183,8 @@ func (poolPairState *PoolPairState) UnmarshalJSON(data []byte) error {
 		StakingPoolFees   map[common.Hash]uint64        `json:"StakingPoolFees"`
 		OrderRewards      map[string]*OrderReward       `json:"OrderRewards"`
 		MakingVolume      map[common.Hash]*MakingVolume `json:"MakingVolume"`
-		LmRewardsPerShare map[common.Hash]*big.Int      `json:"LmRewardsPerShare,omitempty"`
-		LmLockedShare     map[string]map[uint64]uint64  `json:"LmLockedShare,omitempty"`
+		LmRewardsPerShare map[common.Hash]*big.Int      `json:"LmRewardsPerShare"`
+		LmLockedShare     map[string]map[uint64]uint64  `json:"LmLockedShare"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -800,16 +800,34 @@ func (p *PoolPairState) updateToDB(
 			}
 		}
 	}
-	for nftID, v := range p.lmLockedShare {
-		for key, value := range v {
-			err := statedb.StorePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID,
-				statedb.NewPdexv3PoolPairLmLockedShareStateWithValue(nftID, key, value),
-			)
-			if err != nil {
-				return err
+
+	for nftID, lmLockedShareChange := range poolPairChange.LmLockedShare {
+		if _, found := p.lmLockedShare[nftID]; !found {
+			for beaconHeight, _ := range lmLockedShareChange {
+				err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, nftID, beaconHeight)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			for beaconHeight, isChanged := range lmLockedShareChange {
+				if isChanged {
+					if amount, found := p.lmLockedShare[nftID][beaconHeight]; found {
+						err := statedb.StorePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID,
+							statedb.NewPdexv3PoolPairLmLockedShareStateWithValue(nftID, beaconHeight, amount),
+						)
+						if err != nil {
+							return err
+						}
+					} else {
+						err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, nftID, beaconHeight)
+						if err != nil {
+							return err
+						}
+					}
+				}
 			}
 		}
-
 	}
 
 	// store / delete orders

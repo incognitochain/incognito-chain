@@ -296,6 +296,16 @@ func DeletePdexv3PoolPairMakingVolume(
 	return nil
 }
 
+func DeletePdexv3PoolPairLmLockedShare(
+	stateDB *StateDB, poolPairID, nftID string, beaconHeight uint64,
+) error {
+	key := GeneratePdexv3PoolPairLmLockedShareObjectKey(poolPairID, nftID, beaconHeight)
+	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairLmLockedShareObjectType, key) {
+		return fmt.Errorf("Cannot delete pool pair lm locked share with ID %v - %v - %v", poolPairID, nftID, beaconHeight)
+	}
+	return nil
+}
+
 func StorePdexv3ShareTradingFee(
 	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3ShareTradingFeeState,
 ) error {
