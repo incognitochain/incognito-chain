@@ -78,6 +78,7 @@ func buildMetaInfo() {
 		IssuingBSCResponseMeta,
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
+		IssuingPLGResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 
@@ -146,6 +147,8 @@ func buildMetaInfo() {
 		BurningForDepositToSCRequestMetaV2,
 		ContractingRequestMeta,
 		BurningPBSCForDepositToSCRequestMeta,
+		BurningPLGRequestMeta,
+		BurningPLGForDepositToSCRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNormal,
@@ -190,6 +193,7 @@ func buildMetaInfo() {
 		Pdexv3MintBlockRewardMeta,
 		Pdexv3DistributeStakingRewardMeta,
 		Pdexv3WithdrawStakingRewardResponseMeta,
+		IssuingPRVERC20ResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNoInput,
@@ -239,6 +243,9 @@ func buildMetaInfo() {
 		IssuingPRVBEP20RequestMeta,
 		ContractingRequestMeta,
 		InitTokenRequestMeta,
+		IssuingPLGRequestMeta,
+		BurningPRVERC20RequestMeta,
+		BurningPRVBEP20RequestMeta,
 
 		ShardStakingMeta,
 		BeaconStakingMeta,
@@ -308,6 +315,7 @@ func buildMetaInfo() {
 	})
 
 	listSNoIn := []int{
+		IssuingPRVERC20ResponseMeta,
 		PDETradeResponseMeta,
 		PDEWithdrawalResponseMeta,
 		PDEContributionResponseMeta,
@@ -361,10 +369,12 @@ func buildMetaInfo() {
 		IssuingPRVBEP20RequestMeta,
 		IssuingPRVERC20RequestMeta,
 		IssuingBSCRequestMeta,
+		IssuingPLGRequestMeta,
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
+		IssuingPLGResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,

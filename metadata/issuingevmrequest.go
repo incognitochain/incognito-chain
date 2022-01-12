@@ -18,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -150,7 +149,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
 
-	if (iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta) && iReq.IncTokenID.String() != common.PRVIDStr {
+	if (iReq.Type == IssuingPRVBEP20RequestMeta || iReq.Type == IssuingPRVERC20RequestMeta) && iReq.IncTokenID.String() != common.PRVIDStr {
 		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, errors.New("Invalid token id"))
 	}
 
@@ -159,7 +158,8 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingBSCRequestMeta ||
-		iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
+		iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta ||
+		iReq.Type == IssuingPLGRequestMeta {
 		return true
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -219,16 +219,20 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	var protocol, host, port string
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
+	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta {
 		evmParam := config.Param().BSCParam
 		evmParam.GetFromEnv()
 		host = evmParam.Host
-	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta {
+	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta {
 		evmParam := config.Config().GethParam
 		evmParam.GetFromEnv()
 		protocol = evmParam.Protocol
 		host = evmParam.Host
 		port = evmParam.Port
+	} else if iReq.Type == IssuingPLGRequestMeta {
+		evmParam := config.Param().PLGParam
+		evmParam.GetFromEnv()
+		host = evmParam.Host
 	} else {
 		return nil, errors.New("[verifyProofAndParseReceipt] invalid metatype")
 	}
@@ -273,7 +277,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta {
+	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPLGRequestMeta {
 		if len(val) == 0 {
 			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
 		}
