@@ -219,9 +219,11 @@ func (sp *stateProcessorV2) matchContribution(
 	deletedWaitingContributions[matchContribution.PairHash()] = existedWaitingContribution
 	delete(waitingContributions, matchContribution.PairHash())
 
+	accessID := matchContributionValue.NftID()
 	contribStatus := v2.ContributionStatus{
 		Status:     common.PDEContributionAcceptedStatus,
 		PoolPairID: matchContributionValue.PoolPairID(),
+		AccessID:   &accessID,
 	}
 	contribStatusBytes, _ := json.Marshal(contribStatus)
 	err = statedb.TrackPdexv3Status(
@@ -301,6 +303,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		deletedWaitingContributions[matchAndReturnContribution.PairHash()] = waitingContribution
 		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {
+		accessID := matchAndReturnContributionValue.NftID()
 		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
 			contribStatus = v2.ContributionStatus{
 				Status:                  common.PDEContributionMatchedNReturnedStatus,
@@ -311,6 +314,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 				Token1ContributedAmount: matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount(),
 				Token1ReturnedAmount:    matchAndReturnAddLiquidity.ReturnAmount(),
 				PoolPairID:              matchAndReturnContributionValue.PoolPairID(),
+				AccessID:                &accessID,
 			}
 		} else {
 			contribStatus = v2.ContributionStatus{
@@ -322,6 +326,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 				Token0ContributedAmount: matchAndReturnContributionValue.Amount() - matchAndReturnAddLiquidity.ReturnAmount(),
 				Token0ReturnedAmount:    matchAndReturnAddLiquidity.ReturnAmount(),
 				PoolPairID:              matchAndReturnContributionValue.PoolPairID(),
+				AccessID:                &accessID,
 			}
 		}
 

@@ -19,6 +19,7 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -2238,6 +2239,7 @@ func Test_stateProducerV2_userMintNft(t *testing.T) {
 }
 
 func Test_stateProducerV2_staking(t *testing.T) {
+	initTestParams(t)
 	txReqID, err := common.Hash{}.NewHashFromStr("1111122222")
 	assert.Nil(t, err)
 	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
@@ -2308,6 +2310,34 @@ func Test_stateProducerV2_staking(t *testing.T) {
 	valEnv4 = tx_generic.WithShardID(valEnv4, 1)
 	validTx.On("GetValidationEnv").Return(valEnv4)
 	validTx.On("Hash").Return(txReqID)
+	//
+
+	otaReceivers := map[common.Hash]privacy.OTAReceiver{
+		common.PdexAccessCoinID: otaReceiver0,
+	}
+
+	// newAccessIDTx
+	newAccessIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, utils.EmptyString, 100, metadataPdexv3.AccessOption{}, otaReceivers,
+	)
+	newAccessIDTx := &metadataMocks.Transaction{}
+	newAccessIDTx.On("GetMetadata").Return(newAccessIDMetadata)
+	valEnv5 := tx_generic.DefaultValEnv()
+	valEnv5 = tx_generic.WithShardID(valEnv5, 1)
+	newAccessIDTx.On("GetValidationEnv").Return(valEnv5)
+	newAccessIDTx.On("Hash").Return(txReqID)
+	//
+
+	// oldAccessIDTx
+	oldAccessIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
+		common.PRVIDStr, utils.EmptyString, 100, metadataPdexv3.AccessOption{AccessID: &common.Hash{}}, otaReceivers,
+	)
+	oldAccessIDTx := &metadataMocks.Transaction{}
+	oldAccessIDTx.On("GetMetadata").Return(oldAccessIDMetadata)
+	valEnv6 := tx_generic.DefaultValEnv()
+	valEnv6 = tx_generic.WithShardID(valEnv6, 1)
+	oldAccessIDTx.On("GetValidationEnv").Return(valEnv6)
+	oldAccessIDTx.On("Hash").Return(txReqID)
 	//
 
 	type fields struct {
@@ -2400,6 +2430,64 @@ func Test_stateProducerV2_staking(t *testing.T) {
 			name: "Valid input",
 			args: args{
 				txs: []metadata.Transaction{validTx},
+				nftIDs: map[string]uint64{
+					nftID1: 100,
+				},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{acceptInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 100,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:           100,
+							rewards:             map[common.Hash]uint64{},
+							lastRewardsPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					rewardsPerShare: map[common.Hash]*big.Int{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "New accessID",
+			args: args{
+				txs:    []metadata.Transaction{newAccessIDTx},
+				nftIDs: map[string]uint64{},
+				stakingPoolStates: map[string]*StakingPoolState{
+					common.PRVIDStr: &StakingPoolState{
+						stakers: map[string]*Staker{},
+					},
+				},
+				beaconHeight: 10,
+			},
+			want: [][]string{acceptInst},
+			want1: map[string]*StakingPoolState{
+				common.PRVIDStr: &StakingPoolState{
+					liquidity: 100,
+					stakers: map[string]*Staker{
+						nftID1: &Staker{
+							liquidity:           100,
+							rewards:             map[common.Hash]uint64{},
+							lastRewardsPerShare: map[common.Hash]*big.Int{},
+						},
+					},
+					rewardsPerShare: map[common.Hash]*big.Int{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Old accessID",
+			args: args{
+				txs: []metadata.Transaction{oldAccessIDTx},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},

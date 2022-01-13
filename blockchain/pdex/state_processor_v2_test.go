@@ -364,7 +364,8 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 				},
 			},
 			want3: &v2utils.ContributionStatus{
-				Status: common.PDEContributionAcceptedStatus,
+				Status:   common.PDEContributionAcceptedStatus,
+				AccessID: nftHash,
 			},
 			wantErr: false,
 		},
@@ -626,6 +627,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				Token1ID:                token1ID.String(),
 				Token1ContributedAmount: 200,
 				PoolPairID:              poolPairID,
+				AccessID:                nftHash,
 			},
 			wantErr: false,
 		},

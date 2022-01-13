@@ -14,14 +14,15 @@ type MintNftStatus struct {
 }
 
 type ContributionStatus struct {
-	Status                  byte   `json:"Status"`
-	Token0ID                string `json:"Token0ID"`
-	Token0ContributedAmount uint64 `json:"Token0ContributedAmount"`
-	Token0ReturnedAmount    uint64 `json:"Token0ReturnedAmount"`
-	Token1ID                string `json:"Token1ID"`
-	Token1ContributedAmount uint64 `json:"Token1ContributedAmount"`
-	Token1ReturnedAmount    uint64 `json:"Token1ReturnedAmount"`
-	PoolPairID              string `json:"PoolPairID"`
+	Status                  byte         `json:"Status"`
+	Token0ID                string       `json:"Token0ID"`
+	Token0ContributedAmount uint64       `json:"Token0ContributedAmount"`
+	Token0ReturnedAmount    uint64       `json:"Token0ReturnedAmount"`
+	Token1ID                string       `json:"Token1ID"`
+	Token1ContributedAmount uint64       `json:"Token1ContributedAmount"`
+	Token1ReturnedAmount    uint64       `json:"Token1ReturnedAmount"`
+	PoolPairID              string       `json:"PoolPairID"`
+	AccessID                *common.Hash `json:"AccessID,omitempty"`
 }
 
 type WithdrawStatus struct {
