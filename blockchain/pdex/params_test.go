@@ -22,7 +22,7 @@ func TestParams_IsZeroValue(t *testing.T) {
 		OrderTradingRewardRatioBPS        map[string]uint
 		OrderLiquidityMiningBPS           map[string]uint
 		DAOContributingPercent            uint
-		MiningRewardPendingBlocks         uint
+		MiningRewardPendingBlocks         uint64
 		OrderMiningRewardRatioBPS         map[string]uint
 	}
 	tests := []struct {

@@ -65,6 +65,7 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 		waitingContributions        map[string]rawdbv2.Pdexv3Contribution
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		nftIDs                      map[string]bool
+		params                      *Params
 	}
 	tests := []struct {
 		name    string
@@ -114,6 +115,7 @@ func Test_stateProcessorV2_addLiquidity(t *testing.T) {
 				tt.args.stateDB, tt.args.inst,
 				tt.args.beaconHeight, tt.args.poolPairs,
 				tt.args.waitingContributions, tt.args.deletedWaitingContributions,
+				tt.args.params,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.addLiquidity() error = %v, wantErr %v", err, tt.wantErr)
@@ -394,6 +396,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
 		nftIDs                      map[string]uint64
+		params                      *Params
 	}
 	tests := []struct {
 		name    string
@@ -427,6 +430,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs:                   map[string]*PoolPairState{},
 				nftIDs:                      map[string]uint64{},
+				params:                      NewParams(),
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
@@ -438,7 +442,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 			want2: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 200, 100, 400,
+						*token0ID, *token1ID, 200, 0, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
 					),
@@ -472,6 +476,7 @@ func Test_stateProcessorV2_matchContribution(t *testing.T) {
 				tt.args.stateDB, tt.args.inst,
 				tt.args.beaconHeight, tt.args.waitingContributions,
 				tt.args.deletedWaitingContributions, tt.args.poolPairs,
+				tt.args.params,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.matchContribution() error = %v, wantErr %v", err, tt.wantErr)
@@ -551,6 +556,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 		deletedWaitingContributions map[string]rawdbv2.Pdexv3Contribution
 		poolPairs                   map[string]*PoolPairState
 		nftIDs                      map[string]uint64
+		params                      *Params
 	}
 	tests := []struct {
 		name    string
@@ -586,7 +592,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 200, 100, 400,
+							*token0ID, *token1ID, 200, 0, 100, 400,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(800), 20000,
 						),
@@ -603,6 +609,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 					},
 				},
 				nftIDs: map[string]uint64{},
+				params: NewParams(),
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
@@ -614,7 +621,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 			want2: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
+						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -659,7 +666,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
+							*token0ID, *token1ID, 300, 0, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -678,6 +685,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				nftIDs: map[string]uint64{
 					nftID: 100,
 				},
+				params: NewParams(),
 			},
 			want: map[string]rawdbv2.Pdexv3Contribution{},
 			want1: map[string]rawdbv2.Pdexv3Contribution{
@@ -689,7 +697,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 			want2: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
+						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -726,6 +734,7 @@ func Test_stateProcessorV2_matchAndReturnContribution(t *testing.T) {
 				tt.args.stateDB, tt.args.inst,
 				tt.args.beaconHeight, tt.args.waitingContributions,
 				tt.args.deletedWaitingContributions, tt.args.poolPairs,
+				tt.args.params,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.matchAndReturnContribution() error = %v, wantErr %v", err, tt.wantErr)
@@ -837,7 +846,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
+							*token0ID, *token1ID, 300, 0, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -859,7 +868,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
+						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -887,7 +896,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
+							*token0ID, *token1ID, 300, 0, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -909,7 +918,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
+						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -937,7 +946,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
+							*token0ID, *token1ID, 300, 0, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -959,7 +968,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
+						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -987,7 +996,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
+							*token0ID, *token1ID, 300, 0, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1009,7 +1018,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 150, 600,
+						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -1040,7 +1049,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 150, 600,
+							*token0ID, *token1ID, 300, 0, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1062,7 +1071,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 100, 600,
+						*token0ID, *token1ID, 300, 0, 100, 600,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -1073,10 +1082,11 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 							lastLPFeesPerShare: map[common.Hash]*big.Int{},
 						},
 					},
-					orderbook:       Orderbook{[]*Order{}},
-					lpFeesPerShare:  map[common.Hash]*big.Int{},
-					protocolFees:    map[common.Hash]uint64{},
-					stakingPoolFees: map[common.Hash]uint64{},
+					orderbook:         Orderbook{[]*Order{}},
+					lpFeesPerShare:    map[common.Hash]*big.Int{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{},
+					protocolFees:      map[common.Hash]uint64{},
+					stakingPoolFees:   map[common.Hash]uint64{},
 				},
 			},
 			wantErr: false,
@@ -1095,13 +1105,14 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
-						lpFeesPerShare:  map[common.Hash]*big.Int{},
-						protocolFees:    map[common.Hash]uint64{},
-						stakingPoolFees: map[common.Hash]uint64{},
+						lpFeesPerShare:    map[common.Hash]*big.Int{},
+						lmRewardsPerShare: map[common.Hash]*big.Int{},
+						protocolFees:      map[common.Hash]uint64{},
+						stakingPoolFees:   map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID: &Share{
 								amount:             300,
@@ -1117,13 +1128,14 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 200, 100, 400,
+						*token0ID, *token1ID, 200, 0, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
 					),
-					lpFeesPerShare:  map[common.Hash]*big.Int{},
-					protocolFees:    map[common.Hash]uint64{},
-					stakingPoolFees: map[common.Hash]uint64{},
+					lpFeesPerShare:    map[common.Hash]*big.Int{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{},
+					protocolFees:      map[common.Hash]uint64{},
+					stakingPoolFees:   map[common.Hash]uint64{},
 					shares: map[string]*Share{
 						nftID: &Share{
 							amount:             200,
@@ -1501,7 +1513,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1528,7 +1540,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 200, 100, 400,
+						*token0ID, *token1ID, 200, 0, 100, 400,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(800), 20000,
 					),
@@ -1571,7 +1583,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1598,7 +1610,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 100, 100, 200,
+						*token0ID, *token1ID, 100, 0, 100, 200,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(400), 20000,
 					),
@@ -1641,7 +1653,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1673,7 +1685,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 150, 100, 300,
+						*token0ID, *token1ID, 150, 0, 100, 300,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(600), 20000,
 					),
@@ -1731,7 +1743,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1770,7 +1782,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 150, 100, 300,
+						*token0ID, *token1ID, 150, 0, 100, 300,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(600), 20000,
 					),
@@ -2034,7 +2046,7 @@ func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -2064,7 +2076,7 @@ func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 100, 600,
+						*token0ID, *token1ID, 300, 0, 100, 600,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -2105,7 +2117,7 @@ func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 100, 600,
+							*token0ID, *token1ID, 300, 0, 100, 600,
 							big.NewInt(0).SetUint64(200),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -2141,7 +2153,7 @@ func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
 			want: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 100, 600,
+						*token0ID, *token1ID, 300, 0, 100, 600,
 						big.NewInt(0).SetUint64(200),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),

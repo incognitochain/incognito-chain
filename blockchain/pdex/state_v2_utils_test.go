@@ -113,9 +113,11 @@ func TestShare_getDiff(t *testing.T) {
 	assert.Nil(t, err)
 
 	type fields struct {
-		amount             uint64
-		tradingFees        map[common.Hash]uint64
-		lastLPFeesPerShare map[common.Hash]*big.Int
+		amount                uint64
+		lmLockedAmount        uint64
+		tradingFees           map[common.Hash]uint64
+		lastLPFeesPerShare    map[common.Hash]*big.Int
+		lastLMRewardsPerShare map[common.Hash]*big.Int
 	}
 	type args struct {
 		compareShare *Share
@@ -130,7 +132,8 @@ func TestShare_getDiff(t *testing.T) {
 		{
 			name: "Store, update and delete fees",
 			fields: fields{
-				amount: 100,
+				amount:         100,
+				lmLockedAmount: 0,
 				tradingFees: map[common.Hash]uint64{
 					common.PRVCoinID: 200,
 					*tokenID:         300,
@@ -139,10 +142,14 @@ func TestShare_getDiff(t *testing.T) {
 					common.PRVCoinID: big.NewInt(200),
 					*tokenID:         big.NewInt(300),
 				},
+				lastLMRewardsPerShare: map[common.Hash]*big.Int{
+					common.PRVCoinID: big.NewInt(400),
+				},
 			},
 			args: args{
 				compareShare: &Share{
-					amount: 100,
+					amount:         100,
+					lmLockedAmount: 0,
 					tradingFees: map[common.Hash]uint64{
 						common.PRVCoinID:  100,
 						common.PDEXCoinID: 200,
@@ -150,6 +157,9 @@ func TestShare_getDiff(t *testing.T) {
 					lastLPFeesPerShare: map[common.Hash]*big.Int{
 						common.PRVCoinID:  big.NewInt(100),
 						common.PDEXCoinID: big.NewInt(200),
+					},
+					lastLmRewardsPerShare: map[common.Hash]*big.Int{
+						common.PRVCoinID: big.NewInt(400),
 					},
 				},
 				shareChange: &v2utils.ShareChange{},
@@ -166,15 +176,17 @@ func TestShare_getDiff(t *testing.T) {
 					common.PDEXIDStr: true,
 					tokenID.String(): true,
 				},
+				LastLmRewardsPerShare: map[string]bool{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			share := &Share{
-				amount:             tt.fields.amount,
-				tradingFees:        tt.fields.tradingFees,
-				lastLPFeesPerShare: tt.fields.lastLPFeesPerShare,
+				amount:                tt.fields.amount,
+				tradingFees:           tt.fields.tradingFees,
+				lastLPFeesPerShare:    tt.fields.lastLPFeesPerShare,
+				lastLmRewardsPerShare: tt.fields.lastLMRewardsPerShare,
 			}
 			if got := share.getDiff(tt.args.compareShare, tt.args.shareChange); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Share.getDiff() = %v, want %v", got, tt.want)

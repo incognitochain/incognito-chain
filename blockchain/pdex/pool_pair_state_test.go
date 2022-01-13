@@ -44,7 +44,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -63,7 +63,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 600,
+					200, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -92,7 +92,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -111,7 +111,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 600,
+					200, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -196,7 +196,7 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -266,7 +266,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 600,
+					200, 0, 150, 600,
 					big.NewInt(0).SetUint64(100),
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
@@ -285,7 +285,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 600,
+					200, 0, 150, 600,
 					big.NewInt(0).SetUint64(150),
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
@@ -314,7 +314,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 600,
+					200, 0, 150, 600,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -333,7 +333,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 600,
+					200, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -418,7 +418,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 600,
+					300, 0, 150, 600,
 					big.NewInt(0).SetUint64(150),
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
@@ -446,7 +446,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(100),
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
@@ -470,7 +470,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 600,
+					300, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -498,7 +498,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -528,7 +528,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				protocolFees:    tt.fields.protocolFees,
 				stakingPoolFees: tt.fields.stakingPoolFees,
 			}
-			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount, tt.args.beaconHeight)
+			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PoolPairState.deductShare() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -587,7 +587,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 600,
+					300, 0, 150, 600,
 					big.NewInt(0).SetUint64(150),
 					big.NewInt(0).SetUint64(600),
 					metadataPdexv3.BaseAmplifier,
@@ -614,7 +614,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 100, 400,
+					300, 0, 100, 400,
 					big.NewInt(0).SetUint64(100),
 					big.NewInt(0).SetUint64(400),
 					metadataPdexv3.BaseAmplifier,
@@ -637,7 +637,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 600,
+					300, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -664,7 +664,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 100, 400,
+					300, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -752,7 +752,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 600,
+					300, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -772,7 +772,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 100, 600,
+					300, 0, 100, 600,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -802,7 +802,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 600,
+					300, 0, 150, 600,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -822,7 +822,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					300, 150, 400,
+					300, 0, 150, 400,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -852,7 +852,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -872,7 +872,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 150, 400,
+					200, 0, 150, 400,
 					big.NewInt(0).SetUint64(300),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -902,7 +902,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 400,
+					200, 0, 100, 400,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(800),
 					20000,
@@ -922,7 +922,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					200, 100, 600,
+					200, 0, 100, 600,
 					big.NewInt(0).SetUint64(200),
 					big.NewInt(0).SetUint64(1200),
 					20000,
@@ -952,7 +952,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fields: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					18446744073709551610, 18446744073709551610, 18446744073709551610,
+					18446744073709551610, 0, 18446744073709551610, 18446744073709551610,
 					temp,
 					temp,
 					20000,
@@ -972,7 +972,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 			fieldsAfterProcess: fields{
 				state: *rawdbv2.NewPdexv3PoolPairWithValue(
 					*token0ID, *token1ID,
-					18446744073709551610, 18446744073709551610, 18446744073709551615,
+					18446744073709551610, 0, 18446744073709551610, 18446744073709551615,
 					temp, temp0,
 					20000,
 				),
@@ -1030,11 +1030,11 @@ func TestPoolPairState_getDiff(t *testing.T) {
 	assert.Nil(t, err)
 
 	state := rawdbv2.NewPdexv3PoolPairWithValue(
-		*token0ID, *token1ID, 200, 100, 400,
+		*token0ID, *token1ID, 200, 0, 100, 400,
 		big.NewInt(200), big.NewInt(800), 20000,
 	)
 	compareState := rawdbv2.NewPdexv3PoolPairWithValue(
-		*token0ID, *token1ID, 200, 100, 400,
+		*token0ID, *token1ID, 200, 0, 100, 400,
 		big.NewInt(200), big.NewInt(800), 20000,
 	)
 
@@ -1234,7 +1234,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	assert.Nil(t, err)
 
 	state := rawdbv2.NewPdexv3PoolPairWithValue(
-		*token0ID, *token1ID, 200, 100, 400,
+		*token0ID, *token1ID, 200, 0, 100, 400,
 		big.NewInt(200), big.NewInt(800), 20000,
 	)
 
