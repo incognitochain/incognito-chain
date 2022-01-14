@@ -983,6 +983,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if isExistedShare {
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
+			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
 		if isExistedOrderReward {

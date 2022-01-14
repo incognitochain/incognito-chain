@@ -1038,8 +1038,10 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 						},
 						shares: map[string]*Share{
 							nftID1: &Share{
-								amount:      1900,
-								tradingFees: map[common.Hash]uint64{},
+								amount: 1900,
+								tradingFees: map[common.Hash]uint64{
+									common.PRVCoinID: 0,
+								},
 								lastLPFeesPerShare: map[common.Hash]*big.Int{
 									common.PRVCoinID: big.NewInt(100),
 								},
@@ -2023,8 +2025,10 @@ func Test_stateV2_Process(t *testing.T) {
 						},
 						shares: map[string]*Share{
 							nftID1: &Share{
-								amount:      1900,
-								tradingFees: map[common.Hash]uint64{},
+								amount: 1900,
+								tradingFees: map[common.Hash]uint64{
+									common.PRVCoinID: 0,
+								},
 								lastLPFeesPerShare: map[common.Hash]*big.Int{
 									common.PRVCoinID: big.NewInt(100),
 								},
