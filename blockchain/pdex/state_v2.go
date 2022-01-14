@@ -138,7 +138,18 @@ func (s *stateV2) Process(env StateEnvironment) error {
 						releaseAmount = poolPair.shares[shareID].lmLockedAmount
 					}
 
-					var err error
+					shareIDBytes, err := common.Hash{}.NewHashFromStr(shareID)
+					if err != nil {
+						return fmt.Errorf("Invalid shareID: %s", shareID)
+					}
+					poolPair.shares[shareID].tradingFees, err = poolPair.RecomputeLPRewards(*shareIDBytes)
+					if err != nil {
+						return fmt.Errorf("Error when tracking LP reward: %v", err)
+					}
+
+					poolPair.shares[shareID].lastLPFeesPerShare = poolPair.LpFeesPerShare()
+					poolPair.shares[shareID].lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
+
 					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
 					if err != nil {
 						return errors.New("newShare.lmLockedAmount is out of range")
@@ -360,7 +371,18 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 						releaseAmount = poolPair.shares[shareID].lmLockedAmount
 					}
 
-					var err error
+					shareIDBytes, err := common.Hash{}.NewHashFromStr(shareID)
+					if err != nil {
+						return instructions, fmt.Errorf("Invalid shareID: %s", shareID)
+					}
+					poolPair.shares[shareID].tradingFees, err = poolPair.RecomputeLPRewards(*shareIDBytes)
+					if err != nil {
+						return instructions, fmt.Errorf("Error when tracking LP reward: %v", err)
+					}
+
+					poolPair.shares[shareID].lastLPFeesPerShare = poolPair.LpFeesPerShare()
+					poolPair.shares[shareID].lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
+
 					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
 					if err != nil {
 						return instructions, err
