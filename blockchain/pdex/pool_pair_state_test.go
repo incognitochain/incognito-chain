@@ -453,9 +453,10 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:             200,
-						tradingFees:        map[common.Hash]uint64{},
-						lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						amount:                200,
+						tradingFees:           map[common.Hash]uint64{},
+						lastLPFeesPerShare:    map[common.Hash]*big.Int{},
+						lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook:       Orderbook{},
@@ -505,9 +506,10 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				),
 				shares: map[string]*Share{
 					nftID: &Share{
-						amount:             200,
-						tradingFees:        map[common.Hash]uint64{},
-						lastLPFeesPerShare: map[common.Hash]*big.Int{},
+						amount:                200,
+						tradingFees:           map[common.Hash]uint64{},
+						lastLPFeesPerShare:    map[common.Hash]*big.Int{},
+						lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderbook:       Orderbook{},
@@ -546,10 +548,10 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				t.Errorf("fieldsAfterProcess.state got = %v, want %v", p.state, tt.fieldsAfterProcess.state)
 			}
 			if !reflect.DeepEqual(p.shares, tt.fieldsAfterProcess.shares) {
-				t.Errorf("fieldsAfterProcess.state got = %v, want %v", p.shares, tt.fieldsAfterProcess.shares)
+				t.Errorf("fieldsAfterProcess.shares got = %v, want %v", p.shares, tt.fieldsAfterProcess.shares)
 			}
 			if !reflect.DeepEqual(p.orderbook, tt.fieldsAfterProcess.orderbook) {
-				t.Errorf("fieldsAfterProcess.state got = %v, want %v", p.orderbook, tt.fieldsAfterProcess.orderbook)
+				t.Errorf("fieldsAfterProcess.orderbook got = %v, want %v", p.orderbook, tt.fieldsAfterProcess.orderbook)
 			}
 		})
 	}
