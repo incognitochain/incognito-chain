@@ -640,8 +640,6 @@ func (p *PoolPairState) RecomputeLPRewards(
 		}
 	}
 
-	fmt.Printf("ERR Reward 2: %+v\n", result)
-
 	return result, nil
 }
 
