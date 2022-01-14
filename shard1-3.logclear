@@ -1,0 +1,44 @@
+NumCPU 8
+config/local
+2022/01/14 14:29:10 Using network param file for local
+2022-01-14 14:29:10.717 incognito.go:105 [INF] Server log: Version 1.21.0-beta
+2022-01-14 14:29:10.718 incognito.go:113 [ERR] Server log: could not open connection to leveldb
+2022-01-14 14:29:10.718 incognito.go:114 [ERR] Server log: Open database error resource temporarily unavailable
+levelvdb.OpenFile data/shard1-3/local/block/beacon
+github.com/incognitochain/incognito-chain/incdb/lvdb.open
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incdb/lvdb/db.go:66
+github.com/incognitochain/incognito-chain/incdb/lvdb.openDriver
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incdb/lvdb/db.go:50
+github.com/incognitochain/incognito-chain/incdb.OpenMultipleDB
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incdb/driver.go:52
+main.mainMaster
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incognito.go:110
+main.main
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incognito.go:269
+runtime.main
+	/usr/local/go/src/runtime/proc.go:255
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1581
+2022-01-14 14:29:10.718 panic.go:1038 [WRN] Server log: Shutdown complete
+panic: Open database error resource temporarily unavailable
+levelvdb.OpenFile data/shard1-3/local/block/beacon
+github.com/incognitochain/incognito-chain/incdb/lvdb.open
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incdb/lvdb/db.go:66
+github.com/incognitochain/incognito-chain/incdb/lvdb.openDriver
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incdb/lvdb/db.go:50
+github.com/incognitochain/incognito-chain/incdb.OpenMultipleDB
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incdb/driver.go:52
+main.mainMaster
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incognito.go:110
+main.main
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incognito.go:269
+runtime.main
+	/usr/local/go/src/runtime/proc.go:255
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1581
+
+goroutine 1 [running]:
+main.mainMaster(0x0)
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incognito.go:115 +0x157c
+main.main()
+	/Users/macbook/go/src/github.com/incognitochain/incognito-chain/incognito.go:269 +0x2b6

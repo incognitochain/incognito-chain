@@ -145,7 +145,7 @@ func generatePdexv3PoolPairLmLockedShareObjectPrefix(poolPairID string) []byte {
 
 func GeneratePdexv3PoolPairLmLockedShareObjectKey(poolPairID, nftID string, beaconHeight uint64) common.Hash {
 	prefixHash := generatePdexv3PoolPairLmLockedShareObjectPrefix(poolPairID)
-	valueHash := common.HashH(append([]byte(nftID), []byte(nftID)...))
+	valueHash := common.HashH(append([]byte(nftID), common.Uint64ToBytes(beaconHeight)...))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 
