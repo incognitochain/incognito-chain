@@ -164,7 +164,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 				return
 			} else {
 				Logger.log.Info("Websocket Connection from Client %+v counter error %+v \n", ws.RemoteAddr(), err)
-				continue
+				break
 			}
 		}
 		Logger.log.Infof("Handle Websocket Connection from Client %+v ", ws.RemoteAddr())
