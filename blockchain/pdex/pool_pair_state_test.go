@@ -1041,14 +1041,16 @@ func TestPoolPairState_getDiff(t *testing.T) {
 	)
 
 	type fields struct {
-		makingVolume    map[common.Hash]*MakingVolume
-		state           rawdbv2.Pdexv3PoolPair
-		shares          map[string]*Share
-		orderRewards    map[string]*OrderReward
-		orderbook       Orderbook
-		lpFeesPerShare  map[common.Hash]*big.Int
-		protocolFees    map[common.Hash]uint64
-		stakingPoolFees map[common.Hash]uint64
+		makingVolume      map[common.Hash]*MakingVolume
+		state             rawdbv2.Pdexv3PoolPair
+		shares            map[string]*Share
+		orderRewards      map[string]*OrderReward
+		orderbook         Orderbook
+		lpFeesPerShare    map[common.Hash]*big.Int
+		lmRewardsPerShare map[common.Hash]*big.Int
+		protocolFees      map[common.Hash]uint64
+		stakingPoolFees   map[common.Hash]uint64
+		lmLockedShare     map[string]map[uint64]uint64
 	}
 	type args struct {
 		poolPairID      string
@@ -1088,6 +1090,7 @@ func TestPoolPairState_getDiff(t *testing.T) {
 							common.PRVCoinID: big.NewInt(200),
 							*token0ID:        big.NewInt(300),
 						},
+						lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 					},
 				},
 				orderRewards: map[string]*OrderReward{
@@ -1097,10 +1100,12 @@ func TestPoolPairState_getDiff(t *testing.T) {
 						},
 					},
 				},
-				orderbook:       Orderbook{},
-				lpFeesPerShare:  map[common.Hash]*big.Int{},
-				protocolFees:    map[common.Hash]uint64{},
-				stakingPoolFees: map[common.Hash]uint64{},
+				orderbook:         Orderbook{},
+				lpFeesPerShare:    map[common.Hash]*big.Int{},
+				lmRewardsPerShare: map[common.Hash]*big.Int{},
+				protocolFees:      map[common.Hash]uint64{},
+				stakingPoolFees:   map[common.Hash]uint64{},
+				lmLockedShare:     map[string]map[uint64]uint64{},
 			},
 			args: args{
 				poolPairID:     "id",
@@ -1131,6 +1136,7 @@ func TestPoolPairState_getDiff(t *testing.T) {
 								common.PRVCoinID:  big.NewInt(100),
 								common.PDEXCoinID: big.NewInt(200),
 							},
+							lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderRewards: map[string]*OrderReward{
@@ -1145,10 +1151,12 @@ func TestPoolPairState_getDiff(t *testing.T) {
 							},
 						},
 					},
-					orderbook:       Orderbook{},
-					lpFeesPerShare:  map[common.Hash]*big.Int{},
-					protocolFees:    map[common.Hash]uint64{},
-					stakingPoolFees: map[common.Hash]uint64{},
+					orderbook:         Orderbook{},
+					lpFeesPerShare:    map[common.Hash]*big.Int{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{},
+					protocolFees:      map[common.Hash]uint64{},
+					stakingPoolFees:   map[common.Hash]uint64{},
+					lmLockedShare:     map[string]map[uint64]uint64{},
 				},
 			},
 			want: &v2utils.PoolPairChange{
@@ -1166,6 +1174,7 @@ func TestPoolPairState_getDiff(t *testing.T) {
 							common.PDEXIDStr:  true,
 							token0ID.String(): true,
 						},
+						LastLmRewardsPerShare: map[string]bool{},
 					},
 				},
 				OrderIDs:        map[string]bool{},
@@ -1196,6 +1205,8 @@ func TestPoolPairState_getDiff(t *testing.T) {
 						},
 					},
 				},
+				LmLockedShare:     map[string]map[uint64]bool{},
+				LmRewardsPerShare: map[string]bool{},
 			},
 			want1: &v2utils.StateChange{
 				PoolPairs:    map[string]*v2utils.PoolPairChange{},
