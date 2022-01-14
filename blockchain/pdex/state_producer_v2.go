@@ -1638,7 +1638,13 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			continue
 		}
 
-		share, isExisted := pool.stakers[metaData.NftID.String()]
+		accessID := common.Hash{}
+		if metaData.AccessOption.UseNft() {
+			accessID = *metaData.NftID
+		} else {
+			accessID = *metaData.AccessID
+		}
+		share, isExisted := pool.stakers[accessID.String()]
 		if !isExisted {
 			instructions = append(instructions, rejectInst...)
 			continue
