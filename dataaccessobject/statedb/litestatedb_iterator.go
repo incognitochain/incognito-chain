@@ -77,7 +77,6 @@ func (l *LiteStateDBIterator) whichZoneToSelect() int {
 			return 1
 		}
 	} else {
-
 		return 0
 	}
 	return 0
@@ -88,6 +87,9 @@ func (l *LiteStateDBIterator) Next() bool {
 	if selectedZone == 0 {
 		if !l.firstCall { //the first call is init call in Next() iterator, db already init, so need to bypass
 			l.firstCall = true
+			if l.dbIterator.Key() == nil {
+				return false
+			}
 			return true
 		}
 		if ok := l.dbIterator.Next(); !ok { //if db dont have next, check mem, else increase db index
@@ -112,13 +114,12 @@ func (l *LiteStateDBIterator) Next() bool {
 func (l *LiteStateDBIterator) Key() []byte {
 	selectedZone := l.whichZoneToSelect()
 	if selectedZone == 0 {
-		return l.dbIterator.Key()
+		return l.dbIterator.Key()[len(PREFIX_LITESTATEDB):]
 	} else {
-
 		if l.memIndex >= len(l.memKeySort) {
 			return []byte{}
 		}
-		return l.memKeySort[l.memIndex]
+		return l.memKeySort[l.memIndex][len(PREFIX_LITESTATEDB):]
 	}
 }
 

@@ -42,7 +42,11 @@ func TestLiteStateDB(t *testing.T) {
 		randValue = append(randValue, v)
 	}
 	//flow test
-
+	emptyIter := txDB.liteStateDB.NewIteratorwithPrefix([]byte{})
+	if emptyIter.Next() {
+		t.Error("Empty iterator must return false immediately")
+		t.FailNow()
+	}
 	/*
 		Test Set&Get&Copy LiteStateDB
 	*/
@@ -136,7 +140,7 @@ func TestLiteStateDB(t *testing.T) {
 	txDB.Finalized(db, aggHash4)
 
 	//check finalized database
-	iterator := txDB.liteStateDB.db.NewIteratorWithPrefix([]byte(PREFIX_LITESTATEDB))
+	iterator := txDB.liteStateDB.db.NewIteratorWithPrefix([]byte{})
 	iteratorKeyArray := []string{}
 	dataSizeArray := []string{}
 	for iterator.Next() {
@@ -162,12 +166,12 @@ func TestLiteStateDB(t *testing.T) {
 	}
 
 	//iterator on lite statedb
-	iterator = txDB.liteStateDB.NewIteratorwithPrefix([]byte(PREFIX_LITESTATEDB))
+	iterator = txDB.liteStateDB.NewIteratorwithPrefix([]byte{})
 	iteratorKeyArray = []string{}
 	dataSizeArray = []string{}
 	for iterator.Next() {
 		k := iterator.Key()
-		h, e := common.Hash{}.NewHash(k[len(PREFIX_LITESTATEDB):])
+		h, e := common.Hash{}.NewHash(k[:])
 		if e != nil {
 			panic(e)
 		}

@@ -200,6 +200,7 @@ func (stateDB *LiteStateDB) NewIteratorwithPrefix(prefix []byte) incdb.Iterator 
 	kvMap := map[string][]byte{}
 	stateDB.headStateNode.replay(kvMap)
 	//fmt.Println("kvMap", kvMap)
+	prefix = append([]byte(PREFIX_LITESTATEDB), prefix...)
 	iter := NewLiteStateDBIterator(stateDB.db, prefix, kvMap)
 	return iter
 }
