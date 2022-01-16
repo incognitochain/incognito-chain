@@ -456,9 +456,6 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 		}
 	} else {
 		if len(proof.GetInputCoins()) == 0 {
-			if (metaData == nil) && (txNormal.GetValidationEnv().TxAction() != common.TxActInit) && (txNormal.GetType() == common.TxTokenConversionType) {
-				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
-			}
 			if metaData != nil {
 				metaType := metaData.GetType()
 				if !metadata.NoInputHasOutput(metaType) {
