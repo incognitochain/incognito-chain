@@ -44,8 +44,9 @@ func collectStatefulActions(
 			metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
 			metadata.IssuingBSCRequestMeta,
-			metadataCommon.IssuingPRVERC20RequestMeta,
-			metadataCommon.IssuingPRVBEP20RequestMeta,
+			metadata.IssuingPRVERC20RequestMeta,
+			metadata.IssuingPRVBEP20RequestMeta,
+			metadata.IssuingPLGRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -222,7 +223,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				if uniqTx != nil {
 					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
 				}
-			case metadataCommon.IssuingPRVERC20RequestMeta:
+			case metadata.IssuingPRVERC20RequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					beaconBestState,
@@ -240,7 +241,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				if uniqTx != nil {
 					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTx)
 				}
-			case metadataCommon.IssuingPRVBEP20RequestMeta:
+			case metadata.IssuingPRVBEP20RequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					beaconBestState,
@@ -258,6 +259,25 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				if uniqTx != nil {
 					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTx)
 				}
+			case metadata.IssuingPLGRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqPLGTxsUsed,
+					config.Param().PlgContractAddressStr,
+					common.PLGPrefix,
+					statedb.IsPLGTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqPLGTxsUsed = append(accumulatedValues.UniqPLGTxsUsed, uniqTx)
+				}
+
 			case metadata.PDEContributionMeta:
 				pdeContributionActions = append(pdeContributionActions, action)
 			case metadata.PDEPRVRequiredContributionRequestMeta:
