@@ -2,7 +2,6 @@ package pdex
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -1661,8 +1660,6 @@ func Test_stateProcessorV2_feeTrackingAddLiquidity(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
 				t.Errorf("stateProcessorV2.matchContribution() got2 = %v, want %v", got2, tt.want2)
-				fmt.Printf("got: %v\n", getStrPoolPairState(got2[poolPairID]))
-				fmt.Printf("want: %v\n", getStrPoolPairState(tt.want2[poolPairID]))
 				return
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {

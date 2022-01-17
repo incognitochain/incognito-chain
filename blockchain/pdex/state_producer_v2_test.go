@@ -1463,12 +1463,12 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	invalidPoolPairIDTx.On("Hash").Return(txHash)
 
 	// invalid pool pair
-	// rejectPoolPairInst := v2utils.BuildWithdrawLPFeeInsts(
-	// 	"123", *nftHash,
-	// 	map[common.Hash]metadataPdexv3.ReceiverInfo{},
-	// 	1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
-	// )[0]
-	// assert.Nil(t, err)
+	rejectPoolPairInst := v2utils.BuildWithdrawLPFeeInsts(
+		"123", *nftHash,
+		map[common.Hash]metadataPdexv3.ReceiverInfo{},
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+	)[0]
+	assert.Nil(t, err)
 
 	//mint nft
 	mintNftInst, err := instruction.NewMintNftWithValue(*nftHash, validOTAReceiver0, 1, *txHash).
@@ -1476,9 +1476,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	assert.Nil(t, err)
 
 	// invalid nftID (PRV) mint PRV inst
-	// mintPrvNftInst, err := instruction.NewMintNftWithValue(common.PRVCoinID, validOTAReceiver0, 1, *txHash).
-	// 	StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
-	// assert.Nil(t, err)
+	mintPrvNftInst, err := instruction.NewMintNftWithValue(common.PRVCoinID, validOTAReceiver0, 1, *txHash).
+		StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+	assert.Nil(t, err)
 
 	// invalidNftID
 	invalidNftIDMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
@@ -1492,12 +1492,12 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	invalidNftIDTx.On("GetValidationEnv").Return(valEnv)
 	invalidNftIDTx.On("Hash").Return(txHash)
 
-	// rejectNftIDInst := v2utils.BuildWithdrawLPFeeInsts(
-	// 	poolPairID, common.PRVCoinID,
-	// 	map[common.Hash]metadataPdexv3.ReceiverInfo{},
-	// 	1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
-	// )[0]
-	// assert.Nil(t, err)
+	rejectNftIDInst := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, common.PRVCoinID,
+		map[common.Hash]metadataPdexv3.ReceiverInfo{},
+		1, *txHash, metadataPdexv3.RequestRejectedChainStatus,
+	)[0]
+	assert.Nil(t, err)
 
 	// validInput
 	validInputMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
@@ -1532,32 +1532,32 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 		},
 		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
 	)
-	// acceptWithdrawLPInstsOnlyOrderReward := v2utils.BuildWithdrawLPFeeInsts(
-	// 	poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
-	// 		*token0ID: {
-	// 			Address: otaReceiver0,
-	// 			Amount:  150,
-	// 		},
-	// 		*token1ID: {
-	// 			Address: otaReceiver1,
-	// 			Amount:  250,
-	// 		},
-	// 	},
-	// 	1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
-	// )
-	// acceptWithdrawLPInstsBothReward := v2utils.BuildWithdrawLPFeeInsts(
-	// 	poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
-	// 		*token0ID: {
-	// 			Address: otaReceiver0,
-	// 			Amount:  450,
-	// 		},
-	// 		*token1ID: {
-	// 			Address: otaReceiver1,
-	// 			Amount:  1450,
-	// 		},
-	// 	},
-	// 	1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
-	// )
+	acceptWithdrawLPInstsOnlyOrderReward := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+			*token0ID: {
+				Address: otaReceiver0,
+				Amount:  150,
+			},
+			*token1ID: {
+				Address: otaReceiver1,
+				Amount:  250,
+			},
+		},
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+	)
+	acceptWithdrawLPInstsBothReward := v2utils.BuildWithdrawLPFeeInsts(
+		poolPairID, *nftHash, map[common.Hash]metadataPdexv3.ReceiverInfo{
+			*token0ID: {
+				Address: otaReceiver0,
+				Amount:  450,
+			},
+			*token1ID: {
+				Address: otaReceiver1,
+				Amount:  1450,
+			},
+		},
+		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
+	)
 
 	type fields struct {
 		stateProducerBase stateProducerBase
@@ -1575,7 +1575,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 		want1   map[string]*PoolPairState
 		wantErr bool
 	}{
-		/*{
+		{
 			name:   "Invalid pool pair id",
 			fields: fields{},
 			args: args{
@@ -1698,7 +1698,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				},
 			},
 			wantErr: false,
-		},*/
+		},
 		{
 			name:   "Valid LP withdrawal",
 			fields: fields{},
@@ -1789,7 +1789,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		/*{
+		{
 			name:   "Valid order reward withdrawal",
 			fields: fields{},
 			args: args{
@@ -1932,7 +1932,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				},
 			},
 			wantErr: false,
-		},*/
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
