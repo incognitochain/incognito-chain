@@ -151,6 +151,10 @@ func getStrPoolPairState(p *PoolPairState) string {
 			result += fmt.Sprintf("  %v: %v\n", nftID, amount.String())
 		}
 	}
+	result += fmt.Sprintf("Locked Record\n")
+	for shareID, record := range p.lmLockedShare {
+		result += fmt.Sprintf(" Share %v: %+v\n", shareID, record)
+	}
 	return result
 }
 
