@@ -72,7 +72,7 @@ tx_pool_version: 0
 bsc_param:
   host: "https://bsc-dataseed.binance.org"
 plg_param:
-  host: "https://polygon-mainnet.g.alchemy.com/v2/20tUMU2wZsDNIwLnp3oJdw2ZP2TW_ue4"
+  host: "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
