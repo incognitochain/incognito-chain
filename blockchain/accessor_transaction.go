@@ -865,7 +865,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 		if err != nil {
 			return err
 		}
-		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
+		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) && config.Param().ConsensusParam.NotUseBurnedCoins > 0 {
 			continue
 		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
@@ -931,7 +931,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		if err != nil {
 			return err
 		}
-		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
+		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) && config.Param().ConsensusParam.NotUseBurnedCoins > 0 {
 			continue
 		}
 		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
