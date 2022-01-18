@@ -840,6 +840,7 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			// update state after fee withdrawal
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
+			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
 		_, isExisted = poolPair.orderRewards[actionData.NftID.String()]

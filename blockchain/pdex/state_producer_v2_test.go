@@ -1503,9 +1503,10 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 	validInputMetaData, _ := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		poolPairID, *nftHash, map[common.Hash]privacy.OTAReceiver{
-			*nftHash:  otaReceiver0,
-			*token0ID: otaReceiver0,
-			*token1ID: otaReceiver1,
+			*nftHash:         otaReceiver0,
+			*token0ID:        otaReceiver0,
+			*token1ID:        otaReceiver1,
+			common.PRVCoinID: otaReceiver1,
 		},
 	)
 	validInputTx := &metadataMocks.Transaction{}
@@ -1523,6 +1524,10 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 			*token1ID: {
 				Address: otaReceiver1,
 				Amount:  1200,
+			},
+			common.PRVCoinID: {
+				Address: otaReceiver1,
+				Amount:  600,
 			},
 		},
 		1, *txHash, metadataPdexv3.RequestAcceptedChainStatus,
@@ -1702,7 +1707,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 300, 0, 150, 600,
+							*token0ID, *token1ID, 300, 100, 150, 600,
 							big.NewInt(0).SetUint64(300),
 							big.NewInt(0).SetUint64(1200), 20000,
 						),
@@ -1710,18 +1715,26 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							*token0ID: convertToLPFeesPerShare(300, 300),
 							*token1ID: convertToLPFeesPerShare(1200, 300),
 						},
+						lmRewardsPerShare: map[common.Hash]*big.Int{
+							common.PRVCoinID: convertToLPFeesPerShare(600, 200),
+						},
 						protocolFees:    map[common.Hash]uint64{},
 						stakingPoolFees: map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID: &Share{
-								amount: 300,
+								amount:         300,
+								lmLockedAmount: 100,
 								tradingFees: map[common.Hash]uint64{
-									*token0ID: 100,
-									*token1ID: 200,
+									*token0ID:        100,
+									*token1ID:        200,
+									common.PRVCoinID: 100,
 								},
 								lastLPFeesPerShare: map[common.Hash]*big.Int{
 									*token0ID: convertToLPFeesPerShare(100, 300),
 									*token1ID: convertToLPFeesPerShare(200, 300),
+								},
+								lastLmRewardsPerShare: map[common.Hash]*big.Int{
+									common.PRVCoinID: convertToLPFeesPerShare(100, 200),
 								},
 							},
 						},
@@ -1734,11 +1747,11 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 					nftID: 100,
 				},
 			},
-			want: [][]string{mintNftInst, acceptWithdrawLPInstsOnlyLP[0], acceptWithdrawLPInstsOnlyLP[1]},
+			want: [][]string{mintNftInst, acceptWithdrawLPInstsOnlyLP[0], acceptWithdrawLPInstsOnlyLP[1], acceptWithdrawLPInstsOnlyLP[2]},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 300, 0, 150, 600,
+						*token0ID, *token1ID, 300, 100, 150, 600,
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
@@ -1746,18 +1759,26 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 						*token0ID: convertToLPFeesPerShare(300, 300),
 						*token1ID: convertToLPFeesPerShare(1200, 300),
 					},
+					lmRewardsPerShare: map[common.Hash]*big.Int{
+						common.PRVCoinID: convertToLPFeesPerShare(600, 200),
+					},
 					protocolFees:    map[common.Hash]uint64{},
 					stakingPoolFees: map[common.Hash]uint64{},
 					shares: map[string]*Share{
 						nftID: &Share{
-							amount: 300,
+							amount:         300,
+							lmLockedAmount: 100,
 							tradingFees: map[common.Hash]uint64{
-								*token0ID: 0,
-								*token1ID: 0,
+								*token0ID:        0,
+								*token1ID:        0,
+								common.PRVCoinID: 0,
 							},
 							lastLPFeesPerShare: map[common.Hash]*big.Int{
 								*token0ID: convertToLPFeesPerShare(300, 300),
 								*token1ID: convertToLPFeesPerShare(1200, 300),
+							},
+							lastLmRewardsPerShare: map[common.Hash]*big.Int{
+								common.PRVCoinID: convertToLPFeesPerShare(600, 200),
 							},
 						},
 					},
@@ -1784,9 +1805,10 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							*token0ID: convertToLPFeesPerShare(300, 300),
 							*token1ID: convertToLPFeesPerShare(1200, 300),
 						},
-						protocolFees:    map[common.Hash]uint64{},
-						stakingPoolFees: map[common.Hash]uint64{},
-						shares:          map[string]*Share{},
+						lmRewardsPerShare: map[common.Hash]*big.Int{},
+						protocolFees:      map[common.Hash]uint64{},
+						stakingPoolFees:   map[common.Hash]uint64{},
+						shares:            map[string]*Share{},
 						orderRewards: map[string]*OrderReward{
 							nftID: &OrderReward{
 								uncollectedRewards: Reward{
@@ -1815,12 +1837,13 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 						*token0ID: convertToLPFeesPerShare(300, 300),
 						*token1ID: convertToLPFeesPerShare(1200, 300),
 					},
-					protocolFees:    map[common.Hash]uint64{},
-					stakingPoolFees: map[common.Hash]uint64{},
-					shares:          map[string]*Share{},
-					orderRewards:    map[string]*OrderReward{},
-					makingVolume:    map[common.Hash]*MakingVolume{},
-					orderbook:       Orderbook{[]*Order{}},
+					lmRewardsPerShare: map[common.Hash]*big.Int{},
+					protocolFees:      map[common.Hash]uint64{},
+					stakingPoolFees:   map[common.Hash]uint64{},
+					shares:            map[string]*Share{},
+					orderRewards:      map[string]*OrderReward{},
+					makingVolume:      map[common.Hash]*MakingVolume{},
+					orderbook:         Orderbook{[]*Order{}},
 				},
 			},
 			wantErr: false,
@@ -1841,8 +1864,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 							*token0ID: convertToLPFeesPerShare(300, 300),
 							*token1ID: convertToLPFeesPerShare(1200, 300),
 						},
-						protocolFees:    map[common.Hash]uint64{},
-						stakingPoolFees: map[common.Hash]uint64{},
+						lmRewardsPerShare: map[common.Hash]*big.Int{},
+						protocolFees:      map[common.Hash]uint64{},
+						stakingPoolFees:   map[common.Hash]uint64{},
 						shares: map[string]*Share{
 							nftID: &Share{
 								amount: 300,
@@ -1854,6 +1878,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 									*token0ID: convertToLPFeesPerShare(100, 300),
 									*token1ID: convertToLPFeesPerShare(200, 300),
 								},
+								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 							},
 						},
 						orderRewards: map[string]*OrderReward{
@@ -1884,8 +1909,9 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 						*token0ID: convertToLPFeesPerShare(300, 300),
 						*token1ID: convertToLPFeesPerShare(1200, 300),
 					},
-					protocolFees:    map[common.Hash]uint64{},
-					stakingPoolFees: map[common.Hash]uint64{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{},
+					protocolFees:      map[common.Hash]uint64{},
+					stakingPoolFees:   map[common.Hash]uint64{},
 					shares: map[string]*Share{
 						nftID: &Share{
 							amount: 300,
@@ -1897,6 +1923,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 								*token0ID: convertToLPFeesPerShare(300, 300),
 								*token1ID: convertToLPFeesPerShare(1200, 300),
 							},
+							lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 					},
 					orderRewards: map[string]*OrderReward{},
@@ -2853,7 +2880,7 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 				poolPairs: map[string]*PoolPairState{
 					poolPairID: &PoolPairState{
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
-							*token0ID, *token1ID, 500, 0, 250, 1000,
+							*token0ID, *token1ID, 500, 200, 250, 1000,
 							big.NewInt(0).SetUint64(500),
 							big.NewInt(0).SetUint64(2000), 20000,
 						),
@@ -2864,12 +2891,14 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						shares: map[string]*Share{
 							nftID: &Share{
 								amount:                300,
+								lmLockedAmount:        150,
 								tradingFees:           map[common.Hash]uint64{},
 								lastLPFeesPerShare:    map[common.Hash]*big.Int{},
 								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 							},
 							nftID1: &Share{
 								amount:                200,
+								lmLockedAmount:        50,
 								tradingFees:           map[common.Hash]uint64{},
 								lastLPFeesPerShare:    map[common.Hash]*big.Int{},
 								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
@@ -2892,25 +2921,27 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 500, 0, 250, 1000,
+						*token0ID, *token1ID, 500, 200, 250, 1000,
 						big.NewInt(0).SetUint64(500),
 						big.NewInt(0).SetUint64(2000), 20000,
 					),
-					lpFeesPerShare: map[common.Hash]*big.Int{
-						common.PRVCoinID: convertToLPFeesPerShare(1000000, 500),
+					lpFeesPerShare: map[common.Hash]*big.Int{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{
+						common.PRVCoinID: convertToLPFeesPerShare(1000000, 300),
 					},
-					lmRewardsPerShare: map[common.Hash]*big.Int{},
-					protocolFees:      map[common.Hash]uint64{},
-					stakingPoolFees:   map[common.Hash]uint64{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
 					shares: map[string]*Share{
 						nftID: &Share{
 							amount:                300,
+							lmLockedAmount:        150,
 							tradingFees:           map[common.Hash]uint64{},
 							lastLPFeesPerShare:    map[common.Hash]*big.Int{},
 							lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 						},
 						nftID1: &Share{
 							amount:                200,
+							lmLockedAmount:        50,
 							tradingFees:           map[common.Hash]uint64{},
 							lastLPFeesPerShare:    map[common.Hash]*big.Int{},
 							lastLmRewardsPerShare: map[common.Hash]*big.Int{},
@@ -2984,12 +3015,12 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
-					lpFeesPerShare: map[common.Hash]*big.Int{
+					lpFeesPerShare: map[common.Hash]*big.Int{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{
 						common.PRVCoinID: convertToLPFeesPerShare(700000, 300),
 					},
-					lmRewardsPerShare: map[common.Hash]*big.Int{},
-					protocolFees:      map[common.Hash]uint64{},
-					stakingPoolFees:   map[common.Hash]uint64{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
 					shares: map[string]*Share{
 						nftID: {
 							amount:                300,
@@ -3082,12 +3113,12 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						big.NewInt(0).SetUint64(300),
 						big.NewInt(0).SetUint64(1200), 20000,
 					),
-					lpFeesPerShare: map[common.Hash]*big.Int{
+					lpFeesPerShare: map[common.Hash]*big.Int{},
+					lmRewardsPerShare: map[common.Hash]*big.Int{
 						common.PRVCoinID: convertToLPFeesPerShare(850000, 300),
 					},
-					lmRewardsPerShare: map[common.Hash]*big.Int{},
-					protocolFees:      map[common.Hash]uint64{},
-					stakingPoolFees:   map[common.Hash]uint64{},
+					protocolFees:    map[common.Hash]uint64{},
+					stakingPoolFees: map[common.Hash]uint64{},
 					shares: map[string]*Share{
 						nftID: {
 							amount:                300,
