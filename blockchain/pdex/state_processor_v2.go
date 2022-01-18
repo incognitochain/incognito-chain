@@ -749,7 +749,6 @@ func (sp *stateProcessorV2) withdrawOrder(
 					ord.SetToken0Balance(newBalance)
 					// remove order when both balances are cleared
 					if newBalance == 0 && ord.Token1Balance() == 0 {
-						Logger.log.Info("[pdex] 0")
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
 							orderReward.accessOTA = md.AccessOTA

@@ -793,3 +793,22 @@ func (p *PoolPairState) getChangedShares(compareShare map[string]*Share) map[str
 	}
 	return res
 }
+
+func (p *PoolPairState) isEmptyOrder(index int) (bool, error) {
+	if index >= len(p.orderbook.orders) {
+		return false, errors.New("Index is out of range")
+	}
+	order := p.orderbook.orders[index]
+	if !order.IsEmpty() {
+		return false, nil
+	}
+	orderReward, found := p.orderRewards[order.NftID().String()]
+	if orderReward != nil && found {
+		for _, v := range orderReward.uncollectedRewards {
+			if v != 0 {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}

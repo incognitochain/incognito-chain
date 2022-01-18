@@ -423,3 +423,7 @@ func (o *Pdexv3Order) Clone() *Pdexv3Order {
 	return NewPdexv3OrderWithValue(o.id, o.nftID, o.accessOTA, o.token0Rate, o.token1Rate,
 		o.token0Balance, o.token1Balance, o.tradeDirection, o.receiver)
 }
+
+func (o *Pdexv3Order) IsEmpty() bool {
+	return o.token0Balance == 0 && o.token1Balance == 0
+}

@@ -762,7 +762,8 @@ TransactionLoop:
 		}
 
 		orderID := currentOrderReq.OrderID
-		for _, ord := range pair.orderbook.orders {
+		shouldMintAccessCoin := false
+		for index, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
 				if ord.NftID() == accessID {
 					if !accessByNFT {
@@ -777,7 +778,7 @@ TransactionLoop:
 							continue TransactionLoop
 						}
 						// access successful -> always mint access token & change NextOTA in state
-						result = append(result, mintAccessInstruction)
+						shouldMintAccessCoin = true
 						refundMd.AccessOTA = nextAccessOTA
 						ord.SetAccessOTA(nextAccessOTA)
 					}
@@ -791,6 +792,9 @@ TransactionLoop:
 						if currentOrderReq.Amount != 0 {
 							Logger.log.Warnf("Invalid amount %v withdrawing both tokens from order %s (expect %d)",
 								currentOrderReq.Amount, orderID, 0)
+							if shouldMintAccessCoin {
+								result = append(result, mintAccessInstruction)
+							}
 							result = append(result, refundAction.StringSlice())
 							continue TransactionLoop
 						}
@@ -820,6 +824,22 @@ TransactionLoop:
 							withdrawResults[pair.state.Token1ID()] = amt
 							accepted = true
 						}
+					}
+					if ord.IsEmpty() {
+						orderReward, found := pair.orderRewards[ord.NftID().String()]
+						if orderReward != nil && found {
+							orderReward.accessOTA = ord.AccessOTA()
+						}
+					}
+					isEmptyOrder, err := pair.isEmptyOrder(index)
+					if err != nil {
+						return result, pairs, err
+					}
+					if isEmptyOrder {
+						shouldMintAccessCoin = false
+					}
+					if shouldMintAccessCoin {
+						result = append(result, mintAccessInstruction)
 					}
 
 					if !accepted {
@@ -1119,19 +1139,31 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		if isExistedOrderReward {
+			orderIndex := -1
 			if order.accessOTA == nil {
 				for index, orderbook := range poolPair.orderbook.orders {
 					if orderbook.NftID().String() == accessID.String() {
 						poolPair.orderbook.orders[index].SetAccessOTA(accessOTA)
+						orderIndex = index
 						break
 					}
 				}
 			}
 			delete(poolPair.orderRewards, metaData.NftID.String())
+			if orderIndex == -1 {
+				shouldMintAccessCoin = false
+			} else {
+				isEmptyOrder, err := poolPair.isEmptyOrder(orderIndex)
+				if err != nil {
+					return instructions, pairs, err
+				}
+				if isEmptyOrder {
+					shouldMintAccessCoin = false
+				}
+			}
 			if shouldMintAccessCoin {
 				instructions = append(instructions, mintAccessCoinInst)
 			}
-			//TODO: @tin check with order case
 		}
 
 		instructions = append(instructions, acceptedInst...)
