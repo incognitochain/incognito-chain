@@ -71,6 +71,31 @@ func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, close
 	return arr, nil
 }
 
+func (httpServer *HttpServer) handleSendFinishSync(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	miningKeyStr := arrayParams[0].(string)
+	cpk := arrayParams[1].(string)
+	sid := arrayParams[2].(float64)
+	miningKey, err := consensus_v2.GetMiningKeyFromPrivateSeed(miningKeyStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	signature, err := miningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	finishedSyncSignatures = append(finishedSyncSignatures, signature)
+	finishedSyncValidators = append(finishedSyncValidators, cpk)
+
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(sid))
+	if err := httpServer.config.Server.PushMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	return nil, nil
+}
+
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := int(arrayParams[0].(float64))

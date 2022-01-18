@@ -104,6 +104,7 @@ var HttpHandler = map[string]httpHandler{
 	unlockMempool:              (*HttpServer).handleUnlockMempool,
 	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	sendFinishSync:             (*HttpServer).handleSendFinishSync,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,

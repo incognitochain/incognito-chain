@@ -130,6 +130,7 @@ const (
 	unlockMempool              = "unlockmempool"
 	handleGetConsensusInfoV3   = "getconsensusinfov3"
 	getAutoStakingByHeight     = "getautostakingbyheight"
+	sendFinishSync             = "sendfinishsync"
 	getCommitteeState          = "getcommitteestate"
 	convertPaymentAddress      = "convertpaymentaddress"
 	getTotalBlockInEpoch       = "gettotalblockinepoch"
@@ -362,7 +363,7 @@ const (
 	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
 	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
 
-	getFeatureStats       = "getfeaturestats"
+	getFeatureStats                              = "getfeaturestats"
 	getBurnPLGProofForDepositToSC                = "getburnplgprooffordeposittosc"
 	createAndSendBurningPLGForDepositToSCRequest = "createandsendburningplgfordeposittoscrequest"
 
