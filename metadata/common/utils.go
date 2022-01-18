@@ -316,6 +316,7 @@ func buildMetaInfo() {
 
 	listSNoIn := []int{
 		IssuingPRVERC20ResponseMeta,
+		IssuingPRVBEP20ResponseMeta,
 		PDETradeResponseMeta,
 		PDEWithdrawalResponseMeta,
 		PDEContributionResponseMeta,
