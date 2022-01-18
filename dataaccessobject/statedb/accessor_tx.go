@@ -309,6 +309,14 @@ func StoreOTACoinsAndOnetimeAddresses(stateDB *StateDB, tokenID common.Hash, hei
 			return NewStatedbError(StoreOTACoinLengthError, err)
 		}
 
+		_, err = GetOTACoinByIndex(stateDB, tokenID, otaCoinLength.Uint64(), shardID)
+		if err != nil {
+			fmt.Printf("idx: %v, key: %v, value: %v\n", otaCoinLength.Uint64(), key.String(), *value)
+			fmt.Printf("idx: %v, keyOTACoin: %v, valueOTACoin: %v\n", otaCoinLength.Uint64(), keyOTACoin.String(), *valueOTACoin)
+			fmt.Printf("idx: %v, keyOTAIndex: %v, valueOTACoinIndex: %v\n", otaCoinLength.Uint64(), keyOTAIndex.String(), valueOTACoinIndex.String())
+			panic(err)
+		}
+
 		// Caution: ask Hieu before change these lines
 		temp2 := otaCoinLength.Uint64() + 1
 		otaCoinLength = new(big.Int).SetUint64(temp2)
