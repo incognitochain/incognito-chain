@@ -836,6 +836,7 @@ TransactionLoop:
 						return result, pairs, err
 					}
 					if isEmptyOrder {
+						delete(pair.orderRewards, ord.NftID().String())
 						shouldMintAccessCoin = false
 					}
 					if shouldMintAccessCoin {
@@ -1133,8 +1134,9 @@ func (sp *stateProducerV2) withdrawLPFee(
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 			share.setAccessOTA(accessOTA)
-			if shouldMintAccessCoin && !share.isEmpty() {
-				instructions = append(instructions, mintAccessCoinInst)
+			if share.isEmpty() {
+				shouldMintAccessCoin = false
+				delete(poolPair.shares, accessID.String())
 			}
 		}
 
@@ -1161,11 +1163,11 @@ func (sp *stateProducerV2) withdrawLPFee(
 					shouldMintAccessCoin = false
 				}
 			}
-			if shouldMintAccessCoin {
-				instructions = append(instructions, mintAccessCoinInst)
-			}
 		}
 
+		if shouldMintAccessCoin {
+			instructions = append(instructions, mintAccessCoinInst)
+		}
 		instructions = append(instructions, acceptedInst...)
 	}
 

@@ -631,6 +631,9 @@ func (sp *stateProcessorV2) acceptWithdrawLiquidity(
 		if err != nil {
 			return poolPairs, nil, err
 		}
+		if share.isEmpty() {
+			delete(poolPair.shares, accessID)
+		}
 		withdrawStatus = &v2.WithdrawStatus{
 			Status:       common.Pdexv3AcceptStatus,
 			Token0ID:     poolPair.state.Token0ID().String(),
@@ -859,6 +862,47 @@ func (sp *stateProcessorV2) withdrawLPFee(
 	withdrawalStatus := inst[2]
 	var reqTrackStatus int
 	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+
+		// check conditions
+		poolPair, isExisted := pairs[actionData.PoolPairID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PoolPairID)
+			Logger.log.Errorf(msg)
+			return pairs, errors.New(msg)
+		}
+
+		accessID := utils.EmptyString
+		if actionData.AccessOption.UseNft() {
+			accessID = actionData.NftID.String()
+		} else {
+			accessID = actionData.AccessID.String()
+		}
+		share, isExisted := poolPair.shares[accessID]
+		if isExisted {
+			// update state after fee withdrawal
+			share.tradingFees = resetKeyValueToZero(share.tradingFees)
+			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
+			share.setAccessOTA(actionData.AccessOTA)
+			if share.isEmpty() {
+				delete(poolPair.shares, accessID)
+			}
+		}
+
+		orderReward, isExisted := poolPair.orderRewards[accessID]
+		if isExisted {
+			if !actionData.AccessOption.UseNft() {
+				if orderReward.accessOTA == nil {
+					for index, orderbook := range poolPair.orderbook.orders {
+						if orderbook.NftID().String() == accessID {
+							poolPair.orderbook.orders[index].SetAccessOTA(actionData.AccessOTA)
+							break
+						}
+					}
+				}
+			}
+			delete(poolPair.orderRewards, accessID)
+		}
+
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus
 
 		_, found := sp.receiverCache[actionData.TxReqID.String()]
@@ -868,43 +912,6 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		sp.receiverCache[actionData.TxReqID.String()][actionData.TokenID] = actionData.Receiver
 	} else {
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeFailedStatus
-	}
-
-	// check conditions
-	poolPair, isExisted := pairs[actionData.PoolPairID]
-	if !isExisted {
-		msg := fmt.Sprintf("Could not find pair %s for withdrawal", actionData.PoolPairID)
-		Logger.log.Errorf(msg)
-		return pairs, errors.New(msg)
-	}
-
-	accessID := utils.EmptyString
-	if actionData.AccessOption.UseNft() {
-		accessID = actionData.NftID.String()
-	} else {
-		accessID = actionData.AccessID.String()
-	}
-	share, isExisted := poolPair.shares[accessID]
-	if isExisted {
-		// update state after fee withdrawal
-		share.tradingFees = resetKeyValueToZero(share.tradingFees)
-		share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
-		share.setAccessOTA(actionData.AccessOTA)
-	}
-
-	orderReward, isExisted := poolPair.orderRewards[accessID]
-	if isExisted {
-		if !actionData.AccessOption.UseNft() {
-			if orderReward.accessOTA == nil {
-				for index, orderbook := range poolPair.orderbook.orders {
-					if orderbook.NftID().String() == accessID {
-						poolPair.orderbook.orders[index].SetAccessOTA(actionData.AccessOTA)
-						break
-					}
-				}
-			}
-		}
-		delete(poolPair.orderRewards, accessID)
 	}
 
 	if reqTrackStatus == metadataPdexv3.WithdrawProtocolFeeSuccessStatus && !actionData.IsLastInst {
@@ -1194,6 +1201,10 @@ func (sp *stateProcessorV2) unstaking(
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
+		staker := stakingPoolState.stakers[accessID.String()]
+		if staker.isEmpty() {
+			delete(stakingPoolState.stakers, accessID.String())
+		}
 		accessOTA = acceptInst.AccessOTA()
 	case common.Pdexv3RejectStringStatus:
 		rejectInst := instruction.NewRejectUnstaking()
@@ -1282,6 +1293,34 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 	withdrawalStatus := inst[2]
 	var reqTrackStatus int
 	if withdrawalStatus == metadataPdexv3.RequestAcceptedChainStatus {
+		// check conditions
+		pool, isExisted := pools[actionData.StakingPoolID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find staking pool %s for withdrawal", actionData.StakingPoolID)
+			Logger.log.Errorf(msg)
+			return pools, errors.New(msg)
+		}
+
+		accessID := utils.EmptyString
+		if actionData.AccessOption.UseNft() {
+			accessID = actionData.NftID.String()
+		} else {
+			accessID = actionData.AccessID.String()
+		}
+		share, isExisted := pool.stakers[accessID]
+		if !isExisted {
+			msg := fmt.Sprintf("Could not find staker %s for withdrawal", actionData.NftID.String())
+			Logger.log.Errorf(msg)
+			return pools, errors.New(msg)
+		}
+
+		// update state after reward withdrawal
+		share.rewards = resetKeyValueToZero(share.rewards)
+		share.lastRewardsPerShare = pool.RewardsPerShare()
+		share.setAccessOTA(actionData.AccessOTA)
+		if share.isEmpty() {
+			delete(pool.stakers, accessID)
+		}
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardSuccessStatus
 
 		_, found := sp.receiverCache[actionData.TxReqID.String()]
@@ -1292,32 +1331,6 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 	} else {
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardFailedStatus
 	}
-
-	// check conditions
-	pool, isExisted := pools[actionData.StakingPoolID]
-	if !isExisted {
-		msg := fmt.Sprintf("Could not find staking pool %s for withdrawal", actionData.StakingPoolID)
-		Logger.log.Errorf(msg)
-		return pools, errors.New(msg)
-	}
-
-	accessID := utils.EmptyString
-	if actionData.AccessOption.UseNft() {
-		accessID = actionData.NftID.String()
-	} else {
-		accessID = actionData.AccessID.String()
-	}
-	share, isExisted := pool.stakers[accessID]
-	if !isExisted {
-		msg := fmt.Sprintf("Could not find staker %s for withdrawal", actionData.NftID.String())
-		Logger.log.Errorf(msg)
-		return pools, errors.New(msg)
-	}
-
-	// update state after reward withdrawal
-	share.rewards = resetKeyValueToZero(share.rewards)
-	share.lastRewardsPerShare = pool.RewardsPerShare()
-	share.setAccessOTA(actionData.AccessOTA)
 
 	if reqTrackStatus == metadataPdexv3.WithdrawProtocolFeeSuccessStatus && !actionData.IsLastInst {
 		return pools, nil
