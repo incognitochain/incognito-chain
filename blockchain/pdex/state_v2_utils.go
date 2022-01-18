@@ -150,6 +150,19 @@ func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, e
 	return true, nil
 }
 
+func (share *Share) isEmpty() bool {
+	if share.amount != 0 {
+		return false
+	}
+	for _, v := range share.tradingFees {
+		if v != 0 {
+			return false
+		}
+	}
+	//TODO: @tin verify with last liquidity mining later
+	return true
+}
+
 type Staker struct {
 	liquidity           uint64
 	accessOTA           []byte
@@ -280,6 +293,18 @@ func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool,
 		return false, errors.New("Not valid access OTA")
 	}
 	return true, nil
+}
+
+func (staker *Staker) isEmpty() bool {
+	if staker.liquidity != 0 {
+		return false
+	}
+	for _, v := range staker.rewards {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func addStakingPoolState(
