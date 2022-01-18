@@ -1,9 +1,9 @@
 package statedb
 
 import (
-	"fmt"
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -162,8 +162,9 @@ func GetOTACoinByIndex(stateDB *StateDB, tokenID common.Hash, index uint64, shar
 		return []byte{}, NewStatedbError(GetOTACoinIndexError, errors.New("no value exist"))
 	}
 	if c.Index().Uint64() != index {
-		panic("same key wrong value")
-		return []byte{}, nil
+		msg := fmt.Sprintf("same key wrong value: expect index %v, got %v (height %v: %v)", index, c.Index().Uint64(), c.Height(), c.OutputCoin())
+		//panic("same key wrong value")
+		return []byte{}, fmt.Errorf(msg)
 	}
 	return c.outputCoin, nil
 }
