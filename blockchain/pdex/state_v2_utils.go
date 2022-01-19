@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
@@ -526,4 +527,54 @@ func (makingVolume *MakingVolume) getDiff(
 		newMakingVolumeChange.Volume = v2utils.GetChangedElementsFromMapStringBigInt(makingVolume.volume, compareMakingVolume.volume)
 	}
 	return newMakingVolumeChange
+}
+
+func unlockLmLockedShareAmount(
+	pairs map[string]*PoolPairState,
+	params *Params,
+	beaconHeight uint64,
+) (map[string]*PoolPairState, error) {
+	for _, poolPair := range pairs {
+		for shareID, lockedRecord := range poolPair.lmLockedShare {
+			// check if this share exists
+			if _, ok := poolPair.shares[shareID]; !ok {
+				delete(poolPair.lmLockedShare, shareID)
+				continue
+			}
+			for lockedHeight, lockedAmount := range lockedRecord {
+				if lockedHeight+params.MiningRewardPendingBlocks < beaconHeight {
+					delete(lockedRecord, lockedHeight)
+
+					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
+					releaseAmount := lockedAmount
+					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
+						releaseAmount = poolPair.shares[shareID].lmLockedAmount
+					}
+
+					shareIDBytes, err := common.Hash{}.NewHashFromStr(shareID)
+					if err != nil {
+						return pairs, fmt.Errorf("Invalid shareID: %s", shareID)
+					}
+					poolPair.shares[shareID].tradingFees, err = poolPair.RecomputeLPRewards(*shareIDBytes)
+					if err != nil {
+						return pairs, fmt.Errorf("Error when tracking LP reward: %v", err)
+					}
+
+					poolPair.shares[shareID].lastLPFeesPerShare = poolPair.LpFeesPerShare()
+					poolPair.shares[shareID].lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
+
+					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
+					if err != nil {
+						return pairs, fmt.Errorf("newShare.lmLockedAmount is out of range")
+					}
+					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
+					if err != nil {
+						return pairs, fmt.Errorf("poolPairLmLockedShareAmount is out of range")
+					}
+					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
+				}
+			}
+		}
+	}
+	return pairs, nil
 }

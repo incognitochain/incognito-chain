@@ -120,48 +120,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		}
 	}
 
-	// unlock LM locked share amount
-	for _, poolPair := range s.poolPairs {
-		for shareID, lockedRecord := range poolPair.lmLockedShare {
-			// check if this share exists
-			if _, ok := poolPair.shares[shareID]; !ok {
-				delete(poolPair.lmLockedShare, shareID)
-				continue
-			}
-			for lockedHeight, lockedAmount := range lockedRecord {
-				if lockedHeight+s.params.MiningRewardPendingBlocks < beaconHeight {
-					delete(lockedRecord, lockedHeight)
+	var err error
 
-					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
-					releaseAmount := lockedAmount
-					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
-						releaseAmount = poolPair.shares[shareID].lmLockedAmount
-					}
-
-					shareIDBytes, err := common.Hash{}.NewHashFromStr(shareID)
-					if err != nil {
-						return fmt.Errorf("Invalid shareID: %s", shareID)
-					}
-					poolPair.shares[shareID].tradingFees, err = poolPair.RecomputeLPRewards(*shareIDBytes)
-					if err != nil {
-						return fmt.Errorf("Error when tracking LP reward: %v", err)
-					}
-
-					poolPair.shares[shareID].lastLPFeesPerShare = poolPair.LpFeesPerShare()
-					poolPair.shares[shareID].lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
-
-					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
-					if err != nil {
-						return errors.New("newShare.lmLockedAmount is out of range")
-					}
-					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
-					if err != nil {
-						return errors.New("poolPairLmLockedShareAmount is out of range")
-					}
-					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
-				}
-			}
-		}
+	s.poolPairs, err = unlockLmLockedShareAmount(s.poolPairs, s.params, beaconHeight)
+	if err != nil {
+		return err
 	}
 
 	for _, inst := range env.BeaconInstructions() {
@@ -353,48 +316,9 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
-	// unlock LM locked share amount
-	for _, poolPair := range s.poolPairs {
-		for shareID, lockedRecord := range poolPair.lmLockedShare {
-			// check if this share exists
-			if _, ok := poolPair.shares[shareID]; !ok {
-				delete(poolPair.lmLockedShare, shareID)
-				continue
-			}
-			for lockedHeight, lockedAmount := range lockedRecord {
-				if lockedHeight+s.params.MiningRewardPendingBlocks < beaconHeight {
-					delete(lockedRecord, lockedHeight)
-
-					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
-					releaseAmount := lockedAmount
-					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
-						releaseAmount = poolPair.shares[shareID].lmLockedAmount
-					}
-
-					shareIDBytes, err := common.Hash{}.NewHashFromStr(shareID)
-					if err != nil {
-						return instructions, fmt.Errorf("Invalid shareID: %s", shareID)
-					}
-					poolPair.shares[shareID].tradingFees, err = poolPair.RecomputeLPRewards(*shareIDBytes)
-					if err != nil {
-						return instructions, fmt.Errorf("Error when tracking LP reward: %v", err)
-					}
-
-					poolPair.shares[shareID].lastLPFeesPerShare = poolPair.LpFeesPerShare()
-					poolPair.shares[shareID].lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
-
-					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
-					if err != nil {
-						return instructions, err
-					}
-					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
-					if err != nil {
-						return instructions, errors.New("poolPairLmLockedShareAmount is out of range")
-					}
-					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
-				}
-			}
-		}
+	s.poolPairs, err = unlockLmLockedShareAmount(s.poolPairs, s.params, beaconHeight)
+	if err != nil {
+		return instructions, err
 	}
 
 	var withdrawLPFeeInstructions [][]string
