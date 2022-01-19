@@ -161,7 +161,7 @@ func LoadParam() *param {
 	if err := verifyParam(p); err != nil {
 		panic(err)
 	}
-	
+
 	return p
 }
 
