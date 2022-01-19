@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
 	"sort"
 	"strconv"
 	"time"
@@ -142,6 +143,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		shouldValidate = true
 	}
 
+
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
@@ -230,8 +232,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
-			return NewBlockChainError(TransactionFromNewBlockError, err)
-		}
+		return NewBlockChainError(TransactionFromNewBlockError, err)
+	}
 		if len(shardBlock.Body.Transactions) > 0 {
 			Logger.log.Infof("SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
 		}
@@ -863,7 +865,8 @@ func (shardBestState *ShardBestState) initShardBestState(
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/tmp", shardBestState.ShardID))
+	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(p, common.Hash{}, common.Hash{}, db)
 	if err != nil {
 		return err
 	}
@@ -1162,6 +1165,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
+
 	// consensus root hash
 	consensusRootHash, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
 	if err != nil {
@@ -1178,11 +1183,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
 	newShardState.TransactionStateDBRootHash = transactionRootHash
+
 	// feature root hash
 	featureRootHash, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {
@@ -1218,7 +1220,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	newShardState.rewardStateDB.ClearObjects()
 	newShardState.slashStateDB.ClearObjects()
 
-	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
 	sRH := ShardRootHash{
 		ConsensusStateDBRootHash:   consensusRootHash,
 		FeatureStateDBRootHash:     featureRootHash,
@@ -1287,6 +1288,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")
+	}
+
+	err = newShardState.transactionStateDB.Finalized(batchData, blockchain.ShardChain[shardID].multiView.GetFinalView().(*ShardBestState).TransactionStateDBRootHash)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	if err := batchData.Write(); err != nil {
