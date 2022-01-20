@@ -54,7 +54,7 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 		nodeList.Put([]byte{}, proofBytes)
 	}
 	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
+	val, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		fmt.Printf("WARNING: ETH proof verification failed: %v", err)
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
