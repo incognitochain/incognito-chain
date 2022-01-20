@@ -395,14 +395,14 @@ func (p *PoolPairState) getDiff(
 			newPoolPairChange.IsChanged = true
 		}
 		newPoolPairChange.Shares = p.getChangedShares(comparePoolPair.shares)
-		newPoolPairChange.LpFeesPerShare = v2utils.GetChangedElementsFromMapBigInt(p.lpFeesPerShare, comparePoolPair.lpFeesPerShare)
-		newPoolPairChange.LmRewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(p.lmRewardsPerShare, comparePoolPair.lmRewardsPerShare)
-		newPoolPairChange.ProtocolFees = v2utils.GetChangedElementsFromMapUint64(p.protocolFees, comparePoolPair.protocolFees)
-		newPoolPairChange.StakingPoolFees = v2utils.GetChangedElementsFromMapUint64(p.stakingPoolFees, comparePoolPair.stakingPoolFees)
+		newPoolPairChange.LpFeesPerShare = v2utils.DifMapHashBigInt(p.lpFeesPerShare).GetDiff(v2utils.DifMapHashBigInt(comparePoolPair.lpFeesPerShare))
+		newPoolPairChange.LmRewardsPerShare = v2utils.DifMapHashBigInt(p.lmRewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(comparePoolPair.lmRewardsPerShare))
+		newPoolPairChange.ProtocolFees = v2utils.DifMapHashUint64(p.protocolFees).GetDiff(v2utils.DifMapHashUint64(comparePoolPair.protocolFees))
+		newPoolPairChange.StakingPoolFees = v2utils.DifMapHashUint64(p.stakingPoolFees).GetDiff(v2utils.DifMapHashUint64(comparePoolPair.stakingPoolFees))
 		newPoolPairChange.OrderRewards = p.getChangedOrderRewards(comparePoolPair.orderRewards)
 		newPoolPairChange.MakingVolume = p.getChangedMakingVolume(comparePoolPair.makingVolume)
 		newPoolPairChange = p.orderbook.getDiff(&comparePoolPair.orderbook, newPoolPairChange)
-		newPoolPairChange.LmLockedShare = v2utils.GetChangedElementsFromMapStringMapUint64(p.lmLockedShare, comparePoolPair.lmLockedShare)
+		newPoolPairChange.LmLockedShare = v2utils.DifMapStringMapUint64Uint64(p.lmLockedShare).GetDiff(v2utils.DifMapStringMapUint64Uint64(comparePoolPair.lmLockedShare))
 	}
 	return newPoolPairChange, newStateChange
 }

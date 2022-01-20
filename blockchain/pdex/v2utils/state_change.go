@@ -106,62 +106,70 @@ func NewOrderRewardChange() *OrderRewardChange {
 	}
 }
 
-func GetChangedElementsFromMapUint64(map0, map1 map[common.Hash]uint64) map[string]bool {
+type DifMapHashUint64 map[common.Hash]uint64
+
+func (dm DifMapHashUint64) GetDiff(compareWith DifMapHashUint64) map[string]bool {
 	res := map[string]bool{}
-	for k, v := range map0 {
-		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
+	for k, v := range dm {
+		if m, ok := compareWith[k]; !ok || !reflect.DeepEqual(m, v) {
 			res[k.String()] = true
 		}
 	}
 
-	for k, v := range map1 {
-		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
+	for k, v := range compareWith {
+		if m, ok := dm[k]; !ok || !reflect.DeepEqual(m, v) {
 			res[k.String()] = true
 		}
 	}
 	return res
 }
 
-func GetChangedElementsFromMapBigInt(map0, map1 map[common.Hash]*big.Int) map[string]bool {
-	res := map[string]bool{}
-	for k, v := range map0 {
-		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
-			res[k.String()] = true
-		}
-	}
+type DifMapStringBigInt map[string]*big.Int
 
-	for k, v := range map1 {
-		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
-			res[k.String()] = true
-		}
-	}
-	return res
-}
-
-func GetChangedElementsFromMapStringBigInt(map0, map1 map[string]*big.Int) map[string]bool {
+func (dm DifMapStringBigInt) GetDiff(compareWith DifMapStringBigInt) map[string]bool {
 	res := map[string]bool{}
-	for k, v := range map0 {
-		if m, ok := map1[k]; !ok || !reflect.DeepEqual(m, v) {
+	for k, v := range dm {
+		if m, ok := compareWith[k]; !ok || !reflect.DeepEqual(m, v) {
 			res[k] = true
 		}
 	}
 
-	for k, v := range map1 {
-		if m, ok := map0[k]; !ok || !reflect.DeepEqual(m, v) {
+	for k, v := range compareWith {
+		if m, ok := dm[k]; !ok || !reflect.DeepEqual(m, v) {
 			res[k] = true
 		}
 	}
 	return res
 }
 
-func GetChangedElementsFromMapStringMapUint64(map0, map1 map[string]map[uint64]uint64) map[string]map[uint64]bool {
+type DifMapHashBigInt map[common.Hash]*big.Int
+
+func (dm DifMapHashBigInt) GetDiff(compareWith DifMapHashBigInt) map[string]bool {
+	res := map[string]bool{}
+	for k, v := range dm {
+		if m, ok := compareWith[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k.String()] = true
+		}
+	}
+
+	for k, v := range compareWith {
+		if m, ok := dm[k]; !ok || !reflect.DeepEqual(m, v) {
+			res[k.String()] = true
+		}
+	}
+	return res
+}
+
+type DifMapStringMapUint64Uint64 map[string]map[uint64]uint64
+
+func (dm DifMapStringMapUint64Uint64) GetDiff(compareWith DifMapStringMapUint64Uint64) map[string]map[uint64]bool {
 	res := map[string]map[uint64]bool{}
-	for k, v := range map0 {
-		res[k] = getChangedElementsFromMapUint64Uint64(v, map1[k])
+	for k, v := range dm {
+		res[k] = getChangedElementsFromMapUint64Uint64(v, compareWith[k])
 	}
 
-	for k, v := range map1 {
-		res[k] = getChangedElementsFromMapUint64Uint64(v, map0[k])
+	for k, v := range compareWith {
+		res[k] = getChangedElementsFromMapUint64Uint64(v, dm[k])
 	}
 	return res
 }

@@ -155,9 +155,9 @@ func (share *Share) getDiff(
 		if share.amount != compareShare.amount || share.lmLockedAmount != compareShare.lmLockedAmount {
 			newShareChange.IsChanged = true
 		}
-		newShareChange.TradingFees = v2utils.GetChangedElementsFromMapUint64(share.tradingFees, compareShare.tradingFees)
-		newShareChange.LastLPFeesPerShare = v2utils.GetChangedElementsFromMapBigInt(share.lastLPFeesPerShare, compareShare.lastLPFeesPerShare)
-		newShareChange.LastLmRewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(share.lastLmRewardsPerShare, compareShare.lastLmRewardsPerShare)
+		newShareChange.TradingFees = v2utils.DifMapHashUint64(share.tradingFees).GetDiff(v2utils.DifMapHashUint64(compareShare.tradingFees))
+		newShareChange.LastLPFeesPerShare = v2utils.DifMapHashBigInt(share.lastLPFeesPerShare).GetDiff(v2utils.DifMapHashBigInt(compareShare.lastLPFeesPerShare))
+		newShareChange.LastLmRewardsPerShare = v2utils.DifMapHashBigInt(share.lastLmRewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(compareShare.lastLmRewardsPerShare))
 	}
 
 	return newShareChange
@@ -264,8 +264,8 @@ func (staker *Staker) getDiff(
 		if staker.liquidity != compareStaker.liquidity {
 			newStakerChange.IsChanged = true
 		}
-		newStakerChange.LastRewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(staker.lastRewardsPerShare, compareStaker.lastRewardsPerShare)
-		newStakerChange.Rewards = v2utils.GetChangedElementsFromMapUint64(staker.rewards, compareStaker.rewards)
+		newStakerChange.LastRewardsPerShare = v2utils.DifMapHashBigInt(staker.lastRewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(compareStaker.lastRewardsPerShare))
+		newStakerChange.Rewards = v2utils.DifMapHashUint64(staker.rewards).GetDiff(v2utils.DifMapHashUint64(compareStaker.rewards))
 	}
 	return newStakerChange
 }
@@ -456,7 +456,7 @@ func (orderReward *OrderReward) getDiff(
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
 	} else {
-		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
+		newOrderRewardChange.UncollectedReward = v2utils.DifMapHashUint64(orderReward.uncollectedRewards).GetDiff(v2utils.DifMapHashUint64(compareOrderReward.uncollectedRewards))
 	}
 	return newOrderRewardChange
 }
@@ -524,7 +524,7 @@ func (makingVolume *MakingVolume) getDiff(
 			newMakingVolumeChange.Volume[nftID] = true
 		}
 	} else {
-		newMakingVolumeChange.Volume = v2utils.GetChangedElementsFromMapStringBigInt(makingVolume.volume, compareMakingVolume.volume)
+		newMakingVolumeChange.Volume = v2utils.DifMapStringBigInt(makingVolume.volume).GetDiff(v2utils.DifMapStringBigInt(compareMakingVolume.volume))
 	}
 	return newMakingVolumeChange
 }
