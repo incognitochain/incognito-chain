@@ -266,6 +266,9 @@ func (staker *Staker) getDiff(
 	compareStaker *Staker, stakerChange *v2utils.StakerChange,
 ) *v2utils.StakerChange {
 	newStakerChange := stakerChange
+	if newStakerChange == nil {
+		newStakerChange = v2utils.NewStakerChange()
+	}
 	if compareStaker == nil {
 		newStakerChange.IsChanged = true
 		for tokenID := range staker.rewards {
@@ -305,6 +308,29 @@ func (staker *Staker) isEmpty() bool {
 		}
 	}
 	return true
+}
+
+func (staker *Staker) deleteFromDB(
+	env StateEnvironment, stakingPoolID string, nftID common.Hash,
+	stakerChange *v2utils.StakerChange,
+) error {
+	err := statedb.DeletePdexv3Staker(env.StateDB(), stakingPoolID, nftID)
+	if err != nil {
+		return err
+	}
+	for tokenID, _ := range stakerChange.LastRewardsPerShare {
+		err = statedb.DeletePdexv3StakerLastRewardPerShare(env.StateDB(), stakingPoolID, nftID.String(), tokenID)
+		if err != nil {
+			return err
+		}
+	}
+	for tokenID, _ := range stakerChange.Rewards {
+		err = statedb.DeletePdexv3StakerReward(env.StateDB(), stakingPoolID, nftID.String(), tokenID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func addStakingPoolState(
@@ -391,6 +417,26 @@ func (share *Share) deleteFromDB(
 	err := statedb.DeletePdexv3Share(env.StateDB(), poolPairID, nftID)
 	if err != nil {
 		return err
+	}
+	for tokenID, isChanged := range shareChange.TradingFees {
+		if isChanged {
+			err := statedb.DeletePdexv3ShareTradingFee(
+				env.StateDB(), poolPairID, nftID, tokenID,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
+		if isChanged {
+			err = statedb.DeletePdexv3ShareLastLpFeePerShare(
+				env.StateDB(), poolPairID, nftID, tokenID,
+			)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

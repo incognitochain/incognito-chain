@@ -1339,10 +1339,12 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, rejectInsts...)
 			continue
 		}
-		if share.isEmpty() {
+		newShare := poolPair.shares[accessID.String()]
+		if newShare.isEmpty() {
 			delete(poolPair.shares, accessID.String())
 			shouldMintAccessCoin = false
 		}
+		Logger.log.Info("[pdex] shouldMintAccessCoin:", shouldMintAccessCoin)
 		if shouldMintAccessCoin {
 			res = append(res, mintAccessCoinInst)
 		}
@@ -1581,7 +1583,8 @@ func (sp *stateProducerV2) unstaking(
 			res = append(res, rejectInsts...)
 			continue
 		}
-		if staker.isEmpty() {
+		newStaker := stakingPoolState.stakers[accessID.String()]
+		if newStaker.isEmpty() {
 			delete(stakingPoolState.stakers, accessID.String())
 			shouldMintAccessCoin = false
 		}
