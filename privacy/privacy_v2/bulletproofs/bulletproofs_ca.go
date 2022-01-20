@@ -1,15 +1,16 @@
 package bulletproofs
 
 import (
+	"math"
+
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/pkg/errors"
-	"math"
 )
 
 // CACommitmentScheme defines the Pedersen Commitment Scheme used for Confidential Asset feature.
-var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
+// var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
 
 // CopyPedersenCommitmentScheme is called upon package initialization to make a clone of generators.
 func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.PedersenCommitment {
@@ -37,6 +38,7 @@ func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point, error) {
 
 // ProveUsingBase runs like the Bulletproof Prove function, except it sets a Pederson base point before proving.
 func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*AggregatedRangeProof, error) {
+	CACommitmentScheme := CopyPedersenCommitmentScheme(operation.PedCom)
 	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	proof := new(AggregatedRangeProof)
 	numValue := len(wit.values)
@@ -208,6 +210,7 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 
 // VerifyUsingBase runs like the Bulletproof Verify function, except it sets a Pederson base point before verifying.
 func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (bool, error) {
+	CACommitmentScheme := CopyPedersenCommitmentScheme(operation.PedCom)
 	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
@@ -263,6 +266,7 @@ func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (
 }
 
 func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Point) (bool, error) {
+	CACommitmentScheme := CopyPedersenCommitmentScheme(operation.PedCom)
 	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
