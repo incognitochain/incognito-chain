@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -53,7 +52,7 @@ func (httpServer *HttpServer) handleGetPRVERC20BurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadataCommon.BurningPRVERC20ConfirmMeta
+	confirmMeta := metadata.BurningPRVERC20ConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
@@ -66,7 +65,7 @@ func (httpServer *HttpServer) handleGetPRVBEP20BurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadataCommon.BurningPRVBEP20ConfirmMeta
+	confirmMeta := metadata.BurningPRVBEP20ConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
@@ -99,6 +98,32 @@ func (httpServer *HttpServer) handleGetBurnPBSCProofForDepositToSC(
 	if onBeacon {
 		confirmMeta = metadata.BurningPBSCConfirmForDepositToSCMeta
 	}
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetPLGBurnProof returns a proof of a tx burning pPLG ( polygon )
+func (httpServer *HttpServer) handleGetPLGBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningPLGConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetBurnPLGProofForDepositToSC returns a proof of a tx burning pPLG to deposit to SC
+func (httpServer *HttpServer) handleGetBurnPLGProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningPLGConfirmForDepositToSCMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 

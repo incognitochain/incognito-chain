@@ -3,6 +3,7 @@ package portaltokens
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -298,4 +299,84 @@ func TestGenerateOTMultisigAddressFromMasterPubKeys(t *testing.T) {
 	}
 	t.Logf("P2WSH Bech32 address: %v\n", address)
 	t.Logf("P2WSH Bech32 hex encode: %v\n", hex.EncodeToString(script))
+}
+
+func TestMatchUTXOsAndUnshieldIDsNew(t *testing.T) {
+	p := PortalBTCTokenProcessor{
+		PortalToken: &PortalToken{
+			ChainID:             "Bitcoin-Mainnet",
+			MinTokenAmount:      10,
+			MultipleTokenAmount: 10,
+			ExternalInputSize:   2,
+			ExternalOutputSize:  1,
+			ExternalTxMaxSize:   30,
+		},
+		ChainParam:    &chaincfg.MainNetParams,
+		PortalTokenID: "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696",
+	}
+	thresholdTinyValue := uint64(4)
+	minUTXOs := uint64(3)
+
+	// utxoAmts := []uint64{1, 8, 4, 5, 2, 7, 12, 15, 3, 2, 3}
+	// unshieldAmts := []uint64{30, 60, 250, 50, 90, 40}
+	utxoAmts := []uint64{100, 2, 3, 1}
+	unshieldAmts := []uint64{70, 90, 80, 40}
+	// 3 => 7 => (15, 12) => 5 => (8,1)
+
+	type batch struct {
+		utxoAmts     []uint64
+		unshieldAmts []uint64
+	}
+	expectedBatchs := []batch{
+		// utxo amount > unshield amount: choose 1 utxo for 1 unshield
+		// append tiny utxo(s)
+		{
+			utxoAmts:     []uint64{3, 7, 2},
+			unshieldAmts: []uint64{30, 60},
+		},
+		// utxo amount < unshield amount: choose utxos for 1 unshield
+		// append tiny utxo(s)
+		{
+			utxoAmts:     []uint64{15, 12, 5},
+			unshieldAmts: []uint64{250, 50},
+		},
+		// num(utxos) < min utxos: don't pick tiny uxto
+		{
+			utxoAmts:     []uint64{8, 1, 4},
+			unshieldAmts: []uint64{90, 40},
+		},
+	}
+
+	utxos := map[string]*statedb.UTXO{}
+	for i, value := range utxoAmts {
+		key := "UTXO " + strconv.Itoa(i)
+		utxos[key] = statedb.NewUTXOWithValue("", "", 0, value, "")
+	}
+	waitingUnshieldReqs := map[string]*statedb.WaitingUnshieldRequest{}
+	for i, value := range unshieldAmts {
+		unshieldID := "Unshield " + strconv.Itoa(i)
+		key := statedb.GenerateWaitingUnshieldRequestObjectKey(p.PortalTokenID, unshieldID).String()
+		waitingUnshieldReqs[key] = statedb.NewWaitingUnshieldRequestStateWithValue("", value, unshieldID, 100)
+	}
+
+	batchTxs, err := p.MatchUTXOsAndUnshieldIDsNew(utxos, waitingUnshieldReqs, thresholdTinyValue, minUTXOs)
+	fmt.Printf("err: %v\n", err)
+
+	for i, batchTx := range batchTxs {
+		_ = expectedBatchs[i]
+		utxoAmts := []uint64{}
+		for _, u := range batchTx.UTXOs {
+			utxoAmts = append(utxoAmts, u.GetOutputAmount())
+		}
+		fmt.Printf("utxoAmts: %+v\n", utxoAmts)
+
+		unshieldAmts := []uint64{}
+		for _, u := range batchTx.UnshieldIDs {
+			key := statedb.GenerateWaitingUnshieldRequestObjectKey(p.PortalTokenID, u).String()
+			unshieldAmts = append(unshieldAmts, waitingUnshieldReqs[key].GetAmount())
+		}
+		fmt.Printf("unshieldAmts: %+v\n", unshieldAmts)
+		// assert.Equal(t, true, reflect.DeepEqual(utxoAmts, expectedBatch.utxoAmts))
+		// assert.Equal(t, true, reflect.DeepEqual(unshieldAmts, expectedBatch.unshieldAmts))
+	}
 }
