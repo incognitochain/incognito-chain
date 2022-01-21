@@ -131,6 +131,89 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 		tokenID,
 		incognitoAddress,
 		shieldingProof,
+		"",
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	tokenIDParam, exists := data["TokenID"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("`TokenID` not found"))
+	}
+	tokenID, ok := tokenIDParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid TokenID"))
+	}
+
+	receiverParam, exists := data["Receiver"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("`Receiver` not found"))
+	}
+	receiver, ok := receiverParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("`Receiver` is invalid"))
+	}
+
+	OTPubKeyParam, exists := data["OTDepositPubKey"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata `OTDepositPubKey` not found"))
+	}
+	OTPubKey, ok := OTPubKeyParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata `OTDepositPubKey` must be a string"))
+	}
+
+	shieldingProofParam, exists := data["ShieldingProof"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata `ShieldProof` not found"))
+	}
+	shieldingProof, ok := shieldingProofParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShieldingProof is invalid"))
+	}
+
+	meta, _ := metadata.NewPortalShieldingRequest(
+		metadataCommon.PortalV4ShieldingRequestMeta,
+		tokenID,
+		receiver,
+		shieldingProof,
+		OTPubKey,
 	)
 
 	// create new param to build raw tx from param interface
