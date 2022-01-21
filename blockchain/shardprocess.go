@@ -686,7 +686,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	//verify producer via index
 
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, shardBestState.GetShardProposerLength()); err != nil {
+		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength()); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -1276,7 +1276,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
 				storeBlock.(*types.ShardBlock),
-				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), newFinalView.(*ShardBestState).GetShardProposerLength()),
+				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), newFinalView.(*ShardBestState).GetProposerLength()),
 				committeesStoreBlock,
 			)
 			if err2 != nil {

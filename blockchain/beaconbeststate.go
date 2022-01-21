@@ -1182,6 +1182,10 @@ func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize m
 	return increaseMaxCommitteeSize[key]
 }
 
+func (curView *BeaconBestState) GetProposerLength() int {
+	return curView.MinBeaconCommitteeSize
+}
+
 func (curView *BeaconBestState) GetShardProposerLength() int {
 	return curView.NumberOfFixedShardBlockValidator
 }

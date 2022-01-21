@@ -1295,7 +1295,7 @@ func (a *actorV2) handleNewProposeMsg(
 		committees,
 		signingCommittees,
 		userKeySet,
-		a.chain.GetBestView().GetShardProposerLength(),
+		a.chain.GetBestView().GetProposerLength(),
 		producerPublicBLSMiningKey,
 	)
 	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)

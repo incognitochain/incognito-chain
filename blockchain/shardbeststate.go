@@ -344,7 +344,7 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(
 	ts int64,
 	version int,
 ) (incognitokey.CommitteePublicKey, int) {
-	id := GetProposerByTimeSlot(ts, shardBestState.GetShardProposerLength())
+	id := GetProposerByTimeSlot(ts, shardBestState.GetProposerLength())
 	return shardBestState.GetShardCommittee()[id], id
 }
 
@@ -626,7 +626,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
-			shardBestState.GetShardProposerLength(),
+			shardBestState.GetProposerLength(),
 		)
 		signingCommitteeV3 := FilterSigningCommitteeV3(
 			committees,
@@ -708,6 +708,6 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 	return beaconHeight, nil
 }
 
-func (curView *ShardBestState) GetShardProposerLength() int {
+func (curView *ShardBestState) GetProposerLength() int {
 	return curView.NumberOfFixedShardBlockValidator
 }

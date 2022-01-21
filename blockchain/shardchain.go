@@ -451,7 +451,7 @@ func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(ts int64, commit
 	proposer, proposerIndex := GetProposer(
 		ts,
 		committees,
-		chain.GetBestState().GetShardProposerLength(),
+		chain.GetBestState().GetProposerLength(),
 	)
 	return proposer, proposerIndex
 }
