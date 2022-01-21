@@ -28,7 +28,7 @@ type PortalV4ShieldingRequest struct {
 	// TokenID is the Incognito tokenID of the shielding token.
 	TokenID string // pTokenID in incognito chain
 
-	// OTDepositPubKey is the public key for this shielding request, used to validate the authenticity of the request.
+	// OTDepositPubKey is the base58-encoded public key for this shielding request, used to validate the authenticity of the request.
 	// This field is only used with one-time depositing addresses.
 	// If set to empty, Receiver must be a payment address. Otherwise, Receiver must be an OTAReceiver.
 	OTDepositPubKey string `json:"OTDepositPubKey,omitempty"`
