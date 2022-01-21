@@ -188,7 +188,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
 	case metadataCommon.PortalV4ShieldingRequestMeta:
-		md = &PortalShieldingRequest{}
+		md = &PortalV4ShieldingRequest{}
 	case metadataCommon.PortalV4ShieldingResponseMeta:
 		md = &PortalShieldingResponse{}
 	case metadataCommon.PortalV4UnshieldingRequestMeta:
