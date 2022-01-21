@@ -564,7 +564,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
 			beaconInstructions,
 			curView.ShardID,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			curView.NumberOfFixedShardBlockValidator,
 			shardBlock.Header.Height,
 		)
 
