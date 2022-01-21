@@ -199,8 +199,8 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 
 	// generate expected multi-sig address from master pubKeys and user payment address
 	chainCode := meta.Receiver
-	if len(meta.OTDepositPubKey) == common.PublicKeySize {
-		chainCode = base58.Base58Check{}.NewEncode(meta.OTDepositPubKey, 0)
+	if meta.OTDepositPubKey != "" {
+		chainCode = meta.OTDepositPubKey
 	}
 	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(
 		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), chainCode)
@@ -317,6 +317,14 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 	)
 	if err != nil {
 		Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
+	}
+
+	if shieldingReqTrackData.OTDepositPubKey != "" {
+		depositPubKeyBytes, _, _ := base58.Base58Check{}.Decode(shieldingReqTrackData.OTDepositPubKey) // error has been checked from outer layers.
+		err = statedb.StoreShieldInfoByPubKey(stateDB, depositPubKeyBytes, shieldingReqTrackData.TxReqID.String())
+		if err != nil {
+			Logger.log.Errorf("Shield Request: An error occurred while storing shielding info: %v\n", err)
+		}
 	}
 
 	return nil

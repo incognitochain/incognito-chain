@@ -2040,6 +2040,17 @@ func (stateDB *StateDB) getPortalV4StatusByKey(key common.Hash) (*PortalV4Status
 	return NewPortalV4StatusState(), false, nil
 }
 
+func (stateDB *StateDB) getPortalV4ShieldInfoByKey(key common.Hash) (*PortalV4ShieldInfoState, bool, error) {
+	portalStatusState, err := stateDB.getStateObject(PortalV4ShieldInfoObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalStatusState != nil {
+		return portalStatusState.GetValue().(*PortalV4ShieldInfoState), true, nil
+	}
+	return NewPortalV4ShieldInfoState(), false, nil
+}
+
 // ================================= BSC bridge OBJECT =======================================
 func (stateDB *StateDB) getBridgeBSCTxState(key common.Hash) (*BridgeBSCTxState, bool, error) {
 	bscTxState, err := stateDB.getStateObject(BridgeBSCTxObjectType, key)

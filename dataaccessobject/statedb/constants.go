@@ -96,6 +96,9 @@ const (
 
 	// Polygon bridge
 	BridgePLGTxObjectType = 66
+
+	// More PortalV4 Object Types
+	PortalV4ShieldInfoObjectType = 67
 )
 
 // Prefix length

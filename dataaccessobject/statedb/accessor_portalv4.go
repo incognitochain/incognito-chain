@@ -2,11 +2,44 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 // ================= Shielding Request =================
+
+func StoreShieldInfoByPubKey(stateDB *StateDB, depositPubKey []byte, txID string) error {
+	pubKeyStr := base58.Base58Check{}.Encode(depositPubKey, 0)
+	currentTxIDs, err := GetShieldRequestIDsByOTDepositPubKey(stateDB, depositPubKey)
+	if err != nil || currentTxIDs == nil {
+		currentTxIDs = make([]string, 0)
+	}
+	mapTxIDs := make(map[string]interface{})
+	for _, tmpTxID := range currentTxIDs {
+		mapTxIDs[tmpTxID] = true
+	}
+	if _, exist := mapTxIDs[txID]; exist {
+		return fmt.Errorf("txID %v existed for pubKey %v", txID, pubKeyStr)
+	}
+	currentTxIDs = append(currentTxIDs, txID)
+
+	return storeDepositInfo(stateDB, depositPubKey, currentTxIDs)
+}
+
+func GetShieldRequestIDsByOTDepositPubKey(stateDB *StateDB, depositPubKey []byte) ([]string, error) {
+	return getDepositInfo(stateDB, depositPubKey)
+}
+
+func OTDepositPubKeyExists(stateDB *StateDB, depositPubKey []byte) bool {
+	txIDs, _ := GetShieldRequestIDsByOTDepositPubKey(stateDB, depositPubKey)
+	if len(txIDs) == 0 {
+		return false
+	}
+
+	return true
+}
+
 func StoreShieldingRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalShieldingRequestStatusPrefix()
 	statusSuffix := []byte(txID)
@@ -258,6 +291,32 @@ func GetPortalV4Status(stateDB *StateDB, statusType []byte, statusSuffix []byte)
 		return []byte{}, NewStatedbError(GetPortalStatusNotFoundError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
 	return s.statusContent, nil
+}
+
+// ================= Portal v4 Deposit Information =================
+
+func storeDepositInfo(stateDB *StateDB, depositPubKey []byte, txIDs []string) error {
+	key := GeneratePortalV4ShieldInfoObjectKey(depositPubKey)
+	value := NewPortalV4ShieldInfoStateWithValue(depositPubKey, txIDs)
+	err := stateDB.SetStateObject(PortalV4ShieldInfoObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePortalV4ShieldInfoError, err)
+	}
+	return nil
+}
+
+func getDepositInfo(stateDB *StateDB, depositPubKey []byte) ([]string, error) {
+	pubKeyStr := base58.Base58Check{}.Encode(depositPubKey, 0)
+	key := GeneratePortalV4ShieldInfoObjectKey(depositPubKey)
+	s, has, err := stateDB.getPortalV4ShieldInfoByKey(key)
+	if err != nil {
+		return []string{}, NewStatedbError(GetPortalV4ShieldInfoError, err)
+	}
+	if !has {
+		return []string{}, NewStatedbError(GetPortalV4ShieldInfoError,
+			fmt.Errorf("deposit with pubKey %v not found", pubKeyStr))
+	}
+	return s.txIDs, nil
 }
 
 // ================= Portal v4 Convert Vault =================

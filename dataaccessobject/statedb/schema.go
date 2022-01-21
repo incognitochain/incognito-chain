@@ -141,6 +141,7 @@ var (
 
 	// portal v4
 	portalV4StatusPrefix                         = []byte("portalv4status-")
+	portalV4ShieldInfoPrefix                     = []byte("portalv4shieldinfo-")
 	portalUTXOStatePrefix                        = []byte("portalutxo-")
 	portalShieldRequestPrefix                    = []byte("portalshieldrequest-")
 	portalWaitingUnshieldRequestsPrefix          = []byte("portalwaitingunshieldrequest-")
@@ -780,6 +781,11 @@ func PortaConvertVaultRequestStatusPrefix() []byte {
 
 func GetPortalV4StatusPrefix(statusType []byte) []byte {
 	h := common.HashH(append(portalV4StatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPortalV4ShieldInfoPrefix() []byte {
+	h := common.HashH(portalV4StatusPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

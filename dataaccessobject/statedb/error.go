@@ -52,6 +52,7 @@ const (
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
 	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
 	ErrInvalidPortalV4StatusStateType            = "invalid portal v4 status state type"
+	ErrInvalidPortalV4ShieldInfoStateType        = "invalid portal v4 shield info state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
 	ErrInvalidPortalUTXOType                     = "invalid portal utxo state type"
@@ -285,6 +286,10 @@ const (
 	// Polygon bridge
 	BridgeInsertPLGTxHashIssuedError
 	IsPLGTxHashIssuedError
+
+	// More PortalV4 Errors
+	StorePortalV4ShieldInfoError
+	GetPortalV4ShieldInfoError
 )
 
 var ErrCodeMessage = map[int]struct {
