@@ -2,8 +2,8 @@ package pdex
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
-	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
@@ -11,18 +11,32 @@ import (
 )
 
 type Share struct {
-	amount             uint64
-	tradingFees        map[common.Hash]uint64
-	lastLPFeesPerShare map[common.Hash]*big.Int
+	amount                uint64
+	lmLockedAmount        uint64
+	tradingFees           map[common.Hash]uint64
+	lastLPFeesPerShare    map[common.Hash]*big.Int
+	lastLmRewardsPerShare map[common.Hash]*big.Int
 }
 
 func (share *Share) Amount() uint64 {
 	return share.amount
 }
 
+func (share *Share) LmLockedShareAmount() uint64 {
+	return share.lmLockedAmount
+}
+
 func (share *Share) LastLPFeesPerShare() map[common.Hash]*big.Int {
 	res := make(map[common.Hash]*big.Int)
 	for k, v := range share.lastLPFeesPerShare {
+		res[k] = big.NewInt(0).Set(v)
+	}
+	return res
+}
+
+func (share *Share) LastLmRewardsPerShare() map[common.Hash]*big.Int {
+	res := make(map[common.Hash]*big.Int)
+	for k, v := range share.lastLmRewardsPerShare {
 		res[k] = big.NewInt(0).Set(v)
 	}
 	return res
@@ -38,27 +52,31 @@ func (share *Share) TradingFees() map[common.Hash]uint64 {
 
 func NewShare() *Share {
 	return &Share{
-		amount:             0,
-		tradingFees:        map[common.Hash]uint64{},
-		lastLPFeesPerShare: map[common.Hash]*big.Int{},
+		amount:                0,
+		tradingFees:           map[common.Hash]uint64{},
+		lastLPFeesPerShare:    map[common.Hash]*big.Int{},
+		lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 	}
 }
 
 func NewShareWithValue(
-	amount uint64,
+	amount, lmLockedAmount uint64,
 	tradingFees map[common.Hash]uint64,
-	lastLPFeesPerShare map[common.Hash]*big.Int,
+	lastLPFeesPerShare, lastLmRewardsPerShare map[common.Hash]*big.Int,
 ) *Share {
 	return &Share{
-		amount:             amount,
-		tradingFees:        tradingFees,
-		lastLPFeesPerShare: lastLPFeesPerShare,
+		amount:                amount,
+		lmLockedAmount:        lmLockedAmount,
+		tradingFees:           tradingFees,
+		lastLPFeesPerShare:    lastLPFeesPerShare,
+		lastLmRewardsPerShare: lastLmRewardsPerShare,
 	}
 }
 
 func (share *Share) Clone() *Share {
 	res := NewShare()
 	res.amount = share.amount
+	res.lmLockedAmount = share.lmLockedAmount
 	res.tradingFees = map[common.Hash]uint64{}
 	for k, v := range share.tradingFees {
 		res.tradingFees[k] = v
@@ -67,18 +85,26 @@ func (share *Share) Clone() *Share {
 	for k, v := range share.lastLPFeesPerShare {
 		res.lastLPFeesPerShare[k] = new(big.Int).Set(v)
 	}
+	res.lastLmRewardsPerShare = map[common.Hash]*big.Int{}
+	for k, v := range share.lastLmRewardsPerShare {
+		res.lastLmRewardsPerShare[k] = new(big.Int).Set(v)
+	}
 	return res
 }
 
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Amount             uint64                   `json:"Amount"`
-		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
-		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		Amount                uint64                   `json:"Amount"`
+		TradingFees           map[common.Hash]uint64   `json:"TradingFees"`
+		LastLPFeesPerShare    map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		LmLockedAmount        uint64                   `json:"LmLockedAmount,omitempty"`
+		LastLmRewardsPerShare map[common.Hash]*big.Int `json:"LastLmRewardsPerShare,omitempty"`
 	}{
-		Amount:             share.amount,
-		TradingFees:        share.tradingFees,
-		LastLPFeesPerShare: share.lastLPFeesPerShare,
+		Amount:                share.amount,
+		TradingFees:           share.tradingFees,
+		LastLPFeesPerShare:    share.lastLPFeesPerShare,
+		LmLockedAmount:        share.lmLockedAmount,
+		LastLmRewardsPerShare: share.lastLmRewardsPerShare,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -88,17 +114,21 @@ func (share *Share) MarshalJSON() ([]byte, error) {
 
 func (share *Share) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Amount             uint64                   `json:"Amount"`
-		TradingFees        map[common.Hash]uint64   `json:"TradingFees"`
-		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		Amount                uint64                   `json:"Amount"`
+		TradingFees           map[common.Hash]uint64   `json:"TradingFees"`
+		LastLPFeesPerShare    map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
+		LmLockedAmount        uint64                   `json:"LmLockedAmount,omitempty"`
+		LastLmRewardsPerShare map[common.Hash]*big.Int `json:"LastLmRewardsPerShare,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	share.amount = temp.Amount
+	share.lmLockedAmount = temp.LmLockedAmount
 	share.tradingFees = temp.TradingFees
 	share.lastLPFeesPerShare = temp.LastLPFeesPerShare
+	share.lastLmRewardsPerShare = temp.LastLmRewardsPerShare
 	return nil
 }
 
@@ -118,12 +148,16 @@ func (share *Share) getDiff(
 		for tokenID := range share.lastLPFeesPerShare {
 			newShareChange.LastLPFeesPerShare[tokenID.String()] = true
 		}
+		for tokenID := range share.lastLmRewardsPerShare {
+			newShareChange.LastLmRewardsPerShare[tokenID.String()] = true
+		}
 	} else {
-		if !reflect.DeepEqual(share.amount, compareShare.amount) {
+		if share.amount != compareShare.amount || share.lmLockedAmount != compareShare.lmLockedAmount {
 			newShareChange.IsChanged = true
 		}
-		newShareChange.TradingFees = v2utils.GetChangedElementsFromMapUint64(share.tradingFees, compareShare.tradingFees)
-		newShareChange.LastLPFeesPerShare = v2utils.GetChangedElementsFromMapBigInt(share.lastLPFeesPerShare, compareShare.lastLPFeesPerShare)
+		newShareChange.TradingFees = v2utils.DifMapHashUint64(share.tradingFees).GetDiff(v2utils.DifMapHashUint64(compareShare.tradingFees))
+		newShareChange.LastLPFeesPerShare = v2utils.DifMapHashBigInt(share.lastLPFeesPerShare).GetDiff(v2utils.DifMapHashBigInt(compareShare.lastLPFeesPerShare))
+		newShareChange.LastLmRewardsPerShare = v2utils.DifMapHashBigInt(share.lastLmRewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(compareShare.lastLmRewardsPerShare))
 	}
 
 	return newShareChange
@@ -230,8 +264,8 @@ func (staker *Staker) getDiff(
 		if staker.liquidity != compareStaker.liquidity {
 			newStakerChange.IsChanged = true
 		}
-		newStakerChange.LastRewardsPerShare = v2utils.GetChangedElementsFromMapBigInt(staker.lastRewardsPerShare, compareStaker.lastRewardsPerShare)
-		newStakerChange.Rewards = v2utils.GetChangedElementsFromMapUint64(staker.rewards, compareStaker.rewards)
+		newStakerChange.LastRewardsPerShare = v2utils.DifMapHashBigInt(staker.lastRewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(compareStaker.lastRewardsPerShare))
+		newStakerChange.Rewards = v2utils.DifMapHashUint64(staker.rewards).GetDiff(v2utils.DifMapHashUint64(compareStaker.rewards))
 	}
 	return newStakerChange
 }
@@ -253,9 +287,10 @@ func (share *Share) updateToDB(
 	if shareChange.IsChanged {
 		nftID, err := common.Hash{}.NewHashFromStr(nftID)
 		err = statedb.StorePdexv3Share(
-			env.StateDB(), poolPairID,
-			*nftID,
-			share.amount, share.tradingFees, share.lastLPFeesPerShare,
+			env.StateDB(), poolPairID, *nftID,
+			statedb.NewPdexv3ShareStateWithValue(
+				*nftID, share.amount, share.lmLockedAmount,
+			),
 		)
 		if err != nil {
 			return err
@@ -301,6 +336,30 @@ func (share *Share) updateToDB(
 				}
 			} else {
 				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
+					env.StateDB(), poolPairID, nftID, tokenID,
+				)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	for tokenID, isChanged := range shareChange.LastLmRewardsPerShare {
+		if isChanged {
+			tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
+			if err != nil {
+				return err
+			}
+			if lastLmRewardsPerShare, found := share.lastLmRewardsPerShare[*tokenHash]; found {
+				err := statedb.StorePdexv3ShareLastLmRewardsPerShare(
+					env.StateDB(), poolPairID, nftID,
+					statedb.NewPdexv3ShareLastLmRewardPerShareStateWithValue(*tokenHash, lastLmRewardsPerShare),
+				)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := statedb.DeletePdexv3ShareLastLmRewardsPerShare(
 					env.StateDB(), poolPairID, nftID, tokenID,
 				)
 				if err != nil {
@@ -397,7 +456,7 @@ func (orderReward *OrderReward) getDiff(
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
 	} else {
-		newOrderRewardChange.UncollectedReward = v2utils.GetChangedElementsFromMapUint64(orderReward.uncollectedRewards, compareOrderReward.uncollectedRewards)
+		newOrderRewardChange.UncollectedReward = v2utils.DifMapHashUint64(orderReward.uncollectedRewards).GetDiff(v2utils.DifMapHashUint64(compareOrderReward.uncollectedRewards))
 	}
 	return newOrderRewardChange
 }
@@ -465,7 +524,57 @@ func (makingVolume *MakingVolume) getDiff(
 			newMakingVolumeChange.Volume[nftID] = true
 		}
 	} else {
-		newMakingVolumeChange.Volume = v2utils.GetChangedElementsFromMapStringBigInt(makingVolume.volume, compareMakingVolume.volume)
+		newMakingVolumeChange.Volume = v2utils.DifMapStringBigInt(makingVolume.volume).GetDiff(v2utils.DifMapStringBigInt(compareMakingVolume.volume))
 	}
 	return newMakingVolumeChange
+}
+
+func unlockLmLockedShareAmount(
+	pairs map[string]*PoolPairState,
+	params *Params,
+	beaconHeight uint64,
+) (map[string]*PoolPairState, error) {
+	for _, poolPair := range pairs {
+		for shareID, lockedRecord := range poolPair.lmLockedShare {
+			// check if this share exists
+			if _, ok := poolPair.shares[shareID]; !ok {
+				delete(poolPair.lmLockedShare, shareID)
+				continue
+			}
+			for lockedHeight, lockedAmount := range lockedRecord {
+				if lockedHeight+params.MiningRewardPendingBlocks < beaconHeight {
+					delete(lockedRecord, lockedHeight)
+
+					// releaseAmount = min(lockedAmount, poolPair.shares[shareID].lmLockedAmount)
+					releaseAmount := lockedAmount
+					if releaseAmount > poolPair.shares[shareID].lmLockedAmount {
+						releaseAmount = poolPair.shares[shareID].lmLockedAmount
+					}
+
+					shareIDBytes, err := common.Hash{}.NewHashFromStr(shareID)
+					if err != nil {
+						return pairs, fmt.Errorf("Invalid shareID: %s", shareID)
+					}
+					poolPair.shares[shareID].tradingFees, err = poolPair.RecomputeLPRewards(*shareIDBytes)
+					if err != nil {
+						return pairs, fmt.Errorf("Error when tracking LP reward: %v", err)
+					}
+
+					poolPair.shares[shareID].lastLPFeesPerShare = poolPair.LpFeesPerShare()
+					poolPair.shares[shareID].lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
+
+					poolPair.shares[shareID].lmLockedAmount, err = executeOperationUint64(poolPair.shares[shareID].lmLockedAmount, releaseAmount, subOperator)
+					if err != nil {
+						return pairs, fmt.Errorf("newShare.lmLockedAmount is out of range")
+					}
+					poolPairLmLockedShareAmount, err := executeOperationUint64(poolPair.state.LmLockedShareAmount(), releaseAmount, subOperator)
+					if err != nil {
+						return pairs, fmt.Errorf("poolPairLmLockedShareAmount is out of range")
+					}
+					poolPair.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
+				}
+			}
+		}
+	}
+	return pairs, nil
 }

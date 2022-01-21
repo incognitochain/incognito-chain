@@ -75,7 +75,6 @@ func (sp *stateProducerBase) sortTradeInstsByFee(
 	beaconHeight uint64,
 	poolPairs map[string]*rawdbv2.PDEPoolForPair,
 ) []metadata.PDETradeRequestAction {
-	// TODO: @tin improve here for v2 by sorting only with fee not necessary with poolPairs sort
 	tradesByPairs := make(map[string][]metadata.PDETradeRequestAction)
 
 	for _, action := range actions {
