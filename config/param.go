@@ -207,16 +207,6 @@ func verifyParam(p *param) error {
 			p.EpochParam.RandomTime, p.EpochParam.NumberOfBlockInEpoch)
 	}
 
-	if p.BlockTime.MaxBeaconBlockCreation < p.BlockTime.MinBeaconBlockInterval {
-		return fmt.Errorf("MaxBeaconBlockCreation %+v < MinBeaconBlockInterval %+v",
-			p.BlockTime.MaxBeaconBlockCreation, p.BlockTime.MinBeaconBlockInterval)
-	}
-
-	if p.BlockTime.MaxShardBlockCreation < p.BlockTime.MinShardBlockInterval {
-		return fmt.Errorf("MaxShardBlockCreation %+v < MinShardBlockInterval %+v",
-			p.BlockTime.MaxShardBlockCreation, p.BlockTime.MinShardBlockInterval)
-	}
-
 	return nil
 }
 
