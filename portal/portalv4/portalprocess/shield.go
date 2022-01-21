@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
@@ -62,7 +63,7 @@ func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(
 		Logger.log.Errorf("Shielding Request: Can not get tx hash from shielding proof")
 		return nil, fmt.Errorf("Shielding Request: Can not get tx hash from shielding proof")
 	}
-	proofHash := hashProof(shieldTxHash, actionData.Meta.IncogAddressStr)
+	proofHash := hashProof(shieldTxHash, actionData.Meta.Receiver)
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
 		Logger.log.Errorf("Shielding request: an error occurred while get pToken request proof from DB - Error: %v", err)
@@ -93,8 +94,7 @@ func hashProof(proof string, chainCode string) string {
 
 // beacon build new instruction from instruction received from ShardToBeaconBlock
 func buildPortalShieldingRequestInstV4(
-	tokenID string,
-	incogAddressStr string,
+	requestMeta metadata.PortalV4ShieldingRequest,
 	proofHash string,
 	shieldingUTXO []*statedb.UTXO,
 	mintingAmt uint64,
@@ -106,8 +106,9 @@ func buildPortalShieldingRequestInstV4(
 	errorStr string,
 ) []string {
 	shieldingReqContent := metadata.PortalShieldingRequestContent{
-		TokenID:         tokenID,
-		IncogAddressStr: incogAddressStr,
+		TokenID:         requestMeta.TokenID,
+		OTDepositPubKey: requestMeta.OTDepositPubKey,
+		Receiver:        requestMeta.Receiver,
 		ProofHash:       proofHash,
 		ShieldingUTXO:   shieldingUTXO,
 		MintingAmount:   mintingAmt,
@@ -148,10 +149,8 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		return [][]string{}, nil
 	}
 	meta := actionData.Meta
-
 	rejectInst := buildPortalShieldingRequestInstV4(
-		meta.TokenID,
-		meta.IncogAddressStr,
+		meta,
 		"",
 		[]*statedb.UTXO{},
 		0,
@@ -198,9 +197,13 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	// generate expected multisig address from master pubkeys and user payment address
+	// generate expected multi-sig address from master pubKeys and user payment address
+	chainCode := meta.Receiver
+	if len(meta.OTDepositPubKey) == common.PublicKeySize {
+		chainCode = base58.Base58Check{}.NewEncode(meta.OTDepositPubKey, 0)
+	}
 	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(
-		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
+		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), chainCode)
 	if err != nil {
 		Logger.log.Error("Shielding Request: Could not generate multisig address - Error: %v", err)
 		return [][]string{rejectInst}, nil
@@ -208,7 +211,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 
 	// verify shielding proof
 	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(
-		meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.IncogAddressStr, portalParams.MinShieldAmts[meta.TokenID])
+		meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.Receiver, portalParams.MinShieldAmts[meta.TokenID])
 	if !isValid || err != nil {
 		Logger.log.Error("Shielding Request: Parse proof and verify shielding proof failed - Error: %v", err)
 		return [][]string{rejectInst}, nil
@@ -225,11 +228,10 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	currentPortalState.AddUTXOs(listUTXO, meta.TokenID)
 	currentPortalState.AddShieldingExternalTx(
 		meta.TokenID, proofHash, listUTXO[0].GetTxHash(),
-		meta.IncogAddressStr, shieldingAmount)
+		meta.Receiver, shieldingAmount)
 
 	inst := buildPortalShieldingRequestInstV4(
-		actionData.Meta.TokenID,
-		actionData.Meta.IncogAddressStr,
+		meta,
 		proofHash,
 		listUTXO,
 		mintingAmount,
@@ -282,10 +284,10 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 
 		currentPortalState.AddUTXOs(actionData.ShieldingUTXO, actionData.TokenID)
 		currentPortalState.AddShieldingExternalTx(actionData.TokenID, actionData.ProofHash,
-			shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
+			shieldingExternalTxHash, actionData.Receiver, shieldingAmount)
 
 		// update bridge token info
-		err := metadata.UpdatePortalBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
+		err = metadata.UpdatePortalBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
 		if err != nil {
 			Logger.log.Errorf("Shielding Request: Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
 			return nil
@@ -299,7 +301,8 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		Status:          shieldStatus,
 		Error:           instructions[4],
 		TokenID:         actionData.TokenID,
-		IncogAddressStr: actionData.IncogAddressStr,
+		OTDepositPubKey: actionData.OTDepositPubKey,
+		Receiver:        actionData.Receiver,
 		ProofHash:       actionData.ProofHash,
 		ShieldingUTXO:   actionData.ShieldingUTXO,
 		MintingAmount:   actionData.MintingAmount,
