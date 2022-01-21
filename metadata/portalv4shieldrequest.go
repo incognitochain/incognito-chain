@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"strconv"
 
@@ -30,7 +31,7 @@ type PortalV4ShieldingRequest struct {
 	// OTDepositPubKey is the public key for this shielding request, used to validate the authenticity of the request.
 	// This field is only used with one-time depositing addresses.
 	// If set to empty, Receiver must be a payment address. Otherwise, Receiver must be an OTAReceiver.
-	OTDepositPubKey []byte `json:"OTDepositPubKey,omitempty"`
+	OTDepositPubKey string `json:"OTDepositPubKey,omitempty"`
 
 	// Receiver is the recipient of this shielding request.
 	// Receiver is
@@ -55,7 +56,7 @@ type PortalShieldingRequestContent struct {
 	TokenID string
 
 	// OTDepositPubKey is the same as in the shielding request.
-	OTDepositPubKey []byte `json:"OTDepositPubKey,omitempty"`
+	OTDepositPubKey string `json:"OTDepositPubKey,omitempty"`
 
 	// Receiver is the same as in the shielding request.
 	Receiver string `json:"IncogAddressStr"` // the json-tag is required for backward-compatibility.
@@ -84,7 +85,7 @@ type PortalShieldingRequestStatus struct {
 	Status          byte
 	Error           string
 	TokenID         string
-	OTDepositPubKey []byte `json:"OTDepositPubKey,omitempty"`
+	OTDepositPubKey string `json:"OTDepositPubKey,omitempty"`
 	Receiver        string `json:"IncogAddressStr"` // the json-tag is required for backward-compatibility.
 	ProofHash       string
 	ShieldingUTXO   []*statedb.UTXO
@@ -100,13 +101,13 @@ func NewPortalShieldingRequest(
 	tokenID string,
 	receiver string,
 	shieldingProof string,
-	depositPubKey []byte) (*PortalV4ShieldingRequest, error) {
+	depositPubKey string) (*PortalV4ShieldingRequest, error) {
 	shieldingRequestMeta := &PortalV4ShieldingRequest{
 		TokenID:        tokenID,
 		Receiver:       receiver,
 		ShieldingProof: shieldingProof,
 	}
-	if depositPubKey != nil {
+	if len(depositPubKey) != 0 {
 		mdBase := NewMetadataBaseWithSignature(metaType)
 		shieldingRequestMeta.MetadataBaseWithSignature = *mdBase
 		shieldingRequestMeta.OTDepositPubKey = depositPubKey
@@ -120,7 +121,7 @@ func NewPortalShieldingRequest(
 	return shieldingRequestMeta, nil
 }
 
-func (shieldingReq PortalV4ShieldingRequest) ValidateTxWithBlockChain(
+func (req PortalV4ShieldingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
@@ -139,9 +140,9 @@ func (shieldingReq PortalV4ShieldingRequest) ValidateTxWithBlockChain(
 //	2. The transaction must be of version 2, with type `n`.
 //	3. The shielding token must be a supported portal token.
 //	4. The ShieldingProof must be in a good form: not empty, sanity-checked.
-func (shieldingReq PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (req PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Step 1
-	keyWallet, err := wallet.Base58CheckDeserialize(shieldingReq.Receiver)
+	keyWallet, err := wallet.Base58CheckDeserialize(req.Receiver)
 	if err == nil { // 1.1
 		incAddr := keyWallet.KeySet.PaymentAddress
 		if _, err = AssertPaymentAddressAndTxVersion(incAddr, tx.GetVersion()); err != nil {
@@ -149,7 +150,7 @@ func (shieldingReq PortalV4ShieldingRequest) ValidateSanityData(chainRetriever C
 		}
 	} else {
 		otaReceiver := new(privacy.OTAReceiver)
-		err = otaReceiver.FromString(shieldingReq.Receiver)
+		err = otaReceiver.FromString(req.Receiver)
 		if err != nil {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
 		}
@@ -158,10 +159,11 @@ func (shieldingReq PortalV4ShieldingRequest) ValidateSanityData(chainRetriever C
 		}
 
 		// 1.2
-		if len(shieldingReq.OTDepositPubKey) != common.PublicKeySize {
-			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTDepositPubKey %v", shieldingReq.OTDepositPubKey))
+		depositPubKeyBytes, _, err := base58.Base58Check{}.Decode(req.OTDepositPubKey)
+		if err != nil {
+			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTDepositPubKey %v", req.OTDepositPubKey))
 		}
-		if isValid, err := shieldingReq.VerifyMetadataSignature(shieldingReq.OTDepositPubKey, tx); err != nil || isValid {
+		if isValid, err := req.VerifyMetadataSignature(depositPubKeyBytes, tx); err != nil || isValid {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
 		}
 	}
@@ -175,16 +177,16 @@ func (shieldingReq PortalV4ShieldingRequest) ValidateSanityData(chainRetriever C
 	}
 
 	// Step 3
-	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, shieldingReq.TokenID, common.PortalVersion4)
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, req.TokenID, common.PortalVersion4)
 	if !isPortalToken || err != nil {
 		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("tokenID not supported"))
 	}
 
 	// Step 4.
-	if shieldingReq.ShieldingProof == "" {
+	if req.ShieldingProof == "" {
 		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("shieldingProof is empty"))
 	}
-	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(shieldingReq.ShieldingProof)
+	_, err = btcrelaying.ParseAndValidateSanityBTCProofFromB64EncodeStr(req.ShieldingProof)
 	if err != nil {
 		return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError,
 			fmt.Errorf("shieldingProof is invalid %v", err))
@@ -193,42 +195,42 @@ func (shieldingReq PortalV4ShieldingRequest) ValidateSanityData(chainRetriever C
 	return true, true, nil
 }
 
-func (shieldingReq PortalV4ShieldingRequest) ValidateMetadataByItself() bool {
-	return shieldingReq.Type == metadataCommon.PortalV4ShieldingRequestMeta
+func (req PortalV4ShieldingRequest) ValidateMetadataByItself() bool {
+	return req.Type == metadataCommon.PortalV4ShieldingRequestMeta
 }
 
-func (shieldingReq PortalV4ShieldingRequest) Hash() *common.Hash {
+func (req PortalV4ShieldingRequest) Hash() *common.Hash {
 	var record string
-	if len(shieldingReq.OTDepositPubKey) == common.PublicKeySize {
-		jsb, _ := json.Marshal(shieldingReq)
+	if req.OTDepositPubKey != "" {
+		jsb, _ := json.Marshal(req)
 		hash := common.HashH(jsb)
 		return &hash
 	}
 
 	// old shielding request
-	record = shieldingReq.MetadataBase.Hash().String()
-	record += shieldingReq.TokenID
-	record += shieldingReq.Receiver
-	record += shieldingReq.ShieldingProof
+	record = req.MetadataBase.Hash().String()
+	record += req.TokenID
+	record += req.Receiver
+	record += req.ShieldingProof
 	hash := common.HashH([]byte(record))
 
 	return &hash
 }
 
-func (shieldingReq PortalV4ShieldingRequest) HashWithoutSig() *common.Hash {
-	if len(shieldingReq.OTDepositPubKey) == common.PublicKeySize {
-		shieldingReq.Sig = nil
-		jsb, _ := json.Marshal(shieldingReq)
+func (req PortalV4ShieldingRequest) HashWithoutSig() *common.Hash {
+	if req.OTDepositPubKey != "" {
+		req.Sig = nil
+		jsb, _ := json.Marshal(req)
 		hash := common.HashH(jsb)
 		return &hash
 	}
 
-	return shieldingReq.Hash()
+	return req.Hash()
 }
 
-func (shieldingReq *PortalV4ShieldingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (req *PortalV4ShieldingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalShieldingRequestAction{
-		Meta:    *shieldingReq,
+		Meta:    *req,
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
 	}
@@ -241,6 +243,6 @@ func (shieldingReq *PortalV4ShieldingRequest) BuildReqActions(tx Transaction, ch
 	return [][]string{action}, nil
 }
 
-func (shieldingReq *PortalV4ShieldingRequest) CalculateSize() uint64 {
-	return calculateSize(shieldingReq)
+func (req *PortalV4ShieldingRequest) CalculateSize() uint64 {
+	return calculateSize(req)
 }
