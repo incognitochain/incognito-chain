@@ -337,6 +337,7 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputShare
 	return err
 }
 
+// deprecated
 func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee, sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
@@ -408,11 +409,29 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	outCount := new(privacy.Scalar).FromUint64(uint64(len(tx.GetProof().GetOutputCoins())))
 	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
 
-	// fmt.Printf("Token id is %v\n",tokenID)
-	ring, err := reconstructRingCAV2(tx.GetValidationEnv(), sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB)
+	ring, coinsInRing, err := reconstructRingCAV2(tx.GetValidationEnv(), sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
+	}
+	hasNonPrivateCoin, _, nptoken, npcoin := ringContainsNonPrivacyToken(coinsInRing)
+	switch len(coinsInRing) {
+	case privacy.RingSize:
+		if hasNonPrivateCoin {
+			utils.Logger.Log.Errorf("RingSig cannot have non-private token, found %v of %v", npcoin.GetPublicKey(), nptoken)
+			return false, fmt.Errorf("invalid ringSig - has non-private token %v", nptoken)
+		}
+	case 1:
+		tokenID := common.ConfidentialAssetID
+		if hasNonPrivateCoin {
+			tokenID = *nptoken
+		}
+		if valid, err := validateNonPrivateTransfer(tokenID, tx.GetProof()); !valid {
+			return false, fmt.Errorf("invalid non-private token transfer - %v", err)
+		}
+	default:
+		utils.Logger.Log.Errorf("Invalid ring size %d, expect %d or %d", len(coinsInRing), privacy.RingSize, 1)
+		return false, fmt.Errorf("invalid ring size %d", len(coinsInRing))
 	}
 
 	// Reform MLSAG Signature

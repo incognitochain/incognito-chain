@@ -190,3 +190,6 @@ func ComputeAssetTagBlinder(sharedSecret *Point) (*Scalar, error) {
 func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error) {
 	return coin.NewCoinCA(info, tokenID)
 }
+
+type TokenAttributes = privacy_v2.TokenAttributes
+var MapPlainAssetTags = privacy_v2.MapPlainAssetTags

@@ -605,7 +605,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 	// Reform Ring
 	sumOutputCoinsWithFee := tx_generic.CalculateSumOutputsWithFee(txFee.GetProof().GetOutputCoins(), txFee.GetTxFee())
-	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txFee.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
+	ring, _, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txFee.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
