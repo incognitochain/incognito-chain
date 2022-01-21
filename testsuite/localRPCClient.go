@@ -135,6 +135,16 @@ func (r *LocalRPCClient) SubmitKey(privateKey string) (b bool, err error) {
 	return true, nil
 }
 
+func (r *LocalRPCClient) SendFinishSync(mining, cpk string, sid float64) error {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createconvertcoinver1tover2transaction"]
+	_, rpcERR := c(httpServer, []interface{}{mining, cpk, sid}, nil)
+	if rpcERR != nil {
+		return errors.New(rpcERR.Error())
+	}
+	return nil
+}
+
 func (r *LocalRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey string) (err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createconvertcoinver1tover2transaction"]

@@ -91,6 +91,7 @@ type ClientInterface interface {
 
 	SubmitKey(privateKey string) (bool, error)
 	CreateConvertCoinVer1ToVer2Transaction(privateKey string) error
+	SendFinishSync(mining, cpk string, sid float64) error
 	GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error)
 	CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error)
 	GetPortalShieldingRequestStatus(tx string) (res *metadata.PortalShieldingRequestStatus, err error)

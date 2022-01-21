@@ -3,10 +3,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
 	"io/ioutil"
 	"net/http"
 )
@@ -15,6 +16,85 @@ type RemoteRPCClient struct {
 	Endpoint string
 }
 
+func (r *RemoteRPCClient) GetPortalShieldingRequestStatus(tx string) (res *metadata.PortalShieldingRequestStatus, err error) {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) CreateAndSendTxWithPortalV4UnshieldRequest(privatekey string, tokenID string, amount string, paymentAddress string, remoteAddress string) (res jsonresult.CreateTransactionTokenResult, err error) {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) GetPortalUnshieldRequestStatus(tx string) (res *metadata.PortalUnshieldRequestStatus, err error) {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) CreateAndSendTokenInitTransaction(param rpcclient.PdexV3InitTokenParam) (jsonresult.CreateTransactionTokenResult, error) {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxMintNft(privatekeys string) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxAddLiquidity(privatekey string, param rpcclient.PdexV3AddLiquidityParam) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxWithdrawLiquidity(privatekey, poolairID, nftID, shareAmount string) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxModifyParams(privatekey string, newParams rpcclient.PdexV3Params) {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxStake(privatekey, stakingPoolID, nftID, amount string) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxUnstake(privatekey, stakingPoolID, nftID, amount string) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxAddTrade(privatekey string, param rpcclient.PdexV3TradeParam) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) Pdexv3_TxAddOrder(privatekey string, params rpcclient.PdexV3AddOrderParam) error {
+	panic("implement me")
+}
+
+func (r *RemoteRPCClient) SendFinishSync(mining, cpk string, sid float64) error {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "sendfinishsync",
+		"params":  []interface{}{mining, cpk, sid},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result bool
+		Error  *ErrMsg
+	}{}
+	//fmt.Println(string(body))
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return err
+
+}
 func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey string) (err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
@@ -33,7 +113,7 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 		Result bool
 		Error  *ErrMsg
 	}{}
-	fmt.Println(string(body))
+	//fmt.Println(string(body))
 	err = json.Unmarshal(body, &resp)
 
 	if resp.Error != nil && resp.Error.StackTrace != "" {
