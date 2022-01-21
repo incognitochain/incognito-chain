@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type NodeFeatureInfo struct {
 type FeatureStat struct {
 	blockchain *BlockChain
 	nodes      map[string]NodeFeatureInfo // committeePK : feature lists
+	lock       *sync.RWMutex
 }
 
 type FeatureReportInfo struct {
@@ -71,6 +73,7 @@ func (bc *BlockChain) InitFeatureStat() {
 	DefaultFeatureStat = &FeatureStat{
 		blockchain: bc,
 		nodes:      make(map[string]NodeFeatureInfo),
+		lock:       new(sync.RWMutex),
 	}
 	//send message periodically
 	go func() {
@@ -137,6 +140,8 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 		}
 	}
 
+	stat.lock.Lock()
+	defer stat.lock.Unlock()
 	for key, features := range stat.nodes {
 
 		//check valid trigger feature and remove duplicate
@@ -189,6 +194,9 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 }
 
 func (featureStat *FeatureStat) addNode(timestamp int, key string, features []string) {
+	featureStat.lock.RLock()
+	defer featureStat.lock.RUnlock()
+
 	//not update from old message
 	if _, ok := featureStat.nodes[key]; ok && featureStat.nodes[key].Timestamp > timestamp {
 		panic(1)
