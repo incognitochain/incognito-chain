@@ -123,7 +123,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		if err != nil {
 			return err
 		}
-		for tokenID, _ := range tokenStates {
+		for tokenID := range tokenStates {
 			allTokens[tokenID] = true
 		}
 
@@ -187,7 +187,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
 	}
 	whiteListTx = make(map[string]bool)
-	for k, _ := range wl {
+	for k := range wl {
 		whiteListTx[k] = true
 	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
@@ -1174,8 +1174,9 @@ func (blockchain *BlockChain) UsingNewPool() bool {
 
 func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePublicKey {
 
-	shardCommittees := blockchain.BeaconChain.GetFinalViewState().GetShardCommittee()
-	numberOfFixedNode := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+	beaconFinalView := blockchain.BeaconChain.GetFinalViewState()
+	shardCommittees := beaconFinalView.GetShardCommittee()
+	numberOfFixedNode := beaconFinalView.NumberOfFixedShardBlockValidator
 	m := []incognitokey.CommitteePublicKey{}
 
 	for _, shardCommittee := range shardCommittees {

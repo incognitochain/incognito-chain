@@ -21,6 +21,7 @@ type View interface {
 	GetBlock() types.BlockInterface
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
+	GetShardProposerLength() int
 }
 
 type MultiView struct {

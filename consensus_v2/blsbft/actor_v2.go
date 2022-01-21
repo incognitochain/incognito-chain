@@ -377,7 +377,7 @@ func InitProposeHistory(chainID int) (map[int64]struct{}, error) {
 
 	res := make(map[int64]struct{})
 
-	for k, _ := range data {
+	for k := range data {
 		res[k] = struct{}{}
 	}
 
@@ -636,7 +636,7 @@ func (a *actorV2) run() error {
 					}
 
 					var finalityProof = NewFinalityProof()
-					var isEnoughLemma2Proof bool = false
+					var isEnoughLemma2Proof = false
 					var failReason = ""
 					if proposeBlockInfo.block != nil {
 						finalityProof, isEnoughLemma2Proof, failReason = a.ruleDirector.builder.ProposeMessageRule().
@@ -1013,7 +1013,7 @@ func (a *actorV2) proposeShardBlock(
 	var newBlock types.BlockInterface
 	var committeesFromBeaconHash []incognitokey.CommitteePublicKey
 	if block != nil {
-		_, committeesFromBeaconHash, err = a.getCommitteeForBlock(block)
+		_, committeesFromBeaconHash, err = a.getCommitteeForNewBlock(block)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -1081,7 +1081,7 @@ func (a *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candidate []b
 }
 
 // getCommitteeForBlock base on the block version to retrieve the right committee list
-func (a *actorV2) getCommitteeForBlock(
+func (a *actorV2) getCommitteeForNewBlock(
 	v types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	committees := []incognitokey.CommitteePublicKey{}
@@ -1214,7 +1214,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	producerCommitteePublicKey := incognitokey.CommitteePublicKey{}
 	producerCommitteePublicKey.FromBase58(block.GetProducer())
 	producerMiningKeyBase58 := producerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
-	signingCommittees, committees, err := a.getCommitteeForBlock(block)
+	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
 	if err != nil {
 		a.logger.Error(err)
 		return err
@@ -1295,6 +1295,7 @@ func (a *actorV2) handleNewProposeMsg(
 		committees,
 		signingCommittees,
 		userKeySet,
+		a.chain.GetBestView().GetShardProposerLength(),
 		producerPublicBLSMiningKey,
 	)
 	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
@@ -1395,7 +1396,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 
 func (a *actorV2) handleCleanMem() {
 
-	for h, _ := range a.receiveBlockByHeight {
+	for h := range a.receiveBlockByHeight {
 		if h <= a.chain.GetFinalView().GetHeight() {
 			err := a.CleanReceiveBlockByHeight(h)
 			if err != nil {
@@ -1405,7 +1406,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	for h, _ := range a.voteHistory {
+	for h := range a.voteHistory {
 		if h <= a.chain.GetFinalView().GetHeight() {
 			if err := a.CleanVoteHistory(h); err != nil {
 				a.logger.Errorf("clean vote history error %+v", err)
@@ -1422,7 +1423,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	for timeSlot, _ := range a.proposeHistory {
+	for timeSlot := range a.proposeHistory {
 		if timeSlot < a.currentTimeSlot {
 			if err := a.CleanProposeHistory(timeSlot); err != nil {
 				a.logger.Errorf("clean propose history %+v", err)

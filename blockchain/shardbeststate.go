@@ -37,22 +37,23 @@ type ShardRootHash struct {
 }
 
 type ShardBestState struct {
-	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
-	BestBlock              *types.ShardBlock `json:"BestBlock"`     // block data
-	BestBeaconHash         common.Hash       `json:"BestBeaconHash"`
-	BeaconHeight           uint64            `json:"BeaconHeight"`
-	ShardID                byte              `json:"ShardID"`
-	Epoch                  uint64            `json:"Epoch"`
-	ShardHeight            uint64            `json:"ShardHeight"`
-	MaxShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize  int               `json:"MinShardCommitteeSize"`
-	ShardProposerIdx       int               `json:"ShardProposerIdx"`
-	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"`         // Best cross shard block by heigh
-	NumTxns                uint64            `json:"NumTxns"`                // The number of txns in the block.
-	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
-	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
-	ActiveShards           int               `json:"ActiveShards"`
-	ConsensusAlgorithm     string            `json:"ConsensusAlgorithm"`
+	BestBlockHash                    common.Hash       `json:"BestBlockHash"` // hash of block.
+	BestBlock                        *types.ShardBlock `json:"BestBlock"`     // block data
+	BestBeaconHash                   common.Hash       `json:"BestBeaconHash"`
+	BeaconHeight                     uint64            `json:"BeaconHeight"`
+	ShardID                          byte              `json:"ShardID"`
+	Epoch                            uint64            `json:"Epoch"`
+	ShardHeight                      uint64            `json:"ShardHeight"`
+	MaxShardCommitteeSize            int               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize            int               `json:"MinShardCommitteeSize"`
+	NumberOfFixedShardBlockValidator int               `json:"NumberOfFixedValidator"`
+	ShardProposerIdx                 int               `json:"ShardProposerIdx"`
+	BestCrossShard                   map[byte]uint64   `json:"BestCrossShard"`         // Best cross shard block by heigh
+	NumTxns                          uint64            `json:"NumTxns"`                // The number of txns in the block.
+	TotalTxns                        uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
+	TotalTxnsExcludeSalary           uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
+	ActiveShards                     int               `json:"ActiveShards"`
+	ConsensusAlgorithm               string            `json:"ConsensusAlgorithm"`
 
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
@@ -137,6 +138,7 @@ func NewBestStateShardWithConfig(shardID byte, shardCommitteeState committeestat
 	bestStateShard.BestBlock = nil
 	bestStateShard.MaxShardCommitteeSize = config.Param().CommitteeSize.MaxShardCommitteeSize
 	bestStateShard.MinShardCommitteeSize = config.Param().CommitteeSize.MinShardCommitteeSize
+	bestStateShard.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 	bestStateShard.ActiveShards = config.Param().ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.ShardHeight = 1
@@ -342,7 +344,7 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(
 	ts int64,
 	version int,
 ) (incognitokey.CommitteePublicKey, int) {
-	id := GetProposerByTimeSlot(ts, GetProposerLength())
+	id := GetProposerByTimeSlot(ts, shardBestState.GetShardProposerLength())
 	return shardBestState.GetShardCommittee()[id], id
 }
 
@@ -361,7 +363,7 @@ func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.
 func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
 	tokenIDs := []common.Hash{}
 	tokenStates := statedb.ListPrivacyToken(shardBestState.GetCopiedTransactionStateDB())
-	for k, _ := range tokenStates {
+	for k := range tokenStates {
 		tokenIDs = append(tokenIDs, k)
 	}
 	return tokenIDs
@@ -438,7 +440,7 @@ func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironmentWithValue
 		EpochBreakPointSwapNewKey:    config.Param().ConsensusParam.EpochBreakPointSwapNewKey,
 		BeaconInstructions:           beaconInstructions,
 		MaxShardCommitteeSize:        shardBestState.MaxShardCommitteeSize,
-		NumberOfFixedBlockValidators: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+		NumberOfFixedBlockValidators: shardBestState.NumberOfFixedShardBlockValidator,
 		MinShardCommitteeSize:        shardBestState.MinShardCommitteeSize,
 		Offset:                       config.Param().SwapCommitteeParam.Offset,
 		ShardBlockHash:               shardBestState.BestBlockHash,
@@ -551,6 +553,12 @@ func (shardBestState *ShardBestState) upgradeBlockProducingV3Config() error {
 			shardBestState.ShardID, shardBestState.MinShardCommitteeSize, SFV3_MinShardCommitteeSize)
 	}
 
+	if shardBestState.NumberOfFixedShardBlockValidator < SFV3_MinShardCommitteeSize {
+		shardBestState.NumberOfFixedShardBlockValidator = SFV3_MinShardCommitteeSize
+		Logger.log.Infof("SHARD %+v | Set shardBestState.NumberOfFixedShardBlockValidator from %+v to %+v ",
+			shardBestState.ShardID, shardBestState.NumberOfFixedShardBlockValidator, SFV3_MinShardCommitteeSize)
+	}
+
 	if shardBestState.MaxShardCommitteeSize < SFV3_MinShardCommitteeSize {
 		shardBestState.MaxShardCommitteeSize = SFV3_MinShardCommitteeSize
 		Logger.log.Infof("SHARD %+v | Set shardBestState.MaxShardCommitteeSize from %+v to %+v ",
@@ -618,7 +626,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
-			GetProposerLength(),
+			shardBestState.GetShardProposerLength(),
 		)
 		signingCommitteeV3 := FilterSigningCommitteeV3(
 			committees,
@@ -686,10 +694,6 @@ func FilterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, 
 	return signingCommittees
 }
 
-func GetProposerLength() int {
-	return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
-}
-
 func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.ShardBlock) (uint64, error) {
 
 	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
@@ -702,4 +706,8 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 	}
 
 	return beaconHeight, nil
+}
+
+func (curView *ShardBestState) GetShardProposerLength() int {
+	return curView.NumberOfFixedShardBlockValidator
 }
