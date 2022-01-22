@@ -181,7 +181,7 @@ func (blockchain *BlockChain) InitChainState() error {
 
 	finishsync.NewDefaultFinishSyncMsgPool()
 	bestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView.GetSyncingValidatorsString())
+	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView)
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())

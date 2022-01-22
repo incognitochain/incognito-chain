@@ -755,7 +755,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	if proposeBlockInfo.block == nil {
 		return
 	}
-	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
+
 	//already in chain
 	bestView := a.chain.GetBestView()
 	view := a.chain.GetViewByHash(*proposeBlockInfo.block.Hash())
@@ -772,6 +772,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	}
 
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
+	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
 
 	if !proposeBlockInfo.IsCommitted {
 		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
