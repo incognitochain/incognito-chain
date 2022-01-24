@@ -10,6 +10,7 @@ import (
 type OTDepositKey struct {
 	PrivateKey []byte
 	PublicKey  []byte
+	Index      uint64
 }
 
 // GenerateOTDepositKey generates a new OTDepositKey from the keySet with the given tokenID and index.
@@ -29,6 +30,7 @@ func (keySet *KeySet) GenerateOTDepositKey(tokenIDStr string, index uint64) (*OT
 	return &OTDepositKey{
 		PrivateKey: privateKey.ToBytesS(),
 		PublicKey:  pubKey.ToBytesS(),
+		Index:      index,
 	}, nil
 }
 
@@ -49,6 +51,7 @@ func GenerateOTDepositKeyFromPrivateKey(incPrivateKey []byte, tokenIDStr string,
 	return &OTDepositKey{
 		PrivateKey: privateKey.ToBytesS(),
 		PublicKey:  pubKey.ToBytesS(),
+		Index:      index,
 	}, nil
 }
 
@@ -62,5 +65,6 @@ func GenerateOTDepositKeyFromMasterDepositSeed(masterDepositSeed []byte, index u
 	return &OTDepositKey{
 		PrivateKey: privateKey.ToBytesS(),
 		PublicKey:  pubKey.ToBytesS(),
+		Index:      index,
 	}, nil
 }
