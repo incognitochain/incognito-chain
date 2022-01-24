@@ -70,7 +70,7 @@ enable_feature_flags:
 portal_v3_height: 10000000
 tx_pool_version: 0
 bsc_param:
-  host: "https://bsc-dataseed.binance.org"
+  host: "https://bsc-fullnode.incognito.org"
 plg_param:
   host: "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
 pdex_param:
