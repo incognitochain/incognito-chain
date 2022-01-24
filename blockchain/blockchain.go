@@ -28,6 +28,7 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -426,8 +427,12 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 
 		publicKey := coinDB.GetPublicKey()
-		// we do not use burned coins since they will reduce the privacy level of the transaction.
+		// we do not use burned or burn-only coins since they will reduce the privacy level of the transaction.
 		if common.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
+			i--
+			continue
+		}
+		if found, _, _, _ := privacy.ContainsNonPrivateToken([][]*privacy.CoinV2{[]*privacy.CoinV2{coinDB}}); found {
 			i--
 			continue
 		}
