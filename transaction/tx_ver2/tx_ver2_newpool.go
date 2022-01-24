@@ -105,7 +105,7 @@ func getRingFromSigPubKeyAndLastColumnCommitmentV2(txEnv metadata.ValidationEnvi
 	OTAData := txEnv.DBData()
 	n := len(indexes)
 	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+		return nil, nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
 	}
 	m := len(indexes[0])
 	if m*n != len(OTAData) {

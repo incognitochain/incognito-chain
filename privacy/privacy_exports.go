@@ -193,3 +193,5 @@ func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error)
 
 type TokenAttributes = privacy_v2.TokenAttributes
 var MapPlainAssetTags = privacy_v2.MapPlainAssetTags
+var ContainsNonPrivateToken = privacy_v2.ContainsNonPrivateToken
+var ValidateNonPrivateTransfer = privacy_v2.ValidateNonPrivateTransfer

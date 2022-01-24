@@ -400,7 +400,7 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 	case privacy.RingSize:
 		// private PRV transfer
 	case 1:
-		if valid, err := validateNonPrivateTransfer(common.PRVCoinID, tx.GetProof()); !valid {
+		if valid, err := privacy.ValidateNonPrivateTransfer(common.PRVCoinID, tx.GetProof()); !valid {
 			return false, fmt.Errorf("invalid non-private transfer - %v", err)
 		}
 	default:

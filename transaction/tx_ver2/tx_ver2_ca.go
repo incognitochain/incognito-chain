@@ -414,7 +414,7 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
 	}
-	hasNonPrivateCoin, _, nptoken, npcoin := ringContainsNonPrivacyToken(coinsInRing)
+	hasNonPrivateCoin, _, nptoken, npcoin := privacy.ContainsNonPrivateToken(coinsInRing)
 	switch len(coinsInRing) {
 	case privacy.RingSize:
 		if hasNonPrivateCoin {
@@ -426,7 +426,7 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 		if hasNonPrivateCoin {
 			tokenID = *nptoken
 		}
-		if valid, err := validateNonPrivateTransfer(tokenID, tx.GetProof()); !valid {
+		if valid, err := privacy.ValidateNonPrivateTransfer(tokenID, tx.GetProof()); !valid {
 			return false, fmt.Errorf("invalid non-private token transfer - %v", err)
 		}
 	default:
