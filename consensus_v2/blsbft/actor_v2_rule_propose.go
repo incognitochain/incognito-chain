@@ -12,6 +12,7 @@ import (
 )
 
 type ProposeMessageEnvironment struct {
+	chainID                    int
 	block                      types.BlockInterface
 	previousBlock              types.BlockInterface
 	committees                 []incognitokey.CommitteePublicKey
@@ -20,8 +21,8 @@ type ProposeMessageEnvironment struct {
 	producerPublicBLSMiningKey string
 }
 
-func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock types.BlockInterface, committees []incognitokey.CommitteePublicKey, signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey, producerPublicBLSMiningKey string) *ProposeMessageEnvironment {
-	return &ProposeMessageEnvironment{block: block, previousBlock: previousBlock, committees: committees, signingCommittees: signingCommittees, userKeySet: userKeySet, producerPublicBLSMiningKey: producerPublicBLSMiningKey}
+func NewProposeMessageEnvironment(chainID int, block types.BlockInterface, previousBlock types.BlockInterface, committees []incognitokey.CommitteePublicKey, signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey, producerPublicBLSMiningKey string) *ProposeMessageEnvironment {
+	return &ProposeMessageEnvironment{chainID: chainID, block: block, previousBlock: previousBlock, committees: committees, signingCommittees: signingCommittees, userKeySet: userKeySet, producerPublicBLSMiningKey: producerPublicBLSMiningKey}
 }
 
 type SendProposeBlockEnvironment struct {
@@ -102,7 +103,7 @@ func NewProposeRuleLemma2(logger common.Logger, nextBlockFinalityProof map[strin
 }
 
 func (p ProposeRuleLemma2) HandleCleanMem(finalView uint64) {
-	for temp, _ := range p.nextBlockFinalityProof {
+	for temp := range p.nextBlockFinalityProof {
 		hash := common.Hash{}.NewHashFromStr2(temp)
 		block, err := p.chain.GetBlockByHash(hash)
 		if err == nil {
@@ -126,9 +127,9 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		}
 		isValidLemma2 = true
 	} else {
-		isReProposeFirstBlockNextHeight = p.isReProposeFromFirstBlockNextHeight(env.previousBlock, env.block, env.committees)
+		isReProposeFirstBlockNextHeight = p.isReProposeFromFirstBlockNextHeight(env.chainID, env.previousBlock, env.block, env.committees)
 		if isReProposeFirstBlockNextHeight {
-			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees)
+			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(env.chainID, proposeMsg, env.block, env.committees)
 			if err != nil {
 				return nil, err
 			}
@@ -189,6 +190,7 @@ func (p *ProposeRuleLemma2) isFirstBlockNextHeight(
 // proposer timeslot > producer timeslot
 // proposer is correct
 func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
+	chainID int,
 	previousBlock types.BlockInterface,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -206,7 +208,7 @@ func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
 		return false
 	}
 
-	wantProposer, _ := GetProposerByTimeSlotFromCommitteeList(proposerTimeSlot, committees)
+	wantProposer, _ := GetProposerByTimeSlotFromCommitteeList(chainID, proposerTimeSlot, committees)
 	wantProposerBase58, _ := wantProposer.ToBase58()
 	if block.GetProposer() != wantProposerBase58 {
 		return false
@@ -240,6 +242,7 @@ func (p *ProposeRuleLemma2) verifyLemma2FirstBlockNextHeight(
 }
 
 func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
+	chainID int,
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -254,7 +257,7 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 			proposeMsg.ReProposeHashSignature, block.GetProposer())
 	}
 
-	isValidProof, err := p.verifyFinalityProof(proposeMsg, block, committees)
+	isValidProof, err := p.verifyFinalityProof(chainID, proposeMsg, block, committees)
 	if err != nil {
 		return false, err
 	}
@@ -277,6 +280,7 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 }
 
 func (p *ProposeRuleLemma2) verifyFinalityProof(
+	chainID int,
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -298,7 +302,7 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 
 	proposerBase58List := []string{}
 	for reProposeTimeSlot := beginTimeSlot; reProposeTimeSlot < currentTimeSlot; reProposeTimeSlot++ {
-		reProposer, _ := GetProposerByTimeSlotFromCommitteeList(reProposeTimeSlot, committees)
+		reProposer, _ := GetProposerByTimeSlotFromCommitteeList(chainID, reProposeTimeSlot, committees)
 		reProposerBase58, _ := reProposer.ToBase58()
 		proposerBase58List = append(proposerBase58List, reProposerBase58)
 	}
@@ -360,11 +364,11 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 }
 
 //ProposerByTimeSlot ...
-func GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
+func GetProposerByTimeSlotFromCommitteeList(chainID int, ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
 		ts,
 		committees,
-		GetProposerLength(),
+		GetProposerLength(chainID),
 	)
 	return proposer, proposerIndex
 }
@@ -381,8 +385,12 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 	return id
 }
 
-func GetProposerLength() int {
-	return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+func GetProposerLength(chainID int) int {
+	if chainID == common.BeaconChainID {
+		return config.Param().CommitteeSize.MinBeaconCommitteeSize
+	} else {
+		return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+	}
 }
 
 func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
