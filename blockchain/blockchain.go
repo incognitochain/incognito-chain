@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"sync"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -180,8 +181,12 @@ func (blockchain *BlockChain) InitChainState() error {
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
 
 	finishsync.NewDefaultFinishSyncMsgPool()
-	bestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView)
+	go func() {
+		for {
+			finishsync.DefaultFinishSyncMsgPool.Clean(blockchain.BeaconChain.GetBestView().(*BeaconBestState).GetSyncingValidatorsString())
+			time.Sleep(time.Minute * 5)
+		}
+	}()
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())

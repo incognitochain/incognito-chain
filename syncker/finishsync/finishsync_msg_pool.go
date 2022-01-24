@@ -2,13 +2,11 @@ package finishsync
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"sync"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 var (
@@ -174,22 +172,13 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string, currentB
 	return res
 }
 
-type BeaconViewInterface interface {
-	GetSyncingValidatorsString() map[byte][]string
-}
-
-func (f *FinishSyncMsgPool) Clean(view BeaconViewInterface) {
-
-	for {
-		f.mu.Lock()
-		f.clean(view.GetSyncingValidatorsString())
-		f.mu.Unlock()
-		time.Sleep(5 * time.Minute)
-	}
-
+func (f *FinishSyncMsgPool) Clean(allSyncPoolValidators map[byte][]string) {
+	f.clean(allSyncPoolValidators)
 }
 
 func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
 		Logger.Infof("Finish Sync Msg Pool, ShardID %+v, Length %+v", shardID, len(finishedSyncValidators))
 		syncPoolValidators := allSyncPoolValidators[shardID]
