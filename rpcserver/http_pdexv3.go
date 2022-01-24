@@ -398,7 +398,9 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 	order, ok := pair.OrderRewards()[nftIDStr]
 	if ok {
 		// compute amount of received LOP reward
-		uncollectedOrderReward = order.UncollectedRewards()
+		for k, v := range order.UncollectedRewards() {
+			uncollectedOrderReward[k] = v.Amount()
+		}
 	}
 
 	reward := pdex.CombineReward(uncollectedLPReward, uncollectedOrderReward)
@@ -1486,7 +1488,7 @@ func createPdexv3AddOrderRequestTransaction(
 
 	md, _ := metadataPdexv3.NewAddOrderRequest(
 		mdReader.TokenToSell, mdReader.PoolPairID, uint64(mdReader.SellAmount),
-		uint64(mdReader.MinAcceptableAmount), nil,
+		uint64(mdReader.MinAcceptableAmount), nil, nil,
 		mdReader.AccessOption, metadataCommon.Pdexv3AddOrderRequestMeta,
 	)
 

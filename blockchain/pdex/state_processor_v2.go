@@ -765,7 +765,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 					if newBalance == 0 && ord.Token1Balance() == 0 {
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
-							orderReward.accessOTA = md.AccessOTA
+							orderReward.withdrawnStatus = WithdrawnOrderReward
 						}
 					}
 				} else if md.TokenID == pair.state.Token1ID() {
@@ -779,7 +779,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 					if newBalance == 0 && ord.Token0Balance() == 0 {
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
-							orderReward.accessOTA = md.AccessOTA
+							orderReward.withdrawnStatus = WithdrawnOrderReward
 						}
 					}
 				}
@@ -900,18 +900,8 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
-		orderReward, isExisted := poolPair.orderRewards[accessID]
+		_, isExisted = poolPair.orderRewards[accessID]
 		if isExisted {
-			if !actionData.AccessOption.UseNft() {
-				if orderReward.accessOTA == nil {
-					for index, orderbook := range poolPair.orderbook.orders {
-						if orderbook.NftID().String() == accessID {
-							poolPair.orderbook.orders[index].SetAccessOTA(actionData.AccessOTA)
-							break
-						}
-					}
-				}
-			}
 			delete(poolPair.orderRewards, accessID)
 		}
 

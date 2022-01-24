@@ -18,6 +18,7 @@ type AddOrderRequest struct {
 	SellAmount          uint64                              `json:"SellAmount"`
 	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
 	Receiver            map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
+	RewardReceiver      map[common.Hash]privacy.OTAReceiver `json:"RewardReceiver,omitempty"`
 	AccessOption
 	metadataCommon.MetadataBase
 }
@@ -28,6 +29,7 @@ func NewAddOrderRequest(
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	recv map[common.Hash]privacy.OTAReceiver,
+	rewardReceivers map[common.Hash]privacy.OTAReceiver,
 	accessOption AccessOption,
 	metaType int,
 ) (*AddOrderRequest, error) {
@@ -37,6 +39,7 @@ func NewAddOrderRequest(
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		Receiver:            recv,
+		RewardReceiver:      rewardReceivers,
 		AccessOption:        accessOption,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
@@ -84,6 +87,20 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		}
 	}
 
+	// reward receivers check
+	for _, item := range req.RewardReceiver {
+		if !item.IsValid() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid reward receiver %v", item))
+		}
+		if tx.GetSenderAddrLastByte() != item.GetShardID() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Invalid shard %d for reward Receiver - must equal sender shard",
+					item.GetShardID()))
+		}
+	}
+
 	// Burned coin check
 	isBurn, burnedPRVCoin, burnedCoin, burnedTokenID, err := tx.GetTxFullBurnData()
 	if err != nil || !isBurn {
@@ -106,6 +123,22 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			return false, false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Missing refund OTAReceiver for token %v", tokenID))
+		}
+		if req.RewardReceiver != nil {
+			_, exists := req.RewardReceiver[tokenID]
+			if !exists {
+				return false, false, metadataCommon.NewMetadataTxError(
+					metadataCommon.PDEInvalidMetadataValueError,
+					fmt.Errorf("Missing reward receiver for token %v", tokenID))
+			}
+		}
+	}
+	if req.RewardReceiver != nil {
+		_, exists := req.RewardReceiver[common.PRVCoinID]
+		if !exists {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Missing reward receiver for token %v", common.PRVCoinID))
 		}
 	}
 

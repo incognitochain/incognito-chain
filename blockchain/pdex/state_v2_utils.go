@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type Share struct {
@@ -501,20 +502,68 @@ func (share *Share) deleteFromDB(
 	return nil
 }
 
-type Reward map[common.Hash]uint64 // tokenID -> amount
+type OrderRewardDetail struct {
+	receiver privacy.OTAReceiver
+	amount   uint64
+}
+
+func NewOrderRewardDetailWithValue(
+	receiver privacy.OTAReceiver, amount uint64,
+) *OrderRewardDetail {
+	return &OrderRewardDetail{
+		amount:   amount,
+		receiver: receiver,
+	}
+}
+
+func (o *OrderRewardDetail) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		Receiver privacy.OTAReceiver `json:"Receiver"`
+		Amount   uint64              `json:"Amount"`
+	}{
+		Receiver: o.receiver,
+		Amount:   o.amount,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (o *OrderRewardDetail) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		Receiver privacy.OTAReceiver `json:"Receiver"`
+		Amount   uint64              `json:"Amount"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	o.receiver = temp.Receiver
+	o.amount = temp.Amount
+	return nil
+}
+
+func (o *OrderRewardDetail) Amount() uint64 {
+	return o.amount
+}
+
+func (o *OrderRewardDetail) Receiver() privacy.OTAReceiver {
+	return o.receiver
+}
 
 type OrderReward struct {
-	accessOTA          []byte
-	uncollectedRewards Reward
+	uncollectedRewards map[common.Hash]OrderRewardDetail
+	withdrawnStatus    byte
 }
 
 func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		AccessOTA          []byte `json:"AccessOTA,omitempty"`
-		UncollectedRewards Reward `json:"UncollectedRewards"`
+		UncollectedRewards map[common.Hash]OrderRewardDetail `json:"UncollectedRewards"`
+		WithdrawnStatus    byte                              `json:"WithdrawnStatus"`
 	}{
-		AccessOTA:          orderReward.accessOTA,
 		UncollectedRewards: orderReward.uncollectedRewards,
+		WithdrawnStatus:    orderReward.withdrawnStatus,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -524,24 +573,24 @@ func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 
 func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		AccessOTA          []byte `json:"AccessOTA,omitempty"`
-		UncollectedRewards Reward `json:"UncollectedRewards"`
+		UncollectedRewards map[common.Hash]OrderRewardDetail `json:"UncollectedRewards"`
+		WithdrawnStatus    byte                              `json:"WithdrawnStatus"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	orderReward.accessOTA = temp.AccessOTA
+	orderReward.withdrawnStatus = temp.WithdrawnStatus
 	orderReward.uncollectedRewards = temp.UncollectedRewards
 	return nil
 }
 
-func (orderReward *OrderReward) AccessOTA() []byte {
-	return orderReward.accessOTA
+func (orderReward *OrderReward) WithdrawnStatus() byte {
+	return orderReward.withdrawnStatus
 }
 
-func (orderReward *OrderReward) UncollectedRewards() Reward {
-	res := Reward{}
+func (orderReward *OrderReward) UncollectedRewards() map[common.Hash]OrderRewardDetail {
+	res := map[common.Hash]OrderRewardDetail{}
 	for k, v := range orderReward.uncollectedRewards {
 		res[k] = v
 	}
@@ -551,23 +600,24 @@ func (orderReward *OrderReward) UncollectedRewards() Reward {
 func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
 	oldAmount := uint64(0)
 	if _, ok := orderReward.uncollectedRewards[tokenID]; ok {
-		oldAmount = orderReward.uncollectedRewards[tokenID]
+		oldAmount = orderReward.uncollectedRewards[tokenID].amount
 	}
-	orderReward.uncollectedRewards[tokenID] = oldAmount + amount
+	temp := orderReward.uncollectedRewards[tokenID]
+	temp.amount = oldAmount + amount
+	orderReward.uncollectedRewards[tokenID] = temp
 }
 
 func NewOrderReward() *OrderReward {
 	return &OrderReward{
-		uncollectedRewards: make(map[common.Hash]uint64),
+		uncollectedRewards: make(map[common.Hash]OrderRewardDetail),
 	}
 }
 
 func NewOrderRewardWithValue(
-	accessOTA []byte,
-	uncollectedRewards map[common.Hash]uint64,
+	withdrawnStatus byte, uncollectedRewards map[common.Hash]OrderRewardDetail,
 ) *OrderReward {
 	return &OrderReward{
-		accessOTA:          accessOTA,
+		withdrawnStatus:    withdrawnStatus,
 		uncollectedRewards: uncollectedRewards,
 	}
 }
@@ -577,7 +627,7 @@ func (orderReward *OrderReward) Clone() *OrderReward {
 	for k, v := range orderReward.uncollectedRewards {
 		res.uncollectedRewards[k] = v
 	}
-	res.accessOTA = orderReward.accessOTA
+	res.withdrawnStatus = orderReward.withdrawnStatus
 	return res
 }
 
@@ -595,16 +645,24 @@ func (orderReward *OrderReward) getDiff(
 		}
 		newOrderRewardChange.IsChanged = true
 	} else {
-		if !bytes.Equal(orderReward.accessOTA, compareOrderReward.accessOTA) {
+		if orderReward.withdrawnStatus != compareOrderReward.withdrawnStatus {
 			newOrderRewardChange.IsChanged = true
 		}
-		newOrderRewardChange.UncollectedReward = v2utils.DifMapHashUint64(orderReward.uncollectedRewards).GetDiff(v2utils.DifMapHashUint64(compareOrderReward.uncollectedRewards))
+		orderRewardAmount := make(map[common.Hash]uint64)
+		compareOrderRewardAmount := make(map[common.Hash]uint64)
+		for k, v := range orderReward.uncollectedRewards {
+			orderRewardAmount[k] = v.amount
+		}
+		for k, v := range compareOrderReward.uncollectedRewards {
+			compareOrderRewardAmount[k] = v.amount
+		}
+		newOrderRewardChange.UncollectedReward = v2utils.DifMapHashUint64(orderRewardAmount).GetDiff(v2utils.DifMapHashUint64(compareOrderRewardAmount))
 	}
 	return newOrderRewardChange
 }
 
 type MakingVolume struct {
-	volume map[string]*big.Int // nftID -> amount
+	volume map[string]*big.Int // accessID -> amount
 }
 
 func (makingVolume *MakingVolume) MarshalJSON() ([]byte, error) {

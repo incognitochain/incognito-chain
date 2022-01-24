@@ -9,12 +9,12 @@ import (
 )
 
 type Pdexv3PoolPairOrderRewardState struct {
-	nftID     string
-	accessOTA []byte
+	nftID           string
+	withdrawnStatus byte
 }
 
-func (state *Pdexv3PoolPairOrderRewardState) AccessOTA() []byte {
-	return state.accessOTA
+func (state *Pdexv3PoolPairOrderRewardState) WithdrawnStatus() byte {
+	return state.withdrawnStatus
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
@@ -23,11 +23,11 @@ func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
 
 func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID     string `json:"NftID"`
-		AccessOTA []byte `json:"AccessOTA,omitempty"`
+		NftID           string `json:"NftID"`
+		WithdrawnStatus byte   `json:"WithdrawnStatus"`
 	}{
-		NftID:     state.nftID,
-		AccessOTA: state.accessOTA,
+		NftID:           state.nftID,
+		WithdrawnStatus: state.withdrawnStatus,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -37,22 +37,22 @@ func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 
 func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID     string `json:"NftID"`
-		AccessOTA []byte `json:"AccessOTA,omitempty"`
+		NftID           string `json:"NftID"`
+		WithdrawnStatus byte   `json:"WithdrawnStatus"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	state.nftID = temp.NftID
-	state.accessOTA = temp.AccessOTA
+	state.withdrawnStatus = temp.WithdrawnStatus
 	return nil
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) Clone() *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
-		nftID:     state.nftID,
-		accessOTA: state.accessOTA,
+		nftID:           state.nftID,
+		withdrawnStatus: state.withdrawnStatus,
 	}
 }
 
@@ -61,11 +61,11 @@ func NewPdexv3PoolPairOrderRewardState() *Pdexv3PoolPairOrderRewardState {
 }
 
 func NewPdexv3PoolPairOrderRewardStateWithValue(
-	nftID string, accessOTA []byte,
+	nftID string, withdrawnStatus byte,
 ) *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
-		nftID:     nftID,
-		accessOTA: accessOTA,
+		nftID:           nftID,
+		withdrawnStatus: withdrawnStatus,
 	}
 }
 

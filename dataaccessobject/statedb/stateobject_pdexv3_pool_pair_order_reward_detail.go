@@ -9,8 +9,13 @@ import (
 )
 
 type Pdexv3PoolPairOrderRewardDetailState struct {
-	tokenID common.Hash
-	value   uint64
+	tokenID  common.Hash
+	value    uint64
+	receiver string
+}
+
+func (state *Pdexv3PoolPairOrderRewardDetailState) Receiver() string {
+	return state.receiver
 }
 
 func (state *Pdexv3PoolPairOrderRewardDetailState) Value() uint64 {
@@ -23,11 +28,13 @@ func (state *Pdexv3PoolPairOrderRewardDetailState) TokenID() common.Hash {
 
 func (state *Pdexv3PoolPairOrderRewardDetailState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID common.Hash `json:"TokenID"`
-		Value   uint64      `json:"Value"`
+		TokenID  common.Hash `json:"TokenID"`
+		Value    uint64      `json:"Value"`
+		Receiver string      `json:"Receiver,omitempty"`
 	}{
-		TokenID: state.tokenID,
-		Value:   state.value,
+		TokenID:  state.tokenID,
+		Value:    state.value,
+		Receiver: state.receiver,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -37,8 +44,9 @@ func (state *Pdexv3PoolPairOrderRewardDetailState) MarshalJSON() ([]byte, error)
 
 func (state *Pdexv3PoolPairOrderRewardDetailState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID common.Hash `json:"TokenID"`
-		Value   uint64      `json:"Value"`
+		TokenID  common.Hash `json:"TokenID"`
+		Value    uint64      `json:"Value"`
+		Receiver string      `json:"Receiver,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -46,13 +54,15 @@ func (state *Pdexv3PoolPairOrderRewardDetailState) UnmarshalJSON(data []byte) er
 	}
 	state.tokenID = temp.TokenID
 	state.value = temp.Value
+	state.receiver = temp.Receiver
 	return nil
 }
 
 func (state *Pdexv3PoolPairOrderRewardDetailState) Clone() *Pdexv3PoolPairOrderRewardDetailState {
 	return &Pdexv3PoolPairOrderRewardDetailState{
-		tokenID: state.tokenID,
-		value:   state.value,
+		tokenID:  state.tokenID,
+		value:    state.value,
+		receiver: state.receiver,
 	}
 }
 
@@ -61,11 +71,12 @@ func NewPdexv3PoolPairOrderRewardDetailState() *Pdexv3PoolPairOrderRewardDetailS
 }
 
 func NewPdexv3PoolPairOrderRewardDetailStateWithValue(
-	tokenID common.Hash, value uint64,
+	tokenID common.Hash, value uint64, receiver string,
 ) *Pdexv3PoolPairOrderRewardDetailState {
 	return &Pdexv3PoolPairOrderRewardDetailState{
-		tokenID: tokenID,
-		value:   value,
+		tokenID:  tokenID,
+		value:    value,
+		receiver: receiver,
 	}
 }
 

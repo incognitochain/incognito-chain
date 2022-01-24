@@ -671,6 +671,21 @@ TransactionLoop:
 			// increment order count to keep same-block requests from exceeding limit
 			orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
 		}
+		rewardReceiverTokenIDs := []common.Hash{pair.state.Token0ID(), pair.state.Token1ID()}
+		if pair.state.Token0ID() != common.PRVCoinID && pair.state.Token1ID() != common.PRVCoinID {
+			rewardReceiverTokenIDs = append(rewardReceiverTokenIDs, common.PRVCoinID)
+		}
+		rewardReceivers := []string{}
+		for _, v := range rewardReceiverTokenIDs {
+			if _, found := currentOrderReq.RewardReceiver[v]; found {
+				receiver, _ := currentOrderReq.RewardReceiver[v].String()
+				rewardReceivers = append(rewardReceivers, receiver)
+			} else {
+				Logger.log.Warnf("RewardReceivers is not enough")
+				result = append(result, refundInstructions...)
+				continue TransactionLoop
+			}
+		}
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
@@ -683,6 +698,7 @@ TransactionLoop:
 			Token1Balance:  token1Balance,
 			TradeDirection: tradeDirection,
 			Receiver:       [2]string{token0RecvStr, token1RecvStr},
+			RewardReceiver: rewardReceivers,
 		}
 
 		acceptedAction := instruction.NewAction(
@@ -769,7 +785,7 @@ TransactionLoop:
 
 		orderID := currentOrderReq.OrderID
 		shouldMintAccessCoin := false
-		for index, ord := range pair.orderbook.orders {
+		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
 				if ord.NftID() == accessID {
 					if !accessByNFT {
@@ -832,17 +848,9 @@ TransactionLoop:
 						}
 					}
 					if ord.IsEmpty() {
-						orderReward, found := pair.orderRewards[ord.NftID().String()]
-						if orderReward != nil && found {
-							orderReward.accessOTA = ord.AccessOTA()
+						if orderReward, found := pair.orderRewards[ord.NftID().String()]; found {
+							orderReward.withdrawnStatus = WithdrawnOrderReward
 						}
-					}
-					isEmptyOrder, err := pair.isEmptyOrder(index)
-					if err != nil {
-						return result, pairs, err
-					}
-					if isEmptyOrder {
-						delete(pair.orderRewards, ord.NftID().String())
 						shouldMintAccessCoin = false
 					}
 					if shouldMintAccessCoin {
@@ -1053,44 +1061,10 @@ func (sp *stateProducerV2) withdrawLPFee(
 		orderReward := map[common.Hash]uint64{}
 		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
 		if isExistedOrderReward {
-			if !metaData.AccessOption.UseNft() {
-				var orderAccessOTA []byte
-				orderIndex := -1
-				for index, orderbook := range poolPair.orderbook.orders {
-					if orderbook.NftID().String() == accessID.String() {
-						orderAccessOTA = orderbook.AccessOTA()
-						orderIndex = index
-						break
-					}
-				}
-				if orderAccessOTA == nil {
-					orderAccessOTA = order.accessOTA
-				}
-				if !bytes.Equal(orderAccessOTA, metaData.BurntOTA.ToBytesS()) {
-					instructions = append(instructions, rejectInst...)
-					continue
-				}
-				otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
-				if err != nil {
-					return instructions, pairs, err
-				}
-				mintAccessCoinInst, err = instruction.NewMintAccessTokenWithValue(
-					otaReceiverStr, shardID, txReqID,
-				).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
-				if err != nil {
-					return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
-				}
-				if order.accessOTA == nil {
-					if orderIndex >= 0 {
-						poolPair.orderbook.orders[orderIndex].SetAccessOTA(accessOTA)
-					}
-					shouldMintAccessCoin = true
-				} else {
-					order.accessOTA = accessOTA
-				}
-			}
 			// compute amount of received LOP reward
-			orderReward = order.uncollectedRewards
+			for k, v := range order.uncollectedRewards {
+				orderReward[k] = v.amount
+			}
 		}
 
 		reward := CombineReward(lpReward, orderReward)
@@ -1148,28 +1122,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		if isExistedOrderReward {
-			orderIndex := -1
-			if order.accessOTA == nil {
-				for index, orderbook := range poolPair.orderbook.orders {
-					if orderbook.NftID().String() == accessID.String() {
-						poolPair.orderbook.orders[index].SetAccessOTA(accessOTA)
-						orderIndex = index
-						break
-					}
-				}
-			}
 			delete(poolPair.orderRewards, metaData.NftID.String())
-			if orderIndex == -1 {
-				shouldMintAccessCoin = false
-			} else {
-				isEmptyOrder, err := poolPair.isEmptyOrder(orderIndex)
-				if err != nil {
-					return instructions, pairs, err
-				}
-				if isEmptyOrder {
-					shouldMintAccessCoin = false
-				}
-			}
 		}
 
 		if shouldMintAccessCoin {

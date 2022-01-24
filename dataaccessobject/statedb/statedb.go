@@ -2348,9 +2348,9 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderReward(prefix []byte) (
 }
 
 func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderRewardDetail(prefix []byte) (
-	map[common.Hash]uint64, error,
+	map[common.Hash]Pdexv3PoolPairOrderRewardDetailState, error,
 ) {
-	res := map[common.Hash]uint64{}
+	res := map[common.Hash]Pdexv3PoolPairOrderRewardDetailState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -2362,7 +2362,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderRewardDetail(prefix []byte
 		if err != nil {
 			return res, err
 		}
-		res[orderRewardDetailState.tokenID] = orderRewardDetailState.value
+		res[orderRewardDetailState.tokenID] = *orderRewardDetailState
 	}
 	return res, nil
 }

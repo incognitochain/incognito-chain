@@ -19,7 +19,7 @@ type PoolPairState struct {
 	makingVolume      map[common.Hash]*MakingVolume // tokenID -> MakingVolume
 	state             rawdbv2.Pdexv3PoolPair
 	shares            map[string]*Share
-	orderRewards      map[string]*OrderReward // nftID -> orderReward
+	orderRewards      map[string]*OrderReward // accessID -> orderReward
 	orderbook         Orderbook
 	lpFeesPerShare    map[common.Hash]*big.Int
 	lmRewardsPerShare map[common.Hash]*big.Int
@@ -742,7 +742,7 @@ func (p *PoolPairState) updateToDB(
 		if _, found := p.orderRewards[nftID]; found {
 			if orderRewardChange.IsChanged {
 				err := statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
-					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(nftID, p.orderRewards[nftID].accessOTA),
+					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(nftID, p.orderRewards[nftID].withdrawnStatus),
 				)
 				if err != nil {
 					return err
@@ -755,10 +755,14 @@ func (p *PoolPairState) updateToDB(
 						return err
 					}
 					if reward, found := p.orderRewards[nftID].uncollectedRewards[*tokenHash]; found {
+						receiver, err := reward.receiver.String()
+						if err != nil {
+							return err
+						}
 						err = statedb.StorePdexv3PoolPairOrderRewardDetail(
 							env.StateDB(), poolPairID, nftID,
 							statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
-								*tokenHash, reward,
+								*tokenHash, reward.amount, receiver,
 							),
 						)
 						if err != nil {
@@ -917,25 +921,6 @@ func (p *PoolPairState) getChangedShares(compareShare map[string]*Share) map[str
 		res[nftID] = share.getDiff(p.shares[nftID], res[nftID])
 	}
 	return res
-}
-
-func (p *PoolPairState) isEmptyOrder(index int) (bool, error) {
-	if index >= len(p.orderbook.orders) {
-		return false, errors.New("Index is out of range")
-	}
-	order := p.orderbook.orders[index]
-	if !order.IsEmpty() {
-		return false, nil
-	}
-	orderReward, found := p.orderRewards[order.NftID().String()]
-	if orderReward != nil && found {
-		for _, v := range orderReward.uncollectedRewards {
-			if v != 0 {
-				return false, nil
-			}
-		}
-	}
-	return true, nil
 }
 
 func (p *PoolPairState) addLmLockedShare(shareID string, beaconHeight uint64, amount uint64) {

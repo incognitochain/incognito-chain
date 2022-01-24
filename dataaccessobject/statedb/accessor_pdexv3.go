@@ -530,7 +530,7 @@ func GetPdexv3PoolPairOrderReward(stateDB *StateDB, poolPairID string) (
 }
 
 func GetPdexv3PoolPairOrderRewardDetail(stateDB *StateDB, poolPairID, nftID string) (
-	map[common.Hash]uint64, error,
+	map[common.Hash]Pdexv3PoolPairOrderRewardDetailState, error,
 ) {
 	prefixHash := generatePdexv3PoolPairOrderRewardDetailObjectPrefix(poolPairID, nftID)
 	return stateDB.iterateWithPdexv3PoolPairOrderRewardDetail(prefixHash)
