@@ -121,6 +121,7 @@ const (
 	EthAddrStr                = "0x0000000000000000000000000000000000000000"
 	NativeToken               = "0x0000000000000000000000000000000000000000"
 	BSCPrefix                 = "BSC"
+	PLGPrefix                 = "PLG"
 	ExternalBridgeTokenLength = 20
 )
 

@@ -39,6 +39,7 @@ type param struct {
 	EpochParam                       epochParam         `mapstructure:"epoch_param"`
 	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
+	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
 	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
@@ -53,6 +54,7 @@ type param struct {
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
+	PLGParam                         plgParam           `mapstructure:"plg_param"`
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
@@ -259,12 +261,21 @@ type pdexParam struct {
 		MaxOrdersPerNft                 uint            `mapstructure:"max_orders_per_nft"`
 		AutoWithdrawOrderLimitAmount    uint            `mapstructure:"auto_withdraw_order_limit_amount"`
 		MinPRVReserveTradingRate        uint64          `mapstructure:"min_prv_reserve_trading_rate"`
-		MinPrvForMintPdexAccessToken    uint64          `mapstructure:"min_prv_for_mint_pdex_access_token"`
 	} `mapstructure:"params"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
 		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
+	}
+}
+
+type plgParam struct {
+	Host string `mapstructure:"host"`
+}
+
+func (plgParam *plgParam) GetFromEnv() {
+	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
+		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
 	}
 }

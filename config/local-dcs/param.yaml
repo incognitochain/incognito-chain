@@ -32,6 +32,7 @@ epoch_param:
   random_time: 5
   random_time_v2: 1000000000000
 eth_contract_address: "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
+plg_contract_address: ""
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
 centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 swap_committee_param:
@@ -66,5 +67,7 @@ geth_param:
   protocol: "https"
   port: ""
 bsc_param:
-  host: "https://data-seed-prebsc-1-s1.binance.org:8545"
+  host: "https://data-seed-prebsc-2-s2.binance.org:8545"
+plg_param:
+  host: "https://polygon-mumbai.g.alchemy.com/v2/V8SP0S8Q-sT35ca4VKH3Iwyvh8K8wTRn"
 is_enable_bpv3_stats: true

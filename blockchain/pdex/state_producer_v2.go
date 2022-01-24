@@ -34,6 +34,7 @@ func (sp *stateProducerV2) addLiquidity(
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	nftIDs map[string]uint64,
+	params *Params,
 ) (
 	[][]string, map[string]*PoolPairState, map[string]rawdbv2.Pdexv3Contribution, error,
 ) {
@@ -111,7 +112,7 @@ func (sp *stateProducerV2) addLiquidity(
 				}
 				_, err := newPoolPair.addShare(
 					waitingContribution.NftID(),
-					shareAmount, beaconHeight,
+					shareAmount, beaconHeight, 0,
 					waitingContribution.TxReqID().String(),
 					waitingContribution.AccessOTA(),
 				)
@@ -196,9 +197,14 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, refundInsts...)
 			continue
 		}
+		lmLockedBlocks := uint64(0)
+		if _, exists := params.PDEXRewardPoolPairsShare[poolPairID]; exists {
+			lmLockedBlocks = params.MiningRewardPendingBlocks
+		}
+
 		accessOTA, err := poolPair.addShare(
 			waitingContribution.NftID(),
-			shareAmount, beaconHeight,
+			shareAmount, beaconHeight, lmLockedBlocks,
 			waitingContribution.TxReqID().String(), waitingContribution.AccessOTA(),
 		)
 		if err != nil {
@@ -393,11 +399,11 @@ func (sp *stateProducerV2) mintReward(
 			}
 		}
 
-		pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
+		pair.lmRewardsPerShare = v2utils.NewTradingPairWithValue(
 			&pair.state,
-		).AddLPFee(
+		).AddLMRewards(
 			tokenID, lpRewardAmt, BaseLPFeesPerShare,
-			pair.lpFeesPerShare)
+			pair.lmRewardsPerShare)
 
 		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, lpRewardAmt.Uint64(), tokenID)...)
 	}
@@ -1021,7 +1027,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		share, isExistedShare := poolPair.shares[accessID.String()]
 		if isExistedShare {
 			// compute amount of received LP reward
-			lpReward, err = poolPair.RecomputeLPFee(accessID)
+			lpReward, err = poolPair.RecomputeLPRewards(accessID)
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
@@ -1138,6 +1144,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 				shouldMintAccessCoin = false
 				delete(poolPair.shares, accessID.String())
 			}
+			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
 		if isExistedOrderReward {
@@ -1241,7 +1248,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
-	beaconHeight uint64,
+	beaconHeight, lmLockedBlocks uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,

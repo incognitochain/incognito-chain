@@ -119,6 +119,13 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		}
 	}
 
+	var err error
+
+	s.poolPairs, err = unlockLmLockedShareAmount(s.poolPairs, s.params, beaconHeight)
+	if err != nil {
+		return err
+	}
+
 	for _, inst := range env.BeaconInstructions() {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instructions
@@ -158,10 +165,11 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				beaconHeight,
 				s.poolPairs,
 				s.waitingContributions, s.deletedWaitingContributions,
+				s.params,
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
 			s.poolPairs, err = s.processor.withdrawLiquidity(
-				env.StateDB(), inst, s.poolPairs, beaconHeight,
+				env.StateDB(), inst, s.poolPairs, beaconHeight, s.params.MiningRewardPendingBlocks,
 			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
@@ -222,6 +230,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 	if s.params.IsZeroValue() {
 		s.readConfig()
 	}
+
 	return nil
 }
 
@@ -306,6 +315,11 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
+	s.poolPairs, err = unlockLmLockedShareAmount(s.poolPairs, s.params, beaconHeight)
+	if err != nil {
+		return instructions, err
+	}
+
 	var withdrawLPFeeInstructions [][]string
 	withdrawLPFeeInstructions, s.poolPairs, err = s.producer.withdrawLPFee(
 		withdrawLPFeeTxs,
@@ -328,7 +342,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
-		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, beaconHeight,
+		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, beaconHeight, s.params.MiningRewardPendingBlocks,
 	)
 	if err != nil {
 		return instructions, err
@@ -402,6 +416,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		s.poolPairs,
 		s.waitingContributions,
 		s.nftIDs,
+		s.params,
 	)
 	if err != nil {
 		return instructions, err
@@ -517,6 +532,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.OrderTradingRewardRatioBPS,
 			s.params.OrderLiquidityMiningBPS,
 			s.params.DAOContributingPercent,
+			s.params.MiningRewardPendingBlocks,
 			s.params.OrderMiningRewardRatioBPS,
 		)
 		if err != nil {

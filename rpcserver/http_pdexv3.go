@@ -210,6 +210,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("DAOContributingPercent is invalid"))
 	}
+	miningRewardPendingBlocks, err := common.AssertAndConvertStrToNumber(newParams["MiningRewardPendingBlocks"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MiningRewardPendingBlocks is invalid"))
+	}
 
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
@@ -230,6 +234,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 			OrderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
 			OrderLiquidityMiningBPS:           orderLiquidityMiningBPS,
 			DAOContributingPercent:            uint(daoContributingPercent),
+			MiningRewardPendingBlocks:         miningRewardPendingBlocks,
 			OrderMiningRewardRatioBPS:         map[string]uint{},
 		},
 	)
@@ -384,7 +389,7 @@ func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}
 			result.PoolValue[pairState.Token1ID().String()] = poolAmount1.Uint64()
 		}
 
-		uncollectedLPReward, err = pair.RecomputeLPFee(*nftID)
+		uncollectedLPReward, err = pair.RecomputeLPRewards(*nftID)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3LPFeeError, err)
 		}

@@ -24,7 +24,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
@@ -946,10 +945,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningConfirmMetaV2),
 		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
 		strconv.Itoa(metadata.BurningBSCConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPRVERC20ConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPRVBEP20ConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPBSCConfirmForDepositToSCMeta),
-	}
+		strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
+		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta),
+		strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningPLGConfirmMeta),
+		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta)}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}

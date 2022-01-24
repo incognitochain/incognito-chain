@@ -49,6 +49,7 @@ func StorePdexv3Params(
 	orderTradingRewardRatioBPS map[string]uint,
 	orderLiquidityMiningBPS map[string]uint,
 	daoContributingPercent uint,
+	miningRewardPendingBlocks uint64,
 	orderMiningRewardRatioBPS map[string]uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
@@ -69,6 +70,7 @@ func StorePdexv3Params(
 		orderTradingRewardRatioBPS,
 		orderLiquidityMiningBPS,
 		daoContributingPercent,
+		miningRewardPendingBlocks,
 		orderMiningRewardRatioBPS,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
@@ -122,9 +124,8 @@ func DeletePdexv3WaitingContributions(
 
 func StorePdexv3Share(
 	stateDB *StateDB, poolPairID string, nftID common.Hash,
-	amount uint64, burntOTA []byte,
+	state *Pdexv3ShareState,
 ) error {
-	state := NewPdexv3ShareStateWithValue(nftID, amount, burntOTA)
 	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID.String())
 	return stateDB.SetStateObject(Pdexv3ShareObjectType, key, state)
 }
@@ -193,12 +194,29 @@ func StorePdexv3PoolPairLpFeePerShare(
 	return stateDB.SetStateObject(Pdexv3PoolPairLpFeePerShareObjectType, key, state)
 }
 
+func StorePdexv3PoolPairLmRewardPerShare(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairLmRewardPerShareState,
+) error {
+	key := GeneratePdexv3PoolPairLmRewardPerShareObjectKey(poolPairID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3PoolPairLmRewardPerShareObjectType, key, state)
+}
+
 func DeletePdexv3PoolPairLpFeePerShare(
 	stateDB *StateDB, poolPairID, tokenID string,
 ) error {
 	key := GeneratePdexv3PoolPairLpFeePerShareObjectKey(poolPairID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairLpFeePerShareObjectType, key) {
 		return fmt.Errorf("Cannot delete poolPairLpFeePerShare with ID %v - %v", poolPairID, tokenID)
+	}
+	return nil
+}
+
+func DeletePdexv3PoolPairLmRewardPerShare(
+	stateDB *StateDB, poolPairID, tokenID string,
+) error {
+	key := GeneratePdexv3PoolPairLmRewardPerShareObjectKey(poolPairID, tokenID)
+	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairLmRewardPerShareObjectType, key) {
+		return fmt.Errorf("Cannot delete poolPairLmRewardPerShare with ID %v - %v", poolPairID, tokenID)
 	}
 	return nil
 }
@@ -278,12 +296,29 @@ func StorePdexv3PoolPairMakingVolume(
 	return stateDB.SetStateObject(Pdexv3PoolPairMakingVolumeObjectType, key, state)
 }
 
+func StorePdexv3PoolPairLmLockedShare(
+	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairLmLockedShareState,
+) error {
+	key := GeneratePdexv3PoolPairLmLockedShareObjectKey(poolPairID, state.nftID, state.beaconHeight)
+	return stateDB.SetStateObject(Pdexv3PoolPairLmLockedShareObjectType, key, state)
+}
+
 func DeletePdexv3PoolPairMakingVolume(
 	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
 	key := GeneratePdexv3PoolPairMakingVolumeObjectKey(poolPairID, tokenID, nftID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairMakingVolumeObjectType, key) {
 		return fmt.Errorf("Cannot delete pool pair making volume with ID %v - %v - %v", poolPairID, tokenID.String(), nftID)
+	}
+	return nil
+}
+
+func DeletePdexv3PoolPairLmLockedShare(
+	stateDB *StateDB, poolPairID, nftID string, beaconHeight uint64,
+) error {
+	key := GeneratePdexv3PoolPairLmLockedShareObjectKey(poolPairID, nftID, beaconHeight)
+	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairLmLockedShareObjectType, key) {
+		return fmt.Errorf("Cannot delete pool pair lm locked share with ID %v - %v - %v", poolPairID, nftID, beaconHeight)
 	}
 	return nil
 }
@@ -318,6 +353,23 @@ func DeletePdexv3ShareLastLpFeePerShare(
 	key := GeneratePdexv3ShareLastLpFeePerShareObjectKey(poolPairID, nftID, tokenID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3ShareTradingFeeObjectType, key) {
 		return fmt.Errorf("Cannot delete share last lp fee per share with ID %v - %v - %v", poolPairID, nftID, tokenID)
+	}
+	return nil
+}
+
+func StorePdexv3ShareLastLmRewardsPerShare(
+	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3ShareLastLmRewardPerShareState,
+) error {
+	key := GeneratePdexv3ShareLastLmRewardPerShareObjectKey(poolPairID, nftID, state.tokenID.String())
+	return stateDB.SetStateObject(Pdexv3ShareLastLmRewardPerShareObjectType, key, state)
+}
+
+func DeletePdexv3ShareLastLmRewardsPerShare(
+	stateDB *StateDB, poolPairID, nftID, tokenID string,
+) error {
+	key := GeneratePdexv3ShareLastLmRewardPerShareObjectKey(poolPairID, nftID, tokenID)
+	if !stateDB.MarkDeleteStateObject(Pdexv3ShareLastLmRewardPerShareObjectType, key) {
+		return fmt.Errorf("Cannot delete share last lm reward per share with ID %v - %v - %v", poolPairID, nftID, tokenID)
 	}
 	return nil
 }
@@ -435,6 +487,13 @@ func GetPdexv3PoolPairLpFeesPerShares(stateDB *StateDB, poolPairID string) (
 	return stateDB.iterateWithPdexv3PoolPairLpFeesPerShare(prefixHash)
 }
 
+func GetPdexv3PoolPairLmRewardPerShares(stateDB *StateDB, poolPairID string) (
+	map[common.Hash]*big.Int, error,
+) {
+	prefixHash := generatePdexv3PoolPairLmRewardPerShareObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairLmRewardPerShare(prefixHash)
+}
+
 func GetPdexv3PoolPairProtocolFees(stateDB *StateDB, poolPairID string) (
 	map[common.Hash]uint64, error,
 ) {
@@ -454,6 +513,13 @@ func GetPdexv3PoolPairMakingVolume(stateDB *StateDB, poolPairID string) (
 ) {
 	prefixHash := generatePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3PoolPairMakingVolume(prefixHash)
+}
+
+func GetPdexv3PoolPairLmLockedShare(stateDB *StateDB, poolPairID string) (
+	map[string]map[uint64]uint64, error,
+) {
+	prefixHash := generatePdexv3PoolPairLmLockedShareObjectPrefix(poolPairID)
+	return stateDB.iterateWithPdexv3PoolPairLmLockedShare(prefixHash)
 }
 
 func GetPdexv3PoolPairOrderReward(stateDB *StateDB, poolPairID string) (
@@ -482,6 +548,13 @@ func GetPdexv3ShareLastLpFeesPerShare(stateDB *StateDB, poolPairID, nftID string
 ) {
 	prefixHash := generatePdexv3ShareLastLpFeePerShareObjectPrefix(poolPairID, nftID)
 	return stateDB.iterateWithPdexv3ShareLastLpFeesPerShare(prefixHash)
+}
+
+func GetPdexv3ShareLastLmRewardPerShare(stateDB *StateDB, poolPairID, nftID string) (
+	map[common.Hash]*big.Int, error,
+) {
+	prefixHash := generatePdexv3ShareLastLmRewardPerShareObjectPrefix(poolPairID, nftID)
+	return stateDB.iterateWithPdexv3ShareLastLmRewardPerShare(prefixHash)
 }
 
 func GetPdexv3StakingPoolRewardsPerShare(stateDB *StateDB, stakingPoolID string) (

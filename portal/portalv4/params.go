@@ -21,6 +21,7 @@ type PortalParams struct {
 	BatchNumBlks        uint
 	DustValueThreshold  map[string]uint64 // in nano ptokens
 	MaxUnshieldFees     map[string]uint64 // in nano ptokens
+	MinUTXOsInVault     map[string]uint64
 
 	// for replacement
 	PortalReplacementAddress    string
