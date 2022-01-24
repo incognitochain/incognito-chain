@@ -164,9 +164,9 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 		return true
 	} // if not swap committees => do nothing
 
-	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | " +
-		"blockProduceTs %+v, lastBlockProduceTs %+v |" +
-		"blockProposeTs %+v, lastBlockProposeTs %+v | " +
+	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | "+
+		"blockProduceTs %+v, lastBlockProduceTs %+v |"+
+		"blockProposeTs %+v, lastBlockProposeTs %+v | "+
 		"isSameCommittee %+v",
 		*proposeBlockInfo.block.Hash(),
 		proposeBlockInfo.block.GetHeight(),
@@ -306,9 +306,9 @@ func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.Bl
 		return true
 	} // if not swap committees => do nothing
 
-	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | " +
-		"blockProduceTs %+v, lastBlockProduceTs %+v |" +
-		"blockProposeTs %+v, lastBlockProposeTs %+v | " +
+	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | "+
+		"blockProduceTs %+v, lastBlockProduceTs %+v |"+
+		"blockProposeTs %+v, lastBlockProposeTs %+v | "+
 		"isSameCommittee %+v",
 		*proposeBlockInfo.block.Hash(),
 		proposeBlockInfo.block.GetHeight(),
@@ -317,6 +317,7 @@ func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.Bl
 		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
 		common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
 		proposeBlockInfo.block.CommitteeFromBlock().String() == lastVotedBlock.CommitteeFromBlock().String(),
+	)
 
 	return false
 }
