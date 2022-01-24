@@ -1489,18 +1489,20 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
-	if lastVotedBlock.Hash().IsEqual(proposeBlockInfo.block.Hash()) {
-		// @NOTICE: hackcase for multikey
-		// last block is the same block as propose block info
-		// if proposeBlockInfo is valid then return for the next key to sign
-		a.logger.Infof("validateBlock hash %+v, height %+v, isValid %+v, numberOfUserKeySet %+v",
-			*proposeBlockInfo.block.Hash(),
-			proposeBlockInfo.block.GetHeight(),
-			proposeBlockInfo.IsValid,
-			len(proposeBlockInfo.UserKeySet),
-		)
-		if proposeBlockInfo.IsValid && len(proposeBlockInfo.UserKeySet) != 0 {
-			return nil
+	if isVoted {
+		if lastVotedBlock.Hash().String() == proposeBlockInfo.block.Hash().String() {
+			// @NOTICE: hackcase for multikey
+			// last block is the same block as propose block info
+			// if proposeBlockInfo is valid then return for the next key to sign
+			a.logger.Infof("validateBlock hash %+v, height %+v, isValid %+v, numberOfUserKeySet %+v",
+				*proposeBlockInfo.block.Hash(),
+				proposeBlockInfo.block.GetHeight(),
+				proposeBlockInfo.IsValid,
+				len(proposeBlockInfo.UserKeySet),
+			)
+			if proposeBlockInfo.IsValid && len(proposeBlockInfo.UserKeySet) != 0 {
+				return nil
+			}
 		}
 	}
 
