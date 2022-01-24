@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"math"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -1381,4 +1383,49 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	featureStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err
+}
+
+func (blockService BlockService) GenerateNextOTDepositKey(privateKeyStr, tokenIDStr string) (*incognitokey.OTDepositKey, error) {
+	w, err := wallet.Base58CheckDeserialize(privateKeyStr)
+	if err != nil {
+		return nil, err
+	}
+	privateKey := w.KeySet.PrivateKey[:]
+	if len(privateKey) == 0 {
+		return nil, fmt.Errorf("privateKey not found")
+	}
+
+	tmpKey, err := incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, 0)
+	if err != nil {
+		return nil, fmt.Errorf("generating depositKey at index %v error: %v", 0, err)
+	}
+	exists := statedb.OTDepositPubKeyExists(blockService.BlockChain.GetBestStateBeaconFeatureStateDB(), tmpKey.PublicKey)
+	if !exists {
+		return tmpKey, nil
+	}
+
+	// Perform binary-search for the un-used index
+	lower := uint64(0)
+	upper := uint64(math.MaxUint64)
+	currentIndex := lower
+	for lower < upper {
+		tmpKey, err = incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, currentIndex)
+		if err != nil {
+			return nil, fmt.Errorf("generating depositKey at index %v error: %v", lower, err)
+		}
+		exists = statedb.OTDepositPubKeyExists(blockService.BlockChain.GetBestStateBeaconFeatureStateDB(), tmpKey.PublicKey)
+		if !exists {
+			upper = currentIndex
+		} else {
+			lower = currentIndex
+		}
+		currentIndex = (lower + upper) / 2
+	}
+
+	tmpKey, err = incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, lower+1)
+	if err != nil {
+		return nil, fmt.Errorf("generating depositKey at index %v error: %v", lower, err)
+	}
+
+	return tmpKey, nil
 }
