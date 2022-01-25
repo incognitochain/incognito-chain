@@ -310,6 +310,8 @@ func (serverObj *Server) NewServer(
 		serverObj.pusubManager,
 		time.Duration(cfg.TxPoolTTL)*time.Second,
 	)
+
+	blockchain.ShardSyncMode = cfg.SyncMode
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,
 		BNBChainState: bnbChainState,
@@ -347,7 +349,7 @@ func (serverObj *Server) NewServer(
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for shardID, _ := range serverObj.blockChain.ShardChain {
+		for shardID := range serverObj.blockChain.ShardChain {
 			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase[shardID], byte(shardID))
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
@@ -559,7 +561,7 @@ func (serverObj *Server) NewServer(
 	//Publish node state to other peer
 	go func() {
 		t := time.NewTicker(time.Second * 3)
-		for _ = range t.C {
+		for range t.C {
 			serverObj.PublishNodeState()
 		}
 	}()
@@ -775,7 +777,7 @@ func (serverObj *Server) GetActiveShardNumber() int {
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	ticker := time.NewTicker(serverObj.memPool.ScanTime)
 	defer ticker.Stop()
-	for _ = range ticker.C {
+	for range ticker.C {
 		txDescs := serverObj.memPool.GetPool()
 
 		for _, txDesc := range txDescs {

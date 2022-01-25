@@ -724,10 +724,6 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 		if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
 			// the below disk layer is just one => save one time is enough
 			transactionTrieDB.SaveCache(path)
-			//consensusTrieDB.SaveCache(path)
-			//featureTrieDB.SaveCache(path)
-			//rewardTrieDB.SaveCache(path)
-			//slashTrieDB.SaveCache(path)
 		}
 	}
 	// use for archive mode or force to do so
