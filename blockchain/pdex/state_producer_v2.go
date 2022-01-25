@@ -607,6 +607,8 @@ TransactionLoop:
 			if err != nil {
 				return result, pairs, err
 			}
+			accessID := metadataPdexv3.GenAccessID(accessReceiver)
+			nftID = &accessID
 		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
@@ -686,6 +688,9 @@ TransactionLoop:
 				continue TransactionLoop
 			}
 		}
+		pair.orderRewards[nftID.String()] = NewOrderRewardWithValue(
+			WaitToWithdrawOrderReward, make(map[common.Hash]OrderRewardDetail),
+		)
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
@@ -1061,6 +1066,14 @@ func (sp *stateProducerV2) withdrawLPFee(
 		orderReward := map[common.Hash]uint64{}
 		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
 		if isExistedOrderReward {
+			if order.withdrawnStatus == WithdrawnOrderReward || order.withdrawnStatus == WaitToWithdrawOrderReward {
+				Logger.log.Infof("Can not withdraw order reward actively with accessOTA")
+				if shouldMintAccessCoin {
+					instructions = append(instructions, mintAccessCoinInst)
+				}
+				instructions = append(instructions, rejectInst...)
+				continue
+			}
 			// compute amount of received LOP reward
 			for k, v := range order.uncollectedRewards {
 				orderReward[k] = v.amount
@@ -1304,7 +1317,6 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			delete(poolPair.shares, accessID.String())
 			shouldMintAccessCoin = false
 		}
-		Logger.log.Info("[pdex] shouldMintAccessCoin:", shouldMintAccessCoin)
 		if shouldMintAccessCoin {
 			res = append(res, mintAccessCoinInst)
 		}
