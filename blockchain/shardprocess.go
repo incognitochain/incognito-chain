@@ -1199,7 +1199,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 	newShardState.SlashStateDBRootHash = slashRootHash
 
-	if err := StoreTransactionStateObjectForRepair(
+	flatFileIndexes, err := StoreTransactionStateObjectForRepair(
 		blockchain.config.FlatFileManager[int(shardID)],
 		batchData,
 		blockHash,
@@ -1208,7 +1208,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		featureStateObject,
 		rewardStateObject,
 		slashStateObject,
-	); err != nil {
+	)
+	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
@@ -1220,7 +1221,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		TransactionStateDBRootHash: transactionRootHash,
 	}
 
-	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, false); err != nil {
+	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, flatFileIndexes, false); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	//statedb===========================END

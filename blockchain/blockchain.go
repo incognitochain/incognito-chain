@@ -964,10 +964,25 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 		}
 
 		view.consensusStateDB = viewConsensusStateDB
+		if calculatedRoot, _ := view.consensusStateDB.IntermediateRoot(true); calculatedRoot != view.ConsensusStateDBRootHash {
+			return fmt.Errorf("Repair State Error, expect consensus root hash %+v, got %+v", view.ConsensusStateDBRootHash, calculatedRoot)
+		}
 		view.transactionStateDB = viewTransactionStateDB
+		if calculatedRoot, _ := view.transactionStateDB.IntermediateRoot(true); calculatedRoot != view.TransactionStateDBRootHash {
+			return fmt.Errorf("Repair State Error, expect transaction root hash %+v, got %+v", view.TransactionStateDBRootHash, calculatedRoot)
+		}
 		view.featureStateDB = viewFeatureStateDB
+		if calculatedRoot, _ := view.featureStateDB.IntermediateRoot(true); calculatedRoot != view.FeatureStateDBRootHash {
+			return fmt.Errorf("Repair State Error, expect feature root hash %+v, got %+v", view.FeatureStateDBRootHash, calculatedRoot)
+		}
 		view.rewardStateDB = viewRewardStateDB
+		if calculatedRoot, _ := view.rewardStateDB.IntermediateRoot(true); calculatedRoot != view.RewardStateDBRootHash {
+			return fmt.Errorf("Repair State Error, expect reward root hash %+v, got %+v", view.RewardStateDBRootHash, calculatedRoot)
+		}
 		view.slashStateDB = viewSlashStateDB
+		if calculatedRoot, _ := view.slashStateDB.IntermediateRoot(true); calculatedRoot != view.SlashStateDBRootHash {
+			return fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot)
+		}
 	}
 
 	return nil

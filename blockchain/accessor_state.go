@@ -25,45 +25,45 @@ func StoreTransactionStateObjectForRepair(
 	featureStateObjects map[common.Hash]statedb.StateObject,
 	rewardStateObjects map[common.Hash]statedb.StateObject,
 	slashStateObjects map[common.Hash]statedb.StateObject,
-) error {
+) ([][]int, error) {
 
 	indexes := make([][]int, 5)
 
 	consensusStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, consensusStateObjects)
 	if err != nil {
-		return err
+		return [][]int{}, err
 	}
 	indexes[REPAIR_STATE_CONSENSUS] = consensusStateObjectIndex
 
 	transactionStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, transactionStateObjects)
 	if err != nil {
-		return err
+		return [][]int{}, err
 	}
 	indexes[REPAIR_STATE_TRANSACTION] = transactionStateObjectIndex
 
 	featureStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, featureStateObjects)
 	if err != nil {
-		return err
+		return [][]int{}, err
 	}
 	indexes[REPAIR_STATE_FEATURE] = featureStateObjectIndex
 
 	rewardStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, rewardStateObjects)
 	if err != nil {
-		return err
+		return [][]int{}, err
 	}
 	indexes[REPAIR_STATE_REWARD] = rewardStateObjectIndex
 
 	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, slashStateObjects)
 	if err != nil {
-		return err
+		return [][]int{}, err
 	}
 	indexes[REPAIR_STATE_SLASH] = slashStateObjectIndex
 
 	if err := StoreFlatFileStateObjectIndex(db, hash, indexes); err != nil {
-		return err
+		return [][]int{}, err
 	}
 
-	return nil
+	return indexes, nil
 }
 
 func StoreStateObjectToFlatFile(
