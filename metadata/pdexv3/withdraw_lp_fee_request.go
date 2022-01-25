@@ -24,7 +24,7 @@ type WithdrawalLPFeeContent struct {
 	TokenID    common.Hash  `json:"TokenID"`
 	Receiver   ReceiverInfo `json:"Receiver"`
 	IsLastInst bool         `json:"IsLastInst"`
-	TxReqID    common.Hash  `json:"TxReqID"`
+	TxReqID    *common.Hash `json:"TxReqID,omitempty"`
 	ShardID    byte         `json:"ShardID"`
 	AccessOTA  []byte       `json:"AccessOTA,omitempty"`
 }

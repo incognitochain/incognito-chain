@@ -968,6 +968,9 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			// apply orderbook changes & accept withdrawal(s)
 			ord.SetToken0Balance(0)
 			ord.SetToken1Balance(0)
+			if _, found := pair.orderRewards[ord.NftID().String()]; found {
+				pair.orderRewards[ord.NftID().String()].withdrawnStatus = WaitToWithdrawOrderReward
+			}
 			pairs[pairID] = pair
 			result = append(result, outputInstructions...)
 		}
@@ -975,6 +978,41 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 
 	Logger.log.Warnf("WithdrawAllMatchedOrder instructions: %v", result)
 	return result, pairs, nil
+}
+
+func (sp *stateProducerV2) withdrawPendingOrderRewards(
+	poolPairs map[string]*PoolPairState,
+) ([][]string, map[string]*PoolPairState, error) {
+	res := [][]string{}
+	for poolPairID, poolPair := range poolPairs {
+		for accessID, orderReward := range poolPair.orderRewards {
+			if orderReward.withdrawnStatus == WithdrawnOrderReward {
+				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+				for k, v := range orderReward.uncollectedRewards {
+					receiversInfo[k] = metadataPdexv3.ReceiverInfo{
+						Address: v.receiver,
+						Amount:  v.amount,
+					}
+					accessHash, err := common.Hash{}.NewHashFromStr(accessID)
+					if err != nil {
+						return res, poolPairs, err
+					}
+					inst := v2utils.BuildWithdrawLPFeeInsts(
+						poolPairID,
+						*metadataPdexv3.NewAccessOptionWithValue(nil, accessHash, nil),
+						receiversInfo,
+						v.receiver.GetShardID(),
+						nil,
+						metadataPdexv3.RequestAcceptedChainStatus,
+						nil,
+					)
+					res = append(res, inst...)
+					delete(poolPair.orderRewards, accessID)
+				}
+			}
+		}
+	}
+	return res, poolPairs, nil
 }
 
 func (sp *stateProducerV2) withdrawLPFee(

@@ -493,6 +493,16 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		instructions = append(instructions, mintInstructions...)
 	}
 
+	if env.Reward() > 0 {
+		withdrawOrderRewardInstructions := [][]string{}
+		withdrawOrderRewardInstructions, s.poolPairs, err = s.producer.withdrawPendingOrderRewards(
+			s.poolPairs,
+		)
+		instructions = append(instructions, withdrawOrderRewardInstructions...)
+	}
+
+	//TODO: @tin auto withdraw order reward here
+
 	// handle modify params
 	var modifyParamsInstructions [][]string
 	modifyParamsInstructions, s.params, s.stakingPoolStates, err = s.producer.modifyParams(
