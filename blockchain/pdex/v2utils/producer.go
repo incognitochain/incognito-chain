@@ -92,7 +92,7 @@ func BuildWithdrawLPFeeInsts(
 	accessOption metadataPdexv3.AccessOption,
 	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
-	reqTxID *common.Hash,
+	reqTxID common.Hash,
 	status string, accessOTA []byte,
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {

@@ -981,9 +981,10 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 }
 
 func (sp *stateProducerV2) withdrawPendingOrderRewards(
-	poolPairs map[string]*PoolPairState,
+	poolPairs map[string]*PoolPairState, limitTxsPerShard uint,
 ) ([][]string, map[string]*PoolPairState, error) {
 	res := [][]string{}
+	numberTxsPerShard := make(map[byte]uint)
 	for poolPairID, poolPair := range poolPairs {
 		for accessID, orderReward := range poolPair.orderRewards {
 			if orderReward.withdrawnStatus == WithdrawnOrderReward {
@@ -1002,10 +1003,14 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 						*metadataPdexv3.NewAccessOptionWithValue(nil, accessHash, nil),
 						receiversInfo,
 						v.receiver.GetShardID(),
-						nil,
+						common.Hash{}, //TODO: @tin fix here
 						metadataPdexv3.RequestAcceptedChainStatus,
 						nil,
 					)
+					if numberTxsPerShard[v.receiver.GetShardID()]+uint(len(res)) > limitTxsPerShard {
+						continue
+					}
+					numberTxsPerShard[v.receiver.GetShardID()] += uint(len(inst))
 					res = append(res, inst...)
 					delete(poolPair.orderRewards, accessID)
 				}

@@ -195,7 +195,6 @@ func (share *Share) isEmpty() bool {
 			return false
 		}
 	}
-	//TODO: @tin verify with last liquidity mining later
 	return true
 }
 

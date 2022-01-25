@@ -496,7 +496,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	if env.Reward() > 0 {
 		withdrawOrderRewardInstructions := [][]string{}
 		withdrawOrderRewardInstructions, s.poolPairs, err = s.producer.withdrawPendingOrderRewards(
-			s.poolPairs,
+			s.poolPairs, s.params.AutoWithdrawOrderRewardLimitAmount,
 		)
 		instructions = append(instructions, withdrawOrderRewardInstructions...)
 	}
@@ -544,6 +544,7 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.DAOContributingPercent,
 			s.params.MiningRewardPendingBlocks,
 			s.params.OrderMiningRewardRatioBPS,
+			s.params.AutoWithdrawOrderRewardLimitAmount,
 		)
 		if err != nil {
 			return err
