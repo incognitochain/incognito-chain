@@ -189,6 +189,7 @@ func (p *ProposeRuleLemma2) isFirstBlockNextHeight(
 // proposer timeslot > producer timeslot
 // proposer is correct
 func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
+	chainID int,
 	previousBlock types.BlockInterface,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -241,6 +242,7 @@ func (p *ProposeRuleLemma2) verifyLemma2FirstBlockNextHeight(
 }
 
 func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
+	chainID int,
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -279,6 +281,7 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 }
 
 func (p *ProposeRuleLemma2) verifyFinalityProof(
+	chainID int,
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,

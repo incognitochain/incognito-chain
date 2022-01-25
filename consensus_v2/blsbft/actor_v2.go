@@ -1295,6 +1295,7 @@ func (a *actorV2) handleNewProposeMsg(
 
 	blockHash := block.Hash().String()
 	env := NewProposeMessageEnvironment(
+		a.chainID,
 		block,
 		previousBlock,
 		committees,
