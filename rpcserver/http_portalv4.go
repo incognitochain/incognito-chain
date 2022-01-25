@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/btcsuite/btcd/wire"
@@ -134,6 +136,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 		incognitoAddress,
 		shieldingProof,
 		"",
+		nil,
 	)
 
 	// create new param to build raw tx from param interface
@@ -162,60 +165,84 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Param array must be at least 5"))
 	}
 
 	// get meta data from params
 	data, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata param is invalid"))
 	}
 
 	tokenIDParam, exists := data["TokenID"]
 	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("`TokenID` not found"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`TokenID` not found"))
 	}
 	tokenID, ok := tokenIDParam.(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid TokenID"))
-	}
-
-	receiverParam, exists := data["Receiver"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("`Receiver` not found"))
-	}
-	receiver, ok := receiverParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("`Receiver` is invalid"))
-	}
-
-	OTPubKeyParam, exists := data["OTDepositPubKey"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata `OTDepositPubKey` not found"))
-	}
-	OTPubKey, ok := OTPubKeyParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata `OTDepositPubKey` must be a string"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid TokenID"))
 	}
 
 	shieldingProofParam, exists := data["ShieldingProof"]
 	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata `ShieldProof` not found"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `ShieldProof` not found"))
 	}
 	shieldingProof, ok := shieldingProofParam.(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShieldingProof is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("ShieldingProof is invalid"))
+	}
+
+	OTPubKeyParam, exists := data["OTDepositPubKey"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTDepositPubKey` not found"))
+	}
+	OTPubKeyStr, ok := OTPubKeyParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTDepositPubKey` must be a string"))
+	}
+	OTPrivateKeyParam, exists := data["OTPrivateKey"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTPrivateKey` not found"))
+	}
+	OTPrivateKeyStr, ok := OTPrivateKeyParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTPrivateKey` must be a string"))
+	}
+	OTPrivateKey, _, err := base58.Base58Check{}.Decode(OTPrivateKeyStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf(" `OTPrivateKey` is invalid"))
+	}
+
+	receiverParam, exists := data["Receiver"]
+	if !exists {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`Receiver` not found"))
+	}
+	receiverStr, ok := receiverParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`Receiver` must be a string"))
+	}
+	receiverBytes, _, err := base58.Base58Check{}.Decode(receiverStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`Receiver` is invalid"))
+	}
+
+	priKey := new(privacy.SchnorrPrivateKey)
+	priKey.Set(new(operation.Scalar).FromBytesS(OTPrivateKey), operation.RandomScalar())
+	sig, err := priKey.Sign(receiverBytes)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("SchnorrSign error: %v", err))
 	}
 
 	meta, _ := metadata.NewPortalShieldingRequest(
 		metadataCommon.PortalV4ShieldingRequestMeta,
 		tokenID,
-		receiver,
+		receiverStr,
 		shieldingProof,
-		OTPubKey,
+		OTPubKeyStr,
+		sig.Bytes(),
 	)
 
 	// create new param to build raw tx from param interface

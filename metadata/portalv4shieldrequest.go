@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,12 +20,12 @@ import (
 // PortalV4ShieldingRequest represents a shielding request of Portal V4. Users create transactions with this metadata after
 // sending public tokens to multi-sig wallets. There are two ways to use this metadata, depending on how the corresponding
 // multi-sig wallet (a.k.a. depositing address) is generated:
-// 	- using payment address: Receiver must be a payment address, OTDepositPubKey, Sig must be empty and the corresponding
+// 	- using payment address: Receiver must be a payment address, OTDepositPubKey, Signature must be empty and the corresponding
 //	deposit address must be built with Receiver as the chain-code;
 //	- using one-time depositing public key: Receiver must be an OTAReceiver, OTDepositPubKey must not be empty,
 // 	a signature is required and the corresponding deposit address must be built with OTDepositPubKey as the chain-code.
 type PortalV4ShieldingRequest struct {
-	MetadataBaseWithSignature
+	MetadataBase
 
 	// TokenID is the Incognito tokenID of the shielding token.
 	TokenID string // pTokenID in incognito chain
@@ -32,6 +34,10 @@ type PortalV4ShieldingRequest struct {
 	// This field is only used with one-time depositing addresses.
 	// If set to empty, Receiver must be a payment address. Otherwise, Receiver must be an OTAReceiver.
 	OTDepositPubKey string `json:"OTDepositPubKey,omitempty"`
+
+	// Signature is the signature for validating the authenticity of the request. This signature is different from a
+	// MetadataBaseWithSignature type since it is signed with the tx privateKey.
+	Signature []byte `json:"Signature,omitempty"`
 
 	// Receiver is the recipient of this shielding request.
 	// Receiver is
@@ -101,21 +107,18 @@ func NewPortalShieldingRequest(
 	tokenID string,
 	receiver string,
 	shieldingProof string,
-	depositPubKey string) (*PortalV4ShieldingRequest, error) {
+	depositPubKey string,
+	signature []byte) (*PortalV4ShieldingRequest, error) {
 	shieldingRequestMeta := &PortalV4ShieldingRequest{
 		TokenID:        tokenID,
 		Receiver:       receiver,
 		ShieldingProof: shieldingProof,
+		MetadataBase:   MetadataBase{Type: metaType},
 	}
+
 	if len(depositPubKey) != 0 {
-		mdBase := NewMetadataBaseWithSignature(metaType)
-		shieldingRequestMeta.MetadataBaseWithSignature = *mdBase
+		shieldingRequestMeta.Signature = signature
 		shieldingRequestMeta.OTDepositPubKey = depositPubKey
-	} else {
-		mdBase := MetadataBase{
-			Type: metaType,
-		}
-		shieldingRequestMeta.MetadataBase = mdBase
 	}
 
 	return shieldingRequestMeta, nil
@@ -157,13 +160,26 @@ func (req PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetri
 		if !otaReceiver.IsValid() {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
 		}
+		otaReceiverBytes, _ := otaReceiver.Bytes()
 
 		// 1.2
 		depositPubKeyBytes, _, err := base58.Base58Check{}.Decode(req.OTDepositPubKey)
 		if err != nil {
+			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("cannot decode OTDepositPubKey %v", req.OTDepositPubKey))
+		}
+		depositPubKey, err := new(operation.Point).FromBytesS(depositPubKeyBytes)
+		if err != nil {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTDepositPubKey %v", req.OTDepositPubKey))
 		}
-		if isValid, err := req.VerifyMetadataSignature(depositPubKeyBytes, tx); err != nil || isValid {
+		schnorrKey := new(privacy.SchnorrPublicKey)
+		schnorrKey.Set(depositPubKey)
+		schnorrSig := new(schnorr.SchnSignature)
+		err = schnorrSig.SetBytes(req.Signature)
+		if err != nil {
+			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature %v", req.Signature))
+		}
+
+		if isValid := schnorrKey.Verify(schnorrSig, otaReceiverBytes); isValid {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
 		}
 	}
@@ -219,7 +235,7 @@ func (req PortalV4ShieldingRequest) Hash() *common.Hash {
 
 func (req PortalV4ShieldingRequest) HashWithoutSig() *common.Hash {
 	if req.OTDepositPubKey != "" {
-		req.Sig = nil
+		req.Signature = nil
 		jsb, _ := json.Marshal(req)
 		hash := common.HashH(jsb)
 		return &hash
