@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -232,8 +233,12 @@ func (blockchain *BlockChain) InitChainState() error {
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
 
 	finishsync.NewDefaultFinishSyncMsgPool()
-	bestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView.GetSyncingValidatorsString())
+	go func() {
+		for {
+			finishsync.DefaultFinishSyncMsgPool.Clean(blockchain.BeaconChain.GetBestView().(*BeaconBestState).GetSyncingValidatorsString())
+			time.Sleep(time.Minute * 5)
+		}
+	}()
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())
@@ -1441,8 +1446,9 @@ func (blockchain *BlockChain) UsingNewPool() bool {
 
 func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePublicKey {
 
-	shardCommittees := blockchain.BeaconChain.GetFinalViewState().GetShardCommittee()
-	numberOfFixedNode := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+	beaconFinalView := blockchain.BeaconChain.GetFinalViewState()
+	shardCommittees := beaconFinalView.GetShardCommittee()
+	numberOfFixedNode := beaconFinalView.NumberOfFixedShardBlockValidator
 	m := []incognitokey.CommitteePublicKey{}
 
 	for _, shardCommittee := range shardCommittees {

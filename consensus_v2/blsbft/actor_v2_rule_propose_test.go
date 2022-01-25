@@ -35,12 +35,13 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	tc1FinalityProof := make(map[string]map[int64]string)
 	tc1Chain := &mocks.Chain{}
 	tc1Env := &ProposeMessageEnvironment{
-		block:                      tc1Block,
-		previousBlock:              tc1PreviousBlock,
-		committees:                 shard0Committee,
-		signingCommittees:          shard0Committee,
-		userKeySet:                 []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey: "",
+		block:                            tc1Block,
+		previousBlock:                    tc1PreviousBlock,
+		committees:                       shard0Committee,
+		signingCommittees:                shard0Committee,
+		userKeySet:                       []signatureschemes2.MiningKey{},
+		producerPublicBLSMiningKey:       "",
+		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc1ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
@@ -76,12 +77,13 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	tc2FinalityProof := make(map[string]map[int64]string)
 	tc2Chain := &mocks.Chain{}
 	tc2Env := &ProposeMessageEnvironment{
-		block:                      tc2Block,
-		previousBlock:              tc2PreviousBlock,
-		committees:                 shard0Committee,
-		signingCommittees:          shard0Committee,
-		userKeySet:                 []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey: "",
+		block:                            tc2Block,
+		previousBlock:                    tc2PreviousBlock,
+		committees:                       shard0Committee,
+		signingCommittees:                shard0Committee,
+		userKeySet:                       []signatureschemes2.MiningKey{},
+		producerPublicBLSMiningKey:       "",
+		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc2ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
@@ -108,12 +110,13 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	tc3FinalityProof := make(map[string]map[int64]string)
 	tc3Chain := &mocks.Chain{}
 	tc3Env := &ProposeMessageEnvironment{
-		block:                      tc3Block,
-		previousBlock:              tc3PreviousBlock,
-		committees:                 shard0Committee,
-		signingCommittees:          shard0Committee,
-		userKeySet:                 []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey: "",
+		block:                            tc3Block,
+		previousBlock:                    tc3PreviousBlock,
+		committees:                       shard0Committee,
+		signingCommittees:                shard0Committee,
+		userKeySet:                       []signatureschemes2.MiningKey{},
+		producerPublicBLSMiningKey:       "",
+		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc3ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
@@ -212,12 +215,13 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	tc4FinalityProof := make(map[string]map[int64]string)
 	tc4Chain := &mocks.Chain{}
 	tc4Env := &ProposeMessageEnvironment{
-		block:                      tc4Block,
-		previousBlock:              tc4PreviousBlock,
-		committees:                 shard0Committee,
-		signingCommittees:          shard0Committee,
-		userKeySet:                 []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey: "",
+		block:                            tc4Block,
+		previousBlock:                    tc4PreviousBlock,
+		committees:                       shard0Committee,
+		signingCommittees:                shard0Committee,
+		userKeySet:                       []signatureschemes2.MiningKey{},
+		producerPublicBLSMiningKey:       "",
+		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc4ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
@@ -601,6 +605,7 @@ func TestProposeRuleLemma2_isReProposeFromFirstBlockNextHeight(t *testing.T) {
 		chain                  Chain
 	}
 	type args struct {
+		chainID       int
 		previousBlock types.BlockInterface
 		block         types.BlockInterface
 		committees    []incognitokey.CommitteePublicKey
@@ -703,7 +708,7 @@ func TestProposeRuleLemma2_isReProposeFromFirstBlockNextHeight(t *testing.T) {
 				nextBlockFinalityProof: tt.fields.nextBlockFinalityProof,
 				chain:                  tt.fields.chain,
 			}
-			if got := p.isReProposeFromFirstBlockNextHeight(tt.args.previousBlock, tt.args.block, tt.args.committees); got != tt.want {
+			if got := p.isReProposeFromFirstBlockNextHeight(tt.args.previousBlock, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator); got != tt.want {
 				t.Errorf("isReProposeFromFirstBlockNextHeight() = %v, want %v", got, tt.want)
 			}
 		})
@@ -1012,6 +1017,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 		chain                  Chain
 	}
 	type args struct {
+		chainID    int
 		proposeMsg *BFTPropose
 		block      types.BlockInterface
 		committees []incognitokey.CommitteePublicKey
@@ -1076,7 +1082,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 				nextBlockFinalityProof: tt.fields.nextBlockFinalityProof,
 				chain:                  tt.fields.chain,
 			}
-			got, err := p.verifyFinalityProof(tt.args.proposeMsg, tt.args.block, tt.args.committees)
+			got, err := p.verifyFinalityProof(tt.args.proposeMsg, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("verifyFinalityProof() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1483,7 +1489,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 				nextBlockFinalityProof: tt.fields.nextBlockFinalityProof,
 				chain:                  tt.fields.chain,
 			}
-			got, err := p.verifyLemma2ReProposeBlockNextHeight(tt.args.proposeMsg, tt.args.block, tt.args.committees)
+			got, err := p.verifyLemma2ReProposeBlockNextHeight(tt.args.proposeMsg, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("verifyLemma2ReProposeBlockNextHeight() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -364,7 +364,7 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
 		subsetID := GetSubsetIDFromProposerTime(
 			shardBlock.GetProposeTime(),
-			GetProposerLength(),
+			curView.GetShardProposerLength(),
 		)
 		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)

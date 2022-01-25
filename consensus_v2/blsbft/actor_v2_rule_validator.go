@@ -164,6 +164,19 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 		return true
 	} // if not swap committees => do nothing
 
+	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | "+
+		"blockProduceTs %+v, lastBlockProduceTs %+v |"+
+		"blockProposeTs %+v, lastBlockProposeTs %+v | "+
+		"isSameCommittee %+v",
+		*proposeBlockInfo.block.Hash(),
+		proposeBlockInfo.block.GetHeight(),
+		blockProduceTimeSlot,
+		lastBlockProduceTimeSlot,
+		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+		common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
+		proposeBlockInfo.block.CommitteeFromBlock().String() == lastVotedBlock.CommitteeFromBlock().String(),
+	)
+
 	return false
 }
 
@@ -263,22 +276,48 @@ func (c ConsensusValidatorLemma1) ValidateBlock(lastVotedBlock types.BlockInterf
 func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.BlockInterface, isVoteNextHeight bool, proposeBlockInfo *ProposeBlockInfo) bool {
 
 	if !isVoteNextHeight {
+		c.logger.Infof("Block %+v is valid with because no block in height is voted yet %+v",
+			*proposeBlockInfo.block.Hash(),
+			proposeBlockInfo.block.GetHeight())
 		return true
 	}
 
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
 
 	if blockProduceTimeSlot < common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) {
+		c.logger.Infof("Block %+v is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
+			*proposeBlockInfo.block.Hash(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
 		return true
 	} else if blockProduceTimeSlot == common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) &&
 		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
+		c.logger.Infof("Block %+v is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
+			*proposeBlockInfo.block.Hash(),
+			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {
 		// blockProduceTimeSlot is larger or equal than voted block
+		c.logger.Infof("Block %+v is valid with rule 3, Block Produce Time %+v, < Last Block Produce Time %+v",
+			*proposeBlockInfo.block.Hash(),
+			blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		return true
 	} // if not swap committees => do nothing
+
+	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | "+
+		"blockProduceTs %+v, lastBlockProduceTs %+v |"+
+		"blockProposeTs %+v, lastBlockProposeTs %+v | "+
+		"isSameCommittee %+v",
+		*proposeBlockInfo.block.Hash(),
+		proposeBlockInfo.block.GetHeight(),
+		blockProduceTimeSlot,
+		lastBlockProduceTimeSlot,
+		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+		common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
+		proposeBlockInfo.block.CommitteeFromBlock().String() == lastVotedBlock.CommitteeFromBlock().String(),
+	)
 
 	return false
 }

@@ -42,25 +42,26 @@ type BeaconRootHash struct {
 }
 
 type BeaconBestState struct {
-	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               types.BeaconBlock    `json:"BestBlock"`             // The block.
-	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
-	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
-	Epoch                   uint64               `json:"Epoch"`
-	BeaconHeight            uint64               `json:"BeaconHeight"`
-	BeaconProposerIndex     int                  `json:"BeaconProposerIndex"`
-	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
-	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize   int                  `json:"MinShardCommitteeSize"`
-	ActiveShards            int                  `json:"ActiveShards"`
-	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
-	NumberOfShardBlock      map[byte]uint        `json:"NumberOfShardBlock"`
+	BestBlockHash                    common.Hash          `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash            common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock                        types.BeaconBlock    `json:"BestBlock"`             // The block.
+	BestShardHash                    map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight                  map[byte]uint64      `json:"BestShardHeight"`
+	Epoch                            uint64               `json:"Epoch"`
+	BeaconHeight                     uint64               `json:"BeaconHeight"`
+	BeaconProposerIndex              int                  `json:"BeaconProposerIndex"`
+	CurrentRandomNumber              int64                `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp           int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber                bool                 `json:"IsGetRandomNumber"`
+	MaxBeaconCommitteeSize           int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize           int                  `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize            int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize            int                  `json:"MinShardCommitteeSize"`
+	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
+	ActiveShards                     int                  `json:"ActiveShards"`
+	ConsensusAlgorithm               string               `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm          map[byte]string      `json:"ShardConsensusAlgorithm"`
+	NumberOfShardBlock               map[byte]uint        `json:"NumberOfShardBlock"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -122,6 +123,7 @@ func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconComm
 	beaconBestState.MinBeaconCommitteeSize = config.Param().CommitteeSize.MinBeaconCommitteeSize
 	beaconBestState.MaxShardCommitteeSize = config.Param().CommitteeSize.MaxShardCommitteeSize
 	beaconBestState.MinShardCommitteeSize = config.Param().CommitteeSize.MinShardCommitteeSize
+	beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 	beaconBestState.ActiveShards = config.Param().ActiveShards
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = config.Param().BlockTime.MinBeaconBlockInterval
@@ -743,7 +745,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		ActiveShards:                     beaconBestState.ActiveShards,
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
-		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+		NumberOfFixedShardBlockValidator: beaconBestState.NumberOfFixedShardBlockValidator,
 		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
@@ -782,7 +784,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
 		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
-		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+		NumberOfFixedShardBlockValidator: beaconBestState.NumberOfFixedShardBlockValidator,
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  config.Param().ConsensusParam.StakingFlowV3Height,
 		StakingV2Height:                  config.Param().ConsensusParam.StakingFlowV2Height,
@@ -858,8 +860,8 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 				snapshotShardCommonPool,
 				snapshotShardCommittee,
 				snapshotShardSubstitute,
-				config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-				config.Param().CommitteeSize.MinShardCommitteeSize,
+				beaconBestState.NumberOfFixedShardBlockValidator,
+				beaconBestState.MinShardCommitteeSize,
 				swapRule,
 			)
 		}
@@ -1015,6 +1017,12 @@ func (beaconBestState *BeaconBestState) upgradeBlockProducingV3Config() error {
 			beaconBestState.MinShardCommitteeSize, SFV3_MinShardCommitteeSize)
 	}
 
+	if beaconBestState.NumberOfFixedShardBlockValidator < SFV3_MinShardCommitteeSize {
+		beaconBestState.NumberOfFixedShardBlockValidator = SFV3_MinShardCommitteeSize
+		Logger.log.Infof("BEACON | Set beaconBestState.NumberOfFixedShardBlockValidator from %+v to %+v ",
+			beaconBestState.NumberOfFixedShardBlockValidator, SFV3_MinShardCommitteeSize)
+	}
+
 	if beaconBestState.MaxShardCommitteeSize < SFV3_MinShardCommitteeSize {
 		beaconBestState.MaxShardCommitteeSize = SFV3_MinShardCommitteeSize
 		Logger.log.Infof("BEACON | Set beaconBestState.MaxShardCommitteeSize from %+v to %+v ",
@@ -1151,7 +1159,7 @@ func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize m
 	}
 
 	heights := []uint64{}
-	for k, _ := range increaseMaxCommitteeSize {
+	for k := range increaseMaxCommitteeSize {
 		heights = append(heights, k)
 	}
 
@@ -1204,4 +1212,12 @@ func (beaconBestState *BeaconBestState) CommitTrieToDisk(batch incdb.Batch, bRH 
 	}
 
 	return nil
+}
+
+func (curView *BeaconBestState) GetProposerLength() int {
+	return curView.MinBeaconCommitteeSize
+}
+
+func (curView *BeaconBestState) GetShardProposerLength() int {
+	return curView.NumberOfFixedShardBlockValidator
 }

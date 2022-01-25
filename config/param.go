@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -156,7 +157,57 @@ func LoadParam() *param {
 	p.LoadKeyByNetwork(network)
 	common.TIMESLOT = p.ConsensusParam.Timeslot
 	common.MaxShardNumber = p.ActiveShards
+
+	if err := verifyParam(p); err != nil {
+		panic(err)
+	}
+
 	return p
+}
+
+func verifyParam(p *param) error {
+
+	if p.CommitteeSize.MaxShardCommitteeSize < p.CommitteeSize.MinShardCommitteeSize {
+		return fmt.Errorf("MaxCommitteeSize %+v < MinCommitteeSize %+v",
+			p.CommitteeSize.MaxShardCommitteeSize, p.CommitteeSize.MinShardCommitteeSize)
+	}
+
+	if p.CommitteeSize.MaxBeaconCommitteeSize < p.CommitteeSize.MinBeaconCommitteeSize {
+		return fmt.Errorf("MaxCommitteeSize %+v < MinCommitteeSize %+v",
+			p.CommitteeSize.MaxBeaconCommitteeSize, p.CommitteeSize.MinBeaconCommitteeSize)
+	}
+
+	if p.CommitteeSize.MinShardCommitteeSize < p.CommitteeSize.NumberOfFixedShardBlockValidator {
+		return fmt.Errorf("MinShardCommitteeSize %+v < NumberOfFixedShardBlockValidator %+v",
+			p.CommitteeSize.MinShardCommitteeSize, p.CommitteeSize.NumberOfFixedShardBlockValidator)
+	}
+
+	if p.CommitteeSize.MinShardCommitteeSize < 4 {
+		return fmt.Errorf("MinShardCommitteeSize %+v < %+v",
+			p.CommitteeSize.MinShardCommitteeSize, 4)
+	}
+
+	if p.CommitteeSize.MinBeaconCommitteeSize < 4 {
+		return fmt.Errorf("MinBeaconCommitteeSize %+v < %+v",
+			p.CommitteeSize.MinBeaconCommitteeSize, 4)
+	}
+
+	if p.CommitteeSize.InitShardCommitteeSize != p.CommitteeSize.ShardCommitteeSizeKeyListV2 {
+		return fmt.Errorf("InitShardCommitteeSize %+v < ShardCommitteeSizeKeyListV2 %+v",
+			p.CommitteeSize.InitShardCommitteeSize, p.CommitteeSize.ShardCommitteeSizeKeyListV2)
+	}
+
+	if p.CommitteeSize.InitBeaconCommitteeSize != p.CommitteeSize.BeaconCommitteeSizeKeyListV2 {
+		return fmt.Errorf("InitBeaconCommitteeSize %+v < BeaconCommitteeSizeKeyListV2 %+v",
+			p.CommitteeSize.InitBeaconCommitteeSize, p.CommitteeSize.BeaconCommitteeSizeKeyListV2)
+	}
+
+	if p.EpochParam.RandomTime >= p.EpochParam.NumberOfBlockInEpoch {
+		return fmt.Errorf("RandomTime %+v >= NumberOfBlockInEpoch %+v",
+			p.EpochParam.RandomTime, p.EpochParam.NumberOfBlockInEpoch)
+	}
+
+	return nil
 }
 
 //key1,key2 : default key of the network

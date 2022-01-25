@@ -434,7 +434,7 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 	}
 
 	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
-	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee())
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
 	committee, _ := tempCommittee.ToBase58()
 
 	return map[string]interface{}{
