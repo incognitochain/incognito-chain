@@ -1,7 +1,9 @@
 package incognitokey
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"math/big"
 )
@@ -11,6 +13,52 @@ type OTDepositKey struct {
 	PrivateKey []byte
 	PublicKey  []byte
 	Index      uint64
+}
+
+func (k OTDepositKey) MarshalJSON() ([]byte, error) {
+	type holder struct {
+		PrivateKey string
+		PublicKey  string
+		Index      uint64
+	}
+
+	privateKeyStr := base58.Base58Check{}.Encode(k.PrivateKey, 0)
+	pubKeyStr := base58.Base58Check{}.Encode(k.PublicKey, 0)
+	h := holder{
+		PrivateKey: privateKeyStr,
+		PublicKey:  pubKeyStr,
+		Index:      k.Index,
+	}
+
+	return json.Marshal(h)
+}
+
+func (k *OTDepositKey) UnmarshalJSON(data []byte) error {
+	type holder struct {
+		PrivateKey string
+		PublicKey  string
+		Index      uint64
+	}
+	var tmpH holder
+	err := json.Unmarshal(data, &tmpH)
+	if err != nil {
+		return err
+	}
+
+	privateKey, _, err := base58.Base58Check{}.Decode(tmpH.PrivateKey)
+	if err != nil {
+		return err
+	}
+	pubKey, _, err := base58.Base58Check{}.Decode(tmpH.PublicKey)
+	if err != nil {
+		return nil
+	}
+
+	k.Index = tmpH.Index
+	k.PublicKey = pubKey
+	k.PrivateKey = privateKey
+
+	return nil
 }
 
 // GenerateOTDepositKey generates a new OTDepositKey from the keySet with the given tokenID and index.
