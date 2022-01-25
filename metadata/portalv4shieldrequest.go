@@ -137,9 +137,10 @@ func (req PortalV4ShieldingRequest) ValidateTxWithBlockChain(
 //	1. The Receiver of the request must be valid.
 //		1.1. If Receiver is a payment address
 //			- The payment address must be of the same version of the transaction.
+//			- OTDepositPubKey and Signature must be empty.
 //		1.2. If Receiver is an OTAReceiver
-//			- OTDepositPubKey must not be empty.
-//			- The signature must be valid against OTDepositPubKey.
+//			- OTDepositPubKey, Signature must not be empty.
+//			- The Signature must be valid against OTDepositPubKey.
 //	2. The transaction must be of version 2, with type `n`.
 //	3. The shielding token must be a supported portal token.
 //	4. The ShieldingProof must be in a good form: not empty, sanity-checked.
@@ -150,6 +151,9 @@ func (req PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetri
 		incAddr := keyWallet.KeySet.PaymentAddress
 		if _, err = AssertPaymentAddressAndTxVersion(incAddr, tx.GetVersion()); err != nil {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid Incognito address"))
+		}
+		if req.OTDepositPubKey != "" || req.Signature != nil {
+			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("Signature and OTDepositPubKey must be empty"))
 		}
 	} else {
 		otaReceiver := new(privacy.OTAReceiver)
@@ -231,17 +235,6 @@ func (req PortalV4ShieldingRequest) Hash() *common.Hash {
 	hash := common.HashH([]byte(record))
 
 	return &hash
-}
-
-func (req PortalV4ShieldingRequest) HashWithoutSig() *common.Hash {
-	if req.OTDepositPubKey != "" {
-		req.Signature = nil
-		jsb, _ := json.Marshal(req)
-		hash := common.HashH(jsb)
-		return &hash
-	}
-
-	return req.Hash()
 }
 
 func (req *PortalV4ShieldingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
