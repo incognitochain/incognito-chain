@@ -923,13 +923,34 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("payload data is invalid"))
 	}
 
-	seedParam, ok := paramList["Seed"]
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `OTPubKey` not found"))
+	var chaincode string
+	incAddressParam, ok := paramList["IncAddressStr"]
+	if ok {
+		incAddressStr, ok := incAddressParam.(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`IncAddressStr` must be a string"))
+		}
+
+		// validate incAddressStr must be a version 2 one.
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(incAddressStr, 2); err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				errors.New("IncAddressStr must be a valid payment address version 2"))
+		}
+
+		chaincode = incAddressStr
+	} else {
+		depositPubKeyParam, ok := paramList["OTDepositPubKey"]
+		if ok {
+			depositPubKey, ok := depositPubKeyParam.(string)
+			if !ok {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`OTDepositPubKey` must be a string"))
+			}
+
+			chaincode = depositPubKey
+		}
 	}
-	seed, ok := seedParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`OTPubKey` must be a string"))
+	if chaincode == "" {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("no valid chaincode found"))
 	}
 
 	tokenIDParam, ok := paramList["TokenID"]
@@ -950,7 +971,7 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 	}
 
 	_, shieldingAddress, err := portalParamV4.PortalTokens[tokenID].GenerateOTMultisigAddress(
-		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), seed)
+		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), chaincode)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("error when generating shielding address: %v\n", err))
