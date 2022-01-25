@@ -77,13 +77,102 @@ func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, []
 	return keys, values
 }
 
+func TestFlatFileSerialize(t *testing.T) {
+
+	stateDB := &StateDB{}
+
+	objTestCase1, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2.deleted = true
+
+	type args struct {
+		sob StateObject
+	}
+	tests := []struct {
+		name string
+		args args
+		want []byte
+	}{
+		{
+			name: "test_state_object_delete_false",
+			args: args{
+				sob: objTestCase1,
+			},
+			want: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+		},
+		{
+			name: "test_state_object_delete_true",
+			args: args{
+				sob: objTestCase2,
+			},
+			want: []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ByteSerialize(tt.args.sob); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ByteSerialize() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFlatFileDeSerialize(t *testing.T) {
+
+	stateDB := &StateDB{}
+
+	objTestCase1, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2.deleted = true
+
+	type args struct {
+		stateDB *StateDB
+		sobByte []byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    StateObject
+		wantErr bool
+	}{
+		{
+			name: "test_state_object_delete_false",
+			args: args{
+				stateDB,
+				[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+			},
+			want: objTestCase1,
+		},
+		{
+			name: "test_state_object_delete_true",
+			args: args{
+				stateDB,
+				[]byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+			},
+			want: objTestCase2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ByteDeSerialize(tt.args.stateDB, tt.args.sobByte)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ByteDeSerialize() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ByteDeSerialize() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	keys, values := generateKeyValuePairWithPrefix(5, []byte("abc"))
 	stateDB, _ := NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	stateDB.SetStateObject(TestObjectType, keys[0], values[0])
 	stateDB.SetStateObject(TestObjectType, keys[1], values[1])
 	stateDB.SetStateObject(TestObjectType, keys[2], values[2])
-	rootHash, _ := stateDB.Commit(true)
+	rootHash, _, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 
 	v0, err := stateDB.getTestObject(keys[0])
@@ -130,7 +219,7 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	stateDB.MarkDeleteStateObject(TestObjectType, keys[3])
 	stateDB.MarkDeleteStateObject(TestObjectType, keys[4])
 
-	rootHash2, _ := stateDB.Commit(true)
+	rootHash2, _, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash2, false, nil)
 
 	v0, err = stateDB.getTestObject(keys[0])
@@ -256,7 +345,7 @@ func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
 func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
 	var sampleKey common.Hash
 	rootHash, m := createAndStoreDataForTesting(limit100000)
-	for key, _ := range m[0].wantKey {
+	for key := range m[0].wantKey {
 		sampleKey = key
 		break
 	}
@@ -271,7 +360,7 @@ func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
 func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
 	var sampleKey common.Hash
 	rootHash, m := createAndStoreDataForTesting(limit10000)
-	for key, _ := range m[0].wantKey {
+	for key := range m[0].wantKey {
 		sampleKey = key
 		break
 	}
@@ -286,7 +375,7 @@ func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
 func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
 	var sampleKey common.Hash
 	rootHash, m := createAndStoreDataForTesting(limit1000)
-	for key, _ := range m[0].wantKey {
+	for key := range m[0].wantKey {
 		sampleKey = key
 		break
 	}
@@ -465,7 +554,7 @@ func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
 			}
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}

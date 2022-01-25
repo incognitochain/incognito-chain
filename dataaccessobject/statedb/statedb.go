@@ -23,7 +23,7 @@ import (
 type StateDB struct {
 	db   DatabaseAccessWarper
 	trie Trie
-	//rawdb incdb.Database
+
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
@@ -94,10 +94,12 @@ func (stateDB *StateDB) ClearObjects() {
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
-func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) (common.Hash, map[common.Hash]StateObject) {
+	changeObj := make(map[common.Hash]StateObject)
 	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
 	for addr := range stateDB.stateObjectsPending {
 		obj := stateDB.stateObjects[addr]
+		changeObj[addr] = obj
 		if obj.IsDeleted() {
 			stateDB.deleteStateObject(obj)
 		} else {
@@ -111,7 +113,7 @@ func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	if metrics.EnabledExpensive {
 		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
 	}
-	return stateDB.trie.Hash()
+	return stateDB.trie.Hash(), changeObj
 }
 func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 	for _, object := range stateDB.stateObjects {
@@ -122,16 +124,9 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
+func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, map[common.Hash]StateObject, error) {
 	// Finalize any pending changes and merge everything into the tries
-	//if metrics.EnabledExpensive {
-	//	defer func(start time.Time) {
-	//		elapsed := time.Since(start)
-	//		stateDB.StateObjectCommits += elapsed
-	//		dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
-	//	}(time.Now())
-	//}
-	stateDB.IntermediateRoot(deleteEmptyObjects)
+	_, changeObj := stateDB.IntermediateRoot(deleteEmptyObjects)
 
 	if len(stateDB.stateObjectsDirty) > 0 {
 		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
@@ -141,7 +136,7 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		return nil
 	})
 
-	return root, err
+	return root, changeObj, err
 }
 
 // Database return current database access warper

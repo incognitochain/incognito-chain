@@ -654,7 +654,7 @@ func TestBeaconBestState_GetNonSlashingCommittee(t *testing.T) {
 			keys[8],
 		},
 	})
-	rootHash, _ := sDB.Commit(true)
+	rootHash, _, _ := sDB.Commit(true)
 	sDB.Database().TrieDB().Commit(rootHash, false, nil)
 
 	sDB2, _ := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)

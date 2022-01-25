@@ -1,6 +1,8 @@
 package statedb
 
 import (
+	"bytes"
+	"encoding/binary"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -17,6 +19,82 @@ type StateObject interface {
 	IsDeleted() bool
 	IsEmpty() bool
 	Reset() bool
+}
+
+const (
+	TYPE_LENGTH   = 8
+	STATUS_LENGTH = 2
+	KEY_LENGTH    = 32
+)
+
+// ByteSerialize return a list of byte in format of:
+// 0-7: for type
+// 8-9: for status
+// 10-41: for key
+// 42-end: for value
+func ByteSerialize(sob StateObject) []byte {
+
+	res := []byte{}
+
+	// first 8 byte for type
+	var objTypeByte = make([]byte, 8)
+	binary.LittleEndian.PutUint64(objTypeByte, uint64(sob.GetType()))
+	res = append(res, objTypeByte[:]...)
+
+	// next 2 to byte for status
+	var isDeleteByte = make([]byte, 2)
+	var bitDelete uint16
+	if sob.IsDeleted() {
+		bitDelete = 1
+	}
+	binary.LittleEndian.PutUint16(isDeleteByte, bitDelete)
+	res = append(res, isDeleteByte[:]...)
+
+	// next 32 byte is key
+	res = append(res, sob.GetHash().Bytes()...)
+
+	// the rest is value
+	res = append(res, sob.GetValueBytes()...)
+
+	return res
+}
+
+func ByteDeSerialize(stateDB *StateDB, sobByte []byte) (StateObject, error) {
+
+	objTypeByte := sobByte[:TYPE_LENGTH]
+	var objType uint64
+	if err := binary.Read(bytes.NewBuffer(objTypeByte), binary.LittleEndian, &objType); err != nil {
+		return nil, err
+	}
+
+	objStatusByte := sobByte[TYPE_LENGTH : TYPE_LENGTH+STATUS_LENGTH]
+	var objStatusBit uint16
+	var objStatus = false
+	if err := binary.Read(bytes.NewBuffer(objStatusByte), binary.LittleEndian, &objStatusBit); err != nil {
+		return nil, err
+	}
+	if objStatusBit == 1 {
+		objStatus = true
+	}
+
+	objKeyByte := sobByte[TYPE_LENGTH+STATUS_LENGTH : TYPE_LENGTH+STATUS_LENGTH+KEY_LENGTH]
+	objKey, err := common.Hash{}.NewHash(objKeyByte)
+	if err != nil {
+		return nil, err
+	}
+
+	objValue := sobByte[TYPE_LENGTH+STATUS_LENGTH+KEY_LENGTH:]
+
+	sob, err := newStateObjectWithValue(stateDB, int(objType), *objKey, objValue)
+	if err != nil {
+		return nil, err
+	}
+
+	if objStatus {
+		sob.MarkDelete()
+	}
+
+	return sob, nil
 }
 
 func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, value interface{}) (StateObject, error) {

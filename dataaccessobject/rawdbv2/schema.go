@@ -44,6 +44,12 @@ var (
 	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
+
+	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
+
+	//repair state
+	flatFileTransactionIndexPrefix = []byte("ff-tx-" + string(splitter))
+	fullSyncPivotBlockKey          = []byte("Full-Sync-Latest-Pivot-Block")
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -420,13 +426,17 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 	return append(prefixHash, valueHash[:][:txBySerialNumberPrefixKeyLength]...)
 }
 
-var (
-	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
-)
-
 // preimageKey = PreimagePrefix + hash
 func preimageKey(hash common.Hash) []byte {
 	temp := make([]byte, len(PreimagePrefix))
 	copy(temp, PreimagePrefix)
 	return append(temp, hash.Bytes()...)
+}
+
+func GetFlatFileTransactionIndexKey(hash common.Hash) []byte {
+
+	temp := make([]byte, len(flatFileTransactionIndexPrefix))
+	copy(temp, flatFileTransactionIndexPrefix)
+
+	return append(temp, hash[:]...)
 }

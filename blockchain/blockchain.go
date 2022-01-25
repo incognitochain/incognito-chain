@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
@@ -25,7 +26,6 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -56,12 +56,13 @@ type BlockChain struct {
 
 // Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
 type Config struct {
-	BTCChain      *btcrelaying.BlockChain
-	BNBChainState *bnbrelaying.BNBChainState
-	DataBase      map[int]incdb.Database
-	MemCache      *memcache.MemoryCache
-	Interrupt     <-chan struct{}
-	RelayShards   []byte
+	BTCChain        *btcrelaying.BlockChain
+	BNBChainState   *bnbrelaying.BNBChainState
+	DataBase        map[int]incdb.Database
+	FlatFileManager map[int]*flatfile.FlatFileManager
+	MemCache        *memcache.MemoryCache
+	Interrupt       <-chan struct{}
+	RelayShards     []byte
 	// NodeMode          string
 	BlockGen          *BlockGenerator
 	TxPool            TxPool
@@ -92,19 +93,32 @@ type CacheConfig struct {
 	trieImgsLimit        common.StorageSize
 }
 
+func NewFlatFileConfig(config *Config) {
+
+	config.FlatFileManager = make(map[int]*flatfile.FlatFileManager)
+
+	for chainID, db := range config.DataBase {
+		flatfilePath := db.GetPath() + "/flatfile"
+		flatfileManager, err := flatfile.NewFlatFile(flatfilePath, 5000)
+		if err != nil {
+			return
+		}
+		config.FlatFileManager[chainID] = flatfileManager
+	}
+}
+
 func NewCacheConfig(config *Config) (CacheConfig, error) {
 
 	trieJournal := make(map[int]string)
-
 	for chainID, db := range config.DataBase {
-		filePath := db.GetPath() + "/metadata.bin"
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			_, err := os.Create(filePath)
+		journalPath := db.GetPath() + "/metadata.bin"
+		if _, err := os.Stat(journalPath); os.IsNotExist(err) {
+			_, err := os.Create(journalPath)
 			if err != nil {
 				return CacheConfig{}, err
 			}
 		}
-		trieJournal[chainID] = filePath
+		trieJournal[chainID] = journalPath
 	}
 
 	cacheConfig := configCache32GB
@@ -137,6 +151,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
 	cacheConfig, err := NewCacheConfig(config)
+	NewFlatFileConfig(config)
 	if err != nil {
 		return err
 	}
@@ -163,7 +178,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		if err != nil {
 			return err
 		}
-		for tokenID, _ := range tokenStates {
+		for tokenID := range tokenStates {
 			allTokens[tokenID] = true
 		}
 
@@ -227,7 +242,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
 	}
 	whiteListTx = make(map[string]bool)
-	for k, _ := range wl {
+	for k := range wl {
 		whiteListTx[k] = true
 	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
@@ -358,7 +373,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	initBeaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
-	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
+	consensusRootHash, _, err := initBeaconBestState.consensusStateDB.Commit(true)
 	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil)
 	if err != nil {
 		return err
@@ -819,7 +834,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	}
 
 	blockchain.ShardChain[shardID].multiView.Reset()
-
+	isRepair := false
 	for _, v := range allViews {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
@@ -827,10 +842,15 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			continue
 		}
 		v.BestBlock = block
-		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
+		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain, isRepair)
 		if err != nil {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
-			continue
+			if err := blockchain.RepairShardViewStateDB(shardID, allViews); err != nil {
+				Logger.log.Errorf("RepairShardViewStateDB shardID %+v, error %+v", shardID, err)
+				continue
+			} else {
+				isRepair = true
+			}
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
@@ -856,6 +876,120 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	}
 	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
 		return errors.New("unable to restore any shard best state")
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*ShardBestState) error {
+
+	db := blockchain.GetShardChainDatabase(shardID)
+	flatfileManager := blockchain.config.FlatFileManager[int(shardID)]
+	latestFinalizeShardHash := blockchain.BeaconChain.GetFinalView().(*BeaconBestState).BestShardHash[shardID]
+	pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db)
+	if err != nil {
+		return err
+	}
+	finalizeSRH, err := GetShardRootsHashByBlockHash(db, shardID, latestFinalizeShardHash)
+	if err != nil {
+		return err
+	}
+	finalizeStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return err
+	}
+	restoreFromFinalize, err := blockchain.recursiveRetrieveOldBlock(latestFinalizeShardHash, pivotBlockHash)
+	if err != nil {
+		return err
+	}
+
+	if err := repairStateDB(
+		finalizeStateDB,
+		flatfileManager,
+		db,
+		restoreFromFinalize,
+	); err != nil {
+		return err
+	}
+
+	for _, view := range views {
+
+		restoreFromBestView, err := blockchain.recursiveRetrieveOldBlock(*view.GetHash(), latestFinalizeShardHash)
+		if err != nil {
+			return err
+		}
+
+		viewStateDB := finalizeStateDB.Copy()
+
+		if err := repairStateDB(
+			viewStateDB,
+			flatfileManager,
+			db,
+			restoreFromBestView,
+		); err != nil {
+			return err
+		}
+
+		view.transactionStateDB = viewStateDB
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash) ([]common.Hash, error) {
+
+	blockHashes := []common.Hash{head}
+
+	for blockHashes[len(blockHashes)-1].String() != pivot.String() {
+		block, _, err := blockchain.GetShardBlockByHash(blockHashes[len(blockHashes)-1])
+		if err != nil {
+			return nil, err
+		}
+		blockHashes = append(blockHashes, block.GetPrevHash())
+	}
+
+	return blockHashes[:len(blockHashes)-1], nil
+}
+
+func repairStateDB(
+	stateDB *statedb.StateDB,
+	flatfileManager *flatfile.FlatFileManager,
+	db incdb.Database,
+	restore []common.Hash) error {
+
+	for len(restore) != 0 {
+
+		nextBlock := restore[len(restore)-1]
+
+		stateObjects, err := GetTransactionStateObjectFromFlatFile(
+			stateDB,
+			flatfileManager,
+			db,
+			nextBlock,
+		)
+		if err != nil {
+			return err
+		}
+
+		for objKey, obj := range stateObjects {
+			if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
+				return err
+			}
+			if obj.IsDeleted() {
+				stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+			}
+		}
+
+		restore = restore[:len(restore)-1]
+	}
+
+	rootHash, _, err := stateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	
+	if err := stateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+		return err
 	}
 
 	return nil

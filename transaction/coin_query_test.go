@@ -221,7 +221,7 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 		err := statedb.StoreOutputCoins(dummyDB, common.PRVCoinID, keySet.PaymentAddress.Pk, coinsToBeSaved, shardID)
 		assert.Equal(b, nil, err)
 	}
-	newRoot, err := dummyDB.Commit(true)
+	newRoot, _, err := dummyDB.Commit(true)
 	assert.Equal(b, nil, err)
 	err = warperDBStatedbTest.TrieDB().Commit(newRoot, false)
 	assert.Equal(b, nil, err)
@@ -353,7 +353,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 		storeCoinV2(dummyDB, []coin.Coin{tempCoin}, 0, common.PRVCoinID, uint64(i)%maxHeight)
 	}
 
-	newRoot, err := dummyDB.Commit(true)
+	newRoot, _, err := dummyDB.Commit(true)
 	assert.Equal(b, nil, err)
 	err = warperDBStatedbTest.TrieDB().Commit(newRoot, false)
 	assert.Equal(b, nil, err)
@@ -457,7 +457,7 @@ func BenchmarkReindexCoinV2(b *testing.B) {
 	}
 	storeCoinV2(dummyDB, pastCoins, 0, common.PRVCoinID, 1)
 
-	newRoot, err := dummyDB.Commit(true)
+	newRoot, _, err := dummyDB.Commit(true)
 	assert.Equal(b, nil, err)
 	err = warperDBStatedbTest.TrieDB().Commit(newRoot, false)
 	assert.Equal(b, nil, err)

@@ -28,7 +28,7 @@ func storeCommitteeObjectOneShardForTestConsensus(role int, initRoot common.Hash
 	for key, value := range m {
 		sDB.SetStateObject(CommitteeObjectType, key, value)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}

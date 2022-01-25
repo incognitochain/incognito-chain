@@ -154,7 +154,10 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain, isRepair bool) error {
+	if isRepair {
+		return nil
+	}
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(db, bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], bc.cacheConfig.trieJournalCacheSize)
 	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
@@ -361,7 +364,7 @@ func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.
 func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
 	tokenIDs := []common.Hash{}
 	tokenStates := statedb.ListPrivacyToken(shardBestState.GetCopiedTransactionStateDB())
-	for k, _ := range tokenStates {
+	for k := range tokenStates {
 		tokenIDs = append(tokenIDs, k)
 	}
 	return tokenIDs
@@ -744,7 +747,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 			// all statedb object use the same low-level triedb
 
 			if nodes > bc.cacheConfig.trieNodeLimit || imgs > bc.cacheConfig.trieImgsLimit {
-				transactionTrieDB.Cap((bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize))
+				transactionTrieDB.Cap(bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize)
 			}
 
 			if current%bc.cacheConfig.blockTriesInMemory == 0 {
@@ -774,6 +777,10 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 				Logger.log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v", shardBestState.ShardID, current, nodes-postNodes, imgs-postImgs)
 			}
 		}
+	}
+
+	if err := rawdbv2.StoreLatestPivotBlock(batch, shardBestState.BestBlockHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	if err := rawdbv2.StoreShardRootsHash(batch, shardBestState.ShardID, shardBestState.BestBlockHash, sRH); err != nil {

@@ -1,6 +1,7 @@
 package rawdbv2
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -39,4 +40,61 @@ func DeleteTrieNode(db incdb.KeyValueWriter, hash common.Hash) {
 	if err := db.Delete(hash.Bytes()); err != nil {
 		dataaccessobject.Logger.Log.Critical("Failed to delete trie node", "err", err)
 	}
+}
+
+func StoreFlatFileTransactionIndex(db incdb.KeyValueWriter, hash common.Hash, indexes []int) error {
+
+	key := GetFlatFileTransactionIndexKey(hash)
+
+	value, err := json.Marshal(indexes)
+	if err != nil {
+		return err
+	}
+
+	if err := db.Put(key, value); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetFlatFileTransactionIndex(db incdb.KeyValueReader, hash common.Hash) ([]int, error) {
+
+	indexes := []int{}
+	key := GetFlatFileTransactionIndexKey(hash)
+
+	value, err := db.Get(key)
+	if err != nil {
+		return indexes, err
+	}
+
+	if err := json.Unmarshal(value, &indexes); err != nil {
+		return indexes, err
+	}
+
+	return indexes, nil
+}
+
+func HasFlatFileTransactionIndex(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
+	return db.Has(GetFlatFileTransactionIndexKey(hash))
+}
+
+func DeleteFlatFileTransactionIndex(db incdb.KeyValueWriter, hash common.Hash) error {
+	return db.Delete(GetFlatFileTransactionIndexKey(hash))
+}
+
+func StoreLatestPivotBlock(db incdb.KeyValueWriter, hash common.Hash) error {
+	return db.Put(fullSyncPivotBlockKey, hash[:])
+}
+
+func GetLatestPivotBlock(db incdb.KeyValueReader) (common.Hash, error) {
+
+	value, err := db.Get(fullSyncPivotBlockKey)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	h, err := common.Hash{}.NewHash(value)
+
+	return *h, err
 }

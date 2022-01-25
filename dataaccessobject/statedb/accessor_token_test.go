@@ -123,7 +123,7 @@ func TestStateDB_StorePrivacyToken(t *testing.T) {
 			t.Errorf("StorePrivacyToken() error = %v, wantErr %v", err, tt.wantErr)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func TestStateDB_StorePrivacyTokenTx(t *testing.T) {
 			t.Errorf("StorePrivacyTokenTx() error = %v, wantErr %v", err, tt.wantErr)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +411,7 @@ func TestStateDB_ListPrivacyToken(t *testing.T) {
 			t.Errorf("StorePrivacyToken() error = %v, wantErr %v", err, tt.wantErr)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -519,7 +519,7 @@ func TestStateDB_GetPrivacyTokenTxs(t *testing.T) {
 			t.Errorf("StorePrivacyTokenTx() error = %v, wantErr %v", err, tt.wantErr)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -663,7 +663,7 @@ func TestStateDB_PrivacyTokenIDExisted(t *testing.T) {
 			t.Errorf("StorePrivacyToken() error = %v, wantErr %v", err, tt.wantErr)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}

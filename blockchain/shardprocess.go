@@ -1053,6 +1053,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
+	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
+
 	err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
@@ -1163,35 +1165,38 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	// consensus root hash
-	consensusRootHash, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
+	consensusRootHash, _, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	newShardState.ConsensusStateDBRootHash = consensusRootHash
 	// transaction root hash
-	transactionRootHash, err := newShardState.transactionStateDB.Commit(true)
+	transactionRootHash, transactionStateObject, err := newShardState.transactionStateDB.Commit(true)
 	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	if err := StoreStateObjectForRepair(blockchain.config.FlatFileManager[int(shardID)], batchData, blockHash, transactionStateObject); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	newShardState.TransactionStateDBRootHash = transactionRootHash
 	// feature root hash
-	featureRootHash, err := newShardState.featureStateDB.Commit(true)
+	featureRootHash, _, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	newShardState.FeatureStateDBRootHash = featureRootHash
 	// reward root hash
-	rewardRootHash, err := newShardState.rewardStateDB.Commit(true)
+	rewardRootHash, _, err := newShardState.rewardStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	newShardState.RewardStateDBRootHash = rewardRootHash
 	// slash root hash
-	slashRootHash, err := newShardState.slashStateDB.Commit(true)
+	slashRootHash, _, err := newShardState.slashStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
@@ -1204,8 +1209,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		SlashStateDBRootHash:       slashRootHash,
 		TransactionStateDBRootHash: transactionRootHash,
 	}
-
-	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
 
 	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, false); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)

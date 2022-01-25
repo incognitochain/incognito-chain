@@ -43,7 +43,7 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 	for key, value := range m1 {
 		sDB.SetStateObject(StakerObjectType, key, value)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +90,7 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	if _, ok := stateObjects[key2]; ok {
 		t.Fatalf("want nothing but got %+v", key2)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash2, err := sDB.Commit(true)
+	rootHash2, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +386,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 		for _, v := range newWantMState {
 			newWantM[v.ShardID()] = append(newWantM[v.ShardID()], v.CommitteePublicKey())
 		}
-		rootHash, err := sDB.Commit(true)
+		rootHash, _, err := sDB.Commit(true)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -712,7 +712,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 		for _, v := range newWantMState {
 			newWantM[v.ShardID()] = append(newWantM[v.ShardID()], v.CommitteePublicKey())
 		}
-		rootHash, err := sDB.Commit(true)
+		rootHash, _, err := sDB.Commit(true)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -875,7 +875,7 @@ func BenchmarkStateDB_GetCommitteeState1In1(b *testing.B) {
 		panic(err)
 	}
 	sDB.SetStateObject(CommitteeObjectType, key, committeeState)
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}

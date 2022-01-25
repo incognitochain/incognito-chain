@@ -1014,23 +1014,23 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	//	return err
 	//}
 
-	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
+	consensusRootHash, _, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
 
 	newBestState.ConsensusStateDBRootHash = consensusRootHash
-	featureRootHash, err := newBestState.featureStateDB.Commit(true)
+	featureRootHash, _, err := newBestState.featureStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
 	newBestState.FeatureStateDBRootHash = featureRootHash
-	rewardRootHash, err := newBestState.rewardStateDB.Commit(true)
+	rewardRootHash, _, err := newBestState.rewardStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
 	newBestState.RewardStateDBRootHash = rewardRootHash
-	slashRootHash, err := newBestState.slashStateDB.Commit(true)
+	slashRootHash, _, err := newBestState.slashStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
