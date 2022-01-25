@@ -884,7 +884,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*ShardBestState) error {
 
 	db := blockchain.GetShardChainDatabase(shardID)
-	flatfileManager := blockchain.config.FlatFileManager[int(shardID)]
+	flatFileManager := blockchain.config.FlatFileManager[int(shardID)]
 	latestFinalizeShardHash := blockchain.BeaconChain.GetFinalView().(*BeaconBestState).BestShardHash[shardID]
 	pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db)
 	if err != nil {
@@ -905,7 +905,7 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 
 	if err := repairStateDB(
 		finalizeStateDB,
-		flatfileManager,
+		flatFileManager,
 		db,
 		restoreFromFinalize,
 	); err != nil {
@@ -923,7 +923,7 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 
 		if err := repairStateDB(
 			viewStateDB,
-			flatfileManager,
+			flatFileManager,
 			db,
 			restoreFromBestView,
 		); err != nil {
@@ -953,7 +953,7 @@ func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash)
 
 func repairStateDB(
 	stateDB *statedb.StateDB,
-	flatfileManager *flatfile.FlatFileManager,
+	flatFileManager *flatfile.FlatFileManager,
 	db incdb.Database,
 	restore []common.Hash) error {
 
@@ -963,7 +963,7 @@ func repairStateDB(
 
 		stateObjects, err := GetTransactionStateObjectFromFlatFile(
 			stateDB,
-			flatfileManager,
+			flatFileManager,
 			db,
 			nextBlock,
 		)
@@ -987,7 +987,7 @@ func repairStateDB(
 	if err != nil {
 		return err
 	}
-	
+
 	if err := stateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
 		return err
 	}
