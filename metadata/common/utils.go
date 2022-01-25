@@ -78,6 +78,7 @@ func buildMetaInfo() {
 		IssuingBSCResponseMeta,
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
+		IssuingPLGResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 
@@ -146,6 +147,8 @@ func buildMetaInfo() {
 		BurningForDepositToSCRequestMetaV2,
 		ContractingRequestMeta,
 		BurningPBSCForDepositToSCRequestMeta,
+		BurningPLGRequestMeta,
+		BurningPLGForDepositToSCRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNormal,
@@ -240,6 +243,7 @@ func buildMetaInfo() {
 		IssuingPRVBEP20RequestMeta,
 		ContractingRequestMeta,
 		InitTokenRequestMeta,
+		IssuingPLGRequestMeta,
 		BurningPRVERC20RequestMeta,
 		BurningPRVBEP20RequestMeta,
 
@@ -366,10 +370,12 @@ func buildMetaInfo() {
 		IssuingPRVBEP20RequestMeta,
 		IssuingPRVERC20RequestMeta,
 		IssuingBSCRequestMeta,
+		IssuingPLGRequestMeta,
 		IssuingETHResponseMeta,
 		IssuingBSCResponseMeta,
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
+		IssuingPLGResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,

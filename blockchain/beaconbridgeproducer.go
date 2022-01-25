@@ -17,7 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -72,14 +71,24 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
-		case metadataCommon.BurningPRVERC20RequestMeta:
+		case metadata.BurningPRVERC20RequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPRVERC20ConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVERC20ConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
 			newInst = [][]string{burningConfirm}
 
-		case metadataCommon.BurningPRVBEP20RequestMeta:
+		case metadata.BurningPRVBEP20RequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadataCommon.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningPLGRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmMeta, inst, beaconHeight, common.PLGPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningPLGForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmForDepositToSCMeta, inst, beaconHeight, common.PLGPrefix)
 			newInst = [][]string{burningConfirm}
 
 		default:

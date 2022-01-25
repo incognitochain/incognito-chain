@@ -60,6 +60,31 @@ func IsBSCTxHashIssued(stateDB *StateDB, uniqueBSCTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertPLGTxHashIssued(stateDB *StateDB, uniquePLGTx []byte) error {
+	key := GenerateBridgePLGTxObjectKey(uniquePLGTx)
+	value := NewBridgePLGTxStateWithValue(uniquePLGTx)
+	err := stateDB.SetStateObject(BridgePLGTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertPLGTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsPLGTxHashIssued(stateDB *StateDB, uniquePLGTx []byte) (bool, error) {
+	key := GenerateBridgePLGTxObjectKey(uniquePLGTx)
+	bscTxState, has, err := stateDB.getBridgePLGTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsPLGTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(bscTxState.UniquePLGTx(), uniquePLGTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func InsertPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) error {
 	key := GenerateBrigePRVEVMObjectKey(uniquePRVEVMTx)
 	value := NewBrigePRVEVMStateWithValue(uniquePRVEVMTx)
