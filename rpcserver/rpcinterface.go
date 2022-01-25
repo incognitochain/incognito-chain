@@ -371,6 +371,7 @@ var HttpHandler = map[string]httpHandler{
 	getPortalConvertVaultTxStatus:              (*HttpServer).handleGetPortalConvertVaultTxStatus,
 	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
 	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
+	generateDepositAddress:                     (*HttpServer).handleGenerateDepositAddress,
 	generateOTDepositKey:                       (*HttpServer).handleGenerateOTDepositKey,
 	getNextOTDepositKey:                        (*HttpServer).handleGetNextOTDepositKey,
 	hasOTDepositPubKey:                         (*HttpServer).handleHasOTDepositPubKey,

@@ -861,6 +861,8 @@ func (httpServer *HttpServer) handleGetPortalConvertVaultTxStatus(params interfa
 	return status, nil
 }
 
+// handleGenerateShieldingMultisigAddress returns the multi-sig shielding address for a given payment address and tokenID.
+// DEPRECATED: use handleGenerateDepositAddress.
 func (httpServer *HttpServer) handleGenerateShieldingMultisigAddress(
 	params interface{}, closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
@@ -903,6 +905,55 @@ func (httpServer *HttpServer) handleGenerateShieldingMultisigAddress(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("Error when generating multisig address %v\n", err))
+	}
+
+	return shieldingAddress, nil
+}
+
+func (httpServer *HttpServer) handleGenerateDepositAddress(
+	params interface{}, _ <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param array must be at least one element"))
+	}
+	paramList, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("payload data is invalid"))
+	}
+
+	seedParam, ok := paramList["Seed"]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `OTPubKey` not found"))
+	}
+	seed, ok := seedParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`OTPubKey` must be a string"))
+	}
+
+	tokenIDParam, ok := paramList["TokenID"]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `TokenID` not found"))
+	}
+	tokenID, ok := tokenIDParam.(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`TokenID` must be a string"))
+	}
+
+	// get portal params with the latest beacon height
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(latestBeaconHeight)
+	if !portalParamV4.IsPortalToken(tokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("TokenID is not a portal token"))
+	}
+
+	_, shieldingAddress, err := portalParamV4.PortalTokens[tokenID].GenerateOTMultisigAddress(
+		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), seed)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("error when generating shielding address: %v\n", err))
 	}
 
 	return shieldingAddress, nil
