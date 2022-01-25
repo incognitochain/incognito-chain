@@ -231,7 +231,7 @@ func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(
 
 	priKey := new(privacy.SchnorrPrivateKey)
 	priKey.Set(new(operation.Scalar).FromBytesS(OTPrivateKey), operation.RandomScalar())
-	sig, err := priKey.Sign(receiverBytes)
+	sig, err := priKey.Sign(common.HashB(receiverBytes))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("SchnorrSign error: %v", err))
 	}

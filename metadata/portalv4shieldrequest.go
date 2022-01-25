@@ -183,7 +183,7 @@ func (req PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetri
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature %v", req.Signature))
 		}
 
-		if isValid := schnorrKey.Verify(schnorrSig, otaReceiverBytes); isValid {
+		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); isValid {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
 		}
 	}
