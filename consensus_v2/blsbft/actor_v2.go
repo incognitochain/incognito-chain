@@ -1486,25 +1486,12 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
 
+	if proposeBlockInfo.IsValid {
+		return nil
+	}
+
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
-
-	if isVoted {
-		if lastVotedBlock.Hash().String() == proposeBlockInfo.block.Hash().String() {
-			// @NOTICE: hackcase for multikey
-			// last block is the same block as propose block info
-			// if proposeBlockInfo is valid then return for the next key to sign
-			a.logger.Infof("validateBlock hash %+v, height %+v, isValid %+v, numberOfUserKeySet %+v",
-				*proposeBlockInfo.block.Hash(),
-				proposeBlockInfo.block.GetHeight(),
-				proposeBlockInfo.IsValid,
-				len(proposeBlockInfo.UserKeySet),
-			)
-			if proposeBlockInfo.IsValid && len(proposeBlockInfo.UserKeySet) != 0 {
-				return nil
-			}
-		}
-	}
 
 	isValid, err := a.ruleDirector.builder.ValidatorRule().ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
