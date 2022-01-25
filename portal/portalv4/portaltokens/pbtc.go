@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"sort"
 	"strings"
 
@@ -285,7 +286,17 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 	if chainCodeSeed == "" {
 		pubKeys = masterPubKeys[:]
 	} else {
-		chainCode := chainhash.HashB([]byte(chainCodeSeed))
+		var chainCode []byte
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(chainCodeSeed, 2); err == nil {
+			chainCode = chainhash.HashB([]byte(chainCodeSeed))
+		} else {
+			chainCode, _, err = base58.Base58Check{}.Decode(chainCodeSeed)
+			if err != nil {
+				return nil, "", fmt.Errorf("invalid chainCode: %v", chainCodeSeed)
+			}
+			chainCode = chainhash.HashB(chainCode)
+		}
+
 		for idx, masterPubKey := range masterPubKeys {
 			// generate BTC child public key for this Incognito address
 			extendedBTCPublicKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)

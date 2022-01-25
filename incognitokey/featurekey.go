@@ -22,8 +22,8 @@ func (k OTDepositKey) MarshalJSON() ([]byte, error) {
 		Index      uint64
 	}
 
-	privateKeyStr := base58.Base58Check{}.Encode(k.PrivateKey, 0)
-	pubKeyStr := base58.Base58Check{}.Encode(k.PublicKey, 0)
+	privateKeyStr := base58.Base58Check{}.NewEncode(k.PrivateKey, 0)
+	pubKeyStr := base58.Base58Check{}.NewEncode(k.PublicKey, 0)
 	h := holder{
 		PrivateKey: privateKeyStr,
 		PublicKey:  pubKeyStr,

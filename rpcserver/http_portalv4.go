@@ -1070,7 +1070,7 @@ func (httpServer *HttpServer) handleGenerateOTDepositKey(params interface{}, _ <
 	}
 
 	// generate shielding multiSig address
-	depositPubKeyStr := base58.Base58Check{}.Encode(depositKey.PublicKey, 0)
+	depositPubKeyStr := base58.Base58Check{}.NewEncode(depositKey.PublicKey, 0)
 	_, depositAddress, err := portalParamV4.PortalTokens[tokenID].GenerateOTMultisigAddress(
 		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), depositPubKeyStr)
 	if err != nil {
@@ -1129,7 +1129,7 @@ func (httpServer *HttpServer) handleGetNextOTDepositKey(params interface{}, _ <-
 	}
 
 	// generate shielding multiSig address
-	depositPubKeyStr := base58.Base58Check{}.Encode(depositKey.PublicKey, 0)
+	depositPubKeyStr := base58.Base58Check{}.NewEncode(depositKey.PublicKey, 0)
 	_, depositAddress, err := portalParamV4.PortalTokens[tokenID].GenerateOTMultisigAddress(
 		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), depositPubKeyStr)
 	if err != nil {
