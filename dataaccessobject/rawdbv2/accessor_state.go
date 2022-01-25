@@ -42,47 +42,6 @@ func DeleteTrieNode(db incdb.KeyValueWriter, hash common.Hash) {
 	}
 }
 
-func StoreFlatFileTransactionIndex(db incdb.KeyValueWriter, hash common.Hash, indexes []int) error {
-
-	key := GetFlatFileTransactionIndexKey(hash)
-
-	value, err := json.Marshal(indexes)
-	if err != nil {
-		return err
-	}
-
-	if err := db.Put(key, value); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetFlatFileTransactionIndex(db incdb.KeyValueReader, hash common.Hash) ([]int, error) {
-
-	indexes := []int{}
-	key := GetFlatFileTransactionIndexKey(hash)
-
-	value, err := db.Get(key)
-	if err != nil {
-		return indexes, err
-	}
-
-	if err := json.Unmarshal(value, &indexes); err != nil {
-		return indexes, err
-	}
-
-	return indexes, nil
-}
-
-func HasFlatFileTransactionIndex(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
-	return db.Has(GetFlatFileTransactionIndexKey(hash))
-}
-
-func DeleteFlatFileTransactionIndex(db incdb.KeyValueWriter, hash common.Hash) error {
-	return db.Delete(GetFlatFileTransactionIndexKey(hash))
-}
-
 func StoreLatestPivotBlock(db incdb.KeyValueWriter, hash common.Hash) error {
 	return db.Put(fullSyncPivotBlockKey, hash[:])
 }
@@ -97,4 +56,45 @@ func GetLatestPivotBlock(db incdb.KeyValueReader) (common.Hash, error) {
 	h, err := common.Hash{}.NewHash(value)
 
 	return *h, err
+}
+
+func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, indexes [][]int) error {
+
+	key := GetFlatFileStateObjectIndexKey(hash)
+
+	value, err := json.Marshal(indexes)
+	if err != nil {
+		return err
+	}
+
+	if err := db.Put(key, value); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) ([][]int, error) {
+
+	indexes := [][]int{}
+	key := GetFlatFileStateObjectIndexKey(hash)
+
+	value, err := db.Get(key)
+	if err != nil {
+		return indexes, err
+	}
+
+	if err := json.Unmarshal(value, &indexes); err != nil {
+		return indexes, err
+	}
+
+	return indexes, nil
+}
+
+func HasFlatFileTransactionIndex(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
+	return db.Has(GetFlatFileStateObjectIndexKey(hash))
+}
+
+func DeleteFlatFileTransactionIndex(db incdb.KeyValueWriter, hash common.Hash) error {
+	return db.Delete(GetFlatFileStateObjectIndexKey(hash))
 }

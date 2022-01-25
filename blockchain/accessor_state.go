@@ -8,18 +8,58 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
-func StoreStateObjectForRepair(
+const (
+	REPAIR_STATE_CONSENSUS   = 0
+	REPAIR_STATE_TRANSACTION = 1
+	REPAIR_STATE_FEATURE     = 2
+	REPAIR_STATE_REWARD      = 3
+	REPAIR_STATE_SLASH       = 4
+)
+
+func StoreTransactionStateObjectForRepair(
 	flatfile *flatfile.FlatFileManager,
 	db incdb.Batch,
 	hash common.Hash,
-	stateObjects map[common.Hash]statedb.StateObject) error {
+	consensusStateObjects map[common.Hash]statedb.StateObject,
+	transactionStateObjects map[common.Hash]statedb.StateObject,
+	featureStateObjects map[common.Hash]statedb.StateObject,
+	rewardStateObjects map[common.Hash]statedb.StateObject,
+	slashStateObjects map[common.Hash]statedb.StateObject,
+) error {
 
-	indexes, err := StoreStateObjectToFlatFile(flatfile, stateObjects)
+	indexes := make([][]int, 5)
+
+	consensusStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, consensusStateObjects)
 	if err != nil {
 		return err
 	}
+	indexes[REPAIR_STATE_CONSENSUS] = consensusStateObjectIndex
 
-	if err := StoreFlatFileTransactionIndex(db, hash, indexes); err != nil {
+	transactionStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, transactionStateObjects)
+	if err != nil {
+		return err
+	}
+	indexes[REPAIR_STATE_TRANSACTION] = transactionStateObjectIndex
+
+	featureStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, featureStateObjects)
+	if err != nil {
+		return err
+	}
+	indexes[REPAIR_STATE_FEATURE] = featureStateObjectIndex
+
+	rewardStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, rewardStateObjects)
+	if err != nil {
+		return err
+	}
+	indexes[REPAIR_STATE_REWARD] = rewardStateObjectIndex
+
+	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatfile, slashStateObjects)
+	if err != nil {
+		return err
+	}
+	indexes[REPAIR_STATE_SLASH] = slashStateObjectIndex
+
+	if err := StoreFlatFileStateObjectIndex(db, hash, indexes); err != nil {
 		return err
 	}
 
@@ -27,54 +67,79 @@ func StoreStateObjectForRepair(
 }
 
 func StoreStateObjectToFlatFile(
-	flatfile *flatfile.FlatFileManager,
-	stateObjects map[common.Hash]statedb.StateObject) ([]int, error) {
+	flatFileManager *flatfile.FlatFileManager,
+	stateObjects map[common.Hash]statedb.StateObject,
+) ([]int, error) {
 
 	newIndexes := []int{}
 
 	for _, stateObject := range stateObjects {
 		data := statedb.ByteSerialize(stateObject)
-		newIndex, err := flatfile.Append(data)
+		newIndex, err := flatFileManager.Append(data)
 		if err != nil {
 			return newIndexes, err
 		}
+
 		newIndexes = append(newIndexes, newIndex)
 	}
 
 	return newIndexes, nil
 }
 
-func StoreFlatFileTransactionIndex(db incdb.Batch, hash common.Hash, indexes []int) error {
-	return rawdbv2.StoreFlatFileTransactionIndex(db, hash, indexes)
+func StoreFlatFileStateObjectIndex(db incdb.Batch, hash common.Hash, indexes [][]int) error {
+	return rawdbv2.StoreFlatFileStateObjectIndex(db, hash, indexes)
 }
 
 func GetTransactionStateObjectFromFlatFile(
-	stateDB *statedb.StateDB,
-	flatfile *flatfile.FlatFileManager,
+	consensusStateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
+	featureStateDB *statedb.StateDB,
+	rewardStateDB *statedb.StateDB,
+	slashStateDB *statedb.StateDB,
+	flatFileManager *flatfile.FlatFileManager,
 	db incdb.Database,
 	hash common.Hash,
-) (map[common.Hash]statedb.StateObject, error) {
+) ([]map[common.Hash]statedb.StateObject, error) {
 
-	stateObjects := make(map[common.Hash]statedb.StateObject)
+	allStateObjects := make([]map[common.Hash]statedb.StateObject, 5)
 
-	indexes, err := rawdbv2.GetFlatFileTransactionIndex(db, hash)
+	indexes, err := rawdbv2.GetFlatFileStateObjectIndex(db, hash)
 	if err != nil {
-		return stateObjects, err
+		return allStateObjects, err
 	}
 
-	for _, index := range indexes {
-		data, err := flatfile.Read(index)
-		if err != nil {
-			return stateObjects, err
+	for i := range indexes {
+		stateDB := &statedb.StateDB{}
+		switch i {
+		case REPAIR_STATE_CONSENSUS:
+			stateDB = consensusStateDB
+		case REPAIR_STATE_TRANSACTION:
+			stateDB = transactionStateDB
+		case REPAIR_STATE_FEATURE:
+			stateDB = featureStateDB
+		case REPAIR_STATE_REWARD:
+			stateDB = rewardStateDB
+		case REPAIR_STATE_SLASH:
+			stateDB = slashStateDB
+		}
+		stateObjects := make(map[common.Hash]statedb.StateObject)
+
+		for index := range indexes[i] {
+			data, err := flatFileManager.Read(index)
+			if err != nil {
+				return allStateObjects, err
+			}
+
+			stateObject, err := statedb.ByteDeSerialize(stateDB, data)
+			if err != nil {
+				return allStateObjects, err
+			}
+
+			stateObjects[stateObject.GetHash()] = stateObject
 		}
 
-		stateObject, err := statedb.ByteDeSerialize(stateDB, data)
-		if err != nil {
-			return stateObjects, err
-		}
-
-		stateObjects[stateObject.GetHash()] = stateObject
+		allStateObjects[i] = stateObjects
 	}
 
-	return stateObjects, nil
+	return allStateObjects, nil
 }

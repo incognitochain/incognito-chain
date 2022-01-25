@@ -1165,7 +1165,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	// consensus root hash
-	consensusRootHash, _, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
+	consensusRootHash, consensusStateObject, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
@@ -1176,31 +1176,41 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := StoreStateObjectForRepair(blockchain.config.FlatFileManager[int(shardID)], batchData, blockHash, transactionStateObject); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
 
 	newShardState.TransactionStateDBRootHash = transactionRootHash
 	// feature root hash
-	featureRootHash, _, err := newShardState.featureStateDB.Commit(true)
+	featureRootHash, featureStateObject, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	newShardState.FeatureStateDBRootHash = featureRootHash
 	// reward root hash
-	rewardRootHash, _, err := newShardState.rewardStateDB.Commit(true)
+	rewardRootHash, rewardStateObject, err := newShardState.rewardStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	newShardState.RewardStateDBRootHash = rewardRootHash
 	// slash root hash
-	slashRootHash, _, err := newShardState.slashStateDB.Commit(true)
+	slashRootHash, slashStateObject, err := newShardState.slashStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	newShardState.SlashStateDBRootHash = slashRootHash
+
+	if err := StoreTransactionStateObjectForRepair(
+		blockchain.config.FlatFileManager[int(shardID)],
+		batchData,
+		blockHash,
+		consensusStateObject,
+		transactionStateObject,
+		featureStateObject,
+		rewardStateObject,
+		slashStateObject,
+	); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
 
 	sRH := ShardRootHash{
 		ConsensusStateDBRootHash:   consensusRootHash,

@@ -48,7 +48,7 @@ var (
 	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
 
 	//repair state
-	flatFileTransactionIndexPrefix = []byte("ff-tx-" + string(splitter))
+	flatFileStateObjectIndexPrefix = []byte("ff-sob-" + string(splitter))
 	fullSyncPivotBlockKey          = []byte("Full-Sync-Latest-Pivot-Block")
 )
 
@@ -433,10 +433,10 @@ func preimageKey(hash common.Hash) []byte {
 	return append(temp, hash.Bytes()...)
 }
 
-func GetFlatFileTransactionIndexKey(hash common.Hash) []byte {
+func GetFlatFileStateObjectIndexKey(hash common.Hash) []byte {
 
-	temp := make([]byte, len(flatFileTransactionIndexPrefix))
-	copy(temp, flatFileTransactionIndexPrefix)
+	temp := make([]byte, len(flatFileStateObjectIndexPrefix))
+	copy(temp, flatFileStateObjectIndexPrefix)
 
 	return append(temp, hash[:]...)
 }

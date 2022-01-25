@@ -899,7 +899,23 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 	if err != nil {
 		return err
 	}
-	finalizeStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	finalizeConsensusStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return err
+	}
+	finalizeTransactionStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return err
+	}
+	finalizeFeatureStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return err
+	}
+	finalizeRewardStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return err
+	}
+	finalizeSlashStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return err
 	}
@@ -909,7 +925,11 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 	}
 
 	if err := repairStateDB(
-		finalizeStateDB,
+		finalizeConsensusStateDB,
+		finalizeTransactionStateDB,
+		finalizeFeatureStateDB,
+		finalizeRewardStateDB,
+		finalizeSlashStateDB,
 		flatFileManager,
 		db,
 		restoreFromFinalize,
@@ -924,10 +944,18 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 			return err
 		}
 
-		viewStateDB := finalizeStateDB.Copy()
+		viewConsensusStateDB := finalizeConsensusStateDB.Copy()
+		viewTransactionStateDB := finalizeTransactionStateDB.Copy()
+		viewFeatureStateDB := finalizeFeatureStateDB.Copy()
+		viewRewardStateDB := finalizeRewardStateDB.Copy()
+		viewSlashStateDB := finalizeSlashStateDB.Copy()
 
 		if err := repairStateDB(
-			viewStateDB,
+			viewConsensusStateDB,
+			viewTransactionStateDB,
+			viewFeatureStateDB,
+			viewRewardStateDB,
+			viewSlashStateDB,
 			flatFileManager,
 			db,
 			restoreFromBestView,
@@ -935,7 +963,11 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 			return err
 		}
 
-		view.transactionStateDB = viewStateDB
+		view.consensusStateDB = viewConsensusStateDB
+		view.transactionStateDB = viewTransactionStateDB
+		view.featureStateDB = viewFeatureStateDB
+		view.rewardStateDB = viewRewardStateDB
+		view.slashStateDB = viewSlashStateDB
 	}
 
 	return nil
@@ -957,7 +989,11 @@ func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash)
 }
 
 func repairStateDB(
-	stateDB *statedb.StateDB,
+	consensusStateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
+	featureStateDB *statedb.StateDB,
+	rewardStateDB *statedb.StateDB,
+	slashStateDB *statedb.StateDB,
 	flatFileManager *flatfile.FlatFileManager,
 	db incdb.Database,
 	restore []common.Hash) error {
@@ -966,8 +1002,12 @@ func repairStateDB(
 
 		nextBlock := restore[len(restore)-1]
 
-		stateObjects, err := GetTransactionStateObjectFromFlatFile(
-			stateDB,
+		allStateObjects, err := GetTransactionStateObjectFromFlatFile(
+			consensusStateDB,
+			transactionStateDB,
+			featureStateDB,
+			rewardStateDB,
+			slashStateDB,
 			flatFileManager,
 			db,
 			nextBlock,
@@ -975,26 +1015,68 @@ func repairStateDB(
 		if err != nil {
 			return err
 		}
-
-		for objKey, obj := range stateObjects {
-			if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
-				return err
+		for i := range allStateObjects {
+			stateObjects := allStateObjects[i]
+			stateDB := &statedb.StateDB{}
+			switch i {
+			case REPAIR_STATE_CONSENSUS:
+				stateDB = consensusStateDB
+			case REPAIR_STATE_TRANSACTION:
+				stateDB = transactionStateDB
+			case REPAIR_STATE_FEATURE:
+				stateDB = featureStateDB
+			case REPAIR_STATE_REWARD:
+				stateDB = rewardStateDB
+			case REPAIR_STATE_SLASH:
+				stateDB = slashStateDB
 			}
-			if obj.IsDeleted() {
-				stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+
+			for objKey, obj := range stateObjects {
+				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
+					return err
+				}
+				if obj.IsDeleted() {
+					stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+				}
 			}
 		}
-
 		restore = restore[:len(restore)-1]
 	}
 
-	rootHash, _, err := stateDB.Commit(true)
-	if err != nil {
+	if rootHash, _, err := consensusStateDB.Commit(true); err != nil {
 		return err
+	} else {
+		if err := consensusStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
 	}
-
-	if err := stateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+	if rootHash, _, err := transactionStateDB.Commit(true); err != nil {
 		return err
+	} else {
+		if err := transactionStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
+	}
+	if rootHash, _, err := featureStateDB.Commit(true); err != nil {
+		return err
+	} else {
+		if err := featureStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
+	}
+	if rootHash, _, err := rewardStateDB.Commit(true); err != nil {
+		return err
+	} else {
+		if err := rewardStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
+	}
+	if rootHash, _, err := slashStateDB.Commit(true); err != nil {
+		return err
+	} else {
+		if err := slashStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
 	}
 
 	return nil
