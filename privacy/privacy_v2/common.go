@@ -65,3 +65,38 @@ func initTokenPrivacyAttributes() map[common.Hash]TokenAttributes {
 	result[common.PdexAccessCoinID] = TokenAttributes{Private: false, BurnOnly: true}
 	return result
 }
+
+// RingDecoyFilter provides a method to detect coins ineligible for ring signatures
+type RingDecoyFilter interface {
+	CanUseAsRingDecoy(*coin.CoinV2) bool
+}
+
+type npFilter struct {}
+
+func (npf *npFilter) CanUseAsRingDecoy(c *coin.CoinV2) bool {
+	if isPRV := c.GetAssetTag() == nil; isPRV {
+		return true
+	}
+	var coinHolder [][]*coin.CoinV2
+	coinHolder = append(coinHolder, []*coin.CoinV2{c})
+	found, _, tokenID, _ := ContainsNonPrivateToken(coinHolder)
+	if found {
+		Logger.Log.Infof("Non-private token %v found in coin %v", tokenID, c.GetPublicKey())
+	}
+	return !found
+}
+
+var NonPrivateTokenCoinFilter = &npFilter{}
+
+type TokenIDRingDecoyFilter struct {
+	Data map[string]*common.Hash
+}
+
+func (idf *TokenIDRingDecoyFilter) CanUseAsRingDecoy(c *coin.CoinV2) bool {
+	if isPRV := c.GetAssetTag() == nil; isPRV {
+		return true
+	}
+	// filter coins with any plain tokenID from Data
+	tokenID, _ := c.GetTokenId(nil, idf.Data)
+	return tokenID == nil
+}

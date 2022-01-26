@@ -195,3 +195,6 @@ type TokenAttributes = privacy_v2.TokenAttributes
 var MapPlainAssetTags = privacy_v2.MapPlainAssetTags
 var ContainsNonPrivateToken = privacy_v2.ContainsNonPrivateToken
 var ValidateNonPrivateTransfer = privacy_v2.ValidateNonPrivateTransfer
+type RingDecoyFilter = privacy_v2.RingDecoyFilter
+var NonPrivateTokenCoinFilter = privacy_v2.NonPrivateTokenCoinFilter
+type TokenIDRingDecoyFilter = privacy_v2.TokenIDRingDecoyFilter
