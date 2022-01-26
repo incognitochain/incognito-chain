@@ -319,7 +319,8 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
 	}
 
-	if shieldingReqTrackData.OTDepositPubKey != "" {
+	if shieldingReqTrackData.OTDepositPubKey != "" &&
+		shieldingReqTrackData.Status == portalcommonv4.PortalV4RequestAcceptedStatus {
 		depositPubKeyBytes, _, _ := base58.Base58Check{}.Decode(shieldingReqTrackData.OTDepositPubKey) // error has been checked from outer layers.
 		err = statedb.StoreShieldInfoByPubKey(stateDB, depositPubKeyBytes, shieldingReqTrackData.TxReqID.String())
 		if err != nil {
