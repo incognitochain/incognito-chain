@@ -742,7 +742,11 @@ func (p *PoolPairState) updateToDB(
 		if _, found := p.orderRewards[nftID]; found {
 			if orderRewardChange.IsChanged {
 				err := statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
-					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(nftID, p.orderRewards[nftID].withdrawnStatus),
+					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
+						nftID,
+						p.orderRewards[nftID].withdrawnStatus,
+						p.orderRewards[nftID].txReqID,
+					),
 				)
 				if err != nil {
 					return err

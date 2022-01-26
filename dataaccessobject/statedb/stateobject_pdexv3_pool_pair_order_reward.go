@@ -11,6 +11,11 @@ import (
 type Pdexv3PoolPairOrderRewardState struct {
 	nftID           string
 	withdrawnStatus byte
+	txReqID         *common.Hash
+}
+
+func (state *Pdexv3PoolPairOrderRewardState) TxReqID() *common.Hash {
+	return state.txReqID
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) WithdrawnStatus() byte {
@@ -23,11 +28,13 @@ func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
 
 func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID           string `json:"NftID"`
-		WithdrawnStatus byte   `json:"WithdrawnStatus"`
+		NftID           string       `json:"NftID"`
+		WithdrawnStatus byte         `json:"WithdrawnStatus"`
+		TxReqID         *common.Hash `json:"TxReqID,omitempty"`
 	}{
 		NftID:           state.nftID,
 		WithdrawnStatus: state.withdrawnStatus,
+		TxReqID:         state.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -37,8 +44,9 @@ func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 
 func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID           string `json:"NftID"`
-		WithdrawnStatus byte   `json:"WithdrawnStatus"`
+		NftID           string       `json:"NftID"`
+		WithdrawnStatus byte         `json:"WithdrawnStatus"`
+		TxReqID         *common.Hash `json:"TxReqID,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -46,6 +54,7 @@ func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	}
 	state.nftID = temp.NftID
 	state.withdrawnStatus = temp.WithdrawnStatus
+	state.txReqID = temp.TxReqID
 	return nil
 }
 
@@ -53,6 +62,7 @@ func (state *Pdexv3PoolPairOrderRewardState) Clone() *Pdexv3PoolPairOrderRewardS
 	return &Pdexv3PoolPairOrderRewardState{
 		nftID:           state.nftID,
 		withdrawnStatus: state.withdrawnStatus,
+		txReqID:         state.txReqID,
 	}
 }
 
@@ -61,11 +71,12 @@ func NewPdexv3PoolPairOrderRewardState() *Pdexv3PoolPairOrderRewardState {
 }
 
 func NewPdexv3PoolPairOrderRewardStateWithValue(
-	nftID string, withdrawnStatus byte,
+	nftID string, withdrawnStatus byte, txReqID *common.Hash,
 ) *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
 		nftID:           nftID,
 		withdrawnStatus: withdrawnStatus,
+		txReqID:         txReqID,
 	}
 }
 

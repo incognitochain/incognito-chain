@@ -554,15 +554,18 @@ func (o *OrderRewardDetail) Receiver() privacy.OTAReceiver {
 type OrderReward struct {
 	uncollectedRewards map[common.Hash]OrderRewardDetail
 	withdrawnStatus    byte
+	txReqID            *common.Hash
 }
 
 func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UncollectedRewards map[common.Hash]OrderRewardDetail `json:"UncollectedRewards"`
 		WithdrawnStatus    byte                              `json:"WithdrawnStatus"`
+		TxReqID            *common.Hash                      `json:"TxReqID,omitempty"`
 	}{
 		UncollectedRewards: orderReward.uncollectedRewards,
 		WithdrawnStatus:    orderReward.withdrawnStatus,
+		TxReqID:            orderReward.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -574,6 +577,7 @@ func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UncollectedRewards map[common.Hash]OrderRewardDetail `json:"UncollectedRewards"`
 		WithdrawnStatus    byte                              `json:"WithdrawnStatus"`
+		TxReqID            *common.Hash                      `json:"TxReqID,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -581,7 +585,12 @@ func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	}
 	orderReward.withdrawnStatus = temp.WithdrawnStatus
 	orderReward.uncollectedRewards = temp.UncollectedRewards
+	orderReward.txReqID = temp.TxReqID
 	return nil
+}
+
+func (orderReward *OrderReward) TxReqID() *common.Hash {
+	return orderReward.txReqID
 }
 
 func (orderReward *OrderReward) WithdrawnStatus() byte {

@@ -855,6 +855,8 @@ TransactionLoop:
 					if ord.IsEmpty() {
 						if orderReward, found := pair.orderRewards[ord.NftID().String()]; found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
+							orderReward.txReqID = tx.Hash()
+							pair.orderRewards[ord.NftID().String()] = orderReward
 						}
 						shouldMintAccessCoin = false
 					}
@@ -1003,7 +1005,7 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 						*metadataPdexv3.NewAccessOptionWithValue(nil, accessHash, nil),
 						receiversInfo,
 						v.receiver.GetShardID(),
-						common.Hash{}, //TODO: @tin fix here
+						*orderReward.txReqID,
 						metadataPdexv3.RequestAcceptedChainStatus,
 						nil,
 					)
