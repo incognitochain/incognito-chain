@@ -415,6 +415,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	hasAssetTags := true
+	attempts := privacy.MaxPrivacyAttempts
 	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
@@ -427,13 +428,34 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 
 		publicKey := coinDB.GetPublicKey()
-		// we do not use burned or burn-only coins since they will reduce the privacy level of the transaction.
+		// we do not use burned, burn-only, or NFTID coins since they will reduce the privacy level of the transaction.
+		canUseCoin := true
 		if common.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
-			i--
-			continue
+			canUseCoin = false
 		}
-		if found, _, _, _ := privacy.ContainsNonPrivateToken([][]*privacy.CoinV2{[]*privacy.CoinV2{coinDB}}); found {
+		if *tokenID != common.PRVCoinID {
+			if pass := privacy.NonPrivateTokenCoinFilter.CanUseAsRingDecoy(coinDB); !pass {
+				canUseCoin = false
+				Logger.log.Infof("RandomCommitment: discard coin %v of non-private token, asset tag %v", publicKey, coinDB.GetAssetTag())
+			} else {
+				f, err := blockchain.GetBeaconBestState().NftIDCoinFilter()
+				if err == nil {
+					if pass := f.CanUseAsRingDecoy(coinDB); !pass {
+						canUseCoin = false
+						Logger.log.Infof("RandomCommitment: discard coin %v with NFTID, asset tag %v", publicKey, coinDB.GetAssetTag())
+					}
+				} else {
+					Logger.log.Infof("Cannot get NFTID filter from beacon state - %v", err)
+				}
+			}
+		}
+		// when the sampled coin cannot be used, retry (or exit if attempts run out)
+		if !canUseCoin {
 			i--
+			attempts--
+			if attempts <= 0 {
+				break
+			}
 			continue
 		}
 
