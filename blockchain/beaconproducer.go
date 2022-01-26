@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
+	"math"
 	"sort"
 )
 
@@ -634,9 +635,9 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 }
 
 func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
-	halfPendingCycle := uint64(len(curView.GetShardPendingValidator()[sid]) / 2)
-	halfPendingCycleEpoch := halfPendingCycle / 4 //this assume an average of 4 nodes will be out pending queue per epoch
-	return halfPendingCycleEpoch
+	swapOffset := uint64(curView.MaxShardCommitteeSize / 8)
+	halfPendingCycleEpoch := math.Ceil(float64(len(curView.GetShardPendingValidator()[sid])) / float64(2*swapOffset))
+	return uint64(halfPendingCycleEpoch)
 }
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
