@@ -7,12 +7,18 @@
 #    		sudo ./{this script} -y
 #	3. To uninstall, run:
 #		    sudo ./{this script} -u
+# 4. If you want to add more node after running this script:
+#      4.1. Open /home/incognito/validator_keys, append more keys to it.
+#          (separate by commas, no spaces)
+#      4.2. Delete /home/incognito/inc_node_latest_tag
+#      4.3. Start IncognitoUpdater service again:
+#          sudo systemctl start IncognitoUpdater.service
+#        or just run the run_node.sh script:
+#          sudo /home/incognito/run_node.sh
 # ============================================================================================
 
 # ============================= CHANGE CONFIG HERE ===========================================
-VALIDATOR_K=("validator_key_1,
-             validator_key_2,
-             validator_key_3"
+VALIDATOR_K=("validator_key_1,validator_key_2,validator_key_3"
   "! Input validator keys here, multiple validator keys must be separated by commas (no spaces):\n\t> ")
 GETH_NAME=("https://mainnet.infura.io/v3/xxxyyy"
   "! Infura link. Example: 'https://mainnet.infura.io/v3/xxxyyy'.
@@ -133,6 +139,7 @@ done
 
 echo "Checking for / Installing Docker and jq (JSON processor)"
 apt install docker.io jq -y
+systemctl start docker.service
 echo "Finished. Launching setup script..."
 sleep 3
 clear
@@ -340,7 +347,7 @@ systemctl enable $(basename $SERVICE)
 systemctl enable $(basename $TIMER)
 
 
-echo " # Starting service"
+echo " # Starting service. Please wait..."
 systemctl start $(basename $SERVICE)
 systemctl start $(basename $TIMER)
 cat << EOF
