@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
@@ -810,4 +811,17 @@ func (s *stateV2) IsValidLP(poolPairID, lpID string) (bool, error) {
 		return false, fmt.Errorf("Can't not find lpID %s", lpID)
 	}
 	return true, nil
+}
+
+func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
+	result := make(map[string]*common.Hash)
+	for s, _ := range s.nftIDs {
+		tokenID, err := common.Hash{}.NewHashFromStr(s)
+		if err != nil {
+			return nil, err
+		}
+		assetTag := privacy.HashToPoint(tokenID[:])
+		result[assetTag.String()] = tokenID
+	}
+	return result, nil
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -447,3 +448,5 @@ func (s *stateV1) IsValidPdexv3PoolPairID(poolPairID string) (bool, error) {
 	}
 	return true, nil
 }
+
+func (s *stateV1) NFTAssetTags() (map[string]*common.Hash, error) { return nil, nil }

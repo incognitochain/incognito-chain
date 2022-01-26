@@ -620,6 +620,16 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3LP(poolPairID, lpID string)
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidLP(poolPairID, lpID)
 }
 
+func (beaconBestState *BeaconBestState) NftIDCoinFilter() (*privacy.TokenIDRingDecoyFilter, error) {
+	data, err := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().NFTAssetTags()
+	if err != nil {
+		return nil, err
+	}
+	return &privacy.TokenIDRingDecoyFilter {
+		Data: data,
+	}, nil
+}
+
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	sC := make(map[byte][]incognitokey.CommitteePublicKey)
 	sPV := make(map[byte][]incognitokey.CommitteePublicKey)
