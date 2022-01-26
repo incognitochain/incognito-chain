@@ -349,7 +349,21 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 					}
 
 					// we do not use burned coins since they will reduce the privacy level of the transaction.
-					if !common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+					canUseCoin := true
+					if common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						canUseCoin = false
+					}
+					filters := params.RingDecoyFilters()
+					// filter out unwanted coins from ring
+					for _, f := range filters {
+						if !f.CanUseAsRingDecoy(coinDB) {
+							canUseCoin = false
+							utils.Logger.Log.Infof("SignTX: discard coin %+v from PRV ring - by filter %#v", coinDB, f)
+							break
+						}
+					}
+					// when the random coin cannot be used in ring, retry
+					if canUseCoin {
 						break
 					}
 					attempts++

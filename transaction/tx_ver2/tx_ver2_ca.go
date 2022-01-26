@@ -3,7 +3,6 @@ package tx_ver2
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	// "github.com/incognitochain/incognito-chain/wallet"
 )
 
 func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, outputSharedSecrets []*privacy.Point, params *tx_generic.TxPrivacyInitParams, shardID byte, commitmentsToZero []*privacy.Point) ([]*privacy.Scalar, error) {
@@ -208,7 +206,21 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 					}
 
 					// we do not use burned coins since they will reduce the privacy level of the transaction.
-					if !wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+					canUseCoin := true
+					if common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						canUseCoin = false
+					}
+					filters := params.RingDecoyFilters()
+					// filter out unwanted coins from ring
+					for _, f := range filters {
+						if !f.CanUseAsRingDecoy(coinDB) {
+							canUseCoin = false
+							utils.Logger.Log.Infof("SignTX: discard coin %+v from ring - by filter %#v", coinDB, f)
+							break
+						}
+					}
+					// when the random coin cannot be used in ring, retry
+					if canUseCoin {
 						break
 					}
 					attempts++
