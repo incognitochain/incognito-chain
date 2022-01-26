@@ -440,3 +440,13 @@ func GetFlatFileStateObjectIndexKey(hash common.Hash) []byte {
 
 	return append(temp, hash[:]...)
 }
+
+func GetFullSyncPivotBlockKey(shardID byte) []byte {
+
+	temp := make([]byte, len(fullSyncPivotBlockKey))
+	copy(temp, fullSyncPivotBlockKey)
+
+	temp = append(temp, shardID)
+
+	return temp
+}

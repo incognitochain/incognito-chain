@@ -42,13 +42,17 @@ func DeleteTrieNode(db incdb.KeyValueWriter, hash common.Hash) {
 	}
 }
 
-func StoreLatestPivotBlock(db incdb.KeyValueWriter, hash common.Hash) error {
-	return db.Put(fullSyncPivotBlockKey, hash[:])
+func StoreLatestPivotBlock(db incdb.KeyValueWriter, shardID byte, hash common.Hash) error {
+	return db.Put(GetFullSyncPivotBlockKey(shardID), hash[:])
 }
 
-func GetLatestPivotBlock(db incdb.KeyValueReader) (common.Hash, error) {
+func HasLatestPivotBlock(db incdb.KeyValueReader, shardID byte) (bool, error) {
+	return db.Has(GetFullSyncPivotBlockKey(shardID))
+}
 
-	value, err := db.Get(fullSyncPivotBlockKey)
+func GetLatestPivotBlock(db incdb.KeyValueReader, shardID byte) (common.Hash, error) {
+
+	value, err := db.Get(GetFullSyncPivotBlockKey(shardID))
 	if err != nil {
 		return common.Hash{}, err
 	}

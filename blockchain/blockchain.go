@@ -90,6 +90,7 @@ type CacheConfig struct {
 	trieJournalPath      map[int]string
 	trieJournalCacheSize int
 	blockTriesInMemory   uint64
+	fullSyncPivot        map[byte]uint64
 	trieNodeLimit        common.StorageSize
 	trieImgsLimit        common.StorageSize
 }
@@ -99,18 +100,19 @@ func NewFlatFileConfig(config *Config) {
 	config.FlatFileManager = make(map[int]*flatfile.FlatFileManager)
 
 	for chainID, db := range config.DataBase {
-		flatfilePath := db.GetPath() + "/flatfile"
-		flatfileManager, err := flatfile.NewFlatFile(flatfilePath, 5000)
+		path := db.GetPath() + "/flatfile"
+		flatFileManager, err := flatfile.NewFlatFile(path, 5000)
 		if err != nil {
 			return
 		}
-		config.FlatFileManager[chainID] = flatfileManager
+		config.FlatFileManager[chainID] = flatFileManager
 	}
 }
 
-func NewCacheConfig(config *Config) (CacheConfig, error) {
+func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 
 	trieJournal := make(map[int]string)
+	pivotBlock := make(map[byte]uint64)
 	for chainID, db := range config.DataBase {
 		journalPath := db.GetPath() + "/metadata.bin"
 		if _, err := os.Stat(journalPath); os.IsNotExist(err) {
@@ -120,11 +122,32 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 			}
 		}
 		trieJournal[chainID] = journalPath
+		if chainID != common.BeaconChainID {
+			shardID := byte(chainID)
+			has, err := rawdbv2.HasLatestPivotBlock(db, shardID)
+			if err != nil {
+				return CacheConfig{}, err
+			}
+			if !has {
+				pivotBlock[shardID] = 0
+			} else {
+				pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db, shardID)
+				if err != nil {
+					return CacheConfig{}, err
+				}
+				_, pivotBlockHeight, err := bc.GetShardBlockByHashWithShardID(pivotBlockHash, shardID)
+				if err != nil {
+					return CacheConfig{}, err
+				}
+				pivotBlock[shardID] = pivotBlockHeight
+			}
+		}
 	}
 
-	cacheConfig := configCache32GB
+	cacheConfig := configCache8GB
 	cacheConfig.triegc = prque.New(nil)
 	cacheConfig.trieJournalPath = trieJournal
+	cacheConfig.fullSyncPivot = pivotBlock
 
 	return cacheConfig, nil
 }
@@ -146,13 +169,13 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if config.DataBase == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
+	NewFlatFileConfig(config)
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
-	cacheConfig, err := NewCacheConfig(config)
-	NewFlatFileConfig(config)
+	cacheConfig, err := NewCacheConfig(blockchain, config)
 	if err != nil {
 		return err
 	}
@@ -852,10 +875,9 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
 			if err := blockchain.RepairShardViewStateDB(shardID, allViews); err != nil {
 				Logger.log.Errorf("RepairShardViewStateDB shardID %+v, error %+v", shardID, err)
-				continue
-			} else {
-				isRepair = true
+				return err
 			}
+			isRepair = true
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
@@ -879,6 +901,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			return errors.New("Restart shard views fail")
 		}
 	}
+
 	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
 		return errors.New("unable to restore any shard best state")
 	}
@@ -886,76 +909,54 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	return nil
 }
 
-func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*ShardBestState) error {
+func (blockchain *BlockChain) RepairShardViewStateDB(
+	shardID byte,
+	views []*ShardBestState,
+) error {
 
 	db := blockchain.GetShardChainDatabase(shardID)
 	flatFileManager := blockchain.config.FlatFileManager[int(shardID)]
-	latestFinalizeShardHash := blockchain.BeaconChain.GetFinalView().(*BeaconBestState).BestShardHash[shardID]
-	pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db)
-	if err != nil {
-		return err
-	}
-	finalizeSRH, err := GetShardRootsHashByBlockHash(db, shardID, latestFinalizeShardHash)
-	if err != nil {
-		return err
-	}
-	finalizeConsensusStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
-	if err != nil {
-		return err
-	}
-	finalizeTransactionStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
-	if err != nil {
-		return err
-	}
-	finalizeFeatureStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
-	if err != nil {
-		return err
-	}
-	finalizeRewardStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
-	if err != nil {
-		return err
-	}
-	finalizeSlashStateDB, err := statedb.NewWithPrefixTrie(finalizeSRH.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
-	if err != nil {
-		return err
-	}
-	restoreFromFinalize, err := blockchain.recursiveRetrieveOldBlock(latestFinalizeShardHash, pivotBlockHash)
-	if err != nil {
-		return err
+	simulateMultiViews := multiview.NewMultiView()
+	for _, v := range views {
+		simulateMultiViews.AddView(v)
 	}
 
-	if err := repairStateDB(
-		finalizeConsensusStateDB,
-		finalizeTransactionStateDB,
-		finalizeFeatureStateDB,
-		finalizeRewardStateDB,
-		finalizeSlashStateDB,
-		flatFileManager,
-		db,
-		restoreFromFinalize,
-	); err != nil {
+	pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db, shardID)
+	if err != nil {
+		return err
+	}
+	finalView := simulateMultiViews.GetFinalView()
+	pivotBlock, _, err := blockchain.GetShardBlockByHashWithShardID(pivotBlockHash, shardID)
+	if err != nil {
+		return err
+	}
+	finalViewHash := finalView.GetHash()
+	finalBlock, _, err := blockchain.GetShardBlockByHashWithShardID(*finalViewHash, shardID)
+	if err != nil {
+		return err
+	}
+	stateDBs, err := blockchain.tryRepairStateFromFinalToPivot(
+		db, flatFileManager,
+		shardID,
+		pivotBlock, finalBlock,
+	)
+	if err != nil {
 		return err
 	}
 
 	for _, view := range views {
 
-		restoreFromBestView, err := blockchain.recursiveRetrieveOldBlock(*view.GetHash(), latestFinalizeShardHash)
+		restoreFromBestView, err := blockchain.recursiveRetrieveOldBlock(*view.GetHash(), *finalBlock.Hash())
 		if err != nil {
 			return err
 		}
-
-		viewConsensusStateDB := finalizeConsensusStateDB.Copy()
-		viewTransactionStateDB := finalizeTransactionStateDB.Copy()
-		viewFeatureStateDB := finalizeFeatureStateDB.Copy()
-		viewRewardStateDB := finalizeRewardStateDB.Copy()
-		viewSlashStateDB := finalizeSlashStateDB.Copy()
+		viewStateDBs := make([]*statedb.StateDB, 5)
+		for i := range stateDBs {
+			viewStateDBs[i] = stateDBs[i].Copy()
+		}
 
 		if err := repairStateDB(
-			viewConsensusStateDB,
-			viewTransactionStateDB,
-			viewFeatureStateDB,
-			viewRewardStateDB,
-			viewSlashStateDB,
+			viewStateDBs,
 			flatFileManager,
 			db,
 			restoreFromBestView,
@@ -963,29 +964,89 @@ func (blockchain *BlockChain) RepairShardViewStateDB(shardID byte, views []*Shar
 			return err
 		}
 
-		view.consensusStateDB = viewConsensusStateDB
+		view.consensusStateDB = viewStateDBs[REPAIR_STATE_CONSENSUS]
 		if calculatedRoot, _ := view.consensusStateDB.IntermediateRoot(true); calculatedRoot != view.ConsensusStateDBRootHash {
-			return fmt.Errorf("Repair State Error, expect consensus root hash %+v, got %+v", view.ConsensusStateDBRootHash, calculatedRoot)
+			Logger.log.Error(fmt.Errorf("Repair State Error, expect consensus root hash %+v, got %+v", view.ConsensusStateDBRootHash, calculatedRoot))
 		}
-		view.transactionStateDB = viewTransactionStateDB
+		view.transactionStateDB = viewStateDBs[REPAIR_STATE_TRANSACTION]
 		if calculatedRoot, _ := view.transactionStateDB.IntermediateRoot(true); calculatedRoot != view.TransactionStateDBRootHash {
-			return fmt.Errorf("Repair State Error, expect transaction root hash %+v, got %+v", view.TransactionStateDBRootHash, calculatedRoot)
+			Logger.log.Error(fmt.Errorf("Repair State Error, expect transaction root hash %+v, got %+v", view.TransactionStateDBRootHash, calculatedRoot))
 		}
-		view.featureStateDB = viewFeatureStateDB
+		view.featureStateDB = viewStateDBs[REPAIR_STATE_FEATURE]
 		if calculatedRoot, _ := view.featureStateDB.IntermediateRoot(true); calculatedRoot != view.FeatureStateDBRootHash {
-			return fmt.Errorf("Repair State Error, expect feature root hash %+v, got %+v", view.FeatureStateDBRootHash, calculatedRoot)
+			Logger.log.Error(fmt.Errorf("Repair State Error, expect feature root hash %+v, got %+v", view.FeatureStateDBRootHash, calculatedRoot))
 		}
-		view.rewardStateDB = viewRewardStateDB
+		view.rewardStateDB = viewStateDBs[REPAIR_STATE_REWARD]
 		if calculatedRoot, _ := view.rewardStateDB.IntermediateRoot(true); calculatedRoot != view.RewardStateDBRootHash {
-			return fmt.Errorf("Repair State Error, expect reward root hash %+v, got %+v", view.RewardStateDBRootHash, calculatedRoot)
+			Logger.log.Error(fmt.Errorf("Repair State Error, expect reward root hash %+v, got %+v", view.RewardStateDBRootHash, calculatedRoot))
 		}
-		view.slashStateDB = viewSlashStateDB
+		view.slashStateDB = viewStateDBs[REPAIR_STATE_SLASH]
 		if calculatedRoot, _ := view.slashStateDB.IntermediateRoot(true); calculatedRoot != view.SlashStateDBRootHash {
-			return fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot)
+			Logger.log.Error(fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot))
 		}
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) tryRepairStateFromFinalToPivot(
+	db incdb.Database, flatFileManager *flatfile.FlatFileManager,
+	shardID byte,
+	pivotBlock, finalBlock *types.ShardBlock) ([]*statedb.StateDB, error) {
+
+	tempShardHash := common.Hash{}
+	stateDBs := make([]*statedb.StateDB, 5)
+	isRecursiveRepair := false
+
+	// pivot block is also a finalized block => pivot block only <= final block
+	if pivotBlock.GetHeight() < finalBlock.GetHeight() {
+		tempShardHash = pivotBlock.Header.Hash()
+		isRecursiveRepair = true
+	} else {
+		tempShardHash = finalBlock.Header.Hash()
+	}
+
+	shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, tempShardHash)
+	if err != nil {
+		return stateDBs, err
+	}
+	stateDBs[REPAIR_STATE_CONSENSUS], err = statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return stateDBs, err
+	}
+	stateDBs[REPAIR_STATE_TRANSACTION], err = statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return stateDBs, err
+	}
+	stateDBs[REPAIR_STATE_FEATURE], err = statedb.NewWithPrefixTrie(shardRootHash.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return stateDBs, err
+	}
+	stateDBs[REPAIR_STATE_REWARD], err = statedb.NewWithPrefixTrie(shardRootHash.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return stateDBs, err
+	}
+	stateDBs[REPAIR_STATE_SLASH], err = statedb.NewWithPrefixTrie(shardRootHash.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return stateDBs, err
+	}
+
+	if isRecursiveRepair {
+		restoreFromFinalize, err := blockchain.recursiveRetrieveOldBlock(*finalBlock.Hash(), *pivotBlock.Hash())
+		if err != nil {
+			return stateDBs, err
+		}
+		if err := repairStateDB(
+			stateDBs,
+			flatFileManager,
+			db,
+			restoreFromFinalize,
+		); err != nil {
+			return stateDBs, err
+		}
+	}
+
+	return stateDBs, nil
 }
 
 func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash) ([]common.Hash, error) {
@@ -1004,25 +1065,21 @@ func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash)
 }
 
 func repairStateDB(
-	consensusStateDB *statedb.StateDB,
-	transactionStateDB *statedb.StateDB,
-	featureStateDB *statedb.StateDB,
-	rewardStateDB *statedb.StateDB,
-	slashStateDB *statedb.StateDB,
+	stateDBs []*statedb.StateDB,
 	flatFileManager *flatfile.FlatFileManager,
 	db incdb.Database,
 	restore []common.Hash) error {
 
+	if len(restore) == 0 {
+		return nil
+	}
+
 	for len(restore) != 0 {
 
-		nextBlock := restore[len(restore)-1]
+		nextBlock := restore[0]
 
 		allStateObjects, err := GetTransactionStateObjectFromFlatFile(
-			consensusStateDB,
-			transactionStateDB,
-			featureStateDB,
-			rewardStateDB,
-			slashStateDB,
+			stateDBs,
 			flatFileManager,
 			db,
 			nextBlock,
@@ -1032,65 +1089,27 @@ func repairStateDB(
 		}
 		for i := range allStateObjects {
 			stateObjects := allStateObjects[i]
-			stateDB := &statedb.StateDB{}
-			switch i {
-			case REPAIR_STATE_CONSENSUS:
-				stateDB = consensusStateDB
-			case REPAIR_STATE_TRANSACTION:
-				stateDB = transactionStateDB
-			case REPAIR_STATE_FEATURE:
-				stateDB = featureStateDB
-			case REPAIR_STATE_REWARD:
-				stateDB = rewardStateDB
-			case REPAIR_STATE_SLASH:
-				stateDB = slashStateDB
-			}
+			stateDB := stateDBs[i]
 
 			for objKey, obj := range stateObjects {
 				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return err
 				}
-				if obj.IsDeleted() {
-					stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
-				}
+				//if obj.IsDeleted() {
+				//	stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+				//}
 			}
 		}
-		restore = restore[:len(restore)-1]
+		restore = restore[1:]
 	}
 
-	if rootHash, _, err := consensusStateDB.Commit(true); err != nil {
-		return err
-	} else {
-		if err := consensusStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+	for i := range stateDBs {
+		if rootHash, _, err := stateDBs[i].Commit(true); err != nil {
 			return err
-		}
-	}
-	if rootHash, _, err := transactionStateDB.Commit(true); err != nil {
-		return err
-	} else {
-		if err := transactionStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
-			return err
-		}
-	}
-	if rootHash, _, err := featureStateDB.Commit(true); err != nil {
-		return err
-	} else {
-		if err := featureStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
-			return err
-		}
-	}
-	if rootHash, _, err := rewardStateDB.Commit(true); err != nil {
-		return err
-	} else {
-		if err := rewardStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
-			return err
-		}
-	}
-	if rootHash, _, err := slashStateDB.Commit(true); err != nil {
-		return err
-	} else {
-		if err := slashStateDB.Database().TrieDB().Commit(rootHash, false, nil); err != nil {
-			return err
+		} else {
+			if err := stateDBs[i].Database().TrieDB().Commit(rootHash, false, nil); err != nil {
+				return err
+			}
 		}
 	}
 

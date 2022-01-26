@@ -373,20 +373,6 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 	return tokenIDs
 }
 
-func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
-	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
-	if err != nil {
-		return nil, err
-	}
-	data, err := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, *h)
-	if err != nil {
-		return nil, err
-	}
-	sRH := &ShardRootHash{}
-	err = json.Unmarshal(data, sRH)
-	return sRH, err
-}
-
 func InitShardCommitteeState(
 	version int,
 	consensusStateDB *statedb.StateDB,
@@ -712,7 +698,14 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 	return beaconHeight, nil
 }
 
-func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *BlockChain, sRH ShardRootHash, flatFileIndexes [][]int, force bool) error {
+func (shardBestState *ShardBestState) CommitTrieToDisk(
+	batch incdb.Batch,
+	bc *BlockChain,
+	sRH ShardRootHash,
+	flatFileIndexes [][]int,
+	isFinalizedBlock bool,
+	newFinalBlock types.BlockInterface,
+) error {
 
 	consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
 	transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
@@ -727,9 +720,9 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 		}
 	}
 	// use for archive mode or force to do so
-	if force || ShardSyncMode == ARCHIVE_SYNC_MODE {
+	if shardBestState.ShardHeight == 1 || ShardSyncMode == ARCHIVE_SYNC_MODE {
 		if err := shardBestState.commitTrieToDisk(
-			batch, sRH, bc.config.FlatFileManager[int(shardBestState.ShardID)], flatFileIndexes); err != nil {
+			bc, batch, types.BlockInterface(shardBestState.BestBlock), sRH, bc.config.FlatFileManager[int(shardBestState.ShardID)], flatFileIndexes); err != nil {
 			return err
 		}
 	} else {
@@ -752,9 +745,13 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 				transactionTrieDB.Cap(bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize)
 			}
 
-			if current%bc.cacheConfig.blockTriesInMemory == 0 {
-				if err := shardBestState.commitTrieToDisk(
-					batch, sRH, bc.config.FlatFileManager[int(shardBestState.ShardID)], flatFileIndexes); err != nil {
+			if isFinalizedBlock &&
+				current > bc.cacheConfig.fullSyncPivot[shardBestState.ShardID] &&
+				current-bc.cacheConfig.fullSyncPivot[shardBestState.ShardID] >= bc.cacheConfig.blockTriesInMemory+1 {
+				if err := shardBestState.fullSyncCommitTrieToDisk(
+					bc, batch,
+					newFinalBlock,
+					bc.config.FlatFileManager[int(shardBestState.ShardID)], flatFileIndexes); err != nil {
 					return err
 				}
 			}
@@ -788,8 +785,27 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(batch incdb.Batch, bc *Bl
 	return nil
 }
 
-func (shardBestState *ShardBestState) commitTrieToDisk(
+func (shardBestState *ShardBestState) fullSyncCommitTrieToDisk(
+	bc *BlockChain,
 	batch incdb.Batch,
+	blockToCommit types.BlockInterface,
+	flatFileManager *flatfile.FlatFileManager,
+	flatFileIndexes [][]int,
+) error {
+
+	sRH, err := GetShardRootsHashByBlockHash(bc.ShardChain[shardBestState.ShardID].GetChainDatabase(),
+		shardBestState.ShardID, *blockToCommit.Hash())
+	if err != nil {
+		return err
+	}
+
+	return shardBestState.commitTrieToDisk(bc, batch, blockToCommit, *sRH, flatFileManager, flatFileIndexes)
+}
+
+func (shardBestState *ShardBestState) commitTrieToDisk(
+	bc *BlockChain,
+	batch incdb.Batch,
+	blockToCommit types.BlockInterface,
 	sRH ShardRootHash,
 	flatFileManager *flatfile.FlatFileManager,
 	flatFileIndexes [][]int,
@@ -818,13 +834,28 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := rawdbv2.StoreLatestPivotBlock(batch, shardBestState.BestBlockHash); err != nil {
+	bc.cacheConfig.fullSyncPivot[shardBestState.ShardID] = blockToCommit.GetHeight()
+
+	if err := rawdbv2.StoreLatestPivotBlock(batch, shardBestState.ShardID, *blockToCommit.Hash()); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	truncateLastIndex(flatFileManager, flatFileIndexes)
+
+	shardBestState.consensusStateDB.ClearObjects()
+	shardBestState.transactionStateDB.ClearObjects()
+	shardBestState.featureStateDB.ClearObjects()
+	shardBestState.rewardStateDB.ClearObjects()
+	shardBestState.slashStateDB.ClearObjects()
+	Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, blockToCommit.GetHeight(), *blockToCommit.Hash())
+
+	return nil
+}
+
+func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes [][]int) {
 	// truncate old files
 	lastIndex := 0
-	for _, v := range flatFileIndexes {
+	for _, v := range indexes {
 		if len(v) != 0 {
 			if lastIndex < v[len(v)-1] {
 				lastIndex = v[len(v)-1]
@@ -837,15 +868,6 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 			Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
 		}
 	}
-
-	shardBestState.consensusStateDB.ClearObjects()
-	shardBestState.transactionStateDB.ClearObjects()
-	shardBestState.featureStateDB.ClearObjects()
-	shardBestState.rewardStateDB.ClearObjects()
-	shardBestState.slashStateDB.ClearObjects()
-	Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, shardBestState.ShardHeight, shardBestState.BestBlockHash)
-
-	return nil
 }
 
 func (curView *ShardBestState) GetProposerLength() int {

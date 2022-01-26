@@ -1221,9 +1221,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		TransactionStateDBRootHash: transactionRootHash,
 	}
 
-	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, flatFileIndexes, false); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
@@ -1240,10 +1237,12 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-
 	storeBlock := newFinalView.GetBlock()
 
+	isFinalizedBlock := false
+
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
+		isFinalizedBlock = true
 		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
@@ -1277,6 +1276,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			}
 		}
 	}
+
+	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, flatFileIndexes, isFinalizedBlock, storeBlock); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")
