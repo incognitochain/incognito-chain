@@ -224,7 +224,6 @@ chown $USER_NAME:$USER_NAME $TMP
 echo ${VALIDATOR_K[0]} > $KEY_FILE
 
 echo " # Creating systemd service to check for new release"
-KILL=$(which pkill)
 cat << EOF > $SERVICE
 [Unit]
 Description = IncognitoChain Node updater
