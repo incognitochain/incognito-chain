@@ -36,13 +36,15 @@ INDEXER_ACCESS_TOKEN=("edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0
 # Do not edit lines below unless you know what you're doing
 BOOTNODE="mainnet-bootnode.incognito.org:9330"  # this should be left as default
 FULLNODE=""  # set to 1 to run as a full node, empty to run as normal node
-USER="incognito"
-SCRIPT="/bin/run_node.sh"
 SERVICE="/etc/systemd/system/IncognitoUpdater.service"
 TIMER="/etc/systemd/system/IncognitoUpdater.timer"
-INC_HOME=/home/$USER
+USER_NAME="incognito"
+INC_HOME="/home/$USER_NAME"
 DATA_DIR="$INC_HOME/node_data"
-TMP="/home/$USER/inc_node_latest_tag"
+TMP="$INC_HOME/inc_node_latest_tag"
+KEY_FILE="$INC_HOME/validator_keys"
+SCRIPT="$INC_HOME/run_node.sh"
+
 
 # check super user
 if [ $(whoami) != root ]; then
@@ -62,8 +64,8 @@ cat << EOF
 !   This action will remove:
 !      - The systemd service and timer: $SERVICE $TIMER
 !      - Docker containers and images
-!      - User: $USER
-!      - Node's data: $DATA_DIR
+!      - User: $USER_NAME
+!      - $INC_HOME (including all node's data, logs and everything else inside the folder)
 !      - Run script: $SCRIPT
 !!! Do you really want to do this? (N/y)
 EOF
@@ -87,10 +89,10 @@ EOF
     docker container stop $(docker container ls -aqf name=inc_mainnet)
     docker container rm $(docker container ls -aqf name=inc_mainnet)
     docker image rm -f $(docker images -q incognitochain/incognito-mainnet)
-    echo " # Clearing node's data"
-    rm -Rf $TMP ${DATA_DIR}* $SCRIPT $SERVICE $TIMER
     echo " # Removing user"
-    deluser $USER
+    deluser $USER_NAME
+    echo " # Removing $INC_HOME (including all node's data, logs and everything else inside the folder)"
+    rm -Rf $INC_HOME $SERVICE $TIMER
     exit 1
   fi
 }
@@ -165,9 +167,10 @@ cat << EOF
 EOF
   printf "${VALIDATOR_K[1]}"
   read VALIDATOR_K[0]
-
+  
   printf "${GETH_NAME[1]}"
   read GETH_NAME[0]
+
   printf "${PORT_RPC[1]}"
   read input
   if [[ ! -z $input ]]; then PORT_RPC[0]=$input; fi
@@ -204,13 +207,14 @@ EOF
 
 systemctl stop $(basename $SERVICE) 2> /dev/null
 systemctl stop $(basename $TIMER) 2> /dev/null
-echo " # Creating incognito user to run node"
-useradd $USER
-usermod -aG docker ${USER} || echo
+echo " # Creating $USER_NAME user to run node"
+useradd $USER_NAME
+usermod -aG docker $USER_NAME || echo
 mkdir -p $INC_HOME
-chown -R $USER:$USER $INC_HOME
+chown -R $USER_NAME:$USER_NAME $INC_HOME
 rm -f $TMP && touch $TMP
-chown $USER:$USER $TMP
+chown $USER_NAME:$USER_NAME $TMP
+echo ${VALIDATOR_K[0]} > $KEY_FILE
 
 echo " # Creating systemd service to check for new release"
 KILL=$(which pkill)
@@ -222,7 +226,7 @@ Wants = network-online.target
 
 [Service]
 Type = oneshot
-User = $USER
+User = $USER_NAME
 ExecStart = $SCRIPT
 StandardOutput = syslog
 StandardError = syslog
@@ -249,9 +253,9 @@ echo " # Creating run node script"
 cat << EOF > $SCRIPT
 #!/bin/bash
 TMP=$TMP
+key_file=$KEY_FILE
 run()
 {
-  validator_key=(${VALIDATOR_K[0]//,/ })
   bootnode=$BOOTNODE
   data_dir=$DATA_DIR
   rpc_port=${PORT_RPC[0]}
@@ -262,10 +266,11 @@ run()
   fullnode=$FULLNODE
   coin_index_access_token=${INDEXER_ACCESS_TOKEN[0]}
   num_index_worker=${NUM_INDEXER_WORKERS[0]}
-
 EOF
-cat << 'EOF' >> $SCRIPT
 
+cat << 'EOF' >> $SCRIPT
+  validator_key=$(cat $key_file)
+  validator_key=(${validator_key//,/ })
   latest_tag=$1
   current_tag=$2
   backup_log=0
