@@ -129,12 +129,12 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 		Logger.log.Error(err)
 	}
 	validatorSize[-1] = len(beaconCommittee)
-	shardCommmittee := map[int][]string{}
-	pendingCommmittee := map[int][]string{}
+	shardCommittee := map[int][]string{}
+	pendingCommittee := map[int][]string{}
 	for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
-		shardCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetCommittee())
-		pendingCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetPendingCommittee())
-		validatorSize[i] = len(shardCommmittee[i]) + len(pendingCommmittee[i])
+		shardCommittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetCommittee())
+		pendingCommittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetPendingCommittee())
+		validatorSize[i] = len(shardCommittee[i]) + len(pendingCommittee[i])
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -153,7 +153,7 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 		}
 
 		//count
-		for feature, _ := range featureList {
+		for feature := range featureList {
 			if validatorStat[feature] == nil {
 				validatorStat[feature] = make(map[int]uint64)
 			}
@@ -169,14 +169,14 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 			//check in shard
 			for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
 				//if in pending -> increase validator set
-				if common.IndexOfStr(key, pendingCommmittee[i]) > -1 {
+				if common.IndexOfStr(key, pendingCommittee[i]) > -1 {
 					validatorStat[feature][-1]++
 				}
 				//if in committee, increase validator set
-				if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
+				if common.IndexOfStr(key, shardCommittee[i]) > -1 {
 					validatorStat[feature][i]++
 					//if in proposer, increase proposer
-					if common.IndexOfStr(key, shardCommmittee[i]) < config.Param().CommitteeSize.NumberOfFixedShardBlockValidator {
+					if common.IndexOfStr(key, shardCommittee[i]) < config.Param().CommitteeSize.NumberOfFixedShardBlockValidator {
 						proposeStat[feature][i]++
 					}
 				}

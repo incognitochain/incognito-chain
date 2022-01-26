@@ -1031,6 +1031,7 @@ func (beaconBestState *BeaconBestState) ExtractPendingAndCommittee(validatorFrom
 	}
 	beaconValidators := beaconBestState.beaconCommitteeState.GetBeaconCommittee()
 	shardValidators := beaconBestState.beaconCommitteeState.GetShardCommittee()
+	// TODO: @0xmerman change variables name from finishedSyncValidators => validator (copied issue i guess)
 	finishedSyncUserKeys := []*consensus.Validator{}
 	finishedSyncValidators := []string{}
 
@@ -1165,7 +1166,7 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 
 func (curView *BeaconBestState) getUntriggerFeature() []string {
 	unTriggerFeatures := []string{}
-	for f, _ := range config.Param().AutoEnableFeature {
+	for f := range config.Param().AutoEnableFeature {
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
 			unTriggerFeatures = append(unTriggerFeatures, f)
 		}
@@ -1199,7 +1200,7 @@ func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize m
 	}
 
 	heights := []uint64{}
-	for k, _ := range increaseMaxCommitteeSize {
+	for k := range increaseMaxCommitteeSize {
 		heights = append(heights, k)
 	}
 

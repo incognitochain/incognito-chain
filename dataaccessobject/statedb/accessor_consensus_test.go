@@ -206,7 +206,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
+	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,20 +240,20 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 func TestStoreSlashingCommittee(t *testing.T) {
 	sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	m1 := map[byte][]string{
-		0: []string{committeePublicKeys[0], committeePublicKeys[1], committeePublicKeys[2]},
+		0: {committeePublicKeys[0], committeePublicKeys[1], committeePublicKeys[2]},
 	}
 	m2 := map[byte][]string{
-		0: []string{committeePublicKeys[0], committeePublicKeys[1], committeePublicKeys[2]},
-		1: []string{committeePublicKeys[3], committeePublicKeys[4], committeePublicKeys[5]},
+		0: {committeePublicKeys[0], committeePublicKeys[1], committeePublicKeys[2]},
+		1: {committeePublicKeys[3], committeePublicKeys[4], committeePublicKeys[5]},
 	}
 	m3 := map[byte][]string{
-		0: []string{committeePublicKeys[6], committeePublicKeys[8], committeePublicKeys[10]},
-		1: []string{committeePublicKeys[7], committeePublicKeys[9], committeePublicKeys[11]},
+		0: {committeePublicKeys[6], committeePublicKeys[8], committeePublicKeys[10]},
+		1: {committeePublicKeys[7], committeePublicKeys[9], committeePublicKeys[11]},
 	}
 	m4 := map[byte][]string{
-		0: []string{},
-		1: []string{},
-		2: []string{},
+		0: {},
+		1: {},
+		2: {},
 	}
 	type args struct {
 		stateDB            *StateDB
@@ -362,7 +362,7 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx)
+	err = StoreStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
