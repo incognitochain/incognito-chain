@@ -377,7 +377,7 @@ func InitProposeHistory(chainID int) (map[int64]struct{}, error) {
 
 	res := make(map[int64]struct{})
 
-	for k, _ := range data {
+	for k := range data {
 		res[k] = struct{}{}
 	}
 
@@ -636,7 +636,7 @@ func (a *actorV2) run() error {
 					}
 
 					var finalityProof = NewFinalityProof()
-					var isEnoughLemma2Proof bool = false
+					var isEnoughLemma2Proof = false
 					var failReason = ""
 					if proposeBlockInfo.block != nil {
 						finalityProof, isEnoughLemma2Proof, failReason = a.ruleDirector.builder.ProposeMessageRule().
@@ -1395,7 +1395,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 
 func (a *actorV2) handleCleanMem() {
 
-	for h, _ := range a.receiveBlockByHeight {
+	for h := range a.receiveBlockByHeight {
 		if h <= a.chain.GetFinalView().GetHeight() {
 			err := a.CleanReceiveBlockByHeight(h)
 			if err != nil {
@@ -1405,7 +1405,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	for h, _ := range a.voteHistory {
+	for h := range a.voteHistory {
 		if h <= a.chain.GetFinalView().GetHeight() {
 			if err := a.CleanVoteHistory(h); err != nil {
 				a.logger.Errorf("clean vote history error %+v", err)
@@ -1422,7 +1422,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	for timeSlot, _ := range a.proposeHistory {
+	for timeSlot := range a.proposeHistory {
 		if timeSlot < a.currentTimeSlot {
 			if err := a.CleanProposeHistory(timeSlot); err != nil {
 				a.logger.Errorf("clean propose history %+v", err)
@@ -1479,6 +1479,10 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 }
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+
+	if proposeBlockInfo.IsValid {
+		return nil
+	}
 
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
