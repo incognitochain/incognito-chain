@@ -966,23 +966,23 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 
 		view.consensusStateDB = viewStateDBs[REPAIR_STATE_CONSENSUS]
 		if calculatedRoot, _ := view.consensusStateDB.IntermediateRoot(true); calculatedRoot != view.ConsensusStateDBRootHash {
-			Logger.log.Error(fmt.Errorf("Repair State Error, expect consensus root hash %+v, got %+v", view.ConsensusStateDBRootHash, calculatedRoot))
+			return fmt.Errorf("Repair State Error, expect consensus root hash %+v, got %+v", view.ConsensusStateDBRootHash, calculatedRoot)
 		}
 		view.transactionStateDB = viewStateDBs[REPAIR_STATE_TRANSACTION]
 		if calculatedRoot, _ := view.transactionStateDB.IntermediateRoot(true); calculatedRoot != view.TransactionStateDBRootHash {
-			Logger.log.Error(fmt.Errorf("Repair State Error, expect transaction root hash %+v, got %+v", view.TransactionStateDBRootHash, calculatedRoot))
+			return fmt.Errorf("Repair State Error, expect transaction root hash %+v, got %+v", view.TransactionStateDBRootHash, calculatedRoot)
 		}
 		view.featureStateDB = viewStateDBs[REPAIR_STATE_FEATURE]
 		if calculatedRoot, _ := view.featureStateDB.IntermediateRoot(true); calculatedRoot != view.FeatureStateDBRootHash {
-			Logger.log.Error(fmt.Errorf("Repair State Error, expect feature root hash %+v, got %+v", view.FeatureStateDBRootHash, calculatedRoot))
+			return fmt.Errorf("Repair State Error, expect feature root hash %+v, got %+v", view.FeatureStateDBRootHash, calculatedRoot)
 		}
 		view.rewardStateDB = viewStateDBs[REPAIR_STATE_REWARD]
 		if calculatedRoot, _ := view.rewardStateDB.IntermediateRoot(true); calculatedRoot != view.RewardStateDBRootHash {
-			Logger.log.Error(fmt.Errorf("Repair State Error, expect reward root hash %+v, got %+v", view.RewardStateDBRootHash, calculatedRoot))
+			return fmt.Errorf("Repair State Error, expect reward root hash %+v, got %+v", view.RewardStateDBRootHash, calculatedRoot)
 		}
 		view.slashStateDB = viewStateDBs[REPAIR_STATE_SLASH]
 		if calculatedRoot, _ := view.slashStateDB.IntermediateRoot(true); calculatedRoot != view.SlashStateDBRootHash {
-			Logger.log.Error(fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot))
+			return fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot)
 		}
 	}
 
@@ -1095,9 +1095,13 @@ func repairStateDB(
 				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return err
 				}
-				//if obj.IsDeleted() {
-				//	stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
-				//}
+				if obj.IsDeleted() {
+					stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+				}
+			}
+
+			if len(stateObjects) > 0 {
+				stateDB.Commit(true)
 			}
 		}
 		restore = restore[1:]
