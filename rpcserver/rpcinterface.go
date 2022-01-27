@@ -375,7 +375,7 @@ var HttpHandler = map[string]httpHandler{
 	generateDepositAddress:               (*HttpServer).handleGenerateDepositAddress,
 	generateOTDepositKey:                 (*HttpServer).handleGenerateOTDepositKey,
 	getNextOTDepositKey:                  (*HttpServer).handleGetNextOTDepositKey,
-	hasOTDepositPubKey:                   (*HttpServer).handleHasOTDepositPubKey,
+	hasOTDepositPubKeys:                  (*HttpServer).handleHasOTDepositPubKeys,
 	getDepositTxsByPubKeys:               (*HttpServer).handleGetDepositTxsByPubKeys,
 	createAndSendDepositTxWithDepositKey: (*HttpServer).handleCreateAndSendDepositTxWithDepositKey,
 

@@ -1394,26 +1394,42 @@ func (blockService BlockService) GenerateNextOTDepositKey(privateKeyStr, tokenID
 	if len(privateKey) == 0 {
 		return nil, fmt.Errorf("privateKey not found")
 	}
+	db := blockService.BlockChain.GetBestStateBeaconFeatureStateDB()
 
 	tmpKey, err := incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, 0)
 	if err != nil {
 		return nil, fmt.Errorf("generating depositKey at index %v error: %v", 0, err)
 	}
-	exists := statedb.OTDepositPubKeyExists(blockService.BlockChain.GetBestStateBeaconFeatureStateDB(), tmpKey.PublicKey)
+	exists := statedb.OTDepositPubKeyExists(db, tmpKey.PublicKey)
 	if !exists {
 		return tmpKey, nil
 	}
 
-	// Perform binary-search for the un-used index
 	lower := uint64(0)
 	upper := uint64(math.MaxUint64)
-	currentIndex := lower
-	for lower < upper {
+	currentIndex := uint64(1)
+	for {
 		tmpKey, err = incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, currentIndex)
 		if err != nil {
 			return nil, fmt.Errorf("generating depositKey at index %v error: %v", lower, err)
 		}
-		exists = statedb.OTDepositPubKeyExists(blockService.BlockChain.GetBestStateBeaconFeatureStateDB(), tmpKey.PublicKey)
+		exists = statedb.OTDepositPubKeyExists(db, tmpKey.PublicKey)
+		if exists {
+			lower = currentIndex
+			currentIndex *= 2
+		} else {
+			upper = currentIndex
+			break
+		}
+	}
+
+	currentIndex = lower
+	for lower < upper-1 {
+		tmpKey, err = incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, currentIndex)
+		if err != nil {
+			return nil, fmt.Errorf("generating depositKey at index %v error: %v", lower, err)
+		}
+		exists = statedb.OTDepositPubKeyExists(db, tmpKey.PublicKey)
 		if !exists {
 			upper = currentIndex
 		} else {
@@ -1424,7 +1440,11 @@ func (blockService BlockService) GenerateNextOTDepositKey(privateKeyStr, tokenID
 
 	tmpKey, err = incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, tokenIDStr, lower+1)
 	if err != nil {
-		return nil, fmt.Errorf("generating depositKey at index %v error: %v", lower, err)
+		return nil, fmt.Errorf("generating depositKey at index %v error: %v", lower+1, err)
+	}
+	exists = statedb.OTDepositPubKeyExists(db, tmpKey.PublicKey)
+	if exists {
+		return nil, fmt.Errorf("something is wrong when generating OTDepositKey: index %v has been used", lower+1)
 	}
 
 	return tmpKey, nil
