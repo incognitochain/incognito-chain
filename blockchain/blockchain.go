@@ -144,7 +144,7 @@ func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 		}
 	}
 
-	cacheConfig := configCache8GB
+	cacheConfig := configCache32GB
 	cacheConfig.triegc = prque.New(nil)
 	cacheConfig.trieJournalPath = trieJournal
 	cacheConfig.fullSyncPivot = pivotBlock
@@ -915,7 +915,7 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 ) error {
 
 	Logger.log.Infof("Repairing Shard Best View statedb...")
-	
+
 	db := blockchain.GetShardChainDatabase(shardID)
 	flatFileManager := blockchain.config.FlatFileManager[int(shardID)]
 	simulateMultiViews := multiview.NewMultiView()
