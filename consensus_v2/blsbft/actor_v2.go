@@ -1481,6 +1481,10 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
 
+	if proposeBlockInfo.IsValid {
+		return nil
+	}
+
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
