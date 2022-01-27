@@ -1091,6 +1091,19 @@ func repairStateDB(
 			stateObjects := allStateObjects[i]
 			stateDB := stateDBs[i]
 
+			if i == 3 && len(stateObjects) > 0 {
+				oldRootHash, _ := stateDB.IntermediateRoot(true)
+				Logger.log.Infof("Restore reward root hash, "+
+					"reward root hash %+v, "+
+					"numberOfStateObj %+v",
+					oldRootHash, len(stateObjects))
+				counter := 0
+				for _, v := range stateObjects {
+					Logger.log.Infof("Reward State Object Reward SOB, index %d = %+v", counter, statedb.ByteSerialize(v))
+					counter++
+				}
+			}
+
 			for objKey, obj := range stateObjects {
 				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return err
@@ -1100,9 +1113,17 @@ func repairStateDB(
 				}
 			}
 
-			if len(stateObjects) > 0 {
-				stateDB.Commit(true)
+			if _, _, err := stateDB.Commit(true); err != nil {
+				return err
 			}
+
+			if i == 3 && len(stateObjects) > 0 {
+				newRootHash, _ := stateDB.IntermediateRoot(true)
+				Logger.log.Infof("Restore reward root hash, "+
+					"reward root hash %+v, ",
+					newRootHash)
+			}
+
 		}
 		restore = restore[1:]
 	}

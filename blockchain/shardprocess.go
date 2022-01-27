@@ -1169,29 +1169,39 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
 	newShardState.ConsensusStateDBRootHash = consensusRootHash
+
 	// transaction root hash
 	transactionRootHash, transactionStateObject, err := newShardState.transactionStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
 	newShardState.TransactionStateDBRootHash = transactionRootHash
+
 	// feature root hash
 	featureRootHash, featureStateObject, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
 	newShardState.FeatureStateDBRootHash = featureRootHash
+
 	// reward root hash
 	rewardRootHash, rewardStateObject, err := newShardState.rewardStateDB.Commit(true)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
+	if len(rewardStateObject) > 0 {
+		Logger.log.Infof("Reward State Object Reward OLD roothash %+v", newShardState.RewardStateDBRootHash)
+		Logger.log.Infof("Reward State Object Reward NEW roothash %+v", rewardRootHash)
+		counter := 0
+		for _, v := range rewardStateObject {
+			Logger.log.Infof("Reward State Object Reward SOB, index %d = %+v", counter, statedb.ByteSerialize(v))
+			counter++
+		}
+		//panic("...")
+	}
 	newShardState.RewardStateDBRootHash = rewardRootHash
+
 	// slash root hash
 	slashRootHash, slashStateObject, err := newShardState.slashStateDB.Commit(true)
 	if err != nil {
