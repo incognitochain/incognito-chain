@@ -51,9 +51,6 @@ func StoreTransactionStateObjectForRepair(
 	if err != nil {
 		return [][]int{}, err
 	}
-	if len(rewardStateObjectIndex) > 0 {
-		Logger.log.Infof("Reward State Object Store Flatfiles \n", rewardStateObjectIndex)
-	}
 	indexes[REPAIR_STATE_REWARD] = rewardStateObjectIndex
 
 	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, slashStateObjects)
@@ -61,6 +58,10 @@ func StoreTransactionStateObjectForRepair(
 		return [][]int{}, err
 	}
 	indexes[REPAIR_STATE_SLASH] = slashStateObjectIndex
+
+	if len(transactionStateObjectIndex) > 0 {
+		Logger.log.Infof("State Object Store Flatfiles \n", transactionStateObjectIndex)
+	}
 
 	if err := StoreFlatFileStateObjectIndex(db, hash, indexes); err != nil {
 		return [][]int{}, err
@@ -93,12 +94,7 @@ func StoreFlatFileStateObjectIndex(db incdb.Batch, hash common.Hash, indexes [][
 	return rawdbv2.StoreFlatFileStateObjectIndex(db, hash, indexes)
 }
 
-func GetTransactionStateObjectFromFlatFile(
-	//consensusStateDB *statedb.StateDB,
-	//transactionStateDB *statedb.StateDB,
-	//featureStateDB *statedb.StateDB,
-	//rewardStateDB *statedb.StateDB,
-	//slashStateDB *statedb.StateDB,
+func GetStateObjectFromFlatFile(
 	stateDBs []*statedb.StateDB,
 	flatFileManager *flatfile.FlatFileManager,
 	db incdb.Database,
@@ -112,24 +108,15 @@ func GetTransactionStateObjectFromFlatFile(
 		return allStateObjects, err
 	}
 
+	if len(indexes[1]) > 0 {
+		Logger.log.Infof("GetStateObjectFromFlatFile, %+v", indexes[3])
+	}
+
 	for i := range indexes {
 		stateDB := stateDBs[i]
-		//stateDB := &statedb.StateDB{}
-		//switch i {
-		//case REPAIR_STATE_CONSENSUS:
-		//	stateDB = consensusStateDB
-		//case REPAIR_STATE_TRANSACTION:
-		//	stateDB = transactionStateDB
-		//case REPAIR_STATE_FEATURE:
-		//	stateDB = featureStateDB
-		//case REPAIR_STATE_REWARD:
-		//	stateDB = rewardStateDB
-		//case REPAIR_STATE_SLASH:
-		//	stateDB = slashStateDB
-		//}
 		stateObjects := make(map[common.Hash]statedb.StateObject)
 
-		for index := range indexes[i] {
+		for _, index := range indexes[i] {
 			data, err := flatFileManager.Read(index)
 			if err != nil {
 				return allStateObjects, err

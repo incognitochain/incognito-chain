@@ -1190,16 +1190,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if len(rewardStateObject) > 0 {
-		Logger.log.Infof("Reward State Object Reward OLD roothash %+v", newShardState.RewardStateDBRootHash)
-		Logger.log.Infof("Reward State Object Reward NEW roothash %+v", rewardRootHash)
-		counter := 0
-		for _, v := range rewardStateObject {
-			Logger.log.Infof("Reward State Object Reward SOB, index %d = %+v", counter, statedb.ByteSerialize(v))
-			counter++
-		}
-		//panic("...")
-	}
 	newShardState.RewardStateDBRootHash = rewardRootHash
 
 	// slash root hash
@@ -1209,6 +1199,16 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 	newShardState.SlashStateDBRootHash = slashRootHash
 
+	if len(transactionStateObject) > 0 {
+		Logger.log.Infof("tx State Object, tx OLD roothash %+v", newShardState.TransactionStateDBRootHash)
+		Logger.log.Infof("tx State Object, tx NEW roothash %+v", transactionRootHash)
+		counter := 0
+		for _, v := range rewardStateObject {
+			Logger.log.Infof("tx State Object, index %d = %+v", counter, statedb.ByteSerialize(v))
+			counter++
+		}
+		//panic("...")
+	}
 	flatFileIndexes, err := StoreTransactionStateObjectForRepair(
 		blockchain.config.FlatFileManager[int(shardID)],
 		batchData,
