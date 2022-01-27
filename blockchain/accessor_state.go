@@ -51,6 +51,9 @@ func StoreTransactionStateObjectForRepair(
 	if err != nil {
 		return [][]int{}, err
 	}
+	if len(rewardStateObjectIndex) > 0 {
+		Logger.log.Infof("Reward State Object Store Flatfiles \n", rewardStateObjectIndex)
+	}
 	indexes[REPAIR_STATE_REWARD] = rewardStateObjectIndex
 
 	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, slashStateObjects)
