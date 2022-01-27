@@ -126,3 +126,24 @@ func TestStoreStateObjectToFlatFile2(t *testing.T) {
 	t.Log(reflect.DeepEqual(getObject, storeObject))
 
 }
+
+func TestStoreStateObjectToFlatFile3(t *testing.T) {
+
+	flatFile, err := flatfile.NewFlatFile("/Users/autonomous/working/inc-data/mainnet/fullnode/mainnet/block/shard0/flatfile", 5000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	getObject := [][]byte{}
+
+	storeIndexes := []int{800, 801, 802, 803, 804, 805, 806}
+
+	for _, v := range storeIndexes {
+		res, err := flatFile.Read(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(v, res)
+		getObject = append(getObject, res)
+	}
+}

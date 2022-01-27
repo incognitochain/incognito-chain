@@ -914,6 +914,8 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 	views []*ShardBestState,
 ) error {
 
+	Logger.log.Infof("Repairing Shard Best View statedb...")
+	
 	db := blockchain.GetShardChainDatabase(shardID)
 	flatFileManager := blockchain.config.FlatFileManager[int(shardID)]
 	simulateMultiViews := multiview.NewMultiView()
@@ -1076,7 +1078,7 @@ func repairStateDB(
 
 	for len(restore) != 0 {
 
-		nextBlock := restore[0]
+		nextBlock := restore[len(restore)-1]
 
 		allStateObjects, err := GetStateObjectFromFlatFile(
 			stateDBs,
@@ -1091,18 +1093,18 @@ func repairStateDB(
 			stateObjects := allStateObjects[i]
 			stateDB := stateDBs[i]
 
-			if i == 1 && len(stateObjects) > 0 {
-				oldRootHash, _ := stateDB.IntermediateRoot(true)
-				Logger.log.Infof(
-					"old root hash %+v, "+
-						"numberOfStateObj %+v",
-					oldRootHash, len(stateObjects))
-				counter := 0
-				for _, v := range stateObjects {
-					Logger.log.Infof("tx State Object, index %d = %+v", counter, statedb.ByteSerialize(v))
-					counter++
-				}
-			}
+			//if i == 1 && len(stateObjects) > 0 {
+			//	oldRootHash, _ := stateDB.IntermediateRoot(true)
+			//	Logger.log.Infof(
+			//		"old root hash %+v, "+
+			//			"numberOfStateObj %+v",
+			//		oldRootHash, len(stateObjects))
+			//	counter := 0
+			//	for _, v := range stateObjects {
+			//		Logger.log.Infof("tx State Object, index %d = %+v", counter, statedb.ByteSerialize(v))
+			//		counter++
+			//	}
+			//}
 
 			for objKey, obj := range stateObjects {
 				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
@@ -1117,16 +1119,16 @@ func repairStateDB(
 				return err
 			}
 
-			if i == 1 && len(stateObjects) > 0 {
-				sRH, _ := GetShardRootsHashByBlockHash(db, 0, nextBlock)
-				newRootHash, _ := stateDB.IntermediateRoot(true)
-				Logger.log.Infof("Restore tx root hash, "+
-					"tx root hash %+v \n stored tx root hash %+v",
-					newRootHash, sRH.TransactionStateDBRootHash)
-			}
+			//if i == 1 && len(stateObjects) > 0 {
+			//	sRH, _ := GetShardRootsHashByBlockHash(db, 0, nextBlock)
+			//	newRootHash, _ := stateDB.IntermediateRoot(true)
+			//	Logger.log.Infof("Restore tx root hash, "+
+			//		"tx root hash %+v \n stored tx root hash %+v",
+			//		newRootHash, sRH.TransactionStateDBRootHash)
+			//}
 
 		}
-		restore = restore[1:]
+		restore = restore[:len(restore)-1]
 	}
 
 	for i := range stateDBs {
