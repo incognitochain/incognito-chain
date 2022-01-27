@@ -863,10 +863,11 @@ func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes [][]in
 		}
 	}
 	if lastIndex != 0 {
-		err := flatFileManager.Truncate(lastIndex)
-		if err != nil {
-			Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
-		}
+		//TODO: hung test without truncate
+		//err := flatFileManager.Truncate(lastIndex)
+		//if err != nil {
+		//	Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
+		//}
 	}
 }
 
