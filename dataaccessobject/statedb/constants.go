@@ -74,6 +74,9 @@ const (
 	// PRV EVM bridge
 	BridgePRVEVMObjectType = 47
 
+	// Polygon bridge
+	BridgePLGTxObjectType = 66
+
 	// pDex v3
 	Pdexv3StatusObjectType                    = 48
 	Pdexv3ParamsObjectType                    = 49
@@ -93,12 +96,11 @@ const (
 	Pdexv3StakerLastRewardPerShareObjectType  = 63
 	Pdexv3PoolPairMakingVolumeObjectType      = 64
 	Pdexv3PoolPairOrderRewardObjectType       = 65
+	Pdexv3ShareLastLmRewardPerShareObjectType = 67
+	Pdexv3PoolPairLmRewardPerShareObjectType  = 68
+	Pdexv3PoolPairLmLockedShareObjectType     = 69
 
-	// Polygon bridge
-	BridgePLGTxObjectType = 66
-
-	// More PortalV4 Object Types
-	PortalV4ShieldInfoObjectType = 67
+	PortalV4ShieldInfoObjectType = 70
 )
 
 // Prefix length

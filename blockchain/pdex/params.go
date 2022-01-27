@@ -10,46 +10,58 @@ import (
 )
 
 type Params struct {
-	DefaultFeeRateBPS               uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
-	FeeRateBPS                      map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
-	PRVDiscountPercent              uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
-	TradingProtocolFeePercent       uint            // percent of fees that is rewarded for the core team (default: 0%)
-	TradingStakingPoolRewardPercent uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
-	PDEXRewardPoolPairsShare        map[string]uint // map: pool pair ID -> PDEX reward share weight
-	StakingPoolsShare               map[string]uint // map: staking tokenID -> pool staking share weight
-	StakingRewardTokens             []common.Hash   // list of staking reward tokens
-	MintNftRequireAmount            uint64          // amount prv for depositing to pdex
-	MaxOrdersPerNft                 uint            // max orders per nft
-	AutoWithdrawOrderLimitAmount    uint            // max orders will be auto withdraw each shard for each blocks
-	MinPRVReserveTradingRate        uint64          // min prv reserve for checking price of trading fee paid by PRV
-	OrderMiningRewardRatioBPS       map[string]uint // map: pool ID -> ratio of LOP rewards compare with LP rewards (0.1% ~ 10 BPS)
+	DefaultFeeRateBPS                 uint            // the default value if fee rate is not specific in FeeRateBPS (default 0.3% ~ 30 BPS)
+	FeeRateBPS                        map[string]uint // map: pool ID -> fee rate (0.1% ~ 10 BPS)
+	PRVDiscountPercent                uint            // percent of fee that will be discounted if using PRV as the trading token fee (default: 25%)
+	TradingProtocolFeePercent         uint            // percent of fees that is rewarded for the core team (default: 0%)
+	TradingStakingPoolRewardPercent   uint            // percent of fees that is distributed for staking pools (PRV, PDEX, ..., default: 10%)
+	PDEXRewardPoolPairsShare          map[string]uint // map: pool pair ID -> PDEX reward share weight
+	StakingPoolsShare                 map[string]uint // map: staking tokenID -> pool staking share weight
+	StakingRewardTokens               []common.Hash   // list of staking reward tokens
+	MintNftRequireAmount              uint64          // amount prv for depositing to pdex
+	MaxOrdersPerNft                   uint            // max orders per nft
+	AutoWithdrawOrderLimitAmount      uint            // max orders will be auto withdraw each shard for each blocks
+	MinPRVReserveTradingRate          uint64          // min prv reserve for checking price of trading fee paid by PRV
+	DefaultOrderTradingRewardRatioBPS uint            // default order trading reward ratio BPS
+	OrderTradingRewardRatioBPS        map[string]uint // map: pool ID -> the weight of LOP rewards compared with LP rewards (0.1% ~ 10 BPS)
+	OrderLiquidityMiningBPS           map[string]uint // map: pool ID -> order liquidity mining BPS (1500 BPS -> the percent of reward for AMM : buy orders : sell orders will be 70% : 15% : 15%)
+	DAOContributingPercent            uint            // percent of DAO reward that is using for liquidity mining (default: 0%)
+	MiningRewardPendingBlocks         uint64          // liquidity mining reward of each contribution will be pending for this number of blocks (default: 0)
+	OrderMiningRewardRatioBPS         map[string]uint // not used yet
 }
 
 func NewParams() *Params {
 	return &Params{
-		FeeRateBPS:                map[string]uint{},
-		PDEXRewardPoolPairsShare:  map[string]uint{},
-		StakingPoolsShare:         map[string]uint{},
-		StakingRewardTokens:       []common.Hash{},
-		OrderMiningRewardRatioBPS: map[string]uint{},
+		FeeRateBPS:                 map[string]uint{},
+		PDEXRewardPoolPairsShare:   map[string]uint{},
+		StakingPoolsShare:          map[string]uint{},
+		StakingRewardTokens:        []common.Hash{},
+		OrderTradingRewardRatioBPS: map[string]uint{},
+		OrderLiquidityMiningBPS:    map[string]uint{},
+		OrderMiningRewardRatioBPS:  map[string]uint{},
 	}
 }
 
 func NewParamsWithValue(paramsState *statedb.Pdexv3Params) *Params {
 	return &Params{
-		DefaultFeeRateBPS:               paramsState.DefaultFeeRateBPS(),
-		FeeRateBPS:                      paramsState.FeeRateBPS(),
-		PRVDiscountPercent:              paramsState.PRVDiscountPercent(),
-		TradingProtocolFeePercent:       paramsState.TradingProtocolFeePercent(),
-		TradingStakingPoolRewardPercent: paramsState.TradingStakingPoolRewardPercent(),
-		PDEXRewardPoolPairsShare:        paramsState.PDEXRewardPoolPairsShare(),
-		StakingPoolsShare:               paramsState.StakingPoolsShare(),
-		StakingRewardTokens:             paramsState.StakingRewardTokens(),
-		MintNftRequireAmount:            paramsState.MintNftRequireAmount(),
-		MaxOrdersPerNft:                 paramsState.MaxOrdersPerNft(),
-		AutoWithdrawOrderLimitAmount:    paramsState.AutoWithdrawOrderLimitAmount(),
-		MinPRVReserveTradingRate:        paramsState.MinPRVReserveTradingRate(),
-		OrderMiningRewardRatioBPS:       paramsState.OrderMiningRewardRatioBPS(),
+		DefaultFeeRateBPS:                 paramsState.DefaultFeeRateBPS(),
+		FeeRateBPS:                        paramsState.FeeRateBPS(),
+		PRVDiscountPercent:                paramsState.PRVDiscountPercent(),
+		TradingProtocolFeePercent:         paramsState.TradingProtocolFeePercent(),
+		TradingStakingPoolRewardPercent:   paramsState.TradingStakingPoolRewardPercent(),
+		PDEXRewardPoolPairsShare:          paramsState.PDEXRewardPoolPairsShare(),
+		StakingPoolsShare:                 paramsState.StakingPoolsShare(),
+		StakingRewardTokens:               paramsState.StakingRewardTokens(),
+		MintNftRequireAmount:              paramsState.MintNftRequireAmount(),
+		MaxOrdersPerNft:                   paramsState.MaxOrdersPerNft(),
+		AutoWithdrawOrderLimitAmount:      paramsState.AutoWithdrawOrderLimitAmount(),
+		MinPRVReserveTradingRate:          paramsState.MinPRVReserveTradingRate(),
+		DefaultOrderTradingRewardRatioBPS: paramsState.DefaultOrderTradingRewardRatioBPS(),
+		OrderTradingRewardRatioBPS:        paramsState.OrderTradingRewardRatioBPS(),
+		OrderLiquidityMiningBPS:           paramsState.OrderLiquidityMiningBPS(),
+		DAOContributingPercent:            paramsState.DAOContributingPercent(),
+		MiningRewardPendingBlocks:         paramsState.MiningRewardPendingBlocks(),
+		OrderMiningRewardRatioBPS:         paramsState.OrderMiningRewardRatioBPS(),
 	}
 }
 
@@ -69,6 +81,14 @@ func (p *Params) Clone() *Params {
 	for k, v := range p.StakingPoolsShare {
 		clonedStakingPoolsShare[k] = v
 	}
+	clonedOrderTradingRewardRatioBPS := map[string]uint{}
+	for k, v := range p.OrderTradingRewardRatioBPS {
+		clonedOrderTradingRewardRatioBPS[k] = v
+	}
+	clonedOrderLiquidityMiningBPS := map[string]uint{}
+	for k, v := range p.OrderLiquidityMiningBPS {
+		clonedOrderLiquidityMiningBPS[k] = v
+	}
 	clonedOrderMiningRewardRatioBPS := map[string]uint{}
 	for k, v := range p.OrderMiningRewardRatioBPS {
 		clonedOrderMiningRewardRatioBPS[k] = v
@@ -76,6 +96,8 @@ func (p *Params) Clone() *Params {
 	result.FeeRateBPS = clonedFeeRateBPS
 	result.PDEXRewardPoolPairsShare = clonedPDEXRewardPoolPairsShare
 	result.StakingPoolsShare = clonedStakingPoolsShare
+	result.OrderTradingRewardRatioBPS = clonedOrderTradingRewardRatioBPS
+	result.OrderLiquidityMiningBPS = clonedOrderLiquidityMiningBPS
 	result.OrderMiningRewardRatioBPS = clonedOrderMiningRewardRatioBPS
 
 	return result
@@ -121,14 +143,32 @@ func isValidPdexv3Params(
 			return false, fmt.Sprintf("%v", err)
 		}
 	}
-	for pairID, ratioBPS := range params.OrderMiningRewardRatioBPS {
+	if params.DefaultOrderTradingRewardRatioBPS > BPS {
+		return false, "Default order trading reward ratio is too high"
+	}
+	for pairID, ratioBPS := range params.OrderTradingRewardRatioBPS {
 		_, isExisted := pairs[pairID]
 		if !isExisted {
 			return false, fmt.Sprintf("Pair %v does not exist", pairID)
 		}
-		if ratioBPS > BPS/2 {
-			return false, fmt.Sprintf("Order mining reward ratio of pair %v is too high", pairID)
+		if ratioBPS > BPS {
+			return false, fmt.Sprintf("Order trading reward ratio of pair %v is too high", pairID)
 		}
+	}
+	for pairID, ratioBPS := range params.OrderLiquidityMiningBPS {
+		_, isExisted := pairs[pairID]
+		if !isExisted {
+			return false, fmt.Sprintf("Pair %v does not exist", pairID)
+		}
+		if ratioBPS >= BPS/2 {
+			return false, fmt.Sprintf("Order liquidity mining BPS of pair %v is too high", pairID)
+		}
+	}
+	if params.DAOContributingPercent > 100 {
+		return false, "DAO contributing percent is too high"
+	}
+	if params.DAOContributingPercent > 0 && len(params.PDEXRewardPoolPairsShare) == 0 {
+		return false, "Liquidity mining is enabled but no reward pool is specified"
 	}
 	return true, ""
 }
@@ -157,6 +197,12 @@ func (params *Params) readConfig() *Params {
 	}
 	if res.PDEXRewardPoolPairsShare == nil {
 		res.PDEXRewardPoolPairsShare = make(map[string]uint)
+	}
+	if res.OrderTradingRewardRatioBPS == nil {
+		res.OrderTradingRewardRatioBPS = make(map[string]uint)
+	}
+	if res.OrderLiquidityMiningBPS == nil {
+		res.OrderLiquidityMiningBPS = make(map[string]uint)
 	}
 	if res.OrderMiningRewardRatioBPS == nil {
 		res.OrderMiningRewardRatioBPS = make(map[string]uint)
