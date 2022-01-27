@@ -950,7 +950,7 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("payload data is invalid"))
 	}
 
-	var chaincode string
+	var chainCodeSeed string
 	incAddressParam, ok := paramList["IncAddressStr"]
 	if ok {
 		incAddressStr, ok := incAddressParam.(string)
@@ -961,10 +961,9 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 		// validate incAddressStr must be a version 2 one.
 		if _, err := metadata.AssertPaymentAddressAndTxVersion(incAddressStr, 2); err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-				errors.New("IncAddressStr must be a valid payment address version 2"))
+				fmt.Errorf("IncAddressStr must be a valid payment address version 2"))
 		}
-
-		chaincode = incAddressStr
+		chainCodeSeed = incAddressStr
 	} else {
 		depositPubKeyParam, ok := paramList["OTDepositPubKey"]
 		if ok {
@@ -973,11 +972,11 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`OTDepositPubKey` must be a string"))
 			}
 
-			chaincode = depositPubKey
+			chainCodeSeed = depositPubKey
 		}
 	}
-	if chaincode == "" {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("no valid chaincode found"))
+	if chainCodeSeed == "" {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("no valid chainCodeSeed found"))
 	}
 
 	tokenIDParam, ok := paramList["TokenID"]
@@ -998,7 +997,7 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 	}
 
 	_, shieldingAddress, err := portalParamV4.PortalTokens[tokenID].GenerateOTMultisigAddress(
-		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), chaincode)
+		portalParamV4.MasterPubKeys[tokenID], int(portalParamV4.NumRequiredSigs), chainCodeSeed)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 			fmt.Errorf("error when generating shielding address: %v\n", err))
