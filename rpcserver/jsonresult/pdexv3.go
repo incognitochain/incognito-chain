@@ -15,6 +15,8 @@ type Pdexv3State struct {
 }
 
 type Pdexv3LPValue struct {
-	PoolValue  map[string]uint64 `json:"PoolValue"`
-	TradingFee map[string]uint64 `json:"TradingFee"`
+	PoolValue   map[string]uint64 `json:"PoolValue"`
+	LPReward    map[string]uint64 `json:"LPReward"`
+	OrderReward map[string]uint64 `json:"OrderReward"`
+	PoolReward  map[string]uint64 `json:"PoolReward"`
 }

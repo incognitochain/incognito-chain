@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 
 	"github.com/blockcypher/gobcy"
@@ -422,7 +424,7 @@ func buildPortalShieldingRequestAction(
 ) []string {
 	data := metadata.PortalShieldingRequest{
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalV4ShieldingRequestMeta,
+			Type: metadataCommon.PortalV4ShieldingRequestMeta,
 		},
 		TokenID:         tokenID,
 		IncogAddressStr: incAddressStr,
@@ -436,7 +438,7 @@ func buildPortalShieldingRequestAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalV4ShieldingRequestMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(metadataCommon.PortalV4ShieldingRequestMeta), actionContentBase64Str}
 }
 
 // hashProof returns the hash of shielding proof (include tx proof and user inc address)
@@ -749,7 +751,7 @@ func buildPortalUnshieldRequestAction(
 ) []string {
 	data := metadata.PortalUnshieldRequest{
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalV4UnshieldingRequestMeta,
+			Type: metadataCommon.PortalV4UnshieldingRequestMeta,
 		},
 		OTAPubKeyStr:   incAddressStr,
 		RemoteAddress:  remoteAddress,
@@ -764,7 +766,7 @@ func buildPortalUnshieldRequestAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalV4UnshieldingRequestMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(metadataCommon.PortalV4UnshieldingRequestMeta), actionContentBase64Str}
 }
 
 func buildUnshieldRequestActionsFromTcs(tcs []TestCaseUnshieldRequest, shardID byte, shardHeight uint64) []portalV4InstForProducer {
@@ -1040,7 +1042,8 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 		s.currentPortalStateForProcess.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
 
 		// beacon producer instructions
-		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
+		newInsts, err := pm.PortalInstProcessorsV4[metadataCommon.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "",
+			shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
 		s.Equal(nil, err)
 
 		// process new instructions
@@ -1180,7 +1183,7 @@ func buildPortalFeeReplacementAction(
 	data := metadata.PortalReplacementFeeRequest{
 		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
 			MetadataBase: metadata.MetadataBase{
-				Type: metadata.PortalV4FeeReplacementRequestMeta,
+				Type: metadataCommon.PortalV4FeeReplacementRequestMeta,
 			},
 			Sig: []byte{},
 		},
@@ -1196,7 +1199,7 @@ func buildPortalFeeReplacementAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(metadataCommon.PortalV4FeeReplacementRequestMeta), actionContentBase64Str}
 }
 
 func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeReplacement, *ExpectedResultFeeReplacement) {
@@ -1592,7 +1595,7 @@ func buildPortalSubmitConfirmedTxAction(
 ) []string {
 	data := metadata.PortalSubmitConfirmedTxRequest{
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalV4SubmitConfirmedTxMeta,
+			Type: metadataCommon.PortalV4SubmitConfirmedTxMeta,
 		},
 		UnshieldProof: unshieldProof,
 		TokenID:       tokenID,
@@ -1606,7 +1609,7 @@ func buildPortalSubmitConfirmedTxAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalV4SubmitConfirmedTxMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(metadataCommon.PortalV4SubmitConfirmedTxMeta), actionContentBase64Str}
 }
 
 func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmitConfirmedTx, *ExpectedResultSubmitConfirmedTx) {
@@ -1910,7 +1913,7 @@ func slotIndex(value float64) int {
 
 func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultUTXOProcess() (TestCaseUTXOProcess, UnshieldRequest, map[string]*statedb.WaitingUnshieldRequest) {
 	// prepare waiting unshielding requests
-	testSize := 1000 // 619 current => 4692 old; 398 new with testsize 500
+	testSize := 10 // 619 current => 4692 old; 398 new with testsize 500
 	adverageInit := 5
 	testLength := testSize / adverageInit
 	m := map[int]int{}
@@ -2067,7 +2070,7 @@ func (s *PortalTestSuiteV4) TestUTXOProcess() {
 		fmt.Printf("Unshield request list %v \n", s.currentPortalStateForProducer.WaitingUnshieldRequests[portal.TestnetPortalV4BTCID])
 
 		// beacon producer instructions
-		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
+		newInsts, err := pm.PortalInstProcessorsV4[metadataCommon.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
 		s.Equal(nil, err)
 
 		// process new instructions

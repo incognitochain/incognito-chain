@@ -1,6 +1,10 @@
 {
     "AutoWithdrawOrderLimitAmount": 10,
-    "OrderMiningRewardRatioBPS": {
-        "pair0": 100
-    }
+    "OrderTradingRewardRatioBPS": {
+        "pair0": 200
+    },
+    "PDEXRewardPoolPairsShare": {
+        "pair0": 1
+    },
+    "DAOContributingPercent": 60
 }

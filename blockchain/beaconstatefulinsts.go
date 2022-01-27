@@ -102,6 +102,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalParams portal.PortalParams,
 	shardStates map[byte][]types.ShardState,
 	allPdexv3Txs map[byte][]metadata.Transaction,
+	pdexReward uint64,
 ) ([][]string, error) {
 	// transfrom beacon height for pdex process
 	pdeVersions := []int{}
@@ -311,6 +312,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildListTxs(allPdexv3Txs).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
+		BuildReward(pdexReward).
 		Build()
 
 	for _, version := range pdeVersions {
