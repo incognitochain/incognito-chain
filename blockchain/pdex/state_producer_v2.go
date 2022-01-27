@@ -1009,7 +1009,7 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 						metadataPdexv3.RequestAcceptedChainStatus,
 						nil,
 					)
-					if numberTxsPerShard[v.receiver.GetShardID()]+uint(len(res)) > limitTxsPerShard {
+					if numberTxsPerShard[v.receiver.GetShardID()]+uint(len(inst)) > limitTxsPerShard {
 						continue
 					}
 					numberTxsPerShard[v.receiver.GetShardID()] += uint(len(inst))
