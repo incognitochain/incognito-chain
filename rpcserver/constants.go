@@ -397,11 +397,14 @@ const (
 	createAndSendTxPortalConvertVaultRequest   = "createandsendtxportalconvertvault"
 	getPortalConvertVaultTxStatus              = "getportalconvertvaultstatus"
 	generatePortalShieldMultisigAddress        = "generateportalshieldmultisigaddress"
-	generateDepositAddress                     = "generatedepositaddress"
-	generateOTDepositKey                       = "generateotdepositkey"
-	getNextOTDepositKey                        = "getnextotdepositkey"
-	hasOTDepositPubKey                         = "hasotdepositpubkey"
-	getDepositTxsByPubKeys                     = "getdeposittxsbypubkeys"
+
+	// more bridge
+	generateDepositAddress               = "generatedepositaddress"
+	generateOTDepositKey                 = "generateotdepositkey"
+	getNextOTDepositKey                  = "getnextotdepositkey"
+	hasOTDepositPubKey                   = "hasotdepositpubkey"
+	getDepositTxsByPubKeys               = "getdeposittxsbypubkeys"
+	createAndSendDepositTxWithDepositKey = "createandsenddeposittxwithdepositkey"
 
 	// stake
 	unstake = "createunstaketransaction"

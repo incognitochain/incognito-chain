@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/btcsuite/btcd/wire"
@@ -22,6 +22,83 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
+
+// DepositParams consists of parameters for creating a shielding transaction.
+// A DepositParams is valid if at least one of the following conditions hold:
+//	- Signature is not empty
+//		- Receiver and DepositPubKey must not be empty
+//	- Signature is empty
+//		- If Receiver is empty, it will be generated from the sender's privateKey
+//		- If DepositPrivateKey is empty, it will be derived from the DepositKeyIndex
+//		- DepositPubKey is derived from DepositPrivateKey.
+type DepositParams struct {
+	// TokenID is the shielding asset ID.
+	TokenID string
+
+	// ShieldProof is a merkel proof for the shielding request.
+	ShieldProof string
+
+	// DepositPrivateKey is a base58-encoded deposit privateKey used to sign the request.
+	// If set empty, it will be derived from the DepositKeyIndex.
+	DepositPrivateKey string
+
+	// DepositPubKey is a base58-encoded deposit publicKey. If Signature is not provided, DepositPubKey will be derived from the DepositPrivateKey.
+	DepositPubKey string
+
+	// DepositKeyIndex is the index of the OTDepositKey.
+	DepositKeyIndex uint64
+
+	// Receiver is a base58-encoded OTAReceiver. If set empty, it will be generated from the sender's privateKey.
+	Receiver string
+
+	// Signature is a valid signature signed by the owner of the shielding asset.
+	// If Signature is not empty, DepositPubKey and Receiver must not be empty.
+	Signature string
+}
+
+// IsValid checks if a DepositParams is valid.
+func (dp DepositParams) IsValid() (bool, error) {
+	var err error
+
+	_, err = common.Hash{}.NewHashFromStr(dp.TokenID)
+	if err != nil || dp.TokenID == "" {
+		return false, fmt.Errorf("invalid tokenID %v", dp.TokenID)
+	}
+
+	if dp.Signature != "" {
+		_, _, err = base58.Base58Check{}.Decode(dp.Signature)
+		if err != nil {
+			return false, fmt.Errorf("invalid signature")
+		}
+		if dp.DepositPubKey == "" || dp.Receiver == "" {
+			return false, fmt.Errorf("must have both `DepositPubKey` and `Receiver`")
+		}
+	} else {
+		if dp.DepositPrivateKey != "" {
+			_, _, err = base58.Base58Check{}.Decode(dp.DepositPrivateKey)
+			if err != nil {
+				return false, fmt.Errorf("invalid DepositPrivateKey")
+			}
+		}
+	}
+
+	if dp.DepositPubKey != "" {
+		_, _, err = base58.Base58Check{}.Decode(dp.DepositPubKey)
+		if err != nil {
+			return false, fmt.Errorf("invalid DepositPubKey")
+		}
+	}
+
+	if dp.Receiver != "" {
+		otaReceiver := new(privacy.OTAReceiver)
+		err = otaReceiver.FromString(dp.Receiver)
+		if err != nil {
+			return false, fmt.Errorf("invalid receiver: %v", err)
+		}
+	}
+
+	return true, nil
+}
 
 /*
 ===== Get Portal State
@@ -104,6 +181,7 @@ func (httpServer *HttpServer) handleGetPortalV4Params(params interface{}, closeC
 ===== Shielding request
 */
 
+// DEPRECATED: consider using handleCreateRawTxDepositReqWithDepositKey instead.
 func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
@@ -165,84 +243,82 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxDepositReqWithDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Param array must be at least 5"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("must have at lease 5 parameters"))
 	}
+
+	privateKeyStr := arrayParams[0].(string)
+	w, err := wallet.Base58CheckDeserialize(privateKeyStr)
+	if err != nil || len(w.KeySet.PrivateKey[:]) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid privateKey: %v", privateKeyStr))
+	}
+	privateKey := w.KeySet.PrivateKey[:]
 
 	// get meta data from params
 	data, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata param is invalid"))
 	}
+	jsb, _ := json.Marshal(data)
 
-	tokenIDParam, exists := data["TokenID"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`TokenID` not found"))
-	}
-	tokenID, ok := tokenIDParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid TokenID"))
-	}
-
-	shieldingProofParam, exists := data["ShieldingProof"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `ShieldProof` not found"))
-	}
-	shieldingProof, ok := shieldingProofParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("ShieldingProof is invalid"))
-	}
-
-	OTPubKeyParam, exists := data["OTDepositPubKey"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTDepositPubKey` not found"))
-	}
-	OTPubKeyStr, ok := OTPubKeyParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTDepositPubKey` must be a string"))
-	}
-	OTPrivateKeyParam, exists := data["OTPrivateKey"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTPrivateKey` not found"))
-	}
-	OTPrivateKeyStr, ok := OTPrivateKeyParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata `OTPrivateKey` must be a string"))
-	}
-	OTPrivateKey, _, err := base58.Base58Check{}.Decode(OTPrivateKeyStr)
+	var dp *DepositParams
+	err = json.Unmarshal(jsb, &dp)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf(" `OTPrivateKey` is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot unmarshal depositParams"))
+	}
+	if _, err = dp.IsValid(); err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid DepositParams: %v", err))
 	}
 
-	receiverParam, exists := data["Receiver"]
-	if !exists {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`Receiver` not found"))
-	}
-	receiverStr, ok := receiverParam.(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`Receiver` must be a string"))
-	}
-	receiverBytes, _, err := base58.Base58Check{}.Decode(receiverStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`Receiver` is invalid"))
+	receiver, depositPubKey := dp.Receiver, dp.DepositPubKey
+	var sig []byte
+	if dp.Signature != "" {
+		sig, _, _ = base58.Base58Check{}.Decode(dp.Signature)
+	} else {
+		if receiver == "" {
+			otaReceiver := new(privacy.OTAReceiver)
+			err = otaReceiver.FromAddress(w.KeySet.PaymentAddress)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("generate OTAReceiver error: %v", err))
+			}
+			receiver, _ = otaReceiver.String()
+		}
+		otaReceiver := new(coin.OTAReceiver)
+		_ = otaReceiver.FromString(receiver)
+
+		var depositPrivateKey *privacy.Scalar
+		if dp.DepositPrivateKey != "" {
+			tmp, _, _ := base58.Base58Check{}.Decode(dp.DepositPrivateKey)
+			depositPrivateKey = new(privacy.Scalar).FromBytesS(tmp)
+		} else {
+			depositKey, err := incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, dp.TokenID, dp.DepositKeyIndex)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("GenerateOTDepositKeyFromPrivateKey error: %v", err))
+			}
+			depositPrivateKey = new(privacy.Scalar).FromBytesS(depositKey.PrivateKey)
+		}
+		depositPubKeyBytes := new(privacy.Point).ScalarMultBase(depositPrivateKey).ToBytesS()
+		depositPubKey = base58.Base58Check{}.NewEncode(depositPubKeyBytes, 0)
+
+		schnorrPrivateKey := new(privacy.SchnorrPrivateKey)
+		schnorrPrivateKey.Set(depositPrivateKey, privacy.RandomScalar())
+		metaDataBytes, _ := otaReceiver.Bytes()
+		tmpSig, err := schnorrPrivateKey.Sign(common.HashB(metaDataBytes))
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		sig = tmpSig.Bytes()
 	}
 
-	priKey := new(privacy.SchnorrPrivateKey)
-	priKey.Set(new(operation.Scalar).FromBytesS(OTPrivateKey), operation.RandomScalar())
-	sig, err := priKey.Sign(common.HashB(receiverBytes))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("SchnorrSign error: %v", err))
-	}
-
-	meta, _ := metadata.NewPortalShieldingRequest(
+	md, _ := metadata.NewPortalShieldingRequest(
 		metadataCommon.PortalV4ShieldingRequestMeta,
-		tokenID,
-		receiverStr,
-		shieldingProof,
-		OTPubKeyStr,
-		sig.Bytes(),
+		dp.TokenID,
+		receiver,
+		dp.ShieldProof,
+		depositPubKey,
+		sig,
 	)
 
 	// create new param to build raw tx from param interface
@@ -253,7 +329,7 @@ func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, md)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -271,8 +347,26 @@ func (httpServer *HttpServer) handleCreateRawTxPortalV4ShieldingReqWithOTPubKey(
 	return result, nil
 }
 
+// DEPRECATED: consider using RPC handleCreateAndSendDepositTxWithDepositKey instead.
 func (httpServer *HttpServer) handleCreateAndSendTxWithShieldingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithShieldingReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendDepositTxWithDepositKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxDepositReqWithDepositKey(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
