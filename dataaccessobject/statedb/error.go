@@ -36,6 +36,7 @@ const (
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
+	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -68,15 +69,18 @@ const (
 	ErrInvalidPdexv3StakingPoolStateType               = "invalid pdex v3 staking pool state type"
 	ErrInvalidPdexv3StakerStateType                    = "invalid pdex v3 staker state type"
 	ErrInvalidPdexv3PoolPairLpFeePerShareStateType     = "invalid pdex v3 pool pair lp fee per share state type"
+	ErrInvalidPdexv3PoolPairLmRewardPerShareStateType  = "invalid pdex v3 pool pair lm reward per share state type"
 	ErrInvalidPdexv3PoolPairProtocolFeeStateType       = "invalid pdex v3 pool pair protocol fee state type"
 	ErrInvalidPdexv3PoolPairStakingPoolFeeStateType    = "invalid pdex v3 pool pair staking pool fee state type"
 	ErrInvalidPdexv3ShareTradingFeeStateType           = "invalid pdex v3 share trading fee state type"
 	ErrInvalidPdexv3LastLPFeesPerShareStateType        = "invalid pdex v3 share last lp fees per share state type"
+	ErrInvalidPdexv3LastLmRewardPerShareStateType      = "invalid pdex v3 share last lm reward per share state type"
 	ErrInvalidPdexv3StakingPoolRewardPerShareStateType = "invalid pdex v3 staking pool reward per share state type"
 	ErrInvalidPdexv3StakerRewardStateType              = "invalid pdex v3 staker reward state type"
 	ErrInvalidPdexv3StakerLastRewardPerShareStateType  = "invalid pdex v3 staker last reward per share state type"
 	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
+	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -280,6 +284,10 @@ const (
 	StorePdexv3TradingFeesError
 	StorePdexv3NftsError
 	GetPdexv3PoolPairError
+
+	// Polygon bridge
+	BridgeInsertPLGTxHashIssuedError
+	IsPLGTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -451,6 +459,10 @@ var ErrCodeMessage = map[int]struct {
 	// prv pegging erc20/bep20
 	BridgeInsertPRVEVMTxHashIssuedError: {-15102, "Bridge Insert PRV pegging evm Tx Hash Issued Error"},
 	IsPRVEVMTxHashIssuedError:           {-15103, "Is PRV pegging evm Tx Hash Issued Error"},
+
+	// polygon bridge
+	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
+	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

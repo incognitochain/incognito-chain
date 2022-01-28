@@ -24,7 +24,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
@@ -301,22 +300,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-
-	//TODO: @0xkumi and @tin check here again
-	/*//check previous pdestate state consistency*/
-	//dbPDEState, err := pdex.InitStateFromDB(curView.featureStateDB, beaconBlock.Header.Height-1) //get from db
-	//if err != nil {
-	//return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
-	//}
-
-	//if !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
-	//mem, _ := json.Marshal(curView.pdeState)
-	//db, _ := json.Marshal(dbPDEState)
-	//Logger.log.Errorf("Last Beacon Block Instruction %+v", curView.BestBlock.Body.Instructions)
-	//Logger.log.Error("Mem", string(mem))
-	//Logger.log.Error("DB", string(db))
-	//return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
-	/*}*/
 
 	portalParams := portal.GetPortalParams()
 
@@ -962,10 +945,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningConfirmMetaV2),
 		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
 		strconv.Itoa(metadata.BurningBSCConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPRVERC20ConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPRVBEP20ConfirmMeta),
-		strconv.Itoa(metadataCommon.BurningPBSCConfirmForDepositToSCMeta),
-	}
+		strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
+		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta),
+		strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningPLGConfirmMeta),
+		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta)}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}

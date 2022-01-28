@@ -212,7 +212,7 @@ func (netSync *NetSync) GetCPUUsage() {
 		idle1, total1 := common.GetCPUSample()
 		idle, total := idle1-idle0, total1-total0
 		netSync.cpuUsage = 100 * float64(total-idle) / float64(total)
-		Logger.log.Infof("TestCPU: CPU Usage %v %v %v", idle, total, netSync.cpuUsage)
+		Logger.log.Debugf("TestCPU: CPU Usage %v %v %v", idle, total, netSync.cpuUsage)
 		idle0, total0 = common.GetCPUSample()
 	}
 }

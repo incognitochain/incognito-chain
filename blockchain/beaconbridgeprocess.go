@@ -13,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -38,11 +37,14 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadata.IssuingBSCRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertBSCTxHashIssued, false)
 
-		case strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta):
+		case strconv.Itoa(metadata.IssuingPRVERC20RequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
-		case strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta):
+		case strconv.Itoa(metadata.IssuingPRVBEP20RequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
+
+		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
@@ -55,6 +57,10 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 
 		case strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.BSCPrefix)
+
+		case strconv.Itoa(metadata.BurningPLGConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.PLGPrefix)
+
 		}
 		if err != nil {
 			return err
@@ -322,8 +328,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		var err error
 		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
-			metaType == metadata.IssuingBSCRequestMeta || metaType == metadataCommon.IssuingPRVERC20RequestMeta ||
-			metaType == metadataCommon.IssuingPRVBEP20RequestMeta {
+			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
+			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -331,7 +337,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
-			metaType == metadataCommon.IssuingPRVERC20ResponseMeta || metaType == metadataCommon.IssuingPRVBEP20ResponseMeta {
+			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
+			metaType == metadata.IssuingPLGResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)

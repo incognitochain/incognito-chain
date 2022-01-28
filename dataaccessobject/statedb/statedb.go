@@ -2221,6 +2221,26 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLpFeesPerShare(prefix []byte) (
 	return res, nil
 }
 
+func (stateDB *StateDB) iterateWithPdexv3PoolPairLmRewardPerShare(prefix []byte) (
+	map[common.Hash]*big.Int, error,
+) {
+	res := map[common.Hash]*big.Int{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		lmRewardPerShareState := NewPdexv3PoolPairLmRewardPerShareState()
+		err := json.Unmarshal(newValue, lmRewardPerShareState)
+		if err != nil {
+			return res, err
+		}
+		res[lmRewardPerShareState.tokenID] = lmRewardPerShareState.value
+	}
+	return res, nil
+}
+
 func (stateDB *StateDB) iterateWithPdexv3PoolPairProtocolFees(prefix []byte) (
 	map[common.Hash]uint64, error,
 ) {
@@ -2284,6 +2304,29 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairMakingVolume(prefix []byte) (
 	return res, nil
 }
 
+func (stateDB *StateDB) iterateWithPdexv3PoolPairLmLockedShare(prefix []byte) (
+	map[string]map[uint64]uint64, error,
+) {
+	res := map[string]map[uint64]uint64{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		lmLockedShareState := NewPdexv3PoolPairLmLockedShareState()
+		err := json.Unmarshal(newValue, lmLockedShareState)
+		if err != nil {
+			return res, err
+		}
+		if res[lmLockedShareState.nftID] == nil {
+			res[lmLockedShareState.nftID] = make(map[uint64]uint64)
+		}
+		res[lmLockedShareState.nftID][lmLockedShareState.beaconHeight] = lmLockedShareState.amount
+	}
+	return res, nil
+}
+
 func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderReward(prefix []byte) (
 	map[string]map[common.Hash]uint64, error,
 ) {
@@ -2343,6 +2386,26 @@ func (stateDB *StateDB) iterateWithPdexv3ShareLastLpFeesPerShare(prefix []byte) 
 			return res, err
 		}
 		res[lastLpFeePerShareState.tokenID] = lastLpFeePerShareState.value
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithPdexv3ShareLastLmRewardPerShare(prefix []byte) (
+	map[common.Hash]*big.Int, error,
+) {
+	res := map[common.Hash]*big.Int{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		lastLmRewardPerShareState := NewPdexv3ShareLastLmRewardPerShareState()
+		err := json.Unmarshal(newValue, lastLmRewardPerShareState)
+		if err != nil {
+			return res, err
+		}
+		res[lastLmRewardPerShareState.tokenID] = lastLmRewardPerShareState.value
 	}
 	return res, nil
 }
@@ -2417,4 +2480,16 @@ func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState
 		return prvEvmTxState.GetValue().(*BrigePRVEVMState), true, nil
 	}
 	return NewBrigePRVEVMState(), false, nil
+}
+
+// ================================= BSC bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState, bool, error) {
+	plgTxState, err := stateDB.getStateObject(BridgePLGTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if plgTxState != nil {
+		return plgTxState.GetValue().(*BridgePLGTxState), true, nil
+	}
+	return NewBridgePLGTxState(), false, nil
 }

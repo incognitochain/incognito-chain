@@ -18,6 +18,7 @@ type StateEnvBuilder interface {
 	BuildStateDB(*statedb.StateDB) StateEnvBuilder
 	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
 	BuildPdexv3BreakPoint(uint64) StateEnvBuilder
+	BuildReward(uint64) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -37,6 +38,7 @@ type stateEnvironment struct {
 	listTxs                        map[byte][]metadata.Transaction
 	stateDB                        *statedb.StateDB
 	bcHeightBreakPointPrivacyV2    uint64
+	reward                         uint64
 	pdexv3BreakPoint               uint64
 }
 
@@ -100,6 +102,11 @@ func (env *stateEnvironment) BuildStateDB(stateDB *statedb.StateDB) StateEnvBuil
 	return env
 }
 
+func (env *stateEnvironment) BuildReward(reward uint64) StateEnvBuilder {
+	env.reward = reward
+	return env
+}
+
 func (env *stateEnvironment) Build() StateEnvironment {
 	return env
 }
@@ -117,6 +124,7 @@ type StateEnvironment interface {
 	StateDB() *statedb.StateDB
 	BCHeightBreakPointPrivacyV2() uint64
 	Pdexv3BreakPoint() uint64
+	Reward() uint64
 }
 
 func (env *stateEnvironment) ContributionActions() [][]string {
@@ -165,4 +173,8 @@ func (env *stateEnvironment) BCHeightBreakPointPrivacyV2() uint64 {
 
 func (env *stateEnvironment) Pdexv3BreakPoint() uint64 {
 	return env.pdexv3BreakPoint
+}
+
+func (env *stateEnvironment) Reward() uint64 {
+	return env.reward
 }
