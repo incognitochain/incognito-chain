@@ -1504,6 +1504,15 @@ func createPdexv3AddOrderRequestTransaction(
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
+	if md.TokenToSell != common.PRVCoinID && mdReader.TokenToBuy != common.PRVCoinID {
+		tokenList = append(tokenList, common.PRVCoinID)
+	}
+	md.RewardReceiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
+		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+	if err != nil {
+		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+
 	paramSelect.SetMetadata(md)
 
 	// get burning address
