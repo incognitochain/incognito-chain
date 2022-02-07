@@ -785,7 +785,7 @@ func (p *PoolPairState) updateToDB(
 			if err != nil {
 				return err
 			}
-			for tokenID, _ := range orderRewardChange.UncollectedReward {
+			for tokenID := range orderRewardChange.UncollectedReward {
 				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 				if err != nil {
 					return err

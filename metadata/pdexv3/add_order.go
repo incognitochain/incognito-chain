@@ -124,14 +124,6 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Missing refund OTAReceiver for token %v", tokenID))
 		}
-		if req.RewardReceiver != nil {
-			_, exists := req.RewardReceiver[tokenID]
-			if !exists {
-				return false, false, metadataCommon.NewMetadataTxError(
-					metadataCommon.PDEInvalidMetadataValueError,
-					fmt.Errorf("Missing reward receiver for token %v", tokenID))
-			}
-		}
 	}
 	if req.RewardReceiver != nil {
 		_, exists := req.RewardReceiver[common.PRVCoinID]

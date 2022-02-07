@@ -694,6 +694,14 @@ func (sp *stateProcessorV2) addOrder(
 		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, rk, md.AccessOTA, md.Token0Rate, md.Token1Rate,
 			md.Token0Balance, md.Token1Balance, md.TradeDirection, md.Receiver)
 		pair.orderbook.InsertOrder(newOrder)
+		orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
+		for k, v := range md.RewardReceiver {
+			orderRewardDetails[k] = NewOrderRewardDetailWithValue(v, 0)
+		}
+		txReqID, _ := common.Hash{}.NewHashFromStr(md.OrderID)
+		pair.orderRewards[md.NftID.String()] = NewOrderRewardWithValue(
+			WaitToWithdrawOrderReward, orderRewardDetails, txReqID,
+		)
 		// write changes to state
 		pairs[md.PoolPairID] = pair
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
@@ -894,15 +902,18 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 			share.setAccessOTA(actionData.AccessOTA)
+			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 			if share.isEmpty() {
 				delete(poolPair.shares, accessID)
 			}
-			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
-		_, isExisted = poolPair.orderRewards[accessID]
+		orderReward, isExisted := poolPair.orderRewards[accessID]
 		if isExisted {
-			delete(poolPair.orderRewards, accessID)
+			delete(orderReward.uncollectedRewards, actionData.TokenID)
+			if orderReward.isEmpty() {
+				delete(poolPair.orderRewards, accessID)
+			}
 		}
 
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeSuccessStatus

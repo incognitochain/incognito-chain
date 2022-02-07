@@ -214,28 +214,33 @@ func (httpServer *HttpServer) handleCreateRawTxWithPdexv3ModifyParams(params int
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("MiningRewardPendingBlocks is invalid"))
 	}
+	autoWithdrawOrderRewardLimitAmount, err := common.AssertAndConvertStrToNumber(newParams["AutoWithdrawOrderRewardLimitAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("AutoWithdrawOrderRewardLimitAmount is invalid"))
+	}
 
 	meta, err := metadataPdexv3.NewPdexv3ParamsModifyingRequest(
 		metadataCommon.Pdexv3ModifyParamsMeta,
 		metadataPdexv3.Pdexv3Params{
-			DefaultFeeRateBPS:                 uint(defaultFeeRateBPS),
-			FeeRateBPS:                        feeRateBPS,
-			PRVDiscountPercent:                uint(prvDiscountPercent),
-			TradingProtocolFeePercent:         uint(tradingProtocolFeePercent),
-			TradingStakingPoolRewardPercent:   uint(tradingStakingPoolRewardPercent),
-			PDEXRewardPoolPairsShare:          pdexRewardPoolPairsShare,
-			StakingPoolsShare:                 stakingPoolsShare,
-			StakingRewardTokens:               stakingRewardTokens,
-			MintNftRequireAmount:              mintNftRequireAmount,
-			MaxOrdersPerNft:                   uint(maxOrdersPerNft),
-			AutoWithdrawOrderLimitAmount:      uint(autoWithdrawOrderLimitAmount),
-			MinPRVReserveTradingRate:          minPRVReserveTradingRate,
-			DefaultOrderTradingRewardRatioBPS: uint(defaultOrderTradingRewardRatioBPS),
-			OrderTradingRewardRatioBPS:        orderTradingRewardRatioBPS,
-			OrderLiquidityMiningBPS:           orderLiquidityMiningBPS,
-			DAOContributingPercent:            uint(daoContributingPercent),
-			MiningRewardPendingBlocks:         miningRewardPendingBlocks,
-			OrderMiningRewardRatioBPS:         map[string]uint{},
+			DefaultFeeRateBPS:                  uint(defaultFeeRateBPS),
+			FeeRateBPS:                         feeRateBPS,
+			PRVDiscountPercent:                 uint(prvDiscountPercent),
+			TradingProtocolFeePercent:          uint(tradingProtocolFeePercent),
+			TradingStakingPoolRewardPercent:    uint(tradingStakingPoolRewardPercent),
+			PDEXRewardPoolPairsShare:           pdexRewardPoolPairsShare,
+			StakingPoolsShare:                  stakingPoolsShare,
+			StakingRewardTokens:                stakingRewardTokens,
+			MintNftRequireAmount:               mintNftRequireAmount,
+			MaxOrdersPerNft:                    uint(maxOrdersPerNft),
+			AutoWithdrawOrderLimitAmount:       uint(autoWithdrawOrderLimitAmount),
+			MinPRVReserveTradingRate:           minPRVReserveTradingRate,
+			DefaultOrderTradingRewardRatioBPS:  uint(defaultOrderTradingRewardRatioBPS),
+			OrderTradingRewardRatioBPS:         orderTradingRewardRatioBPS,
+			OrderLiquidityMiningBPS:            orderLiquidityMiningBPS,
+			DAOContributingPercent:             uint(daoContributingPercent),
+			MiningRewardPendingBlocks:          miningRewardPendingBlocks,
+			OrderMiningRewardRatioBPS:          map[string]uint{},
+			AutoWithdrawOrderRewardLimitAmount: uint(autoWithdrawOrderRewardLimitAmount),
 		},
 	)
 	if err != nil {
@@ -1504,7 +1509,8 @@ func createPdexv3AddOrderRequestTransaction(
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	if md.TokenToSell != common.PRVCoinID && mdReader.TokenToBuy != common.PRVCoinID {
+	tokenList = []common.Hash{mdReader.TokenToBuy}
+	if mdReader.TokenToBuy != common.PRVCoinID {
 		tokenList = append(tokenList, common.PRVCoinID)
 	}
 	md.RewardReceiver, err = httpServer.pdexTxService.GenerateOTAReceivers(

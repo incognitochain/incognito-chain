@@ -73,7 +73,7 @@ func StorePdexv3Params(
 		daoContributingPercent,
 		miningRewardPendingBlocks,
 		orderMiningRewardRatioBPS,
-		autoWithdrawOrderLimitAmount,
+		autoWithdrawOrderRewardLimitAmount,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {

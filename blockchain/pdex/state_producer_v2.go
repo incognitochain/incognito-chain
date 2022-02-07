@@ -280,6 +280,7 @@ func (sp *stateProducerV2) modifyParams(
 		// check conditions
 		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
+		Logger.log.Info("[pdex] newParams.AutoWithdrawOrderRewardLimitAmount:", newParams.AutoWithdrawOrderRewardLimitAmount)
 		isValidParams, errorMsg := isValidPdexv3Params(&newParams, pairs)
 
 		status := ""
@@ -673,15 +674,16 @@ TransactionLoop:
 			// increment order count to keep same-block requests from exceeding limit
 			orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
 		}
-		rewardReceiverTokenIDs := []common.Hash{pair.state.Token0ID(), pair.state.Token1ID()}
-		if pair.state.Token0ID() != common.PRVCoinID && pair.state.Token1ID() != common.PRVCoinID {
+		rewardReceiverTokenIDs := []common.Hash{tokenToBuy}
+		if tokenToBuy != common.PRVCoinID {
 			rewardReceiverTokenIDs = append(rewardReceiverTokenIDs, common.PRVCoinID)
 		}
-		rewardReceivers := []string{}
+		rewardReceivers := map[common.Hash]privacy.OTAReceiver{}
+		orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
 		for _, v := range rewardReceiverTokenIDs {
-			if _, found := currentOrderReq.RewardReceiver[v]; found {
-				receiver, _ := currentOrderReq.RewardReceiver[v].String()
-				rewardReceivers = append(rewardReceivers, receiver)
+			if receiver, found := currentOrderReq.RewardReceiver[v]; found {
+				rewardReceivers[v] = receiver
+				orderRewardDetails[v] = NewOrderRewardDetailWithValue(receiver, 0)
 			} else {
 				Logger.log.Warnf("RewardReceivers is not enough")
 				result = append(result, refundInstructions...)
@@ -689,7 +691,7 @@ TransactionLoop:
 			}
 		}
 		pair.orderRewards[nftID.String()] = NewOrderRewardWithValue(
-			WaitToWithdrawOrderReward, make(map[common.Hash]OrderRewardDetail),
+			WaitToWithdrawOrderReward, orderRewardDetails, tx.Hash(),
 		)
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
@@ -855,7 +857,6 @@ TransactionLoop:
 					if ord.IsEmpty() {
 						if orderReward, found := pair.orderRewards[ord.NftID().String()]; found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
-							orderReward.txReqID = tx.Hash()
 							pair.orderRewards[ord.NftID().String()] = orderReward
 						}
 						shouldMintAccessCoin = false
@@ -991,31 +992,33 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 		for accessID, orderReward := range poolPair.orderRewards {
 			if orderReward.withdrawnStatus == WithdrawnOrderReward {
 				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
+				var shardID byte
 				for k, v := range orderReward.uncollectedRewards {
 					receiversInfo[k] = metadataPdexv3.ReceiverInfo{
 						Address: v.receiver,
 						Amount:  v.amount,
 					}
-					accessHash, err := common.Hash{}.NewHashFromStr(accessID)
-					if err != nil {
-						return res, poolPairs, err
-					}
-					inst := v2utils.BuildWithdrawLPFeeInsts(
-						poolPairID,
-						*metadataPdexv3.NewAccessOptionWithValue(nil, accessHash, nil),
-						receiversInfo,
-						v.receiver.GetShardID(),
-						*orderReward.txReqID,
-						metadataPdexv3.RequestAcceptedChainStatus,
-						nil,
-					)
-					if numberTxsPerShard[v.receiver.GetShardID()]+uint(len(inst)) > limitTxsPerShard {
-						continue
-					}
-					numberTxsPerShard[v.receiver.GetShardID()] += uint(len(inst))
-					res = append(res, inst...)
-					delete(poolPair.orderRewards, accessID)
+					shardID = v.receiver.GetShardID()
 				}
+				accessHash, err := common.Hash{}.NewHashFromStr(accessID)
+				if err != nil {
+					return res, poolPairs, err
+				}
+				inst := v2utils.BuildWithdrawLPFeeInsts(
+					poolPairID,
+					*metadataPdexv3.NewAccessOptionWithValue(nil, accessHash, nil),
+					receiversInfo,
+					shardID,
+					*orderReward.txReqID,
+					metadataPdexv3.RequestAcceptedChainStatus,
+					nil,
+				)
+				if numberTxsPerShard[shardID]+uint(len(inst)) > limitTxsPerShard {
+					continue
+				}
+				numberTxsPerShard[shardID] += uint(len(inst))
+				res = append(res, inst...)
+				delete(poolPair.orderRewards, accessID)
 			}
 		}
 	}
@@ -1172,11 +1175,11 @@ func (sp *stateProducerV2) withdrawLPFee(
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
 			share.setAccessOTA(accessOTA)
+			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 			if share.isEmpty() {
 				shouldMintAccessCoin = false
 				delete(poolPair.shares, accessID.String())
 			}
-			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
 		if isExistedOrderReward {

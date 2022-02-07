@@ -172,6 +172,7 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
+			orderReward[nftID].txReqID = value.TxReqID()
 			orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
 			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
 			if err != nil {
@@ -183,7 +184,7 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 				if err != nil {
 					return nil, err
 				}
-				orderReward[nftID].uncollectedRewards[tokenID] = *NewOrderRewardDetailWithValue(
+				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 					receiver, value.Value(),
 				)
 			}
@@ -379,7 +380,7 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 				if err != nil {
 					return nil, err
 				}
-				orderReward[nftID].uncollectedRewards[tokenID] = *NewOrderRewardDetailWithValue(
+				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 					receiver, value.Value(),
 				)
 			}
@@ -504,7 +505,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			if err != nil {
 				return nil, err
 			}
-			orderReward[nftID].uncollectedRewards[tokenID] = *NewOrderRewardDetailWithValue(
+			orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 				receiver, value.Value(),
 			)
 		}
@@ -579,7 +580,7 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 			if err != nil {
 				return nil, err
 			}
-			orderRewards[nftID].uncollectedRewards[tokenID] = *NewOrderRewardDetailWithValue(
+			orderRewards[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 				receiver, value.Value(),
 			)
 		}

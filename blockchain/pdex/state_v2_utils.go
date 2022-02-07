@@ -353,13 +353,13 @@ func (staker *Staker) deleteFromDB(
 	if err != nil {
 		return err
 	}
-	for tokenID, _ := range stakerChange.LastRewardsPerShare {
+	for tokenID := range stakerChange.LastRewardsPerShare {
 		err = statedb.DeletePdexv3StakerLastRewardPerShare(env.StateDB(), stakingPoolID, nftID.String(), tokenID)
 		if err != nil {
 			return err
 		}
 	}
-	for tokenID, _ := range stakerChange.Rewards {
+	for tokenID := range stakerChange.Rewards {
 		err = statedb.DeletePdexv3StakerReward(env.StateDB(), stakingPoolID, nftID.String(), tokenID)
 		if err != nil {
 			return err
@@ -506,6 +506,17 @@ type OrderRewardDetail struct {
 	amount   uint64
 }
 
+func NewOrderRewardDetail() *OrderRewardDetail {
+	return &OrderRewardDetail{}
+}
+
+func (o *OrderRewardDetail) Clone() *OrderRewardDetail {
+	return &OrderRewardDetail{
+		receiver: o.receiver,
+		amount:   o.amount,
+	}
+}
+
 func NewOrderRewardDetailWithValue(
 	receiver privacy.OTAReceiver, amount uint64,
 ) *OrderRewardDetail {
@@ -552,16 +563,16 @@ func (o *OrderRewardDetail) Receiver() privacy.OTAReceiver {
 }
 
 type OrderReward struct {
-	uncollectedRewards map[common.Hash]OrderRewardDetail
+	uncollectedRewards map[common.Hash]*OrderRewardDetail
 	withdrawnStatus    byte
 	txReqID            *common.Hash
 }
 
 func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		UncollectedRewards map[common.Hash]OrderRewardDetail `json:"UncollectedRewards"`
-		WithdrawnStatus    byte                              `json:"WithdrawnStatus"`
-		TxReqID            *common.Hash                      `json:"TxReqID,omitempty"`
+		UncollectedRewards map[common.Hash]*OrderRewardDetail `json:"UncollectedRewards"`
+		WithdrawnStatus    byte                               `json:"WithdrawnStatus"`
+		TxReqID            *common.Hash                       `json:"TxReqID,omitempty"`
 	}{
 		UncollectedRewards: orderReward.uncollectedRewards,
 		WithdrawnStatus:    orderReward.withdrawnStatus,
@@ -575,9 +586,9 @@ func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 
 func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		UncollectedRewards map[common.Hash]OrderRewardDetail `json:"UncollectedRewards"`
-		WithdrawnStatus    byte                              `json:"WithdrawnStatus"`
-		TxReqID            *common.Hash                      `json:"TxReqID,omitempty"`
+		UncollectedRewards map[common.Hash]*OrderRewardDetail `json:"UncollectedRewards"`
+		WithdrawnStatus    byte                               `json:"WithdrawnStatus"`
+		TxReqID            *common.Hash                       `json:"TxReqID,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -589,6 +600,16 @@ func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (orderReward *OrderReward) isEmpty() bool {
+	if orderReward.withdrawnStatus != WithdrawnOrderReward && orderReward.withdrawnStatus == DefaultWithdrawnOrderReward {
+		return false
+	}
+	if len(orderReward.uncollectedRewards) != 0 {
+		return false
+	}
+	return true
+}
+
 func (orderReward *OrderReward) TxReqID() *common.Hash {
 	return orderReward.txReqID
 }
@@ -597,8 +618,8 @@ func (orderReward *OrderReward) WithdrawnStatus() byte {
 	return orderReward.withdrawnStatus
 }
 
-func (orderReward *OrderReward) UncollectedRewards() map[common.Hash]OrderRewardDetail {
-	res := map[common.Hash]OrderRewardDetail{}
+func (orderReward *OrderReward) UncollectedRewards() map[common.Hash]*OrderRewardDetail {
+	res := map[common.Hash]*OrderRewardDetail{}
 	for k, v := range orderReward.uncollectedRewards {
 		res[k] = v
 	}
@@ -610,6 +631,9 @@ func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
 	if _, ok := orderReward.uncollectedRewards[tokenID]; ok {
 		oldAmount = orderReward.uncollectedRewards[tokenID].amount
 	}
+	if orderReward.uncollectedRewards[tokenID] == nil {
+		orderReward.uncollectedRewards[tokenID] = NewOrderRewardDetail()
+	}
 	temp := orderReward.uncollectedRewards[tokenID]
 	temp.amount = oldAmount + amount
 	orderReward.uncollectedRewards[tokenID] = temp
@@ -617,25 +641,27 @@ func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
 
 func NewOrderReward() *OrderReward {
 	return &OrderReward{
-		uncollectedRewards: make(map[common.Hash]OrderRewardDetail),
+		uncollectedRewards: make(map[common.Hash]*OrderRewardDetail),
 	}
 }
 
 func NewOrderRewardWithValue(
-	withdrawnStatus byte, uncollectedRewards map[common.Hash]OrderRewardDetail,
+	withdrawnStatus byte, uncollectedRewards map[common.Hash]*OrderRewardDetail, txReqID *common.Hash,
 ) *OrderReward {
 	return &OrderReward{
 		withdrawnStatus:    withdrawnStatus,
 		uncollectedRewards: uncollectedRewards,
+		txReqID:            txReqID,
 	}
 }
 
 func (orderReward *OrderReward) Clone() *OrderReward {
 	res := NewOrderReward()
 	for k, v := range orderReward.uncollectedRewards {
-		res.uncollectedRewards[k] = v
+		res.uncollectedRewards[k] = v.Clone()
 	}
 	res.withdrawnStatus = orderReward.withdrawnStatus
+	res.txReqID = orderReward.txReqID
 	return res
 }
 
@@ -653,7 +679,8 @@ func (orderReward *OrderReward) getDiff(
 		}
 		newOrderRewardChange.IsChanged = true
 	} else {
-		if orderReward.withdrawnStatus != compareOrderReward.withdrawnStatus {
+		if orderReward.withdrawnStatus != compareOrderReward.withdrawnStatus ||
+			orderReward.txReqID != compareOrderReward.txReqID {
 			newOrderRewardChange.IsChanged = true
 		}
 		orderRewardAmount := make(map[common.Hash]uint64)

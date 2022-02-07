@@ -31,7 +31,7 @@ type Pdexv3Params struct {
 	DAOContributingPercent             uint            `json:"DAOContributingPercent,omitempty"`
 	MiningRewardPendingBlocks          uint64          `json:"MiningRewardPendingBlocks,omitempty"`
 	OrderMiningRewardRatioBPS          map[string]uint `json:"OrderMiningRewardRatioBPS,omitempty"`
-	AutoWithdrawOrderRewardLimitAmount uint            `json:"AutoWithdrawOrderLimitAmount,omitempty"`
+	AutoWithdrawOrderRewardLimitAmount uint            `json:"AutoWithdrawOrderRewardLimitAmount,omitempty"`
 }
 
 type ParamsModifyingRequest struct {
