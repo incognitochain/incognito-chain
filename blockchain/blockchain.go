@@ -86,7 +86,7 @@ type Config struct {
 }
 
 type CacheConfig struct {
-	triegc               *prque.Prque // Priority queue mapping block numbers to tries to gc
+	triegc               map[byte]*prque.Prque // Priority queue mapping block numbers to tries to gc
 	trieJournalPath      map[int]string
 	trieJournalCacheSize int
 	blockTriesInMemory   uint64
@@ -111,9 +111,17 @@ func NewFlatFileConfig(config *Config) {
 
 func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 
+	cacheConfig := configCache32GB
+	cacheConfig.triegc = make(map[byte]*prque.Prque)
 	trieJournal := make(map[int]string)
 	pivotBlock := make(map[byte]uint64)
+
+	for i := 0; i < common.MaxShardNumber; i++ {
+		cacheConfig.triegc[byte(i)] = prque.New(nil)
+	}
+
 	for chainID, db := range config.DataBase {
+
 		journalPath := db.GetPath() + "/metadata.bin"
 		if _, err := os.Stat(journalPath); os.IsNotExist(err) {
 			_, err := os.Create(journalPath)
@@ -122,6 +130,7 @@ func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 			}
 		}
 		trieJournal[chainID] = journalPath
+
 		if chainID != common.BeaconChainID {
 			shardID := byte(chainID)
 			has, err := rawdbv2.HasLatestPivotBlock(db, shardID)
@@ -144,8 +153,6 @@ func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 		}
 	}
 
-	cacheConfig := configCache32GB
-	cacheConfig.triegc = prque.New(nil)
 	cacheConfig.trieJournalPath = trieJournal
 	cacheConfig.fullSyncPivot = pivotBlock
 
@@ -486,8 +493,8 @@ func (bc *BlockChain) Stop() {
 
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 
-			for !bc.cacheConfig.triegc.Empty() {
-				item := bc.cacheConfig.triegc.PopItem().(ShardRootHash)
+			for !bc.cacheConfig.triegc[shardID].Empty() {
+				item := bc.cacheConfig.triegc[shardID].PopItem().(ShardRootHash)
 				consensusTrieDB.Dereference(item.ConsensusStateDBRootHash)
 				transactionTrieDB.Dereference(item.TransactionStateDBRootHash)
 				featureTrieDB.Dereference(item.FeatureStateDBRootHash)
