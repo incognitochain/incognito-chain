@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	REPAIR_STATE_CONSENSUS   = 0
-	REPAIR_STATE_TRANSACTION = 1
-	REPAIR_STATE_FEATURE     = 2
-	REPAIR_STATE_REWARD      = 3
-	REPAIR_STATE_SLASH       = 4
+	SHARD_CONSENSUS_STATEDB   = 0
+	SHARD_TRANSACTION_STATEDB = 1
+	SHARD_FEATURE_STATEDB     = 2
+	SHARD_REWARD_STATEDB      = 3
+	SHARD_SLASH_STATEDB       = 4
 )
 
 func StoreTransactionStateObjectForRepair(
@@ -33,31 +33,31 @@ func StoreTransactionStateObjectForRepair(
 	if err != nil {
 		return [][]int{}, err
 	}
-	indexes[REPAIR_STATE_CONSENSUS] = consensusStateObjectIndex
+	indexes[SHARD_CONSENSUS_STATEDB] = consensusStateObjectIndex
 
 	transactionStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, transactionStateObjects)
 	if err != nil {
 		return [][]int{}, err
 	}
-	indexes[REPAIR_STATE_TRANSACTION] = transactionStateObjectIndex
+	indexes[SHARD_TRANSACTION_STATEDB] = transactionStateObjectIndex
 
 	featureStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, featureStateObjects)
 	if err != nil {
 		return [][]int{}, err
 	}
-	indexes[REPAIR_STATE_FEATURE] = featureStateObjectIndex
+	indexes[SHARD_FEATURE_STATEDB] = featureStateObjectIndex
 
 	rewardStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, rewardStateObjects)
 	if err != nil {
 		return [][]int{}, err
 	}
-	indexes[REPAIR_STATE_REWARD] = rewardStateObjectIndex
+	indexes[SHARD_REWARD_STATEDB] = rewardStateObjectIndex
 
 	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, slashStateObjects)
 	if err != nil {
 		return [][]int{}, err
 	}
-	indexes[REPAIR_STATE_SLASH] = slashStateObjectIndex
+	indexes[SHARD_SLASH_STATEDB] = slashStateObjectIndex
 
 	//if len(transactionStateObjectIndex) > 0 {
 	//	Logger.log.Infof("State Object Store Flatfiles \n", transactionStateObjectIndex)
@@ -94,18 +94,13 @@ func StoreFlatFileStateObjectIndex(db incdb.Batch, hash common.Hash, indexes [][
 	return rawdbv2.StoreFlatFileStateObjectIndex(db, hash, indexes)
 }
 
-func GetStateObjectFromFlatFile(
-	stateDBs []*statedb.StateDB,
-	flatFileManager *flatfile.FlatFileManager,
-	db incdb.Database,
-	hash common.Hash,
-) ([]map[common.Hash]statedb.StateObject, error) {
+func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *flatfile.FlatFileManager, db incdb.Database, hash common.Hash) ([]map[common.Hash]statedb.StateObject, [][]int, error) {
 
 	allStateObjects := make([]map[common.Hash]statedb.StateObject, 5)
 
 	indexes, err := rawdbv2.GetFlatFileStateObjectIndex(db, hash)
 	if err != nil {
-		return allStateObjects, err
+		return allStateObjects, nil, err
 	}
 
 	//if len(indexes[1]) > 0 {
@@ -119,14 +114,14 @@ func GetStateObjectFromFlatFile(
 		for _, index := range indexes[i] {
 			data, err := flatFileManager.Read(index)
 			if err != nil {
-				return allStateObjects, err
+				return allStateObjects, nil, err
 			}
 
 			//Logger.log.Infof("index %+v = %+v", index, data)
 
 			stateObject, err := statedb.ByteDeSerialize(stateDB, data)
 			if err != nil {
-				return allStateObjects, err
+				return allStateObjects, nil, err
 			}
 
 			stateObjects[stateObject.GetHash()] = stateObject
@@ -135,5 +130,5 @@ func GetStateObjectFromFlatFile(
 		allStateObjects[i] = stateObjects
 	}
 
-	return allStateObjects, nil
+	return allStateObjects, indexes, nil
 }

@@ -961,41 +961,40 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 			viewStateDBs[i] = stateDBs[i].Copy()
 		}
 
-		if err := repairStateDB(
+		if err := repairStateDBCommitPerBlock(
 			blockchain,
 			shardID,
 			viewStateDBs,
 			flatFileManager,
 			db,
 			restoreFromBestView,
-			view.GetBlock(),
 		); err != nil {
 			return err
 		}
 
-		view.consensusStateDB = viewStateDBs[REPAIR_STATE_CONSENSUS]
+		view.consensusStateDB = viewStateDBs[SHARD_CONSENSUS_STATEDB]
 		if calculatedRoot, _ := view.consensusStateDB.IntermediateRoot(true); calculatedRoot != view.ConsensusStateDBRootHash {
 			return fmt.Errorf("Repair State Error, expect consensus root hash %+v, got %+v", view.ConsensusStateDBRootHash, calculatedRoot)
 		}
-		view.transactionStateDB = viewStateDBs[REPAIR_STATE_TRANSACTION]
+		view.transactionStateDB = viewStateDBs[SHARD_TRANSACTION_STATEDB]
 		if calculatedRoot, _ := view.transactionStateDB.IntermediateRoot(true); calculatedRoot != view.TransactionStateDBRootHash {
 			return fmt.Errorf("Repair State Error, expect transaction root hash %+v, got %+v", view.TransactionStateDBRootHash, calculatedRoot)
 		}
-		view.featureStateDB = viewStateDBs[REPAIR_STATE_FEATURE]
+		view.featureStateDB = viewStateDBs[SHARD_FEATURE_STATEDB]
 		if calculatedRoot, _ := view.featureStateDB.IntermediateRoot(true); calculatedRoot != view.FeatureStateDBRootHash {
 			return fmt.Errorf("Repair State Error, expect feature root hash %+v, got %+v", view.FeatureStateDBRootHash, calculatedRoot)
 		}
-		view.rewardStateDB = viewStateDBs[REPAIR_STATE_REWARD]
+		view.rewardStateDB = viewStateDBs[SHARD_REWARD_STATEDB]
 		if calculatedRoot, _ := view.rewardStateDB.IntermediateRoot(true); calculatedRoot != view.RewardStateDBRootHash {
 			return fmt.Errorf("Repair State Error, expect reward root hash %+v, got %+v", view.RewardStateDBRootHash, calculatedRoot)
 		}
-		view.slashStateDB = viewStateDBs[REPAIR_STATE_SLASH]
+		view.slashStateDB = viewStateDBs[SHARD_SLASH_STATEDB]
 		if calculatedRoot, _ := view.slashStateDB.IntermediateRoot(true); calculatedRoot != view.SlashStateDBRootHash {
 			return fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot)
 		}
 	}
 
-	Logger.log.Infof("Finish Repair State, Shard %d, time elapsed %f.3 second", shardID, time.Now().Sub(start).Seconds())
+	Logger.log.Infof("Finish Repair State, Shard %d, time elapsed %.3f second", shardID, time.Now().Sub(start).Seconds())
 
 	return nil
 }
@@ -1021,23 +1020,23 @@ func (blockchain *BlockChain) tryRepairStateFromPivotToFinal(
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[REPAIR_STATE_CONSENSUS], err = statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[REPAIR_STATE_TRANSACTION], err = statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[REPAIR_STATE_FEATURE], err = statedb.NewWithPrefixTrie(shardRootHash.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[REPAIR_STATE_REWARD], err = statedb.NewWithPrefixTrie(shardRootHash.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[REPAIR_STATE_SLASH], err = statedb.NewWithPrefixTrie(shardRootHash.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
@@ -1047,14 +1046,13 @@ func (blockchain *BlockChain) tryRepairStateFromPivotToFinal(
 		if err != nil {
 			return stateDBs, err
 		}
-		if err := repairStateDB(
+		if err := repairStateDBCommitPerBlock(
 			blockchain,
 			shardID,
 			stateDBs,
 			flatFileManager,
 			db,
 			restoreFromFinalize,
-			finalBlock,
 		); err != nil {
 			return stateDBs, err
 		}
@@ -1078,7 +1076,7 @@ func (blockchain *BlockChain) restoreOldBlocks(head, pivot common.Hash) ([]commo
 	return blockHashes[:len(blockHashes)-1], nil
 }
 
-func repairStateDB(
+func repairStateDBCommitPerBatch(
 	bc *BlockChain,
 	shardID byte,
 	stateDBs []*statedb.StateDB,
@@ -1097,7 +1095,7 @@ func repairStateDB(
 
 		Logger.log.Debugf("Repair State, restore next block %+v, remain %+v", nextBlock, len(restore))
 
-		allStateObjects, err := GetStateObjectFromFlatFile(
+		allStateObjects, _, err := GetStateObjectFromFlatFile(
 			stateDBs,
 			flatFileManager,
 			db,
@@ -1163,6 +1161,110 @@ func repairStateDB(
 	}
 
 	bc.cacheConfig.fullSyncPivot[shardID] = blockToCommit.GetHeight()
+
+	return nil
+}
+
+func repairStateDBCommitPerBlock(
+	bc *BlockChain,
+	shardID byte,
+	stateDBs []*statedb.StateDB,
+	flatFileManager *flatfile.FlatFileManager,
+	db incdb.Database,
+	restore []common.Hash) error {
+
+	if len(restore) == 0 {
+		return nil
+	}
+
+	for len(restore) != 0 {
+
+		nextBlock := restore[len(restore)-1]
+
+		Logger.log.Debugf("Repair State, Shard %+v, restore next block %+v, remain %+v", shardID, nextBlock, len(restore))
+
+		allStateObjects, flatFileIndexes, err := GetStateObjectFromFlatFile(
+			stateDBs,
+			flatFileManager,
+			db,
+			nextBlock,
+		)
+		if err != nil {
+			return err
+		}
+
+		stateRootHashes := make([]common.Hash, 5)
+
+		for i := range allStateObjects {
+			stateObjects := allStateObjects[i]
+			stateDB := stateDBs[i]
+
+			for objKey, obj := range stateObjects {
+				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
+					return err
+				}
+				if obj.IsDeleted() {
+					stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+				}
+			}
+
+			rootHash, _, err := stateDB.Commit(true)
+			if err != nil {
+				return err
+			}
+			stateRootHashes[i] = rootHash
+		}
+
+		blockToCommit, _, err := bc.GetShardBlockByHash(nextBlock)
+		if err != nil {
+			return err
+		}
+		batch := db.NewBatch()
+
+		if err := commitTrieToDisk(
+			bc,
+			batch,
+			shardID,
+			stateDBs,
+			stateRootHashes,
+			blockToCommit,
+			flatFileManager,
+			flatFileIndexes,
+		); err != nil {
+			return err
+		}
+
+		if err := batch.Write(); err != nil {
+			return err
+		}
+
+		sRH, err := GetShardRootsHashByBlockHash(db, shardID, nextBlock)
+		if err != nil {
+			return err
+		}
+		if calculatedRoot, _ := stateDBs[SHARD_CONSENSUS_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.ConsensusStateDBRootHash {
+			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect consensus root hash %+v, got %+v",
+				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.ConsensusStateDBRootHash, calculatedRoot)
+		}
+		if calculatedRoot, _ := stateDBs[SHARD_TRANSACTION_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.TransactionStateDBRootHash {
+			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect transaction root hash %+v, got %+v",
+				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.TransactionStateDBRootHash, calculatedRoot)
+		}
+		if calculatedRoot, _ := stateDBs[SHARD_FEATURE_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.FeatureStateDBRootHash {
+			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect feature root hash %+v, got %+v",
+				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.FeatureStateDBRootHash, calculatedRoot)
+		}
+		if calculatedRoot, _ := stateDBs[SHARD_REWARD_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.RewardStateDBRootHash {
+			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect reward root hash %+v, got %+v",
+				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.RewardStateDBRootHash, calculatedRoot)
+		}
+		if calculatedRoot, _ := stateDBs[SHARD_SLASH_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.SlashStateDBRootHash {
+			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect slash root hash %+v, got %+v",
+				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.SlashStateDBRootHash, calculatedRoot)
+		}
+
+		restore = restore[:len(restore)-1]
+	}
 
 	return nil
 }

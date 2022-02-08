@@ -811,43 +811,67 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 	flatFileIndexes [][]int,
 ) error {
 
-	var err error
+	stateDBs := make([]*statedb.StateDB, 5)
+	stateDBs[SHARD_CONSENSUS_STATEDB] = shardBestState.consensusStateDB
+	stateDBs[SHARD_TRANSACTION_STATEDB] = shardBestState.transactionStateDB
+	stateDBs[SHARD_FEATURE_STATEDB] = shardBestState.featureStateDB
+	stateDBs[SHARD_REWARD_STATEDB] = shardBestState.rewardStateDB
+	stateDBs[SHARD_SLASH_STATEDB] = shardBestState.slashStateDB
 
-	err = shardBestState.consensusStateDB.Database().TrieDB().Commit(sRH.ConsensusStateDBRootHash, false, nil) // Save data to disk database
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+	stateRootHashes := make([]common.Hash, 5)
+	stateRootHashes[SHARD_CONSENSUS_STATEDB] = sRH.ConsensusStateDBRootHash
+	stateRootHashes[SHARD_TRANSACTION_STATEDB] = sRH.TransactionStateDBRootHash
+	stateRootHashes[SHARD_FEATURE_STATEDB] = sRH.FeatureStateDBRootHash
+	stateRootHashes[SHARD_REWARD_STATEDB] = sRH.RewardStateDBRootHash
+	stateRootHashes[SHARD_SLASH_STATEDB] = sRH.SlashStateDBRootHash
+
+	if err := commitTrieToDisk(
+		bc,
+		batch,
+		shardBestState.ShardID,
+		stateDBs,
+		stateRootHashes,
+		blockToCommit,
+		flatFileManager,
+		flatFileIndexes,
+	); err != nil {
+		return err
 	}
-	err = shardBestState.slashStateDB.Database().TrieDB().Commit(sRH.SlashStateDBRootHash, false, nil)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+
+	Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, blockToCommit.GetHeight(), *blockToCommit.Hash())
+
+	return nil
+}
+
+func commitTrieToDisk(
+	bc *BlockChain,
+	batch incdb.Batch,
+	shardID byte,
+	stateDBs []*statedb.StateDB,
+	stateRootHashes []common.Hash,
+	blockToCommit types.BlockInterface,
+	flatFileManager *flatfile.FlatFileManager,
+	flatFileIndexes [][]int,
+) error {
+
+	for i, stateDB := range stateDBs {
+		err := stateDB.Database().TrieDB().Commit(stateRootHashes[i], false, nil)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
 	}
-	err = shardBestState.transactionStateDB.Database().TrieDB().Commit(sRH.TransactionStateDBRootHash, false, nil)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	err = shardBestState.featureStateDB.Database().TrieDB().Commit(sRH.FeatureStateDBRootHash, false, nil)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	err = shardBestState.rewardStateDB.Database().TrieDB().Commit(sRH.RewardStateDBRootHash, false, nil)
-	if err != nil {
+
+	if err := rawdbv2.StoreLatestPivotBlock(batch, shardID, *blockToCommit.Hash()); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := rawdbv2.StoreLatestPivotBlock(batch, shardBestState.ShardID, *blockToCommit.Hash()); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-
-	bc.cacheConfig.fullSyncPivot[shardBestState.ShardID] = blockToCommit.GetHeight()
+	bc.cacheConfig.fullSyncPivot[shardID] = blockToCommit.GetHeight()
 
 	truncateLastIndex(flatFileManager, flatFileIndexes)
 
-	shardBestState.consensusStateDB.ClearObjects()
-	shardBestState.transactionStateDB.ClearObjects()
-	shardBestState.featureStateDB.ClearObjects()
-	shardBestState.rewardStateDB.ClearObjects()
-	shardBestState.slashStateDB.ClearObjects()
-	Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, blockToCommit.GetHeight(), *blockToCommit.Hash())
+	for _, stateDB := range stateDBs {
+		stateDB.ClearObjects()
+	}
 
 	return nil
 }
@@ -855,8 +879,11 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes [][]int) {
 	// truncate old files
 	lastIndex := -1
-	for _, v := range indexes {
+	for i, v := range indexes {
 		if len(v) != 0 {
+			if i == 0 {
+				lastIndex = v[len(v)-1]
+			}
 			if lastIndex < v[len(v)-1] {
 				lastIndex = v[len(v)-1]
 			}
