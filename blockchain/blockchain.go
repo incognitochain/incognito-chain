@@ -144,7 +144,7 @@ func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 		}
 	}
 
-	cacheConfig := configCache8GB
+	cacheConfig := configCache32GB
 	cacheConfig.triegc = prque.New(nil)
 	cacheConfig.trieJournalPath = trieJournal
 	cacheConfig.fullSyncPivot = pivotBlock
@@ -914,8 +914,9 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 	views []*ShardBestState,
 ) error {
 
+	start := time.Now()
 	Logger.log.Infof("Repairing Shard Best View statedb...")
-	
+
 	db := blockchain.GetShardChainDatabase(shardID)
 	flatFileManager := blockchain.config.FlatFileManager[int(shardID)]
 	simulateMultiViews := multiview.NewMultiView()
@@ -937,7 +938,10 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 	if err != nil {
 		return err
 	}
-	stateDBs, err := blockchain.tryRepairStateFromFinalToPivot(
+
+	Logger.log.Infof("Repair State, Shard %d, Latest Pivot (Commit) Block %d, Latest Final Block %d", shardID, pivotBlock.GetHeight(), finalBlock.GetHeight())
+
+	stateDBs, err := blockchain.tryRepairStateFromPivotToFinal(
 		db, flatFileManager,
 		shardID,
 		pivotBlock, finalBlock,
@@ -948,7 +952,7 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 
 	for _, view := range views {
 
-		restoreFromBestView, err := blockchain.recursiveRetrieveOldBlock(*view.GetHash(), *finalBlock.Hash())
+		restoreFromBestView, err := blockchain.restoreOldBlocks(*view.GetHash(), *finalBlock.Hash())
 		if err != nil {
 			return err
 		}
@@ -958,10 +962,13 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 		}
 
 		if err := repairStateDB(
+			blockchain,
+			shardID,
 			viewStateDBs,
 			flatFileManager,
 			db,
 			restoreFromBestView,
+			view.GetBlock(),
 		); err != nil {
 			return err
 		}
@@ -988,10 +995,12 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 		}
 	}
 
+	Logger.log.Infof("Finish Repair State, Shard %d, time elapsed %f.3 second", shardID, time.Now().Sub(start).Seconds())
+
 	return nil
 }
 
-func (blockchain *BlockChain) tryRepairStateFromFinalToPivot(
+func (blockchain *BlockChain) tryRepairStateFromPivotToFinal(
 	db incdb.Database, flatFileManager *flatfile.FlatFileManager,
 	shardID byte,
 	pivotBlock, finalBlock *types.ShardBlock) ([]*statedb.StateDB, error) {
@@ -1034,15 +1043,18 @@ func (blockchain *BlockChain) tryRepairStateFromFinalToPivot(
 	}
 
 	if isRecursiveRepair {
-		restoreFromFinalize, err := blockchain.recursiveRetrieveOldBlock(*finalBlock.Hash(), *pivotBlock.Hash())
+		restoreFromFinalize, err := blockchain.restoreOldBlocks(*finalBlock.Hash(), *pivotBlock.Hash())
 		if err != nil {
 			return stateDBs, err
 		}
 		if err := repairStateDB(
+			blockchain,
+			shardID,
 			stateDBs,
 			flatFileManager,
 			db,
 			restoreFromFinalize,
+			finalBlock,
 		); err != nil {
 			return stateDBs, err
 		}
@@ -1051,7 +1063,7 @@ func (blockchain *BlockChain) tryRepairStateFromFinalToPivot(
 	return stateDBs, nil
 }
 
-func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash) ([]common.Hash, error) {
+func (blockchain *BlockChain) restoreOldBlocks(head, pivot common.Hash) ([]common.Hash, error) {
 
 	blockHashes := []common.Hash{head}
 
@@ -1067,10 +1079,13 @@ func (blockchain *BlockChain) recursiveRetrieveOldBlock(head, pivot common.Hash)
 }
 
 func repairStateDB(
+	bc *BlockChain,
+	shardID byte,
 	stateDBs []*statedb.StateDB,
 	flatFileManager *flatfile.FlatFileManager,
 	db incdb.Database,
-	restore []common.Hash) error {
+	restore []common.Hash,
+	blockToCommit types.BlockInterface) error {
 
 	if len(restore) == 0 {
 		return nil
@@ -1079,6 +1094,8 @@ func repairStateDB(
 	for len(restore) != 0 {
 
 		nextBlock := restore[len(restore)-1]
+
+		Logger.log.Debugf("Repair State, restore next block %+v, remain %+v", nextBlock, len(restore))
 
 		allStateObjects, err := GetStateObjectFromFlatFile(
 			stateDBs,
@@ -1140,6 +1157,12 @@ func repairStateDB(
 			}
 		}
 	}
+
+	if err := rawdbv2.StoreLatestPivotBlock(db, shardID, *blockToCommit.Hash()); err != nil {
+		return err
+	}
+
+	bc.cacheConfig.fullSyncPivot[shardID] = blockToCommit.GetHeight()
 
 	return nil
 }

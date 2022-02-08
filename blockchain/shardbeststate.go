@@ -834,11 +834,11 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	bc.cacheConfig.fullSyncPivot[shardBestState.ShardID] = blockToCommit.GetHeight()
-
 	if err := rawdbv2.StoreLatestPivotBlock(batch, shardBestState.ShardID, *blockToCommit.Hash()); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	bc.cacheConfig.fullSyncPivot[shardBestState.ShardID] = blockToCommit.GetHeight()
 
 	truncateLastIndex(flatFileManager, flatFileIndexes)
 
@@ -854,7 +854,7 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 
 func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes [][]int) {
 	// truncate old files
-	lastIndex := 0
+	lastIndex := -1
 	for _, v := range indexes {
 		if len(v) != 0 {
 			if lastIndex < v[len(v)-1] {
@@ -862,12 +862,11 @@ func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes [][]in
 			}
 		}
 	}
-	if lastIndex != 0 {
-		//TODO: hung test without truncate
-		//err := flatFileManager.Truncate(lastIndex)
-		//if err != nil {
-		//	Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
-		//}
+	if lastIndex != -1 {
+		err := flatFileManager.Truncate(lastIndex)
+		if err != nil {
+			Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
+		}
 	}
 }
 

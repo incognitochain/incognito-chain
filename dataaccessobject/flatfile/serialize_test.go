@@ -42,6 +42,7 @@ import (
 
 func TestNewFlatFile(t *testing.T) {
 	os.RemoveAll("./tmp")
+	defer os.RemoveAll("./tmp")
 	ff, _ := NewFlatFile("./tmp", 2)
 	var genStr = func(s string) string {
 		res := ""
@@ -80,6 +81,52 @@ func TestNewFlatFile(t *testing.T) {
 			fmt.Println(msg)
 		}
 		time.Sleep(time.Second)
+	}
+
+}
+
+func TestFlatFileManager_Truncate(t *testing.T) {
+	os.RemoveAll("./tmp")
+	ff, _ := NewFlatFile("./tmp", 2)
+	var genStr = func(s string) string {
+		res := ""
+		for i := 0; i < 10; i++ {
+			res += s
+		}
+		return res
+	}
+
+	ff.Append([]byte(genStr("0")))
+	ff.Append([]byte(genStr("1")))
+	ff.Append([]byte(genStr("2")))
+	ff.Append([]byte(genStr("3")))
+	ff.Append([]byte(genStr("4")))
+	ff.Append([]byte(genStr("5")))
+
+	str := []byte(genStr("6"))
+	ff.Append(str)
+
+	ff.Truncate(5)
+
+	str2, err := ff.Read(5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(str2) != genStr("5") {
+		t.Fatalf("expect %+v, got %+v", genStr("5"), string(str2))
+	}
+
+	str2, err = ff.Read(4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(str2) != genStr("4") {
+		t.Fatalf("expect %+v, got %+v", genStr("4"), string(str2))
+	}
+
+	_, err = ff.Read(3)
+	if err == nil {
+		t.Fatal(err)
 	}
 
 }
