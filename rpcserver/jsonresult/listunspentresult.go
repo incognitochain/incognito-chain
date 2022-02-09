@@ -40,7 +40,7 @@ type OutCoin struct {
 	Version              string `json:"Version"`
 	Index                string `json:"Index"`
 	PublicKey            string `json:"PublicKey"`
-	PublicKeyBase64      []byte `json:"PublicKeyBytes,omitempty"`
+	PublicKeyBase64      []byte `json:"PublicKeyBase64,omitempty"`
 	Commitment           string `json:"Commitment"`
 	SNDerivator          string `json:"SNDerivator"`
 	KeyImage             string `json:"KeyImage"`
