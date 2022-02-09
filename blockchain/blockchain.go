@@ -470,6 +470,12 @@ func (bc *BlockChain) Stop() {
 
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 
+			finalizedBlock := shardChain.multiView.GetFinalView().GetBlock()
+			err := rawdbv2.StoreLatestPivotBlock(db, shardID, *finalizedBlock.Hash())
+			if err != nil {
+				Logger.log.Errorf("StoreLatestPivotBlock, Shard %d, height %d, hash %+v, err %+v", shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash(), err)
+			}
+
 			for !bc.cacheConfig.triegc[shardID].Empty() {
 				item := bc.cacheConfig.triegc[shardID].PopItem().(ShardRootHash)
 				consensusTrieDB.Dereference(item.ConsensusStateDBRootHash)
@@ -1165,90 +1171,114 @@ func repairStateDBCommitPerBlock(
 
 		Logger.log.Debugf("Repair State, Shard %+v, restore next block %+v, remain %+v", shardID, nextBlock, len(restore))
 
-		allStateObjects, flatFileIndexes, err := GetStateObjectFromFlatFile(
-			stateDBs,
-			flatFileManager,
-			db,
-			nextBlock,
-		)
+		wantSRH, err := GetShardRootsHashByBlockHash(db, shardID, nextBlock)
 		if err != nil {
 			return err
 		}
 
-		stateRootHashes := make([]common.Hash, 5)
+		if isCorruptState(wantSRH, statedb.NewDatabaseAccessWarper(db)) {
 
-		for i := range allStateObjects {
-			stateObjects := allStateObjects[i]
-			stateDB := stateDBs[i]
-
-			for objKey, obj := range stateObjects {
-				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
-					return err
-				}
-				if obj.IsDeleted() {
-					stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
-				}
-			}
-
-			rootHash, _, err := stateDB.Commit(true)
+			allStateObjects, flatFileIndexes, err := GetStateObjectFromFlatFile(
+				stateDBs,
+				flatFileManager,
+				db,
+				nextBlock,
+			)
 			if err != nil {
 				return err
 			}
-			stateRootHashes[i] = rootHash
-		}
 
-		blockToCommit, _, err := bc.GetShardBlockByHash(nextBlock)
-		if err != nil {
-			return err
-		}
-		batch := db.NewBatch()
+			gotSRH := make([]common.Hash, 5)
 
-		if err := commitTrieToDisk(
-			bc,
-			batch,
-			shardID,
-			stateDBs,
-			stateRootHashes,
-			blockToCommit,
-			flatFileManager,
-			flatFileIndexes,
-		); err != nil {
-			return err
-		}
+			for i := range allStateObjects {
+				stateObjects := allStateObjects[i]
+				stateDB := stateDBs[i]
 
-		if err := batch.Write(); err != nil {
-			return err
-		}
+				for objKey, obj := range stateObjects {
+					if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
+						return err
+					}
+					if obj.IsDeleted() {
+						stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
+					}
+				}
 
-		sRH, err := GetShardRootsHashByBlockHash(db, shardID, nextBlock)
-		if err != nil {
-			return err
-		}
-		if calculatedRoot, _ := stateDBs[SHARD_CONSENSUS_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.ConsensusStateDBRootHash {
-			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect consensus root hash %+v, got %+v",
-				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.ConsensusStateDBRootHash, calculatedRoot)
-		}
-		if calculatedRoot, _ := stateDBs[SHARD_TRANSACTION_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.TransactionStateDBRootHash {
-			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect transaction root hash %+v, got %+v",
-				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.TransactionStateDBRootHash, calculatedRoot)
-		}
-		if calculatedRoot, _ := stateDBs[SHARD_FEATURE_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.FeatureStateDBRootHash {
-			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect feature root hash %+v, got %+v",
-				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.FeatureStateDBRootHash, calculatedRoot)
-		}
-		if calculatedRoot, _ := stateDBs[SHARD_REWARD_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.RewardStateDBRootHash {
-			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect reward root hash %+v, got %+v",
-				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.RewardStateDBRootHash, calculatedRoot)
-		}
-		if calculatedRoot, _ := stateDBs[SHARD_SLASH_STATEDB].IntermediateRoot(true); calculatedRoot != sRH.SlashStateDBRootHash {
-			return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect slash root hash %+v, got %+v",
-				shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), sRH.SlashStateDBRootHash, calculatedRoot)
+				rootHash, _, err := stateDB.Commit(true)
+				if err != nil {
+					return err
+				}
+				gotSRH[i] = rootHash
+			}
+
+			blockToCommit, _, err := bc.GetShardBlockByHash(nextBlock)
+			if err != nil {
+				return err
+			}
+			batch := db.NewBatch()
+
+			if err := commitTrieToDisk(
+				batch,
+				shardID,
+				stateDBs,
+				gotSRH,
+				blockToCommit,
+				flatFileManager,
+				flatFileIndexes,
+			); err != nil {
+				return err
+			}
+
+			if err := batch.Write(); err != nil {
+				return err
+			}
+
+			if calculatedRoot, _ := stateDBs[SHARD_CONSENSUS_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.ConsensusStateDBRootHash {
+				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect consensus root hash %+v, got %+v",
+					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.ConsensusStateDBRootHash, calculatedRoot)
+			}
+			if calculatedRoot, _ := stateDBs[SHARD_TRANSACTION_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.TransactionStateDBRootHash {
+				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect transaction root hash %+v, got %+v",
+					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.TransactionStateDBRootHash, calculatedRoot)
+			}
+			if calculatedRoot, _ := stateDBs[SHARD_FEATURE_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.FeatureStateDBRootHash {
+				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect feature root hash %+v, got %+v",
+					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.FeatureStateDBRootHash, calculatedRoot)
+			}
+			if calculatedRoot, _ := stateDBs[SHARD_REWARD_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.RewardStateDBRootHash {
+				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect reward root hash %+v, got %+v",
+					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.RewardStateDBRootHash, calculatedRoot)
+			}
+			if calculatedRoot, _ := stateDBs[SHARD_SLASH_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.SlashStateDBRootHash {
+				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect slash root hash %+v, got %+v",
+					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.SlashStateDBRootHash, calculatedRoot)
+			}
 		}
 
 		restore = restore[:len(restore)-1]
 	}
 
 	return nil
+}
+
+func isCorruptState(sRH *ShardRootHash, db statedb.DatabaseAccessWarper) bool {
+
+	if _, err := statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, db); err != nil {
+		return true
+	}
+	if _, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, db); err != nil {
+		return true
+	}
+	if _, err := statedb.NewWithPrefixTrie(sRH.FeatureStateDBRootHash, db); err != nil {
+		return true
+	}
+	if _, err := statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, db); err != nil {
+		return true
+	}
+	if _, err := statedb.NewWithPrefixTrie(sRH.SlashStateDBRootHash, db); err != nil {
+		return true
+	}
+
+	return false
 }
 
 func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error) {
