@@ -402,35 +402,37 @@ func (blockService BlockService) GetPdexv3State(
 func (blockService BlockService) GetPdexv3BlockLPReward(
 	pairID string, beaconHeight uint64, stateDB, prevStateDB *statedb.StateDB,
 ) (map[string]uint64, error) {
-	// get accumulated reward to the beacon height
+	// get accumulated trading fee to the beacon height
 	curLPFeesPerShare, shareAmount, err := getLPFeesPerShare(pairID, beaconHeight, stateDB)
 	if err != nil {
 		return nil, err
 	}
-	// get accumulated reward to the previous block of querying beacon height
+	// get accumulated trading fee to the previous block of querying beacon height
 	oldLPFeesPerShare, _, err := getLPFeesPerShare(pairID, beaconHeight-1, prevStateDB)
 	if err != nil {
 		oldLPFeesPerShare = map[common.Hash]*big.Int{}
 	}
 
+	// get accumulated liq mining reward to the beacon height
+	curLmRewardsPerShare, unlockedShareAmount, err := getLmRewardsPerShare(pairID, beaconHeight, stateDB)
+	if err != nil {
+		return nil, err
+	}
+	// get accumulated liq mining reward to the previous block of querying beacon height
+	oldLmRewardsPerShare, _, err := getLmRewardsPerShare(pairID, beaconHeight-1, prevStateDB)
+	if err != nil {
+		oldLmRewardsPerShare = map[common.Hash]*big.Int{}
+	}
+
 	result := map[string]uint64{}
 
-	for tokenID := range curLPFeesPerShare {
-		oldFees, isExisted := oldLPFeesPerShare[tokenID]
-		if !isExisted {
-			oldFees = big.NewInt(0)
-		}
-		newFees := curLPFeesPerShare[tokenID]
-
-		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
-		reward = new(big.Int).Div(reward, pdex.BaseLPFeesPerShare)
-
-		if !reward.IsUint64() {
-			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
-		}
-		if reward.Uint64() > 0 {
-			result[tokenID.String()] = reward.Uint64()
-		}
+	result, err = addPoolRewards(result, curLPFeesPerShare, oldLPFeesPerShare, shareAmount)
+	if err != nil {
+		return nil, err
+	}
+	result, err = addPoolRewards(result, curLmRewardsPerShare, oldLmRewardsPerShare, unlockedShareAmount)
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -693,6 +695,34 @@ func getPdexv3PoolPairOrderReward(
 	return res, nil
 }
 
+func addPoolRewards(
+	result map[string]uint64,
+	curRewardsPerShare map[common.Hash]*big.Int, oldRewardsPerShare map[common.Hash]*big.Int, shareAmount uint64,
+) (map[string]uint64, error) {
+	for tokenID := range curRewardsPerShare {
+		oldFees, isExisted := oldRewardsPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees := curRewardsPerShare[tokenID]
+
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
+		reward = new(big.Int).Div(reward, pdex.BaseLPFeesPerShare)
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		if reward.Uint64() > 0 {
+			if result[tokenID.String()] == 0 {
+				result[tokenID.String()] = reward.Uint64()
+			} else {
+				result[tokenID.String()] += reward.Uint64()
+			}
+		}
+	}
+	return result, nil
+}
+
 func getLPFeesPerShare(
 	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
 ) (map[common.Hash]*big.Int, uint64, error) {
@@ -715,6 +745,30 @@ func getLPFeesPerShare(
 	pairState := pair.State()
 
 	return pair.LpFeesPerShare(), pairState.ShareAmount(), nil
+}
+
+func getLmRewardsPerShare(
+	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
+) (map[common.Hash]*big.Int, uint64, error) {
+	// get accumulated reward to the beacon height
+	pDexv3State, err := pdex.InitStateFromDB(stateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if _, ok := poolPairs[pairID]; !ok {
+		return nil, 0, fmt.Errorf("Pool pair %s not found", pairID)
+	}
+	pair := poolPairs[pairID]
+	pairState := pair.State()
+
+	return pair.LmRewardsPerShare(), pairState.ShareAmount() - pairState.LmLockedShareAmount(), nil
 }
 
 func getStakingRewardsPerShare(
