@@ -1895,9 +1895,13 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 						shares:            map[string]*Share{},
 						orderRewards: map[string]*OrderReward{
 							nftID: &OrderReward{
-								uncollectedRewards: Reward{
-									*token0ID: 150,
-									*token1ID: 250,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									*token0ID: {
+										amount: 150,
+									},
+									*token1ID: {
+										amount: 250,
+									},
 								},
 							},
 						},
@@ -1967,9 +1971,13 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 						},
 						orderRewards: map[string]*OrderReward{
 							nftID: &OrderReward{
-								uncollectedRewards: Reward{
-									*token0ID: 150,
-									*token1ID: 250,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									*token0ID: {
+										amount: 150,
+									},
+									*token1ID: {
+										amount: 250,
+									},
 								},
 							},
 						},
@@ -3164,13 +3172,17 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 					},
 					orderRewards: map[string]*OrderReward{
 						nftID: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 162500,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 162500,
+								},
 							},
 						},
 						nftID1: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 137500,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 137500,
+								},
 							},
 						},
 					},
@@ -3207,13 +3219,17 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						},
 						orderRewards: map[string]*OrderReward{
 							nftID: {
-								uncollectedRewards: map[common.Hash]uint64{
-									common.PRVCoinID: 162500,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									common.PRVCoinID: {
+										amount: 162500,
+									},
 								},
 							},
 							nftID1: {
-								uncollectedRewards: map[common.Hash]uint64{
-									common.PRVCoinID: 137500,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									common.PRVCoinID: {
+										amount: 137500,
+									},
 								},
 							},
 						},
@@ -3262,13 +3278,17 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 					},
 					orderRewards: map[string]*OrderReward{
 						nftID: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 212500, // 162500 + 50000
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 212500, // 162500 + 50000
+								},
 							},
 						},
 						nftID1: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 237500, // 137500 + 100000
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PDEXCoinID: {
+									amount: 237500, // 137500 + 100000
+								},
 							},
 						},
 					},

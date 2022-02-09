@@ -291,6 +291,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			*token0ID: otaReceiver0,
 			*token1ID: otaReceiver1,
 		},
+		map[common.Hash]privacy.OTAReceiver{
+			*token0ID: otaReceiver0,
+		},
 		metadataPdexv3.AccessOption{NftID: nftHash1},
 		metadataCommon.Pdexv3AddOrderRequestMeta,
 	)
@@ -323,6 +326,9 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 		map[common.Hash]privacy.OTAReceiver{
 			*token0ID: otaReceiver0,
 			*token1ID: otaReceiver1,
+		},
+		map[common.Hash]privacy.OTAReceiver{
+			*token0ID: otaReceiver0,
 		},
 		metadataPdexv3.AccessOption{NftID: nftHash1},
 		metadataCommon.Pdexv3AddOrderRequestMeta,
@@ -2557,14 +2563,20 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						shares:            map[string]*Share{},
 						orderRewards: map[string]*OrderReward{
 							nftID: {
-								uncollectedRewards: Reward{
-									*token0ID: 100,
-									*token1ID: 0,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									*token0ID: {
+										amount: 100,
+									},
+									*token1ID: {
+										amount: 0,
+									},
 								},
 							},
 							nftID1: {
-								uncollectedRewards: Reward{
-									common.PRVCoinID: 50,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									common.PRVCoinID: {
+										amount: 50,
+									},
 								},
 							},
 						},
@@ -2612,9 +2624,13 @@ func Test_stateV2_GetDiff(t *testing.T) {
 							shares:          map[string]*Share{},
 							orderRewards: map[string]*OrderReward{
 								nftID: {
-									uncollectedRewards: Reward{
-										*token0ID: 100,
-										*token1ID: 200,
+									uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+										*token0ID: {
+											amount: 100,
+										},
+										*token1ID: {
+											amount: 200,
+										},
 									},
 								},
 							},
@@ -2667,14 +2683,20 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						shares:            map[string]*Share{},
 						orderRewards: map[string]*OrderReward{
 							nftID: {
-								uncollectedRewards: Reward{
-									*token0ID: 100,
-									*token1ID: 0,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									*token0ID: {
+										amount: 100,
+									},
+									*token1ID: {
+										amount: 0,
+									},
 								},
 							},
 							nftID1: {
-								uncollectedRewards: Reward{
-									common.PRVCoinID: 50,
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+									common.PRVCoinID: {
+										amount: 50,
+									},
 								},
 							},
 						},

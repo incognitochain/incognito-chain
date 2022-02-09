@@ -1317,7 +1317,9 @@ func Test_stateProcessorV2_feeTrackingAddLiquidity(t *testing.T) {
 	matchContributionMetaData := metadataPdexv3.NewAddLiquidityRequestWithValue(
 		"", "pair_hash",
 		validOTAReceiver0,
-		token1ID.String(), nftID, 400, 20000,
+		token1ID.String(), 400, 20000,
+		metadataPdexv3.NewAccessOptionWithValue(nil, nftHash, nil),
+		nil,
 	)
 	assert.Nil(t, err)
 	matchContributionTx := &metadataMocks.Transaction{}
@@ -1330,6 +1332,7 @@ func Test_stateProcessorV2_feeTrackingAddLiquidity(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
 			*token1ID, *secondTxHash, *nftHash, 400, 20000, 1,
+			nil, nil,
 		),
 		"pair_hash")
 	matchContributionInst := instruction.NewMatchAddLiquidityWithValue(*matchContributionState, poolPairID)
@@ -1376,6 +1379,7 @@ func Test_stateProcessorV2_feeTrackingAddLiquidity(t *testing.T) {
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0,
 						*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+						nil, nil,
 					),
 				},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
@@ -1391,6 +1395,7 @@ func Test_stateProcessorV2_feeTrackingAddLiquidity(t *testing.T) {
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0,
 					*token0ID, *firstTxHash, *nftHash, 100, 20000, 1,
+					nil, nil,
 				),
 			},
 			want2: map[string]*PoolPairState{
@@ -2146,13 +2151,17 @@ func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
 					orderbook: Orderbook{[]*Order{}},
 					orderRewards: map[string]*OrderReward{
 						nftID: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 112500,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 112500,
+								},
 							},
 						},
 						nftID1: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 37500,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 37500,
+								},
 							},
 						},
 					},
@@ -2223,13 +2232,17 @@ func Test_stateProcessorV2_distributeMiningOrderReward(t *testing.T) {
 					orderbook: Orderbook{[]*Order{}},
 					orderRewards: map[string]*OrderReward{
 						nftID: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 162500,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 162500,
+								},
 							},
 						},
 						nftID1: {
-							uncollectedRewards: map[common.Hash]uint64{
-								common.PRVCoinID: 137500,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 137500,
+								},
 							},
 						},
 					},

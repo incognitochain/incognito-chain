@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1097,8 +1098,10 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				},
 				orderRewards: map[string]*OrderReward{
 					common.PRVIDStr: {
-						uncollectedRewards: Reward{
-							common.PRVCoinID: 300,
+						uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+							common.PRVCoinID: {
+								amount: 100,
+							},
 						},
 					},
 				},
@@ -1143,13 +1146,17 @@ func TestPoolPairState_getDiff(t *testing.T) {
 					},
 					orderRewards: map[string]*OrderReward{
 						common.PRVIDStr: {
-							uncollectedRewards: Reward{
-								common.PRVCoinID: 100,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PRVCoinID: {
+									amount: 100,
+								},
 							},
 						},
 						common.PDEXIDStr: {
-							uncollectedRewards: Reward{
-								common.PDEXCoinID: 100,
+							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+								common.PDEXCoinID: {
+									amount: 100,
+								},
 							},
 						},
 					},
@@ -1266,7 +1273,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	err = statedb.StorePdexv3PoolPairOrderReward(
 		sDB, "id",
 		statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-			common.PDEXIDStr, nil,
+			common.PDEXIDStr, DefaultWithdrawnOrderReward, nil,
 		),
 	)
 	assert.Nil(t, err)
@@ -1274,7 +1281,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	err = statedb.StorePdexv3PoolPairOrderRewardDetail(
 		sDB, "id", common.PDEXIDStr,
 		statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
-			common.PRVCoinID, 200,
+			common.PRVCoinID, 200, utils.EmptyString,
 		),
 	)
 	assert.Nil(t, err)
@@ -1282,7 +1289,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	err = statedb.StorePdexv3PoolPairOrderRewardDetail(
 		sDB, "id", common.PDEXIDStr,
 		statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
-			common.PDEXCoinID, 200,
+			common.PDEXCoinID, 200, utils.EmptyString,
 		),
 	)
 	assert.Nil(t, err)
@@ -1354,13 +1361,17 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 				},
 				orderRewards: map[string]*OrderReward{
 					common.PRVIDStr: {
-						uncollectedRewards: Reward{
-							common.PRVCoinID: 300,
+						uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+							common.PRVCoinID: {
+								amount: 300,
+							},
 						},
 					},
 					token0ID.String(): {
-						uncollectedRewards: Reward{
-							*token0ID: 300,
+						uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+							*token0ID: {
+								amount: 300,
+							},
 						},
 					},
 				},
