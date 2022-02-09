@@ -746,9 +746,14 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 				transactionTrieDB.Cap(bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize)
 			}
 
+			pivotBlock, err := bc.GetPivotBlock(shardID)
+			if err != nil {
+				return err
+			}
+
 			if isFinalizedBlock &&
-				current > bc.cacheConfig.fullSyncPivot[shardID] &&
-				current-bc.cacheConfig.fullSyncPivot[shardID] >= bc.cacheConfig.blockTriesInMemory+1 {
+				current > pivotBlock.GetHeight() &&
+				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTriesInMemory+1 {
 				if err := shardBestState.fullSyncCommitTrieToDisk(
 					bc, batch,
 					newFinalBlock,
@@ -865,8 +870,6 @@ func commitTrieToDisk(
 	if err := rawdbv2.StoreLatestPivotBlock(batch, shardID, *blockToCommit.Hash()); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
-	bc.cacheConfig.fullSyncPivot[shardID] = blockToCommit.GetHeight()
 
 	truncateLastIndex(flatFileManager, flatFileIndexes)
 

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -131,4 +132,21 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 	}
 
 	return allStateObjects, indexes, nil
+}
+
+func (bc *BlockChain) GetPivotBlock(shardID byte) (*types.ShardBlock, error) {
+
+	db := bc.GetShardChainDatabase(shardID)
+
+	hash, err := rawdbv2.GetLatestPivotBlock(db, shardID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, _, err := bc.GetShardBlockByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

@@ -90,7 +90,6 @@ type CacheConfig struct {
 	trieJournalPath      map[int]string
 	trieJournalCacheSize int
 	blockTriesInMemory   uint64
-	fullSyncPivot        map[byte]uint64
 	trieNodeLimit        common.StorageSize
 	trieImgsLimit        common.StorageSize
 }
@@ -114,7 +113,6 @@ func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 	cacheConfig := configCache32GB
 	cacheConfig.triegc = make(map[byte]*prque.Prque)
 	trieJournal := make(map[int]string)
-	pivotBlock := make(map[byte]uint64)
 
 	for i := 0; i < common.MaxShardNumber; i++ {
 		cacheConfig.triegc[byte(i)] = prque.New(nil)
@@ -131,30 +129,9 @@ func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
 		}
 		trieJournal[chainID] = journalPath
 
-		if chainID != common.BeaconChainID {
-			shardID := byte(chainID)
-			has, err := rawdbv2.HasLatestPivotBlock(db, shardID)
-			if err != nil {
-				return CacheConfig{}, err
-			}
-			if !has {
-				pivotBlock[shardID] = 0
-			} else {
-				pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db, shardID)
-				if err != nil {
-					return CacheConfig{}, err
-				}
-				_, pivotBlockHeight, err := bc.GetShardBlockByHashWithShardID(pivotBlockHash, shardID)
-				if err != nil {
-					return CacheConfig{}, err
-				}
-				pivotBlock[shardID] = pivotBlockHeight
-			}
-		}
 	}
 
 	cacheConfig.trieJournalPath = trieJournal
-	cacheConfig.fullSyncPivot = pivotBlock
 
 	return cacheConfig, nil
 }
@@ -1166,8 +1143,6 @@ func repairStateDBCommitPerBatch(
 	if err := rawdbv2.StoreLatestPivotBlock(db, shardID, *blockToCommit.Hash()); err != nil {
 		return err
 	}
-
-	bc.cacheConfig.fullSyncPivot[shardID] = blockToCommit.GetHeight()
 
 	return nil
 }
