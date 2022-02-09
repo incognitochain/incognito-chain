@@ -544,7 +544,7 @@ func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []inte
 				if tmpCoin.GetTxRandom() != nil {
 					tmp.TxRandom = base58.Base58Check{}.Encode(tmpCoin.GetTxRandom().Bytes(), common.ZeroByte)
 				}
-				tmp.PublicKeyBytes = tmpCoin.GetPublicKey().ToBytesS()
+				tmp.PublicKeyBase64 = tmpCoin.GetPublicKey().ToBytesS()
 			}
 
 			item = append(item, tmp)

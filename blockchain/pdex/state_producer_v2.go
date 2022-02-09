@@ -1116,9 +1116,6 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if isExistedOrderReward {
 			if order.withdrawnStatus != WithdrawnOrderReward && order.withdrawnStatus != WaitToWithdrawOrderReward {
 				Logger.log.Infof("Can not withdraw order reward actively with accessOTA")
-				if shouldMintAccessCoin {
-					instructions = append(instructions, mintAccessCoinInst)
-				}
 				instructions = append(instructions, rejectInst...)
 				continue
 			}
