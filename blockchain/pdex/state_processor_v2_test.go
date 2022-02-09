@@ -743,10 +743,11 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 		stateProcessorBase stateProcessorBase
 	}
 	type args struct {
-		stateDB      *statedb.StateDB
-		inst         []string
-		poolPairs    map[string]*PoolPairState
-		beaconHeight uint64
+		stateDB        *statedb.StateDB
+		inst           []string
+		poolPairs      map[string]*PoolPairState
+		beaconHeight   uint64
+		lmLockedBlocks uint64
 	}
 	tests := []struct {
 		name    string
@@ -1002,7 +1003,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 				withdrawTxCache:    tt.fields.withdrawTxCache,
 				stateProcessorBase: tt.fields.stateProcessorBase,
 			}
-			got, got1, err := sp.acceptWithdrawLiquidity(tt.args.stateDB, tt.args.inst, tt.args.poolPairs, tt.args.beaconHeight)
+			got, got1, err := sp.acceptWithdrawLiquidity(tt.args.stateDB, tt.args.inst, tt.args.poolPairs, tt.args.beaconHeight, tt.args.lmLockedBlocks)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.acceptWithdrawLiquidity() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1512,10 +1513,11 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 		stateProcessorBase stateProcessorBase
 	}
 	type args struct {
-		stateDB      *statedb.StateDB
-		inst         [][]string
-		poolPairs    map[string]*PoolPairState
-		beaconHeight uint64
+		stateDB        *statedb.StateDB
+		inst           [][]string
+		poolPairs      map[string]*PoolPairState
+		beaconHeight   uint64
+		lmLockedBlocks uint64
 	}
 	tests := []struct {
 		name    string
@@ -1896,7 +1898,7 @@ func Test_stateProcessorV2_feeTrackingWithdrawLiquidity(t *testing.T) {
 			poolPairs := tt.args.poolPairs
 			for _, inst := range tt.args.inst {
 				sp.withdrawTxCache = map[string]uint64{}
-				poolPairs, _, err = sp.acceptWithdrawLiquidity(tt.args.stateDB, inst, poolPairs, tt.args.beaconHeight)
+				poolPairs, _, err = sp.acceptWithdrawLiquidity(tt.args.stateDB, inst, poolPairs, tt.args.beaconHeight, tt.args.lmLockedBlocks)
 				if err != nil {
 					if !tt.wantErr {
 						t.Errorf("stateProcessorV2.acceptWithdrawLiquidity() error = %v", err)

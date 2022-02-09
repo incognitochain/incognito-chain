@@ -1087,10 +1087,11 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 		stateProducerBase stateProducerBase
 	}
 	type args struct {
-		txs          []metadata.Transaction
-		poolPairs    map[string]*PoolPairState
-		nftIDs       map[string]uint64
-		beaconHeight uint64
+		txs            []metadata.Transaction
+		poolPairs      map[string]*PoolPairState
+		nftIDs         map[string]uint64
+		beaconHeight   uint64
+		lmLockedBlocks uint64
 	}
 	tests := []struct {
 		name    string
@@ -1481,7 +1482,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 			sp := &stateProducerV2{
 				stateProducerBase: tt.fields.stateProducerBase,
 			}
-			got, got1, err := sp.withdrawLiquidity(tt.args.txs, tt.args.poolPairs, tt.args.nftIDs, tt.args.beaconHeight)
+			got, got1, err := sp.withdrawLiquidity(tt.args.txs, tt.args.poolPairs, tt.args.nftIDs, tt.args.beaconHeight, tt.args.lmLockedBlocks)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProducerV2.withdrawLiquidity() error = %v, wantErr %v", err, tt.wantErr)
 				return
