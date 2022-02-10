@@ -71,6 +71,26 @@ func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, close
 	return arr, nil
 }
 
+func (httpServer *HttpServer) handleGetAutoEnableFeatureConfig(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return config.Param().AutoEnableFeature, nil
+}
+
+func (httpServer *HttpServer) handleSetAutoEnableFeatureConfig(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Config().Network() == config.MainnetNetwork {
+		return nil, nil
+	}
+	arrayParams := common.InterfaceSlice(params)
+	jsonStr := arrayParams[0].(string)
+
+	v := map[string]config.AutoEnableFeature{}
+	err := json.Unmarshal([]byte(jsonStr), &v)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	config.Param().AutoEnableFeature = v
+	return nil, nil
+}
+
 func (httpServer *HttpServer) handleSendFinishSync(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	miningKeyStr := arrayParams[0].(string)
