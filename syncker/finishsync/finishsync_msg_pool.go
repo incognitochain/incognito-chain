@@ -135,7 +135,7 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string, currentB
 
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	fmt.Println("debug 1", allSyncPool, currentBeaconHeight, f.FinishedSyncValidators, f.ReceiveTime)
+	//fmt.Println("debug 1", allSyncPool, currentBeaconHeight, f.FinishedSyncValidators, f.ReceiveTime)
 	res := []*instruction.FinishSyncInstruction{}
 	keys := []int{}
 	for i := 0; i < len(f.FinishedSyncValidators); i++ {
@@ -157,7 +157,7 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string, currentB
 			has := finishSyncMsgValidators[validator]
 			receiveTime := f.ReceiveTime[validator]
 			//receive msg should be from 1 epoch ago (prevent random number control)
-			fmt.Println("debug 2", validator, has, receiveTime, currentBeaconHeight-config.Param().EpochParam.NumberOfBlockInEpoch)
+			//fmt.Println("debug 2", validator, has, receiveTime, currentBeaconHeight-config.Param().EpochParam.NumberOfBlockInEpoch)
 			if has && receiveTime < currentBeaconHeight-config.Param().EpochParam.NumberOfBlockInEpoch {
 				committeePublicKeys = append(committeePublicKeys, validator)
 			}
@@ -191,7 +191,8 @@ func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
 				}
 			}
 			if !has {
-				fmt.Println("debug detete", validator)
+				//fmt.Println("debug detete", validator)
+				//Logger.Info(errors.New("debug detete"))
 				delete(f.FinishedSyncValidators[shardID], validator)
 				delete(f.ReceiveTime, validator)
 			}
