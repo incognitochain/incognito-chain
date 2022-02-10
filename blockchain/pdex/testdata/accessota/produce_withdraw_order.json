@@ -17,7 +17,6 @@
     },
     "expected": {
     	"instructions": [
-            ["309", "289", "{\"OtaReceiver\":\"15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub\",\"ShardID\":0,\"TxReqID\":\"442aab9264ea6db7fbedb9ed8cbc23e4270722d3865a6585af230343968bf140\"}"],
             ["289", "1", "0", "442aab9264ea6db7fbedb9ed8cbc23e4270722d3865a6585af230343968bf140", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa2\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"Receiver\":\"15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R\",\"Amount\":2000,\"AccessOTA\":\"XBN6OuSTzqDnmzsINPnQbP2UWmSrQmnDzyC6RzXEDu0=\"}}"]
         ]
     }
