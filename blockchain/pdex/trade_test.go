@@ -182,36 +182,6 @@ func TestProcessTrade(t *testing.T) {
 	}
 }
 
-func TestProcessOrderReward(t *testing.T) {
-	setTestTradeConfig()
-	type TestData struct {
-		Instructions [][]string `json:"instructions"`
-	}
-
-	type TestResult StateFormatter
-
-	var testcases []Testcase
-	testcases = append(testcases, processTradeOrderRewardTestcases...)
-	for _, testcase := range testcases {
-		t.Run(testcase.Name, func(t *testing.T) {
-			var testdata TestData
-			err := json.Unmarshal(testcase.Data, &testdata)
-			NoError(t, err)
-			var expected TestResult
-			err = json.Unmarshal(testcase.Expected, &expected)
-			NoError(t, err)
-			testState := mustReadState("test_state_order_reward.json", "params.json")
-
-			env := skipToProcess(testdata.Instructions)
-			err = testState.Process(env)
-			NoError(t, err)
-			result := (&StateFormatter{}).FromState(testState)
-
-			EqualValues(t, expected, *result)
-		})
-	}
-}
-
 func TestBuildResponseTrade(t *testing.T) {
 	setTestTradeConfig()
 	type TestData struct {
@@ -404,9 +374,59 @@ type Testcase struct {
 type PoolFormatter struct {
 	State        *rawdbv2.Pdexv3PoolPair       `json:"state"`
 	Orderbook    Orderbook                     `json:"orderbook"`
-	OrderRewards map[string]*OrderReward       `json:"orderrewards"`
+	OrderRewards map[string]*OrderRewardFormatter       `json:"orderrewards"`
 	MakingVolume map[common.Hash]*MakingVolume `json:"makingvolume"`
 }
+
+type OrderRewardFormatter struct {
+	UncollectedRewards map[common.Hash]*OrderRewardDetailFormatter
+	WithdrawnStatus    byte
+	TxReqID            *common.Hash
+}
+
+func (f *OrderRewardFormatter) To() *OrderReward {
+	r := &OrderReward{
+		uncollectedRewards: make(map[common.Hash]*OrderRewardDetail),
+		withdrawnStatus: f.WithdrawnStatus,
+		txReqID: f.TxReqID,
+	}
+	for k, v := range f.UncollectedRewards {
+		r.uncollectedRewards[k] = v.To()
+	}
+	return r
+}
+
+func (f *OrderRewardFormatter) From(r *OrderReward) *OrderRewardFormatter {
+	*f = OrderRewardFormatter{
+		UncollectedRewards: make(map[common.Hash]*OrderRewardDetailFormatter),
+		WithdrawnStatus: r.withdrawnStatus,
+		TxReqID: r.txReqID,
+	}
+	for k, v := range r.uncollectedRewards {
+		f.UncollectedRewards[k] = (&OrderRewardDetailFormatter{}).From(v)
+	}
+	return f
+}
+
+type OrderRewardDetailFormatter struct {
+	Receiver privacy.OTAReceiver
+	Amount   uint64
+}
+
+func (f *OrderRewardDetailFormatter) To() *OrderRewardDetail {
+	return &OrderRewardDetail{
+		receiver: f.Receiver,
+		amount: f.Amount,
+	}
+}
+
+func (f *OrderRewardDetailFormatter) From(r *OrderRewardDetail) *OrderRewardDetailFormatter {
+	return &OrderRewardDetailFormatter{
+		Receiver: r.receiver,
+		Amount: r.amount,
+	}
+}
+
 
 type StateFormatter struct {
 	PoolPairs map[string]PoolFormatter `json:"poolPairs"`
@@ -419,13 +439,17 @@ func (sf *StateFormatter) State(params *Params) *stateV2 {
 		nil, make(map[string]uint64),
 	)
 	for k, v := range sf.PoolPairs {
-		s.poolPairs[k] = &PoolPairState{
+		temp := &PoolPairState{
 			state:          *v.State,
 			orderbook:      v.Orderbook,
-			orderRewards:   v.OrderRewards,
+			orderRewards:   make(map[string]*OrderReward),
 			makingVolume:   v.MakingVolume,
 			lpFeesPerShare: map[common.Hash]*big.Int{},
 		}
+		for k1, v1 := range v.OrderRewards {
+			temp.orderRewards[k1] = v1.To()
+		}
+		s.poolPairs[k] = temp
 	}
 	return s
 }
@@ -433,12 +457,16 @@ func (sf *StateFormatter) State(params *Params) *stateV2 {
 func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 	sf.PoolPairs = make(map[string]PoolFormatter)
 	for k, v := range s.poolPairs {
-		sf.PoolPairs[k] = PoolFormatter{
+		temp := PoolFormatter{
 			State:        &v.state,
 			Orderbook:    v.orderbook,
-			OrderRewards: v.orderRewards,
+			OrderRewards: make(map[string]*OrderRewardFormatter),
 			MakingVolume: v.makingVolume,
 		}
+		for k1, v1 := range v.orderRewards {
+				temp.OrderRewards[k1] = (&OrderRewardFormatter{}).From(v1)
+		}
+		sf.PoolPairs[k] = temp
 	}
 	return sf
 }
@@ -489,7 +517,6 @@ var produceTradeTestcases = mustReadTestcases("produce_trade.json")
 var produceSameBlockTradesTestcases = mustReadTestcases("produce_same_block_trades.json")
 var produceTradeWithFeeTestCases = mustReadTestcases("produce_trade_with_fee.json")
 var processTradeTestcases = mustReadTestcases("process_trade.json")
-var processTradeOrderRewardTestcases = mustReadTestcases("process_trade_order_reward.json")
 var buildResponseTradeTestcases = mustReadTestcases("response_trade.json")
 var prvRateTestcases = mustReadTestcases("prv_rate.json")
 var minPRVReserveTestcases = mustReadTestcases("min_prv_reserve.json")

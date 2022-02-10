@@ -247,3 +247,32 @@ func TestProcessOrder(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessOrderReward(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	type TestResult StateFormatter
+
+	var testcases []Testcase = mustReadTestcases("process_trade_order_reward.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state_order_reward.json", "params.json")
+
+			env := skipToProcess(testdata.Instructions)
+			err = testState.Process(env)
+			NoError(t, err)
+			result := (*TestResult)((&StateFormatter{}).FromState(testState))
+
+			Equal(t, expected, *result)
+		})
+	}
+}
