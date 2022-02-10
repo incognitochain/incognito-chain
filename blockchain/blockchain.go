@@ -108,9 +108,9 @@ func NewFlatFileConfig(config *Config) {
 	}
 }
 
-func NewCacheConfig(bc *BlockChain, config *Config) (CacheConfig, error) {
+func NewCacheConfig(config *Config) (CacheConfig, error) {
 
-	cacheConfig := configCache32GB
+	cacheConfig := configCache16GB
 	cacheConfig.triegc = make(map[byte]*prque.Prque)
 	trieJournal := make(map[int]string)
 
@@ -159,7 +159,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
-	cacheConfig, err := NewCacheConfig(blockchain, config)
+	cacheConfig, err := NewCacheConfig(config)
 	if err != nil {
 		return err
 	}
