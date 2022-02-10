@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type MintNftStatus struct {
@@ -179,4 +180,29 @@ func SplitOrderRewardLiquidityMining(
 	}
 
 	return orderRewards
+}
+
+type NFTAssetTagsCache map[string]*common.Hash
+
+func (m *NFTAssetTagsCache) FromIDs(nftIDs map[string]uint64) (*NFTAssetTagsCache, error) {
+	var result NFTAssetTagsCache
+	if m == nil {
+		result = make(map[string]*common.Hash)
+	} else {
+		result = *m
+	}
+	for idStr, _ := range nftIDs {
+		tokenID, err := common.Hash{}.NewHashFromStr(idStr)
+		if err != nil {
+			return nil, err
+		}
+		assetTag := privacy.HashToPoint(tokenID[:])
+		result[assetTag.String()] = tokenID
+	}
+	return &result, nil
+}
+
+func (m *NFTAssetTagsCache) Add(id common.Hash) {
+	assetTag := privacy.HashToPoint(id[:])
+	(*m)[assetTag.String()] = &id
 }

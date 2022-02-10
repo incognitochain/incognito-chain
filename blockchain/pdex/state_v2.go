@@ -14,7 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
@@ -29,6 +28,9 @@ type stateV2 struct {
 	nftIDs                      map[string]uint64
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
+
+	// cached state
+	nftAssetTags 				*v2utils.NFTAssetTagsCache
 }
 
 func (s *stateV2) readConfig() {
@@ -139,7 +141,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.poolPairs,
 			)
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
-			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
+			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs, s.nftAssetTags)
 			if err != nil {
 				continue
 			}
@@ -458,7 +460,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	mintNftInstructions := [][]string{}
 	burningPRVAmount := uint64(0)
 	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
-		mintNftTxs, s.nftIDs, beaconHeight, s.params.MintNftRequireAmount)
+		mintNftTxs, s.nftIDs, s.nftAssetTags, beaconHeight, s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
@@ -814,14 +816,8 @@ func (s *stateV2) IsValidLP(poolPairID, lpID string) (bool, error) {
 }
 
 func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
-	result := make(map[string]*common.Hash)
-	for s, _ := range s.nftIDs {
-		tokenID, err := common.Hash{}.NewHashFromStr(s)
-		if err != nil {
-			return nil, err
-		}
-		assetTag := privacy.HashToPoint(tokenID[:])
-		result[assetTag.String()] = tokenID
+	if s.nftAssetTags == nil {
+		return nil, fmt.Errorf("NFTAssetTags missing from pdex state")
 	}
-	return result, nil
+	return *s.nftAssetTags, nil
 }

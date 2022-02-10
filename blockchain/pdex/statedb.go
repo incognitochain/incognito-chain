@@ -107,10 +107,15 @@ func initStateV2FromDB(
 	if err != nil {
 		return nil, err
 	}
-	return newStateV2WithValue(
+	result := newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs, params, stakingPools, nftIDs,
-	), nil
+	)
+	result.nftAssetTags, err = result.nftAssetTags.FromIDs(nftIDs)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {

@@ -1369,6 +1369,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 func (sp *stateProducerV2) userMintNft(
 	txs []metadata.Transaction,
 	nftIDs map[string]uint64,
+	nftAssetTags *v2utils.NFTAssetTagsCache,
 	beaconHeight, mintNftRequireAmount uint64,
 ) ([][]string, map[string]uint64, uint64, error) {
 	res := [][]string{}
@@ -1389,6 +1390,7 @@ func (sp *stateProducerV2) userMintNft(
 		} else {
 			nftID := genNFT(uint64(len(nftIDs)), beaconHeight)
 			nftIDs[nftID.String()] = metaData.Amount()
+			nftAssetTags.Add(nftID)
 			inst, err = instruction.NewAcceptUserMintNftWithValue(
 				metaData.OtaReceiver(), metaData.Amount(), shardID, nftID, txReqID,
 			).StringSlice()
