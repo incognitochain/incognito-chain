@@ -738,10 +738,10 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 			var (
 				nodes, imgs = transactionTrieDB.Size()
 			)
+
 			Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, trieNodeLimit %+v, img %+v, trieImgLimit %+v",
 				shardID, nodes, bc.cacheConfig.trieNodeLimit, imgs, common.StorageSize(4*1024*1024))
 			// all statedb object use the same low-level triedb
-
 			if nodes > bc.cacheConfig.trieNodeLimit || imgs > bc.cacheConfig.trieImgsLimit {
 				transactionTrieDB.Cap(bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize)
 			}
@@ -753,7 +753,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 
 			if isFinalizedBlock &&
 				current > pivotBlock.GetHeight() &&
-				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTriesInMemory+1 {
+				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTriesInMemory {
 				if err := shardBestState.fullSyncCommitTrieToDisk(
 					bc, batch,
 					newFinalBlock,
@@ -788,6 +788,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 	if err := rawdbv2.StoreShardRootsHash(batch, shardID, shardBestState.BestBlockHash, sRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
 	return nil
 }
 

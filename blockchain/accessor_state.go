@@ -60,10 +60,6 @@ func StoreTransactionStateObjectForRepair(
 	}
 	indexes[SHARD_SLASH_STATEDB] = slashStateObjectIndex
 
-	//if len(transactionStateObjectIndex) > 0 {
-	//	Logger.log.Infof("State Object Store Flatfiles \n", transactionStateObjectIndex)
-	//}
-
 	if err := StoreFlatFileStateObjectIndex(db, hash, indexes); err != nil {
 		return [][]int{}, err
 	}
@@ -104,10 +100,6 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 		return allStateObjects, nil, err
 	}
 
-	//if len(indexes[1]) > 0 {
-	//	Logger.log.Infof("GetStateObjectFromFlatFile, %+v", indexes[1])
-	//}
-
 	for i := range indexes {
 		stateDB := stateDBs[i]
 		stateObjects := make(map[common.Hash]statedb.StateObject)
@@ -117,8 +109,6 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 			if err != nil {
 				return allStateObjects, nil, err
 			}
-
-			//Logger.log.Infof("index %+v = %+v", index, data)
 
 			stateObject, err := statedb.ByteDeSerialize(stateDB, data)
 			if err != nil {

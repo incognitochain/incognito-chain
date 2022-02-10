@@ -477,12 +477,12 @@ func (bc *BlockChain) Stop() {
 			}
 
 			for !bc.cacheConfig.triegc[shardID].Empty() {
-				item := bc.cacheConfig.triegc[shardID].PopItem().(ShardRootHash)
-				consensusTrieDB.Dereference(item.ConsensusStateDBRootHash)
-				transactionTrieDB.Dereference(item.TransactionStateDBRootHash)
-				featureTrieDB.Dereference(item.FeatureStateDBRootHash)
-				rewardTrieDB.Dereference(item.RewardStateDBRootHash)
-				slashTrieDB.Dereference(item.SlashStateDBRootHash)
+				sRH := bc.cacheConfig.triegc[shardID].PopItem().(ShardRootHash)
+				consensusTrieDB.Dereference(sRH.ConsensusStateDBRootHash)
+				transactionTrieDB.Dereference(sRH.TransactionStateDBRootHash)
+				featureTrieDB.Dereference(sRH.FeatureStateDBRootHash)
+				rewardTrieDB.Dereference(sRH.RewardStateDBRootHash)
+				slashTrieDB.Dereference(sRH.SlashStateDBRootHash)
 			}
 
 			if size, _ := consensusTrieDB.Size(); size != 0 {
@@ -505,10 +505,6 @@ func (bc *BlockChain) Stop() {
 				if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
 					// the below disk layer is just one => save one time is enough
 					transactionTrieDB.SaveCache(path)
-					//consensusTrieDB.SaveCache(path)
-					//featureTrieDB.SaveCache(path)
-					//rewardTrieDB.SaveCache(path)
-					//slashTrieDB.SaveCache(path)
 				}
 			}
 		}
@@ -909,27 +905,25 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 
 	db := blockchain.GetShardChainDatabase(shardID)
 	flatFileManager := blockchain.config.FlatFileManager[int(shardID)]
+
+	pivotBlock, err := blockchain.GetPivotBlock(shardID)
+	if err != nil {
+		return err
+	}
+
 	simulateMultiViews := multiview.NewMultiView()
 	for _, v := range views {
 		simulateMultiViews.AddView(v)
 	}
-
-	pivotBlockHash, err := rawdbv2.GetLatestPivotBlock(db, shardID)
-	if err != nil {
-		return err
-	}
 	finalView := simulateMultiViews.GetFinalView()
-	pivotBlock, _, err := blockchain.GetShardBlockByHashWithShardID(pivotBlockHash, shardID)
-	if err != nil {
-		return err
-	}
 	finalViewHash := finalView.GetHash()
 	finalBlock, _, err := blockchain.GetShardBlockByHashWithShardID(*finalViewHash, shardID)
 	if err != nil {
 		return err
 	}
 
-	Logger.log.Infof("Repair State, Shard %d, Latest Pivot (Commit) Block %d, Latest Final Block %d", shardID, pivotBlock.GetHeight(), finalBlock.GetHeight())
+	Logger.log.Infof("Repair State, Shard %d, Latest Pivot (Commit) Block %d, Latest Final Block %d",
+		shardID, pivotBlock.GetHeight(), finalBlock.GetHeight())
 
 	stateDBs, err := blockchain.tryRepairStateFromPivotToFinal(
 		db, flatFileManager,
@@ -951,7 +945,7 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 			viewStateDBs[i] = stateDBs[i].Copy()
 		}
 
-		if err := repairStateDBCommitPerBlock(
+		if err := repairStateDB(
 			blockchain,
 			shardID,
 			viewStateDBs,
@@ -996,47 +990,47 @@ func (blockchain *BlockChain) tryRepairStateFromPivotToFinal(
 
 	tempShardHash := common.Hash{}
 	stateDBs := make([]*statedb.StateDB, 5)
-	isRecursiveRepair := false
+	isRepairFromPivot := false
 
 	// pivot block is also a finalized block => pivot block only <= final block
 	if pivotBlock.GetHeight() < finalBlock.GetHeight() {
 		tempShardHash = pivotBlock.Header.Hash()
-		isRecursiveRepair = true
+		isRepairFromPivot = true
 	} else {
 		tempShardHash = finalBlock.Header.Hash()
 	}
 
-	shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, tempShardHash)
+	sRH, err := GetShardRootsHashByBlockHash(db, shardID, tempShardHash)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(sRH.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(shardRootHash.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(sRH.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return stateDBs, err
 	}
 
-	if isRecursiveRepair {
+	if isRepairFromPivot {
 		restoreFromFinalize, err := blockchain.restoreOldBlocks(*finalBlock.Hash(), *pivotBlock.Hash())
 		if err != nil {
 			return stateDBs, err
 		}
-		if err := repairStateDBCommitPerBlock(
+		if err := repairStateDB(
 			blockchain,
 			shardID,
 			stateDBs,
@@ -1066,94 +1060,7 @@ func (blockchain *BlockChain) restoreOldBlocks(head, pivot common.Hash) ([]commo
 	return blockHashes[:len(blockHashes)-1], nil
 }
 
-func repairStateDBCommitPerBatch(
-	bc *BlockChain,
-	shardID byte,
-	stateDBs []*statedb.StateDB,
-	flatFileManager *flatfile.FlatFileManager,
-	db incdb.Database,
-	restore []common.Hash,
-	blockToCommit types.BlockInterface) error {
-
-	if len(restore) == 0 {
-		return nil
-	}
-
-	for len(restore) != 0 {
-
-		nextBlock := restore[len(restore)-1]
-
-		Logger.log.Debugf("Repair State, restore next block %+v, remain %+v", nextBlock, len(restore))
-
-		allStateObjects, _, err := GetStateObjectFromFlatFile(
-			stateDBs,
-			flatFileManager,
-			db,
-			nextBlock,
-		)
-		if err != nil {
-			return err
-		}
-		for i := range allStateObjects {
-			stateObjects := allStateObjects[i]
-			stateDB := stateDBs[i]
-
-			//if i == 1 && len(stateObjects) > 0 {
-			//	oldRootHash, _ := stateDB.IntermediateRoot(true)
-			//	Logger.log.Infof(
-			//		"old root hash %+v, "+
-			//			"numberOfStateObj %+v",
-			//		oldRootHash, len(stateObjects))
-			//	counter := 0
-			//	for _, v := range stateObjects {
-			//		Logger.log.Infof("tx State Object, index %d = %+v", counter, statedb.ByteSerialize(v))
-			//		counter++
-			//	}
-			//}
-
-			for objKey, obj := range stateObjects {
-				if err := stateDB.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
-					return err
-				}
-				if obj.IsDeleted() {
-					stateDB.MarkDeleteStateObject(obj.GetType(), objKey)
-				}
-			}
-
-			if _, _, err := stateDB.Commit(true); err != nil {
-				return err
-			}
-
-			//if i == 1 && len(stateObjects) > 0 {
-			//	sRH, _ := GetShardRootsHashByBlockHash(db, 0, nextBlock)
-			//	newRootHash, _ := stateDB.IntermediateRoot(true)
-			//	Logger.log.Infof("Restore tx root hash, "+
-			//		"tx root hash %+v \n stored tx root hash %+v",
-			//		newRootHash, sRH.TransactionStateDBRootHash)
-			//}
-
-		}
-		restore = restore[:len(restore)-1]
-	}
-
-	for i := range stateDBs {
-		if rootHash, _, err := stateDBs[i].Commit(true); err != nil {
-			return err
-		} else {
-			if err := stateDBs[i].Database().TrieDB().Commit(rootHash, false, nil); err != nil {
-				return err
-			}
-		}
-	}
-
-	if err := rawdbv2.StoreLatestPivotBlock(db, shardID, *blockToCommit.Hash()); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func repairStateDBCommitPerBlock(
+func repairStateDB(
 	bc *BlockChain,
 	shardID byte,
 	stateDBs []*statedb.StateDB,
