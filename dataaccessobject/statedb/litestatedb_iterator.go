@@ -126,7 +126,7 @@ func (l *LiteStateDBIterator) Key() []byte {
 func (l *LiteStateDBIterator) Value() []byte {
 	selectedZone := l.whichZoneToSelect()
 	if selectedZone == 0 {
-		return l.dbIterator.Value()
+		return l.dbIterator.Value()[1:]
 	} else {
 		if l.memIndex >= len(l.memValueSort) {
 			return []byte{}
