@@ -23,6 +23,10 @@ type Share struct {
 	lastLmRewardsPerShare map[common.Hash]*big.Int
 }
 
+func (share *Share) AccessOTA() []byte {
+	return share.accessOTA
+}
+
 func (share *Share) Amount() uint64 {
 	return share.amount
 }
