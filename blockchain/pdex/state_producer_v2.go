@@ -674,24 +674,33 @@ TransactionLoop:
 			// increment order count to keep same-block requests from exceeding limit
 			orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
 		}
+		var rewardReceivers map[common.Hash]privacy.OTAReceiver
 		rewardReceiverTokenIDs := []common.Hash{tokenToBuy}
 		if tokenToBuy != common.PRVCoinID {
 			rewardReceiverTokenIDs = append(rewardReceiverTokenIDs, common.PRVCoinID)
 		}
-		rewardReceivers := map[common.Hash]privacy.OTAReceiver{}
+		rewardReceivers = map[common.Hash]privacy.OTAReceiver{}
 		orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
-		for _, v := range rewardReceiverTokenIDs {
-			if receiver, found := currentOrderReq.RewardReceiver[v]; found {
-				rewardReceivers[v] = receiver
-				orderRewardDetails[v] = NewOrderRewardDetailWithValue(receiver, 0)
-			} else {
-				Logger.log.Warnf("RewardReceivers is not enough")
-				result = append(result, refundInstructions...)
-				continue TransactionLoop
+		status := byte(0)
+		var txReqID *common.Hash
+		if !currentOrderReq.UseNft() {
+			for _, v := range rewardReceiverTokenIDs {
+				if receiver, found := currentOrderReq.RewardReceiver[v]; found {
+					rewardReceivers[v] = receiver
+					orderRewardDetails[v] = NewOrderRewardDetailWithValue(receiver, 0)
+				} else {
+					Logger.log.Warnf("RewardReceivers is not enough")
+					result = append(result, refundInstructions...)
+					continue TransactionLoop
+				}
 			}
+			status = WaitToWithdrawOrderReward
+			txReqID = tx.Hash()
+		} else {
+			status = DefaultWithdrawnOrderReward
 		}
 		pair.orderRewards[nftID.String()] = NewOrderRewardWithValue(
-			WaitToWithdrawOrderReward, orderRewardDetails, tx.Hash(),
+			status, orderRewardDetails, txReqID,
 		)
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
@@ -1114,7 +1123,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		orderReward := map[common.Hash]uint64{}
 		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
 		if isExistedOrderReward {
-			if order.withdrawnStatus != WithdrawnOrderReward && order.withdrawnStatus != WaitToWithdrawOrderReward {
+			if order.withdrawnStatus == WithdrawnOrderReward || order.withdrawnStatus == WaitToWithdrawOrderReward {
 				Logger.log.Infof("Can not withdraw order reward actively with accessOTA")
 				instructions = append(instructions, rejectInst...)
 				continue

@@ -1430,7 +1430,8 @@ func Test_stateProcessorV2_feeTrackingAddLiquidity(t *testing.T) {
 				},
 			},
 			want3: &v2utils.ContributionStatus{
-				Status: common.PDEContributionAcceptedStatus,
+				Status:   common.PDEContributionAcceptedStatus,
+				AccessID: nftHash,
 			},
 			wantErr: false,
 		},

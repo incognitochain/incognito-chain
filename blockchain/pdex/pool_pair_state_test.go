@@ -1204,10 +1204,8 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				},
 				OrderRewards: map[string]*v2utils.OrderRewardChange{
 					common.PRVIDStr: {
-						IsChanged: false,
-						UncollectedReward: map[string]bool{
-							common.PRVIDStr: true,
-						},
+						IsChanged:         false,
+						UncollectedReward: map[string]bool{},
 					},
 					common.PDEXIDStr: {
 						IsChanged: true,

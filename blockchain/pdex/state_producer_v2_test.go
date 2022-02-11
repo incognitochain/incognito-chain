@@ -19,7 +19,6 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
-	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1354,12 +1353,12 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:   "Out of range uint64 virtual amount",
+			name:   "Out of range uint64 virtual amount - Valid",
 			fields: fields{},
 			args: args{
 				txs: []metadata.Transaction{outOfRangeTx},
 				poolPairs: map[string]*PoolPairState{
-					poolPairID: &PoolPairState{
+					poolPairID: {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 48019194174972302, 0,
 							250000000000000, 9223372036854775808,
@@ -1371,7 +1370,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 						protocolFees:      map[common.Hash]uint64{},
 						stakingPoolFees:   map[common.Hash]uint64{},
 						shares: map[string]*Share{
-							nftID: &Share{
+							nftID: {
 								amount:                48019194174972302,
 								tradingFees:           map[common.Hash]uint64{},
 								lastLPFeesPerShare:    map[common.Hash]*big.Int{},
@@ -1391,9 +1390,10 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 			},
 			want: [][]string{outOfRangeInst0, outOfRangeInst1, mintNftInst},
 			want1: map[string]*PoolPairState{
-				poolPairID: &PoolPairState{
+				poolPairID: {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
-						*token0ID, *token1ID, 0, 0, 0, 0,
+						*token0ID, *token1ID, 0, 0,
+						0, 0,
 						big.NewInt(0).SetUint64(0),
 						big.NewInt(0).SetUint64(0), 20000,
 					),
@@ -1401,18 +1401,11 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 					lmRewardsPerShare: map[common.Hash]*big.Int{},
 					protocolFees:      map[common.Hash]uint64{},
 					stakingPoolFees:   map[common.Hash]uint64{},
-					shares: map[string]*Share{
-						nftID: &Share{
-							amount:                0,
-							tradingFees:           map[common.Hash]uint64{},
-							lastLPFeesPerShare:    map[common.Hash]*big.Int{},
-							lastLmRewardsPerShare: map[common.Hash]*big.Int{},
-						},
-					},
-					orderRewards:  map[string]*OrderReward{},
-					makingVolume:  map[common.Hash]*MakingVolume{},
-					orderbook:     Orderbook{[]*Order{}},
-					lmLockedShare: map[string]map[uint64]uint64{},
+					shares:            map[string]*Share{},
+					orderRewards:      map[string]*OrderReward{},
+					makingVolume:      map[common.Hash]*MakingVolume{},
+					orderbook:         Orderbook{[]*Order{}},
+					lmLockedShare:     map[string]map[uint64]uint64{},
 				},
 			},
 			wantErr: false,
@@ -1904,6 +1897,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 										amount: 250,
 									},
 								},
+								withdrawnStatus: DefaultWithdrawnOrderReward,
 							},
 						},
 						makingVolume: map[common.Hash]*MakingVolume{},
@@ -1916,7 +1910,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 			},
 			want: [][]string{mintNftInst, acceptWithdrawLPInstsOnlyOrderReward[0], acceptWithdrawLPInstsOnlyOrderReward[1]},
 			want1: map[string]*PoolPairState{
-				poolPairID: &PoolPairState{
+				poolPairID: {
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
 						*token0ID, *token1ID, 300, 0, 150, 600,
 						big.NewInt(0).SetUint64(300),
@@ -1980,6 +1974,7 @@ func Test_stateProducerV2_withdrawLPFee(t *testing.T) {
 										amount: 250,
 									},
 								},
+								withdrawnStatus: DefaultWithdrawnOrderReward,
 							},
 						},
 						makingVolume: map[common.Hash]*MakingVolume{},
@@ -2454,34 +2449,6 @@ func Test_stateProducerV2_staking(t *testing.T) {
 	validTx.On("Hash").Return(txReqID)
 	//
 
-	otaReceivers := map[common.Hash]privacy.OTAReceiver{
-		common.PdexAccessCoinID: otaReceiver0,
-	}
-
-	// newAccessIDTx
-	newAccessIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		common.PRVIDStr, utils.EmptyString, 100, metadataPdexv3.AccessOption{}, otaReceivers,
-	)
-	newAccessIDTx := &metadataMocks.Transaction{}
-	newAccessIDTx.On("GetMetadata").Return(newAccessIDMetadata)
-	valEnv5 := tx_generic.DefaultValEnv()
-	valEnv5 = tx_generic.WithShardID(valEnv5, 1)
-	newAccessIDTx.On("GetValidationEnv").Return(valEnv5)
-	newAccessIDTx.On("Hash").Return(txReqID)
-	//
-
-	// oldAccessIDTx
-	oldAccessIDMetadata := metadataPdexv3.NewStakingRequestWithValue(
-		common.PRVIDStr, utils.EmptyString, 100, metadataPdexv3.AccessOption{AccessID: &common.Hash{}}, otaReceivers,
-	)
-	oldAccessIDTx := &metadataMocks.Transaction{}
-	oldAccessIDTx.On("GetMetadata").Return(oldAccessIDMetadata)
-	valEnv6 := tx_generic.DefaultValEnv()
-	valEnv6 = tx_generic.WithShardID(valEnv6, 1)
-	oldAccessIDTx.On("GetValidationEnv").Return(valEnv6)
-	oldAccessIDTx.On("Hash").Return(txReqID)
-	//
-
 	type fields struct {
 		stateProducerBase stateProducerBase
 	}
@@ -2572,64 +2539,6 @@ func Test_stateProducerV2_staking(t *testing.T) {
 			name: "Valid input",
 			args: args{
 				txs: []metadata.Transaction{validTx},
-				nftIDs: map[string]uint64{
-					nftID1: 100,
-				},
-				stakingPoolStates: map[string]*StakingPoolState{
-					common.PRVIDStr: &StakingPoolState{
-						stakers: map[string]*Staker{},
-					},
-				},
-				beaconHeight: 10,
-			},
-			want: [][]string{acceptInst},
-			want1: map[string]*StakingPoolState{
-				common.PRVIDStr: &StakingPoolState{
-					liquidity: 100,
-					stakers: map[string]*Staker{
-						nftID1: &Staker{
-							liquidity:           100,
-							rewards:             map[common.Hash]uint64{},
-							lastRewardsPerShare: map[common.Hash]*big.Int{},
-						},
-					},
-					rewardsPerShare: map[common.Hash]*big.Int{},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "New accessID",
-			args: args{
-				txs:    []metadata.Transaction{newAccessIDTx},
-				nftIDs: map[string]uint64{},
-				stakingPoolStates: map[string]*StakingPoolState{
-					common.PRVIDStr: &StakingPoolState{
-						stakers: map[string]*Staker{},
-					},
-				},
-				beaconHeight: 10,
-			},
-			want: [][]string{acceptInst},
-			want1: map[string]*StakingPoolState{
-				common.PRVIDStr: &StakingPoolState{
-					liquidity: 100,
-					stakers: map[string]*Staker{
-						nftID1: &Staker{
-							liquidity:           100,
-							rewards:             map[common.Hash]uint64{},
-							lastRewardsPerShare: map[common.Hash]*big.Int{},
-						},
-					},
-					rewardsPerShare: map[common.Hash]*big.Int{},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Old accessID",
-			args: args{
-				txs: []metadata.Transaction{oldAccessIDTx},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},
@@ -3287,7 +3196,7 @@ func Test_stateProducerV2_liquidityMining(t *testing.T) {
 						},
 						nftID1: {
 							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
-								common.PDEXCoinID: {
+								common.PRVCoinID: {
 									amount: 237500, // 137500 + 100000
 								},
 							},

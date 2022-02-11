@@ -292,7 +292,8 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			*token1ID: otaReceiver1,
 		},
 		map[common.Hash]privacy.OTAReceiver{
-			*token0ID: otaReceiver0,
+			*token1ID:        otaReceiver0,
+			common.PRVCoinID: otaReceiver1,
 		},
 		metadataPdexv3.AccessOption{NftID: nftHash1},
 		metadataCommon.Pdexv3AddOrderRequestMeta,
@@ -315,6 +316,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			Token1Balance:  0,
 			TradeDirection: 0,
 			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
+			RewardReceiver: map[common.Hash]privacy.OTAReceiver{},
 		},
 		*firstTxHash,
 		byte(valEnv7.ShardID()),
@@ -328,7 +330,8 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			*token1ID: otaReceiver1,
 		},
 		map[common.Hash]privacy.OTAReceiver{
-			*token0ID: otaReceiver0,
+			*token0ID:        otaReceiver0,
+			common.PRVCoinID: otaReceiver1,
 		},
 		metadataPdexv3.AccessOption{NftID: nftHash1},
 		metadataCommon.Pdexv3AddOrderRequestMeta,
@@ -351,6 +354,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 			Token1Balance:  40,
 			TradeDirection: 1,
 			Receiver:       [2]string{validOTAReceiver0, validOTAReceiver1},
+			RewardReceiver: map[common.Hash]privacy.OTAReceiver{},
 		},
 		*secondTxHash,
 		byte(valEnv8.ShardID()),
@@ -1066,7 +1070,13 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderRewards: map[string]*OrderReward{},
+						orderRewards: map[string]*OrderReward{
+							nftID1: &OrderReward{
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{},
+								withdrawnStatus:    DefaultWithdrawnOrderReward,
+								txReqID:            nil,
+							},
+						},
 						makingVolume: map[common.Hash]*MakingVolume{},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
@@ -2065,7 +2075,12 @@ func Test_stateV2_Process(t *testing.T) {
 								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderRewards: map[string]*OrderReward{},
+						orderRewards: map[string]*OrderReward{
+							nftID1: {
+								uncollectedRewards: map[common.Hash]*OrderRewardDetail{},
+								withdrawnStatus:    DefaultWithdrawnOrderReward,
+							},
+						},
 						makingVolume: map[common.Hash]*MakingVolume{},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
