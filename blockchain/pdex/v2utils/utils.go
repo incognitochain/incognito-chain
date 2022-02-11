@@ -203,6 +203,8 @@ func (m *NFTAssetTagsCache) FromIDs(nftIDs map[string]uint64) (*NFTAssetTagsCach
 }
 
 func (m *NFTAssetTagsCache) Add(id common.Hash) {
-	assetTag := privacy.HashToPoint(id[:])
-	(*m)[assetTag.String()] = &id
+	if m != nil {
+		assetTag := privacy.HashToPoint(id[:])
+		(*m)[assetTag.String()] = &id
+	}
 }

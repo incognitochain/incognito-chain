@@ -817,7 +817,11 @@ func (s *stateV2) IsValidLP(poolPairID, lpID string) (bool, error) {
 
 func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
 	if s.nftAssetTags == nil {
-		return nil, fmt.Errorf("NFTAssetTags missing from pdex state")
+		var err error
+		s.nftAssetTags, err = s.nftAssetTags.FromIDs(s.nftIDs)
+		if err != nil {
+			return nil, fmt.Errorf("NFTAssetTags missing from pdex state - %v", err)
+		}
 	}
 	return *s.nftAssetTags, nil
 }

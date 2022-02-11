@@ -2223,7 +2223,9 @@ func Test_stateProducerV2_userMintNft(t *testing.T) {
 			sp := &stateProducerV2{
 				stateProducerBase: tt.fields.stateProducerBase,
 			}
-			got, got1, _, err := sp.userMintNft(tt.args.txs, tt.args.nftIDs, tt.args.beaconHeight, tt.args.mintNftRequireAmount)
+			atc, err := (&v2utils.NFTAssetTagsCache{}).FromIDs(tt.args.nftIDs)
+			assert.Nil(t, err)
+			got, got1, _, err := sp.userMintNft(tt.args.txs, tt.args.nftIDs, atc, tt.args.beaconHeight, tt.args.mintNftRequireAmount)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProducerV2.userMintNft() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -2233,6 +2235,13 @@ func Test_stateProducerV2_userMintNft(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("stateProducerV2.userMintNft() got1 = %v, want %v", got1, tt.want1)
+			}
+
+			// check assetTagsCache consistency
+			expectedAtc, err := (&v2utils.NFTAssetTagsCache{}).FromIDs(tt.want1)
+			assert.Nil(t, err)
+			if !reflect.DeepEqual(atc, expectedAtc) {
+				t.Errorf("stateProcessorV2.userMintNft() got1 = %v, want %v", atc, expectedAtc)
 			}
 		})
 	}
