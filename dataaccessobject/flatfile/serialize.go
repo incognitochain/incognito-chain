@@ -307,13 +307,12 @@ func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
 		}
 	}
 	sort.Slice(ff.sortedFolder, func(i, j int) bool {
-		if i < j {
+		if ff.sortedFolder[i] < ff.sortedFolder[j] {
 			return true
 		} else {
 			return false
 		}
 	})
-
 	//open last file currentFD, update currentFileSize, if max -> create new file, update currentFD
 	if currentFile > -1 {
 		path := path.Join(ff.dataDir, strconv.Itoa(currentFile))
