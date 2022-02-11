@@ -153,6 +153,12 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairMakingVolumeObjectWithValue(db, hash, value)
 	case Pdexv3PoolPairOrderRewardObjectType:
 		return newPdexv3PoolPairOrderRewardObjectWithValue(db, hash, value)
+	case Pdexv3ShareLastLmRewardPerShareObjectType:
+		return newPdexv3ShareLastLmRewardPerShareObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairLmRewardPerShareObjectType:
+		return newPdexv3PoolPairLmRewardPerShareObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairLmLockedShareObjectType:
+		return newPdexv3PoolPairLmLockedShareObjectWithValue(db, hash, value)
 	case BridgePLGTxObjectType:
 		return newBridgePLGTxObjectWithValue(db, hash, value)
 	default:
@@ -288,6 +294,12 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairMakingVolumeObject(db, hash)
 	case Pdexv3PoolPairOrderRewardObjectType:
 		return newPdexv3PoolPairOrderRewardObject(db, hash)
+	case Pdexv3ShareLastLmRewardPerShareObjectType:
+		return newPdexv3ShareLastLmRewardPerShareObject(db, hash)
+	case Pdexv3PoolPairLmRewardPerShareObjectType:
+		return newPdexv3PoolPairLmRewardPerShareObject(db, hash)
+	case Pdexv3PoolPairLmLockedShareObjectType:
+		return newPdexv3PoolPairLmLockedShareObject(db, hash)
 	case BridgePLGTxObjectType:
 		return newBridgePLGTxObject(db, hash)
 	default:
