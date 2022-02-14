@@ -770,7 +770,8 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 						bc.cacheConfig.triegc[shardID].Push(oldSRH, number)
 						break
 					}
-					Logger.log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v", shardID, current, chosen, number)
+					Logger.log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v",
+						shardID, current, chosen, number)
 					consensusTrieDB.Dereference(oldSRH.(ShardRootHash).ConsensusStateDBRootHash)
 					transactionTrieDB.Dereference(oldSRH.(ShardRootHash).TransactionStateDBRootHash)
 					featureTrieDB.Dereference(oldSRH.(ShardRootHash).FeatureStateDBRootHash)
@@ -779,7 +780,8 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 				}
 				postNodes, postImgs := transactionTrieDB.Size()
 				if nodes-postNodes > 0 || imgs-postImgs > 0 {
-					Logger.log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v", shardID, current, nodes-postNodes, imgs-postImgs)
+					Logger.log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v",
+						shardID, current, nodes-postNodes, imgs-postImgs)
 				}
 			}
 		}

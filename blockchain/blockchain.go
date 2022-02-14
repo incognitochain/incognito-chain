@@ -136,7 +136,7 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 	return cacheConfig, nil
 }
 
-func NewBlockChain(config *Config, isTest bool) *BlockChain {
+func NewBlockChain(isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
