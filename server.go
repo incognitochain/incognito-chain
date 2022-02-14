@@ -311,7 +311,7 @@ func (serverObj *Server) NewServer(
 		time.Duration(cfg.TxPoolTTL)*time.Second,
 	)
 
-	if cfg.SyncMode == blockchain.FULL_SYNC_MODE || cfg.SyncMode == blockchain.ARCHIVE_SYNC_MODE {
+	if cfg.SyncMode == common.FULL_SYNC_MODE || cfg.SyncMode == common.ARCHIVE_SYNC_MODE {
 		blockchain.ShardSyncMode = cfg.SyncMode
 	}
 	err = serverObj.blockChain.Init(&blockchain.Config{

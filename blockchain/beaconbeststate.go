@@ -1189,7 +1189,7 @@ func (beaconBestState *BeaconBestState) CommitTrieToDisk(batch incdb.Batch, bRH 
 	}
 	beaconBestState.consensusStateDB.ClearObjects()
 
-	if BeaconSyncMode == ARCHIVE_SYNC_MODE || (BeaconSyncMode == FULL_SYNC_MODE && beaconBestState.BeaconHeight%10000 == 0) {
+	if BeaconSyncMode == common.ARCHIVE_SYNC_MODE || (BeaconSyncMode == common.FULL_SYNC_MODE && beaconBestState.BeaconHeight%10000 == 0) {
 		err = beaconBestState.slashStateDB.Database().TrieDB().Commit(bRH.SlashStateDBRootHash, false, nil)
 		if err != nil {
 			return err

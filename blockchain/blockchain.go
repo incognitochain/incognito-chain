@@ -424,7 +424,7 @@ func (bc *BlockChain) Stop() {
 
 	Logger.log.Info("Blockchain Stop")
 
-	if ShardSyncMode == FULL_SYNC_MODE {
+	if ShardSyncMode == common.FULL_SYNC_MODE {
 
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
 
@@ -1004,23 +1004,25 @@ func (blockchain *BlockChain) tryRepairStateFromPivotToFinal(
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	dbWarper := statedb.NewDatabaseAccessWrapperWithConfig(ShardSyncMode, db,
+		blockchain.cacheConfig.trieJournalPath[int(shardID)], blockchain.cacheConfig.trieJournalCacheSize)
+	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, dbWarper)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, dbWarper)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(sRH.FeatureStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(sRH.FeatureStateDBRootHash, dbWarper)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, dbWarper)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(sRH.SlashStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(sRH.SlashStateDBRootHash, dbWarper)
 	if err != nil {
 		return stateDBs, err
 	}

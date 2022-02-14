@@ -162,7 +162,8 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *B
 		return nil
 	}
 	var err error
-	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(db, bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], bc.cacheConfig.trieJournalCacheSize)
+	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(ShardSyncMode, db,
+		bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], bc.cacheConfig.trieJournalCacheSize)
 	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
@@ -721,7 +722,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 		}
 	}
 	// use for archive mode or force to do so
-	if shardBestState.ShardHeight == 1 || ShardSyncMode == ARCHIVE_SYNC_MODE {
+	if shardBestState.ShardHeight == 1 || ShardSyncMode == common.ARCHIVE_SYNC_MODE {
 		if err := shardBestState.commitTrieToDisk(
 			batch, types.BlockInterface(shardBestState.BestBlock), sRH, bc.config.FlatFileManager[int(shardID)], flatFileIndexes); err != nil {
 			return err

@@ -72,14 +72,16 @@ func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
 	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
 }
 
-func NewDatabaseAccessWrapperWithConfig(database incdb.Database, journalPath string, size int) DatabaseAccessWarper {
-
-	return &accessorWarper{
-		iw: trie.NewIntermediateWriterWithConfig(database, &trie.Config{
-			Cache:   size,
-			Journal: journalPath,
-		}),
+func NewDatabaseAccessWrapperWithConfig(syncMode string, database incdb.Database, journalPath string, size int) DatabaseAccessWarper {
+	if syncMode == common.FULL_SYNC_MODE {
+		return &accessorWarper{
+			iw: trie.NewIntermediateWriterWithConfig(database, &trie.Config{
+				Cache:   size,
+				Journal: journalPath,
+			}),
+		}
 	}
+	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
 }
 
 // OpenTrie opens the main account trie at a specific root hash.

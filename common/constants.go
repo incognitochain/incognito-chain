@@ -228,3 +228,8 @@ var (
 	BurningAddressByte  []byte
 	BurningAddressByte2 []byte
 )
+
+const (
+	FULL_SYNC_MODE    = "full"
+	ARCHIVE_SYNC_MODE = "archive"
+)
