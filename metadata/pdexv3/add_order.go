@@ -87,6 +87,12 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		}
 	}
 
+	if req.UseNft() {
+		if req.RewardReceiver != nil {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Can not use reward receiver with nftID"))
+		}
+	}
+
 	// reward receivers check
 	for _, item := range req.RewardReceiver {
 		if !item.IsValid() {

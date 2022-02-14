@@ -1509,14 +1509,16 @@ func createPdexv3AddOrderRequestTransaction(
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	tokenList = []common.Hash{mdReader.TokenToBuy}
-	if mdReader.TokenToBuy != common.PRVCoinID {
-		tokenList = append(tokenList, common.PRVCoinID)
-	}
-	md.RewardReceiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
-		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
-	if err != nil {
-		return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	if !md.UseNft() {
+		tokenList = []common.Hash{mdReader.TokenToBuy}
+		if mdReader.TokenToBuy != common.PRVCoinID {
+			tokenList = append(tokenList, common.PRVCoinID)
+		}
+		md.RewardReceiver, err = httpServer.pdexTxService.GenerateOTAReceivers(
+			tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
+		if err != nil {
+			return nil, false, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
 	}
 
 	paramSelect.SetMetadata(md)
