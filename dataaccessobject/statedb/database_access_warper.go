@@ -73,14 +73,16 @@ func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
 }
 
 func NewDatabaseAccessWrapperWithConfig(syncMode string, database incdb.Database, journalPath string, size int) DatabaseAccessWarper {
-	if syncMode == common.FULL_SYNC_MODE {
-		return &accessorWarper{
-			iw: trie.NewIntermediateWriterWithConfig(database, &trie.Config{
-				Cache:   size,
-				Journal: journalPath,
-			}),
-		}
-	}
+
+	//TODO: @hung comment to test
+	//if syncMode == common.FULL_SYNC_MODE {
+	//	return &accessorWarper{
+	//		iw: trie.NewIntermediateWriterWithConfig(database, &trie.Config{
+	//			Cache:   size,
+	//			Journal: journalPath,
+	//		}),
+	//	}
+	//}
 	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
 }
 
