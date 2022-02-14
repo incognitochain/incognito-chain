@@ -1,6 +1,9 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+import (
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 type stateBase struct {
 }
@@ -114,5 +117,9 @@ func (s *stateBase) IsValidLP(poolPairID, nftID string) (bool, error) {
 }
 
 func (s *stateBase) Validator() StateValidator {
+	panic("Implement this function")
+}
+
+func (s *stateBase) NFTAssetTags() (map[string]*common.Hash, error) {
 	panic("Implement this function")
 }

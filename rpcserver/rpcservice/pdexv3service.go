@@ -193,7 +193,7 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		params.ShardIDSender, params.Info,
 		svc.BlockChain.BeaconChain.GetFinalViewState().GetBeaconFeatureStateDB(),
 	)
-
+	txTokenParams.SetRingDecoyFilters(svc.DefaultRingFilters())
 	tx := &transaction.TxTokenVersion2{}
 	errTx := tx.Init(txTokenParams)
 	if errTx != nil {

@@ -96,42 +96,47 @@ func (tx *Tx) VerifySigTx(transactionStateDB *statedb.StateDB) (bool, error) {
 }
 
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
-func getRingFromSigPubKeyAndLastColumnCommitmentV2(txEnv metadata.ValidationEnviroment, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB) (*mlsag.Ring, error) {
+func getRingFromSigPubKeyAndLastColumnCommitmentV2(txEnv metadata.ValidationEnviroment, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB) (*mlsag.Ring, [][]*privacy.CoinV2, error) {
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+		return nil, nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
 	}
 	indexes := txSigPubKey.Indexes
 	OTAData := txEnv.DBData()
 	n := len(indexes)
 	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+		return nil, nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
 	}
 	m := len(indexes[0])
 	if m*n != len(OTAData) {
-		return nil, errors.Errorf("Cached OTA data not match with indexes")
+		return nil, nil, errors.Errorf("Cached OTA data not match with indexes")
 	}
-
 	ring := make([][]*privacy.Point, n)
+	coinsInRing := make([][]*privacy.CoinV2, n)
+
 	for i := 0; i < n; i++ {
 		sumCommitment := new(privacy.Point).Identity()
 		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
 		row := make([]*privacy.Point, m+1)
+		coinsInRing[i] = make([]*privacy.CoinV2, m)
+
 		for j := 0; j < m; j++ {
 			randomCoinBytes := OTAData[i*m+j]
 			randomCoin := new(privacy.CoinV2)
 			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
 				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
-				return nil, err
+				return nil, nil, err
 			}
 			row[j] = randomCoin.GetPublicKey()
 			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
+
+			coinsInRing[i][j] = randomCoin
 		}
 		row[m] = new(privacy.Point).Set(sumCommitment)
 		ring[i] = row
 	}
-	return mlsag.NewRing(ring), nil
+	return mlsag.NewRing(ring), coinsInRing, nil
 }
 
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)

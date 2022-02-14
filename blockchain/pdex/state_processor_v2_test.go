@@ -1153,7 +1153,9 @@ func Test_stateProcessorV2_userMintNft(t *testing.T) {
 				withdrawTxCache:    tt.fields.withdrawTxCache,
 				stateProcessorBase: tt.fields.stateProcessorBase,
 			}
-			got, got1, err := sp.userMintNft(tt.args.stateDB, tt.args.inst, tt.args.nftIDs)
+			atc, err := (&v2utils.NFTAssetTagsCache{}).FromIDs(tt.args.nftIDs)
+			assert.Nil(t, err)
+			got, got1, err := sp.userMintNft(tt.args.stateDB, tt.args.inst, tt.args.nftIDs, atc)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.userMintNft() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1163,6 +1165,13 @@ func Test_stateProcessorV2_userMintNft(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("stateProcessorV2.userMintNft() got1 = %v, want %v", got1, tt.want1)
+			}
+
+			// check assetTagsCache consistency
+			expectedAtc, err := (&v2utils.NFTAssetTagsCache{}).FromIDs(tt.want)
+			assert.Nil(t, err)
+			if !reflect.DeepEqual(atc, expectedAtc) {
+				t.Errorf("stateProcessorV2.userMintNft() got1 = %v, want %v", atc, expectedAtc)
 			}
 		})
 	}

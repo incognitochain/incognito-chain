@@ -1,5 +1,9 @@
 package pdex
 
+import (
+	"github.com/incognitochain/incognito-chain/common"
+)
+
 type State interface {
 	Version() uint
 	Clone() State
@@ -21,6 +25,7 @@ type StateReader interface {
 	TradingFees() map[string]uint64
 	NftIDs() map[string]uint64
 	StakingPools() map[string]*StakingPoolState
+	NFTAssetTags() (map[string]*common.Hash, error)
 }
 
 type StateValidator interface {

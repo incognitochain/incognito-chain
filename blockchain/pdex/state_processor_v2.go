@@ -1062,7 +1062,7 @@ func (sp *stateProcessorV2) mintBlockReward(
 }
 
 func (sp *stateProcessorV2) userMintNft(
-	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64,
+	stateDB *statedb.StateDB, inst []string, nftIDs map[string]uint64, nftAssetTags *v2utils.NFTAssetTagsCache,
 ) (map[string]uint64, *v2.MintNftStatus, error) {
 	if len(inst) != 3 {
 		return nftIDs, nil, fmt.Errorf("Expect length of instruction is %v but get %v", 3, len(inst))
@@ -1093,6 +1093,7 @@ func (sp *stateProcessorV2) userMintNft(
 		nftID = acceptInst.NftID().String()
 		burntAmount = acceptInst.BurntAmount()
 		nftIDs[acceptInst.NftID().String()] = acceptInst.BurntAmount()
+		nftAssetTags.Add(acceptInst.NftID())
 		txReqID = acceptInst.TxReqID()
 		status = common.Pdexv3AcceptStatus
 	default:

@@ -28,6 +28,9 @@ type stateV2 struct {
 	nftIDs                      map[string]uint64
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
+
+	// cached state
+	nftAssetTags 				*v2utils.NFTAssetTagsCache
 }
 
 func (s *stateV2) readConfig() {
@@ -145,7 +148,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.poolPairs,
 			)
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
-			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
+			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs, s.nftAssetTags)
 			if err != nil {
 				continue
 			}
@@ -472,7 +475,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	mintNftInstructions := [][]string{}
 	burningPRVAmount := uint64(0)
 	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
-		mintNftTxs, s.nftIDs, beaconHeight, s.params.MintNftRequireAmount)
+		mintNftTxs, s.nftIDs, s.nftAssetTags, beaconHeight, s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
@@ -837,4 +840,15 @@ func (s *stateV2) IsValidLP(poolPairID, lpID string) (bool, error) {
 		return false, fmt.Errorf("Can't not find lpID %s", lpID)
 	}
 	return true, nil
+}
+
+func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
+	if s.nftAssetTags == nil {
+		var err error
+		s.nftAssetTags, err = s.nftAssetTags.FromIDs(s.nftIDs)
+		if err != nil {
+			return nil, fmt.Errorf("NFTAssetTags missing from pdex state - %v", err)
+		}
+	}
+	return *s.nftAssetTags, nil
 }

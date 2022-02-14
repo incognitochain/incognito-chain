@@ -374,3 +374,30 @@ func SignNoPrivacy(privKey *privacy.PrivateKey, hashedMessage []byte) (signature
 	sigPubKey = sigKey.GetPublicKey().GetPublicKey().ToBytesS()
 	return signatureBytes, sigPubKey, nil
 }
+
+type GenericParams map[string]interface{}
+
+func NewGenericParams() *GenericParams { 
+	result := GenericParams(make(map[string]interface{}))
+	return &result
+}
+
+func (kv *GenericParams) GetKeyValueArgumentsData() map[string]interface{} {
+	if kv == nil {
+		*kv = GenericParams(make(map[string]interface{}))
+	}
+	return (map[string]interface{})(*kv)
+}
+
+func (kv *GenericParams) RingDecoyFilters() []privacy.RingDecoyFilter {
+	if value, exists := kv.GetKeyValueArgumentsData()["RingDecoyFilter"]; exists {
+		if f, ok := value.([]privacy.RingDecoyFilter); ok {
+			return f
+		}
+	}
+	return nil
+}
+
+func (kv *GenericParams) SetRingDecoyFilters(f []privacy.RingDecoyFilter) {
+	kv.GetKeyValueArgumentsData()["RingDecoyFilter"] = f
+}
