@@ -590,7 +590,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 
 		// check proposer threshold
 		invalidCondition := false
-		featureStatReport := DefaultFeatureStat.Report()
+		featureStatReport := DefaultFeatureStat.Report(curView)
 		if featureStatReport.ProposeStat[feature] == nil {
 			continue
 		}

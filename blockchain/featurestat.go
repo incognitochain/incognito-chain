@@ -97,7 +97,7 @@ func (bc *BlockChain) InitFeatureStat() {
 			if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
 				Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
 			}
-			DefaultFeatureStat.Report()
+			//DefaultFeatureStat.Report()
 		}
 
 	}()
@@ -119,7 +119,7 @@ func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk st
 	return true
 }
 
-func (stat *FeatureStat) Report() FeatureReportInfo {
+func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	validatorStat := make(map[string]map[int]uint64)
 	proposeStat := make(map[string]map[int]uint64)
 	validatorSize := make(map[int]int)
@@ -139,7 +139,7 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 			Logger.log.Error(err)
 		}
 	}
-
+	unTriggerFeatures := beaconView.getUntriggerFeature()
 	stat.lock.Lock()
 	defer stat.lock.Unlock()
 	for key, features := range stat.nodes {
@@ -148,7 +148,9 @@ func (stat *FeatureStat) Report() FeatureReportInfo {
 		featureList := map[string]bool{}
 		for _, feature := range features.Features {
 			if _, ok := config.Param().AutoEnableFeature[feature]; ok {
-				featureList[feature] = true
+				if common.IndexOfStr(feature, unTriggerFeatures) > -1 {
+					featureList[feature] = true
+				}
 			}
 		}
 
