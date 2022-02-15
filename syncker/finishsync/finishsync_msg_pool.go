@@ -1,12 +1,10 @@
 package finishsync
 
 import (
-	"sort"
-	"sync"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"sort"
+	"sync"
 )
 
 var (
@@ -57,7 +55,7 @@ func (f *FinishSyncMsgPool) Clone() FinishSyncMsgPool {
 
 	res := NewFinishSyncMsgPool()
 	for i, validatorList := range f.FinishedSyncValidators {
-		for k, _ := range validatorList {
+		for k := range validatorList {
 			res.FinishedSyncValidators[i][k] = true
 		}
 	}
@@ -72,7 +70,7 @@ func (f *FinishSyncMsgPool) GetFinishedSyncValidators() map[byte][]string {
 
 	res := make(map[byte][]string)
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
-		for k, _ := range finishedSyncValidators {
+		for k := range finishedSyncValidators {
 			res[shardID] = append(res[shardID], k)
 		}
 	}
@@ -117,7 +115,7 @@ func (f *FinishSyncMsgPool) Validators(shardID byte) []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	res := []string{}
-	for k, _ := range f.FinishedSyncValidators[shardID] {
+	for k := range f.FinishedSyncValidators[shardID] {
 		res = append(res, k)
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -176,14 +174,9 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string) []*instr
 }
 
 func (f *FinishSyncMsgPool) Clean(allSyncPoolValidators map[byte][]string) {
-
-	for {
-		f.mu.Lock()
-		f.clean(allSyncPoolValidators)
-		f.mu.Unlock()
-		time.Sleep(5 * time.Minute)
-	}
-
+	f.mu.Lock()
+	f.clean(allSyncPoolValidators)
+	f.mu.Unlock()
 }
 
 func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
@@ -193,7 +186,7 @@ func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
 		if !ok {
 			f.FinishedSyncValidators[shardID] = make(map[string]bool)
 		}
-		for finishSyncMsg, _ := range finishedSyncValidators {
+		for finishSyncMsg := range finishedSyncValidators {
 			has := false
 			for _, syncPoolValidator := range syncPoolValidators {
 				if syncPoolValidator == finishSyncMsg {

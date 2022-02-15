@@ -141,6 +141,7 @@ const (
 	setConsensusRule           = "setconsensusrule"
 	getConsensusRule           = "getconsensusrule"
 	getByzantineDetectorInfo   = "getbyzantinedetectorinfo"
+	getByzantineBlackList      = "getbyzantineblacklist"
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
