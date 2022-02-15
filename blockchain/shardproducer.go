@@ -226,7 +226,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
 			beaconInstructions,
 			curView.ShardID,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			shardBestState.NumberOfFixedShardBlockValidator,
 			shardBestState.ShardHeight+1,
 		)
 
@@ -631,7 +631,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
 
-			numberOfFixedShardBlockValidators := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+			numberOfFixedShardBlockValidators := view.NumberOfFixedShardBlockValidator
 
 			maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 			var minShardCommitteeSize int

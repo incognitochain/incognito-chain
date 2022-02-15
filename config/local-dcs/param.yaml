@@ -12,7 +12,7 @@ committee_size:
   max_beacon_committee_size: 7
   init_shard_committee_size: 8
   init_beacon_committee_size: 4
-  shard_committee_size_key_list_v2: 4
+  shard_committee_size_key_list_v2: 8
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 8
   increase_max_shard_committee_size:
@@ -62,12 +62,24 @@ enable_feature_flags:
   - 1: 0
 portal_v3_height: 1000000000000
 tx_pool_version: 0
-geth_param: 
-  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
-  protocol: "https"
-  port: ""
 bsc_param:
   host: "https://data-seed-prebsc-2-s2.binance.org:8545"
 plg_param:
   host: "https://polygon-mumbai.g.alchemy.com/v2/V8SP0S8Q-sT35ca4VKH3Iwyvh8K8wTRn"
+pdex_param:
+  pdex_v3_break_point_height: 11
+  protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  params:
+    default_fee_rate_bps: 30
+    prv_discount_percent: 25
+    trading_protocol_fee_percent: 0
+    trading_staking_pool_reward_percent: 10
+    staking_pool_share:
+      - "0000000000000000000000000000000000000000000000000000000000000004": 10
+      - "0000000000000000000000000000000000000000000000000000000000000006": 20
+    mint_nft_require_amount: 1000000000
+    max_orders_per_nft: 10
+    auto_withdraw_order_limit_amount: 10
+    min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: true
