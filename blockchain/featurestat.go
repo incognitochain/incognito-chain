@@ -132,8 +132,8 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	shardCommmittee := map[int][]string{}
 	pendingCommmittee := map[int][]string{}
 	for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
-		shardCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetCommittee())
-		pendingCommmittee[i], err = incognitokey.CommitteeKeyListToString(stat.blockchain.ShardChain[i].GetPendingCommittee())
+		shardCommmittee[i], err = incognitokey.CommitteeKeyListToString(beaconView.GetAShardCommittee(byte(i)))
+		pendingCommmittee[i], err = incognitokey.CommitteeKeyListToString(beaconView.GetAShardPendingValidator(byte(i)))
 		validatorSize[i] = len(shardCommmittee[i]) + len(pendingCommmittee[i])
 		if err != nil {
 			Logger.log.Error(err)
