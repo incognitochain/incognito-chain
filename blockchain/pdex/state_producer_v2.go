@@ -106,7 +106,7 @@ func (sp *stateProducerV2) addLiquidity(
 				)
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
 				if metaData.AccessOption.AccessID != nil {
-					Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
+					Logger.log.Warnf("tx %v can not have NftID but found", tx.Hash().String())
 					res = append(res, refundInsts...)
 					continue
 				}

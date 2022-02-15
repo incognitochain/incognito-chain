@@ -303,11 +303,11 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	nftID common.Hash,
+	accessID common.Hash,
 	amount, beaconHeight, lmLockedBlocks uint64,
 	txHash string, accessOTA []byte,
 ) ([]byte, error) {
-	return p.updateShareValue(amount, beaconHeight, nftID.String(), accessOTA, addOperator, lmLockedBlocks)
+	return p.updateShareValue(amount, beaconHeight, accessID.String(), accessOTA, addOperator, lmLockedBlocks)
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -354,10 +354,10 @@ func (p *PoolPairState) getDiff(
 	newStateChange := stateChange
 	if comparePoolPair == nil {
 		newPoolPairChange.IsChanged = true
-		for nftID, share := range p.shares {
+		for accessID, share := range p.shares {
 			shareChange := v2utils.NewShareChange()
 			shareChange = share.getDiff(nil, shareChange)
-			poolPairChange.Shares[nftID] = shareChange
+			poolPairChange.Shares[accessID] = shareChange
 		}
 		for tokenID := range p.lpFeesPerShare {
 			newPoolPairChange.LpFeesPerShare[tokenID.String()] = true
@@ -368,10 +368,10 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.stakingPoolFees {
 			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 		}
-		for nftID, orderReward := range p.orderRewards {
+		for accessID, orderReward := range p.orderRewards {
 			orderRewardChange := v2utils.NewOrderRewardChange()
 			orderRewardChange = orderReward.getDiff(nil, orderRewardChange)
-			poolPairChange.OrderRewards[nftID] = orderRewardChange
+			poolPairChange.OrderRewards[accessID] = orderRewardChange
 		}
 		for tokenID, makingVolume := range p.makingVolume {
 			makingVolumeChange := v2utils.NewMakingVolumeChange()
@@ -384,10 +384,10 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.lmRewardsPerShare {
 			newPoolPairChange.LmRewardsPerShare[tokenID.String()] = true
 		}
-		for nftID, lockedShares := range p.lmLockedShare {
-			newPoolPairChange.LmLockedShare[nftID] = make(map[uint64]bool)
-			for beaconHeight, _ := range lockedShares {
-				newPoolPairChange.LmLockedShare[nftID][beaconHeight] = true
+		for accessID, lockedShares := range p.lmLockedShare {
+			newPoolPairChange.LmLockedShare[accessID] = make(map[uint64]bool)
+			for beaconHeight := range lockedShares {
+				newPoolPairChange.LmLockedShare[accessID][beaconHeight] = true
 			}
 		}
 	} else {
@@ -656,10 +656,10 @@ func (p *PoolPairState) RecomputeLPRewards(
 	return result, nil
 }
 
-func (p *PoolPairState) cloneShare(nftID string) map[string]*Share {
+func (p *PoolPairState) cloneShare(accessID string) map[string]*Share {
 	res := make(map[string]*Share)
 	for k, v := range p.shares {
-		if k == nftID {
+		if k == accessID {
 			res[k] = v.Clone()
 		} else {
 			res[k] = v
@@ -679,14 +679,14 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 
-	for nftID, shareChange := range poolPairChange.Shares {
-		if share, found := p.shares[nftID]; found {
-			err := share.updateToDB(env, poolPairID, nftID, shareChange)
+	for accessID, shareChange := range poolPairChange.Shares {
+		if share, found := p.shares[accessID]; found {
+			err := share.updateToDB(env, poolPairID, accessID, shareChange)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := share.deleteFromDB(env, poolPairID, nftID, shareChange)
+			err := share.deleteFromDB(env, poolPairID, accessID, shareChange)
 			if err != nil {
 				return err
 			}
@@ -738,14 +738,14 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 
-	for nftID, orderRewardChange := range poolPairChange.OrderRewards {
-		if _, found := p.orderRewards[nftID]; found {
+	for accessID, orderRewardChange := range poolPairChange.OrderRewards {
+		if _, found := p.orderRewards[accessID]; found {
 			if orderRewardChange.IsChanged {
 				err := statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
 					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-						nftID,
-						p.orderRewards[nftID].withdrawnStatus,
-						p.orderRewards[nftID].txReqID,
+						accessID,
+						p.orderRewards[accessID].withdrawnStatus,
+						p.orderRewards[accessID].txReqID,
 					),
 				)
 				if err != nil {
@@ -758,13 +758,13 @@ func (p *PoolPairState) updateToDB(
 					if err != nil {
 						return err
 					}
-					if reward, found := p.orderRewards[nftID].uncollectedRewards[*tokenHash]; found {
+					if reward, found := p.orderRewards[accessID].uncollectedRewards[*tokenHash]; found {
 						receiver, err := reward.receiver.String()
 						if err != nil {
 							return err
 						}
 						err = statedb.StorePdexv3PoolPairOrderRewardDetail(
-							env.StateDB(), poolPairID, nftID,
+							env.StateDB(), poolPairID, accessID,
 							statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
 								*tokenHash, reward.amount, receiver,
 							),
@@ -773,7 +773,7 @@ func (p *PoolPairState) updateToDB(
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, nftID, *tokenHash)
+						err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, accessID, *tokenHash)
 						if err != nil {
 							return err
 						}
@@ -781,7 +781,7 @@ func (p *PoolPairState) updateToDB(
 				}
 			}
 		} else {
-			err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, nftID)
+			err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, accessID)
 			if err != nil {
 				return err
 			}
@@ -790,7 +790,7 @@ func (p *PoolPairState) updateToDB(
 				if err != nil {
 					return err
 				}
-				err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, nftID, *tokenHash)
+				err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, accessID, *tokenHash)
 				if err != nil {
 					return err
 				}
@@ -804,27 +804,27 @@ func (p *PoolPairState) updateToDB(
 			return err
 		}
 		if _, found := p.makingVolume[*tokenHash]; !found {
-			for nftID, _ := range makingVolume.Volume {
-				err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
+			for accessID := range makingVolume.Volume {
+				err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, accessID, *tokenHash)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			for nftID, isChanged := range makingVolume.Volume {
+			for accessID, isChanged := range makingVolume.Volume {
 				if isChanged {
-					if volume, found := p.makingVolume[*tokenHash].volume[nftID]; found {
+					if volume, found := p.makingVolume[*tokenHash].volume[accessID]; found {
 						err = statedb.StorePdexv3PoolPairMakingVolume(
 							env.StateDB(), poolPairID,
 							statedb.NewPdexv3PoolPairMakingVolumeStateWithValue(
-								nftID, *tokenHash, volume,
+								accessID, *tokenHash, volume,
 							),
 						)
 						if err != nil {
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
+						err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, accessID, *tokenHash)
 						if err != nil {
 							return err
 						}
@@ -834,10 +834,10 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 
-	for nftID, lmLockedShareChange := range poolPairChange.LmLockedShare {
-		if _, found := p.lmLockedShare[nftID]; !found {
-			for beaconHeight, _ := range lmLockedShareChange {
-				err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, nftID, beaconHeight)
+	for accessID, lmLockedShareChange := range poolPairChange.LmLockedShare {
+		if _, found := p.lmLockedShare[accessID]; !found {
+			for beaconHeight := range lmLockedShareChange {
+				err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, accessID, beaconHeight)
 				if err != nil {
 					return err
 				}
@@ -845,15 +845,15 @@ func (p *PoolPairState) updateToDB(
 		} else {
 			for beaconHeight, isChanged := range lmLockedShareChange {
 				if isChanged {
-					if amount, found := p.lmLockedShare[nftID][beaconHeight]; found {
+					if amount, found := p.lmLockedShare[accessID][beaconHeight]; found {
 						err := statedb.StorePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID,
-							statedb.NewPdexv3PoolPairLmLockedShareStateWithValue(nftID, beaconHeight, amount),
+							statedb.NewPdexv3PoolPairLmLockedShareStateWithValue(accessID, beaconHeight, amount),
 						)
 						if err != nil {
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, nftID, beaconHeight)
+						err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, accessID, beaconHeight)
 						if err != nil {
 							return err
 						}
@@ -896,11 +896,11 @@ func (p *PoolPairState) existLP(lpID string) bool {
 
 func (p *PoolPairState) getChangedOrderRewards(compareOrderReward map[string]*OrderReward) map[string]*v2utils.OrderRewardChange {
 	res := make(map[string]*v2utils.OrderRewardChange)
-	for nftID, orderReward := range p.orderRewards {
-		res[nftID] = orderReward.getDiff(compareOrderReward[nftID], res[nftID])
+	for accessID, orderReward := range p.orderRewards {
+		res[accessID] = orderReward.getDiff(compareOrderReward[accessID], res[accessID])
 	}
-	for nftID, orderReward := range compareOrderReward {
-		res[nftID] = orderReward.getDiff(p.orderRewards[nftID], res[nftID])
+	for accessID, orderReward := range compareOrderReward {
+		res[accessID] = orderReward.getDiff(p.orderRewards[accessID], res[accessID])
 	}
 	return res
 }
@@ -918,11 +918,11 @@ func (p *PoolPairState) getChangedMakingVolume(compareMakingVolume map[common.Ha
 
 func (p *PoolPairState) getChangedShares(compareShare map[string]*Share) map[string]*v2utils.ShareChange {
 	res := make(map[string]*v2utils.ShareChange)
-	for nftID, share := range p.shares {
-		res[nftID] = share.getDiff(compareShare[nftID], res[nftID])
+	for accessID, share := range p.shares {
+		res[accessID] = share.getDiff(compareShare[accessID], res[accessID])
 	}
-	for nftID, share := range compareShare {
-		res[nftID] = share.getDiff(p.shares[nftID], res[nftID])
+	for accessID, share := range compareShare {
+		res[accessID] = share.getDiff(p.shares[accessID], res[accessID])
 	}
 	return res
 }
