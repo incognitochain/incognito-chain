@@ -30,7 +30,7 @@ type stateV2 struct {
 	processor                   stateProcessorV2
 
 	// cached state
-	nftAssetTags 				*v2utils.NFTAssetTagsCache
+	nftAssetTags *v2utils.NFTAssetTagsCache
 }
 
 func (s *stateV2) readConfig() {
@@ -503,8 +503,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		)
 		instructions = append(instructions, withdrawOrderRewardInstructions...)
 	}
-
-	//TODO: @tin auto withdraw order reward here
 
 	// handle modify params
 	var modifyParamsInstructions [][]string

@@ -70,7 +70,7 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 
 	if req.TokenToSell == common.PdexAccessCoinID {
 		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError, errors.New("Can not sell pdex access token"))
+			metadataCommon.PDEInvalidMetadataValueError, errors.New("cannot sell pdex access token"))
 	}
 
 	// OTAReceiver check
@@ -89,7 +89,7 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 
 	if req.UseNft() {
 		if req.RewardReceiver != nil {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Can not use reward receiver with nftID"))
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("cannot use reward receiver with nftID"))
 		}
 	}
 
@@ -206,6 +206,14 @@ func (req *AddOrderRequest) CalculateSize() uint64 {
 func (req *AddOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for currentTokenID, val := range req.Receiver {
+		if currentTokenID != common.PRVCoinID {
+			currentTokenID = common.ConfidentialAssetID
+		}
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
+	}
+	for currentTokenID, val := range req.RewardReceiver {
 		if currentTokenID != common.PRVCoinID {
 			currentTokenID = common.ConfidentialAssetID
 		}

@@ -142,7 +142,7 @@ func (response *MintAccessToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 ) (bool, error) {
 	idx := -1
 	metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", response)
-	metadataCommon.Logger.Log.Infof("BUGLOG There are %v inst\n", len(mintData.Insts))
+	metadataCommon.Logger.Log.Infof("There are %v inst\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) != 3 {
 			continue

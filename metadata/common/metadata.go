@@ -472,6 +472,3 @@ func IsPdexv3Type(metadataType int) bool {
 		return false
 	}
 }
-
-type Pdexv3Verifier interface {
-}

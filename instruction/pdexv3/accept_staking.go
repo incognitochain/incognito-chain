@@ -22,21 +22,21 @@ type AcceptStaking struct {
 func NewAcceptStaking() *AcceptStaking { return &AcceptStaking{} }
 
 func NewAcceptStakingWithAccessID(
-	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA []byte,
+	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, nextAccessOTA []byte,
 	accessOption metadataPdexv3.AccessOption, accessID common.Hash,
 ) *AcceptStaking {
 	if !accessOption.UseNft() && !accessID.IsZeroValue() {
 		accessOption.AccessID = &accessID
 	}
-	return NewAcceptStakingWithValue(stakingPoolID, txReqID, shardID, liquidity, accessOTA, accessOption)
+	return NewAcceptStakingWithValue(stakingPoolID, txReqID, shardID, liquidity, nextAccessOTA, accessOption)
 }
 
 func NewAcceptStakingWithValue(
-	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, accessOTA []byte,
+	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, nextAccessOTA []byte,
 	accessOption metadataPdexv3.AccessOption,
 ) *AcceptStaking {
 	return &AcceptStaking{
-		accessOTA:     accessOTA,
+		accessOTA:     nextAccessOTA,
 		stakingPoolID: stakingPoolID,
 		txReqID:       txReqID,
 		shardID:       shardID,
@@ -138,6 +138,6 @@ func (a *AcceptStaking) TxReqID() common.Hash {
 	return a.txReqID
 }
 
-func (a *AcceptStaking) NftID() common.Hash {
-	return *a.AccessOption.NftID
+func (a AcceptStaking) NftID() *common.Hash {
+	return a.AccessOption.NftID
 }

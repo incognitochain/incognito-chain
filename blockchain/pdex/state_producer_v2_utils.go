@@ -31,5 +31,8 @@ func (sp *stateProducerV2) validateContributions(
 			}
 		}
 	}
+	if (contribution0.OtaReceiver() == utils.EmptyString) != (contribution1.OtaReceiver() == utils.EmptyString) {
+		return errors.New("both contributions need to have or not have otaReceiver uniformly")
+	}
 	return nil
 }

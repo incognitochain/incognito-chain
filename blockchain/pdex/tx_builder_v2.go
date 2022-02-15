@@ -173,12 +173,10 @@ func (txBuilder *TxBuilderV2) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect %v but get %v", 4, len(inst))
 		}
 	case metadataCommon.Pdexv3MintAccessTokenMeta:
-		if len(inst) == 3 {
-			if len(inst) != 3 {
-				return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
-			}
-			tx, err = buildMintAccessTokenTx(inst, producerPrivateKey, shardID, transactionStateDB)
+		if len(inst) != 3 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
+		tx, err = buildMintAccessTokenTx(inst, producerPrivateKey, shardID, transactionStateDB)
 	}
 
 	return tx, err
@@ -523,7 +521,7 @@ func buildMintAccessTokenTx(
 	otaReceiverStr = mintAccessTokenInst.OtaReceiver()
 	amount = 1
 	txReqID = mintAccessTokenInst.TxReqID().String()
-	if instShardID != shardID || tokenID.IsZeroValue() {
+	if instShardID != shardID {
 		return tx, nil
 	}
 

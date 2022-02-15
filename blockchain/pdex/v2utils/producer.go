@@ -240,7 +240,7 @@ func BuildWithdrawStakingRewardInsts(
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
-	accessOTA []byte,
+	nextAccessOTA []byte,
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
@@ -250,7 +250,7 @@ func BuildWithdrawStakingRewardInsts(
 			Receiver:      metadataPdexv3.ReceiverInfo{},
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
-			AccessOTA:     accessOTA,
+			AccessOTA:     nextAccessOTA,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		inst := []string{
@@ -285,7 +285,7 @@ func BuildWithdrawStakingRewardInsts(
 			IsLastInst:    isLastInstOfReqTx,
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
-			AccessOTA:     accessOTA,
+			AccessOTA:     nextAccessOTA,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{

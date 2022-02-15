@@ -605,7 +605,7 @@ func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 }
 
 func (orderReward *OrderReward) isEmpty() bool {
-	if orderReward.withdrawnStatus != WithdrawnOrderReward && orderReward.withdrawnStatus == DefaultWithdrawnOrderReward {
+	if orderReward.withdrawnStatus == WaitToWithdrawOrderReward {
 		return false
 	}
 	if len(orderReward.uncollectedRewards) != 0 {

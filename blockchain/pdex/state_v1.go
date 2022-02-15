@@ -444,7 +444,7 @@ func (s *stateV1) Validator() StateValidator {
 func (s *stateV1) IsValidPdexv3PoolPairID(poolPairID string) (bool, error) {
 	poolPair, found := s.poolPairs[poolPairID]
 	if !found || poolPair == nil {
-		return false, fmt.Errorf("%v pool pair ID can not be found", poolPairID)
+		return false, fmt.Errorf("pool pair ID %v can not be found", poolPairID)
 	}
 	return true, nil
 }

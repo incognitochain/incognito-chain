@@ -65,7 +65,7 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 
 	if req.TokenToSell == common.PdexAccessCoinID {
 		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError, errors.New("Can not sell pdex access token"))
+			metadataCommon.PDEInvalidMetadataValueError, errors.New("Cannot sell pdex access token"))
 	}
 
 	// OTAReceiver check

@@ -174,9 +174,6 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			if orderReward[nftID] == nil {
-				orderReward[nftID] = NewOrderReward()
-			}
 			orderReward[nftID].txReqID = value.TxReqID()
 			orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
 			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)

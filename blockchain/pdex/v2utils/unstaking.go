@@ -22,7 +22,8 @@ func BuildRejectUnstakingInstructions(
 	if metaData.AccessOption.UseNft() {
 		mintNftInst, err := instruction.NewMintNftWithValue(
 			*metaData.AccessOption.NftID,
-			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], shardID, txReqID,
+			metaData.OtaReceivers()[metaData.AccessOption.NftID.String()], // otaReceivers map has been check in shard metaData Tx verifier
+			shardID, txReqID,
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
 		if err != nil {
 			return res, err

@@ -81,7 +81,8 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	res = append(res, matchAndReturnInst1)
 	if shouldMintAccessCoin {
 		mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
-			otaReceivers[common.PdexAccessCoinID], shardID, txReqID,
+			otaReceivers[common.PdexAccessCoinID], // otaReceivers map has been checked from shard metadata Tx verifier
+			shardID, txReqID,
 		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
 		if err != nil {
 			return res, err
