@@ -61,7 +61,7 @@ consensus_param:
   staking_flow_v3_height: 3335020
   force_not_use_burned_coins: 4211505
   lemma2_height: 4126069
-  block_producing_v3_height: 1000000000000
+  block_producing_v3_height: 3783250
   byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
