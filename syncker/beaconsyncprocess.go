@@ -291,7 +291,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	blockBuffer := []types.BlockInterface{}
 	defer func() {
 		if requestCnt == 0 {

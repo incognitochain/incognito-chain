@@ -3,7 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"github.com/incognitochain/incognito-chain/config"
 	"sync"
 	"time"
 
@@ -237,7 +237,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-	if os.Getenv("FULL_VALIDATION") != "" {
+	if config.Config().IsFullValidation {
 	WAITFORSHARD:
 		for _, v := range chain.Blockchain.ShardChain {
 			if v.GetBestView().(*ShardBestState).BeaconHeight+380 < block.GetHeight() {
