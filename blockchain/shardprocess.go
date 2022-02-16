@@ -174,11 +174,23 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
+	checkPoint := time.Now()
+WAITFORBEACON:
+	_, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), shardBlock.Header.BeaconHeight)
+	if err != nil {
+		if time.Since(checkPoint).Seconds() > 10 {
+			return NewBlockChainError(FetchBeaconBlocksError, err)
+		}
+		time.Sleep(time.Millisecond * 10)
+		goto WAITFORBEACON
+	}
+
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
-
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
+
+	//fetch signing committees
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	committees := []incognitokey.CommitteePublicKey{}
 	committees, signingCommittees, err = curView.getSigningCommittees(shardBlock, blockchain)
@@ -695,6 +707,10 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 		if err := shardBestState.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
 			return err
 		}
+	}
+
+	if err := blockchain.ShardChain[shardBlock.GetShardID()].ValidateBlockSignatures(shardBlock, signingCommittees); err != nil {
+		return err
 	}
 
 	// check with current final best state
