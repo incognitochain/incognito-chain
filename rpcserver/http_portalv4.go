@@ -303,7 +303,8 @@ func (httpServer *HttpServer) handleCreateRawTxDepositReqWithDepositKey(params i
 		depositPubKey = base58.Base58Check{}.NewEncode(depositPubKeyBytes, 0)
 
 		schnorrPrivateKey := new(privacy.SchnorrPrivateKey)
-		schnorrPrivateKey.Set(depositPrivateKey, privacy.RandomScalar())
+		r := new(privacy.Scalar).FromUint64(0) // must use r = 0
+		schnorrPrivateKey.Set(depositPrivateKey, r)
 		metaDataBytes, _ := otaReceiver.Bytes()
 		tmpSig, err := schnorrPrivateKey.Sign(common.HashB(metaDataBytes))
 		if err != nil {

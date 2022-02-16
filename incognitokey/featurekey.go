@@ -73,7 +73,7 @@ func (keySet *KeySet) GenerateOTDepositKey(tokenIDStr string, index uint64) (*OT
 	indexBig := new(big.Int).SetUint64(index)
 
 	privateKey := operation.HashToScalar(append(masterDepositSeed, indexBig.Bytes()...))
-	pubKey := new(operation.Point).ScalarMultBase(privateKey)
+	pubKey := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], privateKey)
 
 	return &OTDepositKey{
 		PrivateKey: privateKey.ToBytesS(),
@@ -94,7 +94,7 @@ func GenerateOTDepositKeyFromPrivateKey(incPrivateKey []byte, tokenIDStr string,
 	indexBig := new(big.Int).SetUint64(index)
 
 	privateKey := operation.HashToScalar(append(masterDepositSeed, indexBig.Bytes()...))
-	pubKey := new(operation.Point).ScalarMultBase(privateKey)
+	pubKey := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], privateKey)
 
 	return &OTDepositKey{
 		PrivateKey: privateKey.ToBytesS(),
@@ -108,7 +108,7 @@ func GenerateOTDepositKeyFromMasterDepositSeed(masterDepositSeed []byte, index u
 	indexBig := new(big.Int).SetUint64(index)
 
 	privateKey := operation.HashToScalar(append(masterDepositSeed, indexBig.Bytes()...))
-	pubKey := new(operation.Point).ScalarMultBase(privateKey)
+	pubKey := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], privateKey)
 
 	return &OTDepositKey{
 		PrivateKey: privateKey.ToBytesS(),
