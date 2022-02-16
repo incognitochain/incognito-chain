@@ -548,7 +548,7 @@ func (a *actorV2) run() error {
 			a.ruleDirector.updateRule(
 				ActorV2BuilderContext,
 				a.ruleDirector.builder,
-				a.chain.GetBestView().GetHeight(),
+				a.chain.GetBestView().GetBeaconHeight(),
 				a.chain,
 				a.logger,
 			)
@@ -989,7 +989,7 @@ func (a *actorV2) proposeBeaconBlock(
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
-		a.logger.Info("CreateNewBlock")
+		a.logger.Info("CreateNewBlock version", a.blockVersion)
 		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
