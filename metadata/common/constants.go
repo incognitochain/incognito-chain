@@ -261,6 +261,7 @@ const (
 const (
 	StopAutoStakingAmount = 0
 	EVMConfirmationBlocks = 15
+	PLGConfirmationBlocks = 35
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

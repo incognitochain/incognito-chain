@@ -122,7 +122,7 @@ if [ "$1" == "fullnode-testnet-b" ]; then
 GO111MODULE--usecoindata --coindatapre="__coins__" =on GETH_NAME=kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361 GETH_PROTOCOL=https GETH_PORT="" INCOGNITO_NETWORK_KEY=local ./incognito --testnet true --nodemode "relay" --relayshards "[0]" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../testnet/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330" --norpcauth --rpclisten "0.0.0.0:8334" --rpcwslisten "127.0.0.1:18338" > ../testnet/log.txt 2> ../testnet/error_log.txt &
 fi
 if [ "$1" == "fullnode-mainnet" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --testnet true --nodemode "relay" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../mainnet/fullnode" --discoverpeersaddress "mainnet-bootnode.incognito.org:9330"
+INCOGNITO_NETWORK_KEY=mainnet ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --testnet true --nodemode "relay" --relayshards "[0,1,2,3,4,5,6,7]" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../inc-data/mainnet/fullnode" --discoverpeersaddress "mainnet-bootnode.incognito.org:9330" > ../inc-data/mainnet/log.txt 2> ../inc-data/mainnet/error_log.txt &
 fi
 ######
 if [ "$1" == "shard-candidate0-1" ]; then
