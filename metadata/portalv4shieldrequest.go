@@ -183,7 +183,7 @@ func (req PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetri
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature %v", req.Signature))
 		}
 
-		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); isValid {
+		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); !isValid {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
 		}
 	}
@@ -254,4 +254,18 @@ func (req *PortalV4ShieldingRequest) BuildReqActions(tx Transaction, chainRetrie
 
 func (req *PortalV4ShieldingRequest) CalculateSize() uint64 {
 	return calculateSize(req)
+}
+
+func (req *PortalV4ShieldingRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+
+	if req.OTDepositPubKey != "" {
+		otaReceiver := privacy.OTAReceiver{}
+		_ = otaReceiver.FromString(req.Receiver)
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+		})
+	}
+
+	return result
 }

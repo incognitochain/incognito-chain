@@ -211,7 +211,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 
 	// verify shielding proof
 	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(
-		meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.Receiver, portalParams.MinShieldAmts[meta.TokenID])
+		meta.ShieldingProof, bc, expectedReceivedMultisigAddress, chainCode, portalParams.MinShieldAmts[meta.TokenID])
 	if !isValid || err != nil {
 		Logger.log.Error("Shielding Request: Parse proof and verify shielding proof failed - Error: %v", err)
 		return [][]string{rejectInst}, nil
