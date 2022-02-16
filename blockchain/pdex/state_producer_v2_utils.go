@@ -31,7 +31,7 @@ func (sp *stateProducerV2) validateContributions(
 				return errors.New("contribution 0 and contribution 1 need to be same accessID")
 			}
 		}
-	} else if (!contribution0UseOtaReceiver) != (!contribution1UseOtaReceiver) {
+	} else {
 		return errors.New("both contributions must share OtaReceiver format")
 	}
 	return nil
