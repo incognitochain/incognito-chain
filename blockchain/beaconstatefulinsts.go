@@ -47,6 +47,7 @@ func collectStatefulActions(
 			metadata.IssuingPRVERC20RequestMeta,
 			metadata.IssuingPRVBEP20RequestMeta,
 			metadata.IssuingPLGRequestMeta,
+			metadata.IssuingFantomRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -277,6 +278,24 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqPLGTxsUsed = append(accumulatedValues.UniqPLGTxsUsed, uniqTx)
+				}
+			case metadata.IssuingFantomRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqFTMTxsUsed,
+					config.Param().FtmContractAddressStr,
+					common.FTMPrefix,
+					statedb.IsFTMTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:

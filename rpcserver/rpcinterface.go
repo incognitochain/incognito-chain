@@ -186,6 +186,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPRVBEP20Request:   (*HttpServer).handleCreateAndSendBurningPRVBEP20Request,
 	createAndSendTxWithIssuingPLGReq:      (*HttpServer).handleCreateAndSendTxWithIssuingPLGReq,
 	createAndSendBurningPLGRequest:        (*HttpServer).handleCreateAndSendBurningPLGRequest,
+	createAndSendTxWithIssuingFantomReq:   (*HttpServer).handleCreateAndSendTxWithIssuingFantomReq,
+	createAndSendBurningFantomRequest:     (*HttpServer).handleCreateAndSendBurningFantomRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -197,6 +199,7 @@ var HttpHandler = map[string]httpHandler{
 	getPRVERC20BurnProof:     (*HttpServer).handleGetPRVERC20BurnProof,
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
+	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -328,13 +331,15 @@ var HttpHandler = map[string]httpHandler{
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
-	getBurnProofForDepositToSC:                    (*HttpServer).handleGetBurnProofForDepositToSC,
-	getBurnPBSCProofForDepositToSC:                (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
-	createAndSendBurningForDepositToSCRequest:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
-	createAndSendBurningForDepositToSCRequestV2:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
-	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
-	getBurnPLGProofForDepositToSC:                 (*HttpServer).handleGetBurnPLGProofForDepositToSC,
-	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
+	getBurnProofForDepositToSC:                      (*HttpServer).handleGetBurnProofForDepositToSC,
+	getBurnPBSCProofForDepositToSC:                  (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest:       (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+	createAndSendBurningForDepositToSCRequestV2:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
+	createAndSendBurningPBSCForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
+	getBurnPLGProofForDepositToSC:                   (*HttpServer).handleGetBurnPLGProofForDepositToSC,
+	createAndSendBurningPLGForDepositToSCRequest:    (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
+	createAndSendBurningFantomForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningFantomForDepositToSCRequest,
+	getBurnFTMProofForDepositToSC:                   (*HttpServer).handleGetBurnFTMProofForDepositToSC,
 
 	//new pool info
 	getSyncStats:          (*HttpServer).hanldeGetSyncStats,
