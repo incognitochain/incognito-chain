@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
-	"os"
 	"path"
 	"sync"
 	"time"
@@ -318,7 +317,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 }
 
 func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-	if os.Getenv("FULL_VALIDATION") != "" {
+	if config.Config().IsFullValidation {
 	WAITFORBEACON:
 		if block.(*types.ShardBlock).Header.BeaconHeight > chain.Blockchain.BeaconChain.CurrentHeight() {
 			time.Sleep(time.Millisecond * 10)

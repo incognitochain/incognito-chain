@@ -282,7 +282,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	}
 
 	blockBuffer := []types.BlockInterface{}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer func() {
 		if requestCnt == 0 {
 			pState.processed = true
