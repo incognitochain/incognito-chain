@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"sort"
+	"strings"
 )
 
 type LiteStateDBIterator struct {
@@ -24,7 +25,9 @@ func NewLiteStateDBIterator(db incdb.Database, dbPrefix, prefix []byte, kvMap ma
 	memKeySort := [][]byte{}
 	memValueSort := [][]byte{}
 	for k, _ := range kvMap {
-		memKeySort = append(memKeySort, []byte(k))
+		if strings.Index(k, string(prefix)) == 0 {
+			memKeySort = append(memKeySort, []byte(k))
+		}
 	}
 	sort.Slice(memKeySort, func(i, j int) bool {
 		for index := range memKeySort[i] {
