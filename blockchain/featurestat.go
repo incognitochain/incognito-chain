@@ -172,7 +172,7 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 			for i := 0; i < stat.blockchain.GetActiveShardNumber(); i++ {
 				//if in pending -> increase validator set
 				if common.IndexOfStr(key, pendingCommmittee[i]) > -1 {
-					validatorStat[feature][-1]++
+					validatorStat[feature][i]++
 				}
 				//if in committee, increase validator set
 				if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
