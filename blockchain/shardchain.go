@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
+	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -308,6 +310,13 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 }
 
 func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+	if os.Getenv("FULL_VALIDATION") != "" {
+	WAITFORBEACON:
+		if block.(*types.ShardBlock).Header.BeaconHeight > chain.Blockchain.BeaconChain.CurrentHeight() {
+			time.Sleep(time.Millisecond * 10)
+			goto WAITFORBEACON
+		}
+	}
 	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)

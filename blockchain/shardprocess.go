@@ -201,6 +201,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 			}
 		}
 	}
+
 	if shouldValidate {
 		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
