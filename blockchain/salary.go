@@ -105,21 +105,16 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 							return err
 						}
 					} else {
-						Logger.log.Info(">>>>>>>>>>> ShardReceivedRewardV3: ", shardReceiveRewardV3)
 						cInfosV2, err := blockchain.GetAllCommitteeStakeInfoSlashingVersion(shardReceiveRewardV3.Epoch())
-						Logger.log.Infof(">>>>>>>>>>> GetAllCommitteeStakeInfoSlashingVersion, epoch %+v, \n committee info: %+v", cInfosV2)
 						if err != nil {
 							return NewBlockChainError(ProcessSalaryInstructionsError, err)
 						}
 						shardSubsetStakerInfo := getCommitteeToPayRewardMultisetSlashingVersion(cInfosV2[int(shardReceiveRewardV3.ShardID())], shardReceiveRewardV3)
-						Logger.log.Infof(">>>>>>>>>>> shardSubsetStakerInfo, shardID %+v, \n committee info: %+v \n", shardReceiveRewardV3.ShardID(), cInfosV2[int(shardReceiveRewardV3.ShardID())])
-						Logger.log.Infof(">>>>>>>>>>> shardSubsetStakerInfo, shardSubsetStakerInfo %+v", shardSubsetStakerInfo)
 						beaconBestState := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
 						nonSlashingCInfosV2, err := beaconBestState.GetNonSlashingCommittee(shardSubsetStakerInfo, shardReceiveRewardV3.Epoch(), shardReceiveRewardV3.ShardID())
 						if err != nil {
 							return NewBlockChainError(ProcessSalaryInstructionsError, err)
 						}
-						Logger.log.Infof(">>>>>>>>>>> shardSubsetStakerInfo, nonSlashingCInfosV2 %+v", nonSlashingCInfosV2)
 						err = blockchain.addShardCommitteeRewardSlashingVersion(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), nonSlashingCInfosV2)
 						if err != nil {
 							return err
@@ -278,7 +273,6 @@ func (blockchain *BlockChain) addShardCommitteeRewardSlashingVersion(
 		if common.GetShardIDFromLastByte(candidate.RewardReceiver().Pk[common.PublicKeySize-1]) == shardID {
 			for key, value := range reward {
 				tempPK := base58.Base58Check{}.Encode(candidate.RewardReceiver().Pk, common.Base58Version)
-				Logger.log.Info(">>>>>>>>>>>")
 				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
 				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
 				if err != nil {
