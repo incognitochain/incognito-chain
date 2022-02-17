@@ -483,11 +483,17 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 }
 
 func (beaconBestState *BeaconBestState) GetPortalStateV4() *portalprocessv4.CurrentPortalStateV4 {
-	return beaconBestState.portalStateV4.Copy()
+	if beaconBestState.portalStateV4 != nil {
+		return beaconBestState.portalStateV4.Copy()
+	}
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) GetPortalStateV3() *portalprocessv3.CurrentPortalState {
-	return beaconBestState.portalStateV3.Copy()
+	if beaconBestState.portalStateV3 != nil {
+		return beaconBestState.portalStateV3.Copy()
+	}
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) CloneBeaconBestStateFrom(target *BeaconBestState) error {
