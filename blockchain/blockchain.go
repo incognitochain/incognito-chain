@@ -790,6 +790,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		if v.NumberOfFixedShardBlockValidator == 0 {
+			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+		}
 		v.pdeStates, err = pdex.InitStatesFromDB(v.featureStateDB, v.BeaconHeight)
 		if err != nil {
 			return err
@@ -882,6 +885,9 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			if err := v.checkAndUpgradeStakingFlowV3Config(); err != nil {
 				return err
 			}
+		}
+		if v.NumberOfFixedShardBlockValidator == 0 {
+			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			return errors.New("Restart shard views fail")

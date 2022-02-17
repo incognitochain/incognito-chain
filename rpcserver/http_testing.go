@@ -367,6 +367,11 @@ func (httpServer *HttpServer) handleGetByzantineDetectorInfo(params interface{},
 	return blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo(), nil
 }
 
+func (httpServer *HttpServer) handleGetByzantineBlackList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	res := blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo()
+	return res["BlackList"], nil
+}
+
 func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {

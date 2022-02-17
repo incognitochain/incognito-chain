@@ -453,7 +453,7 @@ func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironmentWithValue
 // @NOTICE: DO NOT UPDATE IN BLOCK WITH SWAP INSTRUCTION
 func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) error {
 
-	if shardBestState.BeaconHeight == config.Param().ConsensusParam.BlockProducingV3Height {
+	if shardBestState.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
 		err := shardBestState.checkAndUpgradeStakingFlowV3Config()
 		if err != nil {
 			return err
