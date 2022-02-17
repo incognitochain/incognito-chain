@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"sync"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -123,7 +124,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		if err != nil {
 			return err
 		}
-		for tokenID, _ := range tokenStates {
+		for tokenID := range tokenStates {
 			allTokens[tokenID] = true
 		}
 
@@ -177,8 +178,12 @@ func (blockchain *BlockChain) InitChainState() error {
 	Logger.log.Infof("Init Beacon View height %+v", blockchain.BeaconChain.GetBestView().GetHeight())
 
 	finishsync.NewDefaultFinishSyncMsgPool()
-	bestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
-	go finishsync.DefaultFinishSyncMsgPool.Clean(bestView.GetSyncingValidatorsString())
+	go func() {
+		for {
+			finishsync.DefaultFinishSyncMsgPool.Clean(blockchain.BeaconChain.GetBestView().(*BeaconBestState).GetSyncingValidatorsString())
+			time.Sleep(time.Minute * 5)
+		}
+	}()
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())
@@ -187,7 +192,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
 	}
 	whiteListTx = make(map[string]bool)
-	for k, _ := range wl {
+	for k := range wl {
 		whiteListTx[k] = true
 	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
@@ -630,6 +635,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		if v.NumberOfFixedShardBlockValidator == 0 {
+			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+		}
 		v.pdeStates, err = pdex.InitStatesFromDB(v.featureStateDB, v.BeaconHeight)
 		if err != nil {
 			return err
@@ -718,6 +726,9 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			if err := v.checkAndUpgradeStakingFlowV3Config(); err != nil {
 				return err
 			}
+		}
+		if v.NumberOfFixedShardBlockValidator == 0 {
+			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")
@@ -1176,8 +1187,9 @@ func (blockchain *BlockChain) UsingNewPool() bool {
 
 func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePublicKey {
 
-	shardCommittees := blockchain.BeaconChain.GetFinalViewState().GetShardCommittee()
-	numberOfFixedNode := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+	beaconFinalView := blockchain.BeaconChain.GetFinalViewState()
+	shardCommittees := beaconFinalView.GetShardCommittee()
+	numberOfFixedNode := beaconFinalView.NumberOfFixedShardBlockValidator
 	m := []incognitokey.CommitteePublicKey{}
 
 	for _, shardCommittee := range shardCommittees {

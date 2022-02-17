@@ -456,6 +456,66 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(numInputs int, numOutputs in
 	return p.ExternalInputSize*uint(numInputs)+p.ExternalOutputSize*uint(numOutputs) <= p.ExternalTxMaxSize
 }
 
+func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDsNew(
+	utxos map[string]*statedb.UTXO,
+	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
+	tinyValueThreshold uint64,
+	minUTXOs uint64,
+) ([]*BroadcastTx, error) {
+	batchTxs := []*BroadcastTx{}
+	if len(utxos) == 0 || len(waitingUnshieldReqs) == 0 {
+		return batchTxs, nil
+	}
+
+	// sort UTXOs descending by amount
+	sortedUTXOs := p.sortUTXOsByAmountDescending(utxos)
+	// sort UTXOs ascending by beaconHeight
+	sortedUnshieldReqs := p.sortUnshieldReqsByBeaconHeightAscending(waitingUnshieldReqs)
+
+	remainUnshieldReqs := []unshieldItem{}
+	// choose UTXO(s) for each waiting unshielding requests
+	// create one batch for one unshielding request
+	for _, unshieldReq := range sortedUnshieldReqs {
+		chosenUtxos, chosenIndices, err := p.ChooseUTXOsForUnshieldReq(sortedUTXOs, unshieldReq.value.GetAmount())
+		if err != nil {
+			Logger.log.Errorf("Error when choose utxo for unshield ID: %v - Error %v\n",
+				unshieldReq.value.GetUnshieldID(), err)
+			remainUnshieldReqs = append(remainUnshieldReqs, unshieldReq)
+			continue
+		}
+		chosenUtxoObjs := []*statedb.UTXO{}
+		for _, u := range chosenUtxos {
+			chosenUtxoObjs = append(chosenUtxoObjs, u.value)
+		}
+		batchTxs = append(batchTxs, &BroadcastTx{
+			UTXOs:       chosenUtxoObjs,
+			UnshieldIDs: []string{unshieldReq.value.GetUnshieldID()},
+		})
+		// remove chosen utxos in sortedUTXOs (for next unshielding requests)
+		offsetIndex := 0
+		for _, index := range chosenIndices {
+			if index == 0 {
+				sortedUTXOs = sortedUTXOs[1:]
+			} else {
+				sortedUTXOs = append(sortedUTXOs[:index-offsetIndex], sortedUTXOs[index-offsetIndex+1:]...)
+			}
+			offsetIndex++
+		}
+	}
+
+	// fmt.Printf("batchTxs: %+v\n", batchTxs)
+	// merge small batches
+	batchTxs = p.MergeBatches(batchTxs)
+
+	// appending tiny into batch txs
+	batchTxs = p.AppendTinyUTXOs(batchTxs, sortedUTXOs, tinyValueThreshold, minUTXOs)
+
+	// appending remain unshielding request (if any)
+	batchTxs = p.AppendWaitingUnshieldRequests(batchTxs, remainUnshieldReqs, waitingUnshieldReqs)
+
+	return batchTxs, nil
+}
+
 //TODO: update
 // Choose list of pairs (UTXOs and unshield IDs) for broadcast external transactions
 func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDs(

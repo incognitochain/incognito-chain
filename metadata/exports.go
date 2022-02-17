@@ -179,11 +179,29 @@ const (
 	BeaconOnly                           = metadataCommon.BeaconOnly
 	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
 	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
+	PLGConfirmationBlocks                = metadataCommon.PLGConfirmationBlocks
 	NoAction                             = metadataCommon.NoAction
 	MetaRequestBeaconMintTxs             = metadataCommon.MetaRequestBeaconMintTxs
 	MetaRequestShardMintTxs              = metadataCommon.MetaRequestShardMintTxs
 	BurningPBSCForDepositToSCRequestMeta = metadataCommon.BurningPBSCForDepositToSCRequestMeta
 	BurningPBSCConfirmForDepositToSCMeta = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
+
+	IssuingPRVERC20RequestMeta  = metadataCommon.IssuingPRVERC20RequestMeta
+	IssuingPRVERC20ResponseMeta = metadataCommon.IssuingPRVERC20ResponseMeta
+	IssuingPRVBEP20RequestMeta  = metadataCommon.IssuingPRVBEP20RequestMeta
+	IssuingPRVBEP20ResponseMeta = metadataCommon.IssuingPRVBEP20ResponseMeta
+	BurningPRVERC20RequestMeta  = metadataCommon.BurningPRVERC20RequestMeta
+	BurningPRVERC20ConfirmMeta  = metadataCommon.BurningPRVERC20ConfirmMeta
+	BurningPRVBEP20RequestMeta  = metadataCommon.BurningPRVBEP20RequestMeta
+	BurningPRVBEP20ConfirmMeta  = metadataCommon.BurningPRVBEP20ConfirmMeta
+
+	IssuingPLGRequestMeta  = metadataCommon.IssuingPLGRequestMeta
+	IssuingPLGResponseMeta = metadataCommon.IssuingPLGResponseMeta
+	BurningPLGRequestMeta  = metadataCommon.BurningPLGRequestMeta
+	BurningPLGConfirmMeta  = metadataCommon.BurningPLGConfirmMeta
+
+	BurningPLGForDepositToSCRequestMeta = metadataCommon.BurningPLGForDepositToSCRequestMeta
+	BurningPLGConfirmForDepositToSCMeta = metadataCommon.BurningPLGConfirmForDepositToSCMeta
 )
 
 // export error codes

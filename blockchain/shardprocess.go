@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/config"
@@ -169,7 +167,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	curView := preView.(*ShardBestState)
 
 	if blockHeight != curView.ShardHeight+1 {
-		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomming block height %+v", curView.ShardHeight, blockHeight))
+		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomminÏg block height %+v", curView.ShardHeight, blockHeight))
 	}
 
 	// fetch beacon blocks
@@ -574,7 +572,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
 			beaconInstructions,
 			curView.ShardID,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			curView.NumberOfFixedShardBlockValidator,
 			shardBlock.Header.Height,
 		)
 
@@ -696,7 +694,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	//verify producer via index
 
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, GetProposerLength()); err != nil {
+		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength()); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -1289,7 +1287,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
 				storeBlock.(*types.ShardBlock),
-				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), GetProposerLength()),
+				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), newFinalView.(*ShardBestState).GetProposerLength()),
 				committeesStoreBlock,
 			)
 			if err2 != nil {
@@ -1475,7 +1473,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				}
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
-				metadataCommon.IssuingPRVERC20RequestMeta, metadataCommon.IssuingPRVBEP20RequestMeta:
+				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
+				metadata.IssuingPLGRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

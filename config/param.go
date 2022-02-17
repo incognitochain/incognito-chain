@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -39,6 +40,7 @@ type param struct {
 	EpochParam                       epochParam         `mapstructure:"epoch_param"`
 	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
+	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
 	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
@@ -53,6 +55,7 @@ type param struct {
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
+	PLGParam                         plgParam           `mapstructure:"plg_param"`
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
@@ -154,7 +157,57 @@ func LoadParam() *param {
 	p.LoadKeyByNetwork(network)
 	common.TIMESLOT = p.ConsensusParam.Timeslot
 	common.MaxShardNumber = p.ActiveShards
+
+	if err := verifyParam(p); err != nil {
+		panic(err)
+	}
+
 	return p
+}
+
+func verifyParam(p *param) error {
+
+	if p.CommitteeSize.MaxShardCommitteeSize < p.CommitteeSize.MinShardCommitteeSize {
+		return fmt.Errorf("MaxCommitteeSize %+v < MinCommitteeSize %+v",
+			p.CommitteeSize.MaxShardCommitteeSize, p.CommitteeSize.MinShardCommitteeSize)
+	}
+
+	if p.CommitteeSize.MaxBeaconCommitteeSize < p.CommitteeSize.MinBeaconCommitteeSize {
+		return fmt.Errorf("MaxCommitteeSize %+v < MinCommitteeSize %+v",
+			p.CommitteeSize.MaxBeaconCommitteeSize, p.CommitteeSize.MinBeaconCommitteeSize)
+	}
+
+	if p.CommitteeSize.MinShardCommitteeSize < p.CommitteeSize.NumberOfFixedShardBlockValidator {
+		return fmt.Errorf("MinShardCommitteeSize %+v < NumberOfFixedShardBlockValidator %+v",
+			p.CommitteeSize.MinShardCommitteeSize, p.CommitteeSize.NumberOfFixedShardBlockValidator)
+	}
+
+	if p.CommitteeSize.MinShardCommitteeSize < 4 {
+		return fmt.Errorf("MinShardCommitteeSize %+v < %+v",
+			p.CommitteeSize.MinShardCommitteeSize, 4)
+	}
+
+	if p.CommitteeSize.MinBeaconCommitteeSize < 4 {
+		return fmt.Errorf("MinBeaconCommitteeSize %+v < %+v",
+			p.CommitteeSize.MinBeaconCommitteeSize, 4)
+	}
+
+	if p.CommitteeSize.InitShardCommitteeSize != p.CommitteeSize.ShardCommitteeSizeKeyListV2 {
+		return fmt.Errorf("InitShardCommitteeSize %+v < ShardCommitteeSizeKeyListV2 %+v",
+			p.CommitteeSize.InitShardCommitteeSize, p.CommitteeSize.ShardCommitteeSizeKeyListV2)
+	}
+
+	if p.CommitteeSize.InitBeaconCommitteeSize != p.CommitteeSize.BeaconCommitteeSizeKeyListV2 {
+		return fmt.Errorf("InitBeaconCommitteeSize %+v < BeaconCommitteeSizeKeyListV2 %+v",
+			p.CommitteeSize.InitBeaconCommitteeSize, p.CommitteeSize.BeaconCommitteeSizeKeyListV2)
+	}
+
+	if p.EpochParam.RandomTime >= p.EpochParam.NumberOfBlockInEpoch {
+		return fmt.Errorf("RandomTime %+v >= NumberOfBlockInEpoch %+v",
+			p.EpochParam.RandomTime, p.EpochParam.NumberOfBlockInEpoch)
+	}
+
+	return nil
 }
 
 //key1,key2 : default key of the network
@@ -265,5 +318,15 @@ type pdexParam struct {
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
 		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
+	}
+}
+
+type plgParam struct {
+	Host string `mapstructure:"host"`
+}
+
+func (plgParam *plgParam) GetFromEnv() {
+	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
+		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
 	}
 }

@@ -2,6 +2,9 @@ package v2utils
 
 import (
 	"math/big"
+	"sort"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type MintNftStatus struct {
@@ -50,30 +53,54 @@ func getMakingAmountFromChange(change [2]*big.Int) *big.Int {
 	return new(big.Int).Neg(change[1])
 }
 
-func SplitTradingReward(
-	reward *big.Int, ratio uint, bps uint,
+func GetMakingVolumes(
 	pairChange [2]*big.Int, orderChange map[string][2]*big.Int,
 	nftIDs map[string]string,
+) (*big.Int, map[string]*big.Int, byte) {
+	ammMakingAmt := getMakingAmountFromChange(pairChange)
+
+	orderMakingAmts := map[string]*big.Int{}
+	for ordID, change := range orderChange {
+		orderMakingAmt := getMakingAmountFromChange(change)
+		nftID := nftIDs[ordID]
+		if _, ok := orderMakingAmts[nftID]; !ok {
+			orderMakingAmts[nftID] = new(big.Int).SetUint64(0)
+		}
+		orderMakingAmts[nftID].Add(orderMakingAmts[nftID], orderMakingAmt)
+	}
+
+	sellToken0 := pairChange[0].Cmp(big.NewInt(0)) > 0
+	for _, change := range orderChange {
+		if change[0].Cmp(big.NewInt(0)) > 0 {
+			sellToken0 = true
+			break
+		}
+	}
+
+	tradeDirection := TradeDirectionSell1
+	if sellToken0 {
+		tradeDirection = TradeDirectionSell0
+	}
+
+	return ammMakingAmt, orderMakingAmts, byte(tradeDirection)
+}
+
+func SplitTradingReward(
+	reward *big.Int, ratio uint, bps uint,
+	ammMakingAmt *big.Int, orderMakingAmts map[string]*big.Int,
 ) (uint64, map[string]uint64) {
 	if ratio == 0 {
 		return reward.Uint64(), map[string]uint64{}
 	}
 	weightedMakingAmt := new(big.Int).SetUint64(0)
 
-	ammMakingAmt := getMakingAmountFromChange(pairChange)
 	weightedAmmMakingAmt := new(big.Int).Mul(ammMakingAmt, new(big.Int).SetUint64(uint64(bps)))
 	weightedMakingAmt.Add(weightedMakingAmt, weightedAmmMakingAmt)
 
-	weightOrderMakingAmt := map[string]*big.Int{}
-	for ordID, change := range orderChange {
-		orderMakingAmt := getMakingAmountFromChange(change)
-		nftID := nftIDs[ordID]
-		if _, ok := weightOrderMakingAmt[nftID]; !ok {
-			weightOrderMakingAmt[nftID] = new(big.Int).SetUint64(0)
-		}
-		weightOrderMakingAmt[nftID].Add(weightOrderMakingAmt[nftID], new(big.Int).Mul(orderMakingAmt, new(big.Int).SetUint64(uint64(2*ratio))))
-	}
-	for _, weight := range weightOrderMakingAmt {
+	weightedOrderMakingAmts := map[string]*big.Int{}
+	for nftID, amt := range orderMakingAmts {
+		weight := new(big.Int).Mul(amt, new(big.Int).SetUint64(uint64(ratio)))
+		weightedOrderMakingAmts[nftID] = weight
 		weightedMakingAmt.Add(weightedMakingAmt, weight)
 	}
 
@@ -86,8 +113,20 @@ func SplitTradingReward(
 	weightedMakingAmt.Sub(weightedMakingAmt, weightedAmmMakingAmt)
 	reward.Sub(reward, ammReward)
 
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(weightedOrderMakingAmts))
+	i := 0
+	for k := range weightedOrderMakingAmts {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
 	orderRewards := map[string]uint64{}
-	for nftID, weight := range weightOrderMakingAmt {
+	for _, nftID := range keys {
+		weight := weightedOrderMakingAmts[nftID]
 		orderReward := new(big.Int).SetUint64(0)
 		if weight.Cmp(new(big.Int).SetUint64(0)) > 0 {
 			orderReward = new(big.Int).Mul(reward, weight)
@@ -101,4 +140,42 @@ func SplitTradingReward(
 	}
 
 	return ammReward.Uint64(), orderRewards
+}
+
+func SplitOrderRewardLiquidityMining(
+	volume map[string]*big.Int, amount *big.Int, tokenID common.Hash,
+) map[string]uint64 {
+	sumVolume := new(big.Int).SetUint64(0)
+	for _, v := range volume {
+		sumVolume.Add(sumVolume, v)
+	}
+
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(volume))
+	i := 0
+	for k := range volume {
+		keys[i] = k
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	orderRewards := map[string]uint64{}
+	remain := new(big.Int).Set(amount)
+	for _, nftID := range keys {
+		v := volume[nftID]
+		orderReward := new(big.Int).SetUint64(0)
+		if v.Cmp(new(big.Int).SetUint64(0)) > 0 {
+			orderReward = new(big.Int).Mul(remain, v)
+			orderReward.Div(orderReward, sumVolume)
+		}
+
+		orderRewards[nftID] = orderReward.Uint64()
+
+		sumVolume.Sub(sumVolume, v)
+		remain.Sub(remain, orderReward)
+	}
+
+	return orderRewards
 }
