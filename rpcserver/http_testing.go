@@ -31,7 +31,47 @@ type txs struct {
 }
 
 func (httpServer *HttpServer) handleTestHttpServer(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return nil, nil
+	arrayParams := common.InterfaceSlice(params)
+	types := int(arrayParams[0].(float64))
+	epoch := int(arrayParams[1].(float64))
+	shardID := int(arrayParams[2].(float64))
+	height := int(arrayParams[3].(float64))
+	tempPK := arrayParams[4].(string)
+	if types == 0 {
+		res, err := httpServer.config.BlockChain.GetAllCommitteeStakeInfoSlashingVersion(uint64(epoch))
+		if err != nil {
+			fmt.Println(err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		ress := []string{}
+		for _, v := range res[shardID] {
+			ress = append(ress, v.CommitteePublicKey())
+		}
+		fmt.Printf("%+v\n", ress)
+		return ress, nil
+	} else if types == 1 {
+		sRH, err := httpServer.config.BlockChain.GetShardRootsHashFromBlockHeight(byte(shardID), uint64(height))
+		if err != nil {
+			fmt.Println(err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		committeeRewardStateDB, err := statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
+
+		amount, err := statedb.GetCommitteeReward(committeeRewardStateDB, tempPK, common.PRVCoinID)
+		return amount, nil
+	} else {
+		sRH, err := httpServer.config.BlockChain.GetShardRootsHashFromBlockHeight(byte(shardID), uint64(height))
+		if err != nil {
+			fmt.Println(err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		committeeRewardStateDB, err := statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
+
+		ress := statedb.ListCommitteeReward(committeeRewardStateDB)
+		return ress, nil
+	}
 }
 
 /*
@@ -48,6 +88,7 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 }
 
 func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
 	_, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found, got "+reflect.TypeOf(httpServer.config.ConsensusEngine).String()))

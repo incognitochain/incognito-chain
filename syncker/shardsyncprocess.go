@@ -75,8 +75,8 @@ func NewShardSyncProcess(
 	}
 	s.crossShardSyncProcess = NewCrossShardSyncProcess(network, bc, s, beaconChain)
 
-	go s.syncShardProcess()
-	go s.insertShardBlockFromPool()
+	//go s.syncShardProcess()
+	//go s.insertShardBlockFromPool()
 	go s.syncFinishSyncMessage()
 
 	go func() {

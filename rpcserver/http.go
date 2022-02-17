@@ -251,17 +251,17 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	var request *JsonRequest
 	request, jsonErr = parseJsonRequest(body, r.Method)
 	if jsonErr == nil {
-		defer func(req *JsonRequest) {
-			if req.Method == getShardBestState {
-				return
-			}
-			err := recover()
-			if err != nil {
-				errMsg := fmt.Sprintf("Recovery error message: %v", err)
-				Logger.log.Error(errMsg)
-				httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusInternalServerError, buf)
-			}
-		}(request)
+		//defer func(req *JsonRequest) {
+		//	if req.Method == getShardBestState {
+		//		return
+		//	}
+		//	err := recover()
+		//	if err != nil {
+		//		errMsg := fmt.Sprintf("Recovery error message: %v", err)
+		//		Logger.log.Error(errMsg)
+		//		httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusInternalServerError, buf)
+		//	}
+		//}(request)
 
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
