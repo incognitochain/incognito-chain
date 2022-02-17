@@ -131,6 +131,8 @@ const (
 	handleGetConsensusInfoV3   = "getconsensusinfov3"
 	getAutoStakingByHeight     = "getautostakingbyheight"
 	sendFinishSync             = "sendfinishsync"
+	setAutoEnableFeatureConfig = "setautoenablefeatureconfig"
+	getAutoEnableFeatureConfig = "getautoenablefeatureconfig"
 	getCommitteeState          = "getcommitteestate"
 	convertPaymentAddress      = "convertpaymentaddress"
 	getTotalBlockInEpoch       = "gettotalblockinepoch"

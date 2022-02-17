@@ -12,7 +12,7 @@ import (
 )
 
 func (httpServer *HttpServer) hanldeGetFeatureStats(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := blockchain.DefaultFeatureStat.Report()
+	result := blockchain.DefaultFeatureStat.Report(httpServer.config.BlockChain.GetBeaconBestState())
 	return result, nil
 }
 

@@ -128,7 +128,7 @@ func Test_Auto_Enable() {
 		}
 		node.GenerateBlock().NextRound()
 		if height == 750 || height == 950 {
-			fmt.Println(blockchain.DefaultFeatureStat.Report())
+			fmt.Println(blockchain.DefaultFeatureStat.Report(node.GetBlockchain().GetBeaconBestState()))
 			fmt.Println("beacon ==============", node.GetBlockchain().GetBeaconBestState().TriggeredFeature)
 			fmt.Println("shard 0 ==============", node.GetBlockchain().GetBestStateShard(0).TriggeredFeature)
 			fmt.Println("shard 1  ==============", node.GetBlockchain().GetBestStateShard(1).TriggeredFeature)

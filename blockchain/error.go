@@ -196,6 +196,7 @@ const (
 	PDEStateDBError
 	UpdateBFTV3StatsError
 	FinishSyncInstructionError
+	OutdatedCodeError
 )
 
 var ErrCodeMessage = map[int]struct {

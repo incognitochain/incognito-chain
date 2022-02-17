@@ -105,6 +105,8 @@ var HttpHandler = map[string]httpHandler{
 	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	sendFinishSync:             (*HttpServer).handleSendFinishSync,
+	setAutoEnableFeatureConfig: (*HttpServer).handleSetAutoEnableFeatureConfig,
+	getAutoEnableFeatureConfig: (*HttpServer).handleGetAutoEnableFeatureConfig,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,

@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
+	"math"
 	"sort"
 )
 
@@ -589,19 +590,19 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 
 		// check proposer threshold
 		invalidCondition := false
-		featureStatReport := DefaultFeatureStat.Report()
+		featureStatReport := DefaultFeatureStat.Report(curView)
 		if featureStatReport.ProposeStat[feature] == nil {
 			continue
 		}
 		beaconProposerSize := len(curView.GetCommittee())
 		//if number of beacon proposer update < 90%, not generate inst
-		if featureStatReport.ProposeStat[feature][-1] < uint64(beaconProposerSize*90/100) {
+		if featureStatReport.ProposeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*90/100)) {
 			continue
 		}
 		//if number of each shard proposer update < 90%, not generate inst
 		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
-			shardProposerSize := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
-			if featureStatReport.ProposeStat[feature][chainID] < uint64(shardProposerSize*90/100) {
+			shardProposerSize := curView.MinShardCommitteeSize //assume Min Size = proposer size (bpv3 change this)
+			if featureStatReport.ProposeStat[feature][chainID] < uint64(math.Ceil(float64(shardProposerSize)*90/100)) {
 				invalidCondition = true
 				break
 			}
@@ -634,9 +635,9 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 }
 
 func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
-	halfPendingCycle := uint64(len(curView.GetShardPendingValidator()[sid]) / 2)
-	halfPendingCycleEpoch := halfPendingCycle / 4 //this assume an average of 4 nodes will be out pending queue per epoch
-	return halfPendingCycleEpoch
+	swapOffset := uint64(curView.MaxShardCommitteeSize / 8)
+	halfPendingCycleEpoch := math.Ceil(float64(len(curView.GetShardPendingValidator()[sid])) / float64(2*swapOffset))
+	return uint64(halfPendingCycleEpoch)
 }
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
