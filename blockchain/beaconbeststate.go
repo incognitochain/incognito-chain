@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
@@ -478,6 +479,20 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
 	}
 
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) GetPortalStateV4() *portalprocessv4.CurrentPortalStateV4 {
+	if beaconBestState.portalStateV4 != nil {
+		return beaconBestState.portalStateV4.Copy()
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) GetPortalStateV3() *portalprocessv3.CurrentPortalState {
+	if beaconBestState.portalStateV3 != nil {
+		return beaconBestState.portalStateV3.Copy()
+	}
 	return nil
 }
 
