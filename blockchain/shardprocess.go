@@ -195,17 +195,18 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 				beaconHeight, curView.BeaconHeight)
 			return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
 		}
-		if err := curView.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
-			return err
+		if shouldValidate {
+			if err := curView.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
+				return err
+			}
 		}
 	}
-	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
-		return err
-	}
-
 	if shouldValidate {
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
+			Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
+			return err
+		}
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false, signingCommittees); err != nil {
 			return err
