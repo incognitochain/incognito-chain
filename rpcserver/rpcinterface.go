@@ -168,6 +168,8 @@ var HttpHandler = map[string]httpHandler{
 
 	// wallet
 	getPublicKeyFromPaymentAddress:        (*HttpServer).handleGetPublicKeyFromPaymentAddress,
+	generateOTAReceiver:                   (*HttpServer).handleGenerateOTAReceiver,
+	signReceiver:                          (*HttpServer).handleSignReceiver,
 	defragmentAccount:                     (*HttpServer).handleDefragmentAccount,
 	defragmentAccountV2:                   (*HttpServer).handleDefragmentAccountV2,
 	defragmentAccountToken:                (*HttpServer).handleDefragmentAccountToken,

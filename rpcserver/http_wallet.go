@@ -777,4 +777,48 @@ func (httpServer *HttpServer) handleDefragmentAccountTokenV2(params interface{},
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGenerateOTAReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("must have exactly 1 param"))
+	}
+	paymentAddress, ok := arrayParams[0].(string)
+	if !ok {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid payment address"))
+	}
+
+	otaReceiver, err := httpServer.walletService.GenerateOTAReceiver(paymentAddress)
+	if err != nil {
+		return false, err
+	}
+	result, _ := otaReceiver.String()
+
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleSignReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("must have exactly 1 param"))
+	}
+
+	type Args struct {
+		SigningKey string
+		Receiver   string
+	}
+	jsb, _ := json.Marshal(arrayParams[0])
+	var args Args
+	err := json.Unmarshal(jsb, &args)
+	if err != nil || args.SigningKey == "" || args.Receiver == "" {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid parameters"))
+	}
+
+	sig, err1 := httpServer.walletService.SignReceiver(args.SigningKey, args.Receiver)
+	if err != nil {
+		return false, err1
+	}
+
+	return base58.Base58Check{}.Encode(sig, 0), nil
+}
+
 // ----------------------------- End ------------------------------------

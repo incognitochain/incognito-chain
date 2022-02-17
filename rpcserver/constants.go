@@ -173,6 +173,8 @@ const (
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
+	generateOTAReceiver            = "generateotareceiver"
+	signReceiver                   = "signreceiver"
 	defragmentAccount              = "defragmentaccount"
 	defragmentAccountV2            = "defragmentaccountv2"
 	defragmentAccountToken         = "defragmentaccounttoken"

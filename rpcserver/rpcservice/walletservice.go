@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"math/rand"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -52,9 +53,9 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, _, err := GetKeySetFromPrivateKeyParams(keyStr)
-	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil{
+	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil {
 		return false, NewRPCError(InvalidSenderViewingKeyError, fmt.Errorf("OTA key not found, error: %v", err))
-	}else{
+	} else {
 		otaKey = keySet.OTAKey
 	}
 
@@ -261,4 +262,45 @@ func (walletService WalletService) GetReceivedByAccount(accountName string) (uin
 		}
 	}
 	return balance, nil
+}
+
+func (walletService WalletService) GenerateOTAReceiver(paymentAddr string) (*privacy.OTAReceiver, *RPCError) {
+	w, err := wallet.Base58CheckDeserialize(paymentAddr)
+	if err != nil || w.KeySet.PaymentAddress.GetOTAPublicKey() == nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("invalid payment address"))
+	}
+
+	otaReceiver := new(privacy.OTAReceiver)
+	err = otaReceiver.FromAddress(w.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("generating OTAReceiver error: %v", err))
+	}
+
+	return otaReceiver, nil
+}
+
+func (walletService WalletService) SignReceiver(signKeyStr string, receiverStr string) ([]byte, *RPCError) {
+	signKey, _, err := base58.Base58Check{}.Decode(signKeyStr)
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("invalid signKey %v", signKeyStr))
+	}
+
+	receiver := new(privacy.OTAReceiver)
+	err = receiver.FromString(receiverStr)
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("invalid receiver %v", receiverStr))
+	}
+	receiverBytes, _ := receiver.Bytes()
+
+	schnorrPrivateKey := new(privacy.SchnorrPrivateKey)
+	r := new(privacy.Scalar).FromUint64(0)
+	schnorrPrivateKey.Set(new(privacy.Scalar).FromBytesS(signKey), r)
+
+	digestedData := common.HashB(receiverBytes)
+	sig, err := schnorrPrivateKey.Sign(digestedData)
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("signing error: %v", err))
+	}
+
+	return sig.Bytes(), nil
 }
