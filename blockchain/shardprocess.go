@@ -698,7 +698,6 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	startTimeVerifyBestStateWithShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
-
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
 		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength()); err != nil {
 		return err
@@ -706,17 +705,11 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
 		return err
 	}
-
 	if shardBestState.shardCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 		if err := shardBestState.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
 			return err
 		}
 	}
-
-	if err := blockchain.ShardChain[shardBlock.GetShardID()].ValidateBlockSignatures(shardBlock, signingCommittees); err != nil {
-		return err
-	}
-
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
