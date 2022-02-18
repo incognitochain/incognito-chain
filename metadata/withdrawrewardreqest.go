@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -150,7 +151,9 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
 		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
 	}
-
+	if config.Config().Network() == "testnet-2" && shardViewRetriever.GetBeaconHeight() > config.Param().ConsensusParam.BlockProducingV3Height && shardViewRetriever.GetBeaconHeight() < 1e9 {
+		return true, nil
+	}
 	//check authorized sender
 	if ok, err := withDrawRewardRequest.MetadataBaseWithSignature.VerifyMetadataSignature(withDrawRewardRequest.PaymentAddress.Pk, tx); err != nil || !ok {
 		return false, fmt.Errorf("public key in withdraw reward request metadata is unauthorized. Error %v, OK %v", err, ok)

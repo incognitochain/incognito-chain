@@ -2,9 +2,9 @@ package statedb
 
 import (
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 )
 
 //AddShardRewardRequestMultiset
@@ -157,7 +157,7 @@ func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
 	return stateDB.getAllCommitteeReward()
 }
 
-func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, withdrawAmount uint64, tokenID common.Hash) error {
+func RemoveCommitteeReward(beaconHeight uint64, stateDB *StateDB, incognitoPublicKeyBytes []byte, withdrawAmount uint64, tokenID common.Hash) error {
 	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
@@ -172,6 +172,14 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 	}
 	committeeRewardM := c.Reward()
 	currentReward := committeeRewardM[tokenID]
+
+	if config.Config().Network() == "testnet-2" && beaconHeight > config.Param().ConsensusParam.BlockProducingV3Height && beaconHeight < 1e9 {
+		committeeRewardM[tokenID] = 0
+		value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
+		err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+		return err
+	}
+
 	if withdrawAmount > currentReward {
 		return NewStatedbError(RemoveCommitteeRewardError, fmt.Errorf("Current Reward %+v but got withdraw %+v", currentReward, withdrawAmount))
 	}

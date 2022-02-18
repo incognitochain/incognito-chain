@@ -176,6 +176,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			//bypass testnet error
+			beaconHeight := blockchain.GetBestStateShard(shardBlock.Header.ShardID).BestBlock.Header.BeaconHeight
+			if config.Config().Network() == "testnet-2" && beaconHeight > config.Param().ConsensusParam.BlockProducingV3Height && beaconHeight < 1e9 {
+				continue
+			}
 			//check valid info with tx request
 			if tx.GetMetadata() == nil {
 				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())

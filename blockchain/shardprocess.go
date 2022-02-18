@@ -1086,7 +1086,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			}
 
 			if tx.GetVersion() == 1 {
-				err = statedb.RemoveCommitteeReward(newShardState.rewardStateDB, mintCoin.GetPublicKey().ToBytesS(), mintCoin.GetValue(), *coinID)
+				err = statedb.RemoveCommitteeReward(shardBlock.Header.BeaconHeight, newShardState.rewardStateDB, mintCoin.GetPublicKey().ToBytesS(), mintCoin.GetValue(), *coinID)
 				if err != nil {
 					return NewBlockChainError(RemoveCommitteeRewardError, err)
 				}
@@ -1096,7 +1096,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 					return NewBlockChainError(RemoveCommitteeRewardError, fmt.Errorf("cannot parse withdraw reward response metadata for tx %v", tx.Hash().String()))
 				}
 
-				err = statedb.RemoveCommitteeReward(newShardState.rewardStateDB, md.RewardPublicKey, mintCoin.GetValue(), *coinID)
+				err = statedb.RemoveCommitteeReward(shardBlock.Header.BeaconHeight, newShardState.rewardStateDB, md.RewardPublicKey, mintCoin.GetValue(), *coinID)
 				if err != nil {
 					return NewBlockChainError(RemoveCommitteeRewardError, err)
 				}
