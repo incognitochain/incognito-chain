@@ -151,6 +151,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
 		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
 	}
+
 	if config.Config().Network() == "testnet-2" && shardViewRetriever.GetBeaconHeight() > config.Param().ConsensusParam.BlockProducingV3Height && shardViewRetriever.GetBeaconHeight() < 1e9 {
 		return true, nil
 	}
