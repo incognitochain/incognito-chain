@@ -174,8 +174,10 @@ func RemoveCommitteeReward(beaconHeight uint64, stateDB *StateDB, incognitoPubli
 	currentReward := committeeRewardM[tokenID]
 
 	if config.Config().Network() == "testnet-2" && beaconHeight > config.Param().ConsensusParam.BlockProducingV3Height && beaconHeight < 1e9 {
-		err = stateDB.SetStateObject(CommitteeRewardObjectType, key, 0)
-		return nil
+		committeeRewardM[tokenID] = 0
+		value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
+		err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+		return err
 	}
 
 	if withdrawAmount > currentReward {

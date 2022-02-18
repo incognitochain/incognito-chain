@@ -177,7 +177,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			//bypass testnet error
-			if config.Config().Network() == "testnet-2" && blockchain.GetBestStateShard(shardBlock.Header.ShardID).BestBlock.Header.BeaconHeight > config.Param().ConsensusParam.BlockProducingV3Height && blockchain.GetBeaconBestState().BeaconHeight < 1e9 {
+			beaconHeight := blockchain.GetBestStateShard(shardBlock.Header.ShardID).BestBlock.Header.BeaconHeight
+			if config.Config().Network() == "testnet-2" && beaconHeight > config.Param().ConsensusParam.BlockProducingV3Height && beaconHeight < 1e9 {
 				continue
 			}
 			//check valid info with tx request
