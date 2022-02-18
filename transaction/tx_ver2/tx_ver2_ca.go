@@ -3,7 +3,6 @@ package tx_ver2
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	// "github.com/incognitochain/incognito-chain/wallet"
 )
 
 func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, outputSharedSecrets []*privacy.Point, params *tx_generic.TxPrivacyInitParams, shardID byte, commitmentsToZero []*privacy.Point) ([]*privacy.Scalar, error) {
@@ -208,7 +206,21 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 					}
 
 					// we do not use burned coins since they will reduce the privacy level of the transaction.
-					if !wallet.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+					canUseCoin := true
+					if common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
+						canUseCoin = false
+					}
+					filters := params.RingDecoyFilters()
+					// filter out unwanted coins from ring
+					for _, f := range filters {
+						if !f.CanUseAsRingDecoy(coinDB) {
+							canUseCoin = false
+							utils.Logger.Log.Infof("SignTX: discard coin %+v from ring - by filter %#v", coinDB, f)
+							break
+						}
+					}
+					// when the random coin cannot be used in ring, retry
+					if canUseCoin {
 						break
 					}
 					attempts++
@@ -284,6 +296,9 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputShare
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
+	if !params.HasPrivacy {
+		ringSize = 1
+	}
 
 	// Generate Ring
 	piBig, piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
@@ -334,6 +349,7 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputShare
 	return err
 }
 
+// deprecated
 func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee, sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
@@ -405,11 +421,29 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	outCount := new(privacy.Scalar).FromUint64(uint64(len(tx.GetProof().GetOutputCoins())))
 	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
 
-	// fmt.Printf("Token id is %v\n",tokenID)
-	ring, err := reconstructRingCAV2(tx.GetValidationEnv(), sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB)
+	ring, coinsInRing, err := reconstructRingCAV2(tx.GetValidationEnv(), sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
+	}
+	hasNonPrivateCoin, _, nptoken, npcoin := privacy.ContainsNonPrivateToken(coinsInRing)
+	switch len(coinsInRing) {
+	case privacy.RingSize:
+		if hasNonPrivateCoin {
+			utils.Logger.Log.Errorf("RingSig cannot have non-private token, found %v of %v", npcoin.GetPublicKey(), nptoken)
+			return false, fmt.Errorf("invalid ringSig - has non-private token %v", nptoken)
+		}
+	case 1:
+		tokenID := common.ConfidentialAssetID
+		if hasNonPrivateCoin {
+			tokenID = *nptoken
+		}
+		if valid, err := privacy.ValidateNonPrivateTransfer(tokenID, tx.GetProof()); !valid {
+			return false, fmt.Errorf("invalid non-private token transfer - %v", err)
+		}
+	default:
+		utils.Logger.Log.Errorf("Invalid ring size %d, expect %d or %d", len(coinsInRing), privacy.RingSize, 1)
+		return false, fmt.Errorf("invalid ring size %d", len(coinsInRing))
 	}
 
 	// Reform MLSAG Signature

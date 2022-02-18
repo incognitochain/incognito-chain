@@ -9,18 +9,22 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
-	wrarperDB statedb.DatabaseAccessWarper
-	diskDB    incdb.Database
+	wrarperDB    statedb.DatabaseAccessWarper
+	diskDB       incdb.Database
+	otaReceiver0 privacy.OTAReceiver
 )
 
 const (
@@ -34,7 +38,13 @@ const (
 	poolPairID        = "0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000456-0000000000000000000000000000000000000000000000000000000000000abc"
 	poolPairPRV       = "0000000000000000000000000000000000000000000000000000000000000004-0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000bcd"
 	newPoolPairID     = "0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000456-0000000000000000000000000000000000000000000000000000000000111000"
+	validAccessOTA    = "5xbO6s+gO8pn/Irevhdy6l7S3A64oKGKkAENpRTI5MA="
 )
+
+func initTestParams(t *testing.T) {
+	err := otaReceiver0.FromString(validOTAReceiver0)
+	assert.Nil(t, err)
+}
 
 func initDB() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "data")

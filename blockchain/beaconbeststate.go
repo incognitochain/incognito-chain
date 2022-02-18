@@ -586,32 +586,50 @@ func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
 	return beaconBestState.pdeStates[version]
 }
 
-func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
+func (beaconBestState *BeaconBestState) IsValidPdexv3PoolPairID(poolPairID string) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidPoolPairID(poolPairID)
 }
 
-func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
+func (beaconBestState *BeaconBestState) IsValidPdexv3NftID(nftID string) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidNftID(nftID)
 }
 
-func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
+func (beaconBestState *BeaconBestState) IsValidPdexv3MintNftRequireAmount(amount uint64) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidMintNftRequireAmount(amount)
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStakingPool(tokenID)
 }
 
 func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
 	tokenID, nftID string, unstakingAmount uint64,
-) error {
+) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
 }
 
 func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
 	poolPairID, nftID string, shareAmount uint64,
-) error {
+) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3Staker(poolPairID, stakerID string) (bool, error) {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStaker(poolPairID, stakerID)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3LP(poolPairID, lpID string) (bool, error) {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidLP(poolPairID, lpID)
+}
+
+func (beaconBestState *BeaconBestState) NftIDCoinFilter() (*privacy.TokenIDRingDecoyFilter, error) {
+	data, err := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().NFTAssetTags()
+	if err != nil {
+		return nil, err
+	}
+	return &privacy.TokenIDRingDecoyFilter {
+		Data: data,
+	}, nil
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type AddLiquidityResponse struct {
@@ -64,7 +65,7 @@ func (response *AddLiquidityResponse) ValidateSanityData(
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
 	if response.status == "" {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status cannot be empty"))
 	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
 	if err != nil {
@@ -191,6 +192,9 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardIDFromInst = value.ShardID()
 			txReqIDFromInst = value.TxReqID()
 			receiverAddrStrFromInst = value.OtaReceiver()
+			if receiverAddrStrFromInst == utils.EmptyString {
+				receiverAddrStrFromInst = value.OtaReceivers()[value.TokenID()]
+			}
 			receivingTokenIDStr = value.TokenID().String()
 			receivingAmtFromInst = value.Amount()
 		case common.PDEContributionMatchedNReturnedChainStatus:
@@ -206,6 +210,9 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardIDFromInst = value.ShardID()
 			txReqIDFromInst = value.TxReqID()
 			receiverAddrStrFromInst = value.OtaReceiver()
+			if receiverAddrStrFromInst == utils.EmptyString {
+				receiverAddrStrFromInst = value.OtaReceivers()[value.TokenID()]
+			}
 			receivingTokenIDStr = value.TokenID().String()
 			receivingAmtFromInst = matchAndReturnAddLiquidity.ReturnAmount
 		default:

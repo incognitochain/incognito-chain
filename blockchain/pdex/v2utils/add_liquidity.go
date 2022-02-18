@@ -1,9 +1,12 @@
 package v2utils
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 func BuildRefundAddLiquidityInstructions(
@@ -24,15 +27,27 @@ func BuildRefundAddLiquidityInstructions(
 }
 
 func BuildMatchAddLiquidityInstructions(
-	incomingContributionState statedb.Pdexv3ContributionState,
-	poolPairID string, nftID common.Hash,
+	waitingContributionState statedb.Pdexv3ContributionState,
+	poolPairID string, txReqID common.Hash, shardID byte,
+	otaReceiver string, shouldMintAccessCoin bool,
 ) ([][]string, error) {
 	res := [][]string{}
-	inst0, err := instruction.NewMatchAddLiquidityWithValue(incomingContributionState, poolPairID).StringSlice()
+	inst0, err := instruction.NewMatchAddLiquidityWithValue(
+		waitingContributionState, poolPairID,
+	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, inst0)
+	if shouldMintAccessCoin {
+		inst1, err := instruction.NewMintAccessTokenWithValue(
+			otaReceiver, shardID, txReqID,
+		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+		if err != nil {
+			return res, err
+		}
+		res = append(res, inst1)
+	}
 	return res, nil
 }
 
@@ -40,7 +55,8 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	token0ContributionState, token1ContributionState statedb.Pdexv3ContributionState,
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
-	nftID common.Hash,
+	txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
+	accessOTA []byte, shouldMintAccessCoin bool,
 ) ([][]string, error) {
 	res := [][]string{}
 	token0Contribution := token0ContributionState.Value()
@@ -48,7 +64,7 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst0, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token0ContributionState, shareAmount, returnedToken0ContributionAmount,
 		actualToken1ContributionAmount, returnedToken1ContributionAmount,
-		token1Contribution.TokenID(),
+		token1Contribution.TokenID(), accessOTA,
 	).StringSlice()
 	if err != nil {
 		return res, err
@@ -57,11 +73,21 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	matchAndReturnInst1, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token1ContributionState, shareAmount, returnedToken1ContributionAmount,
 		actualToken0ContributionAmount, returnedToken0ContributionAmount,
-		token0Contribution.TokenID(),
+		token0Contribution.TokenID(), accessOTA,
 	).StringSlice()
 	if err != nil {
 		return res, err
 	}
 	res = append(res, matchAndReturnInst1)
+	if shouldMintAccessCoin {
+		mintAccessTokenInst, err := instruction.NewMintAccessTokenWithValue(
+			otaReceivers[common.PdexAccessCoinID], // otaReceivers map has been checked from shard metadata Tx verifier
+			shardID, txReqID,
+		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta))
+		if err != nil {
+			return res, err
+		}
+		res = append(res, mintAccessTokenInst)
+	}
 	return res, nil
 }

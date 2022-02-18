@@ -32,8 +32,8 @@ func (r *RejectUnstaking) FromStringSlice(source []string) error {
 	if source[0] != strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3UnstakingRequestMeta, source[0])
 	}
-	if source[1] != common.Pdexv3RejectUnstakingStatus {
-		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3RejectUnstakingStatus, source[1])
+	if source[1] != common.Pdexv3RejectStringStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3RejectStringStatus, source[1])
 	}
 	err := json.Unmarshal([]byte(source[2]), r)
 	return err
@@ -42,7 +42,7 @@ func (r *RejectUnstaking) FromStringSlice(source []string) error {
 func (r *RejectUnstaking) StringSlice() ([]string, error) {
 	res := []string{}
 	res = append(res, strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-	res = append(res, common.Pdexv3RejectUnstakingStatus)
+	res = append(res, common.Pdexv3RejectStringStatus)
 	data, err := json.Marshal(r)
 	if err != nil {
 		return res, err

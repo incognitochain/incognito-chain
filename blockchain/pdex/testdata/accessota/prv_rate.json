@@ -1,0 +1,112 @@
+[{
+    "name": "Choose between 2 token/PRV pools - different liquidity",
+    "data": {
+        "pair0": {
+            "state": {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000004",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 700,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 1000,
+                "Token1VirtualAmount": 2200,
+                "Amplifier": 20000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            }
+        },
+        "pair1": {
+            "state": {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000004",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 700,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 2200,
+                "Token1VirtualAmount": 3000,
+                "Amplifier": 20000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            }
+        }
+    },
+    "expected": [3000, 2200, 1650000]
+}, {
+    "name": "Choose between 2 token/PRV pools - different amplifiers",
+    "data": {
+        "pair0": {
+            "state": {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000004",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 700,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 1000,
+                "Token1VirtualAmount": 2200,
+                "Amplifier": 20000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            }
+        },
+        "pair1": {
+            "state": {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000004",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 700,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 2200,
+                "Token1VirtualAmount": 1000,
+                "Amplifier": 15000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            }
+        }
+    },
+    "expected": [1000, 2200, 977777]
+}, {
+    "name": "Choose between 2 token/PRV pools - equality",
+    "data": {
+        "pair0": {
+            "state": {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000004",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 700,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 1000,
+                "Token1VirtualAmount": 2200,
+                "Amplifier": 20000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            }
+        },
+        "pair1": {
+            "state": {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000004",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 700,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 2200,
+                "Token1VirtualAmount": 1000,
+                "Amplifier": 20000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            }
+        }
+    },
+    "expected": [2200, 1000, 550000]
+}]

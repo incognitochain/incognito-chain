@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type MintNftStatus struct {
@@ -14,14 +15,15 @@ type MintNftStatus struct {
 }
 
 type ContributionStatus struct {
-	Status                  byte   `json:"Status"`
-	Token0ID                string `json:"Token0ID"`
-	Token0ContributedAmount uint64 `json:"Token0ContributedAmount"`
-	Token0ReturnedAmount    uint64 `json:"Token0ReturnedAmount"`
-	Token1ID                string `json:"Token1ID"`
-	Token1ContributedAmount uint64 `json:"Token1ContributedAmount"`
-	Token1ReturnedAmount    uint64 `json:"Token1ReturnedAmount"`
-	PoolPairID              string `json:"PoolPairID"`
+	Status                  byte         `json:"Status"`
+	Token0ID                string       `json:"Token0ID"`
+	Token0ContributedAmount uint64       `json:"Token0ContributedAmount"`
+	Token0ReturnedAmount    uint64       `json:"Token0ReturnedAmount"`
+	Token1ID                string       `json:"Token1ID"`
+	Token1ContributedAmount uint64       `json:"Token1ContributedAmount"`
+	Token1ReturnedAmount    uint64       `json:"Token1ReturnedAmount"`
+	PoolPairID              string       `json:"PoolPairID"`
+	AccessID                *common.Hash `json:"AccessID,omitempty"`
 }
 
 type WithdrawStatus struct {
@@ -178,4 +180,31 @@ func SplitOrderRewardLiquidityMining(
 	}
 
 	return orderRewards
+}
+
+type NFTAssetTagsCache map[string]*common.Hash
+
+func (m *NFTAssetTagsCache) FromIDs(nftIDs map[string]uint64) (*NFTAssetTagsCache, error) {
+	var result NFTAssetTagsCache
+	if m == nil {
+		result = make(map[string]*common.Hash)
+	} else {
+		result = *m
+	}
+	for idStr, _ := range nftIDs {
+		tokenID, err := common.Hash{}.NewHashFromStr(idStr)
+		if err != nil {
+			return nil, err
+		}
+		assetTag := privacy.HashToPoint(tokenID[:])
+		result[assetTag.String()] = tokenID
+	}
+	return &result, nil
+}
+
+func (m *NFTAssetTagsCache) Add(id common.Hash) {
+	if m != nil {
+		assetTag := privacy.HashToPoint(id[:])
+		(*m)[assetTag.String()] = &id
+	}
 }

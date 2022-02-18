@@ -153,6 +153,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairMakingVolumeObjectWithValue(db, hash, value)
 	case Pdexv3PoolPairOrderRewardObjectType:
 		return newPdexv3PoolPairOrderRewardObjectWithValue(db, hash, value)
+	case Pdexv3PoolPairOrderRewardDetailObjectType:
+		return newPdexv3PoolPairOrderRewardDetailObjectWithValue(db, hash, value)
 	case Pdexv3ShareLastLmRewardPerShareObjectType:
 		return newPdexv3ShareLastLmRewardPerShareObjectWithValue(db, hash, value)
 	case Pdexv3PoolPairLmRewardPerShareObjectType:
@@ -294,6 +296,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairMakingVolumeObject(db, hash)
 	case Pdexv3PoolPairOrderRewardObjectType:
 		return newPdexv3PoolPairOrderRewardObject(db, hash)
+	case Pdexv3PoolPairOrderRewardDetailObjectType:
+		return newPdexv3PoolPairOrderRewardDetailObject(db, hash)
 	case Pdexv3ShareLastLmRewardPerShareObjectType:
 		return newPdexv3ShareLastLmRewardPerShareObject(db, hash)
 	case Pdexv3PoolPairLmRewardPerShareObjectType:

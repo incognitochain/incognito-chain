@@ -42,17 +42,22 @@ func (blockService BlockService) GetPdexv3ParamsModifyingRequestStatus(reqTxID s
 
 // paramSelector helps to wrap transaction creation steps (v2 only)
 type paramSelector struct {
-	TokenID        common.Hash
-	PRV            *bean.CreateRawTxParam
-	Token          *bean.CreateRawPrivacyTokenTxParam
-	TokenReceivers []*privacy.PaymentInfo
-	Metadata       metadataCommon.Metadata
+	TokenID         common.Hash
+	PRV             *bean.CreateRawTxParam
+	Token           *bean.CreateRawPrivacyTokenTxParam
+	TokenReceivers  []*privacy.PaymentInfo
+	Metadata        metadataCommon.Metadata
+	SpecifiedInputs map[common.Hash]metadataPdexv3.AccessOTA
 }
 
 // SetTokenID, SetTokenReceivers, SetMetadata add necessary data for token tx creation that are missing from the params struct
 func (sel *paramSelector) SetTokenID(id common.Hash)                  { sel.TokenID = id }
 func (sel *paramSelector) SetTokenReceivers(r []*privacy.PaymentInfo) { sel.TokenReceivers = r }
 func (sel *paramSelector) SetMetadata(md metadataCommon.Metadata)     { sel.Metadata = md }
+func (sel *paramSelector) UseSpecifiedInput(tokenID common.Hash, accessOTA metadataPdexv3.AccessOTA) {
+	sel.SpecifiedInputs[tokenID] = accessOTA
+	sel.Token.HasPrivacyToken = false
+}
 
 // PdexTxService extends TxService with wrappers to build TX with cleaner syntax
 type PdexTxService struct {
@@ -62,7 +67,7 @@ type PdexTxService struct {
 func (svc PdexTxService) ReadParamsFrom(raw interface{}, metadataReader interface{}) (*paramSelector, error) {
 	var err error
 	// token id defaults to PRV
-	sel := paramSelector{TokenID: common.PRVCoinID}
+	sel := paramSelector{TokenID: common.PRVCoinID, SpecifiedInputs: make(map[common.Hash]metadataPdexv3.AccessOTA)}
 	sel.PRV, err = bean.NewCreateRawTxParam(raw)
 	if err != nil {
 		return nil, err
@@ -136,15 +141,22 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
 
-	var totalTokenTransferred uint64
-	for _, payment := range sel.TokenReceivers {
-		totalTokenTransferred += payment.Amount
-	}
-	candidateOutputTokens, _, _, err := svc.chooseBestOutCoinsToSpent(
-		outputTokens, totalTokenTransferred,
-	)
-	if err != nil {
-		return nil, NewRPCError(GetOutputCoinError, err)
+	var candidateOutputTokens []privacy.PlainCoin
+	// only support derivable burn for pTokens
+	if accessOTA, exists := sel.SpecifiedInputs[common.PdexAccessCoinID]; exists {
+		pk := privacy.Point(accessOTA)
+		candidateOutputTokens, err = svc.selectInputCoinWithPubkey(outputTokens, pk)
+	} else {
+		var totalTokenTransferred uint64
+		for _, payment := range sel.TokenReceivers {
+			totalTokenTransferred += payment.Amount
+		}
+		candidateOutputTokens, _, _, err = svc.chooseBestOutCoinsToSpent(
+			outputTokens, totalTokenTransferred,
+		)
+		if err != nil {
+			return nil, NewRPCError(GetOutputCoinError, err)
+		}
 	}
 
 	tokenParams := &transaction.TokenParam{
@@ -181,13 +193,23 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		params.ShardIDSender, params.Info,
 		svc.BlockChain.BeaconChain.GetFinalViewState().GetBeaconFeatureStateDB(),
 	)
-
+	txTokenParams.SetRingDecoyFilters(svc.DefaultRingFilters())
 	tx := &transaction.TxTokenVersion2{}
 	errTx := tx.Init(txTokenParams)
 	if errTx != nil {
 		return nil, NewRPCError(CreateTxDataError, errTx)
 	}
 	return tx, nil
+}
+
+func (svc PdexTxService) selectInputCoinWithPubkey(spendableCoins []privacy.PlainCoin, pubkey privacy.Point) ([]privacy.PlainCoin, error) {
+	for _, c := range spendableCoins {
+		coinpubkey := c.GetPublicKey()
+		if coinpubkey != nil && privacy.IsPointEqual(coinpubkey, &pubkey) {
+			return []privacy.PlainCoin{c}, nil
+		}
+	}
+	return nil, NewRPCError(GetOutputCoinError, fmt.Errorf("No spendable coin with public key %v found", pubkey))
 }
 
 func (blockService BlockService) GetPdexv3WithdrawalLPFeeStatus(reqTxID string) (*metadataPdexv3.WithdrawalLPFeeStatus, error) {
@@ -380,35 +402,37 @@ func (blockService BlockService) GetPdexv3State(
 func (blockService BlockService) GetPdexv3BlockLPReward(
 	pairID string, beaconHeight uint64, stateDB, prevStateDB *statedb.StateDB,
 ) (map[string]uint64, error) {
-	// get accumulated reward to the beacon height
+	// get accumulated trading fee to the beacon height
 	curLPFeesPerShare, shareAmount, err := getLPFeesPerShare(pairID, beaconHeight, stateDB)
 	if err != nil {
 		return nil, err
 	}
-	// get accumulated reward to the previous block of querying beacon height
+	// get accumulated trading fee to the previous block of querying beacon height
 	oldLPFeesPerShare, _, err := getLPFeesPerShare(pairID, beaconHeight-1, prevStateDB)
 	if err != nil {
 		oldLPFeesPerShare = map[common.Hash]*big.Int{}
 	}
 
+	// get accumulated liq mining reward to the beacon height
+	curLmRewardsPerShare, unlockedShareAmount, err := getLmRewardsPerShare(pairID, beaconHeight, stateDB)
+	if err != nil {
+		return nil, err
+	}
+	// get accumulated liq mining reward to the previous block of querying beacon height
+	oldLmRewardsPerShare, _, err := getLmRewardsPerShare(pairID, beaconHeight-1, prevStateDB)
+	if err != nil {
+		oldLmRewardsPerShare = map[common.Hash]*big.Int{}
+	}
+
 	result := map[string]uint64{}
 
-	for tokenID := range curLPFeesPerShare {
-		oldFees, isExisted := oldLPFeesPerShare[tokenID]
-		if !isExisted {
-			oldFees = big.NewInt(0)
-		}
-		newFees := curLPFeesPerShare[tokenID]
-
-		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
-		reward = new(big.Int).Div(reward, pdex.BaseLPFeesPerShare)
-
-		if !reward.IsUint64() {
-			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
-		}
-		if reward.Uint64() > 0 {
-			result[tokenID.String()] = reward.Uint64()
-		}
+	result, err = addPoolRewards(result, curLPFeesPerShare, oldLPFeesPerShare, shareAmount)
+	if err != nil {
+		return nil, err
+	}
+	result, err = addPoolRewards(result, curLmRewardsPerShare, oldLmRewardsPerShare, unlockedShareAmount)
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -671,6 +695,34 @@ func getPdexv3PoolPairOrderReward(
 	return res, nil
 }
 
+func addPoolRewards(
+	result map[string]uint64,
+	curRewardsPerShare map[common.Hash]*big.Int, oldRewardsPerShare map[common.Hash]*big.Int, shareAmount uint64,
+) (map[string]uint64, error) {
+	for tokenID := range curRewardsPerShare {
+		oldFees, isExisted := oldRewardsPerShare[tokenID]
+		if !isExisted {
+			oldFees = big.NewInt(0)
+		}
+		newFees := curRewardsPerShare[tokenID]
+
+		reward := new(big.Int).Mul(new(big.Int).Sub(newFees, oldFees), new(big.Int).SetUint64(shareAmount))
+		reward = new(big.Int).Div(reward, pdex.BaseLPFeesPerShare)
+
+		if !reward.IsUint64() {
+			return nil, fmt.Errorf("Reward of token %v is out of range", tokenID)
+		}
+		if reward.Uint64() > 0 {
+			if result[tokenID.String()] == 0 {
+				result[tokenID.String()] = reward.Uint64()
+			} else {
+				result[tokenID.String()] += reward.Uint64()
+			}
+		}
+	}
+	return result, nil
+}
+
 func getLPFeesPerShare(
 	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
 ) (map[common.Hash]*big.Int, uint64, error) {
@@ -693,6 +745,30 @@ func getLPFeesPerShare(
 	pairState := pair.State()
 
 	return pair.LpFeesPerShare(), pairState.ShareAmount(), nil
+}
+
+func getLmRewardsPerShare(
+	pairID string, beaconHeight uint64, stateDB *statedb.StateDB,
+) (map[common.Hash]*big.Int, uint64, error) {
+	// get accumulated reward to the beacon height
+	pDexv3State, err := pdex.InitStateFromDB(stateDB, uint64(beaconHeight), pdex.AmplifierVersion)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	poolPairs := make(map[string]*pdex.PoolPairState)
+	err = json.Unmarshal(pDexv3State.Reader().PoolPairs(), &poolPairs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if _, ok := poolPairs[pairID]; !ok {
+		return nil, 0, fmt.Errorf("Pool pair %s not found", pairID)
+	}
+	pair := poolPairs[pairID]
+	pairState := pair.State()
+
+	return pair.LmRewardsPerShare(), pairState.ShareAmount() - pairState.LmLockedShareAmount(), nil
 }
 
 func getStakingRewardsPerShare(

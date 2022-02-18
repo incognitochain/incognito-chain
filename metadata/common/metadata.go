@@ -106,12 +106,14 @@ type BeaconViewRetriever interface {
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
-	IsValidNftID(string) error
-	IsValidPoolPairID(string) error
-	IsValidMintNftRequireAmount(uint64) error
-	IsValidPdexv3StakingPool(string) error
-	IsValidPdexv3UnstakingAmount(string, string, uint64) error
-	IsValidPdexv3ShareAmount(string, string, uint64) error
+	IsValidPdexv3NftID(string) (bool, error)
+	IsValidPdexv3PoolPairID(string) (bool, error)
+	IsValidPdexv3MintNftRequireAmount(uint64) (bool, error)
+	IsValidPdexv3StakingPool(string) (bool, error)
+	IsValidPdexv3UnstakingAmount(string, string, uint64) (bool, error)
+	IsValidPdexv3ShareAmount(string, string, uint64) (bool, error)
+	IsValidPdexv3Staker(string, string) (bool, error)
+	IsValidPdexv3LP(string, string) (bool, error)
 }
 
 type ShardViewRetriever interface {
@@ -461,6 +463,8 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3WithdrawStakingRewardRequestMeta:
 		return true
 	case Pdexv3WithdrawStakingRewardResponseMeta:
+		return true
+	case Pdexv3MintAccessTokenMeta:
 		return true
 	case Pdexv3DistributeMiningOrderRewardMeta:
 		return true
