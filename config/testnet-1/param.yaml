@@ -43,6 +43,7 @@ epoch_param:
   random_time_v2: 1000000000000
 eth_contract_address: "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
 bsc_contract_address: "0x1ce57B254DC2DBB41e1aeA296Dc7dBD6fb549241"
+plg_contract_address: "0xaCc76d988a1Ad9322069d9999D04b49b85E77a99"
 prv_erc20_contract_address: "0x917637E3E1ee531231747690189e22C5FA38D88C"
 prv_bep20_contract_address: "0x3d2E0c1b0b2d81D1A76544E6cC08670af9b86531"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -60,7 +61,7 @@ consensus_param:
   staking_flow_v3_height: 2823780
   lemma2_height: 2868685
   force_not_use_burned_coins: 2922689
-  block_producing_v3_height: 1000000000000
+  block_producing_v3_height: 3146717
   byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
@@ -78,7 +79,9 @@ enable_feature_flags:
 portal_v3_height: 1328816
 tx_pool_version: 1
 bsc_param:
-  host: "https://data-seed-prebsc-2-s2.binance.org:8545"
+  host: "https://data-seed-prebsc-2-s3.binance.org:8545"
+plg_param:
+    host: "https://polygon-mumbai.g.alchemy.com/v2/V8SP0S8Q-sT35ca4VKH3Iwyvh8K8wTRn"
 pdex_param:
   pdex_v3_break_point_height: 2961693
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"

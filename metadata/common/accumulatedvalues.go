@@ -10,6 +10,7 @@ type AccumulatedValues struct {
 	UniqETHTxsUsed    [][]byte
 	UniqBSCTxsUsed    [][]byte
 	UniqPRVEVMTxsUsed [][]byte
+	UniqPLGTxsUsed    [][]byte
 	DBridgeTokenPair  map[string][]byte
 	CBridgeTokens     []*common.Hash
 	InitTokens        []*common.Hash

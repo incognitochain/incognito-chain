@@ -226,7 +226,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
 			beaconInstructions,
 			curView.ShardID,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			shardBestState.NumberOfFixedShardBlockValidator,
 			shardBestState.ShardHeight+1,
 		)
 
@@ -469,13 +469,17 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
 				}
-			case metadataCommon.IssuingPRVERC20RequestMeta:
+			case metadata.IssuingPRVERC20RequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingPRVERC20ResponseMeta, true)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPRVERC20ResponseMeta, true)
 				}
-			case metadataCommon.IssuingPRVBEP20RequestMeta:
+			case metadata.IssuingPRVBEP20RequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingPRVBEP20ResponseMeta, true)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPRVBEP20ResponseMeta, true)
+				}
+			case metadata.IssuingPLGRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPLGResponseMeta, false)
 				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
@@ -627,7 +631,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
 
-			numberOfFixedShardBlockValidators := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+			numberOfFixedShardBlockValidators := view.NumberOfFixedShardBlockValidator
 
 			maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 			var minShardCommitteeSize int
