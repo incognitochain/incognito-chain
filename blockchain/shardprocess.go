@@ -14,6 +14,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -143,7 +144,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		shouldValidate = true
 	}
 
-
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
@@ -232,8 +232,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
-		return NewBlockChainError(TransactionFromNewBlockError, err)
-	}
+			return NewBlockChainError(TransactionFromNewBlockError, err)
+		}
 		if len(shardBlock.Body.Transactions) > 0 {
 			Logger.log.Infof("SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
 		}
@@ -1237,6 +1237,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	if err := blockchain.ShardChain[shardID].blkManager.StoreBlock(proto.BlkType_BlkShard, shardBlock); err != nil {
+		panic(err)
+	}
+
 	err = newShardState.tryUpgradeCommitteeState(blockchain)
 	if err != nil {
 		panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
@@ -1250,7 +1254,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
-
+	blockchain.ShardChain[shardID].blkManager.MarkFinalized(storeBlock.GetHeight(), *storeBlock.Hash(), shardID)
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
@@ -1264,7 +1268,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		if newFinalView == nil {
 			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
 			if err != nil {
-				panic("Database is corrupt")
+				panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
 			}
 		} else {
 			storeBlock = newFinalView.GetBlock()

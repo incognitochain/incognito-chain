@@ -32,4 +32,5 @@ type BlockInterface interface {
 	GetAggregateRootHash() common.Hash
 	GetFinalityHeight() uint64
 	GetShardID() int
+	ToBytes() ([]byte, error)
 }

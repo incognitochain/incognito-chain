@@ -5,10 +5,11 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
@@ -40,7 +41,7 @@ type BlockService interface {
 		height uint64,
 		hash common.Hash,
 		cID byte,
-	)
+	) error
 }
 
 type BlockManager struct {
@@ -60,7 +61,22 @@ func NewBlockService(
 	BlockService,
 	error,
 ) {
-	return nil, errors.New("Please implement me")
+	res := &BlockManager{
+		rDB:            rawDB,
+		fDB:            flatfileManager,
+		cacher:         &cache.Cache{},
+		locker:         &sync.RWMutex{},
+		hashByHeight:   map[byte]map[uint64][]common.Hash{},
+		prevHashByHash: map[common.Hash]common.Hash{},
+		finalHeight:    map[byte]uint64{},
+	}
+	nShard := config.Param().ActiveShards
+	for i := 0; i < nShard; i++ {
+		res.finalHeight[byte(i)] = 1
+		res.hashByHeight[byte(i)] = make(map[uint64][]common.Hash)
+	}
+	res.finalHeight[255] = 1
+	return res, nil
 }
 
 func (blkM *BlockManager) GetBlockByHeight(
@@ -83,7 +99,7 @@ func (blkM *BlockManager) GetBlockByHash(
 	[]byte,
 	error,
 ) {
-	key := rawdbv2.GetShardHashToBlockKey(*hash)
+	key := rawdbv2.GetShardHashToBlockTmpKey(*hash)
 	rawBlk, err := blkM.rDB.Get(key)
 	if err != nil {
 		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
@@ -112,7 +128,7 @@ func (blkM *BlockManager) StoreBlock(
 	if err != nil {
 		return err
 	}
-	key := rawdbv2.GetShardHashToBlockKey(*blkHash)
+	key := rawdbv2.GetShardHashToBlockTmpKey(*blkHash)
 	err = blkM.rDB.Put(key, blkBytes)
 	if err != nil {
 		return err
@@ -144,7 +160,7 @@ func (blkM *BlockManager) MarkFinalized(
 ) error {
 	curFinalHeight := blkM.finalHeight[cID]
 	for h := height; h >= curFinalHeight; h-- {
-		key := rawdbv2.GetShardHashToBlockKey(hash)
+		key := rawdbv2.GetShardHashToBlockTmpKey(hash)
 		blkBytes, err := blkM.rDB.Get(key)
 		if err != nil {
 			return err
@@ -160,7 +176,7 @@ func (blkM *BlockManager) MarkFinalized(
 		delete(blkM.prevHashByHash, hash)
 		needToRemove := blkM.hashByHeight[cID][height]
 		for _, h := range needToRemove {
-			key := rawdbv2.GetShardHashToBlockKey(h)
+			key := rawdbv2.GetShardHashToBlockTmpKey(h)
 			err := blkM.rDB.Delete(key)
 			if err != nil {
 				panic(err)

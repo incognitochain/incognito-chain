@@ -153,6 +153,10 @@ func (shardBlock ShardBlock) GetFinalityHeight() uint64 {
 	return shardBlock.Header.FinalityHeight
 }
 
+func (shardBlock ShardBlock) ToBytes() ([]byte, error) {
+	return json.Marshal(shardBlock)
+}
+
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
 	if shardBlock.Header.Height == 1 && len(shardBlock.ValidationData) != 0 {

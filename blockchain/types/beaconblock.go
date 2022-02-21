@@ -216,6 +216,10 @@ func (beaconBlock BeaconBlock) GetInstructions() [][]string {
 	return beaconBlock.Body.Instructions
 }
 
+func (beaconBlock BeaconBlock) ToBytes() ([]byte, error) {
+	return json.Marshal(beaconBlock)
+}
+
 func (beaconBlock BeaconBlock) GetProducer() string {
 	return beaconBlock.Header.Producer
 }

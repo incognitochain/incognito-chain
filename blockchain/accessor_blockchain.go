@@ -269,7 +269,8 @@ func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (bool, error
 func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.ShardBlock, uint64, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
-		shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
+		// shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
+		shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash)
 		if err == nil {
 			shardBlock := types.NewShardBlock()
 			err = json.Unmarshal(shardBlockBytes, shardBlock)

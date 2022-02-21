@@ -3,11 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/blockstorage"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -27,6 +29,7 @@ type ShardChain struct {
 	shardID    int
 	multiView  *multiview.MultiView
 	flatfileDB *flatfile.FlatFileManager
+	blkManager blockstorage.BlockService
 
 	BlockGen    *BlockGenerator
 	Blockchain  *BlockChain
@@ -54,6 +57,12 @@ func NewShardChain(
 	if err != nil {
 		panic(err)
 	}
+	p = path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawfinalblock", shardID))
+	ffFinalBlk, err := flatfile.NewFlatFile(p, 5000)
+	if err != nil {
+		panic(err)
+	}
+	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk)
 	return &ShardChain{
 		shardID:     shardID,
 		multiView:   multiView,
@@ -63,6 +72,7 @@ func NewShardChain(
 		ChainName:   chainName,
 		TxPool:      tp,
 		TxsVerifier: tv,
+		blkManager:  blkM,
 	}
 }
 
