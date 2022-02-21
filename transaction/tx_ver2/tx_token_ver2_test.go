@@ -223,8 +223,7 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	So(isValid, ShouldBeTrue)
 
 	// now instead of changing amount, we change the OTA public key
-	theProof := txn.GetProof()
-	outs = theProof.GetOutputCoins()
+	outs = txn.GetProof().GetOutputCoins()
 	tokenOutput, ok = outs[0].(*coin.CoinV2)
 	savedCoinBytes = tokenOutput.Bytes()
 	So(ok, ShouldBeTrue)
@@ -233,12 +232,9 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	newCoin, _, err := createUniqueOTACoinCA(payInf, &fakingTokenID, db)
 	So(err, ShouldBeNil)
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
-	theProofSpecific, ok := theProof.(*privacy.ProofV2)
-	theBulletProof, ok := theProofSpecific.GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
-	cmsv := theBulletProof.GetCommitments()
-	cmsv[0] = newCoin.GetCommitment()
+	txn.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = newCoin.GetCommitment()
 	outs[0] = newCoin
-	theProof.SetOutputCoins(outs)
+	txn.GetProof().SetOutputCoins(outs)
 	txv2.SetTxNormal(txn)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
 	So(err, ShouldBeNil)
@@ -249,8 +245,8 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	// undo the tampering
 	tokenOutput.SetBytes(savedCoinBytes)
 	outs[0] = tokenOutput
-	cmsv[0] = tokenOutput.GetCommitment()
-	theProof.SetOutputCoins(outs)
+	txn.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = tokenOutput.GetCommitment()
+	txn.GetProof().SetOutputCoins(outs)
 	txv2.SetTxNormal(txn)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
 	So(err, ShouldBeNil)
