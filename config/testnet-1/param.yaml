@@ -99,3 +99,8 @@ pdex_param:
     auto_withdraw_order_limit_amount: 10
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
+full_sync_mode_param:
+  trie_journal_cache_size: 32
+  block_trie_in_memory: 2000
+  trie_node_limit: 512 * 1024 * 1024
+  trie_img_limit: 4 * 1024 * 1024

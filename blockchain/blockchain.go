@@ -110,7 +110,7 @@ func NewFlatFileConfig(config *Config) {
 
 func NewCacheConfig(config *Config) (CacheConfig, error) {
 
-	cacheConfig := configCache16GB
+	cacheConfig := configCache8GB
 	cacheConfig.triegc = make(map[byte]*prque.Prque)
 	trieJournal := make(map[int]string)
 

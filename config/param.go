@@ -59,8 +59,9 @@ type param struct {
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
-	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
-	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	PRVERC20ContractAddressStr       string            `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+	PRVBEP20ContractAddressStr       string            `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	FullSyncModeParam                fullSyncModeParam `mapstructure:"full_sync_mode_param"`
 }
 
 type genesisParam struct {
@@ -126,6 +127,13 @@ type consensusParam struct {
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
+}
+
+type fullSyncModeParam struct {
+	trieJournalCacheSize int                `mapstructure:"trie_journal_cache_size"`
+	blockTrieInMemory    uint64             `mapstructure:"block_trie_in_memory"`
+	trieNodeLimit        common.StorageSize `mapstructure:"trie_node_limit"`
+	trieImgsLimit        common.StorageSize `mapstructure:"trie_img_limit"`
 }
 
 func LoadParam() *param {
