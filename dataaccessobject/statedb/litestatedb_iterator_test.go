@@ -44,7 +44,7 @@ func TestLiteStateDBIterator(t *testing.T) {
 		dbSize := 0
 		for i := 0; i < 5; i++ {
 			dbSize++
-			db.Put(randKey[i], randValue[i])
+			db.Put(append([]byte("abc"), randKey[i]...), randValue[i])
 			fmt.Println(IndexByteSlice(randKey[i], randKey), randKey[i])
 		}
 
@@ -59,6 +59,7 @@ func TestLiteStateDBIterator(t *testing.T) {
 
 		fmt.Println("--------------------- Test 1: result")
 		expectResult := append([][]byte{}, randKey[:dbSize+len(kvMap)]...)
+
 		sort.Slice(expectResult, func(i, j int) bool {
 			for index := range randKey[i] {
 				if expectResult[i][index] < expectResult[j][index] {
@@ -70,14 +71,14 @@ func TestLiteStateDBIterator(t *testing.T) {
 			}
 			return false
 		})
-
-		iter := NewLiteStateDBIterator(db, []byte(PREFIX), kvMap)
+		iter := NewLiteStateDBIterator(db, []byte("abc"), []byte(PREFIX), kvMap)
 		cnt := 0
 		for iter.Next() {
 			fmt.Println(IndexByteSlice(iter.Key(), randKey), iter.Key())
 			if !bytes.Equal(iter.Key(), expectResult[cnt]) {
 				t.Error("Not expected at test " + PREFIX)
 				t.Error("Expect", expectResult[cnt])
+				t.Error("Get", iter.Key())
 				t.FailNow()
 			}
 			cnt++

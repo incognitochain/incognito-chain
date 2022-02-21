@@ -367,6 +367,11 @@ func (httpServer *HttpServer) handleGetByzantineDetectorInfo(params interface{},
 	return blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo(), nil
 }
 
+func (httpServer *HttpServer) handleGetByzantineBlackList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	res := blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo()
+	return res["BlackList"], nil
+}
+
 func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -434,7 +439,7 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 	}
 
 	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
-	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee())
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
 	committee, _ := tempCommittee.ToBase58()
 
 	return map[string]interface{}{

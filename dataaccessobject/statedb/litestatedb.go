@@ -169,7 +169,14 @@ func (stateDB *LiteStateDB) GetStateObject(objectType int, addr common.Hash) (St
 	//then search from DB
 	bytesResult, _ := stateDB.db.Get(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...))
 	if len(bytesResult) > 0 {
-		return newStateObjectWithValue(stateDB.stateDB, objectType, addr, bytesResult)
+		obj, err := newStateObjectWithValue(stateDB.stateDB, objectType, addr, bytesResult[1:])
+		if err != nil {
+			return nil, err
+		}
+		if bytesResult[0] == 1 {
+			obj.MarkDelete()
+		}
+		return obj, nil
 	}
 	return nil, nil
 }
@@ -199,8 +206,7 @@ Iterator Interface
 func (stateDB *LiteStateDB) NewIteratorwithPrefix(prefix []byte) incdb.Iterator {
 	kvMap := map[string][]byte{}
 	stateDB.headStateNode.replay(kvMap)
-	//fmt.Println("kvMap", kvMap)
-	prefix = append([]byte(PREFIX_LITESTATEDB), prefix...)
-	iter := NewLiteStateDBIterator(stateDB.db, prefix, kvMap)
+
+	iter := NewLiteStateDBIterator(stateDB.db, []byte(PREFIX_LITESTATEDB), prefix, kvMap)
 	return iter
 }

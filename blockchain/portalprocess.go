@@ -48,14 +48,11 @@ func (blockchain *BlockChain) processPortalInstructions(
 	if (config.Param().Net == config.LocalNet || config.Param().Net == config.TestnetNet) && block.Header.Height < 1580600 {
 		isSkipPortalV3Ints = true
 	}
-	// get the last portalv4 state
-	clonedBeaconBestState, err := blockchain.GetClonedBeaconBestState()
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, nil, nil
+	lastPortalV4State := blockchain.GetBeaconBestState().GetPortalStateV4()
+	lastPortalV3State := &portalprocessv3.CurrentPortalState{}
+	if !isSkipPortalV3Ints {
+		lastPortalV3State = blockchain.GetBeaconBestState().GetPortalStateV3()
 	}
-	lastPortalV4State := clonedBeaconBestState.portalStateV4
-	lastPortalV3State := clonedBeaconBestState.portalStateV3
 	beaconHeight := block.Header.Height - 1
 	relayingState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
 	if err != nil {

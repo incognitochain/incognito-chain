@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"log"
 	"sort"
 )
 
@@ -49,6 +48,12 @@ func (s *StateNode) Serialize() ([]byte, error) {
 		var objTypeByte = make([]byte, 8)
 		binary.LittleEndian.PutUint64(objTypeByte, uint64(obj.GetType()))
 		byteValue := append(objTypeByte[:], obj.GetHash().Bytes()...)
+		if obj.IsDeleted() {
+			byteValue = append(byteValue, 1)
+		} else {
+			byteValue = append(byteValue, 0)
+		}
+
 		byteValue = append(byteValue, obj.GetValueBytes()...)
 		sobj.O = append(sobj.O, byteValue)
 	}
@@ -79,11 +84,14 @@ func (stateDB *StateDB) DeSerializeFromStateNodeData(data []byte) (*StateNode, *
 		}
 		key, _ := common.Hash{}.NewHash(objectByte[8:40])
 
-		obj, _, err := stateDB.createStateObjectWithValue(int(objType), *key, objectByte[40:])
+		obj, _, err := stateDB.createStateObjectWithValue(int(objType), *key, objectByte[41:])
 		if err != nil {
 			return nil, nil, err
 		}
 		stateObject[*key] = obj
+		if objectByte[40] != 0 {
+			obj.MarkDelete()
+		}
 	}
 	stateNode := StateNode{}
 	stateNode.stateObjects = stateObject
@@ -110,8 +118,13 @@ func (s *StateNode) FlushFinalizedToDisk(dbWriter incdb.KeyValueWriter) error {
 	}
 
 	for addr, obj := range s.stateObjects {
-		log.Println("Write key", addr.String())
-		err := dbWriter.Put(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...), obj.GetValueBytes())
+		//log.Println("Write key", addr.String(), obj.IsDeleted())
+		deleteByte := byte(0)
+		if obj.IsDeleted() {
+			deleteByte = 1
+		}
+
+		err := dbWriter.Put(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...), append([]byte{deleteByte}, obj.GetValueBytes()...))
 		if err != nil {
 			return err
 		}
@@ -178,7 +191,13 @@ func (s *StateNode) Commit() (*common.Hash, error) {
 
 		for _, obj := range sortObjs {
 			prevAggHash = append(prevAggHash, obj.GetHash().Bytes()...)
+			if obj.IsDeleted() {
+				prevAggHash = append(prevAggHash, 1)
+			} else {
+				prevAggHash = append(prevAggHash, 0)
+			}
 		}
+
 		aggregateHash := common.Keccak256(prevAggHash)
 		s.aggregateHash = &aggregateHash
 	} else {

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"sort"
+	"strings"
 )
 
 type LiteStateDBIterator struct {
 	dbIterator   incdb.Iterator
+	dbPrefix     []byte
 	memIndex     int
 	memKeySort   [][]byte //assume no duplicate key
 	memValueSort [][]byte
@@ -17,13 +19,15 @@ type LiteStateDBIterator struct {
 	nextMemIndex int
 }
 
-func NewLiteStateDBIterator(db incdb.Database, prefix []byte, kvMap map[string][]byte) *LiteStateDBIterator {
+func NewLiteStateDBIterator(db incdb.Database, dbPrefix, prefix []byte, kvMap map[string][]byte) *LiteStateDBIterator {
 
-	dbIterator := db.NewIteratorWithPrefix(prefix)
+	dbIterator := db.NewIteratorWithPrefix(append(dbPrefix, prefix...))
 	memKeySort := [][]byte{}
 	memValueSort := [][]byte{}
 	for k, _ := range kvMap {
-		memKeySort = append(memKeySort, []byte(string(prefix)+k))
+		if strings.Index(k, string(prefix)) == 0 {
+			memKeySort = append(memKeySort, []byte(k))
+		}
 	}
 	sort.Slice(memKeySort, func(i, j int) bool {
 		for index := range memKeySort[i] {
@@ -42,6 +46,7 @@ func NewLiteStateDBIterator(db incdb.Database, prefix []byte, kvMap map[string][
 
 	iter := &LiteStateDBIterator{
 		dbIterator,
+		dbPrefix,
 		0,
 		memKeySort,
 		memValueSort,
@@ -62,7 +67,7 @@ func (l *LiteStateDBIterator) whichZoneToSelect() int {
 		if len(dbkey) == 0 {
 			return 1
 		}
-
+		dbkey = dbkey[len(l.dbPrefix):]
 		if bytes.Compare(dbkey, memKey) < 0 {
 			return 0
 		}
@@ -114,19 +119,22 @@ func (l *LiteStateDBIterator) Next() bool {
 func (l *LiteStateDBIterator) Key() []byte {
 	selectedZone := l.whichZoneToSelect()
 	if selectedZone == 0 {
-		return l.dbIterator.Key()[len(PREFIX_LITESTATEDB):]
+		if len(l.dbIterator.Key()) == 0 {
+			return nil
+		}
+		return l.dbIterator.Key()[len(l.dbPrefix):]
 	} else {
 		if l.memIndex >= len(l.memKeySort) {
 			return []byte{}
 		}
-		return l.memKeySort[l.memIndex][len(PREFIX_LITESTATEDB):]
+		return l.memKeySort[l.memIndex][:]
 	}
 }
 
 func (l *LiteStateDBIterator) Value() []byte {
 	selectedZone := l.whichZoneToSelect()
 	if selectedZone == 0 {
-		return l.dbIterator.Value()
+		return l.dbIterator.Value()[1:]
 	} else {
 		if l.memIndex >= len(l.memValueSort) {
 			return []byte{}

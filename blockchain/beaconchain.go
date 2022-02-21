@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -236,6 +237,15 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+	if os.Getenv("WAITFORSHARDSYNC") != "" {
+	WAITFORSHARD:
+		for _, v := range chain.Blockchain.ShardChain {
+			if v.GetBestView().(*ShardBestState).BeaconHeight+380 < block.GetHeight() {
+				time.Sleep(time.Millisecond * 10)
+				goto WAITFORSHARD
+			}
+		}
+	}
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Error(err)
 		return err

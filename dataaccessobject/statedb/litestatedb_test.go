@@ -109,7 +109,8 @@ func TestLiteStateDB(t *testing.T) {
 	//this will panic, to prevent flow error
 	//txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[2], randValue[2])
 
-	txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[2], randValue[2])
+	stateObj, _ := txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[2], randValue[2])
+	stateObj.MarkDelete()
 	aggHash3, err := txDB.Commit(true)
 	if err != nil {
 		t.Error(err)
@@ -131,7 +132,8 @@ func TestLiteStateDB(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[14], randValue[14])
+	stateObj, _ = txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[14], randValue[14])
+	stateObj.MarkDelete()
 	aggHash5, err := txDB.Commit(true)
 	if err != nil {
 		t.Error(err)
@@ -195,7 +197,20 @@ func TestLiteStateDB(t *testing.T) {
 		t.Error(err)
 	}
 	compareStateNodeList(restoreTxDB.liteStateDB.headStateNode.previousLink, txDB.liteStateDB.headStateNode.previousLink, t)
-
+	//check mark delete object
+	delObj, err := restoreTxDB.getDeletedStateObject(TestObjectType, randKey[2])
+	if !delObj.IsDeleted() {
+		fmt.Println(delObj.IsDeleted(), delObj.GetValueBytes())
+		t.Error(err)
+	}
+	delObj, err = restoreTxDB.getDeletedStateObject(TestObjectType, randKey[14])
+	if !delObj.IsDeleted() {
+		t.Error(err)
+	}
+	normalObj, err := restoreTxDB.getStateObject(TestObjectType, randKey[13])
+	if normalObj.IsDeleted() {
+		t.Error(err)
+	}
 	////compare restore liteStateDB node link list with current newTxDB
 	restoreTxDB, err = NewLiteStateDB("./tmp/state", newAgg, emptyRoot, db)
 	if err != nil {

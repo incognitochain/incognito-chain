@@ -781,15 +781,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		return err
 	}
 
-	err = blockchain.StoreTxByPublicKey(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), view)
-	if err != nil {
-		return err
-	}
-
-	err = blockchain.StoreTxBySerialNumber(shardBlock.Body.Transactions, shardBlock.Header.ShardID)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
