@@ -319,6 +319,9 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 		})
 
 		Convey("should verify & accept transaction", func() {
+			var err error
+			tx, err = tx.startVerifyTx(dummyDB)
+			So(err, ShouldBeNil)
 			// verify the TX
 			isValid, err := tx.ValidateSanityData(nil, nil, nil, 0)
 			So(err, ShouldBeNil)
@@ -379,8 +382,9 @@ func testTxV2DuplicateInput(db *statedb.StateDB, privateKeys []*privacy.PrivateK
 		[]byte{},
 	)
 	malTx := &Tx{}
-	errMalInit := malTx.Init(malFeeParams)
-	So(errMalInit, ShouldBeNil)
+	err := malTx.Init(malFeeParams)
+	So(err, ShouldBeNil)
+	malTx, err = malTx.startVerifyTx(db)
 	// sanity should be fine
 	isValid, err := malTx.ValidateSanityData(nil, nil, nil, 0)
 	So(err, ShouldBeNil)
@@ -403,15 +407,18 @@ func testTxV2InvalidFee(db *statedb.StateDB, privateKeys []*privacy.PrivateKey, 
 	So(sumIn, ShouldBeGreaterThan, sumOut)
 	malFeeParams := tx_generic.NewTxPrivacyInitParams(privateKeys[0],
 		paymentInfoOut, inputCoins,
-		sumIn-sumOut+1111, true,
+		sumIn-sumOut, true,
 		db,
 		nil,
 		nil,
 		[]byte{},
 	)
 	malTx := &Tx{}
-	_ = malTx.Init(malFeeParams)
-
+	err := malTx.Init(malFeeParams)
+	So(err, ShouldBeNil)
+	malTx.Fee = sumIn-sumOut+1111
+	malTx, err = malTx.startVerifyTx(db)
+	So(err, ShouldBeNil)
 	boolParams := make(map[string]bool)
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	boolParams["isNewTransaction"] = true
@@ -421,6 +428,8 @@ func testTxV2InvalidFee(db *statedb.StateDB, privateKeys []*privacy.PrivateKey, 
 }
 
 func testTxV2OneFakeInput(txv2 *Tx, privateKeys []*privacy.PrivateKey, keySets []*incognitokey.KeySet, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, pastCoins []coin.Coin) {
+	jsb, _ := json.MarshalIndent(txv2, "", "\t")
+	logger.Debugf("debug original tx %s %s", txv2.Hash().String(), string(jsb))
 	// likewise, if someone took an already proven tx and swaps one input coin
 	// for another random coin from outside, the tx cannot go through
 	// (here we only meddle with coin-changing - not adding/removing - since length checks are included within mlsag)
@@ -452,6 +461,8 @@ func testTxV2OneFakeInput(txv2 *Tx, privateKeys []*privacy.PrivateKey, keySets [
 	isValid, err = txv2.ValidateSanityData(nil, nil, nil, 0)
 	So(err, ShouldBeNil)
 	So(isValid, ShouldBeTrue)
+	jsb, _ = json.MarshalIndent(txv2, "", "\t")
+	logger.Debugf("debug tx after recover %s %s", txv2.Hash().String(), string(jsb))
 	isValid, err = txv2.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
 	So(err, ShouldBeNil)
 	So(isValid, ShouldBeTrue)
@@ -555,6 +566,8 @@ func testTxV2OneDoubleSpentInput(privateKeys []*privacy.PrivateKey, db *statedb.
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	boolParams["isBatch"] = true
 	boolParams["isNewTransaction"] = true
+	malTx, err = malTx.startVerifyTx(db)
+	So(err, ShouldBeNil)
 	isValid, err := malTx.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
 	// verify by itself passes
 	if err != nil {
@@ -851,8 +864,53 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *Tx, params *tx_
 		utils.Logger.Log.Warnf("Re-sign a non-CA transaction")
 		err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
 	}
+	if err != nil {
+		return err
+	}
 
 	jsb, _ := json.MarshalIndent(tx, "", "\t")
 	logger.Debugf("Resigning TX for testing : Rehash message %s\n => %v", string(jsb), tx.Hash())
-	return err
+
+	temp, err := tx.startVerifyTx(params.StateDB)
+	if err != nil {
+		return err
+	}
+	*tx = *temp
+	return nil
+}
+
+func (tx *Tx) startVerifyTx(db *statedb.StateDB) (*Tx, error) {
+	marshaledTx, _ := json.Marshal(tx)
+	result := &Tx{}
+	err := json.Unmarshal(marshaledTx, result)
+	if err != nil {
+		return nil, err
+	}
+	marshaledTx2, _ := json.Marshal(result)
+	if !bytes.Equal(marshaledTx, marshaledTx2) {
+		return nil, fmt.Errorf("marshal output inconsistent %s", marshaledTx)
+	}
+	err = result.LoadData(db)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (tx *TxToken) startVerifyTx(db *statedb.StateDB) (*TxToken, error) {
+	marshaledTx, _ := json.Marshal(tx)
+	result := &TxToken{}
+	err := json.Unmarshal(marshaledTx, result)
+	if err != nil {
+		return nil, err
+	}
+	marshaledTx2, _ := json.Marshal(result)
+	if !bytes.Equal(marshaledTx, marshaledTx2) {
+		return nil, fmt.Errorf("marshal output inconsistent %s", marshaledTx)
+	}
+	err = result.LoadData(db)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

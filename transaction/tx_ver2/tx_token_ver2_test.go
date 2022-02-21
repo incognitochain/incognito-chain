@@ -89,6 +89,9 @@ func TestPrivacyV2TxToken(t *testing.T) {
 			Convey("should verify & accept transaction", func() {
 				msgCipherText = []byte("doing a transfer")
 				So(bytes.Equal(msgCipherText, tx2.GetTxNormal().GetProof().GetOutputCoins()[0].GetInfo()), ShouldBeTrue)
+				var err error
+				tx2, err = tx2.startVerifyTx(dummyDB)
+				So(err, ShouldBeNil)
 
 				isValidSanity, err := tx2.ValidateSanityData(nil, nil, nil, 0)
 				So(isValidSanity, ShouldBeTrue)
@@ -281,6 +284,8 @@ func testTxTokenV2OneDoubleSpentInput(pr *tx_generic.TxTokenParams, dbCoin priva
 	tx := &TxToken{}
 	err = tx.Init(pr)
 	So(err, ShouldBeNil)
+	tx, err = tx.startVerifyTx(db)
+	So(err, ShouldBeNil)
 	isValidSanity, err := tx.ValidateSanityData(nil, nil, nil, 0)
 	So(isValidSanity, ShouldBeTrue)
 	So(err, ShouldBeNil)
@@ -298,6 +303,8 @@ func testTxTokenV2OneDoubleSpentInput(pr *tx_generic.TxTokenParams, dbCoin priva
 	pr.TokenParams.TokenInput = []coin.PlainCoin{pc}
 	tx = &TxToken{}
 	err = tx.Init(pr)
+	So(err, ShouldBeNil)
+	tx, err = tx.startVerifyTx(db)
 	So(err, ShouldBeNil)
 	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
 	So(isValidSanity, ShouldBeTrue)
@@ -427,16 +434,24 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 		err = resignUnprovenTx(decryptingKeys, txn, paramsInner, nil, true)
 		txToken.SetTxNormal(txn)
 		txToken.Tx = *txOuter
-		return err
+		if err != nil {
+			return err
+		}
 	} else {
 		paramsOuter := nonPrivacyParams
 		err := resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &txToken.TokenData, false)
 		txToken.Tx = *txOuter
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
-	// txTokenDataHash, err := txToken.TxTokenData.Hash()
-
+	temp, err := txToken.startVerifyTx(params.TransactionStateDB)
+	if err != nil {
+		return err
+	}
+	*txToken = *temp
+	return nil
 }
 
 func createTokenTransferParams(inputCoins []privacy.Coin, db *statedb.StateDB, tokenID, tokenName, symbol string, keySet *incognitokey.KeySet) (*tx_generic.TxTokenParams, *tx_generic.TokenParam, error) {
