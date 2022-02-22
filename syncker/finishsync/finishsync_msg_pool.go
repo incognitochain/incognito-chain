@@ -116,7 +116,6 @@ func (f *FinishSyncMsgPool) AddFinishedSyncValidators(
 			count++
 		}
 	}
-	fmt.Println("debug AddFinishedSyncValidators", f.FinishedSyncValidators, f.ReceiveTime)
 }
 
 func (f *FinishSyncMsgPool) Validators(shardID byte) []string {
@@ -138,7 +137,6 @@ func (f *FinishSyncMsgPool) RemoveValidators(validators []string, shardID byte) 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for _, v := range validators {
-		fmt.Println("debug detete", v)
 		delete(f.FinishedSyncValidators[shardID], v)
 		delete(f.ReceiveTime, v)
 	}
@@ -197,11 +195,8 @@ func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
 	defer f.mu.Unlock()
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
 		Logger.Infof("Finish Sync Msg Pool, ShardID %+v, Length %+v", shardID, len(finishedSyncValidators))
-		syncPoolValidators, ok := allSyncPoolValidators[shardID]
-		if !ok {
-			f.FinishedSyncValidators[shardID] = make(map[string]bool)
-		}
-		for finishSyncMsg := range finishedSyncValidators {
+		syncPoolValidators, _ := allSyncPoolValidators[shardID]
+		for validator := range finishedSyncValidators {
 			has := false
 			for _, syncPoolValidator := range syncPoolValidators {
 				if syncPoolValidator == validator {
