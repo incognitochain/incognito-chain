@@ -67,7 +67,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 	if numWorkers != 0 && len(accessToken) > 0 {
 		accessTokenBytes, err := hex.DecodeString(accessToken)
 		if err != nil {
-			utils.Logger.Log.Errorf("cannot decode the access token %v\n", accessToken)
+			utils.Logger.Log.Errorf("cannot decode the access token %v", accessToken)
 			return nil, fmt.Errorf("cannot decode the access token %v", accessToken)
 		} else if len(accessTokenBytes) != 32 {
 			utils.Logger.Log.Errorf("access token is invalid")
@@ -79,7 +79,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 		authorizedCache = false
 		numWorkers = 0
 	}
-	utils.Logger.Log.Infof("NewOutCoinIndexer with %v workers\n", numWorkers)
+	utils.Logger.Log.Infof("NewOutCoinIndexer with %v workers", numWorkers)
 
 	mtx := new(sync.RWMutex)
 	m := &sync.Map{}
@@ -104,7 +104,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 			}
 
 			if status > StatusIndexingFinished {
-				utils.Logger.Log.Infof("State of OTAKey %x is invalid: %v\n", rawOTAKey, status)
+				utils.Logger.Log.Infof("State of OTAKey %x is invalid: %v", rawOTAKey, status)
 				continue
 			}
 
@@ -113,7 +113,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 			} else {
 				m.Store(rawOTAKey, int(status))
 			}
-			utils.Logger.Log.Infof("Loaded OTAKey %x with status %v\n", rawOTAKey, status)
+			utils.Logger.Log.Infof("Loaded OTAKey %x with status %v", rawOTAKey, status)
 
 			// In case this is an enhanced cache, try to re-add "un-done" params (i.e, params with status = StatusIndexing).
 			// For these IdxParam's, as a quick fix, we'll have to re-cache from the beginning.
@@ -121,7 +121,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 			if status == StatusIndexing && authorizedCache {
 				otaKey := OTAKeyFromRaw(rawOTAKey)
 				if otaKey.GetPublicSpend() == nil || otaKey.GetOTASecretKey() == nil {
-					utils.Logger.Log.Infof("invalid otaKey %x, %v\n", rawOTAKey, otaKey)
+					utils.Logger.Log.Infof("invalid otaKey %x, %v", rawOTAKey, otaKey)
 				}
 				shardID := common.GetShardIDFromLastByte(otaKey.GetPublicSpend().ToBytesS()[len(otaKey.GetPublicSpend().ToBytesS())-1])
 
@@ -133,13 +133,13 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 					ShardID:    shardID,
 					IsReset:    true,
 				}
-				utils.Logger.Log.Infof("Added OTAKey %x to queue\n", rawOTAKey)
+				utils.Logger.Log.Infof("Added OTAKey %x to queue", rawOTAKey)
 				idxQueue[shardID] = append(idxQueue[shardID], idxParam)
 				queueSize++
 			}
 		}
 	}
-	utils.Logger.Log.Infof("Number of cached OTA keys: %v\n", len(loadedKeysRaw))
+	utils.Logger.Log.Infof("Number of cached OTA keys: %v", len(loadedKeysRaw))
 
 	cachedCoins := &sync.Map{}
 	loadRawCachedCoinHashes, err := rawdbv2.GetCachedCoinHashes(db)
@@ -152,8 +152,8 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string, 
 			numCached++
 		}
 	}
-	utils.Logger.Log.Infof("Number of cached coins: %v\n", numCached)
-	utils.Logger.Log.Infof("Number of privacy tokens: %v\n", len(allTokens))
+	utils.Logger.Log.Infof("Number of cached coins: %v", numCached)
+	utils.Logger.Log.Infof("Number of privacy tokens: %v", len(allTokens))
 
 	ci := &CoinIndexer{
 		numWorkers:          int(numWorkers),
@@ -239,7 +239,7 @@ func (ci *CoinIndexer) CacheCoinPublicKey(coinPublicKey *privacy.Point) error {
 		return err
 	}
 	ci.cachedCoinPubKeys.Store(coinPublicKey.String(), true)
-	utils.Logger.Log.Infof("Add coinPublicKey %v success\n", coinPublicKey.String())
+	utils.Logger.Log.Infof("Add coinPublicKey %v success", coinPublicKey.String())
 	return nil
 }
 
@@ -280,7 +280,7 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams *IndexParam) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v\n", r)
+			utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v", r)
 		}
 		if exists, tmpState := ci.HasOTAKey(vkb); exists && tmpState == StatusIndexing {
 			ci.managedOTAKeys.Delete(vkb)
@@ -296,7 +296,7 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams *IndexParam) {
 		// query token output coins
 		currentOutputCoinsToken, err := QueryDbCoinVer2(idxParams.OTAKey, &common.ConfidentialAssetID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v", err)
 
 			status.err = err
 			ci.statusChan <- status
@@ -306,14 +306,14 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams *IndexParam) {
 		// query PRV output coins
 		currentOutputCoinsPRV, err := QueryDbCoinVer2(idxParams.OTAKey, &common.PRVCoinID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v", err)
 
 			status.err = err
 			ci.statusChan <- status
 			return
 		}
 
-		utils.Logger.Log.Infof("[CoinIndexer] Key %x, %d to %d: found %d PRV + %d pToken coins, timeElapsed %v\n", vkb, height, nextHeight-1, len(currentOutputCoinsPRV), len(currentOutputCoinsToken), time.Since(tmpStart).Seconds())
+		utils.Logger.Log.Infof("[CoinIndexer] Key %x, %d to %d: found %d PRV + %d pToken coins, timeElapsed %v", vkb, height, nextHeight-1, len(currentOutputCoinsPRV), len(currentOutputCoinsToken), time.Since(tmpStart).Seconds())
 
 		allOutputCoins = append(allOutputCoins, append(currentOutputCoinsToken, currentOutputCoinsPRV...)...)
 		height = nextHeight
@@ -324,26 +324,27 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams *IndexParam) {
 	if err == nil {
 		err = ci.StoreIndexedOutputCoins(idxParams.OTAKey, allOutputCoins, idxParams.ShardID)
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins error: %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins error: %v", err)
 
 			status.err = err
 			ci.statusChan <- status
 			return
 		}
 	} else {
-		utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey error: %v\n", err)
+		utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey error: %v", err)
 
 		status.err = err
 		ci.statusChan <- status
 		return
 	}
 
-	utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, timeElapsed: %v\n", vkb, time.Since(start).Seconds())
+	utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, timeElapsed: %v", vkb, time.Since(start).Seconds())
 
 	status.err = nil
 	ci.statusChan <- status
 }
 
+//nolint:revive // using defer in loop
 // ReIndexOutCoinBatch re-scans all output coins for a list of indexing params of the same shardID.
 //
 // Callers must manage to make sure all indexing params belong to the same shard.
@@ -393,7 +394,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 
 		defer func() {
 			if r := recover(); r != nil {
-				utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v\n", r)
+				utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v", r)
 			}
 			if exists, tmpState := ci.HasOTAKey(vkb); exists && tmpState == StatusIndexing {
 				ci.managedOTAKeys.Delete(vkb)
@@ -431,7 +432,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 		// query token output coins
 		currentOutputCoinsToken, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txDb, ci.cachedCoinPubKeys, getCoinFilterByOTAKey())
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v", err)
 
 			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
@@ -447,7 +448,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 		// query PRV output coins
 		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.PRVCoinID, height, nextHeight-1, txDb, ci.cachedCoinPubKeys, getCoinFilterByOTAKey())
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v", err)
 
 			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
@@ -465,7 +466,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsPRV[otaStr]...)
 
-			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV + %d pToken coins, current #coins %v, timeElapsed %v\n", otaStr, height, nextHeight-1, len(currentOutputCoinsPRV[otaStr]), len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV + %d pToken coins, current #coins %v, timeElapsed %v", otaStr, height, nextHeight-1, len(currentOutputCoinsPRV[otaStr]), len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
 			mapOutputCoins[otaStr] = listOutputCoins
 		}
 
@@ -479,10 +480,10 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 
 		err := ci.AddOTAKey(idxParam.OTAKey, StatusIndexingFinished)
 		if err == nil {
-			utils.Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x\n", len(allOutputCoins), vkb)
+			utils.Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x", len(allOutputCoins), vkb)
 			err = ci.StoreIndexedOutputCoins(idxParam.OTAKey, allOutputCoins, shardID)
 			if err != nil {
-				utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v\n", vkb, err)
+				utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v", vkb, err)
 
 				status := mapStatuses[otaStr]
 				status.err = err
@@ -493,7 +494,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 				continue
 			}
 		} else {
-			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey %x, error: %v\n", vkb, err)
+			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey %x, error: %v", vkb, err)
 
 			status := mapStatuses[otaStr]
 			status.err = err
@@ -504,7 +505,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 			continue
 		}
 
-		utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, len(allOutputCoins), time.Since(start).Seconds())
+		utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v", vkb, len(allOutputCoins), time.Since(start).Seconds())
 
 		ci.statusChan <- mapStatuses[otaStr]
 		delete(mapIdxParams, otaStr)
@@ -513,6 +514,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []*IndexParam, txDb *stated
 	}
 }
 
+//nolint:revive // using defer in loop
 // ReIndexOutCoinBatchByIndices re-scans all output coins for a list of indexing params of the same shardID.
 //
 // Callers must manage to make sure all indexing params belong to the same shard.
@@ -553,7 +555,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 
 		defer func() {
 			if r := recover(); r != nil {
-				utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v\n", r)
+				utils.Logger.Log.Errorf("[CoinIndexer] Recovered from: %v", r)
 			}
 			if exists, tmpState := ci.HasOTAKey(vkb); exists && tmpState == StatusIndexing {
 				ci.managedOTAKeys.Delete(vkb)
@@ -568,7 +570,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 
 	prvCoinLength, err := statedb.GetOTACoinLength(txDb, common.PRVCoinID, shardID)
 	if err != nil {
-		utils.Logger.Log.Errorf("[CoinIndexer] GetOTACoinLength for PRV error: %v\n", err)
+		utils.Logger.Log.Errorf("[CoinIndexer] GetOTACoinLength for PRV error: %v", err)
 
 		for otaStr := range mapStatuses {
 			status := mapStatuses[otaStr]
@@ -582,7 +584,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 	}
 	tokenCoinLength, err := statedb.GetOTACoinLength(txDb, common.ConfidentialAssetID, shardID)
 	if err != nil {
-		utils.Logger.Log.Errorf("[CoinIndexer] GetOTACoinLength for TOKEN error: %v\n", err)
+		utils.Logger.Log.Errorf("[CoinIndexer] GetOTACoinLength for TOKEN error: %v", err)
 
 		for otaStr := range mapStatuses {
 			status := mapStatuses[otaStr]
@@ -594,7 +596,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		}
 		return
 	}
-	utils.Logger.Log.Infof("[CoinIndexer] Current #Coins for shard %v: PRV %v, TOKEN %v\n", shardID, prvCoinLength.Uint64(), tokenCoinLength.Uint64())
+	utils.Logger.Log.Infof("[CoinIndexer] Current #Coins for shard %v: PRV %v, TOKEN %v", shardID, prvCoinLength.Uint64(), tokenCoinLength.Uint64())
 
 	start := time.Now()
 	for idx := uint64(0); idx < prvCoinLength.Uint64(); {
@@ -606,7 +608,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		// query token output coins
 		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2ByIndices(mapIdxParams, shardID, &common.PRVCoinID, idx, nextIdx-1, txDb, ci.cachedCoinPubKeys, getCoinFilterByOTAKey())
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v", err)
 
 			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
@@ -623,7 +625,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsPRV[otaStr]...)
 
-			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsPRV[otaStr]), len(listOutputCoins), time.Since(start).Seconds())
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV coins, current #coins %v, timeElapsed %v", otaStr, idx, nextIdx-1, len(currentOutputCoinsPRV[otaStr]), len(listOutputCoins), time.Since(start).Seconds())
 			mapOutputCoins[otaStr] = listOutputCoins
 		}
 
@@ -639,7 +641,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		// query token output coins
 		currentOutputCoinsToken, err := QueryBatchDbCoinVer2ByIndices(mapIdxParams, shardID, &common.ConfidentialAssetID, idx, nextIdx-1, txDb, ci.cachedCoinPubKeys, getCoinFilterByOTAKey())
 		if err != nil {
-			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying Token coins from db - %v\n", err)
+			utils.Logger.Log.Errorf("[CoinIndexer] Error while querying Token coins from db - %v", err)
 
 			for otaStr := range mapStatuses {
 				status := mapStatuses[otaStr]
@@ -656,7 +658,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
 
-			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d Token coins, current #coins %v, timeElapsed %v\n", otaStr, idx, nextIdx-1, len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(start).Seconds())
+			utils.Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d Token coins, current #coins %v, timeElapsed %v", otaStr, idx, nextIdx-1, len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(start).Seconds())
 			mapOutputCoins[otaStr] = listOutputCoins
 		}
 
@@ -670,10 +672,10 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 
 		err := ci.AddOTAKey(idxParam.OTAKey, StatusIndexingFinished)
 		if err == nil {
-			utils.Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x\n", len(allOutputCoins), vkb)
+			utils.Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x", len(allOutputCoins), vkb)
 			err = ci.StoreIndexedOutputCoins(idxParam.OTAKey, allOutputCoins, shardID)
 			if err != nil {
-				utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v\n", vkb, err)
+				utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v", vkb, err)
 
 				status := mapStatuses[otaStr]
 				status.err = err
@@ -684,7 +686,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 				continue
 			}
 		} else {
-			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey %x, error: %v\n", vkb, err)
+			utils.Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey %x, error: %v", vkb, err)
 
 			status := mapStatuses[otaStr]
 			status.err = err
@@ -695,7 +697,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatchByIndices(idxParams []*IndexParam, txD
 			continue
 		}
 
-		utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, len(allOutputCoins), time.Since(start).Seconds())
+		utils.Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v", vkb, len(allOutputCoins), time.Since(start).Seconds())
 
 		ci.statusChan <- mapStatuses[otaStr]
 		delete(mapIdxParams, otaStr)
@@ -774,7 +776,7 @@ func (ci *CoinIndexer) AddTokenID(tokenID common.Hash) {
 		ci.mtx.Lock()
 		ci.allTokens[tokenID] = true
 		ci.mtx.Unlock()
-		utils.Logger.Log.Infof("Add tokenID %v to cache\n", tokenID.String())
+		utils.Logger.Log.Infof("Add tokenID %v to cache", tokenID.String())
 	}
 }
 
@@ -817,7 +819,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 	tracking := make(map[string]int)
 	var id string
 
-	utils.Logger.Log.Infof("Start CoinIndexer....\n")
+	utils.Logger.Log.Infof("Start CoinIndexer....")
 	ci.isAuthorizedRunning = true
 	ci.mtx.Unlock()
 
@@ -836,18 +838,18 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 
 			otaKeyBytes := OTAKeyToRaw(status.otaKey)
 			if status.err != nil {
-				utils.Logger.Log.Errorf("IndexOutCoin for otaKey %x failed: %v\n", otaKeyBytes, status.err)
+				utils.Logger.Log.Errorf("IndexOutCoin for otaKey %x failed: %v", otaKeyBytes, status.err)
 				err = ci.RemoveOTAKey(status.otaKey)
 				if err != nil {
-					utils.Logger.Log.Errorf("Remove OTAKey %v error: %v\n", otaKeyBytes, err)
+					utils.Logger.Log.Errorf("Remove OTAKey %v error: %v", otaKeyBytes, err)
 				}
 			} else {
-				utils.Logger.Log.Infof("Finished indexing output coins for otaKey: %x\n", otaKeyBytes)
+				utils.Logger.Log.Infof("Finished indexing output coins for otaKey: %x", otaKeyBytes)
 			}
 
 		case idxParams := <-ci.IdxChan:
 			otaKeyBytes := OTAKeyToRaw(idxParams.OTAKey)
-			utils.Logger.Log.Infof("New authorized OTAKey received: %x\n", otaKeyBytes)
+			utils.Logger.Log.Infof("New authorized OTAKey received: %x", otaKeyBytes)
 
 			ci.mtx.Lock()
 			ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
@@ -859,7 +861,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 			ci.isAuthorizedRunning = false
 			ci.mtx.Unlock()
 
-			utils.Logger.Log.Infof("Stopped coinIndexer!!\n")
+			utils.Logger.Log.Infof("Stopped coinIndexer!!")
 			return
 		default:
 			if numWorking < ci.numWorkers && ci.queueSize > 0 {
@@ -884,7 +886,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 						id = common.HashH(append(jsb, common.RandBytes(32)...)).String()
 						tracking[id] = numParams
 
-						utils.Logger.Log.Infof("Re-index for %v new OTA keys, shard %v, id %v\n", numParams, shard, id)
+						utils.Logger.Log.Infof("Re-index for %v new OTA keys, shard %v, id %v", numParams, shard, id)
 
 						ci.mtx.Unlock()
 
@@ -895,7 +897,7 @@ func (ci *CoinIndexer) Start(cfg *IndexerInitialConfig) {
 				}
 				start = time.Now()
 			} else {
-				utils.Logger.Log.Infof("CoinIndexer is full or no OTA key is found in queue, numWorking %v, queueSize %v\n", numWorking, ci.queueSize)
+				utils.Logger.Log.Infof("CoinIndexer is full or no OTA key is found in queue, numWorking %v, queueSize %v", numWorking, ci.queueSize)
 				time.Sleep(10 * time.Second)
 			}
 		}

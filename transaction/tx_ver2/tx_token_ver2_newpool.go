@@ -3,8 +3,6 @@ package tx_ver2
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -54,15 +52,15 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 		metaType := metaData.GetType()
 		txType := txToken.GetValidationEnv().TxType()
 		if !metadata.IsAvailableMetaInTxType(metaType, txType) {
-			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
+			return false, fmt.Errorf("not mismatch Type, txType: %v, metadataType %v", txType, metaType)
 		}
 		if !metaData.ValidateMetadataByItself() {
-			return false, errors.Errorf("Metadata is not valid")
+			return false, fmt.Errorf("metadata is not valid")
 		}
 	}
-	txn := txToken.GetTxNormal()
-	if txn == nil {
-		return false, errors.Errorf("Can not get tx normal for tx %v", txToken.Hash().String())
+	txn, ok := txToken.GetTxNormal().(*Tx)
+	if !ok || txn == nil {
+		return false, fmt.Errorf("cannot get tx normal for tx %v", txToken.Hash().String())
 	}
 	proof := txn.GetProof()
 	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
@@ -77,12 +75,12 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 	} else {
 		if len(proof.GetInputCoins()) == 0 {
 			if (metaData == nil) && (txn.GetValidationEnv().TxAction() != common.TxActInit) && (txn.GetType() != common.TxTokenConversionType) {
-				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", txToken.Hash().String()))
+				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v has no input, but metadata is nil", txToken.Hash().String()))
 			}
 			if metaData != nil {
 				metaType := metaData.GetType()
 				if !metadata.NoInputHasOutput(metaType) {
-					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", txToken.Hash().String(), metaType))
+					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v has no proof, but metadata is invalid, metadata type %v", txToken.Hash().String(), metaType))
 				}
 			}
 
@@ -91,7 +89,7 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 	proof = txToken.Tx.GetProof()
 	if proof != nil {
 		if (len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) != 0) {
-			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v for pay fee for tx %v, can not be mint tx", txToken.Tx.Hash().String(), txToken.Hash().String()))
+			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v for pay fee for tx %v, can not be mint tx", txToken.Tx.Hash().String(), txToken.Hash().String()))
 		}
 	}
 	return true, nil
@@ -99,11 +97,11 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 
 func (txToken *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 	if txToken.GetType() != common.TxCustomTokenPrivacyType && txToken.GetType() != common.TxTokenConversionType {
-		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
+		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, fmt.Errorf("txCustomTokenPrivacy.Tx should have type tp"))
 	}
 	txn, ok := txToken.GetTxNormal().(*Tx)
 	if !ok || txn == nil {
-		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("TX token must have token component"))
+		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, fmt.Errorf("tx token must have token component"))
 	}
 	if txToken.GetTxBase().GetProof() != nil {
 		check, err := txToken.Tx.TxBase.ValidateSanityDataByItSelf()
@@ -112,10 +110,10 @@ func (txToken *TxToken) ValidateSanityDataByItSelf() (bool, error) {
 		}
 	}
 	if txn.GetProof() == nil {
-		return false, errors.New("Tx Privacy Ver 2 must have a proof")
+		return false, fmt.Errorf("tx Privacy Ver 2 must have a proof")
 	}
 	if txToken.GetTokenID().String() == common.PRVCoinID.String() {
-		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
+		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, fmt.Errorf("cannot transfer PRV via txtoken"))
 	}
 	check, err := txn.TxBase.ValidateSanityDataByItSelf()
 	if !check || err != nil {
@@ -153,7 +151,7 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 	tokenID := txn.GetValidationEnv().TokenID()
 	ok, err := txToken.verifySig(transactionStateDB, byte(shardID), &common.PRVCoinID)
 	if !ok {
-		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v \n", txToken.Hash().String(), err)
+		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v", txToken.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
 
@@ -190,14 +188,14 @@ func (txToken *TxToken) ValidateTxCorrectness(transactionStateDB *statedb.StateD
 		}
 		txFeeProof := txToken.Tx.GetProof()
 		if txFeeProof == nil {
-			return false, errors.New("Missing proof for PRV")
+			return false, fmt.Errorf("missing proof for PRV")
 		}
 
 		bpValid, err := txFeeProof.VerifyV2(txToken.Tx.GetValidationEnv(), 0)
 
 		return bpValid && resTxToken, err
 	default:
-		return false, errors.New("Cannot validate Tx Token. Unavailable type")
+		return false, fmt.Errorf("cannot validate Tx Token; unavailable type")
 	}
 }
 

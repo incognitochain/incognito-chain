@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -146,7 +144,7 @@ func (txToken TxTokenBase) MarshalJSON() ([]byte, error) {
 	tempTx.TxTokenData = txToken.GetTxTokenData()
 	tx := txToken.GetTxBase()
 	if tx == nil {
-		return nil, errors.New("Cannot unmarshal transaction: txfee cannot be nil")
+		return nil, fmt.Errorf("cannot unmarshal transaction: txfee cannot be nil")
 	}
 	tempTx.TxBase.SetVersion(tx.GetVersion())
 	tempTx.TxBase.SetType(tx.GetType())
@@ -364,7 +362,7 @@ func (txToken TxTokenBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetri
 func (txToken TxTokenBase) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
 	// check proof of PRV and pToken
 	if txToken.GetProof() == nil && txToken.TxTokenData.TxNormal.GetProof() == nil {
-		return errors.New("empty tx")
+		return fmt.Errorf("empty tx")
 	}
 
 	// collect serial number for PRV
@@ -388,7 +386,7 @@ func (txToken TxTokenBase) validateDoubleSpendTxWithCurrentMempool(poolSerialNum
 	for _, listSerialNumbers := range poolSerialNumbersHashH {
 		for _, serialNumberHash := range listSerialNumbers {
 			if _, ok := temp[serialNumberHash]; ok {
-				return errors.New("double spend")
+				return fmt.Errorf("double spend")
 			}
 		}
 	}
@@ -436,10 +434,10 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 		metaType := metaData.GetType()
 		txType := tx.GetValidationEnv().TxType()
 		if !metadata.IsAvailableMetaInTxType(metaType, txType) {
-			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
+			return false, fmt.Errorf("not mismatch Type, txType: %v, metadataType %v", txType, metaType)
 		}
 		if !metaData.ValidateMetadataByItself() {
-			return false, errors.Errorf("Metadata is not valid")
+			return false, fmt.Errorf("metadata is not valid")
 		}
 	}
 	txNormal := tx.TxTokenData.TxNormal
@@ -457,12 +455,12 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 	} else {
 		if len(proof.GetInputCoins()) == 0 {
 			if (metaData == nil) && (txNormal.GetValidationEnv().TxAction() != common.TxActInit) && (txNormal.GetType() == common.TxTokenConversionType) {
-				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
+				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v has no input, but metadata is nil", tx.Hash().String()))
 			}
 			if metaData != nil {
 				metaType := metaData.GetType()
 				if !metadata.NoInputHasOutput(metaType) {
-					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
 				}
 			}
 
@@ -471,7 +469,7 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 	proof = tx.Tx.GetProof()
 	if proof != nil {
 		if (len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) != 0) {
-			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v for pay fee for tx %v, can not be mint tx", tx.Tx.Hash().String(), tx.Hash().String()))
+			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v cannot mint PRV", tx.Hash().String()))
 		}
 	}
 	return true, nil

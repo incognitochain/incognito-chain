@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -57,19 +56,16 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			return false, err, i
 		}
 		if tx.GetMetadata() != nil {
-			// if hasPrivacy {
-			// 	return false, errors.New("Metadata can not exist in privacy tx"), i
-			// }
 			validateMetadata := tx.GetMetadata().ValidateMetadataByItself()
 			if !validateMetadata {
-				return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid")), i
+				return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("metadata is invalid")), i
 			}
 		}
 
 		for _, batchableProof := range batchableProofs {
 			bulletproof := batchableProof.GetAggregatedRangeProof()
 			if bulletproof == nil {
-				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("Privacy TX Proof missing at index %d", i)), -1
+				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("privacy TX Proof missing at index %d", i)), -1
 			}
 			switch proof_specific := bulletproof.(type) {
 			case *privacy.AggregatedRangeProofV1:
@@ -112,6 +108,5 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %d", i)
 		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 2 PAYMENT PROOF %d", i)), -1
 	}
-	fmt.Println("[BUGLOG] Number of tx in batch", len(bulletProofListVer1), len(bulletProofListVer2))
 	return true, nil, -1
 }
