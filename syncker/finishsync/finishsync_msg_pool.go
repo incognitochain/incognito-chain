@@ -185,9 +185,7 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string, currentB
 }
 
 func (f *FinishSyncMsgPool) Clean(allSyncPoolValidators map[byte][]string) {
-	f.mu.Lock()
 	f.clean(allSyncPoolValidators)
-	f.mu.Unlock()
 }
 
 func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
