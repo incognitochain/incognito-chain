@@ -1,7 +1,6 @@
 package finishsync
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -53,6 +52,21 @@ func NewFinishSyncMsgPoolWithValue(validators map[byte]map[string]bool) FinishSy
 	}
 }
 
+func (f *FinishSyncMsgPool) Clone() FinishSyncMsgPool {
+
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
+	res := NewFinishSyncMsgPool()
+	for i, validatorList := range f.FinishedSyncValidators {
+		for k := range validatorList {
+			res.FinishedSyncValidators[i][k] = true
+		}
+	}
+
+	return res
+}
+
 func (f *FinishSyncMsgPool) GetFinishedSyncValidators() map[byte][]string {
 
 	f.mu.RLock()
@@ -60,7 +74,7 @@ func (f *FinishSyncMsgPool) GetFinishedSyncValidators() map[byte][]string {
 
 	res := make(map[byte][]string)
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
-		for k, _ := range finishedSyncValidators {
+		for k := range finishedSyncValidators {
 			res[shardID] = append(res[shardID], k)
 		}
 	}
@@ -109,7 +123,7 @@ func (f *FinishSyncMsgPool) Validators(shardID byte) []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	res := []string{}
-	for k, _ := range f.FinishedSyncValidators[shardID] {
+	for k := range f.FinishedSyncValidators[shardID] {
 		res = append(res, k)
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -173,7 +187,9 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string, currentB
 }
 
 func (f *FinishSyncMsgPool) Clean(allSyncPoolValidators map[byte][]string) {
+	f.mu.Lock()
 	f.clean(allSyncPoolValidators)
+	f.mu.Unlock()
 }
 
 func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
@@ -181,8 +197,11 @@ func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
 	defer f.mu.Unlock()
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
 		Logger.Infof("Finish Sync Msg Pool, ShardID %+v, Length %+v", shardID, len(finishedSyncValidators))
-		syncPoolValidators := allSyncPoolValidators[shardID]
-		for validator, _ := range finishedSyncValidators {
+		syncPoolValidators, ok := allSyncPoolValidators[shardID]
+		if !ok {
+			f.FinishedSyncValidators[shardID] = make(map[string]bool)
+		}
+		for finishSyncMsg := range finishedSyncValidators {
 			has := false
 			for _, syncPoolValidator := range syncPoolValidators {
 				if syncPoolValidator == validator {

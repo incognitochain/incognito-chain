@@ -118,6 +118,7 @@ var HttpHandler = map[string]httpHandler{
 	setConsensusRule:           (*HttpServer).handleSetConsensusRule,
 	getConsensusRule:           (*HttpServer).handleGetConsensusRule,
 	getByzantineDetectorInfo:   (*HttpServer).handleGetByzantineDetectorInfo,
+	getByzantineBlackList:      (*HttpServer).handleGetByzantineBlackList,
 	removeByzantineDetector:    (*HttpServer).handleRemoveByzantineDetector,
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,

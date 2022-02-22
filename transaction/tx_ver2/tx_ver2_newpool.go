@@ -77,6 +77,7 @@ func (tx *Tx) ValidateTxCorrectness(transactionStateDB *statedb.StateDB) (bool, 
 		if err != nil {
 			utils.Logger.Log.Error(err)
 		}
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err, tx.Hash().String())
 	}
 	utils.Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 	return true, nil
