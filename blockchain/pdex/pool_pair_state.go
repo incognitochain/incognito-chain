@@ -143,6 +143,11 @@ func (poolPairState *PoolPairState) OrderRewards() map[string]*OrderReward {
 	return res
 }
 
+func (poolPairState *PoolPairState) Orderbook() *Orderbook {
+	res := poolPairState.orderbook.Clone()
+	return &res
+}
+
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		State             *rawdbv2.Pdexv3PoolPair       `json:"State"`
