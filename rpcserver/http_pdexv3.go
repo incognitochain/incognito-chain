@@ -1654,7 +1654,7 @@ func createPdexv3WithdrawOrderRequestTransaction(
 		if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
 			index := -1
 			for i, order := range poolPair.Orderbook().Orders() {
-				if order.NftID().String() == mdReader.AccessID.String() {
+				if order.Id() == mdReader.OrderID {
 					index = i
 					if accessOTA.FromBytesS(order.AccessOTA()) != nil {
 						return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
