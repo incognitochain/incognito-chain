@@ -1789,7 +1789,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		}
 
 		// compute amount of received staking reward
-		reward, err := pool.RecomputeStakingRewards(*metaData.NftID)
+		reward, err := pool.RecomputeStakingRewards(accessID)
 		if err != nil {
 			return instructions, pools, fmt.Errorf("Could not track staking reward: %v\n", err)
 		}
