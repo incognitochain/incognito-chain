@@ -39,7 +39,7 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*cons
 		return nil, nil
 	}
 
-	validatorFromUserKeys, syncValidator := beaconView.ExtractPendingAndCommittee(validators)
+	validatorFromUserKeys, validatorStr := beaconView.ExtractPendingAndCommittee(validators)
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 
@@ -53,12 +53,12 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*cons
 
 	for i, v := range validatorFromUserKeys {
 		dataSign := signBytes[:]
-		signature, err := v.MiningKey.BriSignData(append(dataSign, []byte(syncValidator[i])...))
+		signature, err := v.MiningKey.BriSignData(append(dataSign, []byte(validatorStr[i])...))
 		if err != err {
 			continue
 		}
 		featureSyncSignatures = append(featureSyncSignatures, signature)
-		featureSyncValidators = append(featureSyncValidators, syncValidator[i])
+		featureSyncValidators = append(featureSyncValidators, validatorStr[i])
 	}
 	if len(featureSyncValidators) == 0 {
 		return nil, nil

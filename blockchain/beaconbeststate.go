@@ -42,26 +42,26 @@ type BeaconRootHash struct {
 }
 
 type BeaconBestState struct {
-	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               types.BeaconBlock    `json:"BestBlock"`             // The block.
-	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
-	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
-	Epoch                   uint64               `json:"Epoch"`
-	BeaconHeight            uint64               `json:"BeaconHeight"`
-	BeaconProposerIndex     int                  `json:"BeaconProposerIndex"`
-	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
-	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize   int                  `json:"MinShardCommitteeSize"`
-	ActiveShards            int                  `json:"ActiveShards"`
-	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
-	NumberOfShardBlock      map[byte]uint        `json:"NumberOfShardBlock"`
-	TriggeredFeature        map[string]uint64    `json:"TriggeredFeature"`
+	BestBlockHash                    common.Hash          `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash            common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock                        types.BeaconBlock    `json:"BestBlock"`             // The block.
+	BestShardHash                    map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight                  map[byte]uint64      `json:"BestShardHeight"`
+	Epoch                            uint64               `json:"Epoch"`
+	BeaconHeight                     uint64               `json:"BeaconHeight"`
+	BeaconProposerIndex              int                  `json:"BeaconProposerIndex"`
+	CurrentRandomNumber              int64                `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp           int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber                bool                 `json:"IsGetRandomNumber"`
+	MaxBeaconCommitteeSize           int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize           int                  `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize            int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize            int                  `json:"MinShardCommitteeSize"`
+	ActiveShards                     int                  `json:"ActiveShards"`
+	ConsensusAlgorithm               string               `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm          map[byte]string      `json:"ShardConsensusAlgorithm"`
+	NumberOfShardBlock               map[byte]uint        `json:"NumberOfShardBlock"`
+	TriggeredFeature                 map[string]uint64    `json:"TriggeredFeature"`
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
@@ -1039,16 +1039,17 @@ func (beaconBestState *BeaconBestState) ExtractPendingAndCommittee(validatorFrom
 	}
 	beaconValidators := beaconBestState.beaconCommitteeState.GetBeaconCommittee()
 	shardValidators := beaconBestState.beaconCommitteeState.GetShardCommittee()
-	finishedSyncUserKeys := []*consensus.Validator{}
-	finishedSyncValidators := []string{}
+	shardSubstitutes := beaconBestState.beaconCommitteeState.GetShardSubstitute()
+	userKeys := []*consensus.Validator{}
+	validatorString := []string{}
 
 	for _, v := range beaconValidators {
 		blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
 		for _, userKey := range validatorFromUserKeys {
 			if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
-				finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+				userKeys = append(userKeys, userKey)
 				temp, _ := v.ToBase58()
-				finishedSyncValidators = append(finishedSyncValidators, temp)
+				validatorString = append(validatorString, temp)
 				break
 			}
 		}
@@ -1059,16 +1060,30 @@ func (beaconBestState *BeaconBestState) ExtractPendingAndCommittee(validatorFrom
 			blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
 			for _, userKey := range validatorFromUserKeys {
 				if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
-					finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+					userKeys = append(userKeys, userKey)
 					temp, _ := v.ToBase58()
-					finishedSyncValidators = append(finishedSyncValidators, temp)
+					validatorString = append(validatorString, temp)
 					break
 				}
 			}
 		}
 	}
 
-	return finishedSyncUserKeys, finishedSyncValidators
+	for _, validators := range shardSubstitutes {
+		for _, v := range validators {
+			blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+			for _, userKey := range validatorFromUserKeys {
+				if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+					userKeys = append(userKeys, userKey)
+					temp, _ := v.ToBase58()
+					validatorString = append(validatorString, temp)
+					break
+				}
+			}
+		}
+	}
+
+	return userKeys, validatorString
 }
 
 func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []*consensus.Validator, shardID byte) ([]*consensus.Validator, []string) {
