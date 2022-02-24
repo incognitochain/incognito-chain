@@ -133,7 +133,7 @@ func (f FlatFileManager) Read(index int) ([]byte, error) {
 	return rawB, nil
 }
 
-func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
+func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func()) {
 	c := make(chan []byte)
 	e := make(chan int)
 	closed := false
@@ -146,15 +146,22 @@ func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
 
 	}
 	go func() {
-		for i := len(f.sortedFolder) - 1; i >= 0; i-- {
-			readInfo, err := f.PasreFile(f.sortedFolder[i])
+		fromFile := index / uint64(f.fileSizeLimit)
+		offset := index % uint64(f.fileSizeLimit)
+		for i := int(fromFile); i >= 0; i-- {
+			readInfo, err := f.PasreFile(int(i))
 			if err != nil {
 				e <- 1
 				cancel()
 			}
-			for j := len(readInfo) - 1; j >= 0; j-- {
-				b := make([]byte, readInfo[j].size)
-				readInfo[j].fd.ReadAt(b, int64(readInfo[j].offset))
+			if offset > uint64(len(readInfo)-1) {
+				e <- 1
+				cancel()
+			}
+
+			for j := int(offset); j >= 0; j-- {
+				b := make([]byte, readInfo[int(j)].size)
+				readInfo[int(j)].fd.ReadAt(b, int64(readInfo[int(j)].offset))
 				gz, err := gzip.NewReader(bytes.NewBuffer(b))
 				if err != nil {
 					e <- 1
