@@ -626,7 +626,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		//check validator threshold
 		if featureStatReport.ValidatorStat[feature] != nil {
 			for chainID, size := range featureStatReport.ValidatorSize {
-				if featureStatReport.ValidatorStat[feature][chainID] < uint64(size*autoEnableFeatureInfo.RequiredPercentage/100) {
+				if featureStatReport.ValidatorStat[feature][chainID] < uint64(math.Ceil(float64(size*autoEnableFeatureInfo.RequiredPercentage)/100)) {
 					invalidCondition = true
 					break
 				}
