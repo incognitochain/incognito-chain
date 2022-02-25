@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 	"time"
 
@@ -866,6 +867,9 @@ func (stateDB *StateDB) getShardsCommitteeInfo(curValidator map[int][]*Committee
 func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfoSlashingVersion) {
 	curValidatorInfo = make(map[int][]*StakerInfoSlashingVersion)
 	for shardID, listCommittee := range curValidator {
+		sort.Slice(listCommittee, func(i, j int) bool {
+			return listCommittee[i].EnterTime() < listCommittee[j].EnterTime()
+		})
 		tempStakerInfos := []*StakerInfoSlashingVersion{}
 		for _, c := range listCommittee {
 			cPKBytes, _ := c.committeePublicKey.RawBytes()
