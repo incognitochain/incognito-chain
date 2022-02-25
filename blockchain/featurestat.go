@@ -21,6 +21,7 @@ type FeatureStat struct {
 	blockchain *BlockChain
 	nodes      map[string]NodeFeatureInfo // committeePK : feature lists
 	lock       *sync.RWMutex
+	msg        chan *wire.MessageFeature
 }
 
 type FeatureReportInfo struct {
@@ -82,30 +83,36 @@ func (bc *BlockChain) InitFeatureStat() {
 		blockchain: bc,
 		nodes:      make(map[string]NodeFeatureInfo),
 		lock:       new(sync.RWMutex),
+		msg:        make(chan *wire.MessageFeature, 5000),
 	}
+
+	go func() {
+		for {
+			select {
+			case msg := <-DefaultFeatureStat.msg:
+				bc.ReceiveFeatureReport(msg.Timestamp, msg.CommitteePublicKey, msg.Signature, msg.Feature)
+			}
+		}
+	}()
+
 	//send message periodically
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
-
+			time.Sleep(5 * time.Minute)
 			//get untrigger feature
 			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
 			msg, err := CreateNewFeatureStatMessage(beaconView, bc.config.ConsensusEngine.GetValidators())
-
 			if err != nil {
 				Logger.log.Error(err)
 				continue
 			}
-
 			if msg == nil {
 				continue
 			}
-
 			if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
 				Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
 			}
 			//DefaultFeatureStat.Report()
-
 			DefaultFeatureStat.lock.Lock()
 			for id, node := range DefaultFeatureStat.nodes {
 				if time.Now().Unix()-int64(node.Timestamp) > 30*60 {
@@ -113,9 +120,17 @@ func (bc *BlockChain) InitFeatureStat() {
 				}
 			}
 			DefaultFeatureStat.lock.Unlock()
-
 		}
 	}()
+}
+
+func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
+	if len(stat.msg) >= cap(stat.msg)*90/100 {
+		Logger.log.Warn("Drop feature stat message", msg.CommitteePublicKey, len(stat.msg), cap(stat.msg))
+		return
+	}
+	Logger.log.Info("Receive a MsgFeature", msg.CommitteePublicKey, msg.Feature)
+	stat.msg <- msg
 }
 
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {

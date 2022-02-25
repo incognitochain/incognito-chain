@@ -981,10 +981,7 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 
 //OnFeatureMsg handle feature message
 func (serverObj *Server) OnFeatureMsg(p *peer.PeerConn, msg *wire.MessageFeature) {
-	Logger.log.Info("Receive a MsgFeature", msg.CommitteePublicKey, msg.Feature)
-	if len(msg.CommitteePublicKey) > 0 {
-		serverObj.blockChain.ReceiveFeatureReport(msg.Timestamp, msg.CommitteePublicKey, msg.Signature, msg.Feature)
-	}
+	blockchain.DefaultFeatureStat.ReceiveMsg(msg)
 }
 
 // OnBlock is invoked when a peer receives a block message.  It
