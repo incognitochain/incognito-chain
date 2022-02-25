@@ -105,6 +105,15 @@ func (bc *BlockChain) InitFeatureStat() {
 				Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
 			}
 			//DefaultFeatureStat.Report()
+
+			DefaultFeatureStat.lock.Lock()
+			for id, node := range DefaultFeatureStat.nodes {
+				if time.Now().Unix()-int64(node.Timestamp) > 30*60 {
+					delete(DefaultFeatureStat.nodes, id)
+				}
+			}
+			DefaultFeatureStat.lock.Unlock()
+
 		}
 	}()
 }

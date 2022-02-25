@@ -1123,22 +1123,33 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	signBytes := []byte{}
+	untriggerFeature := blockchain.GetBeaconBestState().getUntriggerFeature(true)
+	cpk := blockchain.GetBeaconBestState().beaconCommitteeState.GetAllCandidateSubstituteCommittee()
 	for _, v := range features {
+		if common.IndexOfStr(v, untriggerFeature) == -1 {
+			Logger.log.Errorf("Receive feature stat not valid checkpoint - %v", v)
+			return
+		}
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
+
 	timestampStr := fmt.Sprintf("%v", timestamp)
 	signBytes = append(signBytes, []byte(timestampStr)...)
 	for i, key := range committeePublicKeyStructs {
+		//not in staker
+		if common.IndexOfStr(committeePublicKeys[i], cpk) == -1 {
+			continue
+		}
+
 		dataSign := signBytes[:]
 		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], append(dataSign, []byte(committeePublicKeys[i])...), signatures[i])
 
 		if err != nil {
-			Logger.log.Errorf("Verify feature stat Sign failed, err", committeePublicKeys[i], signatures[i], err)
+			Logger.log.Error("Verify feature stat Sign failed, err", committeePublicKeys[i], signatures[i], err)
 			continue
 		}
 		if !isValid {
-			fmt.Println("timestamp", timestamp, timestampStr)
-			Logger.log.Errorf("Verify feature stat Sign failed", committeePublicKeys[i], signatures[i])
+			Logger.log.Error("Verify feature stat Sign failed", committeePublicKeys[i], signatures[i], timestampStr)
 			continue
 		}
 		DefaultFeatureStat.addNode(timestamp, committeePublicKeys[i], features)
