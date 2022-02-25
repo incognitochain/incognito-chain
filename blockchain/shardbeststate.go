@@ -735,7 +735,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 		rewardTrieDB.Reference(sRH.RewardStateDBRootHash, common.Hash{})
 		slashTrieDB.Reference(sRH.SlashStateDBRootHash, common.Hash{})
 		bc.cacheConfig.triegc[shardID].Push(sRH, -int64(shardBestState.ShardHeight))
-		if current := shardBestState.ShardHeight; current >= bc.cacheConfig.blockTriesInMemory {
+		if current := shardBestState.ShardHeight; current >= bc.cacheConfig.blockTrieInMemory {
 			var (
 				nodes, imgs = transactionTrieDB.Size()
 			)
@@ -754,7 +754,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 
 			if isFinalizedBlock &&
 				current > pivotBlock.GetHeight() &&
-				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTriesInMemory {
+				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTrieInMemory {
 				if err := shardBestState.fullSyncCommitTrieToDisk(
 					bc, batch,
 					newFinalBlock,
@@ -762,7 +762,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 					return err
 				}
 
-				chosen := current / bc.cacheConfig.blockTriesInMemory * bc.cacheConfig.blockTriesInMemory
+				chosen := current / bc.cacheConfig.blockTrieInMemory * bc.cacheConfig.blockTrieInMemory
 				// Garbage collect anything below our required write retention
 				// Dereference could take time and block the insertion process
 				for !bc.cacheConfig.triegc[shardID].Empty() {

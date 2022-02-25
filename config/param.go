@@ -130,10 +130,10 @@ type consensusParam struct {
 }
 
 type fullSyncModeParam struct {
-	trieJournalCacheSize int                `mapstructure:"trie_journal_cache_size"`
-	blockTrieInMemory    uint64             `mapstructure:"block_trie_in_memory"`
-	trieNodeLimit        common.StorageSize `mapstructure:"trie_node_limit"`
-	trieImgsLimit        common.StorageSize `mapstructure:"trie_img_limit"`
+	TrieJournalCacheSize int                `mapstructure:"trie_journal_cache_size"`
+	BlockTrieInMemory    uint64             `mapstructure:"block_trie_in_memory"`
+	TrieNodeLimit        common.StorageSize `mapstructure:"trie_node_limit"`
+	TrieImgsLimit        common.StorageSize `mapstructure:"trie_img_limit"`
 }
 
 func LoadParam() *param {

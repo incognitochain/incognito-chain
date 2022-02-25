@@ -90,7 +90,7 @@ type CacheConfig struct {
 	triegc               map[byte]*prque.Prque // Priority queue mapping block numbers to tries to gc
 	trieJournalPath      map[int]string
 	trieJournalCacheSize int
-	blockTriesInMemory   uint64
+	blockTrieInMemory    uint64
 	trieNodeLimit        common.StorageSize
 	trieImgsLimit        common.StorageSize
 }
@@ -109,9 +109,13 @@ func NewFlatFileConfig(config *Config) {
 	}
 }
 
-func NewCacheConfig(config *Config) (CacheConfig, error) {
+func NewCacheConfig(cfg *Config) (CacheConfig, error) {
 
-	cacheConfig := configCache8GB
+	cacheConfig := CacheConfig{}
+	cacheConfig.trieJournalCacheSize = config.Param().FullSyncModeParam.TrieJournalCacheSize
+	cacheConfig.blockTrieInMemory = config.Param().FullSyncModeParam.BlockTrieInMemory
+	cacheConfig.trieNodeLimit = config.Param().FullSyncModeParam.TrieNodeLimit
+	cacheConfig.trieImgsLimit = config.Param().FullSyncModeParam.TrieImgsLimit
 	cacheConfig.triegc = make(map[byte]*prque.Prque)
 	trieJournal := make(map[int]string)
 
@@ -119,7 +123,7 @@ func NewCacheConfig(config *Config) (CacheConfig, error) {
 		cacheConfig.triegc[byte(i)] = prque.New(nil)
 	}
 
-	for chainID, db := range config.DataBase {
+	for chainID, db := range cfg.DataBase {
 
 		journalPath := db.GetPath() + "/metadata.bin"
 		if _, err := os.Stat(journalPath); os.IsNotExist(err) {
