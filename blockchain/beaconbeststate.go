@@ -1186,11 +1186,18 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
 }
 
-func (curView *BeaconBestState) getUntriggerFeature() []string {
+func (curView *BeaconBestState) getUntriggerFeature(reachCheckpoint bool) []string {
 	unTriggerFeatures := []string{}
 	for f, _ := range config.Param().AutoEnableFeature {
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
-			unTriggerFeatures = append(unTriggerFeatures, f)
+			if reachCheckpoint {
+				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {
+					unTriggerFeatures = append(unTriggerFeatures, f)
+				}
+			} else {
+				unTriggerFeatures = append(unTriggerFeatures, f)
+			}
+
 		}
 	}
 	return unTriggerFeatures

@@ -568,7 +568,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				beaconBestState.TriggeredFeature = make(map[string]uint64)
 			}
 			for _, feature := range enableFeatures.Features {
-				if common.IndexOfStr(feature, curView.getUntriggerFeature()) != -1 {
+				if common.IndexOfStr(feature, curView.getUntriggerFeature(false)) != -1 {
 					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
 				} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)

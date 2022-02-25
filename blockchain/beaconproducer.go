@@ -589,7 +589,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 	instructions := [][]string{}
 	enableFeature := []string{}
 	// get valid untrigger feature
-	unTriggerFeatures := curView.getUntriggerFeature()
+	unTriggerFeatures := curView.getUntriggerFeature(false)
 
 	for _, feature := range unTriggerFeatures {
 		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]

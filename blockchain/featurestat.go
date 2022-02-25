@@ -29,13 +29,21 @@ type FeatureReportInfo struct {
 	ValidatorSize map[int]int               // chainid -> all validator size
 }
 
-func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*consensus.Validator, unTriggerFeatures []string) (*wire.MessageFeature, error) {
+func CreateNewFeatureStatMessage(beaconView *BeaconBestState, validators []*consensus.Validator) (*wire.MessageFeature, error) {
 
+	unTriggerFeatures := beaconView.getUntriggerFeature(true)
 	if len(validators) == 0 {
 		return nil, nil
 	}
 
-	if len(unTriggerFeatures) == 0 {
+	validUntriggerFeatures := []string{}
+	for _, v := range unTriggerFeatures {
+		if beaconView.BeaconHeight > uint64(config.Param().AutoEnableFeature[v].MinTriggerBlockHeight) {
+			validUntriggerFeatures = append(validUntriggerFeatures, v)
+		}
+	}
+
+	if len(validUntriggerFeatures) == 0 {
 		return nil, nil
 	}
 
@@ -82,8 +90,7 @@ func (bc *BlockChain) InitFeatureStat() {
 
 			//get untrigger feature
 			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
-			unTriggerFeatures := beaconView.getUntriggerFeature()
-			msg, err := CreateNewFeatureStatMessage(beaconView, bc.config.ConsensusEngine.GetValidators(), unTriggerFeatures)
+			msg, err := CreateNewFeatureStatMessage(beaconView, bc.config.ConsensusEngine.GetValidators())
 
 			if err != nil {
 				Logger.log.Error(err)
@@ -99,15 +106,13 @@ func (bc *BlockChain) InitFeatureStat() {
 			}
 			//DefaultFeatureStat.Report()
 		}
-
 	}()
-
 }
 
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
 	nodeFeatures := stat.nodes[cpk].Features
-	//get feature that beacon is preparing to trigger
-	unTriggerFeatures := curView.getUntriggerFeature()
+	//get feature that beacon is checking for trigger
+	unTriggerFeatures := curView.getUntriggerFeature(true)
 
 	//check if node contain the untriggered feature
 	for _, feature := range unTriggerFeatures {
@@ -139,7 +144,7 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 			Logger.log.Error(err)
 		}
 	}
-	unTriggerFeatures := beaconView.getUntriggerFeature()
+	unTriggerFeatures := beaconView.getUntriggerFeature(true)
 	stat.lock.Lock()
 	defer stat.lock.Unlock()
 	for key, features := range stat.nodes {

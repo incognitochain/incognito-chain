@@ -792,7 +792,8 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 					if common.IndexOfStr(feature, shardBestState.getUntriggerFeature()) != -1 {
 						shardBestState.TriggeredFeature[feature] = shardBlock.GetHeight()
 					} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
-						panic("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
+						Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
+						return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 					}
 
 				}
