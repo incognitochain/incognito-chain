@@ -4,7 +4,7 @@ GO111MODULE=on go get -v
 
 cd ./blockchain/committeestate/ && mockery --name=BeaconCommitteeState --outpkg=externalmocks --output=./externalmocks && cd -
 cd ./blockchain/committeestate/ && mockery --name=SplitRewardRuleProcessor --outpkg=externalmocks --output=./externalmocks && cd -
-cd ./metadata/ && mockery --name=ChainRetriever && mockery --name=BeaconViewRetriever && mockery --name=ShardViewRetriever && mockery --name=Transaction && cd -
+cd ./metadata/common && mockery --name=ChainRetriever && mockery --name=BeaconViewRetriever && mockery --name=ShardViewRetriever && mockery --name=Transaction && cd -
 cd ./consensus_v2/blsbft/ && mockery --name=NodeInterface  && mockery --name=CommitteeChainHandler && mockery  --name=Chain && cd -
 cd ./blockchain/types/ && mockery --name=BlockInterface && cd -
 cd ./multiview/ && mockery --name=View && cd -
