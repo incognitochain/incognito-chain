@@ -85,6 +85,6 @@ pdex_param:
 is_enable_bpv3_stats: true
 full_sync_mode_param:
   trie_journal_cache_size: 32
-  block_trie_in_memory: 2000
+  block_trie_in_memory: 20000
   trie_node_limit: 1e9
   trie_img_limit: 4e6

@@ -102,5 +102,5 @@ is_enable_bpv3_stats: false
 full_sync_mode_param:
   trie_journal_cache_size: 32
   block_trie_in_memory: 2000
-  trie_node_limit: 512 * 1024 * 1024
-  trie_img_limit: 4 * 1024 * 1024
+  trie_node_limit: 1e9
+  trie_img_limit: 4e6
