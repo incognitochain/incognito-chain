@@ -47,8 +47,9 @@ type BlockChain struct {
 
 	IsTest bool
 
-	beaconViewCache       *lru.Cache
-	committeeByEpochCache *lru.Cache
+	beaconViewCache             *lru.Cache
+	committeeByEpochCache       *lru.Cache
+	committeeByEpochProcessLock sync.Mutex
 }
 
 // Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
@@ -1169,11 +1170,15 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoSlashingVersion(epoch uint64) (map
 	}
 	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
 		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
+			bc.committeeByEpochProcessLock.Lock()
+			defer bc.committeeByEpochProcessLock.Unlock()
 			return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, result), nil
 		}
 	}
 	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
 	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
+	bc.committeeByEpochProcessLock.Lock()
+	defer bc.committeeByEpochProcessLock.Unlock()
 	return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, allCommitteeState), nil
 }
 
