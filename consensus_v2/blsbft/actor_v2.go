@@ -1247,8 +1247,10 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		}
 	}
 
-	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash); !ok {
+	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash); !ok ||
+		!reflect.DeepEqual(proposeBlockInfo.block, block) {
 		err := a.handleNewProposeMsg(
+			proposeBlockInfo,
 			proposeMsg,
 			block,
 			previousBlock,
@@ -1283,6 +1285,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 }
 
 func (a *actorV2) handleNewProposeMsg(
+	oldProposeBlockInfo *ProposeBlockInfo,
 	proposeMsg BFTPropose,
 	block types.BlockInterface,
 	previousBlock types.BlockInterface,
@@ -1302,19 +1305,31 @@ func (a *actorV2) handleNewProposeMsg(
 		a.chain.GetBestView().GetProposerLength(),
 		producerPublicBLSMiningKey,
 	)
-	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
+
+	newProposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
 		a.logger.Errorf("Fail to HandleBFTProposeMessage, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
 		return err
 	}
 
-	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
+	if oldProposeBlockInfo != nil {
+		if len(oldProposeBlockInfo.Votes) != 0 {
+			for k, v := range oldProposeBlockInfo.Votes {
+				newProposeBlockInfo.Votes[k] = v
+			}
+		}
+		newProposeBlockInfo.ErrVotes = oldProposeBlockInfo.ErrVotes
+		newProposeBlockInfo.ValidVotes = oldProposeBlockInfo.ValidVotes
+	}
+
+	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	if err := a.AddReceiveBlockByHeight(block.GetHeight(), proposeBlockInfo); err != nil {
+	if err := a.AddReceiveBlockByHeight(block.GetHeight(), newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by height error %+v", err)
 	}
+
 	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
