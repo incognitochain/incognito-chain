@@ -840,6 +840,17 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 /*
 Restart all BeaconView from Database
 */
+var (
+	testGetFlatFileIndex        = float64(0)
+	testRestoreOneBlock         = float64(0)
+	testCommitMemOneBlock       = float64(0)
+	testCommitDiskOneBlock      = float64(0)
+	testGetRootOneBlock         = float64(0)
+	testGetSObjOneBlock         = float64(0)
+	testDeserializeSObjOneBlock = float64(0)
+	testReadFile                = float64(0)
+)
+
 func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 
 	allViews := []*ShardBestState{}
@@ -866,12 +877,36 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		v.BestBlock = block
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain, isRepair)
 		if err != nil {
+			now := time.Now()
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
 			if err := blockchain.RepairShardViewStateDB(shardID, allViews); err != nil {
 				Logger.log.Errorf("RepairShardViewStateDB shardID %+v, error %+v", shardID, err)
 				return err
 			}
 			isRepair = true
+			Logger.log.Infof("Benchmark Time RestoreShardBestState \n"+
+				"Commit Mem %.4f \n"+
+				"Commit Disk %.4f \n"+
+				"Get Root %.4f \n"+
+				"Repair State %.4f \n"+
+				"Read File Time: %.4f \n"+
+				"Deserialize State Object: %.4f \n"+
+				"Restore State Object: %.4f \n"+
+				"Deserialize Byte 1: %.4f \n"+
+				"Deserialize Byte 2: %.4f \n"+
+				"Read file by index: %.4f \n"+
+				"Total: %.2f \n",
+				testCommitMemOneBlock,
+				testCommitDiskOneBlock,
+				testGetRootOneBlock,
+				testRestoreOneBlock,
+				testGetFlatFileIndex,
+				testDeserializeSObjOneBlock,
+				testGetSObjOneBlock,
+				statedb.TestBenchmarkDeserialize1,
+				statedb.TestBenchmarkDeserialize2,
+				testReadFile,
+				time.Since(now).Seconds())
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
@@ -1086,7 +1121,7 @@ func repairStateDB(
 	}
 
 	for len(restore) != 0 {
-
+		startTime1 := time.Now()
 		nextBlock := restore[len(restore)-1]
 
 		Logger.log.Debugf("Repair State, Shard %+v, restore next block %+v, remain %+v", shardID, nextBlock, len(restore))
@@ -1098,6 +1133,8 @@ func repairStateDB(
 
 		if isCorruptState(wantSRH, statedb.NewDatabaseAccessWarper(db)) {
 
+			startTime5 := time.Now()
+
 			allStateObjects, flatFileIndexes, err := GetStateObjectFromFlatFile(
 				stateDBs,
 				flatFileManager,
@@ -1107,9 +1144,11 @@ func repairStateDB(
 			if err != nil {
 				return err
 			}
+			testGetSObjOneBlock += time.Since(startTime5).Seconds()
+			Logger.log.Infof("Benchmark Time Get State One Block %f", time.Since(startTime5).Seconds())
 
 			gotSRH := make([]common.Hash, 5)
-
+			startTime2 := time.Now()
 			for i := range allStateObjects {
 				stateObjects := allStateObjects[i]
 				stateDB := stateDBs[i]
@@ -1129,12 +1168,16 @@ func repairStateDB(
 				}
 				gotSRH[i] = rootHash
 			}
+			testCommitMemOneBlock += time.Since(startTime2).Seconds()
+			Logger.log.Infof("Benchmark Time Mem Commit One Block %f", time.Since(startTime2).Seconds())
 
 			blockToCommit, _, err := bc.GetShardBlockByHash(nextBlock)
 			if err != nil {
 				return err
 			}
 			batch := db.NewBatch()
+
+			startTime3 := time.Now()
 
 			if err := commitTrieToDisk(
 				batch,
@@ -1151,7 +1194,10 @@ func repairStateDB(
 			if err := batch.Write(); err != nil {
 				return err
 			}
+			testCommitDiskOneBlock += time.Since(startTime3).Seconds()
+			Logger.log.Infof("Benchmark Time Disk Commit One Block %f", time.Since(startTime3).Seconds())
 
+			startTime4 := time.Now()
 			if calculatedRoot, _ := stateDBs[SHARD_CONSENSUS_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.ConsensusStateDBRootHash {
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect consensus root hash %+v, got %+v",
 					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.ConsensusStateDBRootHash, calculatedRoot)
@@ -1172,9 +1218,13 @@ func repairStateDB(
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect slash root hash %+v, got %+v",
 					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.SlashStateDBRootHash, calculatedRoot)
 			}
+			testGetRootOneBlock += time.Since(startTime4).Seconds()
+			Logger.log.Infof("Benchmark Time Get Root One Block %f", time.Since(startTime4).Seconds())
 		}
 
 		restore = restore[:len(restore)-1]
+		testRestoreOneBlock += time.Since(startTime1).Seconds()
+		Logger.log.Infof("Benchmark Time Restore One Block %f", time.Since(startTime1).Seconds())
 	}
 
 	return nil

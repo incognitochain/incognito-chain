@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/incognitochain/incognito-chain/common"
+	"time"
 )
 
 type StateObject interface {
@@ -59,20 +60,32 @@ func ByteSerialize(sob StateObject) []byte {
 	return res
 }
 
+var (
+	TestBenchmarkDeserialize1 = float64(0)
+	TestBenchmarkDeserialize2 = float64(0)
+)
+
 func ByteDeSerialize(stateDB *StateDB, sobByte []byte) (StateObject, error) {
 
 	objTypeByte := sobByte[:TYPE_LENGTH]
 	var objType uint64
+
+	now := time.Now()
 	if err := binary.Read(bytes.NewBuffer(objTypeByte), binary.LittleEndian, &objType); err != nil {
 		return nil, err
 	}
+	TestBenchmarkDeserialize1 += time.Since(now).Seconds()
 
 	objStatusByte := sobByte[TYPE_LENGTH : TYPE_LENGTH+STATUS_LENGTH]
 	var objStatusBit uint16
 	var objStatus = false
+
+	now = time.Now()
 	if err := binary.Read(bytes.NewBuffer(objStatusByte), binary.LittleEndian, &objStatusBit); err != nil {
 		return nil, err
 	}
+	TestBenchmarkDeserialize2 += time.Since(now).Seconds()
+
 	if objStatusBit == 1 {
 		objStatus = true
 	}

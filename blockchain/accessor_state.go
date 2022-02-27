@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"time"
 )
 
 const (
@@ -95,20 +96,27 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 
 	allStateObjects := make([]map[common.Hash]statedb.StateObject, 5)
 
+	startTime1 := time.Now()
 	indexes, err := rawdbv2.GetFlatFileStateObjectIndex(db, hash)
 	if err != nil {
 		return allStateObjects, nil, err
 	}
+	testGetFlatFileIndex += time.Since(startTime1).Seconds()
+	Logger.log.Infof("Benchmark Time Get Flatfile State Object Index %f", time.Since(startTime1).Seconds())
 
+	startTime2 := time.Now()
 	for i := range indexes {
 		stateDB := stateDBs[i]
 		stateObjects := make(map[common.Hash]statedb.StateObject)
 
 		for _, index := range indexes[i] {
+
+			now := time.Now()
 			data, err := flatFileManager.Read(index)
 			if err != nil {
 				return allStateObjects, nil, err
 			}
+			testReadFile += time.Since(now).Seconds()
 
 			stateObject, err := statedb.ByteDeSerialize(stateDB, data)
 			if err != nil {
@@ -120,6 +128,8 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 
 		allStateObjects[i] = stateObjects
 	}
+	testDeserializeSObjOneBlock += time.Since(startTime2).Seconds()
+	Logger.log.Infof("Benchmark Time Restore State Object Index %f", time.Since(startTime2).Seconds())
 
 	return allStateObjects, indexes, nil
 }
