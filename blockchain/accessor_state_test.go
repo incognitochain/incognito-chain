@@ -11,7 +11,7 @@ func TestStoreStateObjectToFlatFile(t *testing.T) {
 
 	os.RemoveAll("./tmp")
 	defer os.RemoveAll("./tmp")
-	flatFile, err := flatfile.NewFlatFile("./tmp", 5000)
+	flatFile, err := flatfile.NewFlatFile("./tmp", 5000, true)
 	if err != nil {
 		t.Fatal(err)
 	}

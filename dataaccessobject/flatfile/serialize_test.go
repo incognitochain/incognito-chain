@@ -43,7 +43,7 @@ import (
 func TestNewFlatFile(t *testing.T) {
 	os.RemoveAll("./tmp")
 	defer os.RemoveAll("./tmp")
-	ff, _ := NewFlatFile("./tmp", 2)
+	ff, _ := NewFlatFile("./tmp", 2, true)
 	var genStr = func(s string) string {
 		res := ""
 		for i := 0; i < 10; i++ {
@@ -87,7 +87,7 @@ func TestNewFlatFile(t *testing.T) {
 
 func TestFlatFileManager_Truncate(t *testing.T) {
 	os.RemoveAll("./tmp")
-	ff, _ := NewFlatFile("./tmp", 2)
+	ff, _ := NewFlatFile("./tmp", 2, true)
 	var genStr = func(s string) string {
 		res := ""
 		for i := 0; i < 10; i++ {

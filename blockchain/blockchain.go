@@ -101,7 +101,7 @@ func NewFlatFileConfig(config *Config) {
 
 	for chainID, db := range config.DataBase {
 		path := db.GetPath() + "/flatfile"
-		flatFileManager, err := flatfile.NewFlatFile(path, 5000)
+		flatFileManager, err := flatfile.NewFlatFile(path, 5000, false)
 		if err != nil {
 			return
 		}
