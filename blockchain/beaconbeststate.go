@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -22,6 +21,10 @@ import (
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
+)
+
+const (
+	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
 )
 
 // BestState houses information about the current best block and other info
@@ -1222,34 +1225,11 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	return nonSlashingCommittees
 }
 
-func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize map[uint64]int, beaconHeight uint64) int {
-
-	if len(increaseMaxCommitteeSize) == 0 {
-		return currentMaxCommitteeSize
+func GetMaxCommitteeSize(currentMaxShardCommittee int, triggerFeature map[string]uint64, blkHeight uint64) int {
+	if triggerFeature[MAX_COMMITTEE_SIZE_48_FEATURE] != 0 && triggerFeature[MAX_COMMITTEE_SIZE_48_FEATURE] <= blkHeight {
+		return 48
 	}
-
-	heights := []uint64{}
-	for k := range increaseMaxCommitteeSize {
-		heights = append(heights, k)
-	}
-
-	sort.Slice(heights, func(i, j int) bool {
-		return heights[i] < heights[j]
-	})
-
-	key := uint64(0)
-	// heights is sorted increasing array
-	for _, height := range heights {
-		if beaconHeight >= height {
-			key = height
-		}
-	}
-
-	if key == 0 {
-		return currentMaxCommitteeSize
-	}
-
-	return increaseMaxCommitteeSize[key]
+	return currentMaxShardCommittee
 }
 
 func (curView *BeaconBestState) GetProposerLength() int {

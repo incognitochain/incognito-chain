@@ -603,8 +603,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		beaconBestState.NumberOfShardBlock[shardID] = beaconBestState.NumberOfShardBlock[shardID] + uint(len(shardStates))
 	}
 
-	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize,
-		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, beaconBlock.Header.Height)
+	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize, beaconBestState.TriggeredFeature, beaconBlock.Header.Height)
 	if newMaxCommitteeSize != beaconBestState.MaxShardCommitteeSize {
 		Logger.log.Infof("Beacon Height %+v, Hash %+v, found new max committee size %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash(), newMaxCommitteeSize)
 		beaconBestState.MaxShardCommitteeSize = newMaxCommitteeSize
