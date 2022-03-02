@@ -2,6 +2,7 @@ package pdex
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type State interface {
@@ -36,5 +37,6 @@ type StateValidator interface {
 	IsValidUnstakingAmount(tokenID, stakerID string, unstakingAmount uint64) (bool, error)
 	IsValidShareAmount(poolPairID, lpID string, shareAmount uint64) (bool, error)
 	IsValidStaker(stakingPoolID, stakerID string) (bool, error)
+	IsValidAccessOTA(metadataCommon.Pdexv3AccessOTAChecker) (bool, error)
 	IsValidLP(poolPairID, lpID string) (bool, error)
 }

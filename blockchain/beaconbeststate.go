@@ -18,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -622,12 +623,16 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3LP(poolPairID, lpID string)
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidLP(poolPairID, lpID)
 }
 
+func (beaconBestState *BeaconBestState) IsValidPdexv3AccessOTA(checker metadataCommon.Pdexv3AccessOTAChecker) (bool, error) {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidAccessOTA(checker)
+}
+
 func (beaconBestState *BeaconBestState) NftIDCoinFilter() (*privacy.TokenIDRingDecoyFilter, error) {
 	data, err := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().NFTAssetTags()
 	if err != nil {
 		return nil, err
 	}
-	return &privacy.TokenIDRingDecoyFilter {
+	return &privacy.TokenIDRingDecoyFilter{
 		Data: data,
 	}, nil
 }

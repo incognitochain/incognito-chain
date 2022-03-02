@@ -4,6 +4,8 @@ package mocks
 
 import (
 	incognitokey "github.com/incognitochain/incognito-chain/incognitokey"
+	common "github.com/incognitochain/incognito-chain/metadata/common"
+
 	mock "github.com/stretchr/testify/mock"
 
 	statedb "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -286,6 +288,27 @@ func (_m *BeaconViewRetriever) GetStakerInfo(_a0 string) (*statedb.StakerInfo, b
 	}
 
 	return r0, r1, r2
+}
+
+// IsValidPdexv3AccessOTA provides a mock function with given fields: _a0
+func (_m *BeaconViewRetriever) IsValidPdexv3AccessOTA(_a0 common.Pdexv3AccessOTAChecker) (bool, error) {
+	ret := _m.Called(_a0)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(common.Pdexv3AccessOTAChecker) bool); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Pdexv3AccessOTAChecker) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // IsValidPdexv3LP provides a mock function with given fields: _a0, _a1

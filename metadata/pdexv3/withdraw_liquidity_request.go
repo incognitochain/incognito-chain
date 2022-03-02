@@ -88,8 +88,25 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
-
-	return beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, accessID, request.shareAmount)
+	ok, err := beaconViewRetriever.IsValidPdexv3ShareAmount(request.poolPairID, accessID, request.shareAmount)
+	if err != nil || !ok {
+		if !ok {
+			err = fmt.Errorf("Share amount is invalid")
+		}
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if !request.UseNft() {
+		return beaconViewRetriever.IsValidPdexv3AccessOTA(
+			*metadataCommon.NewPdexv3AccessOTACheckerWithValue(
+				request.poolPairID,
+				*request.AccessID,
+				request.BurntOTA.ToBytesS(),
+				metadataCommon.Pdexv3PoolPairLiquidityType,
+				utils.EmptyString,
+			),
+		)
+	}
+	return true, nil
 }
 
 func (request *WithdrawLiquidityRequest) ValidateSanityData(
