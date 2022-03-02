@@ -100,6 +100,44 @@ func ByteDeSerialize(stateDB *StateDB, sobByte []byte) (StateObject, error) {
 	return sob, nil
 }
 
+func MapByteSerialize(m map[common.Hash]StateObject) []byte {
+
+	res := []byte{}
+
+	for _, v := range m {
+		b := ByteSerialize(v)
+		offset := make([]byte, 4)
+		binary.LittleEndian.PutUint32(offset, uint32(len(b)))
+		res = append(res, offset...)
+		res = append(res, b...)
+	}
+
+	return res
+}
+
+func MapByteDeserialize(stateDB *StateDB, data []byte) (map[common.Hash]StateObject, error) {
+
+	m := make(map[common.Hash]StateObject)
+
+	for len(data) > 0 {
+
+		offsetByte := data[:4]
+		offset := binary.LittleEndian.Uint32(offsetByte)
+		data = data[4:]
+
+		soByte := data[:offset]
+		stateObject, err := ByteDeSerialize(stateDB, soByte)
+		if err != nil {
+			return m, err
+		}
+		data = data[offset:]
+
+		m[stateObject.GetHash()] = stateObject
+	}
+
+	return m, nil
+}
+
 func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, value interface{}) (StateObject, error) {
 	switch objectType {
 	case TestObjectType:

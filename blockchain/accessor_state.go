@@ -26,42 +26,42 @@ func StoreTransactionStateObjectForRepair(
 	featureStateObjects map[common.Hash]statedb.StateObject,
 	rewardStateObjects map[common.Hash]statedb.StateObject,
 	slashStateObjects map[common.Hash]statedb.StateObject,
-) ([][]int, error) {
+) ([]int, error) {
 
-	indexes := make([][]int, 5)
+	indexes := make([]int, 5)
 
 	consensusStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, consensusStateObjects)
 	if err != nil {
-		return [][]int{}, err
+		return []int{}, err
 	}
 	indexes[SHARD_CONSENSUS_STATEDB] = consensusStateObjectIndex
 
 	transactionStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, transactionStateObjects)
 	if err != nil {
-		return [][]int{}, err
+		return []int{}, err
 	}
 	indexes[SHARD_TRANSACTION_STATEDB] = transactionStateObjectIndex
 
 	featureStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, featureStateObjects)
 	if err != nil {
-		return [][]int{}, err
+		return []int{}, err
 	}
 	indexes[SHARD_FEATURE_STATEDB] = featureStateObjectIndex
 
 	rewardStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, rewardStateObjects)
 	if err != nil {
-		return [][]int{}, err
+		return []int{}, err
 	}
 	indexes[SHARD_REWARD_STATEDB] = rewardStateObjectIndex
 
 	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, slashStateObjects)
 	if err != nil {
-		return [][]int{}, err
+		return []int{}, err
 	}
 	indexes[SHARD_SLASH_STATEDB] = slashStateObjectIndex
 
 	if err := StoreFlatFileStateObjectIndex(db, hash, indexes); err != nil {
-		return [][]int{}, err
+		return []int{}, err
 	}
 
 	return indexes, nil
@@ -70,28 +70,18 @@ func StoreTransactionStateObjectForRepair(
 func StoreStateObjectToFlatFile(
 	flatFileManager *flatfile.FlatFileManager,
 	stateObjects map[common.Hash]statedb.StateObject,
-) ([]int, error) {
+) (int, error) {
 
-	newIndexes := []int{}
+	res := statedb.MapByteSerialize(stateObjects)
 
-	for _, stateObject := range stateObjects {
-		data := statedb.ByteSerialize(stateObject)
-		newIndex, err := flatFileManager.Append(data)
-		if err != nil {
-			return newIndexes, err
-		}
-
-		newIndexes = append(newIndexes, newIndex)
-	}
-
-	return newIndexes, nil
+	return flatFileManager.Append(res)
 }
 
-func StoreFlatFileStateObjectIndex(db incdb.Batch, hash common.Hash, indexes [][]int) error {
+func StoreFlatFileStateObjectIndex(db incdb.Batch, hash common.Hash, indexes []int) error {
 	return rawdbv2.StoreFlatFileStateObjectIndex(db, hash, indexes)
 }
 
-func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *flatfile.FlatFileManager, db incdb.Database, hash common.Hash) ([]map[common.Hash]statedb.StateObject, [][]int, error) {
+func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *flatfile.FlatFileManager, db incdb.Database, hash common.Hash) ([]map[common.Hash]statedb.StateObject, []int, error) {
 
 	allStateObjects := make([]map[common.Hash]statedb.StateObject, 5)
 
@@ -101,22 +91,17 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 	}
 
 	for i := range indexes {
+
 		stateDB := stateDBs[i]
-		stateObjects := make(map[common.Hash]statedb.StateObject)
 
-		for _, index := range indexes[i] {
+		data, err := flatFileManager.Read(indexes[i])
+		if err != nil {
+			return allStateObjects, nil, err
+		}
 
-			data, err := flatFileManager.Read(index)
-			if err != nil {
-				return allStateObjects, nil, err
-			}
-
-			stateObject, err := statedb.ByteDeSerialize(stateDB, data)
-			if err != nil {
-				return allStateObjects, nil, err
-			}
-
-			stateObjects[stateObject.GetHash()] = stateObject
+		stateObjects, err := statedb.MapByteDeserialize(stateDB, data)
+		if err != nil {
+			return allStateObjects, nil, err
 		}
 
 		allStateObjects[i] = stateObjects
@@ -140,4 +125,8 @@ func (bc *BlockChain) GetPivotBlock(shardID byte) (*types.ShardBlock, error) {
 	}
 
 	return res, nil
+}
+
+func StoreLatestPivotBlock(writer incdb.KeyValueWriter, shardID byte, hash common.Hash) error {
+	return rawdbv2.StoreLatestPivotBlock(writer, shardID, hash)
 }

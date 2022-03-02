@@ -100,7 +100,7 @@ func NewFlatFileConfig(config *Config) {
 	config.FlatFileManager = make(map[int]*flatfile.FlatFileManager)
 
 	for chainID, db := range config.DataBase {
-		path := db.GetPath() + "/flatfile"
+		path := db.GetPath() + "/statefile"
 		flatFileManager, err := flatfile.NewFlatFile(path, 5000, false)
 		if err != nil {
 			return
@@ -112,10 +112,10 @@ func NewFlatFileConfig(config *Config) {
 func NewCacheConfig(cfg *Config) (CacheConfig, error) {
 
 	cacheConfig := CacheConfig{}
-	cacheConfig.trieJournalCacheSize = config.Param().FullSyncModeParam.TrieJournalCacheSize
-	cacheConfig.blockTrieInMemory = config.Param().FullSyncModeParam.BlockTrieInMemory
-	cacheConfig.trieNodeLimit = config.Param().FullSyncModeParam.TrieNodeLimit
-	cacheConfig.trieImgsLimit = config.Param().FullSyncModeParam.TrieImgsLimit
+	cacheConfig.trieJournalCacheSize = config.Param().BatchCommitSyncModeParam.TrieJournalCacheSize
+	cacheConfig.blockTrieInMemory = config.Param().BatchCommitSyncModeParam.BlockTrieInMemory
+	cacheConfig.trieNodeLimit = config.Param().BatchCommitSyncModeParam.TrieNodeLimit
+	cacheConfig.trieImgsLimit = config.Param().BatchCommitSyncModeParam.TrieImgsLimit
 	cacheConfig.triegc = make(map[byte]*prque.Prque)
 	trieJournal := make(map[int]string)
 
@@ -429,7 +429,7 @@ func (bc *BlockChain) Stop() {
 
 	Logger.log.Info("Blockchain Stop")
 
-	if ShardSyncMode == common.FULL_SYNC_MODE {
+	if ShardSyncMode == common.BATCH_COMMIT_SYNC_MODE {
 
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
 
@@ -476,7 +476,7 @@ func (bc *BlockChain) Stop() {
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 
 			finalizedBlock := shardChain.multiView.GetFinalView().GetBlock()
-			err := rawdbv2.StoreLatestPivotBlock(db, shardID, *finalizedBlock.Hash())
+			err := StoreLatestPivotBlock(db, shardID, *finalizedBlock.Hash())
 			if err != nil {
 				Logger.log.Errorf("StoreLatestPivotBlock, Shard %d, height %d, hash %+v, err %+v", shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash(), err)
 			}
@@ -1094,7 +1094,7 @@ func repairStateDB(
 
 		if isCorruptState(wantSRH, statedb.NewDatabaseAccessWarper(db)) {
 
-			allStateObjects, flatFileIndexes, err := GetStateObjectFromFlatFile(
+			allStateObjects, _, err := GetStateObjectFromFlatFile(
 				stateDBs,
 				flatFileManager,
 				db,
@@ -1137,8 +1137,6 @@ func repairStateDB(
 				stateDBs,
 				gotSRH,
 				blockToCommit,
-				flatFileManager,
-				flatFileIndexes,
 			); err != nil {
 				return err
 			}

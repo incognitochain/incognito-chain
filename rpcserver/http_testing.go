@@ -455,26 +455,18 @@ func (httpServer *HttpServer) handleEnableFastSyncMode(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
 	}
 	shardSyncMode, ok := arrayParams[0].(bool)
-	beaconSyncMode, ok := arrayParams[1].(bool)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
 	}
 
 	if shardSyncMode {
-		blockchain.ShardSyncMode = common.FULL_SYNC_MODE
+		blockchain.ShardSyncMode = common.BATCH_COMMIT_SYNC_MODE
 	} else {
 		blockchain.ShardSyncMode = common.ARCHIVE_SYNC_MODE
 	}
 
-	if beaconSyncMode {
-		blockchain.BeaconSyncMode = common.FULL_SYNC_MODE
-	} else {
-		blockchain.BeaconSyncMode = common.ARCHIVE_SYNC_MODE
-	}
-
 	return map[string]interface{}{
-		"Beacon": blockchain.BeaconSyncMode,
-		"Shard":  blockchain.ShardSyncMode,
+		"Shard": blockchain.ShardSyncMode,
 	}, nil
 }
 

@@ -1165,63 +1165,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	// consensus root hash
-	consensusRootHash, consensusStateObject, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	newShardState.ConsensusStateDBRootHash = consensusRootHash
-
-	// transaction root hash
-	transactionRootHash, transactionStateObject, err := newShardState.transactionStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	newShardState.TransactionStateDBRootHash = transactionRootHash
-
-	// feature root hash
-	featureRootHash, featureStateObject, err := newShardState.featureStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	newShardState.FeatureStateDBRootHash = featureRootHash
-
-	// reward root hash
-	rewardRootHash, rewardStateObject, err := newShardState.rewardStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	newShardState.RewardStateDBRootHash = rewardRootHash
-
-	// slash root hash
-	slashRootHash, slashStateObject, err := newShardState.slashStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	newShardState.SlashStateDBRootHash = slashRootHash
-
-	flatFileIndexes, err := StoreTransactionStateObjectForRepair(
-		blockchain.config.FlatFileManager[int(shardID)],
-		batchData,
-		blockHash,
-		consensusStateObject,
-		transactionStateObject,
-		featureStateObject,
-		rewardStateObject,
-		slashStateObject,
-	)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-
-	sRH := ShardRootHash{
-		ConsensusStateDBRootHash:   consensusRootHash,
-		FeatureStateDBRootHash:     featureRootHash,
-		RewardStateDBRootHash:      rewardRootHash,
-		SlashStateDBRootHash:       slashRootHash,
-		TransactionStateDBRootHash: transactionRootHash,
-	}
-
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
@@ -1278,7 +1221,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 	}
 
-	if err := newShardState.CommitTrieToDisk(batchData, blockchain, sRH, flatFileIndexes, isFinalizedBlock, storeBlock); err != nil {
+	if err := newShardState.CommitTrieToDisk(batchData, blockchain, isFinalizedBlock, storeBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 

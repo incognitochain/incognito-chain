@@ -998,39 +998,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	//	return err
 	//}
 
-	consensusRootHash, _, err := newBestState.consensusStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-
-	newBestState.ConsensusStateDBRootHash = consensusRootHash
-	featureRootHash, _, err := newBestState.featureStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	newBestState.FeatureStateDBRootHash = featureRootHash
-	rewardRootHash, _, err := newBestState.rewardStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	newBestState.RewardStateDBRootHash = rewardRootHash
-	slashRootHash, _, err := newBestState.slashStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	newBestState.SlashStateDBRootHash = slashRootHash
-
-	//State Root Hash
-	bRH := BeaconRootHash{
-		ConsensusStateDBRootHash: consensusRootHash,
-		FeatureStateDBRootHash:   featureRootHash,
-		RewardStateDBRootHash:    rewardRootHash,
-		SlashStateDBRootHash:     slashRootHash,
-	}
 	//statedb===========================END
 	batch := blockchain.GetBeaconChainDatabase().NewBatch()
 
-	if err := newBestState.CommitTrieToDisk(batch, bRH); err != nil {
+	if err := newBestState.CommitTrieToDisk(batch); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 

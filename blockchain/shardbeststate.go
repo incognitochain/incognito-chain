@@ -702,11 +702,52 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 func (shardBestState *ShardBestState) CommitTrieToDisk(
 	batch incdb.Batch,
 	bc *BlockChain,
-	sRH ShardRootHash,
-	flatFileIndexes [][]int,
 	isFinalizedBlock bool,
 	newFinalBlock types.BlockInterface,
 ) error {
+
+	// consensus root hash
+	consensusRootHash, consensusStateObject, err := shardBestState.consensusStateDB.Commit(true) // Store data to memory
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	shardBestState.ConsensusStateDBRootHash = consensusRootHash
+
+	// transaction root hash
+	transactionRootHash, transactionStateObject, err := shardBestState.transactionStateDB.Commit(true)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	shardBestState.TransactionStateDBRootHash = transactionRootHash
+
+	// feature root hash
+	featureRootHash, featureStateObject, err := shardBestState.featureStateDB.Commit(true)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	shardBestState.FeatureStateDBRootHash = featureRootHash
+
+	// reward root hash
+	rewardRootHash, rewardStateObject, err := shardBestState.rewardStateDB.Commit(true)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	shardBestState.RewardStateDBRootHash = rewardRootHash
+
+	// slash root hash
+	slashRootHash, slashStateObject, err := shardBestState.slashStateDB.Commit(true)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	shardBestState.SlashStateDBRootHash = slashRootHash
+
+	sRH := ShardRootHash{
+		ConsensusStateDBRootHash:   consensusRootHash,
+		FeatureStateDBRootHash:     featureRootHash,
+		RewardStateDBRootHash:      rewardRootHash,
+		SlashStateDBRootHash:       slashRootHash,
+		TransactionStateDBRootHash: transactionRootHash,
+	}
 
 	shardID := shardBestState.ShardID
 	consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
@@ -723,11 +764,24 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 	}
 	// use for archive mode or force to do so
 	if shardBestState.ShardHeight == 1 || ShardSyncMode == common.ARCHIVE_SYNC_MODE {
-		if err := shardBestState.commitTrieToDisk(
-			batch, types.BlockInterface(shardBestState.BestBlock), sRH, bc.config.FlatFileManager[int(shardID)], flatFileIndexes); err != nil {
+		if err := shardBestState.archiveCommitTrieToDisk(
+			batch, types.BlockInterface(shardBestState.BestBlock), sRH); err != nil {
 			return err
 		}
 	} else {
+		flatFileIndexes, err := StoreTransactionStateObjectForRepair(
+			bc.config.FlatFileManager[int(shardBestState.ShardID)],
+			batch,
+			*shardBestState.GetHash(),
+			consensusStateObject,
+			transactionStateObject,
+			featureStateObject,
+			rewardStateObject,
+			slashStateObject,
+		)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
 		// Full but not archive node, do proper garbage collection
 		consensusTrieDB.Reference(sRH.ConsensusStateDBRootHash, common.Hash{})
 		transactionTrieDB.Reference(sRH.TransactionStateDBRootHash, common.Hash{}) // metadata reference to keep trie alive
@@ -755,7 +809,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 			if isFinalizedBlock &&
 				current > pivotBlock.GetHeight() &&
 				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTrieInMemory {
-				if err := shardBestState.fullSyncCommitTrieToDisk(
+				if err := shardBestState.batchCommitTrieToDisk(
 					bc, batch,
 					newFinalBlock,
 					bc.config.FlatFileManager[int(shardID)], flatFileIndexes); err != nil {
@@ -795,12 +849,12 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 	return nil
 }
 
-func (shardBestState *ShardBestState) fullSyncCommitTrieToDisk(
+func (shardBestState *ShardBestState) batchCommitTrieToDisk(
 	bc *BlockChain,
 	batch incdb.Batch,
 	blockToCommit types.BlockInterface,
 	flatFileManager *flatfile.FlatFileManager,
-	flatFileIndexes [][]int,
+	flatFileIndexes []int,
 ) error {
 
 	sRH, err := GetShardRootsHashByBlockHash(bc.ShardChain[shardBestState.ShardID].GetChainDatabase(),
@@ -809,15 +863,19 @@ func (shardBestState *ShardBestState) fullSyncCommitTrieToDisk(
 		return err
 	}
 
-	return shardBestState.commitTrieToDisk(batch, blockToCommit, *sRH, flatFileManager, flatFileIndexes)
+	if err := shardBestState.archiveCommitTrieToDisk(batch, blockToCommit, *sRH); err != nil {
+		return err
+	}
+
+	truncateLastIndex(flatFileManager, flatFileIndexes)
+
+	return nil
 }
 
-func (shardBestState *ShardBestState) commitTrieToDisk(
+func (shardBestState *ShardBestState) archiveCommitTrieToDisk(
 	batch incdb.Batch,
 	blockToCommit types.BlockInterface,
 	sRH ShardRootHash,
-	flatFileManager *flatfile.FlatFileManager,
-	flatFileIndexes [][]int,
 ) error {
 
 	stateDBs := make([]*statedb.StateDB, 5)
@@ -857,8 +915,6 @@ func (shardBestState *ShardBestState) commitTrieToDisk(
 		stateDBs,
 		stateRootHashes,
 		blockToCommit,
-		flatFileManager,
-		flatFileIndexes,
 	); err != nil {
 		return err
 	}
@@ -874,8 +930,6 @@ func commitTrieToDisk(
 	stateDBs []*statedb.StateDB,
 	stateRootHashes []common.Hash,
 	blockToCommit types.BlockInterface,
-	flatFileManager *flatfile.FlatFileManager,
-	flatFileIndexes [][]int,
 ) error {
 
 	for i, stateDB := range stateDBs {
@@ -885,11 +939,9 @@ func commitTrieToDisk(
 		}
 	}
 
-	if err := rawdbv2.StoreLatestPivotBlock(batch, shardID, *blockToCommit.Hash()); err != nil {
+	if err := StoreLatestPivotBlock(batch, shardID, *blockToCommit.Hash()); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-
-	truncateLastIndex(flatFileManager, flatFileIndexes)
 
 	for _, stateDB := range stateDBs {
 		stateDB.ClearObjects()
@@ -898,16 +950,15 @@ func commitTrieToDisk(
 	return nil
 }
 
-func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes [][]int) {
+func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes []int) {
 	// truncate old files
 	lastIndex := -1
 	for i, v := range indexes {
-		if len(v) != 0 {
-			if i == 0 {
-				lastIndex = v[len(v)-1]
-			}
-			if lastIndex < v[len(v)-1] {
-				lastIndex = v[len(v)-1]
+		if i == 0 {
+			lastIndex = v
+		} else {
+			if lastIndex < v {
+				lastIndex = v
 			}
 		}
 	}

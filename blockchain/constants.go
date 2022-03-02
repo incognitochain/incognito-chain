@@ -57,7 +57,6 @@ var (
 )
 
 var (
-	BeaconSyncMode = common.ARCHIVE_SYNC_MODE
 	ShardSyncMode  = common.ARCHIVE_SYNC_MODE
 	configCache4GB = CacheConfig{
 		trieJournalCacheSize: 32,

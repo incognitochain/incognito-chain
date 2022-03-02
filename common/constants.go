@@ -230,6 +230,6 @@ var (
 )
 
 const (
-	FULL_SYNC_MODE    = "full"
-	ARCHIVE_SYNC_MODE = "archive"
+	BATCH_COMMIT_SYNC_MODE = "batch_commit"
+	ARCHIVE_SYNC_MODE      = "archive"
 )

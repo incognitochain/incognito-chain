@@ -62,7 +62,7 @@ func GetLatestPivotBlock(db incdb.KeyValueReader, shardID byte) (common.Hash, er
 	return *h, err
 }
 
-func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, indexes [][]int) error {
+func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, indexes []int) error {
 
 	key := GetFlatFileStateObjectIndexKey(hash)
 
@@ -78,9 +78,9 @@ func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, in
 	return nil
 }
 
-func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) ([][]int, error) {
+func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) ([]int, error) {
 
-	indexes := [][]int{}
+	indexes := []int{}
 	key := GetFlatFileStateObjectIndexKey(hash)
 
 	value, err := db.Get(key)

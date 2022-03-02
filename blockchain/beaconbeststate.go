@@ -1182,30 +1182,56 @@ func GetMaxCommitteeSize(currentMaxCommitteeSize int, increaseMaxCommitteeSize m
 	return increaseMaxCommitteeSize[key]
 }
 
-func (beaconBestState *BeaconBestState) CommitTrieToDisk(batch incdb.Batch, bRH BeaconRootHash) error {
-	err := beaconBestState.consensusStateDB.Database().TrieDB().Commit(beaconBestState.ConsensusStateDBRootHash, false, nil)
+func (beaconBestState *BeaconBestState) CommitTrieToDisk(batch incdb.Batch) error {
+
+	consensusRootHash, _, err := beaconBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	beaconBestState.consensusStateDB.ClearObjects()
-
-	if BeaconSyncMode == common.ARCHIVE_SYNC_MODE || (BeaconSyncMode == common.FULL_SYNC_MODE && beaconBestState.BeaconHeight%10000 == 0) {
-		err = beaconBestState.slashStateDB.Database().TrieDB().Commit(bRH.SlashStateDBRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		err = beaconBestState.featureStateDB.Database().TrieDB().Commit(bRH.FeatureStateDBRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		err = beaconBestState.rewardStateDB.Database().TrieDB().Commit(bRH.RewardStateDBRootHash, false, nil)
-		if err != nil {
-			return err
-		}
-		beaconBestState.rewardStateDB.ClearObjects()
-		beaconBestState.featureStateDB.ClearObjects()
-		beaconBestState.slashStateDB.ClearObjects()
+	if err := beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil); err != nil {
+		return err
 	}
+	beaconBestState.ConsensusStateDBRootHash = consensusRootHash
+
+	featureRootHash, _, err := beaconBestState.featureStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.slashStateDB.Database().TrieDB().Commit(featureRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.FeatureStateDBRootHash = featureRootHash
+
+	rewardRootHash, _, err := beaconBestState.rewardStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.featureStateDB.Database().TrieDB().Commit(rewardRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.RewardStateDBRootHash = rewardRootHash
+
+	slashRootHash, _, err := beaconBestState.slashStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.rewardStateDB.Database().TrieDB().Commit(slashRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.SlashStateDBRootHash = slashRootHash
+
+	//State Root Hash
+	bRH := BeaconRootHash{
+		ConsensusStateDBRootHash: consensusRootHash,
+		FeatureStateDBRootHash:   featureRootHash,
+		RewardStateDBRootHash:    rewardRootHash,
+		SlashStateDBRootHash:     slashRootHash,
+	}
+
+	beaconBestState.consensusStateDB.ClearObjects()
+	beaconBestState.rewardStateDB.ClearObjects()
+	beaconBestState.featureStateDB.ClearObjects()
+	beaconBestState.slashStateDB.ClearObjects()
 
 	if err := rawdbv2.StoreBeaconRootsHash(batch, beaconBestState.BestBlockHash, bRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
