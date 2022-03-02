@@ -5,13 +5,14 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
-	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
+	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -766,17 +767,9 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 			if err != nil { //no transaction in this node
 				continue
 			}
-			shardBlockBytes, err := rawdbv2.GetShardBlockByHash(sdb, blockHash)
-			if err != nil { //no transaction in this node
-				panic("Have transaction but cannot found block")
-			}
-			shardBlock := types.NewShardBlock()
-			err = json.Unmarshal(shardBlockBytes, shardBlock)
-			if err != nil {
-				panic("Cannot unmarshal shardblock")
-			}
+			shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
 			if shardBlock.GetShardID() != int(shardID) {
-				continue
+				panic("Database is broken")
 			}
 			txData := shardBlock.Body.Transactions[txindex]
 			committeePk := txData.GetMetadata().(*metadata.StakingMetadata).CommitteePublicKey
