@@ -14,7 +14,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/proto"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -345,13 +345,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
-	previousShardBlockData, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), previousBlockHash)
-	if err != nil {
-		return NewBlockChainError(FetchPreviousBlockError, err)
-	}
-
-	previousShardBlock := types.ShardBlock{}
-	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
+	previousShardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(previousBlockHash, shardID)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
@@ -1244,9 +1238,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
 
 	if err := blockchain.ShardChain[shardID].blkManager.StoreBlock(proto.BlkType_BlkShard, shardBlock); err != nil {
 		panic(err)
@@ -1265,33 +1256,45 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
-	blockchain.ShardChain[shardID].blkManager.MarkFinalized(storeBlock.GetHeight(), *storeBlock.Hash(), shardID)
-	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
+	storeBlkHeight := storeBlock.GetHeight()
+	storeBlkHash := storeBlock.Hash()
+	blockchain.ShardChain[shardID].blkManager.MarkFinalized(storeBlkHeight, *storeBlkHash, shardID)
+	for finalView == nil || storeBlkHeight > finalView.GetHeight() {
+		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlkHeight, *storeBlkHash)
 		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
+			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		if storeBlock.GetHeight() == 1 {
+		if (storeBlkHeight == 1) || ((finalView != nil) && (storeBlkHeight == finalView.GetHeight()+1)) {
 			break
 		}
-		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
-			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+		prevHash, err := blockchain.ShardChain[shardID].blkManager.GetPrevHashByHash(storeBlkHash)
+		if err != nil {
+			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(*storeBlkHash, shardID)
 			if err != nil {
 				panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
 			}
-		} else {
-			storeBlock = newFinalView.GetBlock()
+			prevHash = storeBlock.GetPrevHash()
 		}
+		storeBlkHash = &prevHash
+		storeBlkHeight--
 		if stats.IsEnableBPV3Stats {
+			finalizedBlock := &types.ShardBlock{}
+			newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
+			if newFinalView == nil {
+				finalizedBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+				if err != nil {
+					panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
+				}
+			} else {
+				finalizedBlock = newFinalView.GetBlock().(*types.ShardBlock)
+			}
 			committeesStoreBlock, err := blockchain.getShardCommitteeFromBeaconHash(storeBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 			if err != nil {
 				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
 			}
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
-				storeBlock.(*types.ShardBlock),
+				finalizedBlock,
 				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), newFinalView.(*ShardBestState).GetProposerLength()),
 				committeesStoreBlock,
 			)
