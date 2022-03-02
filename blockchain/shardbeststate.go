@@ -962,6 +962,7 @@ func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes []int)
 			}
 		}
 	}
+	
 	if lastIndex != -1 {
 		err := flatFileManager.Truncate(lastIndex)
 		if err != nil {

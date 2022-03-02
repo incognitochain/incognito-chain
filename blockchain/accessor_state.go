@@ -98,7 +98,6 @@ func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *fl
 		if err != nil {
 			return allStateObjects, nil, err
 		}
-
 		stateObjects, err := statedb.MapByteDeserialize(stateDB, data)
 		if err != nil {
 			return allStateObjects, nil, err
