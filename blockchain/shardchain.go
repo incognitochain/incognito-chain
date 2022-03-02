@@ -14,7 +14,6 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -383,7 +382,7 @@ func (chain *ShardChain) GetBlockByHash(hash common.Hash) (types.BlockInterface,
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
+	_, err := chain.blkManager.CheckBlockByHash(blkHash)
 	return err == nil
 }
 

@@ -2,7 +2,6 @@ package flatfile
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -120,17 +119,11 @@ func (f FlatFileManager) Read(index int) ([]byte, error) {
 	}
 
 	b := make([]byte, readInfo[itemFileIndex].size)
-	readInfo[itemFileIndex].fd.ReadAt(b, int64(readInfo[itemFileIndex].offset))
-	gz, err := gzip.NewReader(bytes.NewBuffer(b))
+	_, err = readInfo[itemFileIndex].fd.ReadAt(b, int64(readInfo[itemFileIndex].offset))
 	if err != nil {
 		return nil, err
 	}
-	rawB, err := ioutil.ReadAll(gz)
-	if err != nil {
-		return nil, err
-	}
-	gz.Close()
-	return rawB, nil
+	return b, nil
 }
 
 func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
@@ -153,19 +146,12 @@ func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
 				cancel()
 			}
 			for j := len(readInfo) - 1; j >= 0; j-- {
-				b := make([]byte, readInfo[j].size)
-				readInfo[j].fd.ReadAt(b, int64(readInfo[j].offset))
-				gz, err := gzip.NewReader(bytes.NewBuffer(b))
+				rawB := make([]byte, readInfo[j].size)
+				_, err := readInfo[j].fd.ReadAt(rawB, int64(readInfo[j].offset))
 				if err != nil {
 					e <- 1
 					cancel()
 				}
-				rawB, err := ioutil.ReadAll(gz)
-				if err != nil {
-					e <- 1
-					cancel()
-				}
-				gz.Close()
 
 			LOOP:
 				if !closed {
@@ -253,12 +239,7 @@ func (f *FlatFileManager) checkFileSize() (int, error) {
 func (f *FlatFileManager) Append(data []byte) (int, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	//gzip
-	var b bytes.Buffer
-	gz := gzip.NewWriter(&b)
-	gz.Write(data)
-	gz.Close()
-
+	b := bytes.NewBuffer(data)
 	//append size-bytes into current FD, if max -> create new file, update currentFD
 	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint64(result, uint64(b.Len()))
