@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/benchmark"
 	"log"
 	"net"
 	"os"
@@ -559,6 +560,8 @@ func (serverObj *Server) NewServer(
 			serverObj.PublishNodeState()
 		}
 	}()
+
+	//benchmark.BenchmarkCollector.Init(1, 100)
 
 	return nil
 }
