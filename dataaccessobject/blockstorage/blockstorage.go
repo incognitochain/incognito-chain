@@ -136,12 +136,15 @@ func (blkM *BlockManager) GetBlockByHash(
 ) {
 	keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
 	blkIdBytes, err := blkM.rDB.Get(keyIdx)
+	if (err != nil) || (len(blkIdBytes) == 0) {
+		return nil, errors.Errorf("Can not get index for block hash %v, got %v, error %v", hash.String(), blkIdBytes, err)
+	}
+	blkID, err := common.BytesToUint64(blkIdBytes)
 	if err != nil {
 		return nil, err
 	}
-	blkID := common.BytesToInt(blkIdBytes)
-	rawBlk, err := blkM.fDB.Read(blkID)
-	return rawBlk, err
+	return blkM.fDB.Read(blkID)
+	// return rawBlk, err
 
 }
 
@@ -167,7 +170,7 @@ func (blkM *BlockManager) StoreBlock(
 	if blkType == proto.BlkType_BlkShard {
 		fmt.Printf("[testFF] store blk %v, key %v\n", blkHash.String(), common.HashH(key).String())
 	}
-	err = blkM.rDB.Put(key, common.IntToBytes(blkIndex))
+	err = blkM.rDB.Put(key, common.Uint64ToBytes(blkIndex))
 	if err != nil {
 		panic(err)
 		return err
