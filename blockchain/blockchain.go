@@ -476,7 +476,7 @@ func (bc *BlockChain) Stop() {
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 
 			finalizedBlock := shardChain.multiView.GetFinalView().GetBlock()
-			err := StoreLatestPivotBlock(db, shardID, *finalizedBlock.Hash())
+			err := statedb.StoreLatestPivotBlock(db, shardID, *finalizedBlock.Hash())
 			if err != nil {
 				Logger.log.Errorf("StoreLatestPivotBlock, Shard %d, height %d, hash %+v, err %+v", shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash(), err)
 			}
@@ -984,6 +984,20 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 		if calculatedRoot, _ := view.slashStateDB.IntermediateRoot(true); calculatedRoot != view.SlashStateDBRootHash {
 			return fmt.Errorf("Repair State Error, expect slash root hash %+v, got %+v", view.SlashStateDBRootHash, calculatedRoot)
 		}
+
+		batch := db.NewBatch()
+		if err := view.CommitTrieToDisk(
+			batch,
+			blockchain,
+			false,
+			view.BestBlock,
+			true,
+		); err != nil {
+			return err
+		}
+		if err := batch.Write(); err != nil {
+			return err
+		}
 	}
 
 	Logger.log.Infof("Finish Repair State, Shard %d, time elapsed %.3f second", shardID, time.Now().Sub(start).Seconds())
@@ -1012,25 +1026,24 @@ func (blockchain *BlockChain) tryRepairStateFromPivotToFinal(
 	if err != nil {
 		return stateDBs, err
 	}
-	dbWarper := statedb.NewDatabaseAccessWrapperWithConfig(ShardSyncMode, db,
-		blockchain.cacheConfig.trieJournalPath[int(shardID)], blockchain.cacheConfig.trieJournalCacheSize)
-	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, dbWarper)
+	dbWarper := statedb.NewDatabaseAccessWarper(db)
+	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithMode(sRH.ConsensusStateDBRootHash, dbWarper, ShardSyncMode, flatFileManager)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, dbWarper)
+	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithMode(sRH.TransactionStateDBRootHash, dbWarper, ShardSyncMode, flatFileManager)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(sRH.FeatureStateDBRootHash, dbWarper)
+	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithMode(sRH.FeatureStateDBRootHash, dbWarper, ShardSyncMode, flatFileManager)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, dbWarper)
+	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithMode(sRH.RewardStateDBRootHash, dbWarper, ShardSyncMode, flatFileManager)
 	if err != nil {
 		return stateDBs, err
 	}
-	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(sRH.SlashStateDBRootHash, dbWarper)
+	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithMode(sRH.SlashStateDBRootHash, dbWarper, ShardSyncMode, flatFileManager)
 	if err != nil {
 		return stateDBs, err
 	}
@@ -1099,6 +1112,7 @@ func repairStateDB(
 				flatFileManager,
 				db,
 				nextBlock,
+				wantSRH,
 			)
 			if err != nil {
 				return err
@@ -1127,21 +1141,6 @@ func repairStateDB(
 
 			blockToCommit, _, err := bc.GetShardBlockByHash(nextBlock)
 			if err != nil {
-				return err
-			}
-			batch := db.NewBatch()
-
-			if err := commitTrieToDisk(
-				batch,
-				shardID,
-				stateDBs,
-				gotSRH,
-				blockToCommit,
-			); err != nil {
-				return err
-			}
-
-			if err := batch.Write(); err != nil {
 				return err
 			}
 

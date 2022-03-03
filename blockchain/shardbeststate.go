@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"reflect"
 	"sort"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -164,23 +164,28 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *B
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWrapperWithConfig(ShardSyncMode, db,
 		bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], bc.cacheConfig.trieJournalCacheSize)
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
+	shardBestState.transactionStateDB, err = statedb.NewWithMode(
+		shardBestState.TransactionStateDBRootHash, dbAccessWarper, ShardSyncMode, bc.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	shardBestState.consensusStateDB, err = statedb.NewWithMode(
+		shardBestState.ConsensusStateDBRootHash, dbAccessWarper, ShardSyncMode, bc.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
+	shardBestState.featureStateDB, err = statedb.NewWithMode(
+		shardBestState.FeatureStateDBRootHash, dbAccessWarper, ShardSyncMode, bc.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(shardBestState.RewardStateDBRootHash, dbAccessWarper)
+	shardBestState.rewardStateDB, err = statedb.NewWithMode(
+		shardBestState.RewardStateDBRootHash, dbAccessWarper, ShardSyncMode, bc.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
+	shardBestState.slashStateDB, err = statedb.NewWithMode(
+		shardBestState.SlashStateDBRootHash, dbAccessWarper, ShardSyncMode, bc.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
@@ -704,247 +709,78 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 	bc *BlockChain,
 	isFinalizedBlock bool,
 	newFinalBlock types.BlockInterface,
+	isForce bool,
 ) error {
-
-	// consensus root hash
-	consensusRootHash, consensusStateObject, err := shardBestState.consensusStateDB.Commit(true) // Store data to memory
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	shardBestState.ConsensusStateDBRootHash = consensusRootHash
-
-	// transaction root hash
-	transactionRootHash, transactionStateObject, err := shardBestState.transactionStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	shardBestState.TransactionStateDBRootHash = transactionRootHash
-
-	// feature root hash
-	featureRootHash, featureStateObject, err := shardBestState.featureStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	shardBestState.FeatureStateDBRootHash = featureRootHash
-
-	// reward root hash
-	rewardRootHash, rewardStateObject, err := shardBestState.rewardStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	shardBestState.RewardStateDBRootHash = rewardRootHash
-
-	// slash root hash
-	slashRootHash, slashStateObject, err := shardBestState.slashStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	shardBestState.SlashStateDBRootHash = slashRootHash
-
-	sRH := ShardRootHash{
-		ConsensusStateDBRootHash:   consensusRootHash,
-		FeatureStateDBRootHash:     featureRootHash,
-		RewardStateDBRootHash:      rewardRootHash,
-		SlashStateDBRootHash:       slashRootHash,
-		TransactionStateDBRootHash: transactionRootHash,
-	}
 
 	shardID := shardBestState.ShardID
-	consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
-	transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
-	featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
-	rewardTrieDB := shardBestState.rewardStateDB.Database().TrieDB()
-	slashTrieDB := shardBestState.slashStateDB.Database().TrieDB()
-
-	if bc.cacheConfig.trieJournalPath != nil {
-		if path := bc.cacheConfig.trieJournalPath[int(shardID)]; path != "" {
-			// the below disk layer is just one => save one time is enough
-			transactionTrieDB.SaveCache(path)
-		}
-	}
-	// use for archive mode or force to do so
-	if shardBestState.ShardHeight == 1 || ShardSyncMode == common.ARCHIVE_SYNC_MODE {
-		if err := shardBestState.archiveCommitTrieToDisk(
-			batch, types.BlockInterface(shardBestState.BestBlock), sRH); err != nil {
-			return err
-		}
-	} else {
-		flatFileIndexes, err := StoreTransactionStateObjectForRepair(
-			bc.config.FlatFileManager[int(shardBestState.ShardID)],
-			batch,
-			*shardBestState.GetHash(),
-			consensusStateObject,
-			transactionStateObject,
-			featureStateObject,
-			rewardStateObject,
-			slashStateObject,
-		)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
-		}
-		// Full but not archive node, do proper garbage collection
-		consensusTrieDB.Reference(sRH.ConsensusStateDBRootHash, common.Hash{})
-		transactionTrieDB.Reference(sRH.TransactionStateDBRootHash, common.Hash{}) // metadata reference to keep trie alive
-		featureTrieDB.Reference(sRH.FeatureStateDBRootHash, common.Hash{})
-		rewardTrieDB.Reference(sRH.RewardStateDBRootHash, common.Hash{})
-		slashTrieDB.Reference(sRH.SlashStateDBRootHash, common.Hash{})
-		bc.cacheConfig.triegc[shardID].Push(sRH, -int64(shardBestState.ShardHeight))
-		if current := shardBestState.ShardHeight; current >= bc.cacheConfig.blockTrieInMemory {
-			var (
-				nodes, imgs = transactionTrieDB.Size()
-			)
-
-			Logger.log.Debugf("SHARD %+v | Transaction Trie Cap. Nodes %+v, trieNodeLimit %+v, img %+v, trieImgLimit %+v",
-				shardID, nodes, bc.cacheConfig.trieNodeLimit, imgs, common.StorageSize(4*1024*1024))
-			// all statedb object use the same low-level triedb
-			if nodes > bc.cacheConfig.trieNodeLimit || imgs > bc.cacheConfig.trieImgsLimit {
-				transactionTrieDB.Cap(bc.cacheConfig.trieNodeLimit - incdb.IdealBatchSize)
-			}
-
-			pivotBlock, err := bc.GetPivotBlock(shardID)
-			if err != nil {
-				return err
-			}
-
-			if isFinalizedBlock &&
-				current > pivotBlock.GetHeight() &&
-				current-pivotBlock.GetHeight() >= bc.cacheConfig.blockTrieInMemory {
-				if err := shardBestState.batchCommitTrieToDisk(
-					bc, batch,
-					newFinalBlock,
-					bc.config.FlatFileManager[int(shardID)], flatFileIndexes); err != nil {
-					return err
-				}
-
-				chosen := current / bc.cacheConfig.blockTrieInMemory * bc.cacheConfig.blockTrieInMemory
-				// Garbage collect anything below our required write retention
-				// Dereference could take time and block the insertion process
-				for !bc.cacheConfig.triegc[shardID].Empty() {
-					oldSRH, number := bc.cacheConfig.triegc[shardID].Pop()
-					if uint64(-number) > chosen {
-						bc.cacheConfig.triegc[shardID].Push(oldSRH, number)
-						break
-					}
-					Logger.log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v",
-						shardID, current, chosen, number)
-					consensusTrieDB.Dereference(oldSRH.(ShardRootHash).ConsensusStateDBRootHash)
-					transactionTrieDB.Dereference(oldSRH.(ShardRootHash).TransactionStateDBRootHash)
-					featureTrieDB.Dereference(oldSRH.(ShardRootHash).FeatureStateDBRootHash)
-					rewardTrieDB.Dereference(oldSRH.(ShardRootHash).RewardStateDBRootHash)
-					slashTrieDB.Dereference(oldSRH.(ShardRootHash).SlashStateDBRootHash)
-				}
-				postNodes, postImgs := transactionTrieDB.Size()
-				if nodes-postNodes > 0 || imgs-postImgs > 0 {
-					Logger.log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v",
-						shardID, current, nodes-postNodes, imgs-postImgs)
-				}
-			}
-		}
-	}
-
-	if err := rawdbv2.StoreShardRootsHash(batch, shardID, shardBestState.BestBlockHash, sRH); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-
-	return nil
-}
-
-func (shardBestState *ShardBestState) batchCommitTrieToDisk(
-	bc *BlockChain,
-	batch incdb.Batch,
-	blockToCommit types.BlockInterface,
-	flatFileManager *flatfile.FlatFileManager,
-	flatFileIndexes []int,
-) error {
-
-	sRH, err := GetShardRootsHashByBlockHash(bc.ShardChain[shardBestState.ShardID].GetChainDatabase(),
-		shardBestState.ShardID, *blockToCommit.Hash())
-	if err != nil {
-		return err
-	}
-
-	if err := shardBestState.archiveCommitTrieToDisk(batch, blockToCommit, *sRH); err != nil {
-		return err
-	}
-
-	truncateLastIndex(flatFileManager, flatFileIndexes)
-
-	return nil
-}
-
-func (shardBestState *ShardBestState) archiveCommitTrieToDisk(
-	batch incdb.Batch,
-	blockToCommit types.BlockInterface,
-	sRH ShardRootHash,
-) error {
-
-	stateDBs := make([]*statedb.StateDB, 5)
+	currentBlock := shardBestState.BestBlock
+	currentHeight := currentBlock.Header.Height
+	currentHash := currentBlock.Header.Hash()
+	newPivotBlockHash := common.Hash{}
+	isWriteToDisk := false
+	recentFinalizedSRH := &ShardRootHash{}
+	indexes := make([]int, 5)
 	var err error
 
-	stateDBs[SHARD_CONSENSUS_STATEDB], err = statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, shardBestState.consensusStateDB.Database())
-	if err != nil {
-		return err
-	}
-	stateDBs[SHARD_TRANSACTION_STATEDB], err = statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, shardBestState.transactionStateDB.Database())
-	if err != nil {
-		return err
-	}
-	stateDBs[SHARD_FEATURE_STATEDB], err = statedb.NewWithPrefixTrie(sRH.FeatureStateDBRootHash, shardBestState.featureStateDB.Database())
-	if err != nil {
-		return err
-	}
-	stateDBs[SHARD_REWARD_STATEDB], err = statedb.NewWithPrefixTrie(sRH.RewardStateDBRootHash, shardBestState.rewardStateDB.Database())
-	if err != nil {
-		return err
-	}
-	stateDBs[SHARD_SLASH_STATEDB], err = statedb.NewWithPrefixTrie(sRH.SlashStateDBRootHash, shardBestState.slashStateDB.Database())
-	if err != nil {
-		return err
-	}
-
-	stateRootHashes := make([]common.Hash, 5)
-	stateRootHashes[SHARD_CONSENSUS_STATEDB] = sRH.ConsensusStateDBRootHash
-	stateRootHashes[SHARD_TRANSACTION_STATEDB] = sRH.TransactionStateDBRootHash
-	stateRootHashes[SHARD_FEATURE_STATEDB] = sRH.FeatureStateDBRootHash
-	stateRootHashes[SHARD_REWARD_STATEDB] = sRH.RewardStateDBRootHash
-	stateRootHashes[SHARD_SLASH_STATEDB] = sRH.SlashStateDBRootHash
-
-	if err := commitTrieToDisk(
-		batch,
-		shardBestState.ShardID,
-		stateDBs,
-		stateRootHashes,
-		blockToCommit,
-	); err != nil {
-		return err
-	}
-
-	Logger.log.Infof("SHARD %+v | Finish commit Trie to disk, height %+v, hash %+v", shardBestState.ShardID, blockToCommit.GetHeight(), *blockToCommit.Hash())
-
-	return nil
-}
-
-func commitTrieToDisk(
-	batch incdb.Batch,
-	shardID byte,
-	stateDBs []*statedb.StateDB,
-	stateRootHashes []common.Hash,
-	blockToCommit types.BlockInterface,
-) error {
-
-	for i, stateDB := range stateDBs {
-		err := stateDB.Database().TrieDB().Commit(stateRootHashes[i], false, nil)
+	if ShardSyncMode == common.ARCHIVE_SYNC_MODE || currentHeight == 1 {
+		newPivotBlockHash = currentBlock.Header.Hash()
+		isWriteToDisk = true
+		isForce = true
+	} else {
+		latestPivotBlock, err := bc.GetPivotBlock(shardID)
 		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, err)
+			return err
+		}
+		newPivotBlockHash = *newFinalBlock.Hash()
+		isWriteToDisk = isFinalizedBlock &&
+			currentHeight > latestPivotBlock.GetHeight() &&
+			currentHeight-latestPivotBlock.GetHeight() >= bc.cacheConfig.blockTrieInMemory
+		recentFinalizedSRH, err = GetShardRootsHashByBlockHash(bc.ShardChain[shardBestState.ShardID].GetChainDatabase(),
+			shardBestState.ShardID, *newFinalBlock.Hash())
+		if err != nil {
+			return err
 		}
 	}
 
-	if err := StoreLatestPivotBlock(batch, shardID, *blockToCommit.Hash()); err != nil {
+	shardBestState.ConsensusStateDBRootHash, indexes[SHARD_CONSENSUS_STATEDB], err = shardBestState.consensusStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.ConsensusStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	if err != nil {
+		return err
+	}
+
+	shardBestState.TransactionStateDBRootHash, indexes[SHARD_TRANSACTION_STATEDB], err = shardBestState.transactionStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.TransactionStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	if err != nil {
+		return err
+	}
+
+	shardBestState.FeatureStateDBRootHash, indexes[SHARD_FEATURE_STATEDB], err = shardBestState.featureStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.FeatureStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	if err != nil {
+		return err
+	}
+
+	shardBestState.RewardStateDBRootHash, indexes[SHARD_REWARD_STATEDB], err = shardBestState.rewardStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.RewardStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	if err != nil {
+		return err
+	}
+
+	shardBestState.SlashStateDBRootHash, indexes[SHARD_SLASH_STATEDB], err = shardBestState.slashStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.SlashStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	if err != nil {
+		return err
+	}
+
+	newSRH := &ShardRootHash{
+		ConsensusStateDBRootHash:   shardBestState.ConsensusStateDBRootHash,
+		TransactionStateDBRootHash: shardBestState.TransactionStateDBRootHash,
+		FeatureStateDBRootHash:     shardBestState.FeatureStateDBRootHash,
+		RewardStateDBRootHash:      shardBestState.RewardStateDBRootHash,
+		SlashStateDBRootHash:       shardBestState.SlashStateDBRootHash,
+	}
+
+	if err := rawdbv2.StoreShardRootsHash(batch, shardID, shardBestState.BestBlockHash, newSRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	for _, stateDB := range stateDBs {
-		stateDB.ClearObjects()
+	if isWriteToDisk {
+		truncateLastIndex(bc.config.FlatFileManager[int(shardID)], indexes)
 	}
 
 	return nil
@@ -962,7 +798,7 @@ func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes []int)
 			}
 		}
 	}
-	
+
 	if lastIndex != -1 {
 		err := flatFileManager.Truncate(lastIndex)
 		if err != nil {

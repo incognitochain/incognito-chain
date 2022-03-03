@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/prque"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"sort"
@@ -59,7 +60,8 @@ type StateDB struct {
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
-	dbErr error
+	dbErr  error
+	logger dataaccessobject.DAOLogger
 
 	// Measurements gathered during execution for debugging purposes
 	StateObjectReads   time.Duration
@@ -80,6 +82,7 @@ func NewWithMode(root common.Hash, db DatabaseAccessWarper, mode string, flatFil
 		db:                  db,
 		trie:                tr,
 		mode:                mode,
+		logger:              dataaccessobject.Logger,
 		batchCommitConfig:   NewBatchCommitConfig(flatFile),
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
@@ -99,6 +102,7 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 		trie:                tr,
 		mode:                common.ARCHIVE_SYNC_MODE,
 		batchCommitConfig:   nil,
+		logger:              dataaccessobject.Logger,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
@@ -154,6 +158,7 @@ func (stateDB *StateDB) Copy() *StateDB {
 		trie:                stateDB.db.CopyTrie(stateDB.trie),
 		mode:                stateDB.mode,
 		batchCommitConfig:   stateDB.batchCommitConfig,
+		logger:              dataaccessobject.Logger,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
@@ -171,6 +176,7 @@ func (stateDB *StateDB) CopyWithNewRoot(root common.Hash) (*StateDB, error) {
 		trie:                tr,
 		mode:                stateDB.mode,
 		batchCommitConfig:   stateDB.batchCommitConfig,
+		logger:              dataaccessobject.Logger,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
@@ -241,66 +247,103 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, map[common
 }
 
 // kiem tra mode
-func (stateDB *StateDB) ShardCommitToDisk(rootHash common.Hash) error {
+func (stateDB *StateDB) ShardCommitToDisk(
+	shardID byte,
+	rawDB incdb.KeyValueWriter,
+	newPivotBlockHash common.Hash,
+	newPivotRoot common.Hash,
+	currentBlockHeight uint64,
+	currentBlockHash common.Hash,
+	isWriteToDisk bool,
+	isForce bool,
+) (common.Hash, int, error) {
 
-	if stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
-		return stateDB.batchCommitToDisk(rootHash)
-	} else {
-		return stateDB.archiveCommitToDisk(rootHash)
+	if !isForce || stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
+		return stateDB.batchCommitToDisk(
+			shardID,
+			rawDB,
+			newPivotBlockHash,
+			newPivotRoot,
+			currentBlockHeight,
+			currentBlockHash,
+			isWriteToDisk,
+		)
 	}
 
-	return nil
+	rootHash, err := stateDB.archiveCommitToDisk(
+		shardID,
+		rawDB,
+		newPivotBlockHash,
+	)
+
+	return rootHash, 0, err
 }
 
 // archieve mode commit
 // diskDB commit
 // clear object
-func (stateDB *StateDB) archiveCommitToDisk(rootHash common.Hash) error {
+func (stateDB *StateDB) archiveCommitToDisk(
+	shardID byte,
+	rawDB incdb.KeyValueWriter,
+	block common.Hash,
+) (common.Hash, error) {
 
 	diskDB := stateDB.db.TrieDB()
 
+	// commit dirty objects
+	rootHash, _, err := stateDB.Commit(true)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
 	if err := diskDB.Commit(rootHash, false, nil); err != nil {
-		return err
+		return common.Hash{}, err
+	}
+
+	if err := StoreLatestPivotBlock(rawDB, shardID, block); err != nil {
+		return common.Hash{}, err
 	}
 
 	stateDB.ClearObjects()
 
-	return nil
+	return rootHash, nil
 }
 
 // batchCommitToDisk commit root hash that maybe not belong to current block hash
-// archieve mode commit
-// reference
-// cache reference
-// check cap
-// hash to commit
-// truncate
-// check dereference
-
+// pivot block is either new block or most recent finalized block
 func (stateDB *StateDB) batchCommitToDisk(
-	pivotBlockHash common.Hash,
-	pivotRootToCommit common.Hash,
-	rawDB incdb.KeyValueWriter,
 	shardID byte,
-	currentRootHash common.Hash,
-	currentBlockHash common.Hash,
+	rawDB incdb.KeyValueWriter,
+	newPivotBlockHash common.Hash,
+	newPivotRoot common.Hash,
 	currentBlockHeight uint64,
-	currentChangedObject map[common.Hash]StateObject,
-) error {
+	currentBlockHash common.Hash,
+	isWriteToDisk bool,
+) (common.Hash, int, error) {
 
 	diskDB := stateDB.db.TrieDB()
 	nodes, imgs := diskDB.Size()
 	batchCommitConfig := stateDB.batchCommitConfig
 
+	// commit dirty objects
+	currentRootHash, dirtyObjects, err := stateDB.Commit(true)
+	if err != nil {
+		return common.Hash{}, 0, err
+	}
+
 	// store state object to flatfile
-	index, err := CacheStateObjectForRepair(
+	if currentBlockHeight == 338 {
+		fmt.Println("")
+	}
+	index, err := CacheDirtyObjectForRepair(
 		batchCommitConfig.flatFile,
 		rawDB,
+		currentBlockHash,
 		currentRootHash,
-		currentChangedObject,
+		dirtyObjects,
 	)
 	if err != nil {
-		return err
+		return common.Hash{}, 0, err
 	}
 
 	// reference current root hash
@@ -312,17 +355,39 @@ func (stateDB *StateDB) batchCommitToDisk(
 	if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
 		diskDB.Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
 	}
-	if err := diskDB.Commit(pivotRootToCommit, false, nil); err != nil {
-		return err
-	}
 
-	if err := rawdbv2.StoreLatestPivotBlock(rawDB, shardID, pivotBlockHash); err != nil {
-		return err
+	if isWriteToDisk {
+
+		if err := diskDB.Commit(newPivotRoot, false, nil); err != nil {
+			return common.Hash{}, 0, err
+		}
+
+		if err := StoreLatestPivotBlock(rawDB, shardID, newPivotBlockHash); err != nil {
+			return common.Hash{}, 0, err
+		}
+
+		chosen := currentBlockHeight / batchCommitConfig.blockTrieInMemory * batchCommitConfig.blockTrieInMemory
+		for !batchCommitConfig.triegc.Empty() {
+			oldRootHash, number := batchCommitConfig.triegc.Pop()
+			if uint64(-number) > chosen {
+				batchCommitConfig.triegc.Push(oldRootHash, number)
+				break
+			}
+			stateDB.logger.Log.Debugf("SHARD %+v | Try Dereference, current %+v, chosen %+v, deref block %+v",
+				shardID, currentBlockHeight, chosen, number)
+			diskDB.Dereference(oldRootHash.(common.Hash))
+		}
+
+		postNodes, postImgs := diskDB.Size()
+		if nodes-postNodes > 0 || imgs-postImgs > 0 {
+			stateDB.logger.Log.Debugf("SHARD %+v | Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v",
+				shardID, currentBlockHeight, nodes-postNodes, imgs-postImgs)
+		}
 	}
 
 	stateDB.ClearObjects()
 
-	return nil
+	return currentRootHash, index, nil
 }
 
 // ================================= STATE OBJECT =======================================

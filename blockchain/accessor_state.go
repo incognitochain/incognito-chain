@@ -4,7 +4,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 )
@@ -17,75 +16,35 @@ const (
 	SHARD_SLASH_STATEDB       = 4
 )
 
-func StoreTransactionStateObjectForRepair(
+func GetStateObjectFromFlatFile(
+	stateDBs []*statedb.StateDB,
 	flatFileManager *flatfile.FlatFileManager,
-	db incdb.Batch,
-	hash common.Hash,
-	consensusStateObjects map[common.Hash]statedb.StateObject,
-	transactionStateObjects map[common.Hash]statedb.StateObject,
-	featureStateObjects map[common.Hash]statedb.StateObject,
-	rewardStateObjects map[common.Hash]statedb.StateObject,
-	slashStateObjects map[common.Hash]statedb.StateObject,
-) ([]int, error) {
-
-	indexes := make([]int, 5)
-
-	consensusStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, consensusStateObjects)
-	if err != nil {
-		return []int{}, err
-	}
-	indexes[SHARD_CONSENSUS_STATEDB] = consensusStateObjectIndex
-
-	transactionStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, transactionStateObjects)
-	if err != nil {
-		return []int{}, err
-	}
-	indexes[SHARD_TRANSACTION_STATEDB] = transactionStateObjectIndex
-
-	featureStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, featureStateObjects)
-	if err != nil {
-		return []int{}, err
-	}
-	indexes[SHARD_FEATURE_STATEDB] = featureStateObjectIndex
-
-	rewardStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, rewardStateObjects)
-	if err != nil {
-		return []int{}, err
-	}
-	indexes[SHARD_REWARD_STATEDB] = rewardStateObjectIndex
-
-	slashStateObjectIndex, err := StoreStateObjectToFlatFile(flatFileManager, slashStateObjects)
-	if err != nil {
-		return []int{}, err
-	}
-	indexes[SHARD_SLASH_STATEDB] = slashStateObjectIndex
-
-	if err := StoreFlatFileStateObjectIndex(db, hash, indexes); err != nil {
-		return []int{}, err
-	}
-
-	return indexes, nil
-}
-
-func StoreStateObjectToFlatFile(
-	flatFileManager *flatfile.FlatFileManager,
-	stateObjects map[common.Hash]statedb.StateObject,
-) (int, error) {
-
-	res := statedb.MapByteSerialize(stateObjects)
-
-	return flatFileManager.Append(res)
-}
-
-func StoreFlatFileStateObjectIndex(db incdb.Batch, hash common.Hash, indexes []int) error {
-	return rawdbv2.StoreFlatFileStateObjectIndex(db, hash, indexes)
-}
-
-func GetStateObjectFromFlatFile(stateDBs []*statedb.StateDB, flatFileManager *flatfile.FlatFileManager, db incdb.Database, hash common.Hash) ([]map[common.Hash]statedb.StateObject, []int, error) {
+	db incdb.Database,
+	blockHash common.Hash,
+	sRH *ShardRootHash,
+) ([]map[common.Hash]statedb.StateObject, []int, error) {
 
 	allStateObjects := make([]map[common.Hash]statedb.StateObject, 5)
+	indexes := make([]int, 5)
+	var err error
 
-	indexes, err := rawdbv2.GetFlatFileStateObjectIndex(db, hash)
+	indexes[SHARD_CONSENSUS_STATEDB], err = statedb.GetFlatFileStateObjectIndex(db, blockHash, sRH.ConsensusStateDBRootHash)
+	if err != nil {
+		return allStateObjects, nil, err
+	}
+	indexes[SHARD_TRANSACTION_STATEDB], err = statedb.GetFlatFileStateObjectIndex(db, blockHash, sRH.TransactionStateDBRootHash)
+	if err != nil {
+		return allStateObjects, nil, err
+	}
+	indexes[SHARD_FEATURE_STATEDB], err = statedb.GetFlatFileStateObjectIndex(db, blockHash, sRH.FeatureStateDBRootHash)
+	if err != nil {
+		return allStateObjects, nil, err
+	}
+	indexes[SHARD_REWARD_STATEDB], err = statedb.GetFlatFileStateObjectIndex(db, blockHash, sRH.RewardStateDBRootHash)
+	if err != nil {
+		return allStateObjects, nil, err
+	}
+	indexes[SHARD_SLASH_STATEDB], err = statedb.GetFlatFileStateObjectIndex(db, blockHash, sRH.SlashStateDBRootHash)
 	if err != nil {
 		return allStateObjects, nil, err
 	}
@@ -113,7 +72,7 @@ func (bc *BlockChain) GetPivotBlock(shardID byte) (*types.ShardBlock, error) {
 
 	db := bc.GetShardChainDatabase(shardID)
 
-	hash, err := rawdbv2.GetLatestPivotBlock(db, shardID)
+	hash, err := statedb.GetLatestPivotBlock(db, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +83,4 @@ func (bc *BlockChain) GetPivotBlock(shardID byte) (*types.ShardBlock, error) {
 	}
 
 	return res, nil
-}
-
-func StoreLatestPivotBlock(writer incdb.KeyValueWriter, shardID byte, hash common.Hash) error {
-	return rawdbv2.StoreLatestPivotBlock(writer, shardID, hash)
 }

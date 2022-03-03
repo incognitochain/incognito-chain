@@ -12,12 +12,16 @@ var (
 	fullSyncPivotBlockKey          = []byte("Full-Sync-Latest-Pivot-Block")
 )
 
-func GetFlatFileStateObjectIndexKey(hash common.Hash) []byte {
+func GetFlatFileStateObjectIndexKey(blockHash, rootHash common.Hash) []byte {
 
 	temp := make([]byte, len(flatFileStateObjectIndexPrefix))
 	copy(temp, flatFileStateObjectIndexPrefix)
 
-	return append(temp, hash[:]...)
+	temp = append(temp, blockHash[:]...)
+	temp = append(temp, splitter...)
+	temp = append(temp, rootHash[:]...)
+
+	return temp
 }
 
 func GetFullSyncPivotBlockKey(shardID byte) []byte {
@@ -30,24 +34,24 @@ func GetFullSyncPivotBlockKey(shardID byte) []byte {
 	return temp
 }
 
-func CacheStateObjectForRepair(
+func CacheDirtyObjectForRepair(
 	flatFile FlatFile,
 	db incdb.KeyValueWriter,
+	blockHash common.Hash,
 	rootHash common.Hash,
 	stateObjects map[common.Hash]StateObject,
-) ([]int, error) {
-
-	indexes := make([]int, 5)
+) (int, error) {
 
 	stateObjectsIndex, err := StoreStateObjectToFlatFile(flatFile, stateObjects)
 	if err != nil {
-		return []int{}, err
-	}
-	if err := StoreFlatFileStateObjectIndex(db, rootHash, stateObjectsIndex); err != nil {
-		return []int{}, err
+		return 0, err
 	}
 
-	return indexes, nil
+	if err := StoreFlatFileStateObjectIndex(db, blockHash, rootHash, stateObjectsIndex); err != nil {
+		return 0, err
+	}
+
+	return stateObjectsIndex, nil
 }
 
 func StoreStateObjectToFlatFile(
@@ -60,9 +64,9 @@ func StoreStateObjectToFlatFile(
 	return flatFile.Append(res)
 }
 
-func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, index int) error {
+func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, blockHash, rootHash common.Hash, index int) error {
 
-	key := GetFlatFileStateObjectIndexKey(hash)
+	key := GetFlatFileStateObjectIndexKey(blockHash, rootHash)
 
 	value := make([]byte, 4)
 	binary.LittleEndian.PutUint32(value, uint32(index))
@@ -74,35 +78,9 @@ func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, in
 	return nil
 }
 
-func GetStateObjectFromFlatFile(
-	stateDB *StateDB,
-	flatFile FlatFile,
-	db incdb.Database,
-	rootHash common.Hash,
-) (map[common.Hash]StateObject, int, error) {
+func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, blockHash, rootHash common.Hash) (int, error) {
 
-	stateObject := make(map[common.Hash]StateObject)
-
-	index, err := GetFlatFileStateObjectIndex(db, rootHash)
-	if err != nil {
-		return stateObject, 0, err
-	}
-
-	data, err := flatFile.Read(index)
-	if err != nil {
-		return stateObject, 0, err
-	}
-	stateObjects, err := MapByteDeserialize(stateDB, data)
-	if err != nil {
-		return stateObject, 0, err
-	}
-
-	return stateObjects, index, nil
-}
-
-func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) (int, error) {
-
-	key := GetFlatFileStateObjectIndexKey(hash)
+	key := GetFlatFileStateObjectIndexKey(blockHash, rootHash)
 
 	value, err := db.Get(key)
 	if err != nil {
@@ -112,7 +90,7 @@ func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) (int
 	return int(binary.LittleEndian.Uint32(value)), nil
 }
 
-func GetPivotBlockHash(reader incdb.KeyValueReader, shardID byte) (common.Hash, error) {
+func GetLatestPivotBlock(reader incdb.KeyValueReader, shardID byte) (common.Hash, error) {
 	value, err := reader.Get(GetFullSyncPivotBlockKey(shardID))
 	if err != nil {
 		return common.Hash{}, err

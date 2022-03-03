@@ -860,23 +860,23 @@ func (shardBestState *ShardBestState) initShardBestState(
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWrapperWithConfig(ShardSyncMode, db,
 		blockchain.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], blockchain.cacheConfig.trieJournalCacheSize)
-	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	shardBestState.consensusStateDB, err = statedb.NewWithMode(common.EmptyRoot, dbAccessWarper, ShardSyncMode, blockchain.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	shardBestState.transactionStateDB, err = statedb.NewWithMode(common.EmptyRoot, dbAccessWarper, ShardSyncMode, blockchain.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	shardBestState.featureStateDB, err = statedb.NewWithMode(common.EmptyRoot, dbAccessWarper, ShardSyncMode, blockchain.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	shardBestState.rewardStateDB, err = statedb.NewWithMode(common.EmptyRoot, dbAccessWarper, ShardSyncMode, blockchain.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
-	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	shardBestState.slashStateDB, err = statedb.NewWithMode(common.EmptyRoot, dbAccessWarper, ShardSyncMode, blockchain.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err
 	}
@@ -1221,7 +1221,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 	}
 
-	if err := newShardState.CommitTrieToDisk(batchData, blockchain, isFinalizedBlock, storeBlock); err != nil {
+	if err := newShardState.CommitTrieToDisk(batchData, blockchain, isFinalizedBlock, storeBlock, false); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
