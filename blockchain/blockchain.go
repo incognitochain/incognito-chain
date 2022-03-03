@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
+	"github.com/incognitochain/incognito-chain/proto"
 	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -330,7 +331,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
-	if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
+	// if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
+	// 	Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
+	// 	return err
+	// }
+	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
 	}

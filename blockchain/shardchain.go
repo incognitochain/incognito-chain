@@ -25,9 +25,9 @@ import (
 )
 
 type ShardChain struct {
-	shardID    int
-	multiView  *multiview.MultiView
-	flatfileDB *flatfile.FlatFileManager
+	shardID   int
+	multiView *multiview.MultiView
+	// flatfileDB *flatfile.FlatFileManager
 	blkManager blockstorage.BlockService
 
 	BlockGen    *BlockGenerator
@@ -51,21 +51,16 @@ func NewShardChain(
 	tp txpool.TxPool,
 	tv txpool.TxVerifier,
 ) *ShardChain {
-	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawblock", shardID))
-	ff, err := flatfile.NewFlatFile(p, 5000)
-	if err != nil {
-		panic(err)
-	}
-	p = path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawfinalblock", shardID))
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawfinalblock", shardID))
 	ffFinalBlk, err := flatfile.NewFlatFile(p, 5000)
 	if err != nil {
 		panic(err)
 	}
 	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk)
 	return &ShardChain{
-		shardID:     shardID,
-		multiView:   multiView,
-		flatfileDB:  ff,
+		shardID:   shardID,
+		multiView: multiView,
+		// flatfileDB:  ff,
 		BlockGen:    blockGen,
 		Blockchain:  blockchain,
 		ChainName:   chainName,

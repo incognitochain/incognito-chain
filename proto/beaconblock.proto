@@ -3,7 +3,7 @@ import "proto/shardblock.proto";
 option go_package="./proto";
 
 message ShardStateBytes {
-    string ValidationData = 1;
+    bytes ValidationData = 1;
     bytes CommitteeFromBlock = 2;
     uint64 Height = 3;
     bytes Hash = 4;
@@ -42,4 +42,10 @@ message BeaconHeaderBytes {
     int32 Proposer = 18;
     sint64 ProposeTime = 19;
     uint64 FinalityHeight = 20;
+}
+
+message BeaconBlockBytes {
+    bytes ValidationData = 1;
+    BeaconHeaderBytes Header = 2;
+    BeaconBodyBytes Body = 3;
 }

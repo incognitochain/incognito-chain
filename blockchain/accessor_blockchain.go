@@ -117,15 +117,16 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconBlockHash)
+	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
 	beaconBlock := types.NewBeaconBlock()
-	err = json.Unmarshal(beaconBlockBytes, beaconBlock)
+	err = beaconBlock.FromBytes(beaconBlockBytes)
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 

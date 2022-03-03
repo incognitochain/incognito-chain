@@ -525,15 +525,6 @@ func (shardBlock *ShardBlock) FromBytes(data []byte) error {
 }
 
 func (shardBlock *ShardBlock) ToBytes() ([]byte, error) {
-	if shardBlock.GetHeight() > 1 {
-		v, err := consensustypes.DecodeValidationData(shardBlock.GetValidationField())
-		if err != nil {
-			return nil, err
-		}
-		str, _ := v.ToBase64()
-		fmt.Printf("[testmarshal] %v_%v\n", len([]byte(str)), len([]byte(shardBlock.GetValidationField())))
-		fmt.Printf("[testmarshal] %v+%v\n", str, shardBlock.GetValidationField())
-	}
 	protoBlk := shardBlock.ToProtoShardBlock()
 	if protoBlk == nil {
 		return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf", shardBlock.Header.Height, shardBlock.Hash().String())

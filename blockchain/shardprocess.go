@@ -1240,7 +1240,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	//statedb===========================END
 
 	if err := blockchain.ShardChain[shardID].blkManager.StoreBlock(proto.BlkType_BlkShard, shardBlock); err != nil {
-		panic(err)
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	err = newShardState.tryUpgradeCommitteeState(blockchain)

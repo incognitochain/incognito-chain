@@ -90,7 +90,8 @@ func NewBlockService(
 		res.finalHeight[byte(i)] = 1
 		res.hashByHeight[byte(i)] = make(map[uint64][]common.Hash)
 	}
-	res.finalHeight[255] = 1
+	res.finalHeight[common.BeaconChainSyncID] = 1
+	res.hashByHeight[common.BeaconChainSyncID] = make(map[uint64][]common.Hash)
 	return res, nil
 }
 
