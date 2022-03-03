@@ -212,6 +212,11 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
 		substituteValidatorStr[shardID] = tempV
 	}
+	syncingValidatorsStr := make(map[int][]string)
+	for shardID, v := range syncingValidators {
+		tempV, _ := incognitokey.CommitteeKeyListToString(v)
+		syncingValidatorsStr[int(shardID)] = tempV
+	}
 	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
 	tempStakingTx := make(map[string]string)
@@ -234,7 +239,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
-		"syncing":          syncingValidators,
+		"syncing":          syncingValidatorsStr,
 	}, nil
 }
 
