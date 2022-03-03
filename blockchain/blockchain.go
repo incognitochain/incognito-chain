@@ -653,6 +653,18 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				v.NumberOfShardBlock[shardID] = 0
 			}
 		}
+
+		//check config
+		for feature, height := range v.TriggeredFeature {
+			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
+				return errors.New("No config in triggered feature")
+			} else {
+				if height < uint64(value.MinTriggerBlockHeight) {
+					return errors.New("Feature is trigger before checkpoint")
+				}
+			}
+		}
+
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
