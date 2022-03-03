@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -24,7 +25,7 @@ type FlatFile interface {
 	Read(index int) ([]byte, error)
 
 	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently() (dataChan chan []byte, err chan int, cancel func())
+	ReadRecently(index uint64) (dataChan chan []byte, err chan int, cancel func())
 
 	//truncate flat file system
 	Truncate(lastIndex int) error
@@ -39,6 +40,7 @@ type FlatFileManager struct {
 	currentFile     int
 	currentFileSize int
 	lock            *sync.RWMutex
+	cache           *lru.Cache
 }
 
 type ReadInfo struct {
@@ -153,13 +155,8 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func
 			}
 
 			for j := int(offset); j >= 0; j-- {
-				b := make([]byte, readInfo[int(j)].size)
-				readInfo[int(j)].fd.ReadAt(b, int64(readInfo[int(j)].offset))
-				gz, err := gzip.NewReader(bytes.NewBuffer(b))
-				if err != nil {
-					e <- 1
-					cancel()
-				}
+				rawB := make([]byte, readInfo[int(j)].size)
+				readInfo[int(j)].fd.ReadAt(rawB, int64(readInfo[int(j)].offset))
 
 			LOOP:
 				if !closed {

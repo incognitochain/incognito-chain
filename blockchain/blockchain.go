@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -709,6 +710,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			fmt.Println("block ", block)
 			panic(err)
 		}
+		log.Printf("%+v", block.Header)
 		v.BestBlock = block
 
 		// init other stateDB

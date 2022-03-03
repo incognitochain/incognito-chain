@@ -561,7 +561,7 @@ func (serverObj *Server) NewServer(
 		}
 	}()
 
-	//benchmark.BenchmarkCollector.Init(1, 100)
+	benchmark.BenchmarkCollector.Init(1, 1000)
 
 	return nil
 }

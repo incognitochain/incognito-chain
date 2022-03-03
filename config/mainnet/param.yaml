@@ -68,7 +68,7 @@ enable_feature_flags:
   - PortalV3: 0
   - PortalV4: 4079
 portal_v3_height: 10000000
-tx_pool_version: 0
+tx_pool_version: 1
 bsc_param:
   host: "https://bsc-dataseed.binance.org"
 plg_param:

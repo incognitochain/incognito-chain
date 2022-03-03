@@ -252,7 +252,7 @@ func (stateDB *LiteStateDB) GetStateObject(objectType int, addr common.Hash) (St
 }
 
 func (stateDB *LiteStateDB) SetStateObject(object StateObject) {
-	log.Println("Insert key", object.GetHash().String())
+	//log.Println("Insert key", object.GetHash().String())
 	if stateDB.headStateNode.aggregateHash != nil {
 		log.Println("Warning: set state object after commit, will not calculate aggregate hash again, could break logic")
 		panic("Set key after commit")

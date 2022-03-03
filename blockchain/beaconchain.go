@@ -267,7 +267,7 @@ func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate
 
 func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := chain.blkManager.CheckBlockByHash(blkHash)
+	_, err := chain.blkManager.GetBlockByHash(blkHash)
 	return err == nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/benchmark"
 	"reflect"
 	"sort"
 	"strconv"
@@ -193,6 +194,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
 	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
+	benchmark.BenchmarkCollector.Collect(-1, beaconBlock.GetHeight())
 	return nil
 }
 
@@ -1068,9 +1070,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	// storeBlkHeight := storeBlock.GetHeight()
 	// storeBlkHash := storeBlock.Hash()
-
-	blockchain.BeaconChain.blkManager.MarkFinalized(storeBlock.GetHeight(), *storeBlock.Hash(), common.BeaconChainSyncID)
-
+	//blockchain.BeaconChain.blkManager.MarkFinalized(storeBlock.GetHeight(), *storeBlock.Hash(), common.BeaconChainSyncID)
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {

@@ -2,6 +2,7 @@ package multiview
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -97,9 +98,12 @@ func (multiView *MultiView) AddView(view View) bool {
 			multiView.viewByHash[*view.GetHash()] = view
 			multiView.updateViewState(view)
 			res <- true
+			log.Println("first insert", view.GetHash().String())
 			return
 		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
+			log.Println("not yet insert", view.GetPreviousHash().String())
 			if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
+
 				multiView.viewByHash[*view.GetHash()] = view
 				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 				multiView.updateViewState(view)
@@ -107,6 +111,7 @@ func (multiView *MultiView) AddView(view View) bool {
 				return
 			}
 		}
+		log.Println("previous hash", len(multiView.viewByHash))
 		res <- false
 	}
 	return <-res

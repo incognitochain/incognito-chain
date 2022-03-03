@@ -357,16 +357,6 @@ func BytesToInt(bytesArr []byte) int {
 	return int(numInt.Int64())
 }
 
-// BytesToInt reverts an integer number from 2-byte array
-func BytesToInt64(bytesArr []byte) int64 {
-	if len(bytesArr) != 2 {
-		return 0
-	}
-
-	numInt := new(big.Int).SetBytes(bytesArr)
-	return numInt.Int64()
-}
-
 // BytesToUint32 converts big endian 4-byte array to uint32 number
 func BytesToUint32(b []byte) (uint32, error) {
 	if len(b) != Uint32Size {
