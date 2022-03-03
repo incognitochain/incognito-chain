@@ -140,7 +140,6 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
 				return common.EmptyRoot, nil
 			}
-			return *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash, nil
 		}
 		h, err := stateDB.liteStateDB.Commit()
 		if err != nil {

@@ -871,7 +871,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 		return err
 	}
 	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/tmp", shardBestState.ShardID))
-	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(p, common.Hash{}, common.Hash{}, db)
+	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(p, "txDB", common.Hash{}, db)
 	if err != nil {
 		return err
 	}

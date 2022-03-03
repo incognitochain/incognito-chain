@@ -66,9 +66,9 @@ func TestNewFlatFile(t *testing.T) {
 
 	str2, err := ff.Read(id)
 	fmt.Println("read", str2, err)
-	ff.Truncate(5)
+	//ff.Truncate(5)
 
-	c, e, _ := ff.ReadRecently()
+	c, e, _ := ff.ReadRecently(5)
 	for {
 		select {
 		case msg := <-c:
