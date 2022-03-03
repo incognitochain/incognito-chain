@@ -3,6 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/prque"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"sort"
 	"strconv"
@@ -17,6 +20,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BatchCommitConfig struct {
+	triegc            *prque.Prque // Priority queue mapping block numbers to tries to gc
+	blockTrieInMemory uint64
+	trieNodeLimit     common.StorageSize
+	trieImgsLimit     common.StorageSize
+	flatFile          FlatFile
+}
+
+func NewBatchCommitConfig(flatFile FlatFile) *BatchCommitConfig {
+	return &BatchCommitConfig{
+		triegc:            prque.New(nil),
+		flatFile:          flatFile,
+		blockTrieInMemory: config.Param().BatchCommitSyncModeParam.BlockTrieInMemory,
+		trieNodeLimit:     config.Param().BatchCommitSyncModeParam.TrieNodeLimit,
+		trieImgsLimit:     config.Param().BatchCommitSyncModeParam.TrieImgsLimit,
+	}
+}
+
 // StateDBs within the incognito protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -25,8 +46,8 @@ type StateDB struct {
 	db   DatabaseAccessWarper
 	trie Trie
 
-	flatFile FlatFile
-	mode     string
+	mode              string
+	batchCommitConfig *BatchCommitConfig
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
@@ -48,6 +69,25 @@ type StateDB struct {
 }
 
 // New return a new statedb attach with a state root
+func NewWithMode(root common.Hash, db DatabaseAccessWarper, mode string, flatFile FlatFile) (*StateDB, error) {
+	tr, err := db.OpenPrefixTrie(root)
+	if err != nil {
+		return nil, err
+	}
+
+	metrics.EnabledExpensive = true
+	return &StateDB{
+		db:                  db,
+		trie:                tr,
+		mode:                mode,
+		batchCommitConfig:   NewBatchCommitConfig(flatFile),
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}, nil
+}
+
+// New return a new statedb attach with a state root
 func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	tr, err := db.OpenPrefixTrie(root)
 	if err != nil {
@@ -57,6 +97,8 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
+		mode:                common.ARCHIVE_SYNC_MODE,
+		batchCommitConfig:   nil,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
@@ -93,6 +135,61 @@ func (stateDB *StateDB) ClearObjects() {
 	stateDB.stateObjects = make(map[common.Hash]StateObject)
 	stateDB.stateObjectsPending = make(map[common.Hash]struct{})
 	stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
+}
+
+// Database return current database access warper
+func (stateDB *StateDB) Database() DatabaseAccessWarper {
+	return stateDB.db
+}
+
+// Database return current database access warper
+func (stateDB *StateDB) Trie() Trie {
+	return stateDB.trie
+}
+
+// Copy duplicate statedb and return new statedb instance
+func (stateDB *StateDB) Copy() *StateDB {
+	return &StateDB{
+		db:                  stateDB.db,
+		trie:                stateDB.db.CopyTrie(stateDB.trie),
+		mode:                stateDB.mode,
+		batchCommitConfig:   stateDB.batchCommitConfig,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}
+}
+
+// Copy duplicate statedb and return new statedb instance
+func (stateDB *StateDB) CopyWithNewRoot(root common.Hash) (*StateDB, error) {
+	tr, err := stateDB.db.OpenPrefixTrie(root)
+	if err != nil {
+		return nil, err
+	}
+	return &StateDB{
+		db:                  stateDB.db,
+		trie:                tr,
+		mode:                stateDB.mode,
+		batchCommitConfig:   stateDB.batchCommitConfig,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}, nil
+}
+
+// Exist check existence of a state object in statedb
+func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) (bool, error) {
+	value, err := stateDB.getStateObject(objectType, stateObjectHash)
+	if err != nil {
+		return false, err
+	}
+	return value != nil, nil
+}
+
+// Empty check a state object in statedb is empty or not
+func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool {
+	stateObject, err := stateDB.getStateObject(objectType, stateObjectHash)
+	return stateObject == nil || stateObject.IsEmpty() || err != nil
 }
 
 // IntermediateRoot computes the current root hash of the state trie.
@@ -143,40 +240,89 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, map[common
 	return root, changeObj, err
 }
 
-// Database return current database access warper
-func (stateDB *StateDB) Database() DatabaseAccessWarper {
-	return stateDB.db
-}
+// kiem tra mode
+func (stateDB *StateDB) ShardCommitToDisk(rootHash common.Hash) error {
 
-// Database return current database access warper
-func (stateDB *StateDB) Trie() Trie {
-	return stateDB.trie
-}
-
-// Copy duplicate statedb and return new statedb instance
-func (stateDB *StateDB) Copy() *StateDB {
-	return &StateDB{
-		db:                  stateDB.db,
-		trie:                stateDB.db.CopyTrie(stateDB.trie),
-		stateObjects:        make(map[common.Hash]StateObject),
-		stateObjectsPending: make(map[common.Hash]struct{}),
-		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	if stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
+		return stateDB.batchCommitToDisk(rootHash)
+	} else {
+		return stateDB.archiveCommitToDisk(rootHash)
 	}
+
+	return nil
 }
 
-// Exist check existence of a state object in statedb
-func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) (bool, error) {
-	value, err := stateDB.getStateObject(objectType, stateObjectHash)
+// archieve mode commit
+// diskDB commit
+// clear object
+func (stateDB *StateDB) archiveCommitToDisk(rootHash common.Hash) error {
+
+	diskDB := stateDB.db.TrieDB()
+
+	if err := diskDB.Commit(rootHash, false, nil); err != nil {
+		return err
+	}
+
+	stateDB.ClearObjects()
+
+	return nil
+}
+
+// batchCommitToDisk commit root hash that maybe not belong to current block hash
+// archieve mode commit
+// reference
+// cache reference
+// check cap
+// hash to commit
+// truncate
+// check dereference
+
+func (stateDB *StateDB) batchCommitToDisk(
+	pivotBlockHash common.Hash,
+	pivotRootToCommit common.Hash,
+	rawDB incdb.KeyValueWriter,
+	shardID byte,
+	currentRootHash common.Hash,
+	currentBlockHash common.Hash,
+	currentBlockHeight uint64,
+	currentChangedObject map[common.Hash]StateObject,
+) error {
+
+	diskDB := stateDB.db.TrieDB()
+	nodes, imgs := diskDB.Size()
+	batchCommitConfig := stateDB.batchCommitConfig
+
+	// store state object to flatfile
+	index, err := CacheStateObjectForRepair(
+		batchCommitConfig.flatFile,
+		rawDB,
+		currentRootHash,
+		currentChangedObject,
+	)
 	if err != nil {
-		return false, err
+		return err
 	}
-	return value != nil, nil
-}
 
-// Empty check a state object in statedb is empty or not
-func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool {
-	stateObject, err := stateDB.getStateObject(objectType, stateObjectHash)
-	return stateObject == nil || stateObject.IsEmpty() || err != nil
+	// reference current root hash
+	diskDB.Reference(currentRootHash, common.Hash{})
+	// push it into queue with height priority
+	batchCommitConfig.triegc.Push(currentRootHash, -int64(currentBlockHeight))
+
+	// cap max size for memory management
+	if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
+		diskDB.Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
+	}
+	if err := diskDB.Commit(pivotRootToCommit, false, nil); err != nil {
+		return err
+	}
+
+	if err := rawdbv2.StoreLatestPivotBlock(rawDB, shardID, pivotBlockHash); err != nil {
+		return err
+	}
+
+	stateDB.ClearObjects()
+
+	return nil
 }
 
 // ================================= STATE OBJECT =======================================

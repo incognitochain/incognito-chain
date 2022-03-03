@@ -1,7 +1,7 @@
 package rawdbv2
 
 import (
-	"encoding/json"
+	"encoding/binary"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -62,14 +62,12 @@ func GetLatestPivotBlock(db incdb.KeyValueReader, shardID byte) (common.Hash, er
 	return *h, err
 }
 
-func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, indexes []int) error {
+func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, index int) error {
 
 	key := GetFlatFileStateObjectIndexKey(hash)
 
-	value, err := json.Marshal(indexes)
-	if err != nil {
-		return err
-	}
+	value := make([]byte, 4)
+	binary.LittleEndian.PutUint32(value, uint32(index))
 
 	if err := db.Put(key, value); err != nil {
 		return err
@@ -78,21 +76,16 @@ func StoreFlatFileStateObjectIndex(db incdb.KeyValueWriter, hash common.Hash, in
 	return nil
 }
 
-func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) ([]int, error) {
+func GetFlatFileStateObjectIndex(db incdb.KeyValueReader, hash common.Hash) (int, error) {
 
-	indexes := []int{}
 	key := GetFlatFileStateObjectIndexKey(hash)
 
 	value, err := db.Get(key)
 	if err != nil {
-		return indexes, err
+		return 0, err
 	}
 
-	if err := json.Unmarshal(value, &indexes); err != nil {
-		return indexes, err
-	}
-
-	return indexes, nil
+	return int(binary.LittleEndian.Uint32(value)), nil
 }
 
 func HasFlatFileTransactionIndex(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
