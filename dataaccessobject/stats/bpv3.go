@@ -79,6 +79,7 @@ func GetShardHeightBPV3Stats(db incdb.Database, shardID byte, epoch uint64) (map
 	m := make(map[uint64]*DetailBlockInOneEpochStats)
 	prefix := getShardHeightBPV3StatsPrefix(shardID, epoch)
 	iterator := db.NewIteratorWithPrefix(prefix)
+	defer iterator.Release()
 	for iterator.Next() {
 		temp := make([]byte, len(iterator.Value()))
 		copy(temp, iterator.Value())

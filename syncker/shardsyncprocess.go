@@ -282,7 +282,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	}
 
 	blockBuffer := []types.BlockInterface{}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer func() {
 		if requestCnt == 0 {
 			pState.processed = true
@@ -343,9 +343,9 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
 
-				if blk.(*types.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
-					time.Sleep(30 * time.Second)
-				}
+				//if blk.(*types.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
+				//	time.Sleep(30 * time.Second)
+				//}
 				// if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 				// 	Logger.Infof("Cannot find beacon for inserting shard block")
 				// 	return

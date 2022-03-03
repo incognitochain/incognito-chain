@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
+	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/proto"
+	"github.com/pkg/errors"
 )
 
 type BeaconBlock struct {
@@ -116,6 +120,52 @@ func NewShardState(validationData string,
 	}
 }
 
+func (sState *ShardState) ToProtoShardState() (*proto.ShardStateBytes, error) {
+	res := &proto.ShardStateBytes{}
+	res.CommitteeFromBlock = sState.CommitteeFromBlock[:]
+	res.CrossShard = sState.CrossShard
+	res.Hash = sState.Hash[:]
+	res.Height = sState.Height
+	if len(sState.ValidationData) != 0 {
+		vData, err := consensustypes.DecodeValidationData(sState.ValidationData)
+		if err != nil {
+			return nil, err
+		}
+		res.ValidationData, err = vData.ToBytes()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		res.ValidationData = []byte{}
+	}
+	res.Version = int32(sState.Version)
+	res.ProposerTime = sState.ProposerTime
+	return res, nil
+}
+
+func (sState *ShardState) FromProtoShardState(protoData *proto.ShardStateBytes) error {
+	copy(sState.CommitteeFromBlock[:], protoData.CommitteeFromBlock)
+	copy(sState.Hash[:], protoData.Hash)
+	sState.CrossShard = protoData.CrossShard
+	sState.Height = protoData.Height
+	if len(protoData.ValidationData) != 0 {
+		vData := &consensustypes.ValidationData{}
+		err := vData.FromBytes(protoData.ValidationData)
+		if err != nil {
+			return err
+		}
+		sState.ValidationData, err = consensustypes.EncodeValidationData(*vData)
+		if err != nil {
+			return err
+		}
+	} else {
+		sState.ValidationData = ""
+	}
+	sState.Version = int(protoData.Version)
+	sState.ProposerTime = protoData.ProposerTime
+	return nil
+}
+
 func (beaconBlock *BeaconBlock) GetVersion() int {
 	return beaconBlock.Header.Version
 }
@@ -126,6 +176,78 @@ func (beaconBlock *BeaconBlock) GetPrevHash() common.Hash {
 
 func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
+}
+
+func (beaconBlock *BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, error) {
+	res := &proto.BeaconBlockBytes{}
+	var err error
+	if beaconBlock.GetHeight() > 1 {
+		v, err := consensustypes.DecodeValidationData(beaconBlock.GetValidationField())
+		if err != nil {
+			panic(err)
+		}
+		res.ValidationData, err = v.ToBytes()
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+			return nil, err
+		}
+	}
+	res.Body, err = beaconBlock.Body.ToProtoBeaconBody()
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+	res.Header, err = beaconBlock.Header.ToProtoBeaconHeader()
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func (beaconBlock *BeaconBlock) FromProtoBeaconBlock(protoData *proto.BeaconBlockBytes) error {
+
+	if protoData.Header.Height > 1 {
+		valData := consensustypes.ValidationData{}
+		err := valData.FromBytes(protoData.ValidationData)
+		if err != nil {
+			return err
+		}
+		vStr, err := consensustypes.EncodeValidationData(valData)
+		if err != nil {
+			return err
+		}
+		beaconBlock.AddValidationField(vStr)
+	}
+	err := beaconBlock.Body.FromProtoBeaconBody(protoData.Body)
+	if err != nil {
+		return err
+	}
+	return beaconBlock.Header.FromProtoBeaconHeader(protoData.Header)
+}
+
+func (beaconBlock *BeaconBlock) ToBytes() ([]byte, error) {
+	protoBlk, err := beaconBlock.ToProtoBeaconBlock()
+	if (protoBlk == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
+	}
+	protoBytes, err := ggproto.Marshal(protoBlk)
+	if err != nil {
+		return nil, err
+	}
+	// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	// protoBytesComp := c.EncodeAll(protoBytes, nil)
+	return protoBytes, nil
+}
+
+func (beaconBlock *BeaconBlock) FromBytes(rawBytes []byte) error {
+	protoBlk := &proto.BeaconBlockBytes{}
+	err := ggproto.Unmarshal(rawBytes, protoBlk)
+	if err != nil {
+		return err
+	}
+	return beaconBlock.FromProtoBeaconBlock(protoBlk)
 }
 
 func (beaconBlock *BeaconBlock) GetProposer() string {
@@ -236,9 +358,9 @@ func (beaconBlock BeaconBlock) BodyHash() common.Hash {
 	return beaconBlock.Body.Hash()
 }
 
-func (beaconBlock *BeaconBody) toString() string {
+func (beaconBody *BeaconBody) toString() string {
 	res := ""
-	for _, l := range beaconBlock.ShardState {
+	for _, l := range beaconBody.ShardState {
 		for _, r := range l {
 			res += strconv.Itoa(int(r.Height))
 			res += r.Hash.String()
@@ -247,7 +369,7 @@ func (beaconBlock *BeaconBody) toString() string {
 
 		}
 	}
-	for _, l := range beaconBlock.Instructions {
+	for _, l := range beaconBody.Instructions {
 		for _, r := range l {
 			res += r
 		}
@@ -257,6 +379,49 @@ func (beaconBlock *BeaconBody) toString() string {
 
 func (beaconBody BeaconBody) Hash() common.Hash {
 	return common.HashH([]byte(beaconBody.toString()))
+}
+
+func (beaconBody *BeaconBody) ToProtoBeaconBody() (*proto.BeaconBodyBytes, error) {
+	res := &proto.BeaconBodyBytes{}
+	for _, ins := range beaconBody.Instructions {
+		insTmp := &proto.InstrucstionTmp{}
+		insTmp.Data = ins
+		res.Instrucstions = append(res.Instrucstions, insTmp)
+	}
+	res.ShardState = map[int32]*proto.ListShardStateBytes{}
+	for sID, sStates := range beaconBody.ShardState {
+		lProtoSState := &proto.ListShardStateBytes{}
+		for _, sState := range sStates {
+			protoSState, err := sState.ToProtoShardState()
+			if err != nil {
+				panic(err)
+				return nil, err
+			}
+			lProtoSState.Data = append(lProtoSState.Data, protoSState)
+		}
+		res.ShardState[int32(sID)] = lProtoSState
+	}
+	return res, nil
+}
+
+func (beaconBody *BeaconBody) FromProtoBeaconBody(protoData *proto.BeaconBodyBytes) error {
+	for _, ins := range protoData.Instrucstions {
+		beaconBody.Instructions = append(beaconBody.Instructions, ins.Data)
+	}
+	beaconBody.ShardState = map[byte][]ShardState{}
+	for pSID, pSStates := range protoData.ShardState {
+		lSState := []ShardState{}
+		for _, pSState := range pSStates.Data {
+			sState := &ShardState{}
+			err := sState.FromProtoShardState(pSState)
+			if err != nil {
+				return err
+			}
+			lSState = append(lSState, *sState)
+		}
+		beaconBody.ShardState[byte(pSID)] = lSState
+	}
+	return nil
 }
 
 func (header *BeaconHeader) toString() string {
@@ -299,4 +464,54 @@ func (header *BeaconHeader) Hash() common.Hash {
 	blkInstHash := header.InstructionMerkleRoot
 	combined := append(blkMetaHash[:], blkInstHash[:]...)
 	return common.Keccak256(combined)
+}
+
+func (header *BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, error) {
+	res := &proto.BeaconHeaderBytes{}
+	res.Version = int32(header.Version)
+	res.Height = header.Height
+	res.Epoch = header.Epoch
+	res.Round = int32(header.Round)
+	res.Timestamp = header.Timestamp
+	res.PreviousBlockHash = header.PreviousBlockHash[:]
+	res.InstructionHash = header.InstructionHash[:]
+	res.ShardStateHash = header.ShardStateHash[:]
+	res.InstructionMerkleRoot = header.InstructionMerkleRoot[:]
+	res.BeaconCommitteeAndValidatorRoot = header.BeaconCommitteeAndValidatorRoot[:]
+	res.BeaconCandidateRoot = header.BeaconCandidateRoot[:]
+	res.ShardCandidateRoot = header.ShardCandidateRoot[:]
+	res.ShardCommitteeAndValidatorRoot = header.ShardCommitteeAndValidatorRoot[:]
+	res.AutoStakingRoot = header.AutoStakingRoot[:]
+	res.ShardSyncValidatorRoot = header.ShardSyncValidatorRoot[:]
+	res.ConsensusType = header.ConsensusType
+	res.Producer = 1
+	res.Proposer = 1
+	res.ProposeTime = header.ProposeTime
+	res.FinalityHeight = header.FinalityHeight
+	return res, nil
+}
+
+func (header *BeaconHeader) FromProtoBeaconHeader(protoData *proto.BeaconHeaderBytes) error {
+	header.Version = int(protoData.Version)
+	header.Height = protoData.Height
+	header.Epoch = protoData.Epoch
+	header.Round = int(protoData.Round)
+	header.Timestamp = protoData.Timestamp
+	copy(header.PreviousBlockHash[:], protoData.PreviousBlockHash)
+	copy(header.InstructionHash[:], protoData.InstructionHash)
+	copy(header.ShardStateHash[:], protoData.ShardStateHash)
+	copy(header.InstructionMerkleRoot[:], protoData.InstructionMerkleRoot)
+	copy(header.BeaconCommitteeAndValidatorRoot[:], protoData.BeaconCommitteeAndValidatorRoot)
+	copy(header.BeaconCandidateRoot[:], protoData.BeaconCandidateRoot)
+	copy(header.ShardCandidateRoot[:], protoData.ShardCandidateRoot)
+	copy(header.ShardCommitteeAndValidatorRoot[:], protoData.ShardCommitteeAndValidatorRoot)
+	copy(header.AutoStakingRoot[:], protoData.AutoStakingRoot)
+	copy(header.ShardSyncValidatorRoot[:], protoData.ShardSyncValidatorRoot)
+	header.ConsensusType = protoData.ConsensusType
+	header.Producer = ""
+	header.ProducerPubKeyStr = ""
+	header.Proposer = ""
+	header.ProposeTime = protoData.ProposeTime
+	header.FinalityHeight = protoData.FinalityHeight
+	return nil
 }

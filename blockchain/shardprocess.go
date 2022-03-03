@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
 	"sort"
 	"strconv"
 	"time"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/proto"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -171,11 +173,23 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
+	checkPoint := time.Now()
+WAITFORBEACON:
+	_, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), shardBlock.Header.BeaconHeight)
+	if err != nil {
+		if time.Since(checkPoint).Seconds() > 10 {
+			return NewBlockChainError(FetchBeaconBlocksError, err)
+		}
+		time.Sleep(time.Millisecond * 10)
+		goto WAITFORBEACON
+	}
+
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
-
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
+
+	//fetch signing committees
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	committees := []incognitokey.CommitteePublicKey{}
 	committees, signingCommittees, err = curView.getSigningCommittees(shardBlock, blockchain)
@@ -195,17 +209,19 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 				beaconHeight, curView.BeaconHeight)
 			return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
 		}
-		if err := curView.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
-			return err
+		if shouldValidate {
+			if err := curView.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
+				return err
+			}
 		}
-	}
-	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
-		return err
 	}
 
 	if shouldValidate {
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
+			Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
+			return err
+		}
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false, signingCommittees); err != nil {
 			return err
@@ -329,13 +345,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
-	previousShardBlockData, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), previousBlockHash)
-	if err != nil {
-		return NewBlockChainError(FetchPreviousBlockError, err)
-	}
-
-	previousShardBlock := types.ShardBlock{}
-	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
+	previousShardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(previousBlockHash, shardID)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
@@ -684,7 +694,6 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	startTimeVerifyBestStateWithShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
-
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
 		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength()); err != nil {
 		return err
@@ -692,13 +701,11 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
 		return err
 	}
-
 	if shardBestState.shardCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
 		if err := shardBestState.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
 			return err
 		}
 	}
-
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
@@ -863,7 +870,8 @@ func (shardBestState *ShardBestState) initShardBestState(
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/tmp", shardBestState.ShardID))
+	shardBestState.transactionStateDB, err = statedb.NewLiteStateDB(p, common.Hash{}, common.Hash{}, db)
 	if err != nil {
 		return err
 	}
@@ -1162,6 +1170,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
+
 	// consensus root hash
 	consensusRootHash, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
 	if err != nil {
@@ -1178,11 +1188,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
 	newShardState.TransactionStateDBRootHash = transactionRootHash
+
 	// feature root hash
 	featureRootHash, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {
@@ -1218,7 +1225,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	newShardState.rewardStateDB.ClearObjects()
 	newShardState.slashStateDB.ClearObjects()
 
-	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
 	sRH := ShardRootHash{
 		ConsensusStateDBRootHash:   consensusRootHash,
 		FeatureStateDBRootHash:     featureRootHash,
@@ -1232,7 +1238,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
+
+	if err := blockchain.ShardChain[shardID].blkManager.StoreBlock(proto.BlkType_BlkShard, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
@@ -1249,33 +1256,45 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
-
-	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
+	storeBlkHeight := storeBlock.GetHeight()
+	storeBlkHash := storeBlock.Hash()
+	blockchain.ShardChain[shardID].blkManager.MarkFinalized(storeBlkHeight, *storeBlkHash, shardID)
+	for finalView == nil || storeBlkHeight > finalView.GetHeight() {
+		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlkHeight, *storeBlkHash)
 		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
+			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		if storeBlock.GetHeight() == 1 {
+		if (storeBlkHeight == 1) || ((finalView != nil) && (storeBlkHeight == finalView.GetHeight()+1)) {
 			break
 		}
-		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
-			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+		prevHash, err := blockchain.ShardChain[shardID].blkManager.GetPrevHashByHash(storeBlkHash)
+		if err != nil {
+			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(*storeBlkHash, shardID)
 			if err != nil {
-				panic("Database is corrupt")
+				panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
 			}
-		} else {
-			storeBlock = newFinalView.GetBlock()
+			prevHash = storeBlock.GetPrevHash()
 		}
+		storeBlkHash = &prevHash
+		storeBlkHeight--
 		if stats.IsEnableBPV3Stats {
+			finalizedBlock := &types.ShardBlock{}
+			newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
+			if newFinalView == nil {
+				finalizedBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+				if err != nil {
+					panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
+				}
+			} else {
+				finalizedBlock = newFinalView.GetBlock().(*types.ShardBlock)
+			}
 			committeesStoreBlock, err := blockchain.getShardCommitteeFromBeaconHash(storeBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 			if err != nil {
 				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
 			}
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
-				storeBlock.(*types.ShardBlock),
+				finalizedBlock,
 				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), newFinalView.(*ShardBestState).GetProposerLength()),
 				committeesStoreBlock,
 			)
@@ -1287,6 +1306,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")
+	}
+
+	err = newShardState.transactionStateDB.Finalized(batchData, blockchain.ShardChain[shardID].multiView.GetFinalView().(*ShardBestState).TransactionStateDBRootHash)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	if err := batchData.Write(); err != nil {

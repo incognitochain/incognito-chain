@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"

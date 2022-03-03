@@ -69,6 +69,7 @@ func StoreTxByPublicKey(db incdb.Database, publicKey []byte, txID common.Hash, s
 // GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
 func GetTxByPublicKey(db incdb.Database, publicKey []byte) (map[byte][]common.Hash, error) {
 	iterator := db.NewIteratorWithPrefix(GetStoreTxByPublicPrefix(publicKey))
+	defer iterator.Release()
 	result := make(map[byte][]common.Hash)
 	for iterator.Next() {
 		key := iterator.Key()
@@ -96,6 +97,7 @@ func GetTxByPublicKeyV2(
 	skip, limit uint,
 ) (map[byte][]common.Hash, uint, uint, error) {
 	iterator := db.NewIteratorWithPrefix(GetStoreTxByPublicPrefix(publicKey))
+	defer iterator.Release()
 	result := make(map[byte][]common.Hash)
 	for iterator.Next() {
 		if skip > 0 {
@@ -125,7 +127,6 @@ func GetTxByPublicKeyV2(
 	return result, skip, limit, nil
 }
 
-
 func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	for _, outputCoin := range outputCoins {
 		key := generateIndexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
@@ -140,6 +141,7 @@ func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []by
 
 func GetOutCoinsByIndexedOTAKey(db incdb.Database, tokenID common.Hash, shardID byte, publicKey []byte) ([][]byte, error) {
 	it := db.NewIteratorWithPrefix(getIndexedOutputCoinPrefix(tokenID, shardID, publicKey))
+	defer it.Release()
 	var outputCoins [][]byte
 	for it.Next() {
 		value := it.Value()
@@ -170,8 +172,9 @@ func DeleteIndexedOTAKey(db incdb.Database, theKey []byte) error {
 	return nil
 }
 
-func GetIndexedOTAKeys(db incdb.Database) ([][]byte,error) {
+func GetIndexedOTAKeys(db incdb.Database) ([][]byte, error) {
 	it := db.NewIteratorWithPrefix(getIndexedKeysPrefix())
+	defer it.Release()
 	var otaKeys [][]byte
 	for it.Next() {
 		value := it.Value()
@@ -195,6 +198,7 @@ func StoreCachedCoinHash(db incdb.Database, theCoinHash []byte) error {
 
 func GetCachedCoinHashes(db incdb.Database) ([][]byte, error) {
 	it := db.NewIteratorWithPrefix(getCoinHashKeysPrefix())
+	defer it.Release()
 	var otaKeys [][]byte
 	for it.Next() {
 		value := it.Value()
@@ -218,6 +222,7 @@ func StoreTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, sh
 
 func GetTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, shardID byte) (*common.Hash, error) {
 	iterator := db.NewIteratorWithPrefix(generateTxByCoinIndexObjectKey(index, tokenID, shardID))
+	defer iterator.Release()
 	if iterator.Next() {
 		value := iterator.Value()
 		txHash, err := new(common.Hash).NewHash(value)
@@ -231,6 +236,7 @@ func GetTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, shar
 	//If this is a token transaction, try with assetTag
 	if tokenID.String() != common.PRVIDStr {
 		iterator := db.NewIteratorWithPrefix(generateTxByCoinIndexObjectKey(index, common.ConfidentialAssetID, shardID))
+		defer iterator.Release()
 		if iterator.Next() {
 			value := iterator.Value()
 			txHash, err := new(common.Hash).NewHash(value)
@@ -258,6 +264,7 @@ func StoreTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID commo
 
 func GetTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID common.Hash, shardID byte) (*common.Hash, error) {
 	iterator := db.NewIteratorWithPrefix(generateTxBySerialNumberObjectKey(serialNumber, tokenID, shardID))
+	defer iterator.Release()
 	if iterator.Next() {
 		value := iterator.Value()
 		txHash, err := new(common.Hash).NewHash(value)

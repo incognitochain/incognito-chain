@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"sort"
 
+	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
@@ -16,6 +19,22 @@ type ShardBlock struct {
 	ValidationData string `json:"ValidationData"`
 	Body           ShardBody
 	Header         ShardHeader
+}
+
+var CommitteeProvider CommitteeProvide
+
+type CommitteeProvide interface {
+	GetListCommittee(
+		shardID int,
+		beaconHash common.Hash,
+		beaconHeight uint64,
+	) ([]string, error)
+	GetValidatorIndex(
+		valdatorPk string,
+		shardID int,
+		beaconHash common.Hash,
+		beaconHeight uint64,
+	) (int, error)
 }
 
 type ShardHeader struct {
@@ -254,6 +273,269 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 		return false, fmt.Errorf("Expect Shard Block Tx Root have Non-Zero Hash Value because Transactions List is not empty")
 	}
 	return true, nil
+}
+
+func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
+	// var err error
+	res := &proto.ShardHeaderBytes{}
+	// producerIdx, err := CommitteeProvider.GetValidatorIndex(
+	// 	sHeader.ProducerPubKeyStr,
+	// 	int(sHeader.ShardID),
+	// 	sHeader.BeaconHash,
+	// 	sHeader.BeaconHeight,
+	// )
+
+	// if err != nil {
+	// 	return nil
+	// }
+	res.Producer = 0 //int32(producerIdx)
+
+	// proposerIdx, err := CommitteeProvider.GetValidatorIndex(
+	// 	sHeader.Proposer,
+	// 	int(sHeader.ShardID),
+	// 	sHeader.BeaconHash,
+	// 	sHeader.BeaconHeight,
+	// )
+	// if err != nil {
+	// 	if sHeader.Round == 1 {
+	// 		proposerIdx = -1
+	// 	} else {
+	// 		return nil
+	// 	}
+	// }
+	res.Proposer = -1 //int32(proposerIdx)
+	res.ShardID = int32(sHeader.ShardID)
+	res.Version = int32(sHeader.Version)
+	res.PreviousBlockHash = sHeader.PreviousBlockHash[:]
+	res.Height = sHeader.Height
+	res.Round = int32(sHeader.Round)
+	res.Epoch = sHeader.Epoch
+	res.CrossShardBitMap = sHeader.CrossShardBitMap
+	res.BeaconHeight = sHeader.BeaconHeight
+	res.BeaconHash = sHeader.BeaconHash[:]
+	res.TotalTxsFee = map[string]uint64{}
+	for k, v := range sHeader.TotalTxsFee {
+		res.TotalTxsFee[k.String()] = v
+	}
+	res.ConsensusType = sHeader.ConsensusType
+	res.Timestamp = sHeader.Timestamp
+	res.TxRoot = sHeader.TxRoot[:]
+	res.ShardTxRoot = sHeader.ShardTxRoot[:]
+	res.CrossTransactionRoot = sHeader.CrossTransactionRoot[:]
+	res.InstructionsRoot = sHeader.InstructionsRoot[:]
+	res.CommitteeRoot = sHeader.CommitteeRoot[:]
+	res.PendingValidatorRoot = sHeader.PendingValidatorRoot[:]
+	res.StakingTxRoot = sHeader.StakingTxRoot[:]
+	res.InstructionMerkleRoot = sHeader.InstructionMerkleRoot[:]
+	res.ProposeTime = sHeader.ProposeTime
+	res.CommitteeFromBlock = sHeader.CommitteeFromBlock[:]
+	res.FinalityHeight = sHeader.FinalityHeight
+
+	return res
+}
+
+func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderBytes) error {
+	// var err error
+	// protoData := &proto.ShardHeaderBytes{}
+	// producerIdx, err := CommitteeProvider.GetValidatorIndex(
+	// 	sHeader.ProducerPubKeyStr,
+	// 	int(sHeader.ShardID),
+	// 	sHeader.BeaconHash,
+	// 	sHeader.BeaconHeight,
+	// )
+
+	// if err != nil {
+	// 	return nil
+	// }
+	protoData.Producer = 0 //int32(producerIdx)
+
+	// proposerIdx, err := CommitteeProvider.GetValidatorIndex(
+	// 	sHeader.Proposer,
+	// 	int(sHeader.ShardID),
+	// 	sHeader.BeaconHash,
+	// 	sHeader.BeaconHeight,
+	// )
+	// if err != nil {
+	// 	if sHeader.Round == 1 {
+	// 		proposerIdx = -1
+	// 	} else {
+	// 		return nil
+	// 	}
+	// }
+	sHeader.Proposer = "s" //int32(proposerIdx)
+	sHeader.ShardID = byte(protoData.ShardID)
+	sHeader.Version = int(protoData.Version)
+	copy(sHeader.PreviousBlockHash[:], protoData.PreviousBlockHash)
+	sHeader.Height = protoData.Height
+	sHeader.Round = int(protoData.Round)
+	sHeader.Epoch = protoData.Epoch
+	sHeader.CrossShardBitMap = protoData.CrossShardBitMap
+	sHeader.BeaconHeight = protoData.BeaconHeight
+	copy(sHeader.BeaconHash[:], protoData.BeaconHash)
+	sHeader.TotalTxsFee = make(map[common.Hash]uint64)
+	for k, v := range protoData.TotalTxsFee {
+		h := common.Hash{}.NewHashFromStr2(k)
+		sHeader.TotalTxsFee[h] = v
+	}
+	sHeader.ConsensusType = protoData.ConsensusType
+	sHeader.Timestamp = protoData.Timestamp
+	copy(sHeader.TxRoot[:], protoData.TxRoot)
+	copy(sHeader.ShardTxRoot[:], protoData.ShardTxRoot)
+	copy(sHeader.CrossTransactionRoot[:], protoData.CrossTransactionRoot)
+	copy(sHeader.InstructionsRoot[:], protoData.InstructionsRoot)
+	copy(sHeader.CommitteeRoot[:], protoData.CommitteeRoot)
+	copy(sHeader.PendingValidatorRoot[:], protoData.PendingValidatorRoot)
+	copy(sHeader.StakingTxRoot[:], protoData.StakingTxRoot)
+	copy(sHeader.InstructionMerkleRoot[:], protoData.InstructionMerkleRoot)
+	copy(sHeader.CommitteeFromBlock[:], protoData.CommitteeFromBlock)
+	sHeader.ProposeTime = protoData.ProposeTime
+	sHeader.FinalityHeight = protoData.FinalityHeight
+	return nil
+}
+
+func (sBody *ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
+	res := &proto.ShardBodyBytes{}
+	res.CrossTransactions = map[int32]*proto.CrossTransactionTmp{}
+	for k, v := range sBody.CrossTransactions {
+		crossTxs := &proto.CrossTransactionTmp{}
+		for _, tx := range v {
+			// buf := &bytes.Buffer{}
+			// e := gob.NewEncoder(buf)
+			// err := e.Encode(tx)
+			txBytes, err := json.Marshal(tx)
+			if err != nil {
+				panic(err)
+			}
+			crossTxs.Data = append(crossTxs.Data, txBytes)
+		}
+		res.CrossTransactions[int32(k)] = crossTxs
+	}
+	for _, v := range sBody.Instructions {
+		insTmp := &proto.InstrucstionTmp{
+			Data: v,
+		}
+		res.Instrucstions = append(res.Instrucstions, insTmp)
+	}
+
+	// enc1 := gob.NewEncoder(F)
+	for _, tx := range sBody.Transactions {
+		// buf := &bytes.Buffer{}
+		// e := gob.NewEncoder(buf)
+		// err := e.Encode(tx)
+		txBytes, err := json.Marshal(tx)
+		if err != nil {
+			panic(err)
+		}
+		res.Transactions = append(res.Transactions, txBytes)
+	}
+	return res
+}
+
+func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) error {
+	sBody.CrossTransactions = map[byte][]CrossTransaction{}
+	for k, v := range protoData.CrossTransactions {
+		crossTxs := []CrossTransaction{}
+		for _, txBytes := range v.Data {
+			crossTx := &CrossTransaction{}
+			// buf := bytes.NewBuffer(txBytes)
+			// e := gob.NewDecoder(buf)
+			// err := e.Decode(crossTx)
+			err := json.Unmarshal(txBytes, crossTx)
+			if err != nil {
+				panic(err)
+			}
+			crossTxs = append(crossTxs, *crossTx)
+		}
+		sBody.CrossTransactions[byte(k)] = crossTxs
+	}
+
+	for _, ins := range protoData.Instrucstions {
+		sBody.Instructions = append(sBody.Instructions, ins.Data)
+	}
+
+	for _, txBytes := range protoData.Transactions {
+		// buf := bytes.NewBuffer(txBytes)
+		// e := gob.NewDecoder(buf)
+		var tx metadata.Transaction
+		var parseErr error
+		var txChoice *transaction.TxChoice
+		txChoice, parseErr = transaction.DeserializeTransactionJSON(txBytes)
+		if parseErr != nil {
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)
+		}
+		tx = txChoice.ToTx()
+		if tx == nil {
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Corrupted TX")
+		}
+		sBody.Transactions = append(sBody.Transactions, tx)
+	}
+	return nil
+}
+
+func (sBlock *ShardBlock) ToProtoShardBlock() *proto.ShardBlockBytes {
+	res := &proto.ShardBlockBytes{}
+	if sBlock.GetHeight() > 1 {
+		v, err := consensustypes.DecodeValidationData(sBlock.GetValidationField())
+		if err != nil {
+			panic(err)
+		}
+		res.ValidationData, err = v.ToBytes()
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+	}
+	res.Body = sBlock.Body.ToProtoShardBody()
+	res.Header = sBlock.Header.ToProtoShardHeader()
+	return res
+}
+
+func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) error {
+	if protoData.Header.Height > 1 {
+		valData := consensustypes.ValidationData{}
+		err := valData.FromBytes(protoData.ValidationData)
+		if err != nil {
+			return err
+		}
+		vStr, err := consensustypes.EncodeValidationData(valData)
+		if err != nil {
+			return err
+		}
+		sBlock.AddValidationField(vStr)
+	}
+	err := sBlock.Body.FromProtoShardBody(protoData.Body)
+	if err != nil {
+		return err
+	}
+	return sBlock.Header.FromProtoShardHeader(protoData.Header)
+}
+
+func (shardBlock *ShardBlock) FromBytes(data []byte) error {
+	// d, _ := zstd.NewReader(nil)
+	// rawBytes, err := d.DecodeAll(data, nil)
+	// if err != nil {
+	// 	return err
+	// }
+	protoBlk := &proto.ShardBlockBytes{}
+	err := ggproto.Unmarshal(data, protoBlk)
+	if err != nil {
+		return err
+	}
+	return shardBlock.FromProtoShardBlock(protoBlk)
+}
+
+func (shardBlock *ShardBlock) ToBytes() ([]byte, error) {
+	protoBlk := shardBlock.ToProtoShardBlock()
+	if protoBlk == nil {
+		return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf", shardBlock.Header.Height, shardBlock.Hash().String())
+	}
+	protoBytes, err := ggproto.Marshal(protoBlk)
+	if err != nil {
+		return nil, err
+	}
+	// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	// protoBytesComp := c.EncodeAll(protoBytes, nil)
+	return protoBytes, nil
 }
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {

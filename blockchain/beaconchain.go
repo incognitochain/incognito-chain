@@ -3,13 +3,17 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/blockstorage"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -27,17 +31,26 @@ type BeaconChain struct {
 	Ready               bool //when has peerstate
 	committeesInfoCache *lru.Cache
 
+	blkManager blockstorage.BlockService
+
 	insertLock sync.Mutex
 }
 
 func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
 	committeeInfoCache, _ := lru.New(100)
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("beacon/rawfinalblock"))
+	ffFinalBlk, err := flatfile.NewFlatFile(p, 5000)
+	if err != nil {
+		panic(err)
+	}
+	blkM, err := blockstorage.NewBlockService(blockchain.GetBeaconChainDatabase(), ffFinalBlk)
 	return &BeaconChain{
 		multiView:           multiView,
 		BlockGen:            blockGen,
 		Blockchain:          blockchain,
 		ChainName:           chainName,
 		committeesInfoCache: committeeInfoCache,
+		blkManager:          blkM,
 	}
 }
 
@@ -236,6 +249,15 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+	if os.Getenv("WAITFORSHARDSYNC") != "" {
+	WAITFORSHARD:
+		for _, v := range chain.Blockchain.ShardChain {
+			if v.GetBestView().(*ShardBestState).BeaconHeight+380 < block.GetHeight() {
+				time.Sleep(time.Millisecond * 10)
+				goto WAITFORSHARD
+			}
+		}
+	}
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Error(err)
 		return err
@@ -245,7 +267,7 @@ func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate
 
 func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
+	_, err := chain.blkManager.CheckBlockByHash(blkHash)
 	return err == nil
 }
 
