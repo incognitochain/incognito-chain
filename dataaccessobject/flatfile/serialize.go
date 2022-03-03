@@ -18,20 +18,6 @@ import (
 	"strconv"
 )
 
-type FlatFile interface {
-	//append item into flat file, return item index
-	Append([]byte) (int, error)
-
-	//read item in flatfile with specific index (return from append)
-	Read(index int) ([]byte, error)
-
-	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently() (dataChan chan []byte, err chan int, cancel func())
-
-	//truncate flat file system
-	Truncate(lastIndex int) error
-}
-
 type FlatFileManager struct {
 	dataDir         string
 	fileSizeLimit   int //number of item

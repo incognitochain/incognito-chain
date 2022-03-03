@@ -7,6 +7,20 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
+type FlatFile interface {
+	//append item into flat file, return item index
+	Append([]byte) (int, error)
+
+	//read item in flatfile with specific index (return from append)
+	Read(index int) ([]byte, error)
+
+	//read recent data, return data channel, errpr channel, and cancel function
+	ReadRecently() (dataChan chan []byte, err chan int, cancel func())
+
+	//truncate flat file system
+	Truncate(lastIndex int) error
+}
+
 // IntermediateWriter wraps access to tries and contract code.
 type DatabaseAccessWarper interface {
 	// OpenTrie opens the main account trie.
@@ -73,16 +87,6 @@ func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
 }
 
 func NewDatabaseAccessWrapperWithConfig(syncMode string, database incdb.Database, journalPath string, size int) DatabaseAccessWarper {
-
-	//TODO: @hung comment to test
-	//if syncMode == common.BATCH_COMMIT_SYNC_MODE {
-	//	return &accessorWarper{
-	//		iw: trie.NewIntermediateWriterWithConfig(database, &trie.Config{
-	//			Cache:   size,
-	//			Journal: journalPath,
-	//		}),
-	//	}
-	//}
 	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
 }
 

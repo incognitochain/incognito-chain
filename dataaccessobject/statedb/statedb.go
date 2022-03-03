@@ -25,6 +25,9 @@ type StateDB struct {
 	db   DatabaseAccessWarper
 	trie Trie
 
+	flatFile FlatFile
+	mode     string
+
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
