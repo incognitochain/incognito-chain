@@ -255,10 +255,10 @@ func (stateDB *StateDB) ShardCommitToDisk(
 	currentBlockHeight uint64,
 	currentBlockHash common.Hash,
 	isWriteToDisk bool,
-	isForce bool,
+	isForceWrite bool,
 ) (common.Hash, int, error) {
 
-	if !isForce || stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
+	if !isForceWrite && stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
 		return stateDB.batchCommitToDisk(
 			shardID,
 			rawDB,
@@ -332,9 +332,6 @@ func (stateDB *StateDB) batchCommitToDisk(
 	}
 
 	// store state object to flatfile
-	if currentBlockHeight == 338 {
-		fmt.Println("")
-	}
 	index, err := CacheDirtyObjectForRepair(
 		batchCommitConfig.flatFile,
 		rawDB,

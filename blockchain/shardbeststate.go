@@ -709,7 +709,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 	bc *BlockChain,
 	isFinalizedBlock bool,
 	newFinalBlock types.BlockInterface,
-	isForce bool,
+	isForceWrite bool,
 ) error {
 
 	shardID := shardBestState.ShardID
@@ -725,7 +725,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 	if ShardSyncMode == common.ARCHIVE_SYNC_MODE || currentHeight == 1 {
 		newPivotBlockHash = currentBlock.Header.Hash()
 		isWriteToDisk = true
-		isForce = true
+		isForceWrite = true
 	} else {
 		latestPivotBlock, err := bc.GetPivotBlock(shardID)
 		if err != nil {
@@ -742,27 +742,27 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(
 		}
 	}
 
-	shardBestState.ConsensusStateDBRootHash, indexes[SHARD_CONSENSUS_STATEDB], err = shardBestState.consensusStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.ConsensusStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	shardBestState.ConsensusStateDBRootHash, indexes[SHARD_CONSENSUS_STATEDB], err = shardBestState.consensusStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.ConsensusStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForceWrite)
 	if err != nil {
 		return err
 	}
 
-	shardBestState.TransactionStateDBRootHash, indexes[SHARD_TRANSACTION_STATEDB], err = shardBestState.transactionStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.TransactionStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	shardBestState.TransactionStateDBRootHash, indexes[SHARD_TRANSACTION_STATEDB], err = shardBestState.transactionStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.TransactionStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForceWrite)
 	if err != nil {
 		return err
 	}
 
-	shardBestState.FeatureStateDBRootHash, indexes[SHARD_FEATURE_STATEDB], err = shardBestState.featureStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.FeatureStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	shardBestState.FeatureStateDBRootHash, indexes[SHARD_FEATURE_STATEDB], err = shardBestState.featureStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.FeatureStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForceWrite)
 	if err != nil {
 		return err
 	}
 
-	shardBestState.RewardStateDBRootHash, indexes[SHARD_REWARD_STATEDB], err = shardBestState.rewardStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.RewardStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	shardBestState.RewardStateDBRootHash, indexes[SHARD_REWARD_STATEDB], err = shardBestState.rewardStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.RewardStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForceWrite)
 	if err != nil {
 		return err
 	}
 
-	shardBestState.SlashStateDBRootHash, indexes[SHARD_SLASH_STATEDB], err = shardBestState.slashStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.SlashStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForce)
+	shardBestState.SlashStateDBRootHash, indexes[SHARD_SLASH_STATEDB], err = shardBestState.slashStateDB.ShardCommitToDisk(shardID, batch, newPivotBlockHash, recentFinalizedSRH.SlashStateDBRootHash, currentHeight, currentHash, isWriteToDisk, isForceWrite)
 	if err != nil {
 		return err
 	}
