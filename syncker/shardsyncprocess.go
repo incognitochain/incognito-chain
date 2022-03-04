@@ -263,8 +263,8 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
 			convertedTimeslot := time.Duration(common.TIMESLOT) * time.Second
 			now := time.Now().Unix()
-			ceiling := now + 5*convertedTimeslot.Milliseconds()
-			floor := now - 5*convertedTimeslot.Milliseconds()
+			ceiling := now + int64(5*convertedTimeslot.Seconds())
+			floor := now - int64(5*convertedTimeslot.Seconds())
 			if floor <= shardView.BestBlock.Header.Timestamp &&
 				shardView.BestBlock.Header.Timestamp <= ceiling {
 				s.trySendFinishSyncMessage()
