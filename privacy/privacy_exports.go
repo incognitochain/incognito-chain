@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -128,7 +128,7 @@ func ArrayScalarToBytes(arr *[]*operation.Scalar) ([]byte, error) {
 
 	n := len(scalarArr)
 	if n > 255 {
-		return nil, errors.New("ArrayScalarToBytes: length of scalar array is too big")
+		return nil, fmt.Errorf("arrayScalarToBytes: length of scalar array is too big")
 	}
 	b := make([]byte, 1)
 	b[0] = byte(n)
@@ -141,11 +141,11 @@ func ArrayScalarToBytes(arr *[]*operation.Scalar) ([]byte, error) {
 
 func ArrayScalarFromBytes(b []byte) (*[]*operation.Scalar, error) {
 	if len(b) == 0 {
-		return nil, errors.New("ArrayScalarFromBytes error: length of byte is 0")
+		return nil, fmt.Errorf("arrayScalarFromBytes error: length of byte is 0")
 	}
 	n := int(b[0])
 	if n*Ed25519KeySize+1 != len(b) {
-		return nil, errors.New("ArrayScalarFromBytes error: length of byte is not correct")
+		return nil, fmt.Errorf("arrayScalarFromBytes error: length of byte is not correct")
 	}
 	scalarArr := make([]*operation.Scalar, n)
 	offset := 1

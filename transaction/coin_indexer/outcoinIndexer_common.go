@@ -124,7 +124,7 @@ func QueryDbCoinVer1(pubKey []byte, tokenID *common.Hash, db *statedb.StateDB) (
 	shardID := common.GetShardIDFromLastByte(pubKey[len(pubKey)-1])
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(db, *tokenID, pubKey, shardID)
 	if err != nil {
-		utils.Logger.Log.Errorf("get outCoins by pubKey error: %v\n", err)
+		utils.Logger.Log.Errorf("get outCoins by pubKey error: %v", err)
 		return nil, err
 	}
 	var outCoins []privacy.Coin
@@ -158,7 +158,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			utils.Logger.Log.Errorf("get outCoins ver 2 bytes by height error: %v\n", err)
+			utils.Logger.Log.Errorf("get outCoins ver 2 bytes by height error: %v", err)
 			return nil, err
 		}
 
@@ -171,7 +171,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, tokenID *common.Hash, startHeight, d
 			cv2 := &privacy.CoinV2{}
 			err = cv2.SetBytes(coinBytes)
 			if err != nil {
-				utils.Logger.Log.Error("get outCoins ver 2 from bytes error: %v\n", err)
+				utils.Logger.Log.Error("get outCoins ver 2 from bytes error: %v", err)
 				return nil, err
 			}
 
@@ -213,7 +213,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 	for height := start; height <= destHeight; height++ {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v\n", err)
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by height error: %v", err)
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
@@ -263,7 +263,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]*IndexParam, shardID byte, tokenI
 			}
 		}
 	}
-	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v\n", start, destHeight, tokenID.String(), countSkipped)
+	utils.Logger.Log.Infof("#skipped for heights [%v,%v], tokenID %v: %v", start, destHeight, tokenID.String(), countSkipped)
 	return res, nil
 }
 
@@ -286,7 +286,7 @@ func QueryBatchDbCoinVer2ByIndices(idxParams map[string]*IndexParam, shardID byt
 	for idx := fromIndex; idx <= toIndex; idx++ {
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx, shardID)
 		if err != nil {
-			utils.Logger.Log.Errorf("Get outCoins ver 2 by idx error: %v\n", err)
+			utils.Logger.Log.Errorf("Get outCoins ver 2 by idx error: %v", err)
 			return nil, err
 		}
 
@@ -331,7 +331,7 @@ func QueryBatchDbCoinVer2ByIndices(idxParams map[string]*IndexParam, shardID byt
 		}
 
 	}
-	utils.Logger.Log.Infof("#skipped for indices [%v,%v], tokenID %v: %v\n", fromIndex, toIndex, tokenID.String(), countSkipped)
+	utils.Logger.Log.Infof("#skipped for indices [%v,%v], tokenID %v: %v", fromIndex, toIndex, tokenID.String(), countSkipped)
 	return res, nil
 }
 
