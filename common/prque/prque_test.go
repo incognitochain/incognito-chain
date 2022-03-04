@@ -132,18 +132,22 @@ func BenchmarkPop(b *testing.B) {
 func TestPrque_Push(t *testing.T) {
 	queue := New(nil)
 
-	queue.Push(struct{}{}, 3)
-	queue.Push(struct{}{}, 4)
-	queue.Push(struct{}{}, 5)
+	queue.Push("test1", 3)
+	queue.Push("test2", 3)
+	queue.Push("test3", 4)
+	queue.Push("test4", 5)
 
 	t.Log(queue.Pop())
 	t.Log(queue.Pop())
 	t.Log(queue.Pop())
+	t.Log(queue.Pop())
 
-	queue.Push(struct{}{}, -4)
-	queue.Push(struct{}{}, -3)
-	queue.Push(struct{}{}, -5)
+	queue.Push("test1", -4)
+	queue.Push("test2", -3)
+	queue.Push("test3", -3)
+	queue.Push("test4", -5)
 
+	t.Log(queue.Pop())
 	t.Log(queue.Pop())
 	t.Log(queue.Pop())
 	t.Log(queue.Pop())

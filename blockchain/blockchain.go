@@ -10,7 +10,6 @@ import (
 	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -21,7 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/prque"
 	"github.com/incognitochain/incognito-chain/config"
 	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
@@ -46,7 +44,6 @@ type BlockChain struct {
 	BeaconChain *BeaconChain
 	ShardChain  []*ShardChain
 	config      Config
-	cacheConfig CacheConfig
 	cQuitSync   chan struct{}
 
 	IsTest bool
@@ -86,15 +83,6 @@ type Config struct {
 	usingNewPool  bool
 }
 
-type CacheConfig struct {
-	triegc               map[byte]*prque.Prque // Priority queue mapping block numbers to tries to gc
-	trieJournalPath      map[int]string
-	trieJournalCacheSize int
-	blockTrieInMemory    uint64
-	trieNodeLimit        common.StorageSize
-	trieImgsLimit        common.StorageSize
-}
-
 func NewFlatFileConfig(config *Config) {
 
 	config.FlatFileManager = make(map[int]*flatfile.FlatFileManager)
@@ -107,38 +95,6 @@ func NewFlatFileConfig(config *Config) {
 		}
 		config.FlatFileManager[chainID] = flatFileManager
 	}
-}
-
-func NewCacheConfig(cfg *Config) (CacheConfig, error) {
-
-	cacheConfig := CacheConfig{}
-	cacheConfig.trieJournalCacheSize = config.Param().BatchCommitSyncModeParam.TrieJournalCacheSize
-	cacheConfig.blockTrieInMemory = config.Param().BatchCommitSyncModeParam.BlockTrieInMemory
-	cacheConfig.trieNodeLimit = config.Param().BatchCommitSyncModeParam.TrieNodeLimit
-	cacheConfig.trieImgsLimit = config.Param().BatchCommitSyncModeParam.TrieImgsLimit
-	cacheConfig.triegc = make(map[byte]*prque.Prque)
-	trieJournal := make(map[int]string)
-
-	for i := 0; i < common.MaxShardNumber; i++ {
-		cacheConfig.triegc[byte(i)] = prque.New(nil)
-	}
-
-	for chainID, db := range cfg.DataBase {
-
-		journalPath := db.GetPath() + "/metadata.bin"
-		if _, err := os.Stat(journalPath); os.IsNotExist(err) {
-			_, err := os.Create(journalPath)
-			if err != nil {
-				return CacheConfig{}, err
-			}
-		}
-		trieJournal[chainID] = journalPath
-
-	}
-
-	cacheConfig.trieJournalPath = trieJournal
-
-	return cacheConfig, nil
 }
 
 func NewBlockChain(isTest bool) *BlockChain {
@@ -164,11 +120,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
-	cacheConfig, err := NewCacheConfig(config)
-	if err != nil {
-		return err
-	}
-	blockchain.cacheConfig = cacheConfig
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
@@ -441,6 +392,7 @@ func (bc *BlockChain) Stop() {
 			shardBestState := shardChain.GetBestState()
 			shardID := shardBestState.ShardID
 			db := bc.GetShardChainDatabase(shardID)
+			finalizedBlock := shardChain.multiView.GetFinalView().GetBlock()
 			consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
 			transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
 			featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
@@ -456,61 +408,61 @@ func (bc *BlockChain) Stop() {
 					Logger.log.Error("Blockchain Stop, GetShardRootsHashByBlockHash shardID %+v, blockhash %+v,  error: ", shardID, shardView.BestBlockHash, err)
 					continue
 				}
-				if err := consensusTrieDB.Commit(sRH.ConsensusStateDBRootHash, false, nil); err != nil {
+				env := statedb.NewForceTrieCommitEnvironment(shardID, db, *finalizedBlock.Hash())
+				if _, _, err := shardBestState.consensusStateDB.ShardCommitToDisk(
+					env, sRH.ConsensusStateDBRootHash); err != nil {
 					Logger.log.Errorf("Blockchain Stop, Commit Consensus DB %+v, error %+v", sRH.ConsensusStateDBRootHash, err)
 				}
-				if err := transactionTrieDB.Commit(sRH.TransactionStateDBRootHash, false, nil); err != nil {
+				if _, _, err := shardBestState.transactionStateDB.ShardCommitToDisk(
+					env, sRH.TransactionStateDBRootHash); err != nil {
 					Logger.log.Errorf("Blockchain Stop, Commit Transaction DB %+v, error %+v", sRH.TransactionStateDBRootHash, err)
 				}
-				if err := featureTrieDB.Commit(sRH.FeatureStateDBRootHash, false, nil); err != nil {
+				if _, _, err := shardBestState.featureStateDB.ShardCommitToDisk(
+					env, sRH.FeatureStateDBRootHash); err != nil {
 					Logger.log.Errorf("Blockchain Stop, Commit Feature DB %+v, error %+v", sRH.FeatureStateDBRootHash, err)
 				}
-				if err := rewardTrieDB.Commit(sRH.RewardStateDBRootHash, false, nil); err != nil {
+				if _, _, err := shardBestState.rewardStateDB.ShardCommitToDisk(
+					env, sRH.RewardStateDBRootHash); err != nil {
 					Logger.log.Errorf("Blockchain Stop, Commit Reward DB %+v, error %+v", sRH.RewardStateDBRootHash, err)
 				}
-				if err := slashTrieDB.Commit(sRH.SlashStateDBRootHash, false, nil); err != nil {
+				if _, _, err := shardBestState.slashStateDB.ShardCommitToDisk(
+					env, sRH.SlashStateDBRootHash); err != nil {
 					Logger.log.Errorf("Blockchain Stop, Commit Slash DB %+v, error %+v", sRH.SlashStateDBRootHash, err)
 				}
 			}
 
+			shardBestState.consensusStateDB.CleanReference()
+			shardBestState.transactionStateDB.CleanReference()
+			shardBestState.featureStateDB.CleanReference()
+			shardBestState.rewardStateDB.CleanReference()
+			shardBestState.slashStateDB.CleanReference()
+
 			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 
-			finalizedBlock := shardChain.multiView.GetFinalView().GetBlock()
-			err := statedb.StoreLatestPivotBlock(db, shardID, *finalizedBlock.Hash())
-			if err != nil {
-				Logger.log.Errorf("StoreLatestPivotBlock, Shard %d, height %d, hash %+v, err %+v", shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash(), err)
-			}
-
-			for !bc.cacheConfig.triegc[shardID].Empty() {
-				sRH := bc.cacheConfig.triegc[shardID].PopItem().(ShardRootHash)
-				consensusTrieDB.Dereference(sRH.ConsensusStateDBRootHash)
-				transactionTrieDB.Dereference(sRH.TransactionStateDBRootHash)
-				featureTrieDB.Dereference(sRH.FeatureStateDBRootHash)
-				rewardTrieDB.Dereference(sRH.RewardStateDBRootHash)
-				slashTrieDB.Dereference(sRH.SlashStateDBRootHash)
-			}
-
 			if size, _ := consensusTrieDB.Size(); size != 0 {
-				Logger.log.Error("Dangling consensus trie nodes after full cleanup")
+				Logger.log.Errorf("Shard %+v | Dangling consensus trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | consensusTrieDB size = 0", shardID)
 			}
 			if size, _ := transactionTrieDB.Size(); size != 0 {
-				Logger.log.Error("Dangling transaction trie nodes after full cleanup")
+				Logger.log.Errorf("Shard %+v | Dangling transaction trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | transactionTrieDB size = 0", shardID)
 			}
 			if size, _ := featureTrieDB.Size(); size != 0 {
-				Logger.log.Error("Dangling feature trie nodes after full cleanup")
+				Logger.log.Errorf("Shard %+v | Dangling feature trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | featureTrieDB remain size = 0", shardID)
 			}
 			if size, _ := rewardTrieDB.Size(); size != 0 {
-				Logger.log.Error("Dangling reward trie nodes after full cleanup")
+				Logger.log.Errorf("Shard %+v | Dangling reward trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | rewardTrieDB remain size = 0", shardID)
 			}
 			if size, _ := slashTrieDB.Size(); size != 0 {
-				Logger.log.Error("Dangling slash trie nodes after full cleanup")
-			}
-
-			if bc.cacheConfig.trieJournalPath != nil {
-				if path := bc.cacheConfig.trieJournalPath[int(shardBestState.ShardID)]; path != "" {
-					// the below disk layer is just one => save one time is enough
-					transactionTrieDB.SaveCache(path)
-				}
+				Logger.log.Errorf("Shard %+v | Dangling slash trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | slashTrieDB remain size = 0", shardID)
 			}
 		}
 
@@ -1139,30 +1091,30 @@ func repairStateDB(
 				gotSRH[i] = rootHash
 			}
 
-			blockToCommit, _, err := bc.GetShardBlockByHash(nextBlock)
+			repairedBlock, _, err := bc.GetShardBlockByHash(nextBlock)
 			if err != nil {
 				return err
 			}
 
 			if calculatedRoot, _ := stateDBs[SHARD_CONSENSUS_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.ConsensusStateDBRootHash {
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect consensus root hash %+v, got %+v",
-					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.ConsensusStateDBRootHash, calculatedRoot)
+					shardID, repairedBlock.GetHeight(), *repairedBlock.Hash(), wantSRH.ConsensusStateDBRootHash, calculatedRoot)
 			}
 			if calculatedRoot, _ := stateDBs[SHARD_TRANSACTION_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.TransactionStateDBRootHash {
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect transaction root hash %+v, got %+v",
-					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.TransactionStateDBRootHash, calculatedRoot)
+					shardID, repairedBlock.GetHeight(), *repairedBlock.Hash(), wantSRH.TransactionStateDBRootHash, calculatedRoot)
 			}
 			if calculatedRoot, _ := stateDBs[SHARD_FEATURE_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.FeatureStateDBRootHash {
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect feature root hash %+v, got %+v",
-					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.FeatureStateDBRootHash, calculatedRoot)
+					shardID, repairedBlock.GetHeight(), *repairedBlock.Hash(), wantSRH.FeatureStateDBRootHash, calculatedRoot)
 			}
 			if calculatedRoot, _ := stateDBs[SHARD_REWARD_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.RewardStateDBRootHash {
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect reward root hash %+v, got %+v",
-					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.RewardStateDBRootHash, calculatedRoot)
+					shardID, repairedBlock.GetHeight(), *repairedBlock.Hash(), wantSRH.RewardStateDBRootHash, calculatedRoot)
 			}
 			if calculatedRoot, _ := stateDBs[SHARD_SLASH_STATEDB].IntermediateRoot(true); calculatedRoot != wantSRH.SlashStateDBRootHash {
 				return fmt.Errorf("Repair State Error, Shard %d, height %d, hash %+v, expect slash root hash %+v, got %+v",
-					shardID, blockToCommit.GetHeight(), *blockToCommit.Hash(), wantSRH.SlashStateDBRootHash, calculatedRoot)
+					shardID, repairedBlock.GetHeight(), *repairedBlock.Hash(), wantSRH.SlashStateDBRootHash, calculatedRoot)
 			}
 		}
 

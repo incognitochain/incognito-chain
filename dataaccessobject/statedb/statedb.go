@@ -248,32 +248,26 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, map[common
 
 // kiem tra mode
 func (stateDB *StateDB) ShardCommitToDisk(
-	shardID byte,
-	rawDB incdb.KeyValueWriter,
-	newPivotBlockHash common.Hash,
-	newPivotRoot common.Hash,
-	currentBlockHeight uint64,
-	currentBlockHash common.Hash,
-	isWriteToDisk bool,
-	isForceWrite bool,
+	env *TrieCommitEnvironment,
+	pivotRootHash common.Hash,
 ) (common.Hash, int, error) {
 
-	if !isForceWrite && stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
+	if !env.IsForceWrite && stateDB.mode == common.BATCH_COMMIT_SYNC_MODE {
 		return stateDB.batchCommitToDisk(
-			shardID,
-			rawDB,
-			newPivotBlockHash,
-			newPivotRoot,
-			currentBlockHeight,
-			currentBlockHash,
-			isWriteToDisk,
+			env.ShardID,
+			env.RawDB,
+			env.NewPivotBlockHash,
+			pivotRootHash,
+			env.CurrentBlockHeight,
+			env.CurrentBlockHash,
+			env.IsWriteToDisk,
 		)
 	}
 
 	rootHash, err := stateDB.archiveCommitToDisk(
-		shardID,
-		rawDB,
-		newPivotBlockHash,
+		env.ShardID,
+		env.RawDB,
+		env.NewPivotBlockHash,
 	)
 
 	return rootHash, 0, err
@@ -385,6 +379,19 @@ func (stateDB *StateDB) batchCommitToDisk(
 	stateDB.ClearObjects()
 
 	return currentRootHash, index, nil
+}
+
+func (stateDB *StateDB) CleanReference() {
+
+	batchCommitConfig := stateDB.batchCommitConfig
+	diskDB := stateDB.db.TrieDB()
+
+	for !batchCommitConfig.triegc.Empty() {
+		oldRootHash, number := batchCommitConfig.triegc.Pop()
+		stateDB.logger.Log.Debugf("Dereference, block %d",
+			-number)
+		diskDB.Dereference(oldRootHash.(common.Hash))
+	}
 }
 
 // ================================= STATE OBJECT =======================================

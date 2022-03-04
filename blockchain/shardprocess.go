@@ -858,8 +858,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 	}
 
 	//statedb===========================START
-	dbAccessWarper := statedb.NewDatabaseAccessWrapperWithConfig(ShardSyncMode, db,
-		blockchain.cacheConfig.trieJournalPath[int(shardBestState.ShardID)], blockchain.cacheConfig.trieJournalCacheSize)
+	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithMode(common.EmptyRoot, dbAccessWarper, ShardSyncMode, blockchain.config.FlatFileManager[int(shardBestState.ShardID)])
 	if err != nil {
 		return err

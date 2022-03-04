@@ -6,6 +6,24 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+type TrieCommitEnvironment struct {
+	ShardID            byte
+	RawDB              incdb.KeyValueWriter
+	NewPivotBlockHash  common.Hash
+	CurrentBlockHeight uint64
+	CurrentBlockHash   common.Hash
+	IsWriteToDisk      bool
+	IsForceWrite       bool
+}
+
+func NewTrieCommitEnvironment(shardID byte, rawDB incdb.KeyValueWriter, newPivotBlockHash common.Hash, currentBlockHeight uint64, currentBlockHash common.Hash, isWriteToDisk bool, isForceWrite bool) *TrieCommitEnvironment {
+	return &TrieCommitEnvironment{ShardID: shardID, RawDB: rawDB, NewPivotBlockHash: newPivotBlockHash, CurrentBlockHeight: currentBlockHeight, CurrentBlockHash: currentBlockHash, IsWriteToDisk: isWriteToDisk, IsForceWrite: isForceWrite}
+}
+
+func NewForceTrieCommitEnvironment(shardID byte, rawDB incdb.KeyValueWriter, newPivotBlockHash common.Hash) *TrieCommitEnvironment {
+	return &TrieCommitEnvironment{ShardID: shardID, RawDB: rawDB, NewPivotBlockHash: newPivotBlockHash, IsForceWrite: true}
+}
+
 var (
 	splitter                       = []byte("-[-]-")
 	flatFileStateObjectIndexPrefix = []byte("ff-sob-" + string(splitter))

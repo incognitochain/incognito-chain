@@ -57,29 +57,5 @@ var (
 )
 
 var (
-	ShardSyncMode  = common.ARCHIVE_SYNC_MODE
-	configCache4GB = CacheConfig{
-		trieJournalCacheSize: 32,
-		blockTrieInMemory:    uint64(500),
-		trieNodeLimit:        common.StorageSize(128 * 1024 * 1024),
-		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
-	}
-	configCache8GB = CacheConfig{
-		trieJournalCacheSize: 32,
-		blockTrieInMemory:    uint64(2000),
-		trieNodeLimit:        common.StorageSize(512 * 1024 * 1024),
-		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
-	}
-	configCache16GB = CacheConfig{
-		trieJournalCacheSize: 32,
-		blockTrieInMemory:    uint64(10000),
-		trieNodeLimit:        common.StorageSize(2 * 1024 * 1024 * 1024),
-		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
-	}
-	configCache32GB = CacheConfig{
-		trieJournalCacheSize: 32,
-		blockTrieInMemory:    uint64(20000),
-		trieNodeLimit:        common.StorageSize(4 * 1024 * 1024 * 1024),
-		trieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
-	}
+	ShardSyncMode = common.ARCHIVE_SYNC_MODE
 )
