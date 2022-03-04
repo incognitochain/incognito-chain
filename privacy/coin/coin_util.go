@@ -1,7 +1,6 @@
 package coin
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -36,14 +35,14 @@ func getMin(a, b int) int {
 func parseScalarForSetBytes(coinBytes *[]byte, offset *int) (*operation.Scalar, error) {
 	b := *coinBytes
 	if *offset >= len(b) {
-		return nil, errors.New("Offset is larger than len(bytes), cannot parse scalar")
+		return nil, fmt.Errorf("offset is larger than len(bytes), cannot parse scalar")
 	}
 	var sc *operation.Scalar
 	lenField := b[*offset]
 	*offset++
 	if lenField != 0 {
 		if *offset+int(lenField) > len(b) {
-			return nil, errors.New("Offset+curLen is larger than len(bytes), cannot parse scalar for set bytes")
+			return nil, fmt.Errorf("offset+curLen is larger than len(bytes), cannot parse scalar for set bytes")
 		}
 		data := b[*offset : *offset+int(lenField)]
 		sc = new(operation.Scalar).FromBytesS(data)
@@ -55,7 +54,7 @@ func parseScalarForSetBytes(coinBytes *[]byte, offset *int) (*operation.Scalar, 
 func parsePointForSetBytes(coinBytes *[]byte, offset *int) (*operation.Point, error) {
 	b := *coinBytes
 	if *offset >= len(b) {
-		return nil, errors.New("Offset is larger than len(bytes), cannot parse point")
+		return nil, fmt.Errorf("offset is larger than len(bytes), cannot parse point")
 	}
 	var point *operation.Point
 	var err error
@@ -63,7 +62,7 @@ func parsePointForSetBytes(coinBytes *[]byte, offset *int) (*operation.Point, er
 	*offset++
 	if lenField != 0 {
 		if *offset+int(lenField) > len(b) {
-			return nil, errors.New("Offset+curLen is larger than len(bytes), cannot parse point for set bytes")
+			return nil, fmt.Errorf("offset+curLen is larger than len(bytes), cannot parse point for set bytes")
 		}
 		data := b[*offset : *offset+int(lenField)]
 		point, err = new(operation.Point).FromBytesS(data)
@@ -78,14 +77,14 @@ func parsePointForSetBytes(coinBytes *[]byte, offset *int) (*operation.Point, er
 func parseInfoForSetBytes(coinBytes *[]byte, offset *int) ([]byte, error) {
 	b := *coinBytes
 	if *offset >= len(b) {
-		return []byte{}, errors.New("Offset is larger than len(bytes), cannot parse info")
+		return []byte{}, fmt.Errorf("offset is larger than len(bytes), cannot parse info")
 	}
 	info := []byte{}
 	lenField := b[*offset]
 	*offset++
 	if lenField != 0 {
 		if *offset+int(lenField) > len(b) {
-			return []byte{}, errors.New("Offset+curLen is larger than len(bytes), cannot parse info for set bytes")
+			return []byte{}, fmt.Errorf("offset+curLen is larger than len(bytes), cannot parse info for set bytes")
 		}
 		info = make([]byte, lenField)
 		copy(info, b[*offset:*offset+int(lenField)])
@@ -125,7 +124,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 	if err != nil {
 		errStr := fmt.Sprintf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
-		return nil, errors.New(errStr)
+		return nil, fmt.Errorf(errStr)
 	}
 	receiverPublicKeyBytes := receiverPublicKey.ToBytesS()
 	targetShardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes)-1])
@@ -153,7 +152,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	index := uint32(0)
 	publicOTA := info.PaymentAddress.GetOTAPublicKey()
 	if publicOTA == nil {
-		return nil, errors.New("public OTA from payment address is nil")
+		return nil, fmt.Errorf("public OTA from payment address is nil")
 	}
 	publicSpend := info.PaymentAddress.GetPublicSpend()
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
@@ -180,15 +179,6 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	return c, nil
 }
 
-//nolint:revive // skip linter for this long function name
-// func CoinV2ArrayToCoinArray(coinArray []*CoinV2) []Coin {
-// 	res := make([]Coin, len(coinArray))
-// 	for i := 0; i < len(coinArray); i++ {
-// 		res[i] = coinArray[i]
-// 	}
-// 	return res
-// }
-
 func NewOTAFromReceiver(receiver key.PaymentAddress) (*operation.Point, *TxRandom, error) {
 	paymentInfo := key.InitPaymentInfo(receiver, 0, []byte{})
 	coin, err := NewCoinFromPaymentInfo(paymentInfo)
@@ -205,20 +195,20 @@ func ParseOTAInfoToString(pubKey *operation.Point, txRandom *TxRandom) (string, 
 func ParseOTAInfoFromString(pubKeyStr, txRandomStr string) (*operation.Point, *TxRandom, error) {
 	publicKeyB, version, err := base58.Base58Check{}.Decode(pubKeyStr)
 	if err != nil || version != common.ZeroByte {
-		return nil, nil, errors.New("ParseOTAInfoFromString Cannot decode base58check string")
+		return nil, nil, fmt.Errorf("parseOTAInfoFromString Cannot decode base58check string")
 	}
 	pubKey, err := new(operation.Point).FromBytesS(publicKeyB)
 	if err != nil {
-		return nil, nil, errors.New("ParseOTAInfoFromString Cannot set Point from bytes")
+		return nil, nil, fmt.Errorf("parseOTAInfoFromString Cannot set Point from bytes")
 	}
 
 	txRandomB, version, err := base58.Base58Check{}.Decode(txRandomStr)
 	if err != nil || version != common.ZeroByte {
-		return nil, nil, errors.New("ParseOTAInfoFromString Cannot decode base58check string")
+		return nil, nil, fmt.Errorf("parseOTAInfoFromString Cannot decode base58check string")
 	}
 	txRandom := new(TxRandom)
 	if err := txRandom.SetBytes(txRandomB); err != nil {
-		return nil, nil, errors.New("ParseOTAInfoFromString Cannot set txRandom from bytes")
+		return nil, nil, fmt.Errorf("parseOTAInfoFromString Cannot set txRandom from bytes")
 	}
 	return pubKey, txRandom, nil
 }

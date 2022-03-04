@@ -3,7 +3,6 @@ package coin
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -59,17 +58,15 @@ func (t TxRandom) Bytes() []byte {
 
 func (t *TxRandom) SetBytes(b []byte) error {
 	if b == nil || len(b) != TxRandomGroupSize {
-		return errors.New("Cannot SetByte to TxRandom. Input is invalid")
+		return fmt.Errorf("cannot SetByte to TxRandom. Input is invalid")
 	}
 	_, err := new(operation.Point).FromBytesS(b[:operation.Ed25519KeySize])
 	if err != nil {
-		errStr := fmt.Sprintf("Cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
-		return errors.New(errStr)
+		return fmt.Errorf("cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
 	}
 	_, err = new(operation.Point).FromBytesS(b[operation.Ed25519KeySize+4:])
 	if err != nil {
-		errStr := fmt.Sprintf("Cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
-		return errors.New(errStr)
+		return fmt.Errorf("cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
 	}
 	copy(t[:], b)
 	return nil
@@ -105,8 +102,7 @@ type CoinV2 struct {
 func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
 	keySet := new(incognitokey.KeySet)
 	if err := keySet.InitFromPrivateKey(&privKey); err != nil {
-		err := errors.New("Cannot init keyset from privateKey")
-		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, err)
+		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, fmt.Errorf("cannot init keyset from privateKey"))
 	}
 	_, txRandomOTAPoint, index, err := c.GetTxRandomDetail()
 	if err != nil {
@@ -123,8 +119,7 @@ func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar
 func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
 	k, err := c.ParsePrivateKeyOfCoin(privKey)
 	if err != nil {
-		err := errors.New("Cannot init keyset from privateKey")
-		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, err)
+		return nil, errhandler.NewPrivacyErr(errhandler.InvalidPrivateKeyErr, fmt.Errorf("cannot init keyset from privateKey"))
 	}
 	Hp := operation.HashToPoint(c.GetPublicKey().ToBytesS())
 	return new(operation.Point).ScalarMult(Hp, k), nil
@@ -139,10 +134,6 @@ func (c *CoinV2) ConcealOutputCoin(additionalData *operation.Point) error {
 		return nil
 	}
 	publicView := additionalData
-	// if !ok {
-	// 	return errors.New("Cannot conceal CoinV2 without receiver view key")
-	// }
-
 	rK := new(operation.Point).ScalarMult(publicView, c.GetSharedConcealRandom()) // rK = sharedConcealRandom * publicView
 
 	hash := operation.HashToScalar(rK.ToBytesS()) // hash(rK)
@@ -170,16 +161,14 @@ func (c *CoinV2) ConcealInputCoin() {
 // Decrypt a coin using the corresponding KeySet
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	if keySet == nil {
-		err := errors.New("Cannot Decrypt CoinV2: Keyset is empty")
-		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, fmt.Errorf("cannot Decrypt CoinV2: Keyset is empty"))
 	}
 
 	// Must parse keyImage first in any situation
 	if len(keySet.PrivateKey) > 0 {
 		keyImage, err := c.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
 		if err != nil {
-			errReturn := errors.New("Cannot parse key image with privateKey CoinV2" + err.Error())
-			return nil, errhandler.NewPrivacyErr(errhandler.ParseKeyImageWithPrivateKeyErr, errReturn)
+			return nil, errhandler.NewPrivacyErr(errhandler.ParseKeyImageWithPrivateKeyErr, fmt.Errorf("cannot parse key image with privateKey CoinV2 - %v", err))
 		}
 		c.SetKeyImage(keyImage)
 	}
@@ -190,8 +179,7 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 
 	viewKey := keySet.ReadonlyKey
 	if len(viewKey.Rk) == 0 && len(keySet.PrivateKey) == 0 {
-		err := errors.New("Cannot Decrypt CoinV2: Keyset does not contain viewkey or privatekey")
-		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, fmt.Errorf("cannot Decrypt CoinV2: Keyset does not contain viewkey or privatekey"))
 	}
 
 	if viewKey.GetPrivateView() != nil {
@@ -215,14 +203,12 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		if c.GetAssetTag() != nil {
 			com, err := ComputeCommitmentCA(c.GetAssetTag(), randomness, value)
 			if err != nil {
-				err := errors.New("Cannot recompute commitment when decrypting")
-				return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+				return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, fmt.Errorf("cannot recompute commitment when decrypting"))
 			}
 			commitment = com
 		}
 		if !operation.IsPointEqual(commitment, c.GetCommitment()) {
-			err := errors.New("Cannot Decrypt CoinV2: Commitment is not the same after decrypt")
-			return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+			return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, fmt.Errorf("cannot Decrypt CoinV2: Commitment is not the same after decrypt"))
 		}
 		c.SetRandomness(randomness)
 		c.SetAmount(value)
@@ -285,13 +271,13 @@ func (c CoinV2) GetTxRandomDetail() (*operation.Point, *operation.Point, uint32,
 	txRandomConcealPoint, err2 := c.txRandom.GetTxConcealRandomPoint()
 	index, err3 := c.txRandom.GetIndex()
 	if err1 != nil || err2 != nil || err3 != nil {
-		return nil, nil, 0, errors.New("Cannot Get TxRandom: point or index is wrong")
+		return nil, nil, 0, fmt.Errorf("cannot Get TxRandom: point or index is wrong")
 	}
 	return txRandomConcealPoint, txRandomOTAPoint, index, nil
 }
 func (c CoinV2) GetShardID() (uint8, error) {
 	if c.publicKey == nil {
-		return 255, errors.New("Cannot get GetShardID because GetPublicKey of PlainCoin is concealed")
+		return 255, fmt.Errorf("cannot get GetShardID because GetPublicKey of PlainCoin is concealed")
 	}
 	pubKeyBytes := c.publicKey.ToBytes()
 	lastByte := pubKeyBytes[operation.Ed25519KeySize-1]
@@ -418,71 +404,71 @@ func (c CoinV2) Bytes() []byte {
 func (c *CoinV2) SetBytes(coinBytes []byte) error {
 	var err error
 	if c == nil {
-		return errors.New("Cannot set bytes for unallocated CoinV2")
+		return fmt.Errorf("cannot set bytes for unallocated CoinV2")
 	}
 	if len(coinBytes) == 0 {
-		return errors.New("coinBytes is empty")
+		return fmt.Errorf("coinBytes is empty")
 	}
 	if coinBytes[0] != 2 {
-		return errors.New("coinBytes version is not 2")
+		return fmt.Errorf("coinBytes version is not 2")
 	}
 	c.SetVersion(coinBytes[0])
 
 	offset := 1
 	c.info, err = parseInfoForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 info error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 info error: %v", err)
 	}
 
 	c.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 publicKey error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 publicKey error: %v", err)
 	}
 	c.commitment, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 commitment error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 commitment error: %v", err)
 	}
 	c.keyImage, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 keyImage error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 keyImage error: %v", err)
 	}
 	c.sharedRandom, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 mask error: %v", err)
 	}
 
 	c.sharedConcealRandom, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 mask error: %v", err)
 	}
 
 	if offset >= len(coinBytes) {
-		return errors.New("Offset is larger than len(bytes), cannot parse txRandom")
+		return fmt.Errorf("offset is larger than len(bytes), cannot parse txRandom")
 	}
 	if coinBytes[offset] != TxRandomGroupSize {
-		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of TxRandomGroup is not correct")
+		return fmt.Errorf("setBytes CoinV2 TxRandomGroup error: length of TxRandomGroup is not correct")
 	}
 	offset++
 	if offset+TxRandomGroupSize > len(coinBytes) {
-		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of coinBytes is too small")
+		return fmt.Errorf("setBytes CoinV2 TxRandomGroup error: length of coinBytes is too small")
 	}
 	c.txRandom = NewTxRandom()
 	err = c.txRandom.SetBytes(coinBytes[offset : offset+TxRandomGroupSize])
 	if err != nil {
-		return errors.New("SetBytes CoinV2 TxRandomGroup error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 TxRandomGroup error: %v", err)
 	}
 	offset += TxRandomGroupSize
 
 	if err != nil {
-		return errors.New("SetBytes CoinV2 txRandom error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 txRandom error: %v", err)
 	}
 	c.mask, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 mask error: %v", err)
 	}
 	c.amount, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes CoinV2 amount error: " + err.Error())
+		return fmt.Errorf("setBytes CoinV2 amount error: %v", err)
 	}
 
 	if offset >= len(coinBytes) {
@@ -491,7 +477,7 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 	} else {
 		c.assetTag, err = parsePointForSetBytes(&coinBytes, &offset)
 		if err != nil {
-			return errors.New("SetBytes CoinV2 assetTag error: " + err.Error())
+			return fmt.Errorf("setBytes CoinV2 assetTag error: %v", err)
 		}
 	}
 	return nil

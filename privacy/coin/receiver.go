@@ -2,7 +2,6 @@ package coin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -35,7 +34,7 @@ func (recv OTAReceiver) IsValid() bool {
 
 func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 	if recv == nil {
-		return errors.New("OTAReceiver not initialized")
+		return fmt.Errorf("OTAReceiver not initialized")
 	}
 
 	targetShardID := common.GetShardIDFromLastByte(addr.Pk[len(addr.Pk)-1])
@@ -46,7 +45,7 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 	index := uint32(0)
 	publicOTA := addr.GetOTAPublicKey()
 	if publicOTA == nil {
-		return errors.New("Missing public OTA in payment address")
+		return fmt.Errorf("missing public OTA in payment address")
 	}
 	publicSpend := addr.GetPublicSpend()
 	rK := (&operation.Point{}).ScalarMult(publicOTA, otaRand)
@@ -69,7 +68,7 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Cannot generate OTAReceiver after %d attempts", MaxAttempts)
+	return fmt.Errorf("cannot generate OTAReceiver after %d attempts", MaxAttempts)
 }
 
 // FromString() returns a new OTAReceiver parsed from the input string,
@@ -104,10 +103,10 @@ func (recv OTAReceiver) Bytes() ([]byte, error) {
 
 func (recv *OTAReceiver) SetBytes(b []byte) error {
 	if len(b) == 0 {
-		return errors.New("Not enough bytes to parse ReceivingAddress")
+		return fmt.Errorf("not enough bytes to parse ReceivingAddress")
 	}
 	if recv == nil {
-		return errors.New("OTAReceiver not initialized")
+		return fmt.Errorf("OTAReceiver not initialized")
 	}
 	keyType := b[0]
 	switch keyType {
@@ -128,7 +127,7 @@ func (recv *OTAReceiver) SetBytes(b []byte) error {
 		recv.TxRandom = *txr
 		return nil
 	default:
-		return errors.New("Unrecognized prefix for ReceivingAddress")
+		return fmt.Errorf("unrecognized prefix for ReceivingAddress")
 	}
 }
 

@@ -1,9 +1,10 @@
 package bulletproofs
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/pkg/errors"
 )
 
 // ConvertIntToBinary represents a integer number in binary
@@ -69,7 +70,7 @@ func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N
 
 func innerProduct(a []*operation.Scalar, b []*operation.Scalar) (*operation.Scalar, error) {
 	if len(a) != len(b) {
-		return nil, errors.New("Incompatible sizes of a and b")
+		return nil, fmt.Errorf("incompatible sizes of a and b")
 	}
 	result := new(operation.Scalar).FromUint64(uint64(0))
 	for i := range a {
@@ -81,7 +82,7 @@ func innerProduct(a []*operation.Scalar, b []*operation.Scalar) (*operation.Scal
 
 func vectorAdd(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
 	if len(a) != len(b) {
-		return nil, errors.New("Incompatible sizes of a and b")
+		return nil, fmt.Errorf("incompatible sizes of a and b")
 	}
 	result := make([]*operation.Scalar, len(a))
 	for i := range a {
@@ -116,7 +117,7 @@ func roundUpPowTwo(v int) int {
 
 func hadamardProduct(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
 	if len(a) != len(b) {
-		return nil, errors.New("Invalid input")
+		return nil, fmt.Errorf("invalid input")
 	}
 	result := make([]*operation.Scalar, len(a))
 	for i := 0; i < len(result); i++ {
@@ -159,7 +160,7 @@ func vectorMulScalar(v []*operation.Scalar, s *operation.Scalar) []*operation.Sc
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func encodeVectors(l []*operation.Scalar, r []*operation.Scalar, g []*operation.Point, h []*operation.Point) (*operation.Point, error) {
 	if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
-		return nil, errors.New("Invalid input")
+		return nil, fmt.Errorf("invalid input")
 	}
 	tmp1 := new(operation.Point).MultiScalarMult(l, g)
 	tmp2 := new(operation.Point).MultiScalarMult(r, h)
