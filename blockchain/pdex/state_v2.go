@@ -852,7 +852,7 @@ func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
 	return *s.nftAssetTags, nil
 }
 
-func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3ExtendAccessID) (bool, error) {
+func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3ExtendedAccessID) (bool, error) {
 	var accessOTA []byte
 	switch checker.MetadataType {
 	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta, metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:

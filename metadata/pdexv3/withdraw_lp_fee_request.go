@@ -103,7 +103,7 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 	}
 	if !withdrawal.UseNft() {
-		return beaconViewRetriever.IsValidPdexv3AccessOTA(
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
 			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
 				withdrawal.PoolPairID,
 				*withdrawal.AccessID,

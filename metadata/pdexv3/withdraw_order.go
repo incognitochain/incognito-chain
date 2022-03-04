@@ -89,7 +89,7 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 		}
 	}
 	if !req.UseNft() {
-		return beaconViewRetriever.IsValidPdexv3AccessOTA(
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
 			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
 				req.PoolPairID,
 				*req.AccessID,

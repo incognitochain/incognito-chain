@@ -37,6 +37,6 @@ type StateValidator interface {
 	IsValidUnstakingAmount(tokenID, stakerID string, unstakingAmount uint64) (bool, error)
 	IsValidShareAmount(poolPairID, lpID string, shareAmount uint64) (bool, error)
 	IsValidStaker(stakingPoolID, stakerID string) (bool, error)
-	IsValidAccessOTA(metadataCommon.Pdexv3ExtendAccessID) (bool, error)
+	IsValidAccessOTA(metadataCommon.Pdexv3ExtendedAccessID) (bool, error)
 	IsValidLP(poolPairID, lpID string) (bool, error)
 }
