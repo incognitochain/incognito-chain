@@ -97,11 +97,11 @@ func (request *WithdrawLiquidityRequest) ValidateTxWithBlockChain(
 	}
 	if !request.UseNft() {
 		return beaconViewRetriever.IsValidPdexv3AccessOTA(
-			*metadataCommon.NewPdexv3AccessOTACheckerWithValue(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
 				request.poolPairID,
 				*request.AccessID,
 				request.BurntOTA.ToBytesS(),
-				metadataCommon.Pdexv3PoolPairLiquidityType,
+				metadataCommon.Pdexv3WithdrawLiquidityRequestMeta,
 				utils.EmptyString,
 			),
 		)

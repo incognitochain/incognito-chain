@@ -104,11 +104,11 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateTxWithBlockChain(
 	}
 	if !withdrawal.UseNft() {
 		return beaconViewRetriever.IsValidPdexv3AccessOTA(
-			*metadataCommon.NewPdexv3AccessOTACheckerWithValue(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
 				withdrawal.StakingPoolID,
 				*withdrawal.AccessID,
 				withdrawal.BurntOTA.ToBytesS(),
-				metadataCommon.Pdexv3StakingLiquidityType,
+				metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,
 				utils.EmptyString,
 			),
 		)

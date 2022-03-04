@@ -125,6 +125,6 @@ func (s *stateBase) NFTAssetTags() (map[string]*common.Hash, error) {
 	panic("Implement this function")
 }
 
-func (s *stateBase) IsValidAccessOTA(metadataCommon.Pdexv3AccessOTAChecker) (bool, error) {
+func (s *stateBase) IsValidAccessOTA(metadataCommon.Pdexv3ExtendAccessID) (bool, error) {
 	panic("Implement this function")
 }

@@ -97,11 +97,11 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	}
 	if !request.UseNft() {
 		return beaconViewRetriever.IsValidPdexv3AccessOTA(
-			*metadataCommon.NewPdexv3AccessOTACheckerWithValue(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
 				request.stakingPoolID,
 				*request.AccessID,
 				request.BurntOTA.ToBytesS(),
-				metadataCommon.Pdexv3StakingLiquidityType,
+				metadataCommon.Pdexv3UnstakingRequestMeta,
 				utils.EmptyString,
 			),
 		)

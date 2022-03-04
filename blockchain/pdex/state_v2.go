@@ -852,20 +852,20 @@ func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
 	return *s.nftAssetTags, nil
 }
 
-func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3AccessOTAChecker) (bool, error) {
+func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3ExtendAccessID) (bool, error) {
 	var accessOTA []byte
-	switch checker.AssetType {
-	case metadataCommon.Pdexv3PoolPairLiquidityType:
+	switch checker.MetadataType {
+	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta, metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
 		poolPair, found := s.poolPairs[checker.PoolID]
 		if !found || poolPair == nil {
 			return false, fmt.Errorf("Cannot find pool pair ID %s", checker.PoolID)
 		}
 		share, found := poolPair.Shares()[checker.AccessID.String()]
 		if !found || share == nil {
-			return false, fmt.Errorf("Cannot find nftID %s", checker.AccessID.String())
+			return false, fmt.Errorf("Cannot find accessID %s", checker.AccessID.String())
 		}
 		accessOTA = share.accessOTA
-	case metadataCommon.Pdexv3StakingLiquidityType:
+	case metadataCommon.Pdexv3UnstakingRequestMeta, metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
 		stakingPool, found := s.stakingPoolStates[checker.PoolID]
 		if stakingPool == nil || !found {
 			return false, fmt.Errorf("Cannot find stakingPoolID %s", checker.PoolID)
@@ -875,7 +875,7 @@ func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3AccessOTAChecker
 			return false, fmt.Errorf("Cannot find stakerID %s", checker.AccessID.String())
 		}
 		accessOTA = staker.accessOTA
-	case metadataCommon.Pdexv3OrderType:
+	case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
 		poolPair, found := s.poolPairs[checker.PoolID]
 		if !found || poolPair == nil {
 			return false, fmt.Errorf("Cannot find pool pair ID %s", checker.PoolID)

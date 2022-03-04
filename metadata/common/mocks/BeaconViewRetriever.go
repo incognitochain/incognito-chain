@@ -291,18 +291,18 @@ func (_m *BeaconViewRetriever) GetStakerInfo(_a0 string) (*statedb.StakerInfo, b
 }
 
 // IsValidPdexv3AccessOTA provides a mock function with given fields: _a0
-func (_m *BeaconViewRetriever) IsValidPdexv3AccessOTA(_a0 common.Pdexv3AccessOTAChecker) (bool, error) {
+func (_m *BeaconViewRetriever) IsValidPdexv3AccessOTA(_a0 common.Pdexv3ExtendAccessID) (bool, error) {
 	ret := _m.Called(_a0)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(common.Pdexv3AccessOTAChecker) bool); ok {
+	if rf, ok := ret.Get(0).(func(common.Pdexv3ExtendAccessID) bool); ok {
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Pdexv3AccessOTAChecker) error); ok {
+	if rf, ok := ret.Get(1).(func(common.Pdexv3ExtendAccessID) error); ok {
 		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)

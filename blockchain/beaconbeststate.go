@@ -623,7 +623,7 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3LP(poolPairID, lpID string)
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidLP(poolPairID, lpID)
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3AccessOTA(checker metadataCommon.Pdexv3AccessOTAChecker) (bool, error) {
+func (beaconBestState *BeaconBestState) IsValidPdexv3AccessOTA(checker metadataCommon.Pdexv3ExtendAccessID) (bool, error) {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidAccessOTA(checker)
 }
 

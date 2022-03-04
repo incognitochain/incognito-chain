@@ -114,7 +114,7 @@ type BeaconViewRetriever interface {
 	IsValidPdexv3ShareAmount(string, string, uint64) (bool, error)
 	IsValidPdexv3Staker(string, string) (bool, error)
 	IsValidPdexv3LP(string, string) (bool, error)
-	IsValidPdexv3AccessOTA(Pdexv3AccessOTAChecker) (bool, error)
+	IsValidPdexv3AccessOTA(Pdexv3ExtendAccessID) (bool, error)
 }
 
 type ShardViewRetriever interface {
@@ -474,30 +474,24 @@ func IsPdexv3Type(metadataType int) bool {
 	}
 }
 
-const (
-	Pdexv3PoolPairLiquidityType = iota
-	Pdexv3OrderType
-	Pdexv3StakingLiquidityType
-)
-
-type Pdexv3AccessOTAChecker struct {
-	PoolID    string
-	AccessID  common.Hash
-	OrderID   string
-	AccessOTA []byte
-	AssetType int
+type Pdexv3ExtendAccessID struct {
+	PoolID       string
+	AccessID     common.Hash
+	OrderID      string
+	AccessOTA    []byte
+	MetadataType int
 }
 
-func NewPdexv3AccessOTACheckerWithValue(
+func NewPdexv3ExtendAccessIDWithValue(
 	poolID string, accessID common.Hash,
-	accessOTA []byte, assetType int,
+	accessOTA []byte, metadataType int,
 	orderID string,
-) *Pdexv3AccessOTAChecker {
-	return &Pdexv3AccessOTAChecker{
-		PoolID:    poolID,
-		AccessID:  accessID,
-		AccessOTA: accessOTA,
-		AssetType: assetType,
-		OrderID:   orderID,
+) *Pdexv3ExtendAccessID {
+	return &Pdexv3ExtendAccessID{
+		PoolID:       poolID,
+		AccessID:     accessID,
+		AccessOTA:    accessOTA,
+		MetadataType: metadataType,
+		OrderID:      orderID,
 	}
 }
