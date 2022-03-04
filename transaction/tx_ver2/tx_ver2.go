@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	proto_transaction "github.com/incognitochain/incognito-chain/transaction/proto"
-	"github.com/klauspost/compress/gzip"
+	"google.golang.org/protobuf/proto"
 	"sort"
 
 	"math"
@@ -267,45 +266,45 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 // }
 
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
-func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
-	txSigPubKey := new(SigPubKey)
-	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
-	}
-	indexes := txSigPubKey.Indexes
-	n := len(indexes)
-	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
-	}
-
-	m := len(indexes[0])
-
-	ring := make([][]*privacy.Point, n)
-	for i := 0; i < n; i++ {
-		sumCommitment := new(privacy.Point).Identity()
-		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
-		row := make([]*privacy.Point, m+1)
-		for j := 0; j < m; j++ {
-			index := indexes[i][j]
-			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
-			if err != nil {
-				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
-				return nil, err
-			}
-			randomCoin := new(privacy.CoinV2)
-			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
-				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
-				return nil, err
-			}
-			row[j] = randomCoin.GetPublicKey()
-			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
-		}
-		row[m] = new(privacy.Point).Set(sumCommitment)
-		ring[i] = row
-	}
-	return mlsag.NewRing(ring), nil
-}
+// func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
+//	txSigPubKey := new(SigPubKey)
+//	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
+//		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
+//		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+//	}
+//	indexes := txSigPubKey.Indexes
+//	n := len(indexes)
+//	if n == 0 {
+//		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+//	}
+//
+//	m := len(indexes[0])
+//
+//	ring := make([][]*privacy.Point, n)
+//	for i := 0; i < n; i++ {
+//		sumCommitment := new(privacy.Point).Identity()
+//		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
+//		row := make([]*privacy.Point, m+1)
+//		for j := 0; j < m; j++ {
+//			index := indexes[i][j]
+//			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+//			if err != nil {
+//				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
+//				return nil, err
+//			}
+//			randomCoin := new(privacy.CoinV2)
+//			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
+//				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
+//				return nil, err
+//			}
+//			row[j] = randomCoin.GetPublicKey()
+//			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
+//		}
+//		row[m] = new(privacy.Point).Set(sumCommitment)
+//		ring[i] = row
+//	}
+//	return mlsag.NewRing(ring), nil
+// }
 
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
@@ -840,7 +839,7 @@ func (tx Tx) ToCompactBytes() ([]byte, error) {
 }
 
 func (tx *Tx) FromCompactBytes(data []byte) error {
-	var protoTx *proto_transaction.TxVer2
+	protoTx := new(proto_transaction.TxVer2)
 	err := proto.Unmarshal(data, protoTx)
 	if err != nil {
 		return err
@@ -859,11 +858,12 @@ func (tx Tx) toProto() (*proto_transaction.TxVer2, error) {
 	res.Type = tx.Type
 	res.LockTime = tx.LockTime
 	res.Fee = tx.Fee
-	if tx.Info == nil {
+	switch {
+	case tx.Info == nil:
 		res.Info = nil
-	} else if len(tx.Info) == 0 {
+	case len(tx.Info) == 0:
 		res.Info = utils.TxInfoPlaceHolder
-	} else {
+	default:
 		res.Info = tx.Info
 	}
 
@@ -878,16 +878,6 @@ func (tx Tx) toProto() (*proto_transaction.TxVer2, error) {
 		}
 	}
 	if tx.GetProof() != nil {
-		proofBytes := tx.Proof.Bytes()
-		var buf bytes.Buffer
-		zw := gzip.NewWriter(&buf)
-		_, err := zw.Write(proofBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		res.Proof = buf.Bytes()
-		_ = zw.Close()
 		res.Proof = tx.GetProof().Bytes()
 	}
 
@@ -896,34 +886,24 @@ func (tx Tx) toProto() (*proto_transaction.TxVer2, error) {
 
 func (tx *Tx) fromProto(protoTx *proto_transaction.TxVer2) error {
 	if len(protoTx.Proof) != 0 {
-		zr, err := gzip.NewReader(bytes.NewReader(protoTx.Proof))
-		if err != nil {
-			return err
-		}
-		proofBytes := make([]byte, utils.DefaultBytesSliceSize)
-		n, err := zr.Read(proofBytes)
-		if err != nil {
-			return err
-		}
-
 		proof := new(privacy.ProofV2)
-		err = proof.SetBytes(proofBytes[:n])
+		err := proof.SetBytes(protoTx.Proof)
 		if err != nil {
 			return err
 		}
 		tx.Proof = proof
-		_ = zr.Close()
 	}
 
 	tx.Version = int8(protoTx.Version)
 	tx.Type = protoTx.Type
 	tx.LockTime = protoTx.LockTime
 	tx.Fee = protoTx.Fee
-	if protoTx.Info == nil {
+	switch {
+	case protoTx.Info == nil:
 		tx.Info = nil
-	} else if bytes.Equal(protoTx.Info, utils.TxInfoPlaceHolder) {
+	case bytes.Equal(protoTx.Info, utils.TxInfoPlaceHolder):
 		tx.Info = []byte{}
-	} else {
+	default:
 		tx.Info = protoTx.Info
 	}
 

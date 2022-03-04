@@ -334,51 +334,51 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputShare
 	return err
 }
 
-func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee, sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
-	txSigPubKey := new(SigPubKey)
-	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
-	}
-	indexes := txSigPubKey.Indexes
-	n := len(indexes)
-	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
-	}
-
-	m := len(indexes[0])
-
-	ring := make([][]*privacy.Point, n)
-	for i := 0; i < n; i++ {
-		sumCommitment := new(privacy.Point).Identity()
-		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
-		sumAssetTags := new(privacy.Point).Identity()
-		sumAssetTags.Sub(sumAssetTags, sumOutputAssetTags)
-		row := make([]*privacy.Point, m+2)
-		for j := 0; j < m; j++ {
-			index := indexes[i][j]
-			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
-			if err != nil {
-				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
-				return nil, err
-			}
-			randomCoin := new(privacy.CoinV2)
-			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
-				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
-				return nil, err
-			}
-			row[j] = randomCoin.GetPublicKey()
-			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
-			temp := new(privacy.Point).ScalarMult(randomCoin.GetAssetTag(), numOfOutputs)
-			sumAssetTags.Add(sumAssetTags, temp)
-		}
-
-		row[m] = new(privacy.Point).Set(sumAssetTags)
-		row[m+1] = new(privacy.Point).Set(sumCommitment)
-		ring[i] = row
-	}
-	return mlsag.NewRing(ring), nil
-}
+// func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee, sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
+//	txSigPubKey := new(SigPubKey)
+//	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
+//		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
+//		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+//	}
+//	indexes := txSigPubKey.Indexes
+//	n := len(indexes)
+//	if n == 0 {
+//		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+//	}
+//
+//	m := len(indexes[0])
+//
+//	ring := make([][]*privacy.Point, n)
+//	for i := 0; i < n; i++ {
+//		sumCommitment := new(privacy.Point).Identity()
+//		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
+//		sumAssetTags := new(privacy.Point).Identity()
+//		sumAssetTags.Sub(sumAssetTags, sumOutputAssetTags)
+//		row := make([]*privacy.Point, m+2)
+//		for j := 0; j < m; j++ {
+//			index := indexes[i][j]
+//			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
+//			if err != nil {
+//				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
+//				return nil, err
+//			}
+//			randomCoin := new(privacy.CoinV2)
+//			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
+//				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
+//				return nil, err
+//			}
+//			row[j] = randomCoin.GetPublicKey()
+//			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
+//			temp := new(privacy.Point).ScalarMult(randomCoin.GetAssetTag(), numOfOutputs)
+//			sumAssetTags.Add(sumAssetTags, temp)
+//		}
+//
+//		row[m] = new(privacy.Point).Set(sumAssetTags)
+//		row[m+1] = new(privacy.Point).Set(sumCommitment)
+//		ring[i] = row
+//	}
+//	return mlsag.NewRing(ring), nil
+// }
 
 //nolint:staticcheck // overwrite tokenID to fit existing prototype
 func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
@@ -389,7 +389,11 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	var err error
 
 	// confidential asset TX always use umbrella ID to verify
-	tokenID = &common.ConfidentialAssetID
+	err = tokenID.SetBytes(common.ConfidentialAssetID.Bytes())
+	if err != nil {
+		return false, err
+	}
+
 	// Reform Ring
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
 	sumOutputAssetTags := new(privacy.Point).Identity()

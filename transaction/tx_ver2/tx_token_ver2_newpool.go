@@ -61,9 +61,6 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 		}
 	}
 	txn := txToken.GetTxNormal()
-	if txn == nil {
-		return false, errors.Errorf("Can not get tx normal for tx %v", txToken.Hash().String())
-	}
 	proof := txn.GetProof()
 	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
 		if metaData == nil {

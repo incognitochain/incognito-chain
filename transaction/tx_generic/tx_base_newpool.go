@@ -85,13 +85,12 @@ func (tx *TxBase) ValidateSanityDataWithMetadata() (bool, error) {
 		if len(proof.GetInputCoins()) == 0 {
 			if (metaData == nil) && (tx.GetValidationEnv().TxAction() != common.TxActInit) && (tx.GetType() != common.TxTokenConversionType) {
 				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
-			} else {
-				if metaData != nil {
-					metaType := metaData.GetType()
-					if !metadata.NoInputHasOutput(metaType) {
-						return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
-					}
+			} else if metaData != nil {
+				metaType := metaData.GetType()
+				if !metadata.NoInputHasOutput(metaType) {
+					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
 				}
+
 			}
 		}
 	}
@@ -100,7 +99,7 @@ func (tx *TxBase) ValidateSanityDataWithMetadata() (bool, error) {
 
 func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
 	switch tx.Type {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType, common.TxTokenConversionType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType, common.TxConversionType, common.TxTokenConversionType: // is valid
 	default:
 		return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("wrong tx type with %s", tx.Type))
 	}
@@ -113,11 +112,11 @@ func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
 	// check tx size
 	actualTxSize := tx.GetTxActualSize()
 	if actualTxSize > common.MaxTxSize {
-		//fmt.Print(actualTxSize, common.MaxTxSize)
+		// fmt.Print(actualTxSize, common.MaxTxSize)
 		return false, utils.NewTransactionErr(utils.RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
 	}
 
-	//check version
+	// check version
 	if tx.Version > utils.TxVersion2Number {
 		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, utils.CurrentTxVersion))
 	}

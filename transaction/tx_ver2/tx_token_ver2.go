@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	proto_transaction "github.com/incognitochain/incognito-chain/transaction/proto"
-	"github.com/klauspost/compress/gzip"
-	"io/ioutil"
-
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 
@@ -1314,32 +1311,12 @@ func (txToken TxToken) ToCompactBytes() ([]byte, error) {
 		return nil, err
 	}
 
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	_, err = zw.Write(dataBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = zw.Close()
-	res := buf.Bytes()
-
-	return res, nil
+	return dataBytes, nil
 }
 
 func (txToken *TxToken) FromCompactBytes(data []byte) error {
-	zr, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-	protoTxBytes, err := ioutil.ReadAll(zr)
-	if err != nil {
-		return err
-	}
-	_ = zr.Close()
-
 	protoTx := new(proto_transaction.TxTokenVer2)
-	err = proto.Unmarshal(protoTxBytes, protoTx)
+	err := proto.Unmarshal(data, protoTx)
 	if err != nil {
 		return err
 	}
@@ -1378,9 +1355,9 @@ func (td *TxTokenDataVersion2) fromProto(protoTokenData *proto_transaction.TxTok
 
 	if len(protoTokenData.Proof) != 0 {
 		proof := new(privacy.ProofV2)
-		err = proof.SetBytes(protoTokenData.Proof)
-		if err != nil {
-			return err
+		err1 := proof.SetBytes(protoTokenData.Proof)
+		if err1 != nil {
+			return fmt.Errorf(err1.Error())
 		}
 		td.Proof = proof
 	}
