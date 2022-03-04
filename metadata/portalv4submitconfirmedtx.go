@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/golang/protobuf/proto"
+	proto_metadata "github.com/incognitochain/incognito-chain/metadata/proto"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -141,4 +144,39 @@ func (r *PortalSubmitConfirmedTxRequest) BuildReqActions(tx Transaction, chainRe
 
 func (r *PortalSubmitConfirmedTxRequest) CalculateSize() uint64 {
 	return calculateSize(r)
+}
+
+func (r PortalSubmitConfirmedTxRequest) ToCompactBytes() ([]byte, error) {
+	res := new(proto_metadata.PortalSubmitConfirmedTxMeta)
+	res.Type = int32(r.Type)
+	res.TokenID = r.TokenID
+	res.BatchID = r.BatchID
+
+	var err error
+	res.Proof, err = base64.StdEncoding.DecodeString(r.UnshieldProof)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(common.IntToBytes(r.Type), data...), nil
+}
+
+func (r *PortalSubmitConfirmedTxRequest) FromCompactBytes(data []byte) error {
+	portalSubmitMdRes := new(proto_metadata.PortalSubmitConfirmedTxMeta)
+	err := proto.Unmarshal(data, portalSubmitMdRes)
+	if err == nil && portalSubmitMdRes.Type == int32(metadataCommon.PortalV4SubmitConfirmedTxMeta) {
+		r.TokenID = portalSubmitMdRes.TokenID
+		r.Type = int(portalSubmitMdRes.Type)
+		r.BatchID = portalSubmitMdRes.BatchID
+		r.UnshieldProof = base64.StdEncoding.EncodeToString(portalSubmitMdRes.Proof)
+
+		return nil
+	}
+
+	return fmt.Errorf("not a PortalSubmitConfirmedTxRequest")
 }

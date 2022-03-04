@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	proto_metadata "github.com/incognitochain/incognito-chain/metadata/proto"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -153,4 +155,39 @@ func (shieldingReq *PortalShieldingRequest) BuildReqActions(tx Transaction, chai
 
 func (shieldingReq *PortalShieldingRequest) CalculateSize() uint64 {
 	return calculateSize(shieldingReq)
+}
+
+func (shieldingReq PortalShieldingRequest) ToCompactBytes() ([]byte, error) {
+	res := new(proto_metadata.PortalShieldRequestMeta)
+	res.Type = int32(shieldingReq.Type)
+	res.TokenID = shieldingReq.TokenID
+	res.Address = shieldingReq.IncogAddressStr
+
+	var err error
+	res.Proof, err = base64.StdEncoding.DecodeString(shieldingReq.ShieldingProof)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(common.IntToBytes(shieldingReq.Type), data...), nil
+}
+
+func (shieldingReq *PortalShieldingRequest) FromCompactBytes(data []byte) error {
+	portalShieldMdRes := new(proto_metadata.PortalShieldRequestMeta)
+	err := proto.Unmarshal(data, portalShieldMdRes)
+	if err == nil && portalShieldMdRes.Type == int32(metadataCommon.PortalV4ShieldingRequestMeta) {
+		shieldingReq.TokenID = portalShieldMdRes.TokenID
+		shieldingReq.Type = int(portalShieldMdRes.Type)
+		shieldingReq.IncogAddressStr = portalShieldMdRes.Address
+		shieldingReq.ShieldingProof = base64.StdEncoding.EncodeToString(portalShieldMdRes.Proof)
+
+		return nil
+	}
+
+	return fmt.Errorf("not a PortalShieldingRequest")
 }

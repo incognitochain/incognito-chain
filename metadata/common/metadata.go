@@ -32,6 +32,8 @@ type Metadata interface {
 	VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 	SetSharedRandom([]byte)
+	ToCompactBytes() ([]byte, error)
+	FromCompactBytes([]byte) error
 }
 
 // This is tx struct which is really saved in tx mempool
@@ -225,6 +227,9 @@ type Transaction interface {
 		bool,
 		error,
 	)
+
+	ToCompactBytes() ([]byte, error)
+	FromCompactBytes([]byte) error
 }
 
 type MintData struct {

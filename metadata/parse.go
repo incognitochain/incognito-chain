@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/common"
 
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
@@ -262,4 +263,28 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 
 	return md, nil
+}
+
+func MdFromCompactBytes(data []byte) (Metadata, error) {
+	if len(data) < 2 {
+		return nil, nil
+	}
+
+	var err error
+	var md Metadata
+	mdType := common.BytesToInt(data[:2])
+	switch mdType {
+	case IssuingETHRequestMeta, IssuingBSCRequestMeta, IssuingPLGRequestMeta,
+		IssuingPRVERC20RequestMeta, IssuingPRVBEP20RequestMeta:
+		md = &IssuingEVMRequest{}
+	case metadataCommon.PortalV4ShieldingRequestMeta:
+		md = &PortalShieldingRequest{}
+	case metadataCommon.PortalV4SubmitConfirmedTxMeta:
+		md = &PortalSubmitConfirmedTxRequest{}
+	default:
+		return ParseMetadata(data[2:])
+	}
+
+	err = md.FromCompactBytes(data[2:])
+	return md, err
 }

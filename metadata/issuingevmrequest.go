@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	proto_metadata "github.com/incognitochain/incognito-chain/metadata/proto"
 	"math/big"
 	"strconv"
 	"strings"
@@ -215,6 +217,59 @@ func (iReq *IssuingEVMRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 
 func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
+}
+
+func (iReq IssuingEVMRequest) ToCompactBytes() ([]byte, error) {
+	res := new(proto_metadata.IssuingEVMRequest)
+	res.Type = int32(iReq.Type)
+	res.TokenID = iReq.IncTokenID.GetBytes()
+	res.TxIndex = uint64(iReq.TxIndex)
+	res.BlockHash = iReq.BlockHash.Bytes()
+	proofs := make([][]byte, 0)
+	for _, proofStr := range iReq.ProofStrs {
+		proof, err := base64.StdEncoding.DecodeString(proofStr)
+		if err != nil {
+			return nil, err
+		}
+		proofs = append(proofs, proof)
+	}
+	res.Proofs = proofs
+
+	data, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(common.IntToBytes(iReq.Type), data...), nil
+}
+
+func (iReq *IssuingEVMRequest) FromCompactBytes(data []byte) error {
+	issuingEVMRequest := new(proto_metadata.IssuingEVMRequest)
+	err := proto.Unmarshal(data, issuingEVMRequest)
+	if err == nil {
+		switch issuingEVMRequest.Type {
+		case int32(IssuingBSCRequestMeta), int32(IssuingETHRequestMeta), int32(IssuingPLGRequestMeta),
+			int32(IssuingPRVERC20RequestMeta), int32(IssuingPRVBEP20RequestMeta):
+			iReq.BlockHash = rCommon.BytesToHash(issuingEVMRequest.BlockHash)
+			iReq.TxIndex = uint(issuingEVMRequest.TxIndex)
+			iReq.Type = int(issuingEVMRequest.Type)
+			tokenID := new(common.Hash)
+			err = tokenID.SetBytes(issuingEVMRequest.TokenID)
+			if err != nil {
+				return err
+			}
+			iReq.IncTokenID = *tokenID
+			proofStrs := make([]string, 0)
+			for _, proof := range issuingEVMRequest.Proofs {
+				proofStrs = append(proofStrs, base64.StdEncoding.EncodeToString(proof))
+			}
+			iReq.ProofStrs = proofStrs
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("not an IssuingEVMRequest")
 }
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {

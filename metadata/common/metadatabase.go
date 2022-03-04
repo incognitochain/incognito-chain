@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -169,4 +170,17 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetr
 
 func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
+}
+
+func (mb MetadataBase) ToCompactBytes() ([]byte, error) {
+	data, err := json.Marshal(mb)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(common.IntToBytes(mb.Type), data...), nil
+}
+
+func (mb *MetadataBase) FromCompactBytes(data []byte) error {
+	return json.Unmarshal(data, &mb)
 }
