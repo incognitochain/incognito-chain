@@ -114,6 +114,7 @@ type BeaconViewRetriever interface {
 	IsValidPdexv3ShareAmount(string, string, uint64) (bool, error)
 	IsValidPdexv3Staker(string, string) (bool, error)
 	IsValidPdexv3LP(string, string) (bool, error)
+	IsValidAccessOTAWithPdexState(Pdexv3ExtendedAccessID) (bool, error)
 }
 
 type ShardViewRetriever interface {
@@ -470,5 +471,27 @@ func IsPdexv3Type(metadataType int) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+type Pdexv3ExtendedAccessID struct {
+	PoolID       string
+	AccessID     common.Hash
+	OrderID      string
+	AccessOTA    []byte
+	MetadataType int
+}
+
+func NewPdexv3ExtendAccessIDWithValue(
+	poolID string, accessID common.Hash,
+	accessOTA []byte, metadataType int,
+	orderID string,
+) *Pdexv3ExtendedAccessID {
+	return &Pdexv3ExtendedAccessID{
+		PoolID:       poolID,
+		AccessID:     accessID,
+		AccessOTA:    accessOTA,
+		MetadataType: metadataType,
+		OrderID:      orderID,
 	}
 }

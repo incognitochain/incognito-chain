@@ -3,6 +3,7 @@ package pdex
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type stateBase struct {
@@ -121,5 +122,9 @@ func (s *stateBase) Validator() StateValidator {
 }
 
 func (s *stateBase) NFTAssetTags() (map[string]*common.Hash, error) {
+	panic("Implement this function")
+}
+
+func (s *stateBase) IsValidAccessOTA(metadataCommon.Pdexv3ExtendedAccessID) (bool, error) {
 	panic("Implement this function")
 }

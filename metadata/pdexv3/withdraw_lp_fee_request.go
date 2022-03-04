@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type WithdrawalLPFeeRequest struct {
@@ -94,7 +95,25 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
 		}
 	}
-	return beaconViewRetriever.IsValidPdexv3PoolPairID(withdrawal.PoolPairID)
+	ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(withdrawal.PoolPairID)
+	if err != nil || !ok {
+		if !ok {
+			err = fmt.Errorf("Can not find poolPairID %v", withdrawal.PoolPairID)
+		}
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if !withdrawal.UseNft() {
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
+				withdrawal.PoolPairID,
+				*withdrawal.AccessID,
+				withdrawal.BurntOTA.ToBytesS(),
+				metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+				utils.EmptyString,
+			),
+		)
+	}
+	return true, nil
 }
 
 func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(

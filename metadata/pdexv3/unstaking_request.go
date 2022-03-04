@@ -88,9 +88,25 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("Tx type must be custom token privacy type"))
 	}
-	return beaconViewRetriever.IsValidPdexv3UnstakingAmount(
-		request.stakingPoolID, accessID, request.unstakingAmount,
-	)
+	ok, err := beaconViewRetriever.IsValidPdexv3UnstakingAmount(request.stakingPoolID, accessID, request.unstakingAmount)
+	if err != nil || !ok {
+		if !ok {
+			err = fmt.Errorf("UnstakingAmount is invalid")
+		}
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if !request.UseNft() {
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
+				request.stakingPoolID,
+				*request.AccessID,
+				request.BurntOTA.ToBytesS(),
+				metadataCommon.Pdexv3UnstakingRequestMeta,
+				utils.EmptyString,
+			),
+		)
+	}
+	return true, nil
 }
 
 func (request *UnstakingRequest) ValidateSanityData(

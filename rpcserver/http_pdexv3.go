@@ -559,8 +559,34 @@ func (httpServer *HttpServer) createPdexv3WithdrawLPFeeTransaction(params interf
 		receivers[v] = otaReceiver
 	}
 
+	if mdReader.UseNft() {
+		paramSelect.SetTokenID(*mdReader.NftID)
+	} else {
+		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		if mdReader.BurntOTA == nil {
+			pdeState := beaconBestView.PdeState(pdex.AmplifierVersion)
+			poolPairs := make(map[string]*pdex.PoolPairState)
+			err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+			}
+			accessOTA := metadataPdexv3.AccessOTA{}
+			if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
+				if share, found := poolPair.Shares()[mdReader.AccessID.String()]; found {
+					if accessOTA.FromBytesS(share.AccessOTA()) != nil {
+						return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+					}
+				} else {
+					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
+				}
+			} else {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found poolPairID"))
+			}
+			mdReader.BurntOTA = &accessOTA
+		}
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
+	}
 	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
-
 	md, err := metadataPdexv3.NewPdexv3WithdrawalLPFeeRequest(
 		metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
 		mdReader.PoolPairID,
@@ -569,32 +595,6 @@ func (httpServer *HttpServer) createPdexv3WithdrawLPFeeTransaction(params interf
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	if mdReader.UseNft() {
-		paramSelect.SetTokenID(*md.NftID)
-	} else {
-		paramSelect.SetTokenID(common.PdexAccessCoinID)
-		pdeState := beaconBestView.PdeState(pdex.AmplifierVersion)
-		poolPairs := make(map[string]*pdex.PoolPairState)
-		err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-		}
-		accessOTA := metadataPdexv3.AccessOTA{}
-		if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
-			if share, found := poolPair.Shares()[mdReader.AccessID.String()]; found {
-				if accessOTA.FromBytesS(share.AccessOTA()) != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-				}
-			} else {
-				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
-			}
-		} else {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found poolPairID"))
-		}
-		md.BurntOTA = &accessOTA
-		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, accessOTA)
 	}
 	paramSelect.SetMetadata(md)
 
@@ -1015,37 +1015,38 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 		otaReceivers[v] = otaReceiverStr
 	}
 
+	bc := httpServer.pdexTxService.BlockChain
+	if mdReader.UseNft() {
+		paramSelect.SetTokenID(*mdReader.NftID)
+	} else {
+		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		if mdReader.BurntOTA == nil {
+			accessOTA := metadataPdexv3.AccessOTA{}
+			pdeState := beaconBestView.PdeState(pdex.AmplifierVersion)
+			poolPairs := make(map[string]*pdex.PoolPairState)
+			err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+			}
+			if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
+				if share, found := poolPair.Shares()[mdReader.AccessID.String()]; found {
+					if accessOTA.FromBytesS(share.AccessOTA()) != nil {
+						return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+					}
+				} else {
+					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
+				}
+			} else {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found poolPairID"))
+			}
+			mdReader.BurntOTA = &accessOTA
+		}
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
+	}
 	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
-
 	md := metadataPdexv3.NewWithdrawLiquidityRequestWithValue(
 		mdReader.PoolPairID, otaReceivers, uint64(mdReader.ShareAmount), accessOption,
 	)
-	bc := httpServer.pdexTxService.BlockChain
-	if mdReader.UseNft() {
-		paramSelect.SetTokenID(*md.NftID)
-	} else {
-		paramSelect.SetTokenID(common.PdexAccessCoinID)
-		pdeState := beaconBestView.PdeState(pdex.AmplifierVersion)
-		poolPairs := make(map[string]*pdex.PoolPairState)
-		err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-		}
-		accessOTA := metadataPdexv3.AccessOTA{}
-		if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
-			if share, found := poolPair.Shares()[mdReader.AccessID.String()]; found {
-				if accessOTA.FromBytesS(share.AccessOTA()) != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-				}
-			} else {
-				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
-			}
-		} else {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found poolPairID"))
-		}
-		md.BurntOTA = &accessOTA
-		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, accessOTA)
-	}
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -1053,7 +1054,7 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	w, _ := wallet.Base58CheckDeserialize(temp)
 	burnAddr := w.KeySet.PaymentAddress
 
-	// burn 1 governance-NFT to withdraw order
+	// burn 1 governance-NFT to withdraw liquidity
 	burnPayments := []*privacy.PaymentInfo{
 		{
 			PaymentAddress: burnAddr,
@@ -1158,7 +1159,7 @@ func (httpServer *HttpServer) createPdexv3MintNftTransaction(
 	md := metadataPdexv3.NewUserMintNftRequestWithValue(otaReceiveStr, amount)
 	paramSelect.SetMetadata(md)
 
-	// burn selling amount for order, plus fee
+	// burn selling amount for mint nft, plus fee
 	burnPayments := []*privacy.PaymentInfo{
 		{
 			PaymentAddress: burnAddr,
@@ -1622,10 +1623,6 @@ func createPdexv3WithdrawOrderRequestTransaction(
 			fmt.Errorf("Invalid WithdrawTokenIDs count %d, expect 1 or 2", len(mdReader.WithdrawTokenIDs)))
 	}
 
-	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
-		mdReader.PoolPairID, mdReader.OrderID, uint64(mdReader.Amount),
-		nil, mdReader.AccessOption, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
-
 	bc := httpServer.pdexTxService.BlockChain
 	bestState, err := bc.GetClonedBeaconBestState()
 	if err != nil {
@@ -1634,43 +1631,49 @@ func createPdexv3WithdrawOrderRequestTransaction(
 
 	tokenList := mdReader.WithdrawTokenIDs
 	if mdReader.UseNft() {
-		paramSelect.SetTokenID(*md.NftID)
-		tokenList = append(tokenList, *md.NftID)
+		paramSelect.SetTokenID(*mdReader.NftID)
+		tokenList = append(tokenList, *mdReader.NftID)
 		// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
-		if *md.NftID == common.PRVCoinID {
+		if *mdReader.NftID == common.PRVCoinID {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
 				fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
 		}
 	} else {
 		paramSelect.SetTokenID(common.PdexAccessCoinID)
 		tokenList = append(tokenList, common.PdexAccessCoinID)
-		pdeState := bestState.PdeState(pdex.AmplifierVersion)
-		poolPairs := make(map[string]*pdex.PoolPairState)
-		err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-		}
-		accessOTA := metadataPdexv3.AccessOTA{}
-		if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
-			index := -1
-			for i, order := range poolPair.Orderbook().Orders() {
-				if order.Id() == mdReader.OrderID {
-					index = i
-					if accessOTA.FromBytesS(order.AccessOTA()) != nil {
-						return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+		if mdReader.BurntOTA == nil {
+			pdeState := bestState.PdeState(pdex.AmplifierVersion)
+			poolPairs := make(map[string]*pdex.PoolPairState)
+			err = json.Unmarshal(pdeState.Reader().PoolPairs(), &poolPairs)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+			}
+			accessOTA := metadataPdexv3.AccessOTA{}
+			if poolPair, found := poolPairs[mdReader.PoolPairID]; found {
+				index := -1
+				for i, order := range poolPair.Orderbook().Orders() {
+					if order.Id() == mdReader.OrderID {
+						index = i
+						if accessOTA.FromBytesS(order.AccessOTA()) != nil {
+							return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+						}
+						break
 					}
-					break
 				}
+				if index == -1 {
+					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
+				}
+			} else {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found poolPairID"))
 			}
-			if index == -1 {
-				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
-			}
-		} else {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found poolPairID"))
+			mdReader.BurntOTA = &accessOTA
 		}
-		md.BurntOTA = &accessOTA
-		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, accessOTA)
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
 	}
+
+	md, _ := metadataPdexv3.NewWithdrawOrderRequest(
+		mdReader.PoolPairID, mdReader.OrderID, uint64(mdReader.Amount),
+		nil, mdReader.AccessOption, metadataCommon.Pdexv3WithdrawOrderRequestMeta)
 
 	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
 		tokenList, paramSelect.PRV.SenderKeySet.PaymentAddress)
@@ -1973,47 +1976,43 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 		otaReceivers[v] = otaReceiverStr
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
 
 	if mdReader.UseNft() {
 		paramSelect.SetTokenID(*mdReader.NftID)
 		// set token ID & metadata to paramSelect struct. Generate new OTAReceivers from private key
 		if *mdReader.NftID == common.PRVCoinID {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-				fmt.Errorf("Cannot use PRV for withdrawOrder TX"))
+				fmt.Errorf("Cannot use PRV for unstaking TX"))
 		}
 	} else {
 		paramSelect.SetTokenID(common.PdexAccessCoinID)
+		if mdReader.BurntOTA == nil {
+			pdeState := bestState.PdeState(pdex.AmplifierVersion)
+			accessOTA := metadataPdexv3.AccessOTA{}
+			if stakingPool, found := pdeState.Reader().StakingPools()[mdReader.StakingPoolID]; found {
+				if staker, found := stakingPool.Stakers()[mdReader.AccessID.String()]; found {
+					if accessOTA.FromBytesS(staker.AccessOTA()) != nil {
+						return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+					}
+				} else {
+					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
+				}
+			} else {
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found stakingPoolID"))
+			}
+			mdReader.BurntOTA = &accessOTA
+		}
 		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
 	}
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
 	md := metadataPdexv3.NewUnstakingRequestWithValue(
 		mdReader.StakingPoolID, otaReceivers, uint64(mdReader.Amount), *accessOption,
 	)
-	bc := httpServer.pdexTxService.BlockChain
-	bestState, err := bc.GetClonedBeaconBestState()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
-	}
-	if mdReader.UseNft() {
-		paramSelect.SetTokenID(*md.NftID)
-	} else {
-		paramSelect.SetTokenID(common.PdexAccessCoinID)
-		pdeState := bestState.PdeState(pdex.AmplifierVersion)
-		accessOTA := metadataPdexv3.AccessOTA{}
-		if stakingPool, found := pdeState.Reader().StakingPools()[mdReader.StakingPoolID]; found {
-			if staker, found := stakingPool.Stakers()[mdReader.AccessID.String()]; found {
-				if accessOTA.FromBytesS(staker.AccessOTA()) != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
-				}
-			} else {
-				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
-			}
-		} else {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found stakingPoolID"))
-		}
-		md.BurntOTA = &accessOTA
-		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, accessOTA)
-	}
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -2021,7 +2020,7 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 	w, _ := wallet.Base58CheckDeserialize(temp)
 	burnAddr := w.KeySet.PaymentAddress
 
-	// burn 1 governance-NFT to withdraw order
+	// burn 1 governance-NFT to unstaking
 	burnPayments := []*privacy.PaymentInfo{
 		{
 			PaymentAddress: burnAddr,
@@ -2283,40 +2282,40 @@ func (httpServer *HttpServer) createPdexv3WithdrawStakingRewardTransaction(param
 		receivers[v] = otaReceiver
 	}
 
-	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
-
-	md, err := metadataPdexv3.NewPdexv3WithdrawalStakingRewardRequest(
-		metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,
-		mdReader.StakingPoolID.String(),
-		*accessOption,
-		receivers,
-	)
-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	bc := httpServer.pdexTxService.BlockChain
 	if mdReader.UseNft() {
-		paramSelect.SetTokenID(*md.NftID)
+		paramSelect.SetTokenID(*mdReader.NftID)
 	} else {
 		paramSelect.SetTokenID(common.PdexAccessCoinID)
-		pdeState := beaconBestView.PdeState(pdex.AmplifierVersion)
-		accessOTA := metadataPdexv3.AccessOTA{}
-		if stakingPool, found := pdeState.Reader().StakingPools()[mdReader.StakingPoolID.String()]; found {
-			if staker, found := stakingPool.Stakers()[mdReader.AccessID.String()]; found {
-				if accessOTA.FromBytesS(staker.AccessOTA()) != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+		if mdReader.BurntOTA == nil {
+			accessOTA := metadataPdexv3.AccessOTA{}
+			pdeState := beaconBestView.PdeState(pdex.AmplifierVersion)
+			if stakingPool, found := pdeState.Reader().StakingPools()[mdReader.StakingPoolID.String()]; found {
+				if staker, found := stakingPool.Stakers()[mdReader.AccessID.String()]; found {
+					if accessOTA.FromBytesS(staker.AccessOTA()) != nil {
+						return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, err)
+					}
+				} else {
+					return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
 				}
 			} else {
-				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found acccessID"))
+				return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found stakingPoolID"))
 			}
-		} else {
-			return nil, rpcservice.NewRPCError(rpcservice.GetPdexv3StateError, errors.New("Not found stakingPoolID"))
+			mdReader.BurntOTA = &accessOTA
 		}
-		md.BurntOTA = &accessOTA
-		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, accessOTA)
+		paramSelect.UseSpecifiedInput(common.PdexAccessCoinID, *mdReader.BurntOTA)
 	}
+	accessOption := metadataPdexv3.NewAccessOptionWithValue(mdReader.BurntOTA, mdReader.NftID, mdReader.AccessID)
+	md, err := metadataPdexv3.NewPdexv3WithdrawalStakingRewardRequest(
+		metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,
+		mdReader.StakingPoolID.String(),
+		*accessOption,
+		receivers,
+	)
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -2324,7 +2323,7 @@ func (httpServer *HttpServer) createPdexv3WithdrawStakingRewardTransaction(param
 	w, _ := wallet.Base58CheckDeserialize(temp)
 	burnAddr := w.KeySet.PaymentAddress
 
-	// burn 1 governance-NFT to withdraw order
+	// burn 1 governance-NFT to withdraw staking reward
 	burnPayments := []*privacy.PaymentInfo{
 		{
 			PaymentAddress: burnAddr,
