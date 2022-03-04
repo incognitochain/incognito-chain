@@ -177,6 +177,7 @@ func (coinService CoinService) ListCachedUnspentOutputCoinsByKey(listKeyParams [
 				if tmpCoin.GetSharedRandom() != nil {
 					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 				}
+				tmp.PublicKeyBase64 = tmpCoin.GetPublicKey().ToBytesS()
 			}
 
 			item = append(item, tmp)
