@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package proto_metadata;
+
+option go_package = "proto_metadata";
+
+message PortalShieldRequestMeta {
+  int32 Type = 1;
+  string TokenID = 2;
+  string Address = 3;
+  bytes Proof = 4;
+}
+
+message PortalSubmitConfirmedTxMeta {
+  int32 Type = 1;
+  string TokenID = 2;
+  string BatchID = 3;
+  bytes Proof = 4;
+}
+
+message IssuingEVMRequest {
+  int32 Type = 1;
+  bytes BlockHash  = 2;
+  uint64 TxIndex = 3;
+  repeated bytes Proofs = 4;
+  bytes TokenID = 5;
+}
