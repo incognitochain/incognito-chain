@@ -105,11 +105,10 @@ func (bc *BlockChain) InitFeatureStat() {
 				Logger.log.Error(err)
 				continue
 			}
-			if msg == nil {
-				continue
-			}
-			if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
-				Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+			if msg != nil {
+				if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
+					Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+				}
 			}
 
 			//only after checkpoint, send feature state for  validator not in sync pool
@@ -119,11 +118,10 @@ func (bc *BlockChain) InitFeatureStat() {
 				Logger.log.Error(err)
 				continue
 			}
-			if msg == nil {
-				continue
-			}
-			if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
-				Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+			if msg != nil {
+				if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
+					Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+				}
 			}
 
 			//DefaultFeatureStat.Report()
