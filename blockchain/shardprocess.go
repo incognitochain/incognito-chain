@@ -1505,7 +1505,31 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 
 					Logger.log.Infof("store issued token %v succeeded\n", acceptedContent.IncTokenID.String())
 				}
+			case metadata.IssuingSOLRequestMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					acceptedContent, err := metadata.ParseSOLIssuingInstAcceptedContent(l[3])
+					if err != nil {
+						Logger.log.Errorf("ParseEVMIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
+						return err
+					}
+
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
+						Logger.log.Infof("eth-issued token %v existed, skip storing this token\n", acceptedContent.IncTokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, acceptedContent.IncTokenID, "",
+						"", statedb.BridgeToken, true, acceptedContent.IssuingAmount, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v\n", err)
+						return err
+					}
+
+					Logger.log.Infof("store Sol-issued token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
 			}
+
 		}
 	}
 

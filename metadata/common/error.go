@@ -25,6 +25,15 @@ const (
 	IssuingRequestBuildReqActionsError
 	IssuingRequestVerifyProofAndParseReceipt
 
+	IssuingSolReqDecodeInstructionError
+	IssuingSolReqUnmarshalJsonError
+	IssuingSolReqValidateTxWithBlockChainError
+	IssuingSolReqValidateSanityDataError
+	IssuingSolReqBuildReqActionsError
+	IssuingSolReqVerifyAndParseTxError
+
+	BurningSolReqValidateSanityDataError
+
 	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError
 	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError
 
@@ -126,6 +135,16 @@ var ErrCodeMessage = map[int]struct {
 	IssuingRequestValidateSanityDataError:       {-2005, "Validate sanity data error"},
 	IssuingRequestBuildReqActionsError:          {-2006, "Build request action error"},
 	IssuingRequestVerifyProofAndParseReceipt:    {-2007, "Verify proof and parse receipt"},
+
+	// Solana bridge
+	IssuingSolReqDecodeInstructionError:        {-2011, "Can not decode issuing sol request instruction"},
+	IssuingSolReqUnmarshalJsonError:            {-2012, "Can not unmarshal json issuing sol request instruction"},
+	IssuingSolReqValidateTxWithBlockChainError: {-2013, "Validate issuing sol request with blockchain error"},
+	IssuingSolReqValidateSanityDataError:       {-2014, "Validate sanity data issuing sol request error"},
+	IssuingSolReqBuildReqActionsError:          {-2015, "Build request action for issuing sol request error"},
+	IssuingSolReqVerifyAndParseTxError:         {-2016, "Verify and parse tx from issuing sol request error"},
+
+	BurningSolReqValidateSanityDataError: {-2017, "Validate sanity data burning sol request error"},
 
 	// -3xxx beacon block reward
 	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError:      {-3000, "Can not new beacon block reward from string"},

@@ -47,6 +47,7 @@ func collectStatefulActions(
 			metadata.IssuingPRVERC20RequestMeta,
 			metadata.IssuingPRVBEP20RequestMeta,
 			metadata.IssuingPLGRequestMeta,
+			metadata.IssuingSOLRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -277,6 +278,24 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqPLGTxsUsed = append(accumulatedValues.UniqPLGTxsUsed, uniqTx)
+				}
+
+			case metadata.IssuingSOLRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingSolBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqSOLTxsUsed,
+					"",
+					statedb.IsSOLTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqSOLTxsUsed = append(accumulatedValues.UniqSOLTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:

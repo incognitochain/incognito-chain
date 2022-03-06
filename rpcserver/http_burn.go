@@ -127,6 +127,32 @@ func (httpServer *HttpServer) handleGetBurnPLGProofForDepositToSC(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
+// handleGetSOLBurnProof returns a proof of a tx burning pSOL ( solana )
+func (httpServer *HttpServer) handleGetSOLBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningSOLConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetBurnSOLProofForDepositToSC returns a proof of a tx burning pSOL to deposit to SC
+func (httpServer *HttpServer) handleGetBurnSOLProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningSOLConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {

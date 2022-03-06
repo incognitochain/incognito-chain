@@ -202,25 +202,42 @@ const (
 
 	BurningPLGForDepositToSCRequestMeta = metadataCommon.BurningPLGForDepositToSCRequestMeta
 	BurningPLGConfirmForDepositToSCMeta = metadataCommon.BurningPLGConfirmForDepositToSCMeta
+
+	IssuingSOLRequestMeta  = metadataCommon.IssuingSOLRequestMeta
+	IssuingSOLResponseMeta = metadataCommon.IssuingSOLResponseMeta
+	BurningSOLRequestMeta  = metadataCommon.BurningSOLRequestMeta
+	BurningSOLConfirmMeta  = metadataCommon.BurningSOLConfirmMeta
+
+	BurningSOLForDepositToSCRequestMeta = metadataCommon.BurningSOLForDepositToSCRequestMeta
+	BurningSOLConfirmForDepositToSCMeta = metadataCommon.BurningSOLConfirmForDepositToSCMeta
 )
 
 // export error codes
 const (
-	UnexpectedError                                            = metadataCommon.UnexpectedError
-	IssuingEvmRequestDecodeInstructionError                    = metadataCommon.IssuingEvmRequestDecodeInstructionError
-	IssuingEvmRequestUnmarshalJsonError                        = metadataCommon.IssuingEvmRequestUnmarshalJsonError
-	IssuingEvmRequestNewIssuingEVMRequestFromMapError          = metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError
-	IssuingEvmRequestValidateTxWithBlockChainError             = metadataCommon.IssuingEvmRequestValidateTxWithBlockChainError
-	IssuingEvmRequestValidateSanityDataError                   = metadataCommon.IssuingEvmRequestValidateSanityDataError
-	IssuingEvmRequestBuildReqActionsError                      = metadataCommon.IssuingEvmRequestBuildReqActionsError
-	IssuingEvmRequestVerifyProofAndParseReceipt                = metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt
-	IssuingRequestDecodeInstructionError                       = metadataCommon.IssuingRequestDecodeInstructionError
-	IssuingRequestUnmarshalJsonError                           = metadataCommon.IssuingRequestUnmarshalJsonError
-	IssuingRequestNewIssuingRequestFromMapEror                 = metadataCommon.IssuingRequestNewIssuingRequestFromMapEror
-	IssuingRequestValidateTxWithBlockChainError                = metadataCommon.IssuingRequestValidateTxWithBlockChainError
-	IssuingRequestValidateSanityDataError                      = metadataCommon.IssuingRequestValidateSanityDataError
-	IssuingRequestBuildReqActionsError                         = metadataCommon.IssuingRequestBuildReqActionsError
-	IssuingRequestVerifyProofAndParseReceipt                   = metadataCommon.IssuingRequestVerifyProofAndParseReceipt
+	UnexpectedError                                   = metadataCommon.UnexpectedError
+	IssuingEvmRequestDecodeInstructionError           = metadataCommon.IssuingEvmRequestDecodeInstructionError
+	IssuingEvmRequestUnmarshalJsonError               = metadataCommon.IssuingEvmRequestUnmarshalJsonError
+	IssuingEvmRequestNewIssuingEVMRequestFromMapError = metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError
+	IssuingEvmRequestValidateTxWithBlockChainError    = metadataCommon.IssuingEvmRequestValidateTxWithBlockChainError
+	IssuingEvmRequestValidateSanityDataError          = metadataCommon.IssuingEvmRequestValidateSanityDataError
+	IssuingEvmRequestBuildReqActionsError             = metadataCommon.IssuingEvmRequestBuildReqActionsError
+	IssuingEvmRequestVerifyProofAndParseReceipt       = metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt
+	IssuingRequestDecodeInstructionError              = metadataCommon.IssuingRequestDecodeInstructionError
+	IssuingRequestUnmarshalJsonError                  = metadataCommon.IssuingRequestUnmarshalJsonError
+	IssuingRequestNewIssuingRequestFromMapEror        = metadataCommon.IssuingRequestNewIssuingRequestFromMapEror
+	IssuingRequestValidateTxWithBlockChainError       = metadataCommon.IssuingRequestValidateTxWithBlockChainError
+	IssuingRequestValidateSanityDataError             = metadataCommon.IssuingRequestValidateSanityDataError
+	IssuingRequestBuildReqActionsError                = metadataCommon.IssuingRequestBuildReqActionsError
+	IssuingRequestVerifyProofAndParseReceipt          = metadataCommon.IssuingRequestVerifyProofAndParseReceipt
+
+	// Solana bridge
+	IssuingSolReqDecodeInstructionError        = metadataCommon.IssuingSolReqDecodeInstructionError
+	IssuingSolReqUnmarshalJsonError            = metadataCommon.IssuingSolReqUnmarshalJsonError
+	IssuingSolReqValidateTxWithBlockChainError = metadataCommon.IssuingSolReqValidateTxWithBlockChainError
+	IssuingSolReqValidateSanityDataError       = metadataCommon.IssuingSolReqValidateSanityDataError
+	IssuingSolReqBuildReqActionsError          = metadataCommon.IssuingSolReqBuildReqActionsError
+	IssuingSolReqVerifyAndParseTxError         = metadataCommon.IssuingSolReqVerifyAndParseTxError
+
 	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError      = metadataCommon.BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError
 	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError = metadataCommon.BeaconBlockRewardBuildInstructionForBeaconBlockRewardError
 	StopAutoStakingRequestNotInCommitteeListError              = metadataCommon.StopAutoStakingRequestNotInCommitteeListError

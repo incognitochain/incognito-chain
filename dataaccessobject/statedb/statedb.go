@@ -2497,3 +2497,15 @@ func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState,
 	}
 	return NewBridgePLGTxState(), false, nil
 }
+
+// ================================= Solana bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeSOLTxState(key common.Hash) (*BridgeSOLTxState, bool, error) {
+	solTxState, err := stateDB.getStateObject(BridgeSOLTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if solTxState != nil {
+		return solTxState.GetValue().(*BridgeSOLTxState), true, nil
+	}
+	return NewBridgeSOLTxState(), false, nil
+}

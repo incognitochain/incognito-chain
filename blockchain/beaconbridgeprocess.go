@@ -46,6 +46,9 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
 
+		case strconv.Itoa(metadata.IssuingSOLRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeSolReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertSOLTxHashIssued, false)
+
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
@@ -60,6 +63,9 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 
 		case strconv.Itoa(metadata.BurningPLGConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.PLGPrefix)
+
+		case strconv.Itoa(metadata.BurningSOLConfirmMeta), strconv.Itoa(metadata.BurningSOLConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningSOLReq(bridgeStateDB, inst, updatingInfoByTokenID, "")
 
 		}
 		if err != nil {
@@ -240,6 +246,58 @@ func (blockchain *BlockChain) processContractingReq(
 	return updatingInfoByTokenID, nil
 }
 
+func (blockchain *BlockChain) processIssuingBridgeSolReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo, insertSolTxHashIssued func(*statedb.StateDB, []byte) error, isPRV bool) (map[common.Hash]metadata.UpdatingInfo, error) {
+	if len(instruction) != 4 {
+		return updatingInfoByTokenID, nil // skip the instruction
+	}
+	if instruction[2] == "rejected" {
+		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while building tx request id in bytes from string: ", err)
+			return updatingInfoByTokenID, nil
+		}
+		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while tracking bridge request with rejected status to leveldb: ", err)
+		}
+		return updatingInfoByTokenID, nil
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
+		return updatingInfoByTokenID, nil
+	}
+	var issuingSOLAcceptedInst metadata.IssuingSOLAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingSOLAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		return updatingInfoByTokenID, nil
+	}
+	err = insertSolTxHashIssued(bridgeStateDB, issuingSOLAcceptedInst.UniqExternalTx)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occured while inserting SOL tx hash issued to leveldb: ", err)
+		return updatingInfoByTokenID, nil
+	}
+
+	if !isPRV {
+		updatingInfo, found := updatingInfoByTokenID[issuingSOLAcceptedInst.IncTokenID]
+		if found {
+			updatingInfo.CountUpAmt += issuingSOLAcceptedInst.IssuingAmount
+		} else {
+			updatingInfo = metadata.UpdatingInfo{
+				CountUpAmt:      issuingSOLAcceptedInst.IssuingAmount,
+				DeductAmt:       0,
+				TokenID:         issuingSOLAcceptedInst.IncTokenID,
+				ExternalTokenID: issuingSOLAcceptedInst.ExternalTokenID,
+				IsCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[issuingSOLAcceptedInst.IncTokenID] = updatingInfo
+	}
+
+	return updatingInfoByTokenID, nil
+}
+
 func (blockchain *BlockChain) processBurningReq(
 	bridgeStateDB *statedb.StateDB,
 	instruction []string,
@@ -264,6 +322,56 @@ func (blockchain *BlockChain) processBurningReq(
 	} else {
 		amount = amt.Uint64()
 	}
+
+	incTokenID := &common.Hash{}
+	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
+
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bridgeStateDB, *incTokenID, false)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while checking whether token (%s) existed in decentralized bridge token list: %+v", incTokenID.String(), err)
+		return updatingInfoByTokenID, nil
+	}
+	if !bridgeTokenExisted {
+		Logger.log.Warnf("WARNING: token (%s) did not exist in decentralized bridge token list", incTokenID.String())
+		return updatingInfoByTokenID, nil
+	}
+
+	updatingInfo, found := updatingInfoByTokenID[*incTokenID]
+	if found {
+		updatingInfo.DeductAmt += amount
+	} else {
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:      0,
+			DeductAmt:       amount,
+			TokenID:         *incTokenID,
+			ExternalTokenID: externalTokenID,
+			IsCentralized:   false,
+		}
+	}
+	updatingInfoByTokenID[*incTokenID] = updatingInfo
+	tmpBytes, _ := json.Marshal(updatingInfo)
+	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", incTokenID.String(), string(tmpBytes))
+	return updatingInfoByTokenID, nil
+}
+
+func (blockchain *BlockChain) processBurningSOLReq(
+	bridgeStateDB *statedb.StateDB,
+	instruction []string,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+	prefix string,
+) (map[common.Hash]metadata.UpdatingInfo, error) {
+	if len(instruction) < 8 {
+		return updatingInfoByTokenID, nil // skip the instruction
+	}
+
+	externalTokenID, _, errExtToken := base58.Base58Check{}.Decode(instruction[2])
+	incTokenIDBytes, _, errIncToken := base58.Base58Check{}.Decode(instruction[6])
+	amountBytes, _, errAmount := base58.Base58Check{}.Decode(instruction[4])
+	if err := common.CheckError(errExtToken, errIncToken, errAmount); err != nil {
+		BLogger.log.Error(errors.WithStack(err))
+		return updatingInfoByTokenID, nil
+	}
+	amount := big.NewInt(0).SetBytes(amountBytes).Uint64()
 
 	incTokenID := &common.Hash{}
 	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
@@ -329,7 +437,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
-			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta {
+			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
+			metaType == metadata.IssuingSOLRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -347,6 +456,13 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		} else if metaType == metadata.IssuingResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingResponse)
+			reqTxID = meta.RequestedTxID
+			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
+			if err != nil {
+				return err
+			}
+		} else if metaType == metadata.IssuingSOLResponseMeta {
+			meta := tx.GetMetadata().(*metadata.IssuingSOLResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {

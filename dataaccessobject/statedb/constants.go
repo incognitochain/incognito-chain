@@ -77,6 +77,9 @@ const (
 	// Polygon bridge
 	BridgePLGTxObjectType = 66
 
+	// Solana bridge
+	BridgeSOLTxObjectType = 71
+
 	// pDex v3
 	Pdexv3StatusObjectType                    = 48
 	Pdexv3ParamsObjectType                    = 49

@@ -204,6 +204,36 @@ func NewBurningRequestMetadata(
 	return meta, nil
 }
 
+func NewBurningSOLRequestMetadata(
+	tokenReceivers interface{},
+	tokenID string,
+	remoteAddress string,
+	burningMetaType int,
+	bcr metadata.ChainRetriever,
+	beaconHeight uint64,
+) (*metadata.BurningSOLRequest, *RPCError) {
+	_, voutsAmount, err := CreateCustomTokenPrivacyBurningReceiverArray(tokenReceivers, bcr, beaconHeight)
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, err)
+	}
+	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, err)
+	}
+
+	meta, err := metadata.NewBurningSOLRequest(
+		uint64(voutsAmount),
+		*tokenIDHash,
+		remoteAddress,
+		burningMetaType,
+	)
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, err)
+	}
+
+	return meta, nil
+}
+
 func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
 	gethParam := config.Config().GethParam
 	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)

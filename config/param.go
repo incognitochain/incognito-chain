@@ -41,6 +41,7 @@ type param struct {
 	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
 	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
+	SolContractAddressStr            string             `mapstructure:"sol_contract_address" description:"smart contract of SOL for bridge"`
 	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
@@ -56,6 +57,7 @@ type param struct {
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	PLGParam                         plgParam           `mapstructure:"plg_param"`
+	SOLParam                         solParam           `mapstructure:"sol_param"`
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
@@ -328,5 +330,15 @@ type plgParam struct {
 func (plgParam *plgParam) GetFromEnv() {
 	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
 		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
+	}
+}
+
+type solParam struct {
+	Host string `mapstructure:"host"`
+}
+
+func (solParam *solParam) GetFromEnv() {
+	if utils.GetEnv(SOLHostKey, utils.EmptyString) != utils.EmptyString {
+		solParam.Host = utils.GetEnv(SOLHostKey, utils.EmptyString)
 	}
 }

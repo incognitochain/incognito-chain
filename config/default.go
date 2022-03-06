@@ -47,6 +47,7 @@ var MainnetParam = &param{
 	EthContractAddressStr:            "0x43D037A562099A4C2c95b1E2120cc43054450629",
 	BscContractAddressStr:            "",
 	PlgContractAddressStr:            "",
+	SolContractAddressStr:            "",
 	IncognitoDAOAddress:              "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3",
 	CentralizedWebsitePaymentAddress: "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885",
 	SwapCommitteeParam: swapCommitteeParam{
@@ -128,6 +129,7 @@ var Testnet1Param = &param{
 	EthContractAddressStr:            "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86",
 	BscContractAddressStr:            "0x1ce57B254DC2DBB41e1aeA296Dc7dBD6fb549241",
 	PlgContractAddressStr:            "",
+	SolContractAddressStr:            "",
 	IncognitoDAOAddress:              "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	CentralizedWebsitePaymentAddress: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	SwapCommitteeParam: swapCommitteeParam{
@@ -208,6 +210,7 @@ var Tesnet2Param = &param{
 	EthContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
 	BscContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
 	PlgContractAddressStr:            "",
+	SolContractAddressStr:            "",
 	IncognitoDAOAddress:              "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	CentralizedWebsitePaymentAddress: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	SwapCommitteeParam: swapCommitteeParam{
@@ -289,6 +292,7 @@ var LocalParam = &param{
 	EthContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
 	BscContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
 	PlgContractAddressStr:            "",
+	SolContractAddressStr:            "",
 	IncognitoDAOAddress:              "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	CentralizedWebsitePaymentAddress: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	SwapCommitteeParam: swapCommitteeParam{
@@ -370,6 +374,7 @@ var LocalDCSParam = &param{
 	EthContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
 	BscContractAddressStr:            "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7",
 	PlgContractAddressStr:            "",
+	SolContractAddressStr:            "",
 	IncognitoDAOAddress:              "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	CentralizedWebsitePaymentAddress: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 	SwapCommitteeParam: swapCommitteeParam{

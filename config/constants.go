@@ -14,6 +14,7 @@ const (
 	GethProtocolKey   = "GETH_PROTOCOL"
 	BSCHostKey        = "BSC_HOST"
 	PLGHostKey        = "PLG_HOST"
+	SOLHostKey        = "SOL_HOST"
 )
 
 // default config

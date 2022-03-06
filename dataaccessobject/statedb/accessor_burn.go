@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 

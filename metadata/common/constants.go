@@ -193,6 +193,16 @@ const (
 	// pPLG ( Polygon )
 	BurningPLGForDepositToSCRequestMeta = 330
 	BurningPLGConfirmForDepositToSCMeta = 154
+
+	// incognito mode for Solana
+	IssuingSOLRequestMeta  = 335
+	IssuingSOLResponseMeta = 336
+	BurningSOLRequestMeta  = 337
+	BurningSOLConfirmMeta  = 157
+
+	// pSOL ( Solana )
+	BurningSOLForDepositToSCRequestMeta = 338
+	BurningSOLConfirmForDepositToSCMeta = 158
 )
 
 var minerCreatedMetaTypes = []int{
@@ -204,6 +214,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingPRVERC20ResponseMeta,
 	IssuingPRVBEP20ResponseMeta,
 	IssuingPLGResponseMeta,
+	IssuingSOLResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
@@ -334,6 +345,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPBSCConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningPLGConfirmMeta),
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningSOLConfirmMeta),
+	strconv.Itoa(BurningSOLConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{

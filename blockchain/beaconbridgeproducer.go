@@ -2,20 +2,20 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/instruction"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-
 	rCommon "github.com/ethereum/go-ethereum/common"
+	solana "github.com/gagliardetto/solana-go"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
@@ -89,6 +89,16 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 		case metadata.BurningPLGForDepositToSCRequestMeta:
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmForDepositToSCMeta, inst, beaconHeight, common.PLGPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningSOLRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningSOLConfirmInst(stateDB, metadata.BurningSOLConfirmMeta, inst, beaconHeight, "")
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningSOLForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningSOLConfirmInst(stateDB, metadata.BurningSOLConfirmForDepositToSCMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -197,6 +207,69 @@ func buildBurningPRVEVMConfirmInst(
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(tokenID[:], 0x00),
 		md.RemoteAddress,
+		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+		txID.String(),
+		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
+		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
+	}, nil
+}
+
+// buildBurningSOLConfirmInst builds on beacon an instruction confirming a tx burning SOL bridge-token
+func buildBurningSOLConfirmInst(
+	stateDB *statedb.StateDB,
+	burningMetaType int,
+	inst []string,
+	height uint64,
+	prefix string,
+) ([]string, error) {
+	BLogger.log.Infof("[SOL Bridge Unshielding Producer] Build BurningSOLConfirmInst: %s", inst)
+	// Parse action and get metadata
+	var burningReqAction metadata.BurningSOLRequestAction
+	err := decodeContent(inst[1], &burningReqAction)
+	if err != nil {
+		BLogger.log.Errorf("[SOL Bridge Unshielding Producer] Decode action error: %v", err)
+		return nil, errors.Wrap(err, "invalid BurningSOLRequest")
+	}
+	md := burningReqAction.Meta
+	txID := burningReqAction.TxReqID // to prevent double-release token
+	shardID := byte(common.BridgeShardID)
+
+	// Convert to external tokenID
+	tokenID, err := findExternalTokenID(stateDB, &md.TokenID)
+	if err != nil {
+		BLogger.log.Errorf("[SOL Bridge Unshielding Producer] Can not find external token ID: %v", err)
+		return nil, err
+	}
+
+	if len(tokenID) < common.ExternalSOLTokenLength {
+		BLogger.log.Errorf("[SOL Bridge Unshielding Producer] Invalid length of external tokenID: %v", len(tokenID))
+		return nil, errors.New("invalid external token id")
+	}
+
+	prefixLen := len(prefix)
+	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
+		len(tokenID) != (common.ExternalSOLTokenLength+prefixLen) {
+		BLogger.log.Errorf("[SOL Bridge Unshielding Producer] Invalid length of external tokenID with prefix: %v", len(tokenID))
+		return nil, errors.New(fmt.Sprintf("invalid BurningSOLRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
+	}
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(md.BurningAmount)
+
+	// Convert height to big.Int to get bytes later
+	h := big.NewInt(0).SetUint64(height)
+
+	// convert remote address to hex encoding
+	remoteAddrBytes, _ := solana.PublicKeyFromBase58(md.RemoteAddress)
+	hexRemoteAddr := hex.EncodeToString(remoteAddrBytes[:])
+
+	BLogger.log.Infof("[SOL Bridge Unshielding Producer] Build BurningSOLConfirmInst completed")
+
+	return []string{
+		strconv.Itoa(burningMetaType),
+		strconv.Itoa(int(shardID)),
+		base58.Base58Check{}.Encode(tokenID, 0x00),
+		hexRemoteAddr,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
 		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),

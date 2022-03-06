@@ -262,6 +262,103 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	return append(instructions, acceptedInst), uniqTx, nil
 }
 
+func (blockchain *BlockChain) buildInstructionsForIssuingSolBridgeReq(
+	beaconBestState *BeaconBestState,
+	stateDB *statedb.StateDB,
+	contentStr string,
+	shardID byte,
+	metaType int,
+	ac *metadata.AccumulatedValues,
+	listTxUsed [][]byte,
+	prefix string,
+	isTxHashIssued func(stateDB *statedb.StateDB, uniqueTx []byte) (bool, error),
+	isPRV bool,
+) ([][]string, []byte, error) {
+	Logger.log.Info("[SOL Bridge Shielding Producer] Starting...")
+	instructions := [][]string{}
+	issuingSOLBridgeReqAction, err := metadata.ParseSOLIssuingInstContent(contentStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
+		return nil, nil, nil
+	}
+	md := issuingSOLBridgeReqAction.Meta
+	Logger.log.Infof("[SOL Bridge Shielding Producer] Processing for tx: %s, tokenid: %s", issuingSOLBridgeReqAction.TxReqID.String(), md.IncTokenID.String())
+
+	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingSOLBridgeReqAction.TxReqID.String())
+
+	uniqTx := []byte(issuingSOLBridgeReqAction.Meta.TxSigStr)
+	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
+	if isUsedInBlock {
+		Logger.log.Warn("WARNING: already issued for the hash in current block: ", uniqTx)
+		return append(instructions, rejectedInst), nil, nil
+	}
+	isIssued, err := isTxHashIssued(stateDB, uniqTx)
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
+		return append(instructions, rejectedInst), nil, nil
+	}
+	if isIssued {
+		Logger.log.Warn("WARNING: already issued for the hash in previous blocks: ", uniqTx)
+		return append(instructions, rejectedInst), nil, nil
+	}
+
+	token := append([]byte(prefix), issuingSOLBridgeReqAction.ExternalTokenID...)
+	// handle case not native token.
+	if !isPRV {
+		canProcess, err := ac.CanProcessTokenPair(token, md.IncTokenID)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		if !canProcess {
+			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
+			return append(instructions, rejectedInst), nil, nil
+		}
+		privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
+		if err != nil {
+			Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		isValid, err := statedb.CanProcessTokenPair(stateDB, token, md.IncTokenID, privacyTokenExisted)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		if !isValid {
+			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
+			return append(instructions, rejectedInst), nil, nil
+		}
+	}
+
+	addressStr := issuingSOLBridgeReqAction.ReceivingIncAddrStr
+	amount := issuingSOLBridgeReqAction.Amount
+	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while getting shard id from payment address: ", err)
+		return append(instructions, rejectedInst), nil, nil
+	}
+
+	issuingAcceptedInst := metadata.IssuingSOLAcceptedInst{
+		ShardID:             receivingShardID,
+		IssuingAmount:       amount,
+		ReceivingIncAddrStr: addressStr,
+		IncTokenID:          md.IncTokenID,
+		TxReqID:             issuingSOLBridgeReqAction.TxReqID,
+		UniqExternalTx:      uniqTx,
+		ExternalTokenID:     token,
+	}
+	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
+		return append(instructions, rejectedInst), nil, nil
+	}
+	ac.DBridgeTokenPair[md.IncTokenID.String()] = token
+
+	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes))
+	Logger.log.Info("[SOL Bridge Shielding Producer] Process finished without error...")
+	return append(instructions, acceptedInst), uniqTx, nil
+}
+
 func (blockGenerator *BlockGenerator) buildIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -366,6 +463,65 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
 		return issuingEVMRes
+	}
+
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
+}
+
+func (blockGenerator *BlockGenerator) buildSolBridgeIssuanceTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
+	metatype int,
+	isPeggedPRV bool,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[Decentralized Solana bridge token issuance] Starting...")
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of SOL accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	var issuingSOLAcceptedInst metadata.IssuingSOLAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingSOLAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling SOL accepted issuance instruction: ", err)
+		return nil, nil
+	}
+
+	if shardID != issuingSOLAcceptedInst.ShardID {
+		Logger.log.Warnf("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingSOLAcceptedInst.ShardID)
+		return nil, nil
+	}
+	key, err := wallet.Base58CheckDeserialize(issuingSOLAcceptedInst.ReceivingIncAddrStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
+		return nil, nil
+	}
+	receiver := &privacy.PaymentInfo{
+		Amount:         issuingSOLAcceptedInst.IssuingAmount,
+		PaymentAddress: key.KeySet.PaymentAddress,
+	}
+
+	issuingSOLRes := metadata.NewIssuingSOLResponse(
+		issuingSOLAcceptedInst.TxReqID,
+		issuingSOLAcceptedInst.UniqExternalTx,
+		issuingSOLAcceptedInst.ExternalTokenID,
+		metatype,
+	)
+	tokenID := issuingSOLAcceptedInst.IncTokenID
+	if !isPeggedPRV && tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
+	}
+
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			issuingSOLRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingSOLRes
 	}
 
 	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)

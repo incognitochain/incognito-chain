@@ -85,6 +85,31 @@ func IsPLGTxHashIssued(stateDB *StateDB, uniquePLGTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertSOLTxHashIssued(stateDB *StateDB, uniqueSOLTx []byte) error {
+	key := GenerateBridgeSOLTxObjectKey(uniqueSOLTx)
+	value := NewBridgeSOLTxStateWithValue(uniqueSOLTx)
+	err := stateDB.SetStateObject(BridgeSOLTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertSOLTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsSOLTxHashIssued(stateDB *StateDB, uniqueSOLTx []byte) (bool, error) {
+	key := GenerateBridgeSOLTxObjectKey(uniqueSOLTx)
+	solTxState, has, err := stateDB.getBridgeSOLTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsSOLTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(solTxState.UniqueSOLTx(), uniqueSOLTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func InsertPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) error {
 	key := GenerateBrigePRVEVMObjectKey(uniquePRVEVMTx)
 	value := NewBrigePRVEVMStateWithValue(uniquePRVEVMTx)

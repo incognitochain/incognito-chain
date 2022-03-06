@@ -37,6 +37,7 @@ const (
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
+	ErrInvalidBridgeSOLTxStateType            = "invalid bridge solana tx state type"
 	//A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -288,6 +289,10 @@ const (
 	// Polygon bridge
 	BridgeInsertPLGTxHashIssuedError
 	IsPLGTxHashIssuedError
+
+	// Solana bridge
+	BridgeInsertSOLTxHashIssuedError
+	IsSOLTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -463,6 +468,10 @@ var ErrCodeMessage = map[int]struct {
 	// polygon bridge
 	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
 	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
+
+	// solana bridge
+	BridgeInsertSOLTxHashIssuedError: {-15108, "Bridge Insert Solana Tx Hash Issued Error"},
+	IsSOLTxHashIssuedError:           {-15109, "Is Solana Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

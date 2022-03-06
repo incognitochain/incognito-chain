@@ -122,6 +122,7 @@ const (
 	BSCPrefix                 = "BSC"
 	PLGPrefix                 = "PLG"
 	ExternalBridgeTokenLength = 20
+	ExternalSOLTokenLength    = 32
 )
 
 // Bridge, PDE & Portal statuses for RPCs
