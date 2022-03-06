@@ -1085,8 +1085,32 @@ func (beaconBestState *BeaconBestState) ExtractPendingAndCommittee(validatorFrom
 			}
 		}
 	}
-
 	return userKeys, validatorString
+}
+
+func (beaconBestState *BeaconBestState) ExtractAllFinishSyncingValidators(validatorFromUserKeys []*consensus.Validator) ([]*consensus.Validator, []string) {
+	if len(validatorFromUserKeys) == 0 {
+		return []*consensus.Validator{}, []string{}
+	}
+	finishedSyncUserKeys := []*consensus.Validator{}
+	finishedSyncValidators := []string{}
+
+	for sid := 0; sid < beaconBestState.ActiveShards; sid++ {
+		syncingValidators := beaconBestState.beaconCommitteeState.GetSyncingValidators()[byte(sid)]
+		for _, v := range syncingValidators {
+			blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+			for _, userKey := range validatorFromUserKeys {
+				if blsKey == userKey.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus) {
+					finishedSyncUserKeys = append(finishedSyncUserKeys, userKey)
+					temp, _ := v.ToBase58()
+					finishedSyncValidators = append(finishedSyncValidators, temp)
+					break
+				}
+			}
+		}
+	}
+
+	return finishedSyncUserKeys, finishedSyncValidators
 }
 
 func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []*consensus.Validator, shardID byte) ([]*consensus.Validator, []string) {
@@ -1189,11 +1213,11 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
 }
 
-func (curView *BeaconBestState) getUntriggerFeature(reachCheckpoint bool) []string {
+func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []string {
 	unTriggerFeatures := []string{}
 	for f, _ := range config.Param().AutoEnableFeature {
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
-			if reachCheckpoint {
+			if afterCheckPoint {
 				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {
 					unTriggerFeatures = append(unTriggerFeatures, f)
 				}
