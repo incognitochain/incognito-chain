@@ -1135,13 +1135,9 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	signBytes := []byte{}
-	untriggerFeature := blockchain.GetBeaconBestState().getUntriggerFeature(true)
+
 	cpk := blockchain.GetBeaconBestState().beaconCommitteeState.GetAllCandidateSubstituteCommittee()
 	for _, v := range features {
-		if common.IndexOfStr(v, untriggerFeature) == -1 {
-			Logger.log.Errorf("Receive feature stat not valid checkpoint - %v", v)
-			return
-		}
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
 
