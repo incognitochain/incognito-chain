@@ -410,6 +410,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 			msgs = []string{
 				wire.CmdBlockBeacon,
 				wire.CmdMsgFinishSync,
+				wire.CmdMsgFeatureStat,
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
