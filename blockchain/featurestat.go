@@ -31,9 +31,9 @@ type FeatureReportInfo struct {
 }
 
 //filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
-func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, unTriggerFeatures []string, validators []*consensus.Validator) (*wire.MessageFeature, error) {
+func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, reportFeatures []string, validators []*consensus.Validator) (*wire.MessageFeature, error) {
 
-	if len(unTriggerFeatures) == 0 {
+	if len(reportFeatures) == 0 {
 		return nil, nil
 	}
 
@@ -49,7 +49,7 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, u
 	featureSyncSignatures := [][]byte{}
 
 	signBytes := []byte{}
-	for _, v := range unTriggerFeatures {
+	for _, v := range reportFeatures {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
 	timestamp := time.Now().Unix()
@@ -69,7 +69,7 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, u
 		return nil, nil
 	}
 	Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
-	msg := wire.NewMessageFeature(int(timestamp), featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
+	msg := wire.NewMessageFeature(int(timestamp), featureSyncValidators, featureSyncSignatures, reportFeatures)
 
 	return msg, nil
 }
@@ -98,9 +98,13 @@ func (bc *BlockChain) InitFeatureStat() {
 			//get untrigger feature
 			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
 
-			//if validator in sync pool, send feature stat for all untrigger feature, even before checkpoint
+			//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint
 			unTriggerFeatures := beaconView.getUntriggerFeature(false)
-			msg, err := CreateNewFeatureStatMessage(beaconView, true, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
+			updatedFeature := unTriggerFeatures
+			for feature, _ := range beaconView.TriggeredFeature {
+				updatedFeature = append(updatedFeature, feature)
+			}
+			msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -145,13 +149,22 @@ func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
 	stat.msg <- msg
 }
 
+//contain all trigger & untrigger feature
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
 	nodeFeatures := stat.nodes[cpk].Features
 	//get feature that beacon is checking for trigger
 	unTriggerFeatures := curView.getUntriggerFeature(false)
-	fmt.Println("IsContainLatestFeature", cpk, unTriggerFeatures, stat.nodes[cpk].Features)
+
 	//check if node contain the untriggered feature
 	for _, feature := range unTriggerFeatures {
+		if common.IndexOfStr(feature, nodeFeatures) == -1 {
+			//fmt.Println("node", cpk, "not content feature", feature, nodeFeatures, len(nodeFeatures))
+			return false
+		}
+	}
+
+	//check if node contain the untriggered feature
+	for feature, _ := range curView.TriggeredFeature {
 		if common.IndexOfStr(feature, nodeFeatures) == -1 {
 			//fmt.Println("node", cpk, "not content feature", feature, nodeFeatures, len(nodeFeatures))
 			return false

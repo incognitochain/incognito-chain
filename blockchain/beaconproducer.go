@@ -681,6 +681,7 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 			}
 		}
 	}
+
 	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(validWaitingValidator, curView.BeaconHeight)
 	instructions := [][]string{}
 
