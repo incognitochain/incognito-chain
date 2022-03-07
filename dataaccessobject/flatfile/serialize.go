@@ -14,6 +14,8 @@ import (
 	"os"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type FlatFile interface {
@@ -39,6 +41,7 @@ type FlatFileManager struct {
 	currentFile     uint64
 	currentFileSize uint64
 	lock            *sync.RWMutex
+	cacher          common.Cacher
 }
 
 type ReadInfo struct {
@@ -71,8 +74,12 @@ func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
 	return nil
 }
 
+var totalGetFile uint64 = 0
+var totalHitFile uint64 = 0
+
 func (f FlatFileManager) PasreFile(fileID uint64) (map[int]ReadInfo, error) {
 	//TODO: cache
+	fmt.Printf("[bmcachefile] hit/get %v/%v\n", totalHitFile, totalGetFile)
 	f.lock.RLock()
 	defer f.lock.RUnlock()
 	path := path.Join(f.dataDir, strconv.FormatUint(fileID, 10))
@@ -103,6 +110,7 @@ func (f FlatFileManager) PasreFile(fileID uint64) (map[int]ReadInfo, error) {
 		offset += result
 		size++
 	}
+	f.cacher.Set(fileID, readInfos, int64(size))
 	return readInfos, nil
 }
 
@@ -110,16 +118,25 @@ func (f FlatFileManager) Read(index uint64) ([]byte, error) {
 	fileID := index / f.fileSizeLimit
 	itemFileIndex := index % f.fileSizeLimit
 
-	readInfo, err := f.PasreFile(fileID)
-	if err != nil {
-		return nil, err
+	mapInfo := map[int]ReadInfo{}
+	ok := false
+	var err error
+	if v, has := f.cacher.Get(fileID); has {
+		mapInfo, ok = v.(map[int]ReadInfo)
 	}
-	if int(itemFileIndex) >= len(readInfo) {
+	if (int(itemFileIndex) >= len(mapInfo)) || (!ok) {
+		mapInfo, err = f.PasreFile(fileID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if int(itemFileIndex) >= len(mapInfo) {
 		return nil, errors.New(fmt.Sprintf("Cannot read item at index %v", index))
 	}
 
-	b := make([]byte, readInfo[int(itemFileIndex)].size)
-	_, err = readInfo[int(itemFileIndex)].fd.ReadAt(b, int64(readInfo[int(itemFileIndex)].offset))
+	b := make([]byte, mapInfo[int(itemFileIndex)].size)
+	_, err = mapInfo[int(itemFileIndex)].fd.ReadAt(b, int64(mapInfo[int(itemFileIndex)].offset))
 	if err != nil {
 		return nil, err
 	}
@@ -258,15 +275,21 @@ func (f *FlatFileManager) Append(data []byte) (uint64, error) {
 }
 
 func NewFlatFile(dir string, fileBound uint64) (*FlatFileManager, error) {
+	memCacher, err := common.NewRistrettoMemCache(common.CacheMaxCost)
+	if err != nil {
+		return nil, err
+	}
+
 	ff := &FlatFileManager{
 		dataDir:       dir,
 		fileSizeLimit: fileBound,
 		folderMap:     make(map[uint64]bool),
 		lock:          new(sync.RWMutex),
+		cacher:        memCacher,
 	}
 
 	//read all file has number  in folder -> into folderMap, sortedFolder
-	err := os.MkdirAll(dir, os.ModePerm)
+	err = os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}

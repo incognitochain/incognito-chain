@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/proto"
-	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -62,7 +61,7 @@ type BlockInfor struct {
 type BlockManager struct {
 	rDB            incdb.Database
 	fDB            flatfile.FlatFile
-	cacher         *cache.Cache
+	cacher         common.Cacher
 	locker         *sync.RWMutex
 	hashByHeight   map[byte]map[uint64][]common.Hash
 	prevHashByHash map[common.Hash]common.Hash
@@ -76,10 +75,14 @@ func NewBlockService(
 	BlockService,
 	error,
 ) {
+	mCache, err := common.NewRistrettoMemCache(common.CacheMaxCost)
+	if err != nil {
+		return nil, err
+	}
 	res := &BlockManager{
 		rDB:            rawDB,
 		fDB:            flatfileManager,
-		cacher:         &cache.Cache{},
+		cacher:         mCache,
 		locker:         &sync.RWMutex{},
 		hashByHeight:   map[byte]map[uint64][]common.Hash{},
 		prevHashByHash: map[common.Hash]common.Hash{},
@@ -135,6 +138,11 @@ func (blkM *BlockManager) GetBlockByHash(
 	error,
 ) {
 	keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
+	if v, has := blkM.cacher.Get(hash.String()); has {
+		if res, ok := v.([]byte); ok && (len(res) > 0) {
+			return res, nil
+		}
+	}
 	blkIdBytes, err := blkM.rDB.Get(keyIdx)
 	if (err != nil) || (len(blkIdBytes) == 0) {
 		return nil, errors.Errorf("Can not get index for block hash %v, got %v, error %v", hash.String(), blkIdBytes, err)
@@ -144,8 +152,6 @@ func (blkM *BlockManager) GetBlockByHash(
 		return nil, err
 	}
 	return blkM.fDB.Read(blkID)
-	// return rawBlk, err
-
 }
 
 func (blkM *BlockManager) StoreBlock(
@@ -180,6 +186,7 @@ func (blkM *BlockManager) StoreBlock(
 	blkM.hashByHeight[byte(blkCID)][blkHeight] = append(blkM.hashByHeight[byte(blkCID)][blkHeight], *blkHash)
 	blkM.prevHashByHash[*blkHash] = blkData.GetPrevHash()
 	blkM.locker.Unlock()
+	blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
 	return nil
 }
 
