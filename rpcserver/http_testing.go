@@ -167,6 +167,11 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
 		substituteValidatorStr[shardID] = tempV
 	}
+	syncingValidatorsStr := make(map[int][]string)
+	for shardID, v := range syncingValidators {
+		tempV, _ := incognitokey.CommitteeKeyListToString(v)
+		syncingValidatorsStr[int(shardID)] = tempV
+	}
 	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
 	tempStakingTx := make(map[string]string)
@@ -189,7 +194,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
-		"syncing":          syncingValidators,
+		"syncing":          syncingValidatorsStr,
 	}, nil
 }
 
@@ -446,6 +451,86 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 		"Proposer":      committee,
 		"ProposerIndex": committeIndex,
 	}, nil
+}
+
+func (httpServer *HttpServer) handleEnableFastSyncMode(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	shardSyncMode, ok := arrayParams[0].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	if shardSyncMode {
+		config.Config().SyncMode = common.STATEDB_BATCH_COMMIT_MODE
+	} else {
+		config.Config().SyncMode = common.STATEDB_ARCHIVE_MODE
+	}
+
+	return map[string]interface{}{
+		"Shard": config.Config().SyncMode,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleSetFullValidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	fullValidation, ok := arrayParams[0].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	config.Config().IsFullValidation = fullValidation
+	return map[string]interface{}{
+		"IsFullValidation": config.Config().IsFullValidation,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetRootHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+
+	tempChainID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+	chainID := int(tempChainID)
+
+	tempBlockHash, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Hash Value"))
+	}
+	blockHash := common.Hash{}.NewHashFromStr2(tempBlockHash)
+
+	if chainID == -1 {
+		res, err := blockchain.GetBeaconRootsHashByBlockHash(
+			httpServer.config.BlockChain.BeaconChain.GetChainDatabase(),
+			blockHash,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		return res, nil
+	} else {
+		res, err := blockchain.GetShardRootsHashByBlockHash(
+			httpServer.config.BlockChain.ShardChain[chainID].GetChainDatabase(),
+			byte(chainID),
+			blockHash,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		return res, nil
+	}
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

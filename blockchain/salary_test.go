@@ -525,8 +525,8 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 			if err := blockchain.addShardRewardRequestToBeacon(tt.args.beaconBlock, sDB); (err != nil) != tt.wantErr {
 				t.Errorf("addShardRewardRequestToBeacon() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			rootHash, _ := sDB.Commit(true)
-			_ = sDB.Database().TrieDB().Commit(rootHash, false)
+			rootHash, _, _ := sDB.Commit(true)
+			_ = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		})
 	}
 	reward, err := statedb.GetRewardOfShardByEpoch(sDB, 1, 0, common.PRVCoinID)

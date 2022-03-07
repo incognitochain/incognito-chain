@@ -3,8 +3,8 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"io/ioutil"
 	"log"
 	"math"
@@ -23,7 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -121,12 +120,7 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		log.Fatal("Could not open persist database connection", err)
 	}
-	bc = blockchain.NewBlockChain(&blockchain.Config{
-		DataBase:      db,
-		PubSubManager: pbMempool,
-		ChainParams:   &blockchain.ChainTestParam,
-		MemCache:      memcache.New(),
-	}, true)
+	bc = blockchain.NewBlockChain(true)
 	bc.BestState = &blockchain.BestState{
 		Beacon: &blockchain.BeaconBestState{},
 		Shard:  make(map[byte]*blockchain.ShardBestState),
@@ -236,8 +230,8 @@ func initTx(amount string, privateKey string, db incdb.Database) []metadata.Tran
 
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func chooseBestOutCoinsToSpent(outCoins []coin.PlainCoin, amount uint64) (resultOutputCoins []coin.PlainCoin,
-																		remainOutputCoins []coin.PlainCoin,
-																		totalResultOutputCoinAmount uint64, err error) {
+	remainOutputCoins []coin.PlainCoin,
+	totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]coin.PlainCoin, 0)
 	remainOutputCoins = make([]coin.PlainCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)

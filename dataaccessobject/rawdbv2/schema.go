@@ -44,6 +44,12 @@ var (
 	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
+
+	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
+
+	//repair state
+	flatFileStateObjectIndexPrefix = []byte("ff-sob-" + string(splitter))
+	fullSyncPivotBlockKey          = []byte("Full-Sync-Latest-Pivot-Block")
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -418,4 +424,29 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 	valueHash := common.HashH(valueToBeHashed)
 
 	return append(prefixHash, valueHash[:][:txBySerialNumberPrefixKeyLength]...)
+}
+
+// preimageKey = PreimagePrefix + hash
+func preimageKey(hash common.Hash) []byte {
+	temp := make([]byte, len(PreimagePrefix))
+	copy(temp, PreimagePrefix)
+	return append(temp, hash.Bytes()...)
+}
+
+func GetFlatFileStateObjectIndexKey(hash common.Hash) []byte {
+
+	temp := make([]byte, len(flatFileStateObjectIndexPrefix))
+	copy(temp, flatFileStateObjectIndexPrefix)
+
+	return append(temp, hash[:]...)
+}
+
+func GetFullSyncPivotBlockKey(shardID byte) []byte {
+
+	temp := make([]byte, len(fullSyncPivotBlockKey))
+	copy(temp, fullSyncPivotBlockKey)
+
+	temp = append(temp, shardID)
+
+	return temp
 }

@@ -27,8 +27,8 @@ func TestStoreAndGetBeaconCommittee(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, _ := sDB.Commit(true)
-	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -61,8 +61,8 @@ func TestStoreAndGetShardCommittee(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, _ := sDB.Commit(true)
-	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -96,8 +96,8 @@ func TestDeleteOneShardCommittee(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, _ := sDB.Commit(true)
-	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -107,8 +107,8 @@ func TestDeleteOneShardCommittee(t *testing.T) {
 	if err2 != nil {
 		t.Fatal(err2)
 	}
-	rootHash2, _ := sDB.Commit(true)
-	err3 := sDB.Database().TrieDB().Commit(rootHash2, false)
+	rootHash2, _, _ := sDB.Commit(true)
+	err3 := sDB.Database().TrieDB().Commit(rootHash2, false, nil)
 	if err3 != nil {
 		t.Fatal(err3)
 	}
@@ -148,8 +148,8 @@ func TestDeleteBeaconCommittee(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, _ := sDB.Commit(true)
-	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -159,8 +159,8 @@ func TestDeleteBeaconCommittee(t *testing.T) {
 	if err2 != nil {
 		t.Fatal(err2)
 	}
-	rootHash2, _ := sDB.Commit(true)
-	err3 := sDB.Database().TrieDB().Commit(rootHash2, false)
+	rootHash2, _, _ := sDB.Commit(true)
+	err3 := sDB.Database().TrieDB().Commit(rootHash2, false, nil)
 	if err3 != nil {
 		t.Fatal(err3)
 	}
@@ -210,8 +210,8 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, _ := sDB.Commit(true)
-	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -307,11 +307,11 @@ func TestStoreSlashingCommittee(t *testing.T) {
 			if err := StoreSlashingCommittee(tt.args.stateDB, tt.args.epoch, tt.args.slashingCommittees); (err != nil) != tt.wantErr {
 				t.Errorf("StoreSlashingCommittee() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			rootHash, err := tt.args.stateDB.Commit(true)
+			rootHash, _, err := tt.args.stateDB.Commit(true)
 			if err != nil {
 				t.Errorf("tt.args.stateDB.Commit() error = %v, wantErr %v", err, nil)
 			}
-			err1 := tt.args.stateDB.Database().TrieDB().Commit(rootHash, false)
+			err1 := tt.args.stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 			if err1 != nil {
 				t.Errorf("tt.args.stateDB.Commit() error = %v, wantErr %v", err1, nil)
 			}
@@ -366,8 +366,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, _ := sDB.Commit(true)
-	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -383,8 +383,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		rootHash, _ := sDB.Commit(true)
-		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -395,8 +395,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rootHash, _ = sDB.Commit(true)
-		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -413,8 +413,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		rootHash, _ := sDB.Commit(true)
-		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -427,8 +427,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rootHash, _ = sDB.Commit(true)
-		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -447,8 +447,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		rootHash, _ := sDB.Commit(true)
-		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -460,8 +460,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rootHash, _ = sDB.Commit(true)
-		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -480,8 +480,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		rootHash, _ := sDB.Commit(true)
-		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -495,8 +495,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rootHash, _ = sDB.Commit(true)
-		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -515,8 +515,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		rootHash, _ := sDB.Commit(true)
-		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -530,8 +530,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rootHash, _ = sDB.Commit(true)
-		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -550,8 +550,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		rootHash, _ := sDB.Commit(true)
-		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}
@@ -565,8 +565,8 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rootHash, _ = sDB.Commit(true)
-		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		rootHash, _, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err1 != nil {
 			t.Fatal(err1)
 		}

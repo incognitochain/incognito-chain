@@ -1,6 +1,7 @@
 package trie
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -10,7 +11,7 @@ import (
 // increase the access time.
 //
 // Contrary to a regular trie, a SecureTrie can only be created with
-// New and must have an attached database. The database also stores
+// New and must have an attached IntermediateWriter. The IntermediateWriter also stores
 // the preimage of each key.
 //
 // SecureTrie is not safe for concurrent use.
@@ -21,22 +22,22 @@ type SecureTrie struct {
 	secKeyCacheOwner *SecureTrie // Pointer to self, replace the key cache on mismatch
 }
 
-// NewSecure creates a trie with an existing root node from a backing database
+// NewSecure creates a trie with an existing root node from a backing IntermediateWriter
 // and optional intermediate in-memory node pool.
 //
 // If root is the zero hash or the sha3 hash of an empty string, the
-// trie is initially empty. Otherwise, New will panic if iw is nil
+// trie is initially empty. Otherwise, New will panic if db is nil
 // and returns MissingNodeError if the root node cannot be found.
 //
-// Accessing the trie loads nodes from the database or node pool on demand.
+// Accessing the trie loads nodes from the IntermediateWriter or node pool on demand.
 // Loaded nodes are kept around until their 'cache generation' expires.
 // A new cache generation is created by each call to Commit.
 // cachelimit sets the number of past cache generations to keep.
-func NewSecure(root common.Hash, intermediateWriter *IntermediateWriter) (*SecureTrie, error) {
-	if intermediateWriter == nil {
-		panic("trie.NewSecure called without a database")
+func NewSecure(root common.Hash, iw *IntermediateWriter) (*SecureTrie, error) {
+	if iw == nil {
+		panic("trie.NewSecure called without a IntermediateWriter")
 	}
-	trie, err := New(root, intermediateWriter)
+	trie, err := New(root, iw)
 	if err != nil {
 		return nil, err
 	}
@@ -48,16 +49,22 @@ func NewSecure(root common.Hash, intermediateWriter *IntermediateWriter) (*Secur
 func (t *SecureTrie) Get(key []byte) []byte {
 	res, err := t.TryGet(key)
 	if err != nil {
-		Logger.log.Errorf("Unhandled trie error: %v", err)
+		Logger.log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
 	}
 	return res
 }
 
 // TryGet returns the value for key stored in the trie.
 // The value bytes must not be modified by the caller.
-// If a node was not found in the database, a MissingNodeError is returned.
+// If a node was not found in the IntermediateWriter, a MissingNodeError is returned.
 func (t *SecureTrie) TryGet(key []byte) ([]byte, error) {
 	return t.trie.TryGet(t.hashKey(key))
+}
+
+// TryGetNode attempts to retrieve a trie node by compact-encoded path. It is not
+// possible to use keybyte-encoding as the path might contain odd nibbles.
+func (t *SecureTrie) TryGetNode(path []byte) ([]byte, int, error) {
+	return t.trie.TryGetNode(path)
 }
 
 // Update associates key with value in the trie. Subsequent calls to
@@ -68,7 +75,7 @@ func (t *SecureTrie) TryGet(key []byte) ([]byte, error) {
 // stored in the trie.
 func (t *SecureTrie) Update(key, value []byte) {
 	if err := t.TryUpdate(key, value); err != nil {
-		Logger.log.Error("Unhandled trie error: %v", err)
+		Logger.log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
 	}
 }
 
@@ -79,7 +86,7 @@ func (t *SecureTrie) Update(key, value []byte) {
 // The value bytes must not be modified by the caller while they are
 // stored in the trie.
 //
-// If a node was not found in the database, a MissingNodeError is returned.
+// If a node was not found in the IntermediateWriter, a MissingNodeError is returned.
 func (t *SecureTrie) TryUpdate(key, value []byte) error {
 	hk := t.hashKey(key)
 	err := t.trie.TryUpdate(hk, value)
@@ -93,12 +100,12 @@ func (t *SecureTrie) TryUpdate(key, value []byte) error {
 // Delete removes any existing value for key from the trie.
 func (t *SecureTrie) Delete(key []byte) {
 	if err := t.TryDelete(key); err != nil {
-		Logger.log.Error("Unhandled trie error: %v", err)
+		Logger.log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
 	}
 }
 
 // TryDelete removes any existing value for key from the trie.
-// If a node was not found in the database, a MissingNodeError is returned.
+// If a node was not found in the IntermediateWriter, a MissingNodeError is returned.
 func (t *SecureTrie) TryDelete(key []byte) error {
 	hk := t.hashKey(key)
 	delete(t.getSecKeyCache(), string(hk))
@@ -111,32 +118,32 @@ func (t *SecureTrie) GetKey(shaKey []byte) []byte {
 	if key, ok := t.getSecKeyCache()[string(shaKey)]; ok {
 		return key
 	}
-	key, _ := t.trie.iw.preimage(common.BytesToHash(shaKey))
-	return key
+	return t.trie.iw.preimage(common.BytesToHash(shaKey))
 }
 
-// Commit writes all nodes and the secure hash pre-images to the trie's database.
+// Commit writes all nodes and the secure hash pre-images to the trie's IntermediateWriter.
 // Nodes are stored with their sha3 hash as the key.
 //
 // Committing flushes nodes from memory. Subsequent Get calls will load nodes
-// from the database.
-func (t *SecureTrie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
-	// Write all the pre-images to the actual disk database
+// from the IntermediateWriter.
+func (t *SecureTrie) Commit(onleaf LeafCallback) (common.Hash, int, error) {
+	// Write all the pre-images to the actual disk IntermediateWriter
 	if len(t.getSecKeyCache()) > 0 {
-		t.trie.iw.lock.Lock()
-		for hk, key := range t.secKeyCache {
-			t.trie.iw.insertPreimage(common.BytesToHash([]byte(hk)), key)
+		if t.trie.iw.preimages != nil { // Ugly direct check but avoids the below write lock
+			t.trie.iw.lock.Lock()
+			for hk, key := range t.secKeyCache {
+				t.trie.iw.insertPreimage(common.BytesToHash([]byte(hk)), key)
+			}
+			t.trie.iw.lock.Unlock()
 		}
-		t.trie.iw.lock.Unlock()
-
 		t.secKeyCache = make(map[string][]byte)
 	}
-	// Commit the trie to its intermediate node database
+	// Commit the trie to its intermediate node IntermediateWriter
 	return t.trie.Commit(onleaf)
 }
 
 // Hash returns the root hash of SecureTrie. It does not write to the
-// database and can be used even if the trie doesn't have one.
+// IntermediateWriter and can be used even if the trie doesn't have one.
 func (t *SecureTrie) Hash() common.Hash {
 	return t.trie.Hash()
 }
@@ -157,12 +164,12 @@ func (t *SecureTrie) NodeIterator(start []byte) NodeIterator {
 // The caller must not hold onto the return value because it will become
 // invalid on the next call to hashKey or secKey.
 func (t *SecureTrie) hashKey(key []byte) []byte {
-	h := newHasher(nil)
+	h := newHasher(false)
 	h.sha.Reset()
 	h.sha.Write(key)
-	buf := h.sha.Sum(t.hashKeyBuf[:0])
+	h.sha.Read(t.hashKeyBuf[:])
 	returnHasherToPool(h)
-	return buf
+	return t.hashKeyBuf[:]
 }
 
 // getSecKeyCache returns the current secure key cache, creating a new one if

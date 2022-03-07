@@ -1,12 +1,20 @@
 package statedb
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/prque"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"log"
 	"math/big"
+	"path"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/metrics"
@@ -18,6 +26,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BatchCommitConfig struct {
+	triegc            *prque.Prque // Priority queue mapping block numbers to tries to gc
+	blockTrieInMemory uint64
+	trieNodeLimit     common.StorageSize
+	trieImgsLimit     common.StorageSize
+	flatFile          FlatFile
+}
+
+func NewBatchCommitConfig(flatFile FlatFile) *BatchCommitConfig {
+	return &BatchCommitConfig{
+		triegc:            prque.New(nil),
+		flatFile:          flatFile,
+		blockTrieInMemory: config.Param().BatchCommitSyncModeParam.BlockTrieInMemory,
+		trieNodeLimit:     config.Param().BatchCommitSyncModeParam.TrieNodeLimit,
+		trieImgsLimit:     config.Param().BatchCommitSyncModeParam.TrieImgsLimit,
+	}
+}
+
 // StateDBs within the incognito protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -25,9 +51,15 @@ import (
 type StateDB struct {
 	liteStateDB *LiteStateDB
 
-	db   DatabaseAccessWarper
-	trie Trie
-	//rawdb incdb.Database
+	db                DatabaseAccessWarper
+	trie              Trie
+	dbName            string
+	mode              string
+	batchCommitConfig *BatchCommitConfig
+
+	//rebuild string of current stateDB
+	curRebuildString string
+
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
@@ -38,13 +70,193 @@ type StateDB struct {
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
-	dbErr error
+	dbErr  error
+	logger dataaccessobject.DAOLogger
 
 	// Measurements gathered during execution for debugging purposes
 	StateObjectReads   time.Duration
 	StateObjectHashes  time.Duration
 	StateObjectUpdates time.Duration
 	StateObjectCommits time.Duration
+}
+
+func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, int, error) {
+	rebuildRootInfo := strings.Split(rebuildRoot, "-")
+	rootHash, err := common.Hash{}.NewHashFromStr(rebuildRootInfo[0])
+	if err != nil {
+		return common.Hash{}, "", 0, err
+	}
+	mode := common.STATEDB_ARCHIVE_MODE
+
+	if len(rebuildRootInfo) > 1 {
+		mode = rebuildRootInfo[1]
+	}
+	ffIndex := 0
+	if len(rebuildRootInfo) == 3 {
+		var err error
+		ffIndex, err = strconv.Atoi(rebuildRootInfo[2])
+		if err != nil {
+			return common.Hash{}, "", 0, err
+		}
+	}
+	return *rootHash, mode, ffIndex, nil
+}
+func NewBatchCommitStateDB(rootDir string, dbName string, db incdb.Database, rootHash common.Hash) (*StateDB, error) {
+	//create ff manager
+	ffDir := path.Join(rootDir, fmt.Sprintf("state_%v", dbName))
+	ff, err := flatfile.NewFlatFile(ffDir, 5000)
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot create flatfile")
+	}
+
+	//create stateDB batch commit mode
+	trieDBWrapper := NewDatabaseAccessWarper(db)
+	stateDB, err := NewWithPrefixTrie(rootHash, trieDBWrapper)
+	if err != nil {
+		return nil, err
+	}
+	stateDB.mode = common.STATEDB_BATCH_COMMIT_MODE
+	stateDB.dbName = dbName
+	stateDB.batchCommitConfig = NewBatchCommitConfig(ff)
+
+	return stateDB, nil
+}
+
+// New return a new statedb attach with a state root
+// input the rebuildRootData (commit hash, ffindex)
+func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData string, pivotState *StateDB) (*StateDB, error) {
+
+	rootDir := db.GetPath()
+	trieDBWrapper := NewDatabaseAccessWarper(db)
+	metrics.EnabledExpensive = true
+	rebuildRoot, rebuildMode, rebuildIndex, _ := getRebuildRootInfo(rebuildRootData)
+	switch mode {
+	case common.STATEDB_ARCHIVE_MODE:
+		//what if rebuildMode is batch, lite
+		if rebuildMode == common.STATEDB_LITE_MODE {
+			return nil, errors.New("Litemode is already initiated")
+		}
+		if rebuildMode == common.STATEDB_BATCH_COMMIT_MODE {
+			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootData, pivotState)
+			if stateDB != nil {
+				stateDB.mode = common.STATEDB_ARCHIVE_MODE
+			}
+			return stateDB, err
+		}
+
+		//create ff manager, only for checking ff size
+		ffDir := path.Join(rootDir, fmt.Sprintf("state_%v", dbName))
+		ff, err := flatfile.NewFlatFile(ffDir, 5000)
+		if err != nil {
+			return nil, errors.Wrap(err, "Cannot create flatfile")
+		}
+
+		if rebuildRootData == "" {
+			archiveStateDB, err := NewWithPrefixTrie(common.EmptyRoot, trieDBWrapper)
+			if archiveStateDB != nil {
+				archiveStateDB.mode = common.STATEDB_ARCHIVE_MODE
+			}
+			archiveStateDB.batchCommitConfig = NewBatchCommitConfig(ff)
+			return archiveStateDB, err
+		}
+
+		root, _, _, err := getRebuildRootInfo(rebuildRootData)
+		if err != nil {
+			return nil, err
+		}
+
+		archiveStateDB, err := NewWithPrefixTrie(root, trieDBWrapper)
+		if archiveStateDB != nil {
+			archiveStateDB.mode = common.STATEDB_ARCHIVE_MODE
+		}
+		archiveStateDB.batchCommitConfig = NewBatchCommitConfig(ff)
+		return archiveStateDB, err
+
+	case common.STATEDB_BATCH_COMMIT_MODE:
+
+		//create new stateDB from beginning
+		if rebuildRootData == "" {
+			return NewBatchCommitStateDB(rootDir, dbName, db, common.EmptyRoot)
+		}
+
+		//if rebuild Root is archive, then we directly build from that rebuildRoot
+		if rebuildMode == common.STATEDB_ARCHIVE_MODE || rebuildMode == "" {
+			//store pivot point at this state, so that we can rebuild batch commit, at this state
+			stateDB, err := NewBatchCommitStateDB(rootDir, dbName, db, rebuildRoot)
+			if stateDB != nil {
+				ffSize := stateDB.batchCommitConfig.flatFile.Size()
+				if err := StoreLatestPivotCommit(db, stateDB.dbName, fmt.Sprintf("%v-%v", rebuildRoot.String(), ffSize-1)); err != nil {
+					return nil, err
+				}
+			}
+
+			return stateDB, err
+		}
+
+		//else rebuild from state
+		//if pivotState nil, rebuild it
+		var pivotIndex = 0
+		var err error
+		//fmt.Println("=====> pivotState ", pivotState != nil)
+		if pivotState == nil {
+			//get last pivot state
+			var pivotCommit *common.Hash
+			pivotCommit, pivotIndex, err = GetLatestPivotCommitInfo(db, dbName)
+			if pivotIndex > rebuildIndex {
+				return nil, errors.New("Cannot Rebuild! Index is less than pivot index")
+			}
+			//fmt.Println("=====> pivotState", pivotCommit.String(), pivotIndex, rebuildIndex)
+			//rebuild pivotState
+			pivotState, err = NewBatchCommitStateDB(rootDir, dbName, db, *pivotCommit)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			_, _, pivotIndex, err = getRebuildRootInfo(pivotState.curRebuildString)
+			if err != nil {
+				return nil, err
+			}
+		}
+		//replay state object to rebuild to expected state
+		stateSeries, err := pivotState.GetStateObjectFromBranch(rebuildIndex, pivotIndex)
+		if err != nil {
+			return nil, err
+		}
+		newState := pivotState.Copy()
+		for i, stateObjects := range stateSeries {
+			//newStateRoot, _ := newState.IntermediateRoot(true)
+			fmt.Println("replay", i, len(stateObjects))
+			for objKey, obj := range stateObjects {
+				if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
+					return nil, err
+				}
+				if obj.IsDeleted() {
+					newState.MarkDeleteStateObject(obj.GetType(), objKey)
+				}
+			}
+		}
+		newStateRoot, _ := newState.IntermediateRoot(true)
+		if err != nil {
+			return nil, err
+		}
+
+		//check if we have expect rebuild root
+		fmt.Println("==================> compare", newStateRoot.String(), rebuildRoot.String())
+		if newStateRoot.String() != rebuildRoot.String() {
+			return nil, errors.New("Cannot rebuild correct root")
+		}
+
+		newState.curRebuildString = fmt.Sprintf("%v-%v-%v", rebuildRoot, common.STATEDB_BATCH_COMMIT_MODE, rebuildIndex)
+		return newState, nil
+
+	case common.STATEDB_LITE_MODE:
+		if rebuildMode != common.STATEDB_LITE_MODE {
+			return nil, errors.New("Must run with lite mode")
+		}
+		return NewLiteStateDB(rootDir, dbName, rebuildRootData, db)
+	default:
+		return nil, errors.New("Cannot recognize statedb mode")
+	}
 }
 
 // New return a new statedb attach with a state root
@@ -54,13 +266,21 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 		return nil, err
 	}
 	metrics.EnabledExpensive = true
+
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
+		mode:                common.STATEDB_ARCHIVE_MODE,
+		batchCommitConfig:   nil,
+		logger:              dataaccessobject.Logger,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}, nil
+}
+
+func (stateDB *StateDB) GetMode() string {
+	return stateDB.mode
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -95,102 +315,14 @@ func (stateDB *StateDB) ClearObjects() {
 	stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
 }
 
-// IntermediateRoot computes the current root hash of the state trie.
-// It is called in between transactions to get the root hash that
-// goes into transaction receipts.
-func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
-	for addr := range stateDB.stateObjectsPending {
-		obj := stateDB.stateObjects[addr]
-		if obj.IsDeleted() {
-			stateDB.deleteStateObject(obj)
-		} else {
-			stateDB.updateStateObject(obj)
-		}
-	}
-	if len(stateDB.stateObjectsPending) > 0 {
-		stateDB.stateObjectsPending = make(map[common.Hash]struct{})
-	}
-	// Track the amount of time wasted on hashing the account trie
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
-	}
-	return stateDB.trie.Hash()
-}
-func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
-	for _, object := range stateDB.stateObjects {
-		if object.IsEmpty() {
-			object.MarkDelete()
-		}
-	}
-}
-
-//this only work for lite statedb, flush finalized key value to DB, and truncate branch
-func (stateDB *StateDB) Finalized(db incdb.KeyValueWriter, rootHash common.Hash) error {
-	if stateDB.liteStateDB == nil {
-		return errors.New("Must be use with liteStateDB")
-	}
-	return stateDB.liteStateDB.Finalized(db, rootHash)
-}
-
-// Commit writes the state to the underlying in-memory trie database.
-func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
-	if stateDB.liteStateDB != nil {
-		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
-			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				return common.EmptyRoot, nil
-			}
-			return *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash, nil
-		}
-		h, err := stateDB.liteStateDB.Commit()
-		if err != nil {
-			return common.Hash{}, err
-		}
-		stateDB.liteStateDB.NewStateNode()
-		return h, nil
-	}
-
-	// Finalize any pending changes and merge everything into the tries
-	//if metrics.EnabledExpensive {
-	//	defer func(start time.Time) {
-	//		elapsed := time.Since(start)
-	//		stateDB.StateObjectCommits += elapsed
-	//		dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
-	//	}(time.Now())
-	//}
-	stateDB.IntermediateRoot(deleteEmptyObjects)
-
-	if len(stateDB.stateObjectsDirty) > 0 {
-		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
-	}
-	// Write the account trie changes, measuing the amount of wasted time
-	return stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
-		return nil
-	})
-}
-
 // Database return current database access warper
 func (stateDB *StateDB) Database() DatabaseAccessWarper {
 	return stateDB.db
 }
 
-// Copy duplicate statedb and return new statedb instance
-func (stateDB *StateDB) Copy() *StateDB {
-	if stateDB.liteStateDB != nil {
-		return &StateDB{
-			liteStateDB:         stateDB.liteStateDB.Copy(),
-			stateObjects:        make(map[common.Hash]StateObject),
-			stateObjectsPending: make(map[common.Hash]struct{}),
-			stateObjectsDirty:   make(map[common.Hash]struct{}),
-		}
-	}
-	return &StateDB{
-		db:                  stateDB.db,
-		trie:                stateDB.db.CopyTrie(stateDB.trie),
-		stateObjects:        make(map[common.Hash]StateObject),
-		stateObjectsPending: make(map[common.Hash]struct{}),
-		stateObjectsDirty:   make(map[common.Hash]struct{}),
-	}
+// Database return current database access warper
+func (stateDB *StateDB) Trie() Trie {
+	return stateDB.trie
 }
 
 // Exist check existence of a state object in statedb
@@ -206,6 +338,221 @@ func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) (bool
 func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool {
 	stateObject, err := stateDB.getStateObject(objectType, stateObjectHash)
 	return stateObject == nil || stateObject.IsEmpty() || err != nil
+}
+
+// IntermediateRoot computes the current root hash of the state trie.
+// It is called in between transactions to get the root hash that
+// goes into transaction receipts.
+func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) (common.Hash, map[common.Hash]StateObject) {
+	changeObj := make(map[common.Hash]StateObject)
+	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
+	for addr := range stateDB.stateObjectsPending {
+		obj := stateDB.stateObjects[addr]
+		changeObj[addr] = obj
+		if obj.IsDeleted() {
+			stateDB.deleteStateObject(obj)
+		} else {
+			stateDB.updateStateObject(obj)
+		}
+	}
+	if len(stateDB.stateObjectsPending) > 0 {
+		stateDB.stateObjectsPending = make(map[common.Hash]struct{})
+	}
+	// Track the amount of time wasted on hashing the account trie
+	if metrics.EnabledExpensive {
+		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
+	}
+	return stateDB.trie.Hash(), changeObj
+}
+
+func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
+	for _, object := range stateDB.stateObjects {
+		if object.IsEmpty() {
+			object.MarkDelete()
+		}
+	}
+}
+
+//readDB raw db
+//writeDB support batch
+//finalRoot is root that we expect not rebuild before that point
+func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot string) error {
+	finalRootHash, _, finalIndex, err := getRebuildRootInfo(finalRoot)
+	if err != nil {
+		return err
+	}
+
+	switch stateDB.mode {
+	case common.STATEDB_ARCHIVE_MODE:
+		rootHash, _ := stateDB.IntermediateRoot(true)
+		if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
+		return nil
+	case common.STATEDB_BATCH_COMMIT_MODE:
+		trieDB := stateDB.db.TrieDB()
+		nodes, imgs := stateDB.db.TrieDB().Size()
+		batchCommitConfig := stateDB.batchCommitConfig
+
+		lastPivotRoot, lastPivotIndex, err := GetLatestPivotCommitInfo(db, stateDB.dbName)
+		if err != nil {
+			return err
+		}
+
+		//if duplicate finalized
+		if lastPivotRoot != nil && lastPivotRoot.String() == finalRootHash.String() {
+			return nil
+		}
+		//if force write (stop node) or reach #commit threshold => write to disk
+		if forceWrite || finalIndex-lastPivotIndex >= int(stateDB.batchCommitConfig.blockTrieInMemory) {
+			//write the current roothash commit nodes to disk
+			rootHash, _, rootIndex, err := getRebuildRootInfo(stateDB.curRebuildString)
+			if rootIndex == 0 {
+				rootHash, _ = stateDB.IntermediateRoot(true)
+			}
+			if err != nil {
+				return err
+			}
+			if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
+				return err
+			}
+			log.Println("finalized", forceWrite, finalIndex-lastPivotIndex, rootIndex)
+
+			if err := StoreLatestPivotCommit(db, stateDB.dbName, fmt.Sprintf("%v-%v", rootHash.String(), rootIndex)); err != nil {
+				return err
+			}
+
+			//dereference roothash before pivot point, for GC reduce memory
+			for !batchCommitConfig.triegc.Empty() {
+				oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
+				if uint64(-number) >= uint64(finalIndex) {
+					batchCommitConfig.triegc.Push(oldRootHash, number)
+					break
+				}
+				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v, deref block %+v", stateDB.dbName, finalIndex, number)
+				trieDB.Dereference(oldRootHash.(common.Hash))
+			}
+			postNodes, postImgs := trieDB.Size()
+			if nodes-postNodes > 0 || imgs-postImgs > 0 {
+				stateDB.logger.Log.Debugf("StateDB %v Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v", stateDB.dbName,
+					finalIndex, nodes-postNodes, imgs-postImgs)
+			}
+		}
+		return nil
+	case common.STATEDB_LITE_MODE:
+		return stateDB.liteStateDB.Finalized(finalRootHash)
+	default:
+		return errors.New("Cannot recognized mode")
+	}
+
+}
+
+// Commit writes the state to the underlying in-memory trie database.
+// commit hash, string for rebuild state, error
+func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, string, error) {
+	switch stateDB.mode {
+	case common.STATEDB_ARCHIVE_MODE, common.STATEDB_BATCH_COMMIT_MODE:
+		// Finalize any pending changes and merge everything into the tries
+		_, changeObj := stateDB.IntermediateRoot(deleteEmptyObjects)
+
+		if len(stateDB.stateObjectsDirty) > 0 {
+			stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
+		}
+		// Write the account trie changes, measuing the amount of wasted time
+		root, _, err := stateDB.trie.Commit(func(paths [][]byte, hexpath []byte, leaf []byte, parent common.Hash) error {
+			return nil
+		})
+		if err != nil {
+			return root, "", err
+		}
+
+		//If statedb is batch commit mode, write changeObj to tmp file (flat file)
+		if stateDB.mode == common.STATEDB_BATCH_COMMIT_MODE {
+			if len(changeObj) == 0 {
+				return root, stateDB.curRebuildString, nil
+			}
+
+			//cap max memory in stateDB
+			//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
+			nodes, imgs := stateDB.db.TrieDB().Size()
+			batchCommitConfig := stateDB.batchCommitConfig
+			if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
+				stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
+			}
+
+			bytesSerialize := MapByteSerialize(changeObj)
+			//append changeObj with previous ff index, to help retrieve stateObject of a branch
+
+			_, _, preRebuildIndex, err := getRebuildRootInfo(stateDB.curRebuildString)
+			var preRebuildIndexInt = make([]byte, 8)
+			binary.LittleEndian.PutUint64(preRebuildIndexInt, uint64(preRebuildIndex))
+			stateObjectsIndex, err := stateDB.batchCommitConfig.flatFile.Append(append(preRebuildIndexInt, bytesSerialize...))
+			if err != nil {
+				return common.Hash{}, "", err
+			}
+			//log.Println("write index", stateObjectsIndex, preRebuildIndex, len(changeObj))
+			//update current rebuild string
+			curRebuildString := fmt.Sprintf("%v-%v-%v", root.String(), common.STATEDB_BATCH_COMMIT_MODE, stateObjectsIndex)
+			stateDB.curRebuildString = curRebuildString
+
+			// NOTE: reference current root hash, we will deference it  when we finalized pivot, so that GC will remove memory
+			// push it into queue with index priority (we want to get smallest index first, so put negative to give small number have high priority)
+			stateDB.db.TrieDB().Reference(root, common.Hash{})
+			stateDB.batchCommitConfig.triegc.Push(root, -int64(stateObjectsIndex))
+			stateDB.ClearObjects()
+			return root, curRebuildString, nil
+
+		} else {
+			stateDB.curRebuildString = fmt.Sprintf("%v-%v", root.String(), common.STATEDB_ARCHIVE_MODE)
+			return root, stateDB.curRebuildString, nil
+		}
+
+	case common.STATEDB_LITE_MODE:
+		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
+			if stateDB.liteStateDB.headStateNode.previousLink == nil {
+				return common.EmptyRoot, "", nil
+			}
+			root := *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash
+			return root, fmt.Sprintf("%v-%v-%v", root.String(), common.STATEDB_LITE_MODE, stateDB.liteStateDB.headStateNode.previousLink.ffIndex), nil
+		}
+		h, err := stateDB.liteStateDB.Commit()
+		if err != nil {
+			return common.Hash{}, "", err
+		}
+		stateDB.liteStateDB.NewStateNode()
+		stateDB.curRebuildString = fmt.Sprintf("%v-%v-%v", h.String(), common.STATEDB_LITE_MODE, stateDB.liteStateDB.headStateNode.previousLink.ffIndex)
+		return h, stateDB.curRebuildString, nil
+	default:
+		return common.Hash{}, "", errors.New("Cannot recognized mode")
+	}
+
+}
+
+// Copy duplicate statedb and return new statedb instance
+func (stateDB *StateDB) Copy() *StateDB {
+	if stateDB.liteStateDB != nil {
+		return &StateDB{
+			mode:                stateDB.mode,
+			dbName:              stateDB.dbName,
+			liteStateDB:         stateDB.liteStateDB.Copy(),
+			curRebuildString:    stateDB.curRebuildString,
+			stateObjects:        make(map[common.Hash]StateObject),
+			stateObjectsPending: make(map[common.Hash]struct{}),
+			stateObjectsDirty:   make(map[common.Hash]struct{}),
+		}
+	}
+	return &StateDB{
+		db:                  stateDB.db,
+		dbName:              stateDB.dbName,
+		trie:                stateDB.db.CopyTrie(stateDB.trie),
+		curRebuildString:    stateDB.curRebuildString,
+		mode:                stateDB.mode,
+		batchCommitConfig:   stateDB.batchCommitConfig,
+		logger:              dataaccessobject.Logger,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}
 }
 
 // ================================= STATE OBJECT =======================================

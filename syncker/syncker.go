@@ -32,6 +32,8 @@ type SynckerManagerConfig struct {
 	Blockchain *blockchain.BlockChain
 	Consensus  peerv2.ConsensusData
 	MiningKey  string
+	CQuit      chan struct{}
+	Wg         *sync.WaitGroup
 }
 
 type SynckerManager struct {
@@ -71,17 +73,26 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	}
 
 	//init beacon sync process
-	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain)
+	config.Wg.Add(1)
+	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(
+		synckerManager.config.Network,
+		synckerManager.config.Blockchain,
+		synckerManager.config.Blockchain.BeaconChain,
+		config.CQuit,
+		config.Wg,
+	)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
 
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
+		config.Wg.Add(1)
 		sid := chain.GetShardID()
 		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(
 			sid, synckerManager.config.Network,
 			synckerManager.config.Blockchain,
 			synckerManager.config.Blockchain.BeaconChain,
-			chain, synckerManager.config.Consensus,
+			chain, synckerManager.config.Consensus, config.CQuit,
+			config.Wg,
 		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess

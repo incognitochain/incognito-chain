@@ -145,6 +145,9 @@ const (
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
+	enableFastSyncMode         = "enablefastsyncmode"
+	setFullValidation          = "setfullvalidation"
+	getRootHash                = "getroothash"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"

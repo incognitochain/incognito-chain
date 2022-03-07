@@ -528,6 +528,7 @@ func (a *actorV2) Start() error {
 
 func (a *actorV2) run() error {
 	go func() {
+		time.Sleep(time.Duration(common.TIMESLOT) * time.Second)
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
@@ -919,6 +920,12 @@ func (a *actorV2) voteValidBlock(
 				return NewConsensusError(UnExpectedError, err)
 			} else {
 				proposeBlockInfo.IsVoted = true
+				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+					return err
+				}
+				if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1382,6 +1389,12 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 								a.logger.Error(err)
 							} else {
 								proposeBlockInfo.ProposerSendVote = true
+								if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+									return err
+								}
+								if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
+									return err
+								}
 							}
 						}
 					} else {

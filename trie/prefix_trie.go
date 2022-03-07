@@ -111,8 +111,7 @@ func (t *PrefixTrie) GetKey(shaKey []byte) []byte {
 	if key, ok := t.getSecKeyCache()[string(shaKey)]; ok {
 		return key
 	}
-	key, _ := t.trie.iw.preimage(common.BytesToHash(shaKey))
-	return key
+	return t.trie.iw.preimage(common.BytesToHash(shaKey))
 }
 
 // Commit writes all nodes and the secure hash pre-images to the trie's database.
@@ -120,15 +119,16 @@ func (t *PrefixTrie) GetKey(shaKey []byte) []byte {
 //
 // Committing flushes nodes from memory. Subsequent Get calls will load nodes
 // from the database.
-func (t *PrefixTrie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
+func (t *PrefixTrie) Commit(onleaf LeafCallback) (common.Hash, int, error) {
 	// Write all the pre-images to the actual disk database
 	if len(t.getSecKeyCache()) > 0 {
-		t.trie.iw.lock.Lock()
-		for hk, key := range t.secKeyCache {
-			t.trie.iw.insertPreimage(common.BytesToHash([]byte(hk)), key)
+		if t.trie.iw.preimages != nil { // Ugly direct check but avoids the below write lock
+			t.trie.iw.lock.Lock()
+			for hk, key := range t.secKeyCache {
+				t.trie.iw.insertPreimage(common.BytesToHash([]byte(hk)), key)
+			}
+			t.trie.iw.lock.Unlock()
 		}
-		t.trie.iw.lock.Unlock()
-
 		t.secKeyCache = make(map[string][]byte)
 	}
 	// Commit the trie to its intermediate node database
@@ -157,7 +157,7 @@ func (t *PrefixTrie) NodeIterator(start []byte) NodeIterator {
 // The caller must not hold onto the return value because it will become
 // invalid on the next call to hashKey or secKey.
 func (t *PrefixTrie) hashKey(key []byte) []byte {
-	h := newHasher(nil)
+	h := newHasher(false)
 	h.sha.Reset()
 	h.sha.Write(key)
 	buf := h.sha.Sum(t.hashKeyBuf[:0])

@@ -12,6 +12,7 @@ func GetAllProposeHistory(db incdb.Database, chainID int) (map[int64]struct{}, e
 
 	prefix := GetProposeHistoryPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -69,6 +70,7 @@ func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]by
 
 	prefix := GetReceiveBlockByHeightPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -136,6 +138,7 @@ func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte
 
 	prefix := GetReceiveBlockByHashPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -190,6 +193,7 @@ func GetAllVoteHistory(db incdb.Database, chainID int) (map[uint64][]byte, error
 
 	prefix := GetVoteHistoryPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())

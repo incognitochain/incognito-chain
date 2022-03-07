@@ -88,7 +88,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -147,7 +147,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -259,7 +259,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -347,7 +347,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -476,7 +476,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -582,7 +582,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -620,7 +620,7 @@ import (
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+//	err = stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}

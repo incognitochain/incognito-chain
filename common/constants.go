@@ -228,3 +228,9 @@ var (
 	BurningAddressByte  []byte
 	BurningAddressByte2 []byte
 )
+
+const (
+	STATEDB_BATCH_COMMIT_MODE = "batchcommit"
+	STATEDB_ARCHIVE_MODE      = "archive"
+	STATEDB_LITE_MODE         = "lite"
+)

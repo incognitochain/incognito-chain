@@ -60,6 +60,8 @@ type NodeIterator interface {
 	// Hash returns the hash of the current node.
 	Hash() common.Hash
 
+	Node() interface{}
+
 	// Parent returns the hash of the parent of the current node. The hash may be the one
 	// grandparent if the immediate parent is an internal node with no hash.
 	Parent() common.Hash
@@ -137,6 +139,13 @@ func (it *nodeIterator) Hash() common.Hash {
 	return it.stack[len(it.stack)-1].hash
 }
 
+func (it *nodeIterator) Node() interface{} {
+	if len(it.stack) == 0 {
+		return common.Hash{}
+	}
+	return it.stack[len(it.stack)-1].node
+}
+
 func (it *nodeIterator) Parent() common.Hash {
 	if len(it.stack) == 0 {
 		return common.Hash{}
@@ -169,15 +178,13 @@ func (it *nodeIterator) LeafBlob() []byte {
 func (it *nodeIterator) LeafProof() [][]byte {
 	if len(it.stack) > 0 {
 		if _, ok := it.stack[len(it.stack)-1].node.(valueNode); ok {
-			hasher := newHasher(nil)
+			hasher := newHasher(false)
 			defer returnHasherToPool(hasher)
-
 			proofs := make([][]byte, 0, len(it.stack))
 
 			for i, item := range it.stack[:len(it.stack)-1] {
 				// Gather nodes that end up as hash nodes (or the root)
-				node, _, _ := hasher.hashChildren(item.node, nil)
-				hashed, _ := hasher.store(node, nil, false)
+				node, hashed := hasher.proofHash(item.node)
 				if _, ok := hashed.(hashNode); ok || i == 0 {
 					enc, _ := rlp.EncodeToBytes(node)
 					proofs = append(proofs, enc)
@@ -389,6 +396,10 @@ func (it *differenceIterator) Hash() common.Hash {
 	return it.b.Hash()
 }
 
+func (it *differenceIterator) Node() interface{} {
+	return it.b.Node()
+}
+
 func (it *differenceIterator) Parent() common.Hash {
 	return it.b.Parent()
 }
@@ -494,6 +505,10 @@ func NewUnionIterator(iters []NodeIterator) (NodeIterator, *int) {
 
 func (it *unionIterator) Hash() common.Hash {
 	return (*it.items)[0].Hash()
+}
+
+func (it *unionIterator) Node() interface{} {
+	return (*it.items)[0].Node()
 }
 
 func (it *unionIterator) Parent() common.Hash {

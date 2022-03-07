@@ -54,10 +54,13 @@ func open(dbPath string) (incdb.Database, error) {
 	handles := 256
 	cache := 8
 	lvdb, err := leveldb.OpenFile(dbPath, &opt.Options{
-		OpenFilesCacheCapacity: handles,
-		BlockCacheCapacity:     cache / 2 * opt.MiB,
-		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
+		OpenFilesCacheCapacity:       handles,
+		BlockCacheCapacity:           cache / 8 * opt.MiB,
+		WriteBuffer:                  cache / 12 * opt.MiB, // Two of these are used internally
+		Filter:                       filter.NewBloomFilter(10),
+		DisableSeeksCompaction:       true,
+		DisableLargeBatchTransaction: true,
+		DisableCompactionBackoff:     true,
 	})
 	if _, corrupted := err.(*lvdbErrors.ErrCorrupted); corrupted {
 		lvdb, err = leveldb.RecoverFile(dbPath, nil)
@@ -76,13 +79,16 @@ func (db *db) Close() error {
 }
 
 func (db *db) ReOpen() error {
-	handles := 256
+	handles := 1024
 	cache := 8
 	lvdb, err := leveldb.OpenFile(db.dbPath, &opt.Options{
-		OpenFilesCacheCapacity: handles,
-		BlockCacheCapacity:     cache / 2 * opt.MiB,
-		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
+		OpenFilesCacheCapacity:       handles,
+		BlockCacheCapacity:           cache / 8 * opt.MiB,
+		WriteBuffer:                  cache / 12 * opt.MiB, // Two of these are used internally
+		Filter:                       filter.NewBloomFilter(10),
+		DisableSeeksCompaction:       true,
+		DisableLargeBatchTransaction: true,
+		DisableCompactionBackoff:     true,
 	})
 	if _, corrupted := err.(*lvdbErrors.ErrCorrupted); corrupted {
 		lvdb, err = leveldb.RecoverFile(db.dbPath, nil)
