@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/proto"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -343,13 +344,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
-	previousShardBlockData, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), previousBlockHash)
-	if err != nil {
-		return NewBlockChainError(FetchPreviousBlockError, err)
-	}
-
-	previousShardBlock := types.ShardBlock{}
-	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
+	previousShardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(previousBlockHash, shardID)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
@@ -1172,7 +1167,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
+
+	if err := blockchain.ShardChain[shardID].blkManager.StoreBlock(proto.BlkType_BlkShard, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
@@ -1191,9 +1187,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
+			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		if storeBlock.GetHeight() == 1 {
+		if (storeBlkHeight == 1) || ((finalView != nil) && (storeBlkHeight == finalView.GetHeight()+1)) {
 			break
 		}
 		prevHash := storeBlock.GetPrevHash()
@@ -1201,7 +1197,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		if prevView == nil {
 			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
 			if err != nil {
-				panic("Database is corrupt")
+				panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
 			}
 		} else {
 			storeBlock = prevView.GetBlock()
@@ -1331,11 +1327,25 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	}()
 }
 
+var totalGetS uint64 = 0
+var totalHitS uint64 = 0
+
 func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 	committeeFromBlock common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	_, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlock)
-	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
+	Logger.log.Infof("[bmcache] GetShardCommitteeFromBeaconHash cache ratio %v/%v", totalHitS, totalGetS)
+	totalGetS++
+	key := getCommitteeCacheKey(committeeFromBlock, shardID)
+	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
+		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
+			totalHitS++
+			return committees, nil
+		} else {
+			Logger.log.Error(errors.Errorf("Can not convert data from cache to committee public key list, blk beacon hash %v", committeeFromBlock.String()))
+		}
+	}
+	existed, err := blockchain.BeaconChain.blkManager.CheckBlockByHash(&committeeFromBlock)
+	if (err != nil) || (!existed) {
+		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, errors.Errorf("Can not get block %v, existed %v, error %v", committeeFromBlock.String(), existed, err))
 	}
 
 	bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), committeeFromBlock)
@@ -1349,6 +1359,7 @@ func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
 	}
 	committees := statedb.GetOneShardCommittee(stateDB, shardID)
+	blockchain.committeeByEpochCache.Add(key, committees)
 
 	return committees, nil
 }

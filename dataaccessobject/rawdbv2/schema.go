@@ -11,6 +11,8 @@ var (
 	beaconViewsPrefix                  = []byte("BeaconViews")
 	shardBestStatePrefix               = []byte("ShardViews" + string(splitter))
 	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
+	shardHashToBlockTmpPrefix          = []byte("s-b-h-t-" + string(splitter))
+	heightToBlockIndexPrefix           = []byte("blk-h-id-" + string(splitter))
 	viewPrefix                         = []byte("V" + string(splitter))
 	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
 	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
@@ -90,6 +92,25 @@ func GetViewShardKey(view common.Hash, shardID byte, height uint64) []byte {
 func GetShardHashToBlockKey(hash common.Hash) []byte {
 	temp := make([]byte, 0, len(shardHashToBlockPrefix))
 	temp = append(temp, shardHashToBlockPrefix...)
+	return append(temp, hash[:]...)
+}
+
+func GetShardHashToBlockTmpKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len(shardHashToBlockTmpPrefix))
+	temp = append(temp, shardHashToBlockTmpPrefix...)
+	return append(temp, hash[:]...)
+}
+
+func GetHeightToBlockIndexKey(height uint64, cID int) []byte {
+	temp := make([]byte, 0, len(heightToBlockIndexPrefix))
+	temp = append(temp, heightToBlockIndexPrefix...)
+	bytesTmp := append(common.Uint64ToBytes(height), common.IntToBytes(cID)...)
+	return append(temp, bytesTmp...)
+}
+
+func GetHashToBlockIndexKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len("blkindex"))
+	temp = append(temp, "blkindex"...)
 	return append(temp, hash[:]...)
 }
 

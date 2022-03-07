@@ -1,0 +1,50 @@
+syntax = "proto3";
+option go_package="./proto";
+
+message ShardHeaderBytes {
+    int32 Producer = 1;
+    int32 ShardID = 2;
+    int32 Version = 3;
+    bytes PreviousBlockHash = 4;
+    uint64 Height = 5;
+    int32 Round = 6;
+    uint64 Epoch = 7;
+    bytes CrossShardBitMap = 8;
+    uint64 BeaconHeight = 9;
+    bytes BeaconHash = 10;
+    map<string, uint64> TotalTxsFee = 11;
+    string ConsensusType = 12;
+    sint64 Timestamp = 13;
+    bytes TxRoot = 14;
+    bytes ShardTxRoot = 15;
+    bytes CrossTransactionRoot = 16;
+    bytes InstructionsRoot = 17;
+    bytes CommitteeRoot = 18;
+    bytes PendingValidatorRoot = 19;
+    bytes StakingTxRoot = 20;
+    bytes InstructionMerkleRoot =   21;
+    int32 Proposer =   22;
+    sint64 ProposeTime =   23;
+    bytes CommitteeFromBlock =   24;
+    uint64 FinalityHeight =   25;
+}
+
+message InstrucstionTmp {
+    repeated string Data = 1;
+}
+
+message CrossTransactionTmp {
+    repeated bytes Data = 1;
+}
+
+message ShardBodyBytes {
+    repeated InstrucstionTmp Instrucstions = 1;
+    map<int32, CrossTransactionTmp> CrossTransactions = 2;
+    repeated bytes Transactions = 3;
+}
+
+message ShardBlockBytes {
+    bytes ValidationData = 1;
+    ShardBodyBytes Body = 2;
+    ShardHeaderBytes Header = 3;
+}
