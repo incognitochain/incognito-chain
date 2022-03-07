@@ -230,7 +230,7 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 	accs := inst.ResolveInstructionAccounts(&tx.Message)
 
 	// TODO: review
-	if len(accs) < 7 {
+	if len(accs) < 5 {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid instruction accounts length"))
 	}
 
@@ -244,20 +244,9 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid incognito proxy account - is not expected"))
 	}
 
-	// TODO: check the receiver token account
-	// receiverTokenAcc := accs[1]
-
-	// var writableAccPk solana.PublicKey
-	// for _, acc := range accs {
-	// 	if acc.IsWritable {
-	// 		writableAccPk = acc.PublicKey
-	// 		break
-	// 	}
-	// }
-	// Logger.log.Errorf("writableAccPk: %v\n", writableAccPk)
-
 	// get solana's token id from writable account
-	writableAccInfo, err := solClient.GetAccountInfoWithOpts(context.TODO(), incProxyAcc.PublicKey, &rpc.GetAccountInfoOpts{Encoding: "jsonParsed"})
+	writableAccPk := accs[0].PublicKey
+	writableAccInfo, err := solClient.GetAccountInfoWithOpts(context.TODO(), writableAccPk, &rpc.GetAccountInfoOpts{Encoding: "jsonParsed"})
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, fmt.Errorf("Can not get writable account info with error %v", err))
 	}
