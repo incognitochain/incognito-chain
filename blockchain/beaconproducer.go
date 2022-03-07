@@ -660,6 +660,7 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 		for _, v := range validators {
 			validatorStr, _ := v.ToBase58()
 			if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
+				fmt.Println("add ", validatorStr, "to valid Sync val")
 				validValidator = append(validValidator, v)
 			}
 		}
