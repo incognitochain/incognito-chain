@@ -82,7 +82,8 @@ var MainnetParam = &param{
 	BSCParam: bscParam{
 		Host: "https://bsc-dataseed.binance.org",
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
 }
 
 var Testnet1Param = &param{
@@ -162,7 +163,8 @@ var Testnet1Param = &param{
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
 }
 
 var Tesnet2Param = &param{
@@ -243,7 +245,8 @@ var Tesnet2Param = &param{
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
 }
 
 var LocalParam = &param{
@@ -324,7 +327,8 @@ var LocalParam = &param{
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
 }
 
 var LocalDCSParam = &param{
@@ -405,7 +409,8 @@ var LocalDCSParam = &param{
 	BSCParam: bscParam{
 		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
 }
 
 func (p *param) LoadKeyByNetwork(network string) {

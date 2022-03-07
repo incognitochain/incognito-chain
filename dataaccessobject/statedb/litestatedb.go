@@ -1,51 +1,63 @@
 package statedb
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/pkg/errors"
 	"log"
+	"path"
 )
-
-const PREFIX_LITESTATEDB = "litestatedb"
 
 type LiteStateDB struct {
 	flatfile      *flatfile.FlatFileManager
 	db            incdb.Database
+	dbPrefix      string
 	headStateNode *StateNode
 	stateDB       *StateDB
 }
 
-func NewLiteStateDB(dir string, root common.Hash, lastState common.Hash, db incdb.Database) (*StateDB, error) {
+func NewLiteStateDB(rootDir string, dbName string, rebuildRoot string, db incdb.Database) (*StateDB, error) {
+	rebuildRootHash, _, rebuildRootIndex, err := getRebuildRootInfo(rebuildRoot)
 	stateDB := &StateDB{
+		mode:                common.STATEDB_LITE_MODE,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}
 	stateNode := NewStateNode()
 	stateNode.aggregateHash = nil
-	ff, err := flatfile.NewFlatFile(dir, 5000)
+	ffDir := path.Join(rootDir, fmt.Sprintf("lite_%v", dbName))
+
+	ff, err := flatfile.NewFlatFile(ffDir, 5000)
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot create flatfile for litestatedb")
 	}
+	dbPrefix := "litestateDB-" + dbName
 
 	stateDB.liteStateDB = &LiteStateDB{
 		ff,
 		db,
+		dbPrefix,
 		stateNode,
 		stateDB,
 	}
 
-	if root.IsZeroValue() {
+	//if init from empty root
+	if rebuildRoot == "" || rebuildRootHash.String() == common.EmptyRoot.String() {
 		return stateDB, nil
 	}
+	//else rebuild
+	err = stateDB.liteStateDB.restoreStateNode(rebuildRootHash, rebuildRootIndex)
 
-	if !root.IsZeroValue() {
-		stateDB.liteStateDB.restoreStateNode(lastState, root)
-	}
+	return stateDB, err
+}
 
-	return stateDB, nil
+func (stateDB *LiteStateDB) GetFinalKey() []byte {
+	final := "final-" + stateDB.dbPrefix
+	return []byte(final)
 }
 
 func (stateDB *LiteStateDB) Copy() *LiteStateDB {
@@ -55,6 +67,7 @@ func (stateDB *LiteStateDB) Copy() *LiteStateDB {
 	return &LiteStateDB{
 		stateDB.flatfile,
 		stateDB.db,
+		stateDB.dbPrefix,
 		&cpy,
 		stateDB.stateDB,
 	}
@@ -66,15 +79,17 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 	}
 
 	h, err := stateDB.headStateNode.Commit()
+
 	if h != nil {
 		data, err := stateDB.headStateNode.Serialize()
 		if err != nil {
 			return common.Hash{}, err
 		}
-		_, err = stateDB.flatfile.Append(data)
+		ffIndex, err := stateDB.flatfile.Append(data)
 		if err != nil {
 			return common.Hash{}, err
 		}
+		stateDB.headStateNode.ffIndex = uint64(ffIndex)
 		return *h, nil
 	}
 
@@ -82,7 +97,7 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 
 }
 
-func (stateDB *LiteStateDB) Finalized(dbWriter incdb.KeyValueWriter, stateNodeHash common.Hash) error {
+func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 
 	//write finalize Key Value to disk
 	stateNode := stateDB.headStateNode.previousLink //current headstatenode dont have aggregatehash, as soon as we commit to calculate agghash, we create new head
@@ -91,12 +106,13 @@ func (stateDB *LiteStateDB) Finalized(dbWriter incdb.KeyValueWriter, stateNodeHa
 			break
 		}
 		if stateNode.aggregateHash.String() == stateNodeHash.String() {
-			err := stateNode.FlushFinalizedToDisk(dbWriter)
+			err := stateNode.FlushFinalizedToDisk(stateDB.db, stateDB)
 			if err != nil {
 				return err
 			}
 			stateNode.previousLink = nil
-			return nil
+			err = StoreLatestPivotCommit(stateDB.db, stateDB.dbPrefix, fmt.Sprintf("%v-%v", stateNodeHash.String(), stateNode.ffIndex))
+			return err
 		}
 		stateNode = stateNode.previousLink
 	}
@@ -104,16 +120,32 @@ func (stateDB *LiteStateDB) Finalized(dbWriter incdb.KeyValueWriter, stateNodeHa
 	return errors.New("Cannot find finalized hash!")
 }
 
-func (stateDB *LiteStateDB) restoreStateNode(finalState common.Hash, root common.Hash) error {
-	dataChan, errChan, cancelReadStateNode := stateDB.flatfile.ReadRecently()
+func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex int) error {
+	//get final commit
+	pivotRootHash, pivotRootIndex, err := GetLatestPivotCommitInfo(stateDB.db, stateDB.dbPrefix)
+	if err != nil {
+		return err
+	}
+
+	if ffIndex < pivotRootIndex {
+		return errors.New("Rebuild from root that before pivot point")
+	}
+
+	dataChan, errChan, cancelReadStateNode := stateDB.flatfile.ReadRecently(uint64(ffIndex))
 	stateNodeMap := map[common.Hash]*StateNode{}
 	prevMap := map[common.Hash]*common.Hash{}
 	for {
 		select {
 		case stateByte := <-dataChan:
 			if len(stateByte) == 0 {
-				goto RESTORE_SUCCESS
+				e := common.Hash{}
+				if pivotRootHash.String() == e.String() {
+					goto RESTORE_SUCCESS
+				} else {
+					return errors.New("Cannot rebuild")
+				}
 			}
+
 			stateNode, prevHash, err := stateDB.stateDB.DeSerializeFromStateNodeData(stateByte)
 			if err != nil {
 				return err
@@ -122,7 +154,7 @@ func (stateDB *LiteStateDB) restoreStateNode(finalState common.Hash, root common
 			stateNodeMap[stateNode.GetHash()] = stateNode
 			prevMap[stateNode.GetHash()] = prevHash
 
-			if stateNode.aggregateHash.String() == finalState.String() {
+			if stateNode.aggregateHash.String() == pivotRootHash.String() {
 				cancelReadStateNode()
 				goto RESTORE_SUCCESS
 			}
@@ -139,7 +171,14 @@ RESTORE_SUCCESS:
 	}
 
 	//point head to root
-	if _, ok := stateNodeMap[root]; !ok {
+	for nodeHash, state := range stateNodeMap {
+		if bytes.Equal(nodeHash.Bytes(), root.Bytes()) {
+			stateDB.headStateNode = state
+			break
+		}
+	}
+
+	if stateDB.headStateNode == nil {
 		return errors.New("Cannot find root head")
 	}
 	stateDB.headStateNode = stateNodeMap[root]
@@ -167,7 +206,7 @@ func (stateDB *LiteStateDB) GetStateObject(objectType int, addr common.Hash) (St
 	}
 
 	//then search from DB
-	bytesResult, _ := stateDB.db.Get(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...))
+	bytesResult, _ := stateDB.db.Get(append([]byte(stateDB.dbPrefix), addr.GetBytes()...))
 	if len(bytesResult) > 0 {
 		obj, err := newStateObjectWithValue(stateDB.stateDB, objectType, addr, bytesResult[1:])
 		if err != nil {
@@ -207,6 +246,6 @@ func (stateDB *LiteStateDB) NewIteratorwithPrefix(prefix []byte) incdb.Iterator 
 	kvMap := map[string][]byte{}
 	stateDB.headStateNode.replay(kvMap)
 
-	iter := NewLiteStateDBIterator(stateDB.db, []byte(PREFIX_LITESTATEDB), prefix, kvMap)
+	iter := NewLiteStateDBIterator(stateDB.db, []byte(stateDB.dbPrefix), prefix, kvMap)
 	return iter
 }

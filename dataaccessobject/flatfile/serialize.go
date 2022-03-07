@@ -2,10 +2,10 @@ package flatfile
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -25,7 +25,7 @@ type FlatFile interface {
 	Read(index int) ([]byte, error)
 
 	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently() (dataChan chan []byte, err chan int, cancel func())
+	ReadRecently(index uint64) (chan []byte, chan int, func())
 
 	//truncate flat file system
 	Truncate(lastIndex int) error
@@ -39,6 +39,7 @@ type FlatFileManager struct {
 	currentFD       *os.File
 	currentFile     int
 	currentFileSize int
+	cache           *lru.Cache
 	lock            *sync.RWMutex
 }
 
@@ -72,12 +73,20 @@ func (ff *FlatFileManager) Truncate(lastIndex int) error {
 	return nil
 }
 
-func (f FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
+func (f *FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
 	//TODO: cache
 	f.lock.RLock()
 	defer f.lock.RUnlock()
-	path := path.Join(f.dataDir, strconv.Itoa(fileID))
-	fd, err := os.Open(path)
+
+	if fileID < f.currentFile {
+		v, ok := f.cache.Get(fileID)
+		if ok {
+			return v.(map[int]ReadInfo), nil
+		}
+	}
+
+	p := path.Join(f.dataDir, strconv.Itoa(fileID))
+	fd, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
@@ -104,14 +113,30 @@ func (f FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
 		offset += result
 		size++
 	}
+
+	f.cache.Add(fileID, readInfos)
+
 	return readInfos, nil
 }
 
 func (f FlatFileManager) Read(index int) ([]byte, error) {
 	fileID := index / f.fileSizeLimit
 	itemFileIndex := index % f.fileSizeLimit
+	var readInfo map[int]ReadInfo
+	var err error
 
-	readInfo, err := f.PasreFile(fileID)
+	//find parse info in cache first
+	v, ok := f.cache.Get(fileID)
+	if ok {
+		if itemFileIndex < len(v.(map[int]ReadInfo)) {
+			readInfo = v.(map[int]ReadInfo)
+		} else { //if find item index is greater than len of cache <- could be new item, parse again
+			readInfo, err = f.PasreFile(fileID)
+		}
+	} else { //no cache, parse
+		readInfo, err = f.PasreFile(fileID)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -121,19 +146,14 @@ func (f FlatFileManager) Read(index int) ([]byte, error) {
 
 	b := make([]byte, readInfo[itemFileIndex].size)
 	readInfo[itemFileIndex].fd.ReadAt(b, int64(readInfo[itemFileIndex].offset))
-	gz, err := gzip.NewReader(bytes.NewBuffer(b))
+	rawB, err := ioutil.ReadAll(bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
 	}
-	rawB, err := ioutil.ReadAll(gz)
-	if err != nil {
-		return nil, err
-	}
-	gz.Close()
 	return rawB, nil
 }
 
-func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
+func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func()) {
 	c := make(chan []byte)
 	e := make(chan int)
 	closed := false
@@ -146,26 +166,22 @@ func (f FlatFileManager) ReadRecently() (chan []byte, chan int, func()) {
 
 	}
 	go func() {
-		for i := len(f.sortedFolder) - 1; i >= 0; i-- {
-			readInfo, err := f.PasreFile(f.sortedFolder[i])
+		fromFile := index / uint64(f.fileSizeLimit)
+		offset := index % uint64(f.fileSizeLimit)
+		for i := int(fromFile); i >= 0; i-- {
+			readInfo, err := f.PasreFile(int(i))
 			if err != nil {
 				e <- 1
 				cancel()
 			}
-			for j := len(readInfo) - 1; j >= 0; j-- {
-				b := make([]byte, readInfo[j].size)
-				readInfo[j].fd.ReadAt(b, int64(readInfo[j].offset))
-				gz, err := gzip.NewReader(bytes.NewBuffer(b))
-				if err != nil {
-					e <- 1
-					cancel()
-				}
-				rawB, err := ioutil.ReadAll(gz)
-				if err != nil {
-					e <- 1
-					cancel()
-				}
-				gz.Close()
+			if offset > uint64(len(readInfo)-1) {
+				e <- 1
+				cancel()
+			}
+
+			for j := int(offset); j >= 0; j-- {
+				rawB := make([]byte, readInfo[int(j)].size)
+				readInfo[int(j)].fd.ReadAt(rawB, int64(readInfo[int(j)].offset))
 
 			LOOP:
 				if !closed {
@@ -253,20 +269,15 @@ func (f *FlatFileManager) checkFileSize() (int, error) {
 func (f *FlatFileManager) Append(data []byte) (int, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	//gzip
-	var b bytes.Buffer
-	gz := gzip.NewWriter(&b)
-	gz.Write(data)
-	gz.Close()
 
 	//append size-bytes into current FD, if max -> create new file, update currentFD
 	var result = make([]byte, 8)
-	binary.LittleEndian.PutUint64(result, uint64(b.Len()))
+	binary.LittleEndian.PutUint64(result, uint64(len(data)))
 	_, err := f.currentFD.Write(result)
 	if err != nil {
 		return 0, err
 	}
-	_, err = f.currentFD.Write(b.Bytes())
+	_, err = f.currentFD.Write(data)
 
 	addedItemIndex := f.currentFile*f.fileSizeLimit + f.currentFileSize
 	f.currentFileSize++
@@ -277,11 +288,13 @@ func (f *FlatFileManager) Append(data []byte) (int, error) {
 }
 
 func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
+	cache, _ := lru.New(100)
 	ff := &FlatFileManager{
 		dataDir:       dir,
 		fileSizeLimit: fileBound,
 		folderMap:     make(map[int]bool),
 		lock:          new(sync.RWMutex),
+		cache:         cache,
 	}
 
 	//read all file has number  in folder -> into folderMap, sortedFolder

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 // shutdownRequestChannel is used to initiate shutdown from one of the
@@ -11,7 +12,7 @@ var shutdownRequestChannel = make(chan struct{})
 
 // interruptSignals defines the default signals to catch in order to do a proper
 // shutdown.  This may be modified during init depending on the platform.
-var interruptSignals = []os.Signal{os.Interrupt}
+var interruptSignals = []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGQUIT}
 
 // interruptListener listens for OS Signals such as SIGINT (Ctrl+C) and shutdown
 // requests from shutdownRequestChannel.  It returns a channel that is closed

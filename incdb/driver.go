@@ -3,9 +3,8 @@ package incdb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/pkg/errors"
-	"path"
-	"strconv"
 )
 
 // Driver defines a structure for backend drivers to use when they registered
@@ -36,19 +35,14 @@ func Open(typ string, args ...interface{}) (Database, error) {
 }
 
 // Open opens the db connection.
-func OpenMultipleDB(typ string, dbPath string) (map[int]Database, error) {
+func OpenMultipleDB(typ string) (map[int]Database, error) {
 	m := make(map[int]Database)
 	d, exists := drivers[typ]
 	if !exists {
 		return nil, errors.Wrapf(errors.New("Driver is not registered"), typ)
 	}
 	for i := -1; i < common.MaxShardNumber; i++ {
-		newPath := ""
-		if i == common.BeaconChainID {
-			newPath = path.Join(dbPath, common.BeaconChainDatabaseDirectory)
-		} else {
-			newPath = path.Join(dbPath, common.ShardChainDatabaseDirectory+strconv.Itoa(i))
-		}
+		newPath := config.Config().GetShardDataDir(i)
 		db, err := d.Open(newPath)
 		if err != nil {
 			return nil, errors.WithStack(fmt.Errorf("Open database error %+v", err))

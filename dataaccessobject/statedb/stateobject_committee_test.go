@@ -24,21 +24,21 @@ func TestStateDB_TestChangeAutoStaking(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	committeeState1 := NewCommitteeStateWithValue(0, CurrentValidator, tempCommitteePublicKey[0])
 	err = sDB.SetStateObject(CommitteeObjectType, key, committeeState1)
-	rootHash2, err := sDB.Commit(true)
+	rootHash2, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash2, false)
+	err = sDB.Database().TrieDB().Commit(rootHash2, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

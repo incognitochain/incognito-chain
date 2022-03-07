@@ -60,7 +60,7 @@ package statedb
 //	if err != nil {
 //		panic(err)
 //	}
-//	err = sDB.Database().TrieDB().Commit(rootHash, false)
+//	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		panic(err)
 //	}
@@ -102,7 +102,7 @@ package statedb
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = sDB.Database().TrieDB().Commit(rootHash, false)
+//	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -223,7 +223,7 @@ package statedb
 //	if err != nil {
 //		t.Fatal(err)
 //	}
-//	err = sDB.Database().TrieDB().Commit(rootHash, false)
+//	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 //	if err != nil {
 //		t.Fatal(err)
 //	}

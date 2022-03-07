@@ -78,3 +78,5 @@ run_new_local.sh
 *.log
 logs/
 log/
+run_node_dcs.sh
+config/local-dcs

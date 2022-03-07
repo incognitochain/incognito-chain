@@ -35,11 +35,11 @@ func storeSerialNumber(initRoot common.Hash, db DatabaseAccessWarper, limit int,
 			panic(err)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -68,11 +68,11 @@ func TestStateDB_StoreAndGetSerialNumberState(t *testing.T) {
 	if err == nil {
 		t.Fatal("expect error")
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,6 +15,7 @@ type StateNode struct {
 	previousLink    *StateNode
 	aggregateHash   *common.Hash //!= nil, aslo mean commit from mem to disk
 	finalizedCommit bool
+	ffIndex         uint64
 }
 
 func (s StateNode) GetHash() common.Hash {
@@ -105,9 +106,9 @@ func (sobj *SerializeObject) DeSerialize(data []byte) error {
 	return err
 }
 
-func (s *StateNode) FlushFinalizedToDisk(dbWriter incdb.KeyValueWriter) error {
+func (s *StateNode) FlushFinalizedToDisk(dbWriter incdb.KeyValueWriter, liteStateDB *LiteStateDB) error {
 	if s.previousLink != nil {
-		err := s.previousLink.FlushFinalizedToDisk(dbWriter)
+		err := s.previousLink.FlushFinalizedToDisk(dbWriter, liteStateDB)
 		if err != nil {
 			return err
 		}
@@ -124,7 +125,7 @@ func (s *StateNode) FlushFinalizedToDisk(dbWriter incdb.KeyValueWriter) error {
 			deleteByte = 1
 		}
 
-		err := dbWriter.Put(append([]byte(PREFIX_LITESTATEDB), addr.GetBytes()...), append([]byte{deleteByte}, obj.GetValueBytes()...))
+		err := dbWriter.Put(append([]byte(liteStateDB.dbPrefix), addr.GetBytes()...), append([]byte{deleteByte}, obj.GetValueBytes()...))
 		if err != nil {
 			return err
 		}

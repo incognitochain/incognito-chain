@@ -3,9 +3,11 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -117,6 +119,7 @@ type config struct {
 	IndexerAccessTokens string    `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
 	UseOutcoinDatabase  []bool    `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 	GethParam           gethParam `mapstructure:"geth_param"`
+	SyncMode            string    `mapstructure:"sync_mode" long:"syncmode" description:"smart contract of prv bep20"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -417,4 +420,18 @@ func (gethPram *gethParam) GetFromEnv() {
 	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
 		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
 	}
+}
+
+func (c *config) GetShardDataDir(shardID int) string {
+
+	newPath := ""
+
+	prefix := filepath.Join(c.DataDir, c.DatabaseDir)
+	if shardID == common.BeaconChainID {
+		newPath = path.Join(prefix, common.BeaconChainDatabaseDirectory)
+	} else {
+		newPath = path.Join(prefix, common.ShardChainDatabaseDirectory+strconv.Itoa(shardID))
+	}
+
+	return newPath
 }

@@ -81,7 +81,7 @@ type Config struct {
 	usingNewPool  bool
 }
 
-func NewBlockChain(config *Config, isTest bool) *BlockChain {
+func NewBlockChain(isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
@@ -324,8 +324,8 @@ func (blockchain *BlockChain) initBeaconState() error {
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	initBeaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
-	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
-	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+	consensusRootHash, _, err := initBeaconBestState.consensusStateDB.Commit(true)
+	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil)
 	if err != nil {
 		return err
 	}
@@ -357,6 +357,71 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	return nil
+}
+
+func (bc *BlockChain) Stop() {
+	Logger.log.Info("Blockchain Stop")
+	if config.Config().SyncMode == common.STATEDB_BATCH_COMMIT_MODE {
+		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
+		for i, shardChain := range bc.ShardChain {
+			bc.ShardChain[i].insertLock.Lock()
+			defer bc.ShardChain[i].insertLock.Unlock()
+			shardBestState := shardChain.GetBestState()
+			shardID := shardBestState.ShardID
+
+			consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
+			transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
+			featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
+			rewardTrieDB := shardBestState.rewardStateDB.Database().TrieDB()
+			slashTrieDB := shardBestState.slashStateDB.Database().TrieDB()
+
+			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
+
+			for _, view := range shardChain.GetAllView() {
+				err := view.(*ShardBestState).CommitTrieToDisk(bc.GetShardChainDatabase(shardID), true, shardChain.multiView.GetFinalView().(*ShardBestState))
+				if err != nil {
+					Logger.log.Error("Cannot write current stateDB to disk")
+				}
+			}
+
+			//Do we need Clean when Stop?
+			//shardBestState.consensusStateDB.CleanReference()
+			//shardBestState.transactionStateDB.CleanReference()
+			//shardBestState.featureStateDB.CleanReference()
+			//shardBestState.rewardStateDB.CleanReference()
+			//shardBestState.slashStateDB.CleanReference()
+
+			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
+
+			if size, _ := consensusTrieDB.Size(); size != 0 {
+				Logger.log.Errorf("Shard %+v | Dangling consensus trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | consensusTrieDB size = 0", shardID)
+			}
+			if size, _ := transactionTrieDB.Size(); size != 0 {
+				Logger.log.Errorf("Shard %+v | Dangling transaction trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | transactionTrieDB size = 0", shardID)
+			}
+			if size, _ := featureTrieDB.Size(); size != 0 {
+				Logger.log.Errorf("Shard %+v | Dangling feature trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | featureTrieDB remain size = 0", shardID)
+			}
+			if size, _ := rewardTrieDB.Size(); size != 0 {
+				Logger.log.Errorf("Shard %+v | Dangling reward trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | rewardTrieDB remain size = 0", shardID)
+			}
+			if size, _ := slashTrieDB.Size(); size != 0 {
+				Logger.log.Errorf("Shard %+v | Dangling slash trie nodes after full cleanup", shardID)
+			} else {
+				Logger.log.Infof("Shard %+v | slashTrieDB remain size = 0", shardID)
+			}
+		}
+
+		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
+	}
 }
 
 func (blockchain *BlockChain) GetClonedBeaconBestState() (*BeaconBestState, error) {
@@ -675,40 +740,36 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
-	// fmt.Println("debug BackupShardViews", len(allViews))
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
-/*
-Restart all BeaconView from Database
-*/
 func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
+
 	allViews := []*ShardBestState{}
+
 	b, err := rawdbv2.GetShardBestState(blockchain.GetShardChainDatabase(shardID), shardID)
 	if err != nil {
-		fmt.Println("debug Cannot see shard best state")
+		Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBestState error %+v", shardID, err)
 		return err
 	}
-	err = json.Unmarshal(b, &allViews)
-	if err != nil {
-		fmt.Println("debug Cannot unmarshall shard best state", string(b))
-		return err
-	}
-	// fmt.Println("debug RestoreShardViews", len(allViews))
-	blockchain.ShardChain[shardID].multiView.Reset()
 
+	if err = json.Unmarshal(b, &allViews); err != nil {
+		Logger.log.Errorf("RestoreShardBestState shardID %+v, Unmarshal views error %+v", shardID, err)
+		return err
+	}
+
+	blockchain.ShardChain[shardID].multiView.Reset()
 	for _, v := range allViews {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
-			fmt.Println("block ", block)
-			panic(err)
+			Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBlockByHash error %+v", shardID, err)
+			continue
 		}
 		v.BestBlock = block
-
-		// init other stateDB
-		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), allViews[0], blockchain)
+		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), allViews[0])
 		if err != nil {
-			panic(err)
+			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
+			continue
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
@@ -732,9 +793,14 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
-			panic("Restart shard views fail")
+			return errors.New("Restart shard views fail")
 		}
 	}
+
+	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
+		return errors.New("unable to restore any shard best state")
+	}
+
 	return nil
 }
 
@@ -788,10 +854,6 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------
-
-// func (blockchain *BlockChain) GetNodeMode() string {
-// 	return blockchain.config.NodeMode
-// }
 
 func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}

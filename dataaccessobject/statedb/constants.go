@@ -124,7 +124,7 @@ const (
 	SyncingValidators
 )
 const (
-	BeaconChainID    = -1
+	BeaconChainID    = 255
 	CandidateChainID = -2
 )
 

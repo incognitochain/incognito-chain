@@ -84,6 +84,7 @@ type Server struct {
 	highway      *peerv2.ConnManager
 
 	cQuit     chan struct{}
+	wg        *sync.WaitGroup
 	cNewPeers chan *peer.Peer
 }
 
@@ -205,6 +206,7 @@ func (serverObj *Server) NewServer(
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.cQuit = make(chan struct{})
+	serverObj.wg = new(sync.WaitGroup)
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
@@ -308,6 +310,11 @@ func (serverObj *Server) NewServer(
 		serverObj.pusubManager,
 		time.Duration(cfg.TxPoolTTL)*time.Second,
 	)
+
+	if cfg.SyncMode != common.STATEDB_BATCH_COMMIT_MODE && cfg.SyncMode != common.STATEDB_ARCHIVE_MODE && cfg.SyncMode != common.STATEDB_LITE_MODE {
+		return errors.New("Sync mode is not regconized")
+	}
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,
 		BNBChainState: bnbChainState,
@@ -345,7 +352,7 @@ func (serverObj *Server) NewServer(
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for shardID, _ := range serverObj.blockChain.ShardChain {
+		for shardID := range serverObj.blockChain.ShardChain {
 			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase[shardID], byte(shardID))
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
@@ -482,6 +489,8 @@ func (serverObj *Server) NewServer(
 			Blockchain: serverObj.blockChain,
 			Consensus:  serverObj.consensusEngine,
 			MiningKey:  serverObj.miningKeys,
+			CQuit:      serverObj.cQuit,
+			Wg:         serverObj.wg,
 		})
 
 	// Start up persistent peers.
@@ -555,7 +564,7 @@ func (serverObj *Server) NewServer(
 	//Publish node state to other peer
 	go func() {
 		t := time.NewTicker(time.Second * 3)
-		for _ = range t.C {
+		for range t.C {
 			serverObj.PublishNodeState()
 		}
 	}()
@@ -634,6 +643,8 @@ func (serverObj *Server) Stop() error {
 
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
+	serverObj.wg.Wait()
+	serverObj.blockChain.Stop()
 	return nil
 }
 
@@ -769,7 +780,7 @@ func (serverObj *Server) GetActiveShardNumber() int {
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	ticker := time.NewTicker(serverObj.memPool.ScanTime)
 	defer ticker.Stop()
-	for _ = range ticker.C {
+	for range ticker.C {
 		txDescs := serverObj.memPool.GetPool()
 
 		for _, txDesc := range txDescs {
