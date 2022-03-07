@@ -193,6 +193,11 @@ const (
 	// pPLG ( Polygon )
 	BurningPLGForDepositToSCRequestMeta = 330
 	BurningPLGConfirmForDepositToSCMeta = 154
+
+	// UnifiedToken
+	BridgeAggModifyUnifiedTokenInfoMeta             = 340
+	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
 )
 
 var minerCreatedMetaTypes = []int{
