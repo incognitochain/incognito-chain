@@ -942,7 +942,7 @@ func (blockchain *BlockChain) RepairShardViewStateDB(
 			batch,
 			blockchain,
 			false,
-			view.BestBlock,
+			finalBlock,
 			true,
 		); err != nil {
 			return err
