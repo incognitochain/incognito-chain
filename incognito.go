@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -86,12 +87,6 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	config.LoadParam()
 	portal.SetupParam()
-	err := wallet.InitPublicKeyBurningAddressByte()
-	if err != nil {
-		Logger.log.Error(err)
-		panic(err)
-	}
-
 	//create genesis block
 	blockchain.CreateGenesisBlocks()
 

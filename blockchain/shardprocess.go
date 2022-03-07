@@ -1412,11 +1412,25 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	}()
 }
 
+var totalGetS uint64 = 0
+var totalHitS uint64 = 0
+
 func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 	committeeFromBlock common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	_, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlock)
-	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
+	Logger.log.Infof("[bmcache] GetShardCommitteeFromBeaconHash cache ratio %v/%v", totalHitS, totalGetS)
+	totalGetS++
+	key := getCommitteeCacheKey(committeeFromBlock, shardID)
+	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
+		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
+			totalHitS++
+			return committees, nil
+		} else {
+			Logger.log.Error(errors.Errorf("Can not convert data from cache to committee public key list, blk beacon hash %v", committeeFromBlock.String()))
+		}
+	}
+	existed, err := blockchain.BeaconChain.blkManager.CheckBlockByHash(&committeeFromBlock)
+	if (err != nil) || (!existed) {
+		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, errors.Errorf("Can not get block %v, existed %v, error %v", committeeFromBlock.String(), existed, err))
 	}
 
 	bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), committeeFromBlock)
@@ -1430,6 +1444,7 @@ func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 		return []incognitokey.CommitteePublicKey{}, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
 	}
 	committees := statedb.GetOneShardCommittee(stateDB, shardID)
+	blockchain.committeeByEpochCache.Add(key, committees)
 
 	return committees, nil
 }

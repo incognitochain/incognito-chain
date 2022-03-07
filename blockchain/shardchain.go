@@ -52,7 +52,7 @@ func NewShardChain(
 	tv txpool.TxVerifier,
 ) *ShardChain {
 	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawfinalblock", shardID))
-	ffFinalBlk, err := flatfile.NewFlatFile(p, 5000)
+	ffFinalBlk, err := flatfile.NewFlatFile(p, 5*config.Param().EpochParam.NumberOfBlockInEpoch)
 	if err != nil {
 		panic(err)
 	}

@@ -39,7 +39,7 @@ type BeaconChain struct {
 func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
 	committeeInfoCache, _ := lru.New(100)
 	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("beacon/rawfinalblock"))
-	ffFinalBlk, err := flatfile.NewFlatFile(p, 5000)
+	ffFinalBlk, err := flatfile.NewFlatFile(p, 5*config.Param().EpochParam.NumberOfBlockInEpoch)
 	if err != nil {
 		panic(err)
 	}
@@ -474,4 +474,8 @@ func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 
 func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
 	return nil
+}
+
+func getCommitteeCacheKeyByEpoch(epoch uint64, cID byte) string {
+	return fmt.Sprintf("cmt-b-e-%v-%v", common.Uint64ToBytes(epoch), cID)
 }

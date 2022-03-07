@@ -34,3 +34,22 @@ type BlockInterface interface {
 	GetShardID() int
 	ToBytes() ([]byte, error)
 }
+
+var CommitteeProvider CommitteeProvide
+
+type CommitteeProvide interface {
+	GetValidatorFromIndex(
+		valdatorIdx int,
+		cID byte,
+		beaconHash common.Hash,
+		prevHash common.Hash,
+		epoch uint64,
+	) (string, error)
+	GetValidatorIndex(
+		valdatorPk string,
+		cID byte,
+		beaconHash common.Hash,
+		prevHash common.Hash,
+		epoch uint64,
+	) (int, error)
+}

@@ -467,6 +467,7 @@ func (header *BeaconHeader) Hash() common.Hash {
 }
 
 func (header *BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, error) {
+	var err error
 	res := &proto.BeaconHeaderBytes{}
 	res.Version = int32(header.Version)
 	res.Height = header.Height
@@ -484,8 +485,37 @@ func (header *BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, err
 	res.AutoStakingRoot = header.AutoStakingRoot[:]
 	res.ShardSyncValidatorRoot = header.ShardSyncValidatorRoot[:]
 	res.ConsensusType = header.ConsensusType
-	res.Producer = 1
-	res.Proposer = 1
+	producerIdx := -1
+	proposerIdx := -1
+	if header.Producer != "" {
+		producerIdx, err = CommitteeProvider.GetValidatorIndex(
+			header.Producer,
+			common.BeaconChainSyncID,
+			common.Hash{},
+			header.PreviousBlockHash,
+			header.Epoch,
+		)
+		if err != nil {
+			panic(err)
+			return nil, err
+		}
+		proposerIdx = producerIdx
+		if (header.Proposer != header.Producer) && (header.Proposer != "") {
+			proposerIdx, err = CommitteeProvider.GetValidatorIndex(
+				header.Proposer,
+				common.BeaconChainSyncID,
+				common.Hash{},
+				header.PreviousBlockHash,
+				header.Epoch,
+			)
+			if err != nil {
+				panic(err)
+				return nil, err
+			}
+		}
+	}
+	res.Producer = int32(producerIdx)
+	res.Proposer = int32(proposerIdx)
 	res.ProposeTime = header.ProposeTime
 	res.FinalityHeight = header.FinalityHeight
 	return res, nil
@@ -508,9 +538,37 @@ func (header *BeaconHeader) FromProtoBeaconHeader(protoData *proto.BeaconHeaderB
 	copy(header.AutoStakingRoot[:], protoData.AutoStakingRoot)
 	copy(header.ShardSyncValidatorRoot[:], protoData.ShardSyncValidatorRoot)
 	header.ConsensusType = protoData.ConsensusType
-	header.Producer = ""
-	header.ProducerPubKeyStr = ""
-	header.Proposer = ""
+	var err error
+	producerPk := ""
+	proposerPk := ""
+	if protoData.Producer != -1 {
+		producerPk, err = CommitteeProvider.GetValidatorFromIndex(
+			int(protoData.Producer),
+			common.BeaconChainSyncID,
+			common.Hash{},
+			header.PreviousBlockHash,
+			protoData.Epoch,
+		)
+		if err != nil {
+			return nil
+		}
+		proposerPk = producerPk
+		if protoData.Producer != protoData.Proposer {
+			proposerPk, err = CommitteeProvider.GetValidatorFromIndex(
+				int(protoData.Proposer),
+				common.BeaconChainSyncID,
+				common.Hash{},
+				header.PreviousBlockHash,
+				protoData.Epoch,
+			)
+			if err != nil {
+				return nil
+			}
+		}
+	}
+	header.Producer = producerPk
+	header.ProducerPubKeyStr = producerPk
+	header.Proposer = proposerPk
 	header.ProposeTime = protoData.ProposeTime
 	header.FinalityHeight = protoData.FinalityHeight
 	return nil

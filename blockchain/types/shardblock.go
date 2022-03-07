@@ -21,22 +21,6 @@ type ShardBlock struct {
 	Header         ShardHeader
 }
 
-var CommitteeProvider CommitteeProvide
-
-type CommitteeProvide interface {
-	GetListCommittee(
-		shardID int,
-		beaconHash common.Hash,
-		beaconHeight uint64,
-	) ([]string, error)
-	GetValidatorIndex(
-		valdatorPk string,
-		shardID int,
-		beaconHash common.Hash,
-		beaconHeight uint64,
-	) (int, error)
-}
-
 type ShardHeader struct {
 	Producer              string                 `json:"Producer"`
 	ProducerPubKeyStr     string                 `json:"ProducerPubKeyStr"`
@@ -276,34 +260,39 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 }
 
 func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
-	// var err error
 	res := &proto.ShardHeaderBytes{}
-	// producerIdx, err := CommitteeProvider.GetValidatorIndex(
-	// 	sHeader.ProducerPubKeyStr,
-	// 	int(sHeader.ShardID),
-	// 	sHeader.BeaconHash,
-	// 	sHeader.BeaconHeight,
-	// )
-
-	// if err != nil {
-	// 	return nil
-	// }
-	res.Producer = 0 //int32(producerIdx)
-
-	// proposerIdx, err := CommitteeProvider.GetValidatorIndex(
-	// 	sHeader.Proposer,
-	// 	int(sHeader.ShardID),
-	// 	sHeader.BeaconHash,
-	// 	sHeader.BeaconHeight,
-	// )
-	// if err != nil {
-	// 	if sHeader.Round == 1 {
-	// 		proposerIdx = -1
-	// 	} else {
-	// 		return nil
-	// 	}
-	// }
-	res.Proposer = -1 //int32(proposerIdx)
+	var err error
+	producerIdx := -1
+	proposerIdx := -1
+	if sHeader.Producer != "" {
+		producerIdx, err = CommitteeProvider.GetValidatorIndex(
+			sHeader.Producer,
+			sHeader.ShardID,
+			sHeader.CommitteeFromBlock,
+			sHeader.PreviousBlockHash,
+			sHeader.Epoch,
+		)
+		if err != nil {
+			panic(err)
+			return nil
+		}
+		proposerIdx = producerIdx
+		if (sHeader.Proposer != sHeader.Producer) && (sHeader.Proposer != "") {
+			proposerIdx, err = CommitteeProvider.GetValidatorIndex(
+				sHeader.Proposer,
+				sHeader.ShardID,
+				sHeader.CommitteeFromBlock,
+				sHeader.PreviousBlockHash,
+				sHeader.Epoch,
+			)
+			if err != nil {
+				panic(err)
+				return nil
+			}
+		}
+	}
+	res.Producer = int32(producerIdx)
+	res.Proposer = int32(proposerIdx)
 	res.ShardID = int32(sHeader.ShardID)
 	res.Version = int32(sHeader.Version)
 	res.PreviousBlockHash = sHeader.PreviousBlockHash[:]
@@ -335,34 +324,39 @@ func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
 }
 
 func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderBytes) error {
-	// var err error
-	// protoData := &proto.ShardHeaderBytes{}
-	// producerIdx, err := CommitteeProvider.GetValidatorIndex(
-	// 	sHeader.ProducerPubKeyStr,
-	// 	int(sHeader.ShardID),
-	// 	sHeader.BeaconHash,
-	// 	sHeader.BeaconHeight,
-	// )
-
-	// if err != nil {
-	// 	return nil
-	// }
-	protoData.Producer = 0 //int32(producerIdx)
-
-	// proposerIdx, err := CommitteeProvider.GetValidatorIndex(
-	// 	sHeader.Proposer,
-	// 	int(sHeader.ShardID),
-	// 	sHeader.BeaconHash,
-	// 	sHeader.BeaconHeight,
-	// )
-	// if err != nil {
-	// 	if sHeader.Round == 1 {
-	// 		proposerIdx = -1
-	// 	} else {
-	// 		return nil
-	// 	}
-	// }
-	sHeader.Proposer = "s" //int32(proposerIdx)
+	copy(sHeader.CommitteeFromBlock[:], protoData.CommitteeFromBlock)
+	copy(sHeader.PreviousBlockHash[:], protoData.PreviousBlockHash)
+	var err error
+	producerPk := ""
+	proposerPk := ""
+	if protoData.Producer != -1 {
+		producerPk, err = CommitteeProvider.GetValidatorFromIndex(
+			int(protoData.Producer),
+			byte(protoData.ShardID),
+			sHeader.CommitteeFromBlock,
+			sHeader.PreviousBlockHash,
+			protoData.Epoch,
+		)
+		if err != nil {
+			return nil
+		}
+		proposerPk = producerPk
+		if protoData.Producer != protoData.Proposer {
+			proposerPk, err = CommitteeProvider.GetValidatorFromIndex(
+				int(protoData.Proposer),
+				byte(protoData.ShardID),
+				sHeader.CommitteeFromBlock,
+				sHeader.PreviousBlockHash,
+				protoData.Epoch,
+			)
+			if err != nil {
+				return nil
+			}
+		}
+	}
+	sHeader.Producer = producerPk
+	sHeader.ProducerPubKeyStr = producerPk
+	sHeader.Proposer = proposerPk
 	sHeader.ShardID = byte(protoData.ShardID)
 	sHeader.Version = int(protoData.Version)
 	copy(sHeader.PreviousBlockHash[:], protoData.PreviousBlockHash)
@@ -387,7 +381,6 @@ func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderByt
 	copy(sHeader.PendingValidatorRoot[:], protoData.PendingValidatorRoot)
 	copy(sHeader.StakingTxRoot[:], protoData.StakingTxRoot)
 	copy(sHeader.InstructionMerkleRoot[:], protoData.InstructionMerkleRoot)
-	copy(sHeader.CommitteeFromBlock[:], protoData.CommitteeFromBlock)
 	sHeader.ProposeTime = protoData.ProposeTime
 	sHeader.FinalityHeight = protoData.FinalityHeight
 	return nil
@@ -525,6 +518,7 @@ func (shardBlock *ShardBlock) FromBytes(data []byte) error {
 }
 
 func (shardBlock *ShardBlock) ToBytes() ([]byte, error) {
+	preHash := shardBlock.Hash().String()
 	protoBlk := shardBlock.ToProtoShardBlock()
 	if protoBlk == nil {
 		return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf", shardBlock.Header.Height, shardBlock.Hash().String())
@@ -535,6 +529,12 @@ func (shardBlock *ShardBlock) ToBytes() ([]byte, error) {
 	}
 	// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	// protoBytesComp := c.EncodeAll(protoBytes, nil)
+	sBlk := &ShardBlock{}
+	sBlk.FromBytes(protoBytes)
+	postHash := sBlk.Hash().String()
+	if preHash != postHash {
+		panic("What")
+	}
 	return protoBytes, nil
 }
 
