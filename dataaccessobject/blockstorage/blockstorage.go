@@ -16,25 +16,13 @@ import (
 )
 
 type BlockService interface {
-	GetBlockFinalByHeight(
-		height uint64,
-		cID int,
-	) (
-		[]byte,
-		error,
-	)
 	GetBlockByHash(
 		hash *common.Hash,
 	) (
 		[]byte,
 		error,
 	)
-	GetPrevHashByHash(
-		hash *common.Hash,
-	) (
-		common.Hash,
-		error,
-	)
+
 	CheckBlockByHash(
 		hash *common.Hash,
 	) (
@@ -44,11 +32,6 @@ type BlockService interface {
 	StoreBlock(
 		blkType proto.BlkType,
 		blkData types.BlockInterface,
-	) error
-	MarkFinalized(
-		height uint64,
-		hash common.Hash,
-		cID byte,
 	) error
 }
 
@@ -96,23 +79,6 @@ func NewBlockService(
 	res.finalHeight[common.BeaconChainSyncID] = 1
 	res.hashByHeight[common.BeaconChainSyncID] = make(map[uint64][]common.Hash)
 	return res, nil
-}
-
-func (blkM *BlockManager) GetBlockFinalByHeight(
-	height uint64,
-	cID int,
-) (
-	[]byte,
-	error,
-) {
-	key := rawdbv2.GetHeightToBlockIndexKey(height, cID)
-	blkHashBytes, err := blkM.rDB.Get(key)
-	if err != nil {
-		return nil, errors.Wrapf(err, "can not get block %v of cID %v", height, cID)
-	}
-	blkHash := common.Hash{}
-	copy(blkHash[:], blkHashBytes)
-	return blkM.GetBlockByHash(&blkHash)
 }
 
 func (blkM *BlockManager) CheckBlockByHash(
@@ -188,61 +154,4 @@ func (blkM *BlockManager) StoreBlock(
 	blkM.locker.Unlock()
 	blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
 	return nil
-}
-
-func (blkM *BlockManager) storeBlockHeightFinalized(
-	cID int,
-	blkHeight uint64,
-	blkHash common.Hash,
-) error {
-	key := rawdbv2.GetHeightToBlockIndexKey(blkHeight, cID)
-	err := blkM.rDB.Put(key, blkHash[:])
-	return err
-}
-func (blkM *BlockManager) MarkFinalized(
-	blkHeight uint64,
-	blkHash common.Hash,
-	cID byte,
-) error {
-	curFinalHeight := blkM.finalHeight[cID]
-	for height := blkHeight; height >= curFinalHeight; height-- {
-		err := blkM.storeBlockHeightFinalized(int(cID), height, blkHash)
-		if err != nil {
-			return err
-		}
-		pHash, ok := blkM.prevHashByHash[blkHash]
-		fmt.Printf("cID %v height %v testdelete %v prev %v \n", cID, height, blkHash.String(), pHash.String())
-		needToRemove := blkM.hashByHeight[cID][height]
-		for _, hash := range needToRemove {
-			delete(blkM.prevHashByHash, hash)
-			if hash != blkHash {
-				fmt.Printf("cID %v height %v testdelete delete %v - %v\n", cID, height, hash.String(), blkHash.String())
-				key := rawdbv2.GetHashToBlockIndexKey(hash)
-				err := blkM.rDB.Delete(key)
-				if err != nil {
-					panic(err)
-				}
-			}
-		}
-		if ok {
-			blkHash = pHash
-		}
-	}
-	blkM.finalHeight[cID] = blkHeight
-	return nil
-}
-
-func (blkM *BlockManager) GetPrevHashByHash(
-	hash *common.Hash,
-) (
-	common.Hash,
-	error,
-) {
-	blkM.locker.RLock()
-	prevH, existed := blkM.prevHashByHash[*hash]
-	blkM.locker.RUnlock()
-	if !existed {
-		return common.Hash{}, errors.Errorf("Can not found prev Hash for non-finalize hash %v ", hash.String())
-	}
-	return prevH, nil
 }

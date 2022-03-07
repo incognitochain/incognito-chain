@@ -1012,11 +1012,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	storeBlock := newFinalView.GetBlock()
 	finalizedBlocks := []*types.BeaconBlock{}
 
-	// storeBlkHeight := storeBlock.GetHeight()
-	// storeBlkHash := storeBlock.Hash()
-
-	blockchain.BeaconChain.blkManager.MarkFinalized(storeBlock.GetHeight(), *storeBlock.Hash(), common.BeaconChainSyncID)
-
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
@@ -1027,15 +1022,15 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
+		prevView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if prevView == nil {
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
 				// panic("Database is corrupt")
 				return err
 			}
 		} else {
-			storeBlock = newFinalView.GetBlock()
+			storeBlock = prevView.GetBlock()
 		}
 	}
 

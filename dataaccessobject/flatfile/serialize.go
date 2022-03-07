@@ -15,19 +15,17 @@ import (
 	"os"
 	"sort"
 	"strconv"
-
-	"github.com/incognitochain/incognito-chain/common"
 )
 
 type FlatFile interface {
-	//append item into flat file, return item index
+	//append item uint64o flat file, return item index
 	Append([]byte) (uint64, error)
 
 	//read item in flatfile with specific index (return from append)
 	Read(index uint64) ([]byte, error)
 
 	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently(index uint64) (chan []byte, chan int, func())
+	ReadRecently(index uint64) (chan []byte, chan uint64, func())
 
 	//truncate flat file system
 	Truncate(lastIndex uint64) error
@@ -39,11 +37,10 @@ type FlatFileManager struct {
 	folderMap       map[uint64]bool
 	sortedFolder    []uint64
 	currentFD       *os.File
-	currentFile     int
-	currentFileSize int
+	currentFile     uint64
+	currentFileSize uint64
 	cache           *lru.Cache
 	lock            *sync.RWMutex
-	cacher          common.Cacher
 }
 
 type ReadInfo struct {
@@ -60,9 +57,9 @@ func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
 	}
 	for _, f := range files {
 		name := filepath.Base(f.Name())
-		i, err := strconv.ParseUint(name, 10, 64)
+		i, err := strconv.Atoi(name)
 		if err == nil {
-			if i < lastFile {
+			if uint64(i) < lastFile {
 				err := os.Remove(path.Join(ff.dataDir, name))
 				fmt.Println(err)
 			}
@@ -76,25 +73,24 @@ func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
 	return nil
 }
 
-func (f *FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
+func (f *FlatFileManager) PasreFile(fileID uint64) (map[uint64]ReadInfo, error) {
 	//TODO: cache
-	fmt.Printf("[bmcachefile] hit/get %v/%v\n", totalHitFile, totalGetFile)
 	f.lock.RLock()
 	defer f.lock.RUnlock()
 
 	if fileID < f.currentFile {
 		v, ok := f.cache.Get(fileID)
 		if ok {
-			return v.(map[int]ReadInfo), nil
+			return v.(map[uint64]ReadInfo), nil
 		}
 	}
 
-	p := path.Join(f.dataDir, strconv.Itoa(fileID))
+	p := path.Join(f.dataDir, strconv.Itoa(int(fileID)))
 	fd, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
-	readInfos := make(map[int]ReadInfo)
+	readInfos := make(map[uint64]ReadInfo)
 	offset := uint64(0)
 	size := 0
 	for {
@@ -112,7 +108,7 @@ func (f *FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
 			result,
 		}
 		id := len(readInfos)
-		readInfos[id] = readInf
+		readInfos[uint64(id)] = readInf
 		offset += 8
 		offset += result
 		size++
@@ -126,14 +122,14 @@ func (f *FlatFileManager) PasreFile(fileID int) (map[int]ReadInfo, error) {
 func (f FlatFileManager) Read(index uint64) ([]byte, error) {
 	fileID := index / f.fileSizeLimit
 	itemFileIndex := index % f.fileSizeLimit
-	var readInfo map[int]ReadInfo
+	var readInfo map[uint64]ReadInfo
 	var err error
 
 	//find parse info in cache first
 	v, ok := f.cache.Get(fileID)
 	if ok {
-		if itemFileIndex < len(v.(map[int]ReadInfo)) {
-			readInfo = v.(map[int]ReadInfo)
+		if int(itemFileIndex) < len(v.(map[uint64]ReadInfo)) {
+			readInfo = v.(map[uint64]ReadInfo)
 		} else { //if find item index is greater than len of cache <- could be new item, parse again
 			readInfo, err = f.PasreFile(fileID)
 		}
@@ -144,14 +140,7 @@ func (f FlatFileManager) Read(index uint64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if (int(itemFileIndex) >= len(mapInfo)) || (!ok) {
-		mapInfo, err = f.PasreFile(fileID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if int(itemFileIndex) >= len(mapInfo) {
+	if int(itemFileIndex) >= len(readInfo) {
 		return nil, errors.New(fmt.Sprintf("Cannot read item at index %v", index))
 	}
 
@@ -164,7 +153,7 @@ func (f FlatFileManager) Read(index uint64) ([]byte, error) {
 	return rawB, nil
 }
 
-func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func()) {
+func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, func()) {
 	c := make(chan []byte)
 	e := make(chan uint64)
 	closed := false
@@ -179,8 +168,8 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func
 	go func() {
 		fromFile := index / uint64(f.fileSizeLimit)
 		offset := index % uint64(f.fileSizeLimit)
-		for i := int(fromFile); i >= 0; i-- {
-			readInfo, err := f.PasreFile(int(i))
+		for i := uint64(fromFile); i >= 0; i-- {
+			readInfo, err := f.PasreFile(uint64(i))
 			if err != nil {
 				e <- 1
 				cancel()
@@ -190,9 +179,9 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func
 				cancel()
 			}
 
-			for j := int(offset); j >= 0; j-- {
-				rawB := make([]byte, readInfo[int(j)].size)
-				readInfo[int(j)].fd.ReadAt(rawB, int64(readInfo[int(j)].offset))
+			for j := uint64(offset); j >= 0; j-- {
+				rawB := make([]byte, readInfo[uint64(j)].size)
+				readInfo[uint64(j)].fd.ReadAt(rawB, int64(readInfo[uint64(j)].offset))
 
 			LOOP:
 				if !closed {
@@ -217,23 +206,23 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan int, func
 }
 
 func (f *FlatFileManager) newNextFile() (*os.File, error) {
-	i := uint64(0)
+	i := 0
 	if f.currentFD != nil {
 		name := filepath.Base(f.currentFD.Name())
-		i, _ = strconv.ParseUint(name, 10, 64)
+		i, _ = strconv.Atoi(name)
 		i++
 	}
-	path := path.Join(f.dataDir, strconv.FormatUint(i, 10))
+	path := path.Join(f.dataDir, strconv.Itoa(i))
 	fd, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		return nil, err
 	}
 
 	f.currentFD = fd
-	f.currentFile = i
+	f.currentFile = uint64(i)
 	f.currentFileSize = 0
-	f.sortedFolder = append(f.sortedFolder, i)
-	f.folderMap[i] = true
+	f.sortedFolder = append(f.sortedFolder, uint64(i))
+	f.folderMap[uint64(i)] = true
 	return fd, nil
 }
 
@@ -281,7 +270,7 @@ func (f *FlatFileManager) Append(data []byte) (uint64, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	//append size-bytes into current FD, if max -> create new file, update currentFD
+	//append size-bytes uint64o current FD, if max -> create new file, update currentFD
 	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint64(result, uint64(len(data)))
 	_, err := f.currentFD.Write(result)
@@ -298,7 +287,7 @@ func (f *FlatFileManager) Append(data []byte) (uint64, error) {
 	return addedItemIndex, err
 }
 
-func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
+func NewFlatFile(dir string, fileBound uint64) (*FlatFileManager, error) {
 	cache, _ := lru.New(100)
 	ff := &FlatFileManager{
 		dataDir:       dir,
@@ -308,8 +297,8 @@ func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
 		cache:         cache,
 	}
 
-	//read all file has number  in folder -> into folderMap, sortedFolder
-	err = os.MkdirAll(dir, os.ModePerm)
+	//read all file has number  in folder -> uint64o folderMap, sortedFolder
+	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
@@ -318,17 +307,15 @@ func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
 		return nil, err
 	}
 
-	currentFile := uint64(0)
-	needNewFile := true
+	currentFile := -1
 	for _, f := range files {
 		name := filepath.Base(f.Name())
-		i, err := strconv.ParseUint(name, 10, 64)
+		i, err := strconv.Atoi(name)
 		if err == nil {
-			ff.folderMap[i] = true
-			ff.sortedFolder = append(ff.sortedFolder, i)
+			ff.folderMap[uint64(i)] = true
+			ff.sortedFolder = append(ff.sortedFolder, uint64(i))
 			if currentFile < i {
 				currentFile = i
-				needNewFile = false
 			}
 		}
 	}
@@ -340,14 +327,14 @@ func NewFlatFile(dir string, fileBound int) (*FlatFileManager, error) {
 		}
 	})
 	//open last file currentFD, update currentFileSize, if max -> create new file, update currentFD
-	if !needNewFile {
-		path := path.Join(ff.dataDir, strconv.FormatUint(currentFile, 10))
+	if currentFile > -1 {
+		path := path.Join(ff.dataDir, strconv.Itoa(currentFile))
 		fd, err := os.OpenFile(path, os.O_APPEND|os.O_RDWR, 0666)
 		if err != nil {
 			return nil, err
 		}
 		ff.currentFD = fd
-		ff.currentFile = currentFile
+		ff.currentFile = uint64(currentFile)
 		//read file size, and create new file in need
 		err = ff.update()
 		if err != nil {

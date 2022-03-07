@@ -1189,7 +1189,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
-		if (storeBlkHeight == 1) || ((finalView != nil) && (storeBlkHeight == finalView.GetHeight()+1)) {
+		if storeBlock.GetHeight() == 1 {
 			break
 		}
 		prevHash := storeBlock.GetPrevHash()
