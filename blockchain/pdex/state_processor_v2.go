@@ -781,6 +781,9 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
+							if ord.AccessOTA() == nil || len(ord.AccessOTA()) == 0 {
+								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
+							}
 						}
 					}
 				} else if md.TokenID == pair.state.Token1ID() {
@@ -795,6 +798,9 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
+							if ord.AccessOTA() == nil || len(ord.AccessOTA()) == 0 {
+								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
+							}
 						}
 					}
 				}

@@ -866,6 +866,9 @@ TransactionLoop:
 					if ord.IsEmpty() {
 						if orderReward, found := pair.orderRewards[ord.NftID().String()]; found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
+							if ord.AccessOTA() == nil || len(ord.AccessOTA()) == 0 {
+								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
+							}
 							pair.orderRewards[ord.NftID().String()] = orderReward
 						}
 						shouldMintAccessCoin = false
@@ -1124,7 +1127,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
 		if isExistedOrderReward {
 			if order.withdrawnStatus == WithdrawnOrderReward || order.withdrawnStatus == WaitToWithdrawOrderReward {
-				Logger.log.Infof("Can not withdraw order reward actively with accessOTA")
+				Logger.log.Infof("Cannot withdraw order reward actively with accessOTA")
 				instructions = append(instructions, rejectInst...)
 				continue
 			}
