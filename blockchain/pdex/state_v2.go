@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -849,4 +850,50 @@ func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
 		}
 	}
 	return *s.nftAssetTags, nil
+}
+
+func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3ExtendedAccessID) (bool, error) {
+	var accessOTA []byte
+	switch checker.MetadataType {
+	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta, metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
+		poolPair, found := s.poolPairs[checker.PoolID]
+		if !found || poolPair == nil {
+			return false, fmt.Errorf("Cannot find pool pair ID %s", checker.PoolID)
+		}
+		share, found := poolPair.Shares()[checker.AccessID.String()]
+		if !found || share == nil {
+			return false, fmt.Errorf("Cannot find accessID %s", checker.AccessID.String())
+		}
+		accessOTA = share.accessOTA
+	case metadataCommon.Pdexv3UnstakingRequestMeta, metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
+		stakingPool, found := s.stakingPoolStates[checker.PoolID]
+		if stakingPool == nil || !found {
+			return false, fmt.Errorf("Cannot find stakingPoolID %s", checker.PoolID)
+		}
+		staker, found := stakingPool.stakers[checker.AccessID.String()]
+		if staker == nil || !found {
+			return false, fmt.Errorf("Cannot find stakerID %s", checker.AccessID.String())
+		}
+		accessOTA = staker.accessOTA
+	case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
+		poolPair, found := s.poolPairs[checker.PoolID]
+		if !found || poolPair == nil {
+			return false, fmt.Errorf("Cannot find pool pair ID %s", checker.PoolID)
+		}
+		index := -1
+		for i, order := range poolPair.Orderbook().Orders() {
+			if order.Id() == checker.OrderID {
+				index = i
+				accessOTA = order.AccessOTA()
+				break
+			}
+		}
+		if index == -1 {
+			return false, fmt.Errorf("Cannot find orderID %v", checker.OrderID)
+		}
+	}
+	if !bytes.Equal(accessOTA, checker.AccessOTA) {
+		return false, fmt.Errorf("AccessOTA Expect %v but receive %v", accessOTA, checker.AccessOTA)
+	}
+	return true, nil
 }

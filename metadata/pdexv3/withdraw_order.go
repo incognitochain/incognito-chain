@@ -88,6 +88,17 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 			return false, fmt.Errorf("Invalid transaction type %v for withdrawOrder request", tx.GetType())
 		}
 	}
+	if !req.UseNft() {
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
+				req.PoolPairID,
+				*req.AccessID,
+				req.BurntOTA.ToBytesS(),
+				metadataCommon.Pdexv3WithdrawOrderRequestMeta,
+				req.OrderID,
+			),
+		)
+	}
 	return true, nil
 }
 
