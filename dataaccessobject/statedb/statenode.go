@@ -15,7 +15,7 @@ type StateNode struct {
 	previousLink    *StateNode
 	aggregateHash   *common.Hash //!= nil, aslo mean commit from mem to disk
 	finalizedCommit bool
-	ffIndex         uint64
+	ffIndex         int64
 }
 
 func (s StateNode) GetHash() common.Hash {

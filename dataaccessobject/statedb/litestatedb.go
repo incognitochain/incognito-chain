@@ -89,7 +89,7 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 		if err != nil {
 			return common.Hash{}, err
 		}
-		stateDB.headStateNode.ffIndex = uint64(ffIndex)
+		stateDB.headStateNode.ffIndex = int64(ffIndex)
 		return *h, nil
 	}
 
@@ -127,7 +127,7 @@ func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex int) erro
 		return err
 	}
 
-	if ffIndex < pivotRootIndex {
+	if ffIndex < int(pivotRootIndex) {
 		return errors.New("Rebuild from root that before pivot point")
 	}
 

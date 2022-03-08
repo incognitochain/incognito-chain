@@ -22,7 +22,7 @@ type FlatFile interface {
 	Append([]byte) (int, error)
 
 	//read item in flatfile with specific index (return from append)
-	Read(index int) ([]byte, error)
+	Read(index uint64) ([]byte, error)
 
 	//read recent data, return data channel, errpr channel, and cancel function
 	ReadRecently(index uint64) (chan []byte, chan int, func())
