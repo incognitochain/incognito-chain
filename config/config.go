@@ -119,7 +119,7 @@ type config struct {
 	IndexerAccessTokens string    `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
 	UseOutcoinDatabase  []bool    `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 	GethParam           gethParam `mapstructure:"geth_param"`
-	SyncMode            string    `mapstructure:"sync_mode" long:"syncmode" description:"smart contract of prv bep20"`
+	SyncMode            string    `mapstructure:"sync_mode" long:"syncmode" description:"archive,batchcommit,lite"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses

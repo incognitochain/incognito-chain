@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"log"
 	"math/big"
 	"path"
 	"sort"
@@ -129,16 +130,32 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 	trieDBWrapper := NewDatabaseAccessWarper(db)
 	metrics.EnabledExpensive = true
 	rebuildRoot, rebuildMode, rebuildIndex, _ := getRebuildRootInfo(rebuildRootData)
-
 	switch mode {
 	case common.STATEDB_ARCHIVE_MODE:
+		//what if rebuildMode is batch, lite
+		if rebuildMode == common.STATEDB_LITE_MODE {
+			return nil, errors.New("Litemode is already initiated")
+		}
+		if rebuildMode == common.STATEDB_BATCH_COMMIT_MODE {
+			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootData, pivotState)
+			if stateDB != nil {
+				stateDB.mode = common.STATEDB_ARCHIVE_MODE
+			}
+			return stateDB, err
+		}
+
+		//create ff manager, only for checking ff size
+
 		if rebuildRootData == "" {
 			return NewWithPrefixTrie(common.EmptyRoot, trieDBWrapper)
+
 		}
+
 		root, _, _, err := getRebuildRootInfo(rebuildRootData)
 		if err != nil {
 			return nil, err
 		}
+
 		return NewWithPrefixTrie(root, trieDBWrapper)
 
 	case common.STATEDB_BATCH_COMMIT_MODE:
@@ -156,29 +173,36 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 		//else rebuild from state
 		//if pivotState nil, rebuild it
 		var pivotIndex = 0
+		var err error
+		//fmt.Println("=====> pivotState ", pivotState != nil)
 		if pivotState == nil {
 			//get last pivot state
 			var pivotCommit *common.Hash
-			var err error
 			pivotCommit, pivotIndex, err = GetLatestPivotCommitInfo(db, dbName)
 			if pivotIndex > rebuildIndex {
 				return nil, errors.New("Cannot Rebuild! Index is less than pivot index")
 			}
-
+			//fmt.Println("=====> pivotState", pivotCommit.String(), pivotIndex, rebuildIndex)
 			//rebuild pivotState
 			pivotState, err = NewBatchCommitStateDB(rootDir, dbName, db, *pivotCommit)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			_, _, pivotIndex, err = getRebuildRootInfo(pivotState.curRebuildString)
+			if err != nil {
+				return nil, err
+			}
 		}
-
 		//replay state object to rebuild to expected state
 		stateSeries, err := pivotState.GetStateObjectFromBranch(rebuildIndex, pivotIndex)
 		if err != nil {
 			return nil, err
 		}
 		newState := pivotState.Copy()
-		for _, stateObjects := range stateSeries {
+		for i, stateObjects := range stateSeries {
+			//newStateRoot, _ := newState.IntermediateRoot(true)
+			fmt.Println("replay", i, len(stateObjects))
 			for objKey, obj := range stateObjects {
 				if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return nil, err
@@ -188,22 +212,24 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 				}
 			}
 		}
-
-		newStateRoot, _, err := newState.Commit(true)
+		newStateRoot, _ := newState.IntermediateRoot(true)
 		if err != nil {
 			return nil, err
 		}
 
 		//check if we have expect rebuild root
+		fmt.Println("==================> compare", newStateRoot.String(), rebuildRoot.String())
 		if newStateRoot.String() != rebuildRoot.String() {
-			if err != nil {
-				return nil, err
-			}
+			return nil, errors.New("Cannot rebuild correct root")
 		}
 
+		newState.curRebuildString = fmt.Sprintf("%v-%v-%v", rebuildRoot, common.STATEDB_BATCH_COMMIT_MODE, rebuildIndex)
 		return newState, nil
 
 	case common.STATEDB_LITE_MODE:
+		if rebuildMode != common.STATEDB_LITE_MODE {
+			return nil, errors.New("Must run with lite mode")
+		}
 		return NewLiteStateDB(rootDir, dbName, rebuildRootData, db)
 	default:
 		return nil, errors.New("Cannot recognize statedb mode")
@@ -217,6 +243,7 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 		return nil, err
 	}
 	metrics.EnabledExpensive = true
+
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
@@ -325,6 +352,7 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 
 //readDB raw db
 //writeDB support batch
+//finalRoot is root that we expect not rebuild before that point
 func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot string) error {
 	finalRootHash, _, finalIndex, err := getRebuildRootInfo(finalRoot)
 	if err != nil {
@@ -333,7 +361,8 @@ func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot 
 
 	switch stateDB.mode {
 	case common.STATEDB_ARCHIVE_MODE:
-		if err := stateDB.db.TrieDB().Commit(finalRootHash, false, nil); err != nil {
+		rootHash, _ := stateDB.IntermediateRoot(true)
+		if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
 			return err
 		}
 		return nil
@@ -341,12 +370,6 @@ func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot 
 		trieDB := stateDB.db.TrieDB()
 		nodes, imgs := stateDB.db.TrieDB().Size()
 		batchCommitConfig := stateDB.batchCommitConfig
-
-		//cap max memory in stateDB
-		//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
-		if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
-			stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
-		}
 
 		lastPivotRoot, lastPivotIndex, err := GetLatestPivotCommitInfo(db, stateDB.dbName)
 		if err != nil {
@@ -358,18 +381,28 @@ func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot 
 			return nil
 		}
 		//if force write (stop node) or reach #commit threshold => write to disk
-		if forceWrite || finalIndex-lastPivotIndex == int(stateDB.batchCommitConfig.blockTrieInMemory) {
-			if err := stateDB.db.TrieDB().Commit(finalRootHash, false, nil); err != nil {
+		if forceWrite || finalIndex-lastPivotIndex >= int(stateDB.batchCommitConfig.blockTrieInMemory) {
+			//write the current roothash commit nodes to disk
+			rootHash, _, rootIndex, err := getRebuildRootInfo(stateDB.curRebuildString)
+			if rootIndex == 0 {
+				rootHash, _ = stateDB.IntermediateRoot(true)
+			}
+			if err != nil {
 				return err
 			}
-			if err := StoreLatestPivotCommit(db, stateDB.dbName, fmt.Sprintf("%v-%v", finalRootHash.String(), finalIndex)); err != nil {
+			if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
+				return err
+			}
+			log.Println("finalized", forceWrite, finalIndex-lastPivotIndex, rootIndex)
+
+			if err := StoreLatestPivotCommit(db, stateDB.dbName, fmt.Sprintf("%v-%v", rootHash.String(), rootIndex)); err != nil {
 				return err
 			}
 
 			//dereference roothash before pivot point, for GC reduce memory
 			for !batchCommitConfig.triegc.Empty() {
 				oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-				if uint64(-number) > uint64(finalIndex) {
+				if uint64(-number) >= uint64(finalIndex) {
 					batchCommitConfig.triegc.Push(oldRootHash, number)
 					break
 				}
@@ -416,9 +449,17 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, string, er
 				return root, stateDB.curRebuildString, nil
 			}
 
-			bytesSerialize := MapByteSerialize(changeObj)
+			//cap max memory in stateDB
+			//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
+			nodes, imgs := stateDB.db.TrieDB().Size()
+			batchCommitConfig := stateDB.batchCommitConfig
+			if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
+				stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
+			}
 
+			bytesSerialize := MapByteSerialize(changeObj)
 			//append changeObj with previous ff index, to help retrieve stateObject of a branch
+
 			_, _, preRebuildIndex, err := getRebuildRootInfo(stateDB.curRebuildString)
 			var preRebuildIndexInt = make([]byte, 8)
 			binary.LittleEndian.PutUint64(preRebuildIndexInt, uint64(preRebuildIndex))
@@ -426,7 +467,7 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, string, er
 			if err != nil {
 				return common.Hash{}, "", err
 			}
-
+			//log.Println("write index", stateObjectsIndex, preRebuildIndex, len(changeObj))
 			//update current rebuild string
 			curRebuildString := fmt.Sprintf("%v-%v-%v", root.String(), common.STATEDB_BATCH_COMMIT_MODE, stateObjectsIndex)
 			stateDB.curRebuildString = curRebuildString
@@ -435,7 +476,7 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, string, er
 			// push it into queue with index priority (we want to get smallest index first, so put negative to give small number have high priority)
 			stateDB.db.TrieDB().Reference(root, common.Hash{})
 			stateDB.batchCommitConfig.triegc.Push(root, -int64(stateObjectsIndex))
-
+			stateDB.ClearObjects()
 			return root, curRebuildString, nil
 
 		} else {

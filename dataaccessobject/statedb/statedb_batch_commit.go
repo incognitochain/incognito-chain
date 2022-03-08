@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
@@ -89,7 +90,10 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 			return nil, err
 		}
 		var prevIndex uint64
-		binary.BigEndian.PutUint64(data[:8], prevIndex)
+		err = binary.Read(bytes.NewBuffer(data[:8]), binary.LittleEndian, &prevIndex)
+		if err != nil {
+			return nil, err
+		}
 		stateObjects, err := MapByteDeserialize(stateDB, data[8:])
 		if err != nil {
 			return nil, err
@@ -99,7 +103,7 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		tmp = append(tmp, stateObjects)
 		stateObjectSeries = append(tmp, stateObjectSeries...)
 		ffIndex = int(prevIndex)
-		if ffIndex == 0 || ffIndex == pivotIndex {
+		if ffIndex == 0 || ffIndex <= pivotIndex {
 			break
 		}
 	}

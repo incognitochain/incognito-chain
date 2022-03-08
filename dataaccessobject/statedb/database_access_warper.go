@@ -19,6 +19,8 @@ type FlatFile interface {
 
 	//truncate flat file system
 	Truncate(lastIndex int) error
+
+	Size() uint64
 }
 
 // IntermediateWriter wraps access to tries and contract code.
