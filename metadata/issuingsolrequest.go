@@ -185,8 +185,9 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 	solParam := config.Param().SOLParam
 	solParam.GetFromEnv()
 	host := solParam.Host
-
 	solClient := rpc.New(host)
+
+	// get sol transaction by txSig
 	txSig, err := solana.SignatureFromBase58(iReq.TxSigStr)
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, fmt.Errorf("Invalid tx signature with error %v", err))
@@ -207,17 +208,40 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, fmt.Errorf("Can not decode sol tx signature with error %v", err))
 	}
 
-	if len(tx.Message.Instructions) < 1 {
+	// find instruction shield by program ID
+	insts := tx.Message.Instructions
+	programIDs := tx.Message.AccountKeys
+	if len(insts) < 1 {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Transaction instruction is empty"))
 	}
+	expectedProgramIDPk, _ := solana.PublicKeyFromBase58(config.Param().SolProgramIDStr)
+	var shieldInst *solana.CompiledInstruction
+	for _, inst := range insts {
+		programIDIdx := inst.ProgramIDIndex
+		if len(programIDs)-1 < int(programIDIdx) {
+			Logger.log.Warnf("Invalid program id index: %v - %v", int(programIDIdx), len(programIDs))
+			continue
+		}
+		programID := programIDs[programIDIdx]
 
-	// get the first instruction
-	inst := tx.Message.Instructions[0]
-	instData := inst.Data
+		if expectedProgramIDPk.Equals(programID) {
+			shieldInst = &inst
+			break
+		}
+	}
+	if shieldInst == nil {
+		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Can not find shielding instruction in txSig"))
+	}
 
-	// 1 + 8 + 148
+	// check instruction data length
+	instData := shieldInst.Data
 	if len(instData) < SolShieldInstLen {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid instruction data length"))
+	}
+
+	// check instruction tag (the first byte)
+	if instData[0] != SolShieldInstTag {
+		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid shielding instruction tag"))
 	}
 
 	// extract amount and receiving address
@@ -226,10 +250,8 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 	amount := binary.LittleEndian.Uint64(amountBytes[:])
 	receivingAddrStr := string(receivingAddr[:])
 
-	// parse from instruction
-	accs := inst.ResolveInstructionAccounts(&tx.Message)
-
-	// TODO: review
+	// parse accounts from instruction
+	accs := shieldInst.ResolveInstructionAccounts(&tx.Message)
 	if len(accs) < 5 {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid instruction accounts length"))
 	}
@@ -244,14 +266,12 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid incognito proxy account - is not expected"))
 	}
 
-	// get solana's token id from writable account
+	// get solana's token id from writable account (shield maker account)
 	writableAccPk := accs[0].PublicKey
 	writableAccInfo, err := solClient.GetAccountInfoWithOpts(context.TODO(), writableAccPk, &rpc.GetAccountInfoOpts{Encoding: "jsonParsed"})
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, fmt.Errorf("Can not get writable account info with error %v", err))
 	}
-
-	Logger.log.Errorf("writableAccInfo: %v\n", writableAccInfo)
 
 	infoJson := writableAccInfo.Value.Data.GetRawJSON()
 	accData := SolAccountData{}

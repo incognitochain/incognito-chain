@@ -28,4 +28,5 @@ type ShieldInfo struct {
 }
 
 const SolPubKeyLen = 32
-const SolShieldInstLen = 157
+const SolShieldInstLen = 157 // 1 + 8 + 148
+const SolShieldInstTag = 0

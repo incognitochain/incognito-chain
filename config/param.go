@@ -42,6 +42,7 @@ type param struct {
 	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
 	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
 	SolContractAddressStr            string             `mapstructure:"sol_contract_address" description:"smart contract of SOL for bridge"`
+	SolProgramIDStr                  string             `mapstructure:"sol_program_id" description:"program id of SOL bridge"`
 	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
