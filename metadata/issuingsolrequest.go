@@ -167,6 +167,7 @@ func (iReq *IssuingSOLRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 		ReceivingIncAddrStr: shieldInfo.ReceivingIncAddrStr,
 		ExternalTokenID:     shieldInfo.ExternalTokenID,
 	}
+	Logger.log.Infof("BuildReqActions with Meta: %+v", actionContent.Meta)
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingSolReqBuildReqActionsError, err)
