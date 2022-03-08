@@ -1023,6 +1023,18 @@ func (blockService BlockService) CheckPRVPeggingHashIssued(data map[string]inter
 	return issued, err
 }
 
+func (blockService BlockService) CheckSolTxSigIssued(data map[string]interface{}) (bool, error) {
+	txSigStr, ok := data["TxSigStr"].(string)
+	if !ok {
+		return false, errors.New("Tx sig string is invalid")
+	}
+
+	uniqTx := []byte(txSigStr)
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	issued, err := statedb.IsSOLTxHashIssued(bridgeStateDB, uniqTx)
+	return issued, err
+}
+
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
 	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(pdexStateDB, pdePrefix, pdeSuffix)
