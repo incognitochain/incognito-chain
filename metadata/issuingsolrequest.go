@@ -120,7 +120,7 @@ func (iReq *IssuingSOLRequest) Hash() *common.Hash {
 
 func (iReq *IssuingSOLRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TxSigStr   string      `json:"TxSig"`
+		TxSigStr   string      `json:"TxSigStr"`
 		IncTokenID common.Hash `json:"IncTokenID"`
 		metadataCommon.MetadataBase
 	}{
@@ -136,7 +136,7 @@ func (iReq *IssuingSOLRequest) MarshalJSON() ([]byte, error) {
 
 func (iReq *IssuingSOLRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TxSigStr   string      `json:"TxSig"`
+		TxSigStr   string      `json:"TxSigStr"`
 		IncTokenID common.Hash `json:"IncTokenID"`
 		metadataCommon.MetadataBase
 	}{}
