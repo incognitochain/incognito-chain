@@ -258,9 +258,6 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 
 	// check Incognito proxy account
 	incProxyAcc := accs[2]
-	if !incProxyAcc.IsWritable {
-		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid incognito proxy account - is not writable"))
-	}
 	expectedIncProxyPk, _ := solana.PublicKeyFromBase58(config.Param().SolContractAddressStr)
 	if !expectedIncProxyPk.Equals(incProxyAcc.PublicKey) {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid incognito proxy account - is not expected"))
