@@ -287,6 +287,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingSolBridgeReq(
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingSOLBridgeReqAction.TxReqID.String())
 
 	uniqTx := []byte(issuingSOLBridgeReqAction.Meta.TxSigStr)
+	Logger.log.Info("[SOL Bridge Shielding Producer] Processing tx sig: %v", issuingSOLBridgeReqAction.Meta.TxSigStr)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
 		Logger.log.Warn("WARNING: already issued for the hash in current block: ", uniqTx)

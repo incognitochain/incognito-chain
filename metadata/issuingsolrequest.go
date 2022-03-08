@@ -136,7 +136,7 @@ func (iReq *IssuingSOLRequest) MarshalJSON() ([]byte, error) {
 
 func (iReq *IssuingSOLRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TxSig      string      `json:"TxSig"`
+		TxSigStr   string      `json:"TxSig"`
 		IncTokenID common.Hash `json:"IncTokenID"`
 		metadataCommon.MetadataBase
 	}{}
@@ -144,7 +144,7 @@ func (iReq *IssuingSOLRequest) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	iReq.TxSigStr = temp.TxSig
+	iReq.TxSigStr = temp.TxSigStr
 	iReq.IncTokenID = temp.IncTokenID
 	iReq.MetadataBase = temp.MetadataBase
 
@@ -258,6 +258,7 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 
 	// check Incognito proxy account
 	incProxyAcc := accs[2]
+
 	expectedIncProxyPk, _ := solana.PublicKeyFromBase58(config.Param().SolContractAddressStr)
 	if !expectedIncProxyPk.Equals(incProxyAcc.PublicKey) {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid incognito proxy account - is not expected"))
