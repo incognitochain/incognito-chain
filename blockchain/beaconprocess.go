@@ -598,6 +598,11 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
+	// update bridge aggreator state
+	err = beaconBestState.bridgeAggState.Process()
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
@@ -988,6 +993,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 				blockchain.GetPortalParamsV4(beaconBlock.Header.Height))
 			if err != nil {
 				Logger.log.Error(err)
+				return err
+			}
+		}
+	}
+
+	if newBestState.bridgeAggState != nil {
+		diffState, err := newBestState.bridgeAggState.GetDiff(curView.bridgeAggState)
+		if err != nil {
+			return err
+		}
+		if diffState != nil {
+			err = diffState.UpdateToDB()
+			if err != nil {
 				return err
 			}
 		}

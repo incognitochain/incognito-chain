@@ -83,7 +83,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4UnshieldingRequestMeta,
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
-			metadataCommon.PortalV4ConvertVaultRequestMeta:
+			metadataCommon.PortalV4ConvertVaultRequestMeta,
+			metadataCommon.BridgeAggModifyListTokenMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -291,6 +292,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
+			case metadataCommon.BridgeAggModifyListTokenMeta:
+				insts, err := beaconBestState.bridgeAggState.BuildInstructions(
+					contentStr,
+					shardID,
+				)
+				if err != nil {
+					return utils.EmptyStringMatrix, err
+				}
+				instructions = append(instructions, insts...)
 			default:
 				continue
 			}
@@ -318,7 +328,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	for _, version := range pdeVersions {
 		pdeInstructions, err := beaconBestState.pdeStates[uint(version)].BuildInstructions(pdeStateEnv)
 		if err != nil {
-			Logger.log.Error(err)
 			return utils.EmptyStringMatrix, err
 		}
 		instructions = append(instructions, pdeInstructions...)

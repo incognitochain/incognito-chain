@@ -195,7 +195,7 @@ const (
 	BurningPLGConfirmForDepositToSCMeta = 154
 
 	// UnifiedToken
-	BridgeAggModifyUnifiedTokenInfoMeta             = 340
+	BridgeAggModifyListTokenMeta                    = 340
 	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
 )

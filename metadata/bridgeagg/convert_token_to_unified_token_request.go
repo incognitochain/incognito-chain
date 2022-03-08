@@ -72,11 +72,17 @@ func (request *ConvertTokenToUnifiedTokenRequest) CalculateSize() uint64 {
 
 func (request *ConvertTokenToUnifiedTokenRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID string `json:"TokenID"`
+		TokenID        common.Hash                         `json:"TokenID"`
+		UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
+		Amount         uint64                              `json:"Amount"`
+		Receivers      map[common.Hash]privacy.OTAReceiver `json:"receivers"`
 		metadataCommon.MetadataBase
 	}{
-		TokenID:      request.tokenID,
-		MetadataBase: request.MetadataBase,
+		TokenID:        request.tokenID,
+		UnifiedTokenID: request.unifiedTokenID,
+		Amount:         request.amount,
+		Receivers:      request.receivers,
+		MetadataBase:   request.MetadataBase,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -86,7 +92,10 @@ func (request *ConvertTokenToUnifiedTokenRequest) MarshalJSON() ([]byte, error) 
 
 func (request *ConvertTokenToUnifiedTokenRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID common.Hash `json:"TokenID"`
+		TokenID        common.Hash                         `json:"TokenID"`
+		UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
+		Amount         uint64                              `json:"Amount"`
+		Receivers      map[common.Hash]privacy.OTAReceiver `json:"receivers"`
 		metadataCommon.MetadataBase
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -94,6 +103,9 @@ func (request *ConvertTokenToUnifiedTokenRequest) UnmarshalJSON(data []byte) err
 		return err
 	}
 	request.tokenID = temp.TokenID
+	request.unifiedTokenID = temp.UnifiedTokenID
+	request.amount = temp.Amount
+	request.receivers = temp.Receivers
 	request.MetadataBase = temp.MetadataBase
 	return nil
 }
@@ -108,6 +120,10 @@ func (request *ConvertTokenToUnifiedTokenRequest) UnifiedTokenID() common.Hash {
 
 func (request *ConvertTokenToUnifiedTokenRequest) Amount() uint64 {
 	return request.amount
+}
+
+func (request *ConvertTokenToUnifiedTokenRequest) Receivers() map[common.Hash]privacy.OTAReceiver {
+	return request.receivers
 }
 
 func (request *ConvertTokenToUnifiedTokenRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

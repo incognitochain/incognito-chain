@@ -267,6 +267,8 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3EstimatedStakingPoolReward:            (*HttpServer).handleGetPdexv3EstimatedStakingPoolReward,
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
+	// bridgeagg method
+	bridgeaggModifyListTokens: (*HttpServer).handleCreateAndSendTxBridgeAggModifyListTokens,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

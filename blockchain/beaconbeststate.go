@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -84,9 +85,10 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeStates     map[uint]pdex.State
-	portalStateV3 *portalprocessv3.CurrentPortalState
-	portalStateV4 *portalprocessv4.CurrentPortalStateV4
+	pdeStates      map[uint]pdex.State
+	portalStateV3  *portalprocessv3.CurrentPortalState
+	portalStateV4  *portalprocessv4.CurrentPortalStateV4
+	bridgeAggState *bridgeagg.State
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
