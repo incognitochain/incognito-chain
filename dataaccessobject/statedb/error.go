@@ -81,6 +81,8 @@ const (
 	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
 	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
+	// bridge agg
+	ErrInvalidBridgeAggStatusStateType = "invalid bridge agg status state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -288,6 +290,10 @@ const (
 	// Polygon bridge
 	BridgeInsertPLGTxHashIssuedError
 	IsPLGTxHashIssuedError
+
+	// Bridge Agg
+	GetBridgeAggStatusError
+	StoreBridgeAggStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -463,6 +469,10 @@ var ErrCodeMessage = map[int]struct {
 	// polygon bridge
 	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
 	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
+
+	// bridge agg
+	GetBridgeAggStatusError:   {-15106, "Get bridge agg status error"},
+	StoreBridgeAggStatusError: {-15107, "Store bridge agg status Error"},
 }
 
 type StatedbError struct {

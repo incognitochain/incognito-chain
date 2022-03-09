@@ -399,7 +399,7 @@ func (sp *stateProcessorV2) modifyParams(
 	modifyingReqStatusBytes, _ := json.Marshal(modifyingReqStatus)
 	err = statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3ParamsModifyingStatusPrefix(),
+		statedb.BridgeAggListTokenModifyingStatusPrefix(),
 		[]byte(actionData.TxReqID.String()),
 		modifyingReqStatusBytes,
 	)

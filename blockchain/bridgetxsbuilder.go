@@ -370,3 +370,23 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 
 	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
+
+func (blockchain *BlockChain) getStateDBsForVerifyTokenID(curView *BeaconBestState) (map[int]*statedb.StateDB, error) {
+	res := make(map[int]*statedb.StateDB)
+	res[common.BeaconChainID] = curView.featureStateDB
+
+	for shardID, shardHash := range curView.BestShardHash {
+		db := blockchain.GetShardChainDatabase(shardID)
+		shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, shardHash)
+		if err != nil {
+			return res, err
+		}
+		stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(db))
+		if err != nil {
+			return res, err
+		}
+		res[int(shardID)] = stateDB
+	}
+	return res, nil
+}

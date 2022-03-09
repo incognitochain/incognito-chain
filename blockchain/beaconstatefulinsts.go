@@ -293,9 +293,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
 			case metadataCommon.BridgeAggModifyListTokenMeta:
+				sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
+				if err != nil {
+					return utils.EmptyStringMatrix, err
+				}
 				insts, err := beaconBestState.bridgeAggState.BuildInstructions(
-					contentStr,
-					shardID,
+					metaType, contentStr, shardID, sDBs,
 				)
 				if err != nil {
 					return utils.EmptyStringMatrix, err

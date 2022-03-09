@@ -57,6 +57,7 @@ type param struct {
 	BSCParam                         bscParam           `mapstructure:"bsc_param"`
 	PLGParam                         plgParam           `mapstructure:"plg_param"`
 	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
+	BridgeAggParam                   bridgeAggParam     `mapstructure:"bridge_agg_param"`
 	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
@@ -329,4 +330,8 @@ func (plgParam *plgParam) GetFromEnv() {
 	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
 		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
 	}
+}
+
+type bridgeAggParam struct {
+	AdminAddress string `mapstructure:"admin_address"`
 }

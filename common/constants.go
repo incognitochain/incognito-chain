@@ -191,6 +191,13 @@ const (
 	Pdexv3RejectStatus = byte(2)
 )
 
+const (
+	AcceptedStatusStr  = "accepted"
+	RejectedStatusStr  = "rejected"
+	AcceptedStatusByte = byte(1)
+	RejectedStatusByte = byte(2)
+)
+
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
 const PDEXDenominatingDecimal = 9

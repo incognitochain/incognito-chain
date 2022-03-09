@@ -92,6 +92,10 @@ var (
 	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
 	pdexv3PoolPairLmLockedSharePrefix       = []byte("pdexv3-poolpair-lmlockedshare-")
 
+	// bridge agg
+	bridgeAggStatusPrefix             = []byte("bridgeagg-status-")
+	bridgeAggListTokenModifyingPrefix = []byte("bridgeagg-listtokenmodifying-")
+
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
 	portalExchangeRatesRequestStatusPrefix               = []byte("portalexchangeratesrequeststatus-")
@@ -827,6 +831,15 @@ func PortalUnshielFeeReplacementBatchStatusPrefix() []byte {
 
 func PortalSubmitConfirmedTxStatusPrefix() []byte {
 	return portalUnshielSubmitConfirmedTxStatusPrefix
+}
+
+func GetBridgeAggStatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(bridgeAggStatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func BridgeAggListTokenModifyingStatusPrefix() []byte {
+	return bridgeAggListTokenModifyingPrefix
 }
 
 var _ = func() (_ struct{}) {

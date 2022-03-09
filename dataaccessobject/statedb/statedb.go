@@ -2497,3 +2497,15 @@ func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState,
 	}
 	return NewBridgePLGTxState(), false, nil
 }
+
+// ================================= bridge agg OBJECT =======================================
+func (stateDB *StateDB) getBridgeAggStatusByKey(key common.Hash) (*BridgeAggStatusState, bool, error) {
+	bridgeAggStatusState, err := stateDB.getStateObject(BridgeAggStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bridgeAggStatusState != nil {
+		return bridgeAggStatusState.GetValue().(*BridgeAggStatusState), true, nil
+	}
+	return NewBridgeAggStatusState(), false, nil
+}

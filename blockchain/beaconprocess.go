@@ -599,7 +599,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
 	// update bridge aggreator state
-	err = beaconBestState.bridgeAggState.Process()
+	err = beaconBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, beaconBestState.featureStateDB)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}

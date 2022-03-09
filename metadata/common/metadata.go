@@ -1,9 +1,11 @@
 package common
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -14,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 // Interface for all types of metadata in tx
@@ -352,4 +355,124 @@ func ConvertPrivacyTokenToNativeToken(
 type Action struct {
 	Meta    Metadata    `json:"Meta"`
 	TxReqID common.Hash `json:"TxReqID"`
+}
+
+func NewAction() *Action {
+	return &Action{}
+}
+
+func NewActionWithValue(
+	meta Metadata, txReqID common.Hash,
+) *Action {
+	return &Action{
+		Meta:    meta,
+		TxReqID: txReqID,
+	}
+}
+
+func (a *Action) FromString(source string) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(source)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(contentBytes, &a)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Action) StringSlice(metaType int) ([]string, error) {
+	contentBytes, err := json.Marshal(a)
+	if err != nil {
+		return []string{}, err
+	}
+	contentStr := base64.StdEncoding.EncodeToString(contentBytes)
+	action := []string{strconv.Itoa(metaType), contentStr}
+	return action, nil
+}
+
+type Instruction struct {
+	MetaType int    `json:"MetaType"`
+	Status   string `json:"Status"`
+	ShardID  byte   `json:"ShardID"`
+	Content  string `json:"Content,omitempty"`
+}
+
+func NewInstruction() *Instruction {
+	return &Instruction{}
+}
+
+func NewInstructionWithValue(
+	metaType int, status string, shardID byte, content string,
+) *Instruction {
+	return &Instruction{
+		MetaType: metaType,
+		Status:   status,
+		ShardID:  shardID,
+		Content:  content,
+	}
+}
+
+func (i *Instruction) StringSlice() []string {
+	return []string{
+		strconv.Itoa(i.MetaType),
+		strconv.Itoa(int(i.ShardID)),
+		i.Status,
+		i.Content,
+	}
+}
+
+func (i *Instruction) FromStringSlice(source []string) error {
+	metaType, err := strconv.Atoi(source[0])
+	if err != nil {
+		return err
+	}
+	i.MetaType = metaType
+	shardID, err := strconv.Atoi(source[1])
+	if err != nil {
+		return err
+	}
+	i.ShardID = byte(shardID)
+	i.Status = source[2]
+	i.Content = source[3]
+	return nil
+}
+
+func (i *Instruction) StringSliceWithRejectContent(rejectContent *RejectContent) ([]string, error) {
+	str, err := rejectContent.String()
+	i.Content = str
+	i.Status = common.RejectedStatusStr
+	return i.StringSlice(), err
+}
+
+type RejectContent struct {
+	TxReqID   common.Hash `json:"TxReqID"`
+	ErrorCode uint        `json:"ErrorCode,omitempty"`
+}
+
+func NewRejectContent() *RejectContent { return &RejectContent{} }
+
+func NewRejectContentWithValue(txReqID common.Hash, errorCode uint) *RejectContent {
+	return &RejectContent{TxReqID: txReqID, ErrorCode: errorCode}
+}
+
+func (r *RejectContent) String() (string, error) {
+	contentBytes, err := json.Marshal(r)
+	if err != nil {
+		return utils.EmptyString, err
+	}
+	return base64.StdEncoding.EncodeToString(contentBytes), nil
+}
+
+func (r *RejectContent) FromString(source string) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(source)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(contentBytes, &r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
