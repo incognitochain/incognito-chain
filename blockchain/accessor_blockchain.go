@@ -117,7 +117,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash)
+	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash, common.BeaconChainSyncID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -126,7 +126,6 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if err != nil {
 		return nil, 0, err
 	}
-
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
@@ -189,7 +188,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 		return nil, err
 	}
 
-	rawBlkBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(blkhash)
+	rawBlkBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(blkhash, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +203,7 @@ func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height ui
 	if err != nil {
 		return nil, err
 	}
-	rawBlkBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(blkhash)
+	rawBlkBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(blkhash, shardID)
 	// data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
 	if err != nil {
 		return nil, err
@@ -241,7 +240,7 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
-	shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash)
+	shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, shardID)
 	if err != nil {
 		return nil, 0, NewBlockChainError(GetShardBlockByHashError, errors.Errorf("Can not get block %v, error %v 1", hash.String(), err))
 	}
@@ -271,7 +270,7 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		// shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
-		shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash)
+		shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, shardID)
 		if err == nil {
 			shardBlock := types.NewShardBlock()
 			err = shardBlock.FromBytes(shardBlockBytes)

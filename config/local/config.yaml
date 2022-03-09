@@ -65,3 +65,4 @@ geth_param:
   protocol: "https"
   port: ""
 sync_mode: "archive"
+enable_ffstorage: false

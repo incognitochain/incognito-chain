@@ -7,6 +7,7 @@ import (
 
 	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/proto"
@@ -259,7 +260,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	return true, nil
 }
 
-func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
+func (sHeader *ShardHeader) ToProtoShardHeader() (*proto.ShardHeaderBytes, error) {
 	res := &proto.ShardHeaderBytes{}
 	var err error
 	producerIdx := -1
@@ -273,8 +274,7 @@ func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
 			sHeader.Epoch,
 		)
 		if err != nil {
-			panic(err)
-			return nil
+			return nil, err
 		}
 		proposerIdx = producerIdx
 		if (sHeader.Proposer != sHeader.Producer) && (sHeader.Proposer != "") {
@@ -286,8 +286,7 @@ func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
 				sHeader.Epoch,
 			)
 			if err != nil {
-				panic(err)
-				return nil
+				return nil, err
 			}
 		}
 	}
@@ -319,8 +318,7 @@ func (sHeader *ShardHeader) ToProtoShardHeader() *proto.ShardHeaderBytes {
 	res.ProposeTime = sHeader.ProposeTime
 	res.CommitteeFromBlock = sHeader.CommitteeFromBlock[:]
 	res.FinalityHeight = sHeader.FinalityHeight
-
-	return res
+	return res, nil
 }
 
 func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderBytes) error {
@@ -392,9 +390,6 @@ func (sBody *ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
 	for k, v := range sBody.CrossTransactions {
 		crossTxs := &proto.CrossTransactionTmp{}
 		for _, tx := range v {
-			// buf := &bytes.Buffer{}
-			// e := gob.NewEncoder(buf)
-			// err := e.Encode(tx)
 			txBytes, err := json.Marshal(tx)
 			if err != nil {
 				panic(err)
@@ -410,11 +405,7 @@ func (sBody *ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
 		res.Instrucstions = append(res.Instrucstions, insTmp)
 	}
 
-	// enc1 := gob.NewEncoder(F)
 	for _, tx := range sBody.Transactions {
-		// buf := &bytes.Buffer{}
-		// e := gob.NewEncoder(buf)
-		// err := e.Encode(tx)
 		txBytes, err := json.Marshal(tx)
 		if err != nil {
 			panic(err)
@@ -430,9 +421,6 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 		crossTxs := []CrossTransaction{}
 		for _, txBytes := range v.Data {
 			crossTx := &CrossTransaction{}
-			// buf := bytes.NewBuffer(txBytes)
-			// e := gob.NewDecoder(buf)
-			// err := e.Decode(crossTx)
 			err := json.Unmarshal(txBytes, crossTx)
 			if err != nil {
 				panic(err)
@@ -447,8 +435,6 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 	}
 
 	for _, txBytes := range protoData.Transactions {
-		// buf := bytes.NewBuffer(txBytes)
-		// e := gob.NewDecoder(buf)
 		var tx metadata.Transaction
 		var parseErr error
 		var txChoice *transaction.TxChoice
@@ -465,22 +451,25 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 	return nil
 }
 
-func (sBlock *ShardBlock) ToProtoShardBlock() *proto.ShardBlockBytes {
+func (sBlock *ShardBlock) ToProtoShardBlock() (*proto.ShardBlockBytes, error) {
 	res := &proto.ShardBlockBytes{}
+	var err error
 	if sBlock.GetHeight() > 1 {
 		v, err := consensustypes.DecodeValidationData(sBlock.GetValidationField())
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		res.ValidationData, err = v.ToBytes()
 		if err != nil {
-			fmt.Println(err)
-			return nil
+			return nil, err
 		}
 	}
 	res.Body = sBlock.Body.ToProtoShardBody()
-	res.Header = sBlock.Header.ToProtoShardHeader()
-	return res
+	res.Header, err = sBlock.Header.ToProtoShardHeader()
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) error {
@@ -504,38 +493,41 @@ func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) 
 }
 
 func (shardBlock *ShardBlock) FromBytes(data []byte) error {
-	// d, _ := zstd.NewReader(nil)
-	// rawBytes, err := d.DecodeAll(data, nil)
-	// if err != nil {
-	// 	return err
-	// }
-	protoBlk := &proto.ShardBlockBytes{}
-	err := ggproto.Unmarshal(data, protoBlk)
-	if err != nil {
-		return err
+	if config.Config().EnableFFStorage {
+		// d, _ := zstd.NewReader(nil)
+		// rawBytes, err := d.DecodeAll(data, nil)
+		// if err != nil {
+		// 	return err
+		// }
+		protoBlk := &proto.ShardBlockBytes{}
+		err := ggproto.Unmarshal(data, protoBlk)
+		if err != nil {
+			return err
+		}
+		return shardBlock.FromProtoShardBlock(protoBlk)
+	} else {
+		// shardBlock = NewShardBlock()
+		return json.Unmarshal(data, shardBlock)
 	}
-	return shardBlock.FromProtoShardBlock(protoBlk)
 }
 
 func (shardBlock *ShardBlock) ToBytes() ([]byte, error) {
-	preHash := shardBlock.Hash().String()
-	protoBlk := shardBlock.ToProtoShardBlock()
-	if protoBlk == nil {
-		return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf", shardBlock.Header.Height, shardBlock.Hash().String())
-	}
-	protoBytes, err := ggproto.Marshal(protoBlk)
-	if err != nil {
-		return nil, err
+	if config.Config().EnableFFStorage {
+		protoBlk, err := shardBlock.ToProtoShardBlock()
+		if (protoBlk == nil) || (err != nil) {
+			return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf, err %v", shardBlock.Header.Height, shardBlock.Hash().String(), err)
+		}
+		protoBytes, err := ggproto.Marshal(protoBlk)
+		if err != nil {
+			return nil, err
+		}
+		return protoBytes, nil
+	} else {
+		return json.Marshal(shardBlock)
 	}
 	// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	// protoBytesComp := c.EncodeAll(protoBytes, nil)
-	sBlk := &ShardBlock{}
-	sBlk.FromBytes(protoBytes)
-	postHash := sBlk.Hash().String()
-	if preHash != postHash {
-		panic("What")
-	}
-	return protoBytes, nil
+
 }
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
