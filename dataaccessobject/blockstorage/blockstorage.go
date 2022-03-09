@@ -136,7 +136,6 @@ func (blkM *BlockManager) GetBlockByHash(
 	error,
 ) {
 	if config.Config().EnableFFStorage {
-		panic("sss")
 		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
 		if v, has := blkM.cacher.Get(hash.String()); has {
 			if res, ok := v.([]byte); ok && (len(res) > 0) {
