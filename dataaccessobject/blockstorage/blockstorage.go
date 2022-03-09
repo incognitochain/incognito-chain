@@ -29,7 +29,9 @@ type BlockService interface {
 		[]byte,
 		error,
 	)
-
+	MarkFinalized(
+		height uint64,
+	)
 	CheckBlockByHash(
 		hash *common.Hash,
 	) (
@@ -80,27 +82,6 @@ func NewBlockService(
 	}
 	return res, nil
 }
-
-// func (blkM *BlockManager) GetBlockFinalByHeight(
-// 	height uint64,
-// 	cID int,
-// ) (
-// 	[]byte,
-// 	error,
-// ) {
-// 	key := rawdbv2.GetHeightToBlockIndexKey(height, cID)
-// 	_, err := rawdbv2.GetFinalizedShardBlockHashByIndex(blkM.rDB, byte(cID), height)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	blkHashBytes, err := blkM.rDB.Get(key)
-// 	if err != nil {
-// 		return nil, errors.Wrapf(err, "can not get block %v of cID %v", height, cID)
-// 	}
-// 	blkHash := common.Hash{}
-// 	copy(blkHash[:], blkHashBytes)
-// 	return blkM.GetBlockByHash(&blkHash)
-// }
 
 func (blkM *BlockManager) GetBlockByHeight(
 	height uint64,
@@ -155,6 +136,7 @@ func (blkM *BlockManager) GetBlockByHash(
 	error,
 ) {
 	if config.Config().EnableFFStorage {
+		panic("sss")
 		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
 		if v, has := blkM.cacher.Get(hash.String()); has {
 			if res, ok := v.([]byte); ok && (len(res) > 0) {
@@ -199,9 +181,9 @@ func (blkM *BlockManager) StoreBlock(
 		}
 	} else {
 		if blkType == proto.BlkType_BlkShard {
-			err = rawdbv2.StoreShardBlock(blkM.rDB, *blkHash, blkBytes)
+			err = rawdbv2.StoreShardBlock(blkM.rDB, *blkHash, blkData)
 		} else {
-			err = rawdbv2.StoreBeaconBlockByHash(blkM.rDB, *blkHash, blkBytes)
+			err = rawdbv2.StoreBeaconBlockByHash(blkM.rDB, *blkHash, blkData)
 		}
 		if err != nil {
 			return err
@@ -215,47 +197,10 @@ func (blkM *BlockManager) StoreBlock(
 	return nil
 }
 
-// func (blkM *BlockManager) storeBlockHeightFinalized(
-// 	cID int,
-// 	blkHeight uint64,
-// 	blkHash common.Hash,
-// ) error {
-// 	key := rawdbv2.GetHeightToBlockIndexKey(blkHeight, cID)
-// 	err := blkM.rDB.Put(key, blkHash[:])
-// 	return err
-// }
 func (blkM *BlockManager) MarkFinalized(
 	blkHeight uint64,
-	blkHash common.Hash,
-	cID byte,
-) error {
-	// curFinalHeight := blkM.finalHeight
-	// for height := blkHeight; height >= curFinalHeight; height-- {
-	// 	err := blkM.storeBlockHeightFinalized(int(cID), height, blkHash)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	pHash, ok := blkM.prevHashByHash[blkHash]
-	// 	fmt.Printf("cID %v height %v testdelete %v prev %v \n", cID, height, blkHash.String(), pHash.String())
-	// 	needToRemove := blkM.hashByHeight[height]
-
-	// 	for _, hash := range needToRemove {
-	// 		delete(blkM.prevHashByHash, hash)
-	// 		if hash != blkHash {
-	// 			fmt.Printf("cID %v height %v testdelete delete %v - %v\n", cID, height, hash.String(), blkHash.String())
-	// 			key := rawdbv2.GetHashToBlockIndexKey(hash)
-	// 			err := blkM.rDB.Delete(key)
-	// 			if err != nil {
-	// 				panic(err)
-	// 			}
-	// 		}
-	// 	}
-	// 	if ok {
-	// 		blkHash = pHash
-	// 	}
-	// }
+) {
 	blkM.finalHeight = blkHeight
-	return nil
 }
 
 func (blkM *BlockManager) GetPrevHashByHash(
