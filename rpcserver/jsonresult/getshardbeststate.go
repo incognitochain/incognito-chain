@@ -28,6 +28,7 @@ type GetShardBestState struct {
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
 	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
 	CommitteeEngineVersion int               `json:"CommitteeStateVersion"`
+	TriggeredFeature       map[string]uint64 `json:"TriggeredFeature"`
 }
 
 func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
@@ -49,6 +50,11 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		BestCrossShard:         data.BestCrossShard,
 		CommitteeFromBlock:     data.CommitteeFromBlock(),
 		BlockVersion:           data.BestBlock.GetVersion(),
+	}
+
+	result.TriggeredFeature = make(map[string]uint64)
+	for k, v := range data.TriggeredFeature {
+		result.TriggeredFeature[k] = v
 	}
 
 	result.ShardCommittee = make([]string, len(data.ShardCommitteeEngine().GetShardCommittee()))

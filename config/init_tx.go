@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type initialIncognito struct {
+type InitialIncognito struct {
 	Version              int                    `mapstructure:"Version"`
 	Type                 string                 `mapstructure:"Type"`
 	LockTime             uint64                 `mapstructure:"LockTime"`
@@ -23,7 +23,7 @@ type initialIncognito struct {
 }
 
 type initTx struct {
-	InitialIncognito []initialIncognito `mapstructure:"initial_incognito" description:"fee per tx calculate by kb"`
+	InitialIncognito []InitialIncognito `mapstructure:"initial_incognito" description:"fee per tx calculate by kb"`
 }
 
 func (initTx *initTx) load(data []byte) {
@@ -40,7 +40,7 @@ func (initTx *initTx) load(data []byte) {
 			}
 		} else { //if file not found
 			log.Println("Using default init tx for " + network)
-			initTxs := []initialIncognito{}
+			initTxs := []InitialIncognito{}
 			json.Unmarshal(data, &initTxs)
 			initTx.InitialIncognito = initTxs
 		}

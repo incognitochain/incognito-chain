@@ -55,11 +55,13 @@ type ShardBestState struct {
 	ActiveShards                     int               `json:"ActiveShards"`
 	ConsensusAlgorithm               string            `json:"ConsensusAlgorithm"`
 
+	TriggeredFeature map[string]uint64 `json:"TriggeredFeature"`
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 	BlockInterval          time.Duration
 	BlockMaxCreateTime     time.Duration
 	MetricBlockHeight      uint64
+
 	//================================ StateDB Method
 	// block height => root hash
 	consensusStateDB           *statedb.StateDB
@@ -595,6 +597,16 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 		}
 	}
 	return nil
+}
+
+func (curView *ShardBestState) getUntriggerFeature() []string {
+	unTriggerFeatures := []string{}
+	for f, _ := range config.Param().AutoEnableFeature {
+		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
+			unTriggerFeatures = append(unTriggerFeatures, f)
+		}
+	}
+	return unTriggerFeatures
 }
 
 // Output:
