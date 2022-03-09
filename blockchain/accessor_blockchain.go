@@ -496,12 +496,12 @@ func getShardConsensusStateDB(db incdb.Database, shardID byte, blockHash common.
 	if err != nil {
 		return nil, err
 	}
-	sRH := &ShardRootHash{}
+	sRH := &ShardRootHashv2{}
 	err1 := json.Unmarshal(data, sRH)
 	if err1 != nil {
 		return nil, err1
 	}
-	stateDB, err := statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	stateDB, err := statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, sRH.ConsensusStateDBRootHash, nil)
 	if err != nil {
 		return nil, err
 	}
