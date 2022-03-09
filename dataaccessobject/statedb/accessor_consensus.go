@@ -607,6 +607,7 @@ func storeStakerInfo(
 	rewardReceiver map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
+	beaconConfirmHeight uint64,
 ) error {
 	for _, committee := range committees {
 		keyBytes, err := committee.RawBytes()
@@ -619,6 +620,7 @@ func storeStakerInfo(
 			rewardReceiver[committee.GetIncKeyBase58()],
 			autoStaking[committeeString],
 			stakingTx[committeeString],
+			beaconConfirmHeight,
 		)
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
@@ -628,14 +630,42 @@ func storeStakerInfo(
 	return nil
 }
 
+func SaveStopAutoStakerInfo(
+	stateDB *StateDB,
+	committees []incognitokey.CommitteePublicKey,
+	autoStaking map[string]bool,
+) error {
+	for _, stakerPubkey := range committees {
+		pubKeyBytes, _ := stakerPubkey.RawBytes()
+		key := GetStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getStakerInfo(key)
+		if err != nil || !exist {
+			return NewStatedbError(SaveStopAutoStakerInfoError, err)
+		}
+
+		//assign auto stake value from autostaking map
+		committeeString, err := stakerPubkey.ToBase58()
+		stakerInfo.autoStaking = autoStaking[committeeString]
+
+		err = stateDB.SetStateObject(StakerObjectType, key, stakerInfo)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func StoreStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
+	beaconConfirmHeight uint64,
+
 ) error {
-	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx)
+	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, beaconConfirmHeight)
 }
 
 func GetBeaconCommitteeEnterTime(
