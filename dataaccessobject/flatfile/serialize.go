@@ -5,12 +5,13 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"io/ioutil"
 	"path"
 	"path/filepath"
 	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"os"
 	"sort"
@@ -29,6 +30,9 @@ type FlatFile interface {
 
 	//truncate flat file system
 	Truncate(lastIndex uint64) error
+
+	//return current size of ff
+	Size() uint64
 }
 
 type FlatFileManager struct {
@@ -47,6 +51,10 @@ type ReadInfo struct {
 	fd     *os.File
 	offset uint64
 	size   uint64
+}
+
+func (ff *FlatFileManager) Size() uint64 {
+	return uint64(ff.currentFile)*uint64(ff.fileSizeLimit) + uint64(ff.currentFileSize)
 }
 
 func (ff *FlatFileManager) Truncate(lastIndex uint64) error {

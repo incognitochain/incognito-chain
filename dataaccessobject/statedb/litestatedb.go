@@ -90,7 +90,7 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 		if err != nil {
 			return common.Hash{}, err
 		}
-		stateDB.headStateNode.ffIndex = uint64(ffIndex)
+		stateDB.headStateNode.ffIndex = int64(ffIndex)
 		return *h, nil
 	}
 

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"path"
 	"sort"
@@ -58,7 +59,7 @@ type StateDB struct {
 	batchCommitConfig *BatchCommitConfig
 
 	//rebuild string of current stateDB
-	curRebuildString string
+	curRebuildInfo *RebuildInfo
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
@@ -124,62 +125,88 @@ func NewBatchCommitStateDB(rootDir string, dbName string, db incdb.Database, roo
 
 // New return a new statedb attach with a state root
 // input the rebuildRootData (commit hash, ffindex)
-func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData string, pivotState *StateDB) (*StateDB, error) {
-
+func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataByte []byte, pivotState *StateDB) (*StateDB, error) {
+	log.Println("init ", dbName, mode)
+	rebuildRootData := NewEmptyRebuildInfo("")
+	rebuildRootData.FromBytes(rebuildRootDataByte)
 	rootDir := db.GetPath()
 	trieDBWrapper := NewDatabaseAccessWarper(db)
 	metrics.EnabledExpensive = true
-	rebuildRoot, rebuildMode, rebuildIndex, _ := getRebuildRootInfo(rebuildRootData)
-
+	rebuildMode := rebuildRootData.mode
+	rebuildRootHash := rebuildRootData.rebuildRootHash
+	rebuildFFIndex := rebuildRootData.rebuildFFIndex
 	switch mode {
 	case common.STATEDB_ARCHIVE_MODE:
-		if rebuildRootData == "" {
-			return NewWithPrefixTrie(common.EmptyRoot, trieDBWrapper)
+		//what if rebuildMode is batch, lite
+		if rebuildMode == common.STATEDB_LITE_MODE {
+			return nil, errors.New("Data is not compatible! Litemode is used")
 		}
-		root, _, _, err := getRebuildRootInfo(rebuildRootData)
-		if err != nil {
-			return nil, err
+		if rebuildMode == common.STATEDB_BATCH_COMMIT_MODE {
+			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootDataByte, pivotState)
+			if stateDB != nil {
+				stateDB.mode = common.STATEDB_ARCHIVE_MODE
+				stateDB.curRebuildInfo = rebuildRootData.Copy()
+			}
+			return stateDB, err
+		} else {
+			stateDB, err := NewWithPrefixTrie(rebuildRootHash, trieDBWrapper)
+			if stateDB != nil {
+				stateDB.curRebuildInfo = rebuildRootData.Copy()
+			}
+			return stateDB, err
 		}
-		return NewWithPrefixTrie(root, trieDBWrapper)
 
 	case common.STATEDB_BATCH_COMMIT_MODE:
-
-		//create new stateDB from beginning
-		if rebuildRootData == "" {
-			return NewBatchCommitStateDB(rootDir, dbName, db, common.EmptyRoot)
+		//reject if it started with Lite mode
+		if rebuildMode == common.STATEDB_LITE_MODE {
+			return nil, errors.New("Data is not compatible! Litemode is used")
 		}
 
 		//if rebuild Root is archive, then we directly build from that rebuildRoot
-		if rebuildMode == common.STATEDB_ARCHIVE_MODE || rebuildMode == "" {
-			return NewBatchCommitStateDB(rootDir, dbName, db, rebuildRoot)
+		if rebuildMode == common.STATEDB_ARCHIVE_MODE {
+			returnStateDB, err := NewBatchCommitStateDB(rootDir, dbName, db, rebuildRootHash)
+			if returnStateDB != nil {
+				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
+				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+			}
+			return returnStateDB, err
+		}
+
+		//create new stateDB from beginning
+		if rebuildRootData.IsEmpty() {
+			returnStateDB, err := NewBatchCommitStateDB(rootDir, dbName, db, common.EmptyRoot)
+			if returnStateDB != nil {
+				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
+				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+			}
+			return returnStateDB, err
 		}
 
 		//else rebuild from state
 		//if pivotState nil, rebuild it
-		var pivotIndex = 0
+		var pivotIndex = rebuildRootData.pivotFFIndex
+		var err error
 		if pivotState == nil {
-			//get last pivot state
-			var pivotCommit *common.Hash
-			var err error
-			pivotCommit, pivotIndex, err = GetLatestPivotCommitInfo(db, dbName)
-			if uint64(pivotIndex) > rebuildIndex {
-				return nil, errors.New("Cannot Rebuild! Index is less than pivot index")
-			}
-
 			//rebuild pivotState
-			pivotState, err = NewBatchCommitStateDB(rootDir, dbName, db, *pivotCommit)
+			pivotState, err = NewBatchCommitStateDB(rootDir, dbName, db, rebuildRootData.pivotRootHash)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			pivotIndex = pivotState.curRebuildInfo.pivotFFIndex
 		}
 
 		//replay state object to rebuild to expected state
-		stateSeries, err := pivotState.GetStateObjectFromBranch(rebuildIndex, pivotIndex)
+		log.Println("rebuild ", rebuildRootData.String())
+		stateSeries, err := pivotState.GetStateObjectFromBranch(uint64(rebuildFFIndex), int(pivotIndex))
 		if err != nil {
 			return nil, err
 		}
 		newState := pivotState.Copy()
-		for _, stateObjects := range stateSeries {
+		for i, stateObjects := range stateSeries {
+			//newStateRoot, _ := newState.IntermediateRoot(true)
+			fmt.Println("replay", i, len(stateObjects))
 			for objKey, obj := range stateObjects {
 				if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return nil, err
@@ -189,23 +216,25 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 				}
 			}
 		}
-
-		newStateRoot, _, err := newState.Commit(true)
+		newStateRoot, _ := newState.IntermediateRoot(true)
 		if err != nil {
 			return nil, err
 		}
 
 		//check if we have expect rebuild root
-		if newStateRoot.String() != rebuildRoot.String() {
-			if err != nil {
-				return nil, err
-			}
+		fmt.Println("==================> compare", newStateRoot.String(), rebuildRootHash.String())
+		if newStateRoot.String() != rebuildRootHash.String() {
+			return nil, errors.New("Cannot rebuild correct root")
 		}
 
+		newState.curRebuildInfo = rebuildRootData.Copy()
 		return newState, nil
 
 	case common.STATEDB_LITE_MODE:
-		return NewLiteStateDB(rootDir, dbName, rebuildRootData, db)
+		if rebuildMode != common.STATEDB_LITE_MODE {
+			return nil, errors.New("Must run with lite mode")
+		}
+		return NewLiteStateDB(rootDir, dbName, rebuildRootHash.String(), db)
 	default:
 		return nil, errors.New("Cannot recognize statedb mode")
 	}
@@ -218,6 +247,7 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 		return nil, err
 	}
 	metrics.EnabledExpensive = true
+
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
@@ -326,75 +356,64 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 
 //readDB raw db
 //writeDB support batch
-func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot string) error {
-	finalRootHash, _, finalIndex, err := getRebuildRootInfo(finalRoot)
-	if err != nil {
-		return err
-	}
-
+//finalViewRebuildInfo is root that we expect not rebuild before that point
+func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildInfo) error {
 	switch stateDB.mode {
 	case common.STATEDB_ARCHIVE_MODE:
-		if err := stateDB.db.TrieDB().Commit(finalRootHash, false, nil); err != nil {
+		rootHash, _ := stateDB.IntermediateRoot(true)
+		if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
 			return err
 		}
 		return nil
 	case common.STATEDB_BATCH_COMMIT_MODE:
 		trieDB := stateDB.db.TrieDB()
-		nodes, imgs := stateDB.db.TrieDB().Size()
 		batchCommitConfig := stateDB.batchCommitConfig
 
-		//cap max memory in stateDB
-		//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
-		if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
-			stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
-		}
-
-		lastPivotRoot, lastPivotIndex, err := GetLatestPivotCommitInfo(db, stateDB.dbName)
-		if err != nil {
-			return err
-		}
-
-		//if duplicate finalized
-		if lastPivotRoot != nil && lastPivotRoot.String() == finalRootHash.String() {
-			return nil
-		}
 		//if force write (stop node) or reach #commit threshold => write to disk
-		if forceWrite || finalIndex-uint64(lastPivotIndex) == uint64(stateDB.batchCommitConfig.blockTrieInMemory) {
-			if err := stateDB.db.TrieDB().Commit(finalRootHash, false, nil); err != nil {
+		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
+		//log.Println("check write", forceWrite, stateDB.curRebuildInfo.pivotFFIndex+stateDB.batchCommitConfig.blockTrieInMemory, finalViewIndex)
+		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
+			//write the current roothash commit nodes to disk
+			rootHash := stateDB.curRebuildInfo.rebuildRootHash
+			rootIndex := stateDB.curRebuildInfo.rebuildFFIndex
+			//if rootIndex == 0 { //when first commit
+			//	rootHash, _ = stateDB.IntermediateRoot(true)
+			//}
+
+			if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
 				return err
 			}
-			if err := StoreLatestPivotCommit(db, stateDB.dbName, fmt.Sprintf("%v-%v", finalRootHash.String(), finalIndex)); err != nil {
-				return err
-			}
+			log.Println("finalized", forceWrite, rootHash.String(), rootIndex, finalViewIndex)
+			stateDB.curRebuildInfo.pivotRootHash = rootHash
+			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
 
 			//dereference roothash before pivot point, for GC reduce memory
 			for !batchCommitConfig.triegc.Empty() {
 				oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-				if uint64(-number) > uint64(finalIndex) {
+				if uint64(-number) >= uint64(finalViewIndex) {
 					batchCommitConfig.triegc.Push(oldRootHash, number)
 					break
 				}
-				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v, deref block %+v", stateDB.dbName, finalIndex, number)
+				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v, deref block %+v", stateDB.dbName, finalViewIndex, number)
 				trieDB.Dereference(oldRootHash.(common.Hash))
-			}
-			postNodes, postImgs := trieDB.Size()
-			if nodes-postNodes > 0 || imgs-postImgs > 0 {
-				stateDB.logger.Log.Debugf("StateDB %v Success Dereference, current %+v, reduce nodes %+v, reduce imgs %+v", stateDB.dbName,
-					finalIndex, nodes-postNodes, imgs-postImgs)
 			}
 		}
 		return nil
 	case common.STATEDB_LITE_MODE:
-		return stateDB.liteStateDB.Finalized(finalRootHash)
+		return stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
 	default:
 		return errors.New("Cannot recognized mode")
 	}
 
 }
 
+func (stateDB *StateDB) GetRebuildRoot() RebuildInfo {
+	return *stateDB.curRebuildInfo
+}
+
 // Commit writes the state to the underlying in-memory trie database.
 // commit hash, string for rebuild state, error
-func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, string, error) {
+func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildInfo, error) {
 	switch stateDB.mode {
 	case common.STATEDB_ARCHIVE_MODE, common.STATEDB_BATCH_COMMIT_MODE:
 		// Finalize any pending changes and merge everything into the tries
@@ -408,59 +427,71 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, string, er
 			return nil
 		})
 		if err != nil {
-			return root, "", err
+			return root, nil, err
 		}
 
 		//If statedb is batch commit mode, write changeObj to tmp file (flat file)
 		if stateDB.mode == common.STATEDB_BATCH_COMMIT_MODE {
 			if len(changeObj) == 0 {
-				return root, stateDB.curRebuildString, nil
+				rebuildInfo := stateDB.curRebuildInfo.Copy()
+				return root, rebuildInfo, nil
+			}
+
+			//cap max memory in stateDB
+			//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
+			nodes, imgs := stateDB.db.TrieDB().Size()
+			batchCommitConfig := stateDB.batchCommitConfig
+			if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
+				stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
 			}
 
 			bytesSerialize := MapByteSerialize(changeObj)
-
 			//append changeObj with previous ff index, to help retrieve stateObject of a branch
-			_, _, preRebuildIndex, err := getRebuildRootInfo(stateDB.curRebuildString)
+
+			preRebuildIndex := stateDB.curRebuildInfo.rebuildFFIndex
 			var preRebuildIndexInt = make([]byte, 8)
 			binary.LittleEndian.PutUint64(preRebuildIndexInt, uint64(preRebuildIndex))
 			stateObjectsIndex, err := stateDB.batchCommitConfig.flatFile.Append(append(preRebuildIndexInt, bytesSerialize...))
 			if err != nil {
-				return common.Hash{}, "", err
+				return common.Hash{}, nil, err
 			}
-
+			//log.Println("write index", stateObjectsIndex, preRebuildIndex, len(changeObj))
 			//update current rebuild string
-			curRebuildString := fmt.Sprintf("%v-%v-%v", root.String(), common.STATEDB_BATCH_COMMIT_MODE, stateObjectsIndex)
-			stateDB.curRebuildString = curRebuildString
+			stateDB.curRebuildInfo = NewRebuildInfo(common.STATEDB_BATCH_COMMIT_MODE, root, stateDB.curRebuildInfo.pivotRootHash, int64(stateObjectsIndex), stateDB.curRebuildInfo.pivotFFIndex)
 
 			// NOTE: reference current root hash, we will deference it  when we finalized pivot, so that GC will remove memory
 			// push it into queue with index priority (we want to get smallest index first, so put negative to give small number have high priority)
 			stateDB.db.TrieDB().Reference(root, common.Hash{})
 			stateDB.batchCommitConfig.triegc.Push(root, -int64(stateObjectsIndex))
-
-			return root, curRebuildString, nil
+			stateDB.ClearObjects()
+			curRebuild := stateDB.curRebuildInfo.Copy()
+			return root, curRebuild, nil
 
 		} else {
-			stateDB.curRebuildString = fmt.Sprintf("%v-%v", root.String(), common.STATEDB_ARCHIVE_MODE)
-			return root, stateDB.curRebuildString, nil
+			curRebuildInfo := NewRebuildInfo(common.STATEDB_ARCHIVE_MODE, root, root, 0, 0)
+			stateDB.curRebuildInfo = curRebuildInfo
+			return root, curRebuildInfo, nil
 		}
 
 	case common.STATEDB_LITE_MODE:
 		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				return common.EmptyRoot, "", nil
+				return common.EmptyRoot, nil, nil
 			}
 			root := *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash
-			return root, fmt.Sprintf("%v-%v-%v", root.String(), common.STATEDB_LITE_MODE, stateDB.liteStateDB.headStateNode.previousLink.ffIndex), nil
+			curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, root, root, stateDB.liteStateDB.headStateNode.previousLink.ffIndex, 0)
+			return root, curRebuildInfo, nil
 		}
 		h, err := stateDB.liteStateDB.Commit()
 		if err != nil {
-			return common.Hash{}, "", err
+			return common.Hash{}, nil, err
 		}
 		stateDB.liteStateDB.NewStateNode()
-		stateDB.curRebuildString = fmt.Sprintf("%v-%v-%v", h.String(), common.STATEDB_LITE_MODE, stateDB.liteStateDB.headStateNode.previousLink.ffIndex)
-		return h, stateDB.curRebuildString, nil
+		curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, h, h, stateDB.liteStateDB.headStateNode.previousLink.ffIndex, 0)
+		stateDB.curRebuildInfo = curRebuildInfo.Copy()
+		return h, curRebuildInfo, nil
 	default:
-		return common.Hash{}, "", errors.New("Cannot recognized mode")
+		return common.Hash{}, nil, errors.New("Cannot recognized mode")
 	}
 
 }
@@ -472,17 +503,22 @@ func (stateDB *StateDB) Copy() *StateDB {
 			mode:                stateDB.mode,
 			dbName:              stateDB.dbName,
 			liteStateDB:         stateDB.liteStateDB.Copy(),
-			curRebuildString:    stateDB.curRebuildString,
+			curRebuildInfo:      stateDB.curRebuildInfo.Copy(),
 			stateObjects:        make(map[common.Hash]StateObject),
 			stateObjectsPending: make(map[common.Hash]struct{}),
 			stateObjectsDirty:   make(map[common.Hash]struct{}),
 		}
 	}
+
+	curRebuildInfo := stateDB.curRebuildInfo
+	if stateDB.curRebuildInfo == nil {
+		curRebuildInfo = nil
+	}
 	return &StateDB{
 		db:                  stateDB.db,
 		dbName:              stateDB.dbName,
 		trie:                stateDB.db.CopyTrie(stateDB.trie),
-		curRebuildString:    stateDB.curRebuildString,
+		curRebuildInfo:      curRebuildInfo,
 		mode:                stateDB.mode,
 		batchCommitConfig:   stateDB.batchCommitConfig,
 		logger:              dataaccessobject.Logger,

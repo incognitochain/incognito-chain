@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"strconv"
@@ -47,8 +48,9 @@ func GetLatestPivotCommit(reader incdb.KeyValueReader, pivotName string) (string
 	return string(value), err
 }
 
-func GetLatestPivotCommitInfo(db incdb.KeyValueReader, pivotName string) (*common.Hash, int, error) {
-	var pivotIndex = 0
+func GetLatestPivotCommitInfo(db incdb.KeyValueReader, pivotName string) (*common.Hash, uint64, error) {
+	var pivotIndex = uint64(0)
+
 	var pivotRoot *common.Hash
 	var err error
 	pivotCommit, _ := GetLatestPivotCommit(db, pivotName)
@@ -57,10 +59,7 @@ func GetLatestPivotCommitInfo(db incdb.KeyValueReader, pivotName string) (*commo
 
 		if len(pivotCommitInfo) == 2 {
 			pivotRoot, err = common.Hash{}.NewHashFromStr(pivotCommitInfo[0])
-			if err != nil || len(pivotCommitInfo[0]) != 64 {
-				return nil, 0, errors.New("Cannot import hash byte" + pivotCommitInfo[0])
-			}
-			pivotIndex, err = strconv.Atoi(pivotCommitInfo[1])
+			pivotIndex, err = strconv.ParseUint(pivotCommitInfo[1], 10, 64)
 			if err != nil {
 				return nil, 0, errors.New("Cannot parse " + pivotCommit)
 			}
@@ -85,12 +84,15 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		return stateObjectSeries, nil
 	}
 	for {
-		data, err := stateDB.batchCommitConfig.flatFile.Read(ffIndex)
+		data, err := stateDB.batchCommitConfig.flatFile.Read(int(ffIndex))
 		if err != nil {
 			return nil, err
 		}
-		var prevIndex uint64
-		binary.BigEndian.PutUint64(data[:8], prevIndex)
+		var prevIndex int64
+		err = binary.Read(bytes.NewBuffer(data[:8]), binary.LittleEndian, &prevIndex)
+		if err != nil {
+			return nil, err
+		}
 		stateObjects, err := MapByteDeserialize(stateDB, data[8:])
 		if err != nil {
 			return nil, err
@@ -99,10 +101,11 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		tmp := []map[common.Hash]StateObject{}
 		tmp = append(tmp, stateObjects)
 		stateObjectSeries = append(tmp, stateObjectSeries...)
-		ffIndex = prevIndex
+		// ffIndex = prevIndex
 		if ffIndex == 0 || ffIndex == uint64(pivotIndex) {
 			break
 		}
+		ffIndex = uint64(prevIndex)
 	}
 
 	return stateObjectSeries, nil

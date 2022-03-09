@@ -864,20 +864,24 @@ func (shardBestState *ShardBestState) initShardBestState(
 	}
 
 	//statedb===========================START
-
-	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, common.STATEDB_ARCHIVE_MODE, db, "", nil)
+	mode := config.Config().SyncMode
+	shardBestState.consensusStateDB, err = statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, common.STATEDB_ARCHIVE_MODE, db, "", nil)
+	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, common.STATEDB_ARCHIVE_MODE, db, "", nil)
+	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, common.STATEDB_ARCHIVE_MODE, db, "", nil)
+	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
+	if err != nil {
+		return err
+	}
+	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
 	if err != nil {
 		return err
 	}
@@ -1221,7 +1225,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, newFinalView.(*ShardBestState)); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)

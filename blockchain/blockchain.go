@@ -238,14 +238,12 @@ func (blockchain *BlockChain) InitChainState() error {
 				return err
 			}
 		}
-
 		sBestState := blockchain.ShardChain[shardID].GetBestState()
 		txDB := sBestState.GetCopiedTransactionStateDB()
 
 		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
-
 	return nil
 }
 
@@ -804,6 +802,9 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		}
 		if v.NumberOfFixedShardBlockValidator == 0 {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+		}
+		if len(v.shardCommitteeState.GetShardCommittee()) == 0 {
+			return errors.New("Something wrong with committee")
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			return errors.New("Restart shard views fail")
