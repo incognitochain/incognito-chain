@@ -4,17 +4,18 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/prque"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common/prque"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
@@ -79,7 +80,7 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, int, error) {
+func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, uint64, error) {
 	rebuildRootInfo := strings.Split(rebuildRoot, "-")
 	rootHash, err := common.Hash{}.NewHashFromStr(rebuildRootInfo[0])
 	if err != nil {
@@ -90,10 +91,10 @@ func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, int, error) {
 	if len(rebuildRootInfo) > 1 {
 		mode = rebuildRootInfo[1]
 	}
-	ffIndex := 0
+	ffIndex := uint64(0)
 	if len(rebuildRootInfo) == 3 {
 		var err error
-		ffIndex, err = strconv.Atoi(rebuildRootInfo[2])
+		ffIndex, err = strconv.ParseUint(rebuildRootInfo[2], 10, 64)
 		if err != nil {
 			return common.Hash{}, "", 0, err
 		}
@@ -161,7 +162,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			var pivotCommit *common.Hash
 			var err error
 			pivotCommit, pivotIndex, err = GetLatestPivotCommitInfo(db, dbName)
-			if pivotIndex > rebuildIndex {
+			if uint64(pivotIndex) > rebuildIndex {
 				return nil, errors.New("Cannot Rebuild! Index is less than pivot index")
 			}
 
@@ -358,7 +359,7 @@ func (stateDB *StateDB) Finalized(db incdb.Database, forceWrite bool, finalRoot 
 			return nil
 		}
 		//if force write (stop node) or reach #commit threshold => write to disk
-		if forceWrite || finalIndex-lastPivotIndex == int(stateDB.batchCommitConfig.blockTrieInMemory) {
+		if forceWrite || finalIndex-uint64(lastPivotIndex) == uint64(stateDB.batchCommitConfig.blockTrieInMemory) {
 			if err := stateDB.db.TrieDB().Commit(finalRootHash, false, nil); err != nil {
 				return err
 			}

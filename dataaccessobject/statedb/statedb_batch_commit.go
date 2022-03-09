@@ -3,10 +3,11 @@ package statedb
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 type TrieCommitEnvironment struct {
@@ -75,12 +76,12 @@ func StoreLatestPivotCommit(writer incdb.KeyValueWriter, pivotName, pivotInfo st
 }
 
 func (stateDB *StateDB) GetStateObjectFromBranch(
-	ffIndex int,
+	ffIndex uint64,
 	pivotIndex int,
 ) ([]map[common.Hash]StateObject, error) {
 
 	stateObjectSeries := []map[common.Hash]StateObject{}
-	if ffIndex == pivotIndex {
+	if ffIndex == uint64(pivotIndex) {
 		return stateObjectSeries, nil
 	}
 	for {
@@ -98,8 +99,8 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		tmp := []map[common.Hash]StateObject{}
 		tmp = append(tmp, stateObjects)
 		stateObjectSeries = append(tmp, stateObjectSeries...)
-		ffIndex = int(prevIndex)
-		if ffIndex == 0 || ffIndex == pivotIndex {
+		ffIndex = prevIndex
+		if ffIndex == 0 || ffIndex == uint64(pivotIndex) {
 			break
 		}
 	}

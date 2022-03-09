@@ -3,12 +3,13 @@ package statedb
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"path"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/pkg/errors"
-	"log"
-	"path"
 )
 
 type LiteStateDB struct {
@@ -120,14 +121,14 @@ func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 	return errors.New("Cannot find finalized hash!")
 }
 
-func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex int) error {
+func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex uint64) error {
 	//get final commit
 	pivotRootHash, pivotRootIndex, err := GetLatestPivotCommitInfo(stateDB.db, stateDB.dbPrefix)
 	if err != nil {
 		return err
 	}
 
-	if ffIndex < pivotRootIndex {
+	if ffIndex < uint64(pivotRootIndex) {
 		return errors.New("Rebuild from root that before pivot point")
 	}
 

@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -798,7 +799,7 @@ func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes []int)
 	}
 
 	if lastIndex != -1 {
-		err := flatFileManager.Truncate(lastIndex)
+		err := flatFileManager.Truncate(uint64(lastIndex))
 		if err != nil {
 			Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
 		}
