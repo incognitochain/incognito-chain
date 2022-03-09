@@ -64,3 +64,4 @@ use_coin_data:
   - true
 num_indexer_workers: 0
 indexer_access_token: ""
+enable_ffstorage: false

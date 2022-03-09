@@ -7,6 +7,7 @@ import (
 
 	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/pkg/errors"
@@ -188,19 +189,15 @@ func (beaconBlock *BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, e
 		}
 		res.ValidationData, err = v.ToBytes()
 		if err != nil {
-			fmt.Println(err)
-			panic(err)
 			return nil, err
 		}
 	}
 	res.Body, err = beaconBlock.Body.ToProtoBeaconBody()
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	res.Header, err = beaconBlock.Header.ToProtoBeaconHeader()
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	return res, nil
@@ -228,26 +225,34 @@ func (beaconBlock *BeaconBlock) FromProtoBeaconBlock(protoData *proto.BeaconBloc
 }
 
 func (beaconBlock *BeaconBlock) ToBytes() ([]byte, error) {
-	protoBlk, err := beaconBlock.ToProtoBeaconBlock()
-	if (protoBlk == nil) || (err != nil) {
-		return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
+	if config.Config().EnableFFStorage {
+		protoBlk, err := beaconBlock.ToProtoBeaconBlock()
+		if (protoBlk == nil) || (err != nil) {
+			return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
+		}
+		protoBytes, err := ggproto.Marshal(protoBlk)
+		if err != nil {
+			return nil, err
+		}
+		// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+		// protoBytesComp := c.EncodeAll(protoBytes, nil)
+		return protoBytes, nil
+	} else {
+		return json.Marshal(beaconBlock)
 	}
-	protoBytes, err := ggproto.Marshal(protoBlk)
-	if err != nil {
-		return nil, err
-	}
-	// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	// protoBytesComp := c.EncodeAll(protoBytes, nil)
-	return protoBytes, nil
 }
 
 func (beaconBlock *BeaconBlock) FromBytes(rawBytes []byte) error {
-	protoBlk := &proto.BeaconBlockBytes{}
-	err := ggproto.Unmarshal(rawBytes, protoBlk)
-	if err != nil {
-		return err
+	if config.Config().EnableFFStorage {
+		protoBlk := &proto.BeaconBlockBytes{}
+		err := ggproto.Unmarshal(rawBytes, protoBlk)
+		if err != nil {
+			return err
+		}
+		return beaconBlock.FromProtoBeaconBlock(protoBlk)
+	} else {
+		return json.Unmarshal(rawBytes, beaconBlock)
 	}
-	return beaconBlock.FromProtoBeaconBlock(protoBlk)
 }
 
 func (beaconBlock *BeaconBlock) GetProposer() string {
