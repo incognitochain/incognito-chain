@@ -1272,9 +1272,6 @@ func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePubli
 	return m
 }
 
-var totalGet uint64 = 0
-var totalHit uint64 = 0
-
 func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 	epoch uint64,
 	cID byte,
@@ -1283,11 +1280,8 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 	err error,
 ) {
 	key := getCommitteeCacheKeyByEpoch(epoch, cID)
-	Logger.log.Infof("[bmcache] getValidatorsFromCacheByEpoch cache ratio %v/%v %v", totalHit, totalGet, key)
-	totalGet++
 	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
 		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
-			totalHit++
 			return committees, nil
 		} else {
 			return nil, errors.Errorf("Can not convert data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
