@@ -84,7 +84,7 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		return stateObjectSeries, nil
 	}
 	for {
-		data, err := stateDB.batchCommitConfig.flatFile.Read(int(ffIndex))
+		data, err := stateDB.batchCommitConfig.flatFile.Read(ffIndex)
 		if err != nil {
 			return nil, err
 		}
