@@ -14,7 +14,6 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -36,25 +35,26 @@ type FlatFile interface {
 }
 
 type FlatFileManager struct {
-	dataDir         string
-	fileSizeLimit   uint64 //number of item
+	dataDir       string
+	fileSizeLimit uint64 //number of item
+
 	folderMap       map[uint64]bool
-	sortedFolder    []uint64
 	currentFD       *os.File
 	currentFile     uint64
 	currentFileSize uint64
-	cache           *lru.Cache
-	lock            *sync.RWMutex
+
+	cache *lru.Cache
+	lock  *sync.RWMutex
 }
 
 type ReadInfo struct {
 	fd     *os.File
-	offset uint64
-	size   uint64
+	offset int64
+	size   int64
 }
 
 func (ff *FlatFileManager) Size() uint64 {
-	return uint64(ff.currentFile)*uint64(ff.fileSizeLimit) + uint64(ff.currentFileSize)
+	return ff.currentFile*ff.fileSizeLimit + ff.currentFileSize
 }
 
 func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
@@ -82,16 +82,9 @@ func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
 }
 
 func (f *FlatFileManager) PasreFile(fileID uint64) (map[uint64]ReadInfo, error) {
-	//TODO: cache
+
 	f.lock.RLock()
 	defer f.lock.RUnlock()
-
-	if fileID < f.currentFile {
-		v, ok := f.cache.Get(fileID)
-		if ok {
-			return v.(map[uint64]ReadInfo), nil
-		}
-	}
 
 	p := path.Join(f.dataDir, strconv.Itoa(int(fileID)))
 	fd, err := os.Open(p)
@@ -99,12 +92,12 @@ func (f *FlatFileManager) PasreFile(fileID uint64) (map[uint64]ReadInfo, error) 
 		return nil, err
 	}
 	readInfos := make(map[uint64]ReadInfo)
-	offset := uint64(0)
+	offset := int64(0)
 	size := 0
 	for {
 		b := make([]byte, 8)
-		n, _ := fd.ReadAt(b, int64(offset))
-		var result uint64
+		n, _ := fd.ReadAt(b, offset)
+		var result int64
 		err := binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &result)
 		if err != nil || n == 0 {
 			break
@@ -174,9 +167,9 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, f
 
 	}
 	go func() {
-		fromFile := index / uint64(f.fileSizeLimit)
-		offset := index % uint64(f.fileSizeLimit)
-		for i := uint64(fromFile); i >= 0; i-- {
+		fromFile := index / f.fileSizeLimit
+		offset := index % f.fileSizeLimit
+		for i := fromFile; i >= 0; i-- {
 			readInfo, err := f.PasreFile(uint64(i))
 			if err != nil {
 				e <- 1
@@ -187,8 +180,8 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, f
 				cancel()
 			}
 
-			for j := uint64(offset); j >= 0; j-- {
-				rawB := make([]byte, readInfo[uint64(j)].size)
+			for j := offset; j >= 0; j-- {
+				rawB := make([]byte, readInfo[j].size)
 				readInfo[uint64(j)].fd.ReadAt(rawB, int64(readInfo[uint64(j)].offset))
 
 			LOOP:
@@ -229,7 +222,6 @@ func (f *FlatFileManager) newNextFile() (*os.File, error) {
 	f.currentFD = fd
 	f.currentFile = uint64(i)
 	f.currentFileSize = 0
-	f.sortedFolder = append(f.sortedFolder, uint64(i))
 	f.folderMap[uint64(i)] = true
 	return fd, nil
 }
@@ -321,19 +313,12 @@ func NewFlatFile(dir string, fileBound uint64) (*FlatFileManager, error) {
 		i, err := strconv.Atoi(name)
 		if err == nil {
 			ff.folderMap[uint64(i)] = true
-			ff.sortedFolder = append(ff.sortedFolder, uint64(i))
 			if currentFile < i {
 				currentFile = i
 			}
 		}
 	}
-	sort.Slice(ff.sortedFolder, func(i, j int) bool {
-		if ff.sortedFolder[i] < ff.sortedFolder[j] {
-			return true
-		} else {
-			return false
-		}
-	})
+
 	//open last file currentFD, update currentFileSize, if max -> create new file, update currentFD
 	if currentFile > -1 {
 		path := path.Join(ff.dataDir, strconv.Itoa(currentFile))
