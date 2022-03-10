@@ -25,3 +25,11 @@ message IssuingEVMRequest {
   repeated bytes Proofs = 4;
   bytes TokenID = 5;
 }
+
+message TradeRequest {
+  int32 Type = 1;
+  bytes SellToken = 2;
+  repeated string TradePath = 3;
+  repeated uint64 Amounts = 4;
+  map<string, bytes> Receivers = 5;
+}

@@ -3,6 +3,8 @@ package pdexv3
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	proto_metadata "github.com/incognitochain/incognito-chain/metadata/proto"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -189,7 +191,68 @@ func (req *TradeRequest) CalculateSize() uint64 {
 }
 
 func (req *TradeRequest) ToCompactBytes() ([]byte, error) {
-	return metadataCommon.ToCompactBytes(req)
+	res := new(proto_metadata.TradeRequest)
+	res.Type = int32(req.Type)
+	res.SellToken = req.TokenToSell.Bytes()
+	res.TradePath = req.TradePath
+	res.Amounts = []uint64{req.SellAmount, req.MinAcceptableAmount, req.TradingFee}
+
+	res.Receivers = make(map[string][]byte)
+	for tokenID, otaReceiver := range req.Receiver {
+		dataBytes, err := otaReceiver.Bytes()
+		if err != nil {
+			return nil, err
+		}
+		res.Receivers[tokenID.String()] = dataBytes
+	}
+
+	data, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(common.IntToBytes(req.Type), data...), nil
+}
+
+func (req *TradeRequest) FromCompactBytes(data []byte) error {
+	protoData := new(proto_metadata.TradeRequest)
+	err := proto.Unmarshal(data, protoData)
+	if err == nil {
+		switch protoData.Type {
+		case int32(metadataCommon.Pdexv3TradeRequestMeta):
+			req.Type = int(protoData.Type)
+			req.SellAmount = protoData.Amounts[0]
+			req.MinAcceptableAmount = protoData.Amounts[1]
+			req.TradingFee = protoData.Amounts[2]
+			req.TradePath = protoData.TradePath
+
+			tokenToSell := new(common.Hash)
+			err = tokenToSell.SetBytes(protoData.SellToken)
+			if err != nil {
+				return err
+			}
+			req.TokenToSell = *tokenToSell
+
+			req.Receiver = make(map[common.Hash]privacy.OTAReceiver)
+			for tokenIDStr, otaReceiverBytes := range protoData.Receivers {
+				tokenID, err := new(common.Hash).NewHashFromStr(tokenIDStr)
+				if err != nil {
+					return err
+				}
+
+				otaReceiver := new(privacy.OTAReceiver)
+				err = otaReceiver.SetBytes(otaReceiverBytes)
+				if err != nil {
+					return err
+				}
+				req.Receiver[*tokenID] = *otaReceiver
+			}
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("not an TradeRequest")
 }
 
 func (req TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

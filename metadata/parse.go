@@ -290,6 +290,8 @@ func MdFromCompactBytes(data []byte) (Metadata, error) {
 		md = &PortalShieldingRequest{}
 	case metadataCommon.PortalV4SubmitConfirmedTxMeta:
 		md = &PortalSubmitConfirmedTxRequest{}
+	case metadataCommon.Pdexv3TradeRequestMeta:
+		md = &metadataPdexv3.TradeRequest{}
 	default:
 		return ParseMetadata(data[2:])
 	}
