@@ -865,23 +865,23 @@ func (shardBestState *ShardBestState) initShardBestState(
 
 	//statedb===========================START
 	mode := config.Config().SyncMode
-	shardBestState.consensusStateDB, err = statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
+	shardBestState.consensusStateDB, err = statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, *statedb.NewEmptyRebuildInfo(""), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
+	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
+	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
+	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, mode, db, statedb.NewEmptyRebuildInfo("").ToBytes(), nil)
+	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
 	if err != nil {
 		return err
 	}

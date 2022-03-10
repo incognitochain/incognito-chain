@@ -432,7 +432,7 @@ func GetBeaconRootsHashByBlockHash(db incdb.Database, hash common.Hash) (*Beacon
 	return bRH, err
 }
 
-func (blockchain *BlockChain) GetShardRootsHashFromBlockHeight(shardID byte, height uint64) (*ShardRootHash, error) {
+func (blockchain *BlockChain) GetShardRootsHashFromBlockHeight(shardID byte, height uint64) (*ShardRootHashv2, error) {
 	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
 		return nil, err
@@ -441,17 +441,17 @@ func (blockchain *BlockChain) GetShardRootsHashFromBlockHeight(shardID byte, hei
 	if err != nil {
 		return nil, err
 	}
-	sRH := &ShardRootHash{}
+	sRH := &ShardRootHashv2{}
 	err = json.Unmarshal(data, sRH)
 	return sRH, err
 }
 
-func GetShardRootsHashByBlockHash(db incdb.Database, shardID byte, hash common.Hash) (*ShardRootHash, error) {
+func GetShardRootsHashByBlockHash(db incdb.Database, shardID byte, hash common.Hash) (*ShardRootHashv2, error) {
 	data, e := rawdbv2.GetShardRootsHash(db, shardID, hash)
 	if e != nil {
 		return nil, e
 	}
-	bRH := &ShardRootHash{}
+	bRH := &ShardRootHashv2{}
 	err := json.Unmarshal(data, bRH)
 	return bRH, err
 }
@@ -501,7 +501,7 @@ func getShardConsensusStateDB(db incdb.Database, shardID byte, blockHash common.
 	if err1 != nil {
 		return nil, err1
 	}
-	stateDB, err := statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, sRH.ConsensusStateDBRootHash, nil)
+	stateDB, err := statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash.GetRootHash(), statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
 		return nil, err
 	}

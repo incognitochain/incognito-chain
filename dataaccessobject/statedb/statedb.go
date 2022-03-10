@@ -125,10 +125,8 @@ func NewBatchCommitStateDB(rootDir string, dbName string, db incdb.Database, roo
 
 // New return a new statedb attach with a state root
 // input the rebuildRootData (commit hash, ffindex)
-func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataByte []byte, pivotState *StateDB) (*StateDB, error) {
+func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData RebuildInfo, pivotState *StateDB) (*StateDB, error) {
 	log.Println("init ", dbName, mode)
-	rebuildRootData := NewEmptyRebuildInfo("")
-	rebuildRootData.FromBytes(rebuildRootDataByte)
 	rootDir := db.GetPath()
 	trieDBWrapper := NewDatabaseAccessWarper(db)
 	metrics.EnabledExpensive = true
@@ -142,7 +140,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 			return nil, errors.New("Data is not compatible! Litemode is used")
 		}
 		if rebuildMode == common.STATEDB_BATCH_COMMIT_MODE {
-			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootDataByte, pivotState)
+			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootData, pivotState)
 			if stateDB != nil {
 				stateDB.mode = common.STATEDB_ARCHIVE_MODE
 				stateDB.curRebuildInfo = rebuildRootData.Copy()
@@ -384,6 +382,9 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 				return err
 			}
 			log.Println("finalized", forceWrite, rootHash.String(), rootIndex, finalViewIndex)
+			if stateDB.curRebuildInfo.pivotFFIndex > 0 {
+				batchCommitConfig.flatFile.Truncate(uint64(stateDB.curRebuildInfo.pivotFFIndex))
+			}
 			stateDB.curRebuildInfo.pivotRootHash = rootHash
 			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
 

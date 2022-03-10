@@ -643,7 +643,7 @@ func Test_BatchStateDB(t *testing.T) {
 		randValue = append(randValue, v)
 	}
 	dbName := "test"
-	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, "", nil)
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -690,7 +690,7 @@ func Test_BatchStateDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newTxDB.Finalized(db, true, newAggRoot)
+	newTxDB.Finalized(true, *newAggRoot)
 	pivotCommit, _ := GetLatestPivotCommit(db, dbName)
 	if strings.Index(pivotCommit, newAgg.String()) != 0 {
 		fmt.Println(pivotCommit, newAgg.String())
@@ -698,7 +698,7 @@ func Test_BatchStateDB(t *testing.T) {
 	}
 
 	fmt.Println(rebuildRoot)
-	newStateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRoot, nil)
+	newStateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *rebuildRoot, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

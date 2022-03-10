@@ -2,7 +2,9 @@ package statedb
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -36,6 +38,10 @@ func NewEmptyRebuildInfo(mode string) *RebuildInfo {
 	}
 }
 
+func (r RebuildInfo) GetRootHash() common.Hash {
+	return r.rebuildRootHash
+}
+
 func (r RebuildInfo) String() string {
 	return fmt.Sprintf("%v %v %v %v %v", r.mode, r.rebuildRootHash.String(), r.pivotRootHash.String(), r.rebuildFFIndex, r.pivotFFIndex)
 }
@@ -54,7 +60,7 @@ func (r RebuildInfo) Copy() *RebuildInfo {
 	}
 }
 
-func (r RebuildInfo) ToBytes() []byte {
+func (r *RebuildInfo) MarshalJSON() ([]byte, error) {
 	res := make([]byte, 1+32+32+8+8)
 	switch r.mode {
 	case common.STATEDB_ARCHIVE_MODE:
@@ -69,17 +75,26 @@ func (r RebuildInfo) ToBytes() []byte {
 	copy(res[33:65], r.pivotRootHash.Bytes())
 	binary.LittleEndian.PutUint64(res[65:], uint64(r.rebuildFFIndex))
 	binary.LittleEndian.PutUint64(res[73:], uint64(r.pivotFFIndex))
-	return res
+	sEnc := base64.StdEncoding.EncodeToString(res)
+	return []byte("\"" + sEnc + "\""), nil
 }
 
-func (r *RebuildInfo) FromBytes(data []byte) (err error) {
+func (r *RebuildInfo) UnmarshalJSON(byteArr []byte) (err error) {
 	if len(data) == 32 || len(data) == 0 { //legacy shard root hash (only root hash of archive mode)
+
+	if len(byteArr) == 32 || len(byteArr) == 0 { //legacy shard root hash (only root hash of archive mode)
 		r.mode = common.STATEDB_ARCHIVE_MODE
-		err = r.rebuildRootHash.SetBytes(data)
+		err = r.rebuildRootHash.SetBytes(byteArr)
 		if err != nil {
 			return err
 		}
 		return nil
+	}
+
+	byteArr = byteArr[1 : len(byteArr)-1]
+	data, err := base64.StdEncoding.DecodeString(string(byteArr))
+	if err != nil {
+		return err
 	}
 
 	switch data[0] {
@@ -89,6 +104,8 @@ func (r *RebuildInfo) FromBytes(data []byte) (err error) {
 		r.mode = common.STATEDB_BATCH_COMMIT_MODE
 	case 2:
 		r.mode = common.STATEDB_LITE_MODE
+	default:
+		return errors.New("Cannot parse mode")
 	}
 
 	err = r.rebuildRootHash.SetBytes(data[1:33])
