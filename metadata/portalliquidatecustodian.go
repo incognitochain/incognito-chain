@@ -114,3 +114,7 @@ func (liqCustodian PortalLiquidateCustodian) Hash() *common.Hash {
 func (liqCustodian *PortalLiquidateCustodian) CalculateSize() uint64 {
 	return calculateSize(liqCustodian)
 }
+
+func (liqCustodian *PortalLiquidateCustodian) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(liqCustodian)
+}

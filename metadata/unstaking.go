@@ -30,13 +30,12 @@ func (meta *UnStakingMetadata) HashWithoutSig() *common.Hash {
 
 func (*UnStakingMetadata) ShouldSignMetaData() bool { return true }
 
-
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
 	metadataBase := NewMetadataBaseWithSignature(UnStakingMeta)
 	return &UnStakingMetadata{
-		MetadataBaseWithSignature:       *metadataBase,
-		CommitteePublicKey: committeePublicKey,
+		MetadataBaseWithSignature: *metadataBase,
+		CommitteePublicKey:        committeePublicKey,
 	}, nil
 }
 
@@ -139,4 +138,8 @@ func (unStakingMetadata UnStakingMetadata) GetType() int {
 //CalculateSize :
 func (unStakingMetadata *UnStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(unStakingMetadata)
+}
+
+func (unStakingMetadata *UnStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(unStakingMetadata)
 }

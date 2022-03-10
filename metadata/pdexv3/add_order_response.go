@@ -132,3 +132,7 @@ func (res AddOrderResponse) Hash() *common.Hash {
 func (res *AddOrderResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(res)
 }
+
+func (res *AddOrderResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(res)
+}

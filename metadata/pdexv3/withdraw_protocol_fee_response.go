@@ -96,6 +96,10 @@ func (withdrawalResponse *WithdrawalProtocolFeeResponse) CalculateSize() uint64 
 	return metadataCommon.CalculateSize(withdrawalResponse)
 }
 
+func (withdrawalResponse *WithdrawalProtocolFeeResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(withdrawalResponse)
+}
+
 func (withdrawalResponse WithdrawalProtocolFeeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte, tx metadataCommon.Transaction,

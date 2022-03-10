@@ -58,7 +58,7 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
 	}
-	
+
 	// OTAReceiver check
 	for _, item := range req.Receiver {
 		if !item.IsValid() {
@@ -186,6 +186,10 @@ func (req TradeRequest) Hash() *common.Hash {
 
 func (req *TradeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(req)
+}
+
+func (req *TradeRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
 }
 
 func (req TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

@@ -118,3 +118,7 @@ func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever C
 func (cReq *ContractingRequest) CalculateSize() uint64 {
 	return calculateSize(cReq)
 }
+
+func (cReq *ContractingRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(cReq)
+}

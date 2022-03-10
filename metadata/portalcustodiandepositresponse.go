@@ -16,7 +16,7 @@ type PortalCustodianDepositResponse struct {
 	DepositStatus    string
 	ReqTxID          common.Hash
 	CustodianAddrStr string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalCustodianDepositResponse(
@@ -69,6 +69,10 @@ func (iRes PortalCustodianDepositResponse) Hash() *common.Hash {
 
 func (iRes *PortalCustodianDepositResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalCustodianDepositResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 //todo:

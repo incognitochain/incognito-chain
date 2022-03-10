@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type UnstakingRequest struct {
@@ -146,6 +146,10 @@ func (request *UnstakingRequest) Hash() *common.Hash {
 
 func (request *UnstakingRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
+}
+
+func (request *UnstakingRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(request)
 }
 
 func (request *UnstakingRequest) MarshalJSON() ([]byte, error) {

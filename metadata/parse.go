@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -22,7 +23,15 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 	err = json.Unmarshal(metaInBytes, &mtTemp)
 	if err != nil {
-		return nil, err
+		var ok bool
+		metaInBytes, ok = meta.([]byte)
+		if !ok {
+			return nil, fmt.Errorf("metadata not regconizable")
+		}
+		err = json.Unmarshal(metaInBytes, &mtTemp)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var md Metadata

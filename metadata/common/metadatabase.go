@@ -2,7 +2,6 @@ package common
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -172,15 +171,6 @@ func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintDa
 	return true, nil
 }
 
-func (mb MetadataBase) ToCompactBytes() ([]byte, error) {
-	data, err := json.Marshal(mb)
-	if err != nil {
-		return nil, err
-	}
-
-	return append(common.IntToBytes(mb.Type), data...), nil
-}
-
 func (mb *MetadataBase) FromCompactBytes(data []byte) error {
-	return json.Unmarshal(data, &mb)
+	return nil
 }

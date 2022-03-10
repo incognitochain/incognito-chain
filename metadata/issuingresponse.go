@@ -14,7 +14,7 @@ import (
 type IssuingResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
 type IssuingResAction struct {
@@ -63,6 +63,10 @@ func (iRes IssuingResponse) Hash() *common.Hash {
 
 func (iRes *IssuingResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *IssuingResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {

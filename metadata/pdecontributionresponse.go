@@ -72,6 +72,10 @@ func (iRes *PDEContributionResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *PDEContributionResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 	Logger.log.Infof("Currently verifying ins: %v\n", iRes)
@@ -92,7 +96,6 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 		if instContributionStatus != iRes.ContributionStatus || (instContributionStatus != common.PDEContributionRefundChainStatus && instContributionStatus != common.PDEContributionMatchedNReturnedChainStatus) {
 			continue
 		}
-
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash

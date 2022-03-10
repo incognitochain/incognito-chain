@@ -13,6 +13,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+func ToCompactBytes(meta Metadata) ([]byte, error) {
+	mdType := common.IntToBytes(meta.GetType())
+
+	data, err := json.Marshal(meta)
+	if err != nil {
+		return nil, err
+	}
+	
+	return append(mdType, data...), nil
+}
+
 func CalculateSize(meta Metadata) uint64 {
 	metaBytes, err := json.Marshal(meta)
 	if err != nil {

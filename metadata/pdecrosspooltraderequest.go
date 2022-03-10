@@ -222,6 +222,10 @@ func (pc *PDECrossPoolTradeRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
 
+func (pc *PDECrossPoolTradeRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(pc)
+}
+
 func (pc *PDECrossPoolTradeRequest) GetOTADeclarations() []OTADeclaration {
 	result := []OTADeclaration{}
 	pk, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)

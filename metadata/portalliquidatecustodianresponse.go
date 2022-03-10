@@ -16,7 +16,7 @@ type PortalLiquidateCustodianResponse struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom           []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalLiquidateCustodianResponse(
@@ -73,6 +73,10 @@ func (iRes *PortalLiquidateCustodianResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *PortalLiquidateCustodianResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 
@@ -83,7 +87,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(PortalLiquidateCustodianMeta) &&
-			instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
+				instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
 			continue
 		}
 

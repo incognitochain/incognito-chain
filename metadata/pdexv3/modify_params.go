@@ -143,3 +143,7 @@ func (paramsModifying ParamsModifyingRequest) HashWithoutSig() *common.Hash {
 func (paramsModifying *ParamsModifyingRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(paramsModifying)
 }
+
+func (paramsModifying *ParamsModifyingRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(paramsModifying)
+}

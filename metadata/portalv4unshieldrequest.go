@@ -195,6 +195,10 @@ func (uReq *PortalUnshieldRequest) CalculateSize() uint64 {
 	return calculateSize(uReq)
 }
 
+func (uReq *PortalUnshieldRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(uReq)
+}
+
 func (uReq *PortalUnshieldRequest) GetOTADeclarations() []OTADeclaration {
 	result := []OTADeclaration{}
 	pk, _, err := coin.ParseOTAInfoFromString(uReq.OTAPubKeyStr, uReq.TxRandomStr)

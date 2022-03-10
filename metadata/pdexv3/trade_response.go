@@ -174,3 +174,7 @@ func (res TradeResponse) Hash() *common.Hash {
 func (res *TradeResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(res)
 }
+
+func (res *TradeResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(res)
+}

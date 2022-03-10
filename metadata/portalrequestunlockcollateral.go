@@ -147,3 +147,7 @@ func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chain
 func (meta *PortalRequestUnlockCollateral) CalculateSize() uint64 {
 	return calculateSize(meta)
 }
+
+func (meta *PortalRequestUnlockCollateral) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(meta)
+}
