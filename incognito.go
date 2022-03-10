@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -42,7 +43,7 @@ func getBTCRelayingChain(btcRelayingChainID, btcDataFolderName string) (*btcrela
 		portal.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		portal.TestnetBTCChainID:  int32(2063133),
+		portal.TestnetBTCChainID:  int32(2187368),
 		portal.Testnet2BTCChainID: int32(2064989),
 		portal.MainnetBTCChainID:  int32(697298),
 	}
