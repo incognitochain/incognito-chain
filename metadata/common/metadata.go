@@ -32,7 +32,15 @@ type Metadata interface {
 	VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 	SetSharedRandom([]byte)
+
+	// ToCompactBytes returns a compact encoding of a Metadata. Call this function instead of json.Marshal when
+	// storing the Metadata to the db to improve storage efficiency. If not implemented, ToCompactBytes is mostly
+	// the same as json.Marshal.
+	//
+	// By default, the first 2 bytes of the returned data indicates the Metadata type, followed with the encoded data.
 	ToCompactBytes() ([]byte, error)
+
+	// FromCompactBytes decodes a Metadata from its compactly encoded data.
 	FromCompactBytes([]byte) error
 }
 
@@ -228,7 +236,11 @@ type Transaction interface {
 		error,
 	)
 
+	// ToCompactBytes returns a compact encoding of a Transaction. Call this function instead of json.Marshal when
+	// storing the Transaction to the db to improve storage efficiency.
 	ToCompactBytes() ([]byte, error)
+
+	// FromCompactBytes decodes a Transaction from its compactly encoded data.
 	FromCompactBytes([]byte) error
 }
 
