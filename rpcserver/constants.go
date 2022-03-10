@@ -296,7 +296,9 @@ const (
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
 	// bridgeagg method
-	bridgeaggModifyListTokens = "bridgeagg_txModifyListTokens"
+	bridgeaggModifyListTokens       = "bridgeagg_txModifyListTokens"
+	bridgeaggState                  = "bridgeagg_getState"
+	bridgeaggStatusModifyListTokens = "bridgeagg_getStatusModifyListTokens"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

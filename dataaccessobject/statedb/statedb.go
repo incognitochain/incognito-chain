@@ -2510,8 +2510,8 @@ func (stateDB *StateDB) getBridgeAggStatusByKey(key common.Hash) (*BridgeAggStat
 	return NewBridgeAggStatusState(), false, nil
 }
 
-func (stateDB *StateDB) iterateWithBridgeAggUnifiedToken(prefix []byte) ([]BridgeAggUnifiedTokenState, error) {
-	res := []BridgeAggUnifiedTokenState{}
+func (stateDB *StateDB) iterateWithBridgeAggUnifiedTokens(prefix []byte) ([]*BridgeAggUnifiedTokenState, error) {
+	res := []*BridgeAggUnifiedTokenState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -2519,11 +2519,29 @@ func (stateDB *StateDB) iterateWithBridgeAggUnifiedToken(prefix []byte) ([]Bridg
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		unifiedTokenState := NewBridgeAggUnifiedTokenState()
-		err := json.Unmarshal(newValue, unifiedTokenState)
+		err := json.Unmarshal(newValue, &unifiedTokenState)
 		if err != nil {
 			return res, err
 		}
-		res = append(res, *unifiedTokenState)
+		res = append(res, unifiedTokenState)
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithBridgeAggConvertedTokens(prefix []byte) ([]*BridgeAggConvertedTokenState, error) {
+	res := []*BridgeAggConvertedTokenState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		convertedTokenState := NewBridgeAggConvertedTokenState()
+		err := json.Unmarshal(newValue, &convertedTokenState)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, convertedTokenState)
 	}
 	return res, nil
 }

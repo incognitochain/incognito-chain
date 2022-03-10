@@ -63,7 +63,7 @@ func (sp *stateProcessor) modifyListTokens(
 	contentBytes, _ := json.Marshal(modifyListTokenStatus)
 	err := statedb.TrackBridgeAggStatus(
 		sDB,
-		statedb.Pdexv3ParamsModifyingStatusPrefix(),
+		statedb.BridgeAggListTokenModifyingStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)

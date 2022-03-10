@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/config"
 )
@@ -57,5 +58,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 			beaconBestState.pdeStates = beaconViewCached.(*BeaconBestState).pdeStates
 		}
 	}
-	return nil
+	beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
+	return err
 }

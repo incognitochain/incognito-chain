@@ -113,10 +113,8 @@ func newBridgeAggUnifiedTokenObjectWithValue(db *StateDB, key common.Hash, data 
 	}, nil
 }
 
-func generateBridgeAggUnifiedTokenObjectPrefix(poolPairID string) []byte {
-	b := GetBridgeAggUnifiedTokenPrefix()
-	h := common.HashH(b)
-	return h[:prefixHashKeyLength]
+func generateBridgeAggUnifiedTokenObjectPrefix() []byte {
+	return GetBridgeAggUnifiedTokenPrefix()
 }
 
 func GenerateBridgeAggUnifiedTokenObjectKey(tokenID common.Hash) common.Hash {

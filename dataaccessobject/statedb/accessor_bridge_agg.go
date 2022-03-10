@@ -37,3 +37,13 @@ func StoreBridgeAggConvertedToken(stateDB *StateDB, unifiedTokenID, tokenID comm
 	key := GenerateBridgeAggConvertedTokenObjectKey(unifiedTokenID, tokenID)
 	return stateDB.SetStateObject(BridgeAggConvertedTokenObjectType, key, state)
 }
+
+func GetBridgeAggUnifiedTokens(stateDB *StateDB) ([]*BridgeAggUnifiedTokenState, error) {
+	prefixHash := generateBridgeAggUnifiedTokenObjectPrefix()
+	return stateDB.iterateWithBridgeAggUnifiedTokens(prefixHash)
+}
+
+func GetBridgeAggConvertedTokens(stateDB *StateDB, unifiedTokenID common.Hash) ([]*BridgeAggConvertedTokenState, error) {
+	prefixHash := generateBridgeAggConvertedTokenObjectPrefix(unifiedTokenID)
+	return stateDB.iterateWithBridgeAggConvertedTokens(prefixHash)
+}

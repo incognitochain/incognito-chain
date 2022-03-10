@@ -21,6 +21,8 @@ func (sp *stateProducer) modifyListTokens(
 	sDBs map[int]*statedb.StateDB,
 ) ([][]string, map[common.Hash]map[common.Hash]*Vault, error) {
 	action := metadataCommon.NewAction()
+	md := &metadataBridgeAgg.ModifyListToken{}
+	action.Meta = md
 	err := action.FromString(contentStr)
 	if err != nil {
 		return [][]string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
@@ -32,7 +34,6 @@ func (sp *stateProducer) modifyListTokens(
 		utils.EmptyString,
 	)
 	rejectContent := metadataCommon.NewRejectContentWithValue(action.TxReqID, 0)
-	md, _ := action.Meta.(*metadataBridgeAgg.ModifyListToken)
 	for k, v := range md.NewListTokens {
 		if err := CheckTokenIDExisted(sDBs, k); err != nil {
 			rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetwork].Code
@@ -60,10 +61,11 @@ func (sp *stateProducer) modifyListTokens(
 			}
 		}
 	}
-	acceptedInst := metadataBridgeAgg.AcceptedModifyListToken{
+	acceptedContent := metadataBridgeAgg.AcceptedModifyListToken{
 		NewListTokens: md.NewListTokens,
+		TxReqID:       action.TxReqID,
 	}
-	contentBytes, err := json.Marshal(acceptedInst)
+	contentBytes, err := json.Marshal(acceptedContent)
 	if err != nil {
 		return [][]string{}, unifiedTokenInfos, err
 	}

@@ -95,20 +95,24 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error {
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
 		if stateChange.unifiedTokenID[unifiedTokenID] {
+			Logger.log.Info("[bridgeagg] Store unifiedTokenID", unifiedTokenID)
 			err := statedb.StoreBridgeAggUnifiedToken(
 				sDB,
 				unifiedTokenID,
 				statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
 			)
+			Logger.log.Info("[bridgeagg] err", err)
 			if err != nil {
 				return err
 			}
 		}
 		for tokenID := range vaults {
+			Logger.log.Info("[bridgeagg] Store convertedTokenID", unifiedTokenID, tokenID)
 			err := statedb.StoreBridgeAggConvertedToken(
 				sDB, unifiedTokenID, tokenID,
 				statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID),
 			)
+			Logger.log.Info("[bridgeagg] err", err)
 			if err != nil {
 				return err
 			}
@@ -146,6 +150,5 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 			}
 		}
 	}
-
 	return res, stateChange, nil
 }

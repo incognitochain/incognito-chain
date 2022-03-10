@@ -12,5 +12,7 @@ type StateChange struct {
 }
 
 func NewStateChange() *StateChange {
-	return &StateChange{}
+	return &StateChange{
+		unifiedTokenID: make(map[common.Hash]bool),
+	}
 }
