@@ -803,7 +803,10 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 	}
 	s := statedb.NewEmptyRebuildInfo("")
 	s.FromBytes(txRebuildRoot)
-	fmt.Println("store ShardRootHashv2", shardBestState.ShardID, shardBestState.BestBlockHash, consensusRebuildRoot, s.String())
+
+	Logger.log.Debugf("Store ShardRootHashV2, ShardID %+v, BlockHash %+v, RebuildInfo %+v"+
+		"", shardBestState.ShardID, shardBestState.BestBlockHash, s.String())
+
 	if err := rawdbv2.StoreShardRootsHash(db, shardBestState.ShardID, shardBestState.BestBlockHash, newSRH); err != nil {
 		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
