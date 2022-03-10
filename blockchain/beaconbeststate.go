@@ -112,6 +112,7 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
+	beaconBestState.bridgeAggState = bridgeagg.NewState()
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
@@ -478,6 +479,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	}
 	if target.portalStateV4 != nil {
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
+	}
+	if beaconBestState.bridgeAggState != nil {
+		beaconBestState.bridgeAggState = target.bridgeAggState.Clone()
 	}
 
 	return nil

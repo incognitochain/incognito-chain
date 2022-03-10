@@ -2509,3 +2509,21 @@ func (stateDB *StateDB) getBridgeAggStatusByKey(key common.Hash) (*BridgeAggStat
 	}
 	return NewBridgeAggStatusState(), false, nil
 }
+
+func (stateDB *StateDB) iterateWithBridgeAggUnifiedToken(prefix []byte) ([]BridgeAggUnifiedTokenState, error) {
+	res := []BridgeAggUnifiedTokenState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		unifiedTokenState := NewBridgeAggUnifiedTokenState()
+		err := json.Unmarshal(newValue, unifiedTokenState)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, *unifiedTokenState)
+	}
+	return res, nil
+}

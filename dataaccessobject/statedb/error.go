@@ -82,7 +82,9 @@ const (
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
 	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
 	// bridge agg
-	ErrInvalidBridgeAggStatusStateType = "invalid bridge agg status state type"
+	ErrInvalidBridgeAggStatusStateType         = "invalid bridge agg status state type"
+	ErrInvalidBridgeAggUnifiedTokenStateType   = "invalid bridge agg unified token state type"
+	ErrInvalidBridgeAggConvertedTokenStateType = "invalid bridge agg converted token state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

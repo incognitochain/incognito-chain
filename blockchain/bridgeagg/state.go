@@ -1,8 +1,12 @@
 package bridgeagg
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
@@ -28,6 +32,19 @@ func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault)
 	}
 }
 
+func (s *State) Clone() *State {
+	res := NewState()
+	res.processor = stateProcessor{}
+	res.producer = stateProducer{}
+	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
+		res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
+		for tokenID, vault := range vaults {
+			res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault.Clone()
+		}
+	}
+	return res
+}
+
 func (s *State) BuildInstructions(
 	metaType int,
 	contentStr string,
@@ -50,7 +67,16 @@ func (s *State) BuildInstructions(
 
 func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 	for _, content := range insts {
-		var err error
+		if len(insts) < 2 {
+			continue // Not error, just not bridgeagg instructions
+		}
+		metaType, err := strconv.Atoi(content[0])
+		if err != nil {
+			continue // Not error, just not bridgeagg instructions
+		}
+		if !metadataBridgeAgg.IsBridgeAggMetaType(metaType) {
+			continue // Not error, just not bridgeagg instructions
+		}
 		inst := metadataCommon.NewInstruction()
 		if err := inst.FromStringSlice(content); err != nil {
 			return err
@@ -66,11 +92,60 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 	return nil
 }
 
-func (s *State) UpdateToDB() error {
+func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error {
+	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
+		if stateChange.unifiedTokenID[unifiedTokenID] {
+			err := statedb.StoreBridgeAggUnifiedToken(
+				sDB,
+				unifiedTokenID,
+				statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
+			)
+			if err != nil {
+				return err
+			}
+		}
+		for tokenID := range vaults {
+			err := statedb.StoreBridgeAggConvertedToken(
+				sDB, unifiedTokenID, tokenID,
+				statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID),
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-func (s *State) GetDiff(compareState *State) (*State, error) {
+func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 	res := NewState()
-	return res, nil
+	stateChange := NewStateChange()
+	if compareState == nil {
+		return nil, nil, errors.New("compareState is nil")
+	}
+	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
+		if compareVaults, found := compareState.unifiedTokenInfos[unifiedTokenID]; !found {
+			res.unifiedTokenInfos[unifiedTokenID] = vaults
+			stateChange.unifiedTokenID[unifiedTokenID] = true
+		} else {
+			for tokenID, vault := range vaults {
+				if compareVault, ok := compareVaults[tokenID]; !ok {
+					res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault
+				} else {
+					temp, err := s.unifiedTokenInfos[unifiedTokenID][tokenID].GetDiff(compareVault)
+					if err != nil {
+						return nil, nil, err
+					}
+					if temp != nil {
+						if res.unifiedTokenInfos[unifiedTokenID] == nil {
+							res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
+						}
+						res.unifiedTokenInfos[unifiedTokenID][tokenID] = temp
+					}
+				}
+			}
+		}
+	}
+
+	return res, stateChange, nil
 }

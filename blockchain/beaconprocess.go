@@ -999,12 +999,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	if newBestState.bridgeAggState != nil {
-		diffState, err := newBestState.bridgeAggState.GetDiff(curView.bridgeAggState)
+		diffState, stateChange, err := newBestState.bridgeAggState.GetDiff(curView.bridgeAggState)
 		if err != nil {
 			return err
 		}
 		if diffState != nil {
-			err = diffState.UpdateToDB()
+			err = diffState.UpdateToDB(newBestState.featureStateDB, stateChange)
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,10 @@
 package statedb
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 func TrackBridgeAggStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
 	key := GenerateBridgeAggStatusObjectKey(statusType, statusSuffix)
@@ -22,4 +26,14 @@ func GetBridgeAggStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte
 		return []byte{}, NewStatedbError(GetBridgeAggStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), statusSuffix))
 	}
 	return s.statusContent, nil
+}
+
+func StoreBridgeAggUnifiedToken(stateDB *StateDB, unifiedTokenID common.Hash, state *BridgeAggUnifiedTokenState) error {
+	key := GenerateBridgeAggUnifiedTokenObjectKey(unifiedTokenID)
+	return stateDB.SetStateObject(BridgeAggUnifiedTokenObjectType, key, state)
+}
+
+func StoreBridgeAggConvertedToken(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggConvertedTokenState) error {
+	key := GenerateBridgeAggConvertedTokenObjectKey(unifiedTokenID, tokenID)
+	return stateDB.SetStateObject(BridgeAggConvertedTokenObjectType, key, state)
 }
