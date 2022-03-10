@@ -379,13 +379,6 @@ func (bc *BlockChain) Stop() {
 			defer bc.ShardChain[i].insertLock.Unlock()
 			shardBestState := shardChain.GetBestState()
 			shardID := shardBestState.ShardID
-
-			consensusTrieDB := shardBestState.consensusStateDB.Database().TrieDB()
-			transactionTrieDB := shardBestState.transactionStateDB.Database().TrieDB()
-			featureTrieDB := shardBestState.featureStateDB.Database().TrieDB()
-			rewardTrieDB := shardBestState.rewardStateDB.Database().TrieDB()
-			slashTrieDB := shardBestState.slashStateDB.Database().TrieDB()
-
 			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
 
 			for _, view := range shardChain.GetAllView() {
@@ -393,41 +386,6 @@ func (bc *BlockChain) Stop() {
 				if err != nil {
 					Logger.log.Error("Cannot write current stateDB to disk")
 				}
-			}
-
-			//Do we need Clean when Stop?
-			//shardBestState.consensusStateDB.CleanReference()
-			//shardBestState.transactionStateDB.CleanReference()
-			//shardBestState.featureStateDB.CleanReference()
-			//shardBestState.rewardStateDB.CleanReference()
-			//shardBestState.slashStateDB.CleanReference()
-
-			Logger.log.Infof("Blockchain Stop, finish commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
-
-			if size, _ := consensusTrieDB.Size(); size != 0 {
-				Logger.log.Errorf("Shard %+v | Dangling consensus trie nodes after full cleanup", shardID)
-			} else {
-				Logger.log.Infof("Shard %+v | consensusTrieDB size = 0", shardID)
-			}
-			if size, _ := transactionTrieDB.Size(); size != 0 {
-				Logger.log.Errorf("Shard %+v | Dangling transaction trie nodes after full cleanup", shardID)
-			} else {
-				Logger.log.Infof("Shard %+v | transactionTrieDB size = 0", shardID)
-			}
-			if size, _ := featureTrieDB.Size(); size != 0 {
-				Logger.log.Errorf("Shard %+v | Dangling feature trie nodes after full cleanup", shardID)
-			} else {
-				Logger.log.Infof("Shard %+v | featureTrieDB remain size = 0", shardID)
-			}
-			if size, _ := rewardTrieDB.Size(); size != 0 {
-				Logger.log.Errorf("Shard %+v | Dangling reward trie nodes after full cleanup", shardID)
-			} else {
-				Logger.log.Infof("Shard %+v | rewardTrieDB remain size = 0", shardID)
-			}
-			if size, _ := slashTrieDB.Size(); size != 0 {
-				Logger.log.Errorf("Shard %+v | Dangling slash trie nodes after full cleanup", shardID)
-			} else {
-				Logger.log.Infof("Shard %+v | slashTrieDB remain size = 0", shardID)
 			}
 		}
 
