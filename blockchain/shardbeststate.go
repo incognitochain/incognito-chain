@@ -744,12 +744,13 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 	}
 
 	//get final sHRv2 (detail rebuild info: commit hash , ffindex)
+	mode := config.Config().SyncMode
 	finalViewRH := &ShardRootHashv2{
-		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(""),
-		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(""),
-		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(""),
-		RewardStateDBRootHash:      *statedb.NewEmptyRebuildInfo(""),
-		SlashStateDBRootHash:       *statedb.NewEmptyRebuildInfo(""),
+		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(common.STATEDB_ARCHIVE_MODE),
+		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(mode),
+		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(mode),
+		RewardStateDBRootHash:      *statedb.NewEmptyRebuildInfo(mode),
+		SlashStateDBRootHash:       *statedb.NewEmptyRebuildInfo(mode),
 	}
 
 	//get finalview shard root hash (bypass first block)
