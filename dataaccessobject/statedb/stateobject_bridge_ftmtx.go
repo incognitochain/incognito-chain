@@ -42,13 +42,13 @@ func (ftmTx BridgeFTMTxState) MarshalJSON() ([]byte, error) {
 
 func (ftmTx *BridgeFTMTxState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		UniquePLGTx []byte
+		UniqueFTMTx []byte
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	ftmTx.uniqueFTMTx = temp.UniquePLGTx
+	ftmTx.uniqueFTMTx = temp.UniqueFTMTx
 	return nil
 }
 
@@ -107,9 +107,9 @@ func newBridgeFTMTxObjectWithValue(db *StateDB, key common.Hash, data interface{
 	}, nil
 }
 
-func GenerateBridgeFTMTxObjectKey(uniquePLGTx []byte) common.Hash {
+func GenerateBridgeFTMTxObjectKey(uniqueFTMTx []byte) common.Hash {
 	prefixHash := GetBridgeFTMTxPrefix()
-	valueHash := common.HashH(uniquePLGTx)
+	valueHash := common.HashH(uniqueFTMTx)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
