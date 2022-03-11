@@ -27,7 +27,7 @@ func TestLiteStateDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txDB, err := NewLiteStateDB("./tmp/state", "txDB", "", db)
+	txDB, err := NewWithMode("txDB", common.STATEDB_LITE_MODE, db, *NewEmptyRebuildInfo(common.STATEDB_LITE_MODE), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,6 +133,8 @@ func TestLiteStateDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("aggHash4.String()", aggHash4.String())
+	txDB.Finalized(false, *aggHash4Rebuild)
+
 	txDB1 := txDB.Copy()
 
 	stateObj, _ = txDB1.getOrNewStateObjectWithValue(TestObjectType, randKey[14], randValue[14])
@@ -153,8 +155,6 @@ func TestLiteStateDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	txDB.Finalized(db, false, aggHash4Rebuild)
 
 	//check finalized database
 	fmt.Println("=====================>", txDB.liteStateDB.dbPrefix)
@@ -209,12 +209,11 @@ func TestLiteStateDB(t *testing.T) {
 	}
 
 	//compare restore liteStateDB node link list with current txDB
-	restoreTxDB, err := NewLiteStateDB("./tmp/state", "txDB", aggHash5Root, db)
+	restoreTxDB, err := NewWithMode("txDB", common.STATEDB_LITE_MODE, db, *aggHash5Root, nil)
 	if err != nil {
 		t.Error(err)
 	}
 	if compareStateNodeList(restoreTxDB.liteStateDB.headStateNode.previousLink, txDB.liteStateDB.headStateNode.previousLink, t) != nil {
-
 		t.Fatal(err)
 	}
 
@@ -235,7 +234,7 @@ func TestLiteStateDB(t *testing.T) {
 	fmt.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxx", agghash5a.String())
 	////restore from finalized hash
 
-	restoreTxDB, err = NewLiteStateDB("./tmp/state", "txDB", agghash5aRoot, db)
+	restoreTxDB, err = NewWithMode("txDB", common.STATEDB_LITE_MODE, db, *agghash5aRoot, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +243,7 @@ func TestLiteStateDB(t *testing.T) {
 	}
 
 	////restore from finalized hash, should return error
-	restoreTxDB, err = NewLiteStateDB("./tmp/state", "txDB", newAggRoot, db)
+	restoreTxDB, err = NewWithMode("txDB", common.STATEDB_LITE_MODE, db, *newAggRoot, nil)
 	if err == nil {
 		t.Fatal(err)
 	}

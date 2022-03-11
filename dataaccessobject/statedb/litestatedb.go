@@ -27,8 +27,7 @@ func NewLiteStateDB(rootDir string, dbName string, rebuildRoot RebuildInfo, db i
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}
-	stateNode := NewStateNode()
-	stateNode.aggregateHash = nil
+
 	ffDir := path.Join(rootDir, fmt.Sprintf("lite_%v", dbName))
 
 	ff, err := flatfile.NewFlatFile(ffDir, 5000)
@@ -41,12 +40,16 @@ func NewLiteStateDB(rootDir string, dbName string, rebuildRoot RebuildInfo, db i
 		ff,
 		db,
 		dbPrefix,
-		stateNode,
+		nil,
 		stateDB,
 	}
 
 	//if init from empty root
 	if rebuildRoot.rebuildRootHash.String() == common.EmptyRoot.String() {
+		stateNode := NewStateNode()
+		stateNode.aggregateHash = &common.EmptyRoot
+		stateDB.liteStateDB.headStateNode = stateNode
+		stateDB.liteStateDB.NewStateNode()
 		return stateDB, nil
 	}
 	//else rebuild
@@ -89,7 +92,6 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, uint64, error) {
 		if err != nil {
 			return common.Hash{}, 0, err
 		}
-		stateDB.headStateNode.ffIndex = int64(ffIndex)
 		return *h, ffIndex, nil
 	}
 
@@ -100,18 +102,22 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, uint64, error) {
 func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 
 	//write finalize Key Value to disk
-	stateNode := stateDB.headStateNode.previousLink //current headstatenode dont have aggregatehash, as soon as we commit to calculate agghash, we create new head
+	// current head node is not commit yet! (When commit,it create new node, and we finalizd the old node)
+	if stateDB.headStateNode.aggregateHash != nil {
+		return errors.New("Not expected. Head node must not commit yet!")
+	}
+
+	stateNode := stateDB.headStateNode.previousLink
 	for {
-		//fmt.Println("stateNode", stateNode != nil)
 		if stateNode == nil {
 			break
 		}
 		if stateNode.aggregateHash.String() == stateNodeHash.String() {
 			err := stateNode.FlushFinalizedToDisk(stateDB.db, stateDB)
+			stateNode.previousLink = nil
 			if err != nil {
 				return err
 			}
-			stateNode.previousLink = nil
 			return err
 		}
 		stateNode = stateNode.previousLink
@@ -131,18 +137,22 @@ func (stateDB *LiteStateDB) restoreStateNode(rebuildInfo RebuildInfo) error {
 		return errors.New("Rebuild from root that before pivot point")
 	}
 
+	fmt.Println("Rebuild lite stateDB", ffIndex, pivotRootIndex, root.String(), pivotRootHash.String())
 	dataChan, errChan, cancelReadStateNode := stateDB.flatfile.ReadRecently(uint64(ffIndex))
 	stateNodeMap := map[common.Hash]*StateNode{}
 	prevMap := map[common.Hash]*common.Hash{}
 	for {
+		if ffIndex < pivotRootIndex {
+			break
+		}
 		select {
 		case stateByte := <-dataChan:
 			if len(stateByte) == 0 {
-				e := common.Hash{}
-				if pivotRootHash.String() == e.String() {
+				if pivotRootHash.String() == common.EmptyRoot.String() {
+					cancelReadStateNode()
 					goto RESTORE_SUCCESS
 				} else {
-					return errors.New("Cannot rebuild")
+					return errors.New("Cannot rebuild " + root.String())
 				}
 			}
 
@@ -150,19 +160,17 @@ func (stateDB *LiteStateDB) restoreStateNode(rebuildInfo RebuildInfo) error {
 			if err != nil {
 				return err
 			}
-
 			stateNodeMap[stateNode.GetHash()] = stateNode
 			prevMap[stateNode.GetHash()] = prevHash
 
-			fmt.Println()
 			if stateNode.aggregateHash.String() == pivotRootHash.String() {
 				cancelReadStateNode()
 				goto RESTORE_SUCCESS
 			}
+
 		case <-errChan:
 			return errors.New("Read data return err")
 		}
-
 	}
 RESTORE_SUCCESS:
 	for hash, stateNode := range stateNodeMap {
@@ -178,10 +186,10 @@ RESTORE_SUCCESS:
 			break
 		}
 	}
-
-	if stateDB.headStateNode == nil {
-		return errors.New("Cannot find root head")
+	if stateDB.headStateNode == nil || stateDB.headStateNode.aggregateHash.String() != root.String() {
+		return errors.New("Cannot find root head " + rebuildInfo.String())
 	}
+
 	stateDB.headStateNode = stateNodeMap[root]
 	stateDB.NewStateNode()
 	return nil
@@ -222,7 +230,6 @@ func (stateDB *LiteStateDB) GetStateObject(objectType int, addr common.Hash) (St
 }
 
 func (stateDB *LiteStateDB) SetStateObject(object StateObject) {
-	log.Println("Insert key", object.GetHash().String())
 	if stateDB.headStateNode.aggregateHash != nil {
 		log.Println("Warning: set state object after commit, will not calculate aggregate hash again, could break logic")
 		panic("Set key after commit")

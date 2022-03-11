@@ -735,6 +735,9 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 
 	commitToDisk := func(stateDB *statedb.StateDB, finalViewRebuildInfo statedb.RebuildInfo) (common.Hash, statedb.RebuildInfo, error) {
 		rootHash, _, err := stateDB.Commit(true)
+		if err != nil {
+			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
+		}
 		//log.Println("=========> ", forceWrite, shardBestState.ShardID)
 		if err := stateDB.Finalized(forceWrite, finalViewRebuildInfo); err != nil {
 			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
@@ -805,6 +808,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 	//	"", shardBestState.ShardID, shardBestState.BestBlockHash, s)
 
 	if err := rawdbv2.StoreShardRootsHash(db, shardBestState.ShardID, shardBestState.BestBlockHash, newSRH); err != nil {
+		panic(err)
 		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
 
