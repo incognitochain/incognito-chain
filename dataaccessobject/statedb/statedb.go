@@ -614,11 +614,7 @@ func (stateDB *StateDB) createStateObjectWithValue(objectType int, hash common.H
 
 // SetStateObject add new stateobject into statedb
 func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) error {
-	obj, err := stateDB.getOrNewStateObjectWithValue(objectType, key, value)
-	if err != nil {
-		return err
-	}
-	err = obj.SetValue(value)
+	obj, _, err := stateDB.createStateObjectWithValue(objectType, key, value)
 	if err != nil {
 		return err
 	}
