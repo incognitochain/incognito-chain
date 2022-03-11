@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/benchmark"
 	"log"
 	"net"
 	"os"
