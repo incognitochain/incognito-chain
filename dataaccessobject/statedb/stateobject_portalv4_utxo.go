@@ -10,11 +10,11 @@ import (
 )
 
 type UTXO struct {
-	walletAddress string
-	txHash        string
-	outputIdx     uint32
-	outputAmount  uint64
-	chainCodeSeed string // It's incognito address of user want to shield to Incognito
+	WalletAddress string
+	TxHash        string
+	OutputIdx     uint32
+	OutputAmount  uint64
+	ChainCodeSeed string // It's incognito address of user want to shield to Incognito
 }
 
 func NewUTXO() *UTXO {
@@ -29,52 +29,52 @@ func NewUTXOWithValue(
 	chainCodeSeed string,
 ) *UTXO {
 	return &UTXO{
-		walletAddress: walletAddress,
-		txHash:        txHash,
-		outputAmount:  outputAmount,
-		outputIdx:     outputIdx,
-		chainCodeSeed: chainCodeSeed,
+		WalletAddress: walletAddress,
+		TxHash:        txHash,
+		OutputAmount:  outputAmount,
+		OutputIdx:     outputIdx,
+		ChainCodeSeed: chainCodeSeed,
 	}
 }
 
 func (uo *UTXO) GetWalletAddress() string {
-	return uo.walletAddress
+	return uo.WalletAddress
 }
 
 func (uo *UTXO) SetWalletAddress(address string) {
-	uo.walletAddress = address
+	uo.WalletAddress = address
 }
 
 func (uo *UTXO) GetTxHash() string {
-	return uo.txHash
+	return uo.TxHash
 }
 
 func (uo *UTXO) SetTxHash(txHash string) {
-	uo.txHash = txHash
+	uo.TxHash = txHash
 }
 
 func (uo *UTXO) GetOutputAmount() uint64 {
-	return uo.outputAmount
+	return uo.OutputAmount
 }
 
 func (uo *UTXO) SetOutputAmount(amount uint64) {
-	uo.outputAmount = amount
+	uo.OutputAmount = amount
 }
 
 func (uo *UTXO) GetOutputIndex() uint32 {
-	return uo.outputIdx
+	return uo.OutputIdx
 }
 
 func (uo *UTXO) SetOutputIndex(index uint32) {
-	uo.outputIdx = index
+	uo.OutputIdx = index
 }
 
 func (uo *UTXO) GetChainCodeSeed() string {
-	return uo.chainCodeSeed
+	return uo.ChainCodeSeed
 }
 
 func (uo *UTXO) SetChainCodeSeed(chainCodeSeed string) {
-	uo.chainCodeSeed = chainCodeSeed
+	uo.ChainCodeSeed = chainCodeSeed
 }
 
 func (uo *UTXO) MarshalJSON() ([]byte, error) {
@@ -85,11 +85,11 @@ func (uo *UTXO) MarshalJSON() ([]byte, error) {
 		OutputAmount  uint64
 		ChainCodeSeed string
 	}{
-		WalletAddress: uo.walletAddress,
-		TxHash:        uo.txHash,
-		OutputIdx:     uo.outputIdx,
-		OutputAmount:  uo.outputAmount,
-		ChainCodeSeed: uo.chainCodeSeed,
+		WalletAddress: uo.WalletAddress,
+		TxHash:        uo.TxHash,
+		OutputIdx:     uo.OutputIdx,
+		OutputAmount:  uo.OutputAmount,
+		ChainCodeSeed: uo.ChainCodeSeed,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -109,11 +109,11 @@ func (uo *UTXO) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	uo.walletAddress = temp.WalletAddress
-	uo.txHash = temp.TxHash
-	uo.outputIdx = temp.OutputIdx
-	uo.outputAmount = temp.OutputAmount
-	uo.chainCodeSeed = temp.ChainCodeSeed
+	uo.WalletAddress = temp.WalletAddress
+	uo.TxHash = temp.TxHash
+	uo.OutputIdx = temp.OutputIdx
+	uo.OutputAmount = temp.OutputAmount
+	uo.ChainCodeSeed = temp.ChainCodeSeed
 	return nil
 }
 

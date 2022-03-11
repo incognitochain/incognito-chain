@@ -8,106 +8,106 @@ import (
 )
 
 type CustodianState struct {
-	incognitoAddress       string
-	totalCollateral        uint64            // prv
-	freeCollateral         uint64            // prv
-	lockedAmountCollateral map[string]uint64 // ptokenID : amount
-	holdingPubTokens       map[string]uint64 // ptokenID : amount
-	remoteAddresses        map[string]string // ptokenID : remote address
-	rewardAmount           map[string]uint64 // ptokenID : amount
+	IncognitoAddress       string
+	TotalCollateral        uint64            // prv
+	FreeCollateral         uint64            // prv
+	LockedAmountCollateral map[string]uint64 // ptokenID : amount
+	HoldingPubTokens       map[string]uint64 // ptokenID : amount
+	RemoteAddresses        map[string]string // ptokenID : remote address
+	RewardAmount           map[string]uint64 // ptokenID : amount
 
-	totalTokenCollaterals  map[string]uint64            // publicTokenID : amount
-	freeTokenCollaterals   map[string]uint64            // publicTokenID : amount
-	lockedTokenCollaterals map[string]map[string]uint64 // ptokenID: publicTokenID : amount
+	TotalTokenCollaterals  map[string]uint64            // publicTokenID : amount
+	FreeTokenCollaterals   map[string]uint64            // publicTokenID : amount
+	LockedTokenCollaterals map[string]map[string]uint64 // ptokenID: publicTokenID : amount
 }
 
 func (cs CustodianState) GetIncognitoAddress() string {
-	return cs.incognitoAddress
+	return cs.IncognitoAddress
 }
 
 func (cs *CustodianState) SetIncognitoAddress(incognitoAddress string) {
-	cs.incognitoAddress = incognitoAddress
+	cs.IncognitoAddress = incognitoAddress
 }
 
 func (cs CustodianState) GetTotalCollateral() uint64 {
-	return cs.totalCollateral
+	return cs.TotalCollateral
 }
 
 func (cs *CustodianState) SetTotalCollateral(amount uint64) {
-	cs.totalCollateral = amount
+	cs.TotalCollateral = amount
 }
 
 func (cs CustodianState) GetHoldingPublicTokens() map[string]uint64 {
-	return cs.holdingPubTokens
+	return cs.HoldingPubTokens
 }
 
 func (cs *CustodianState) SetHoldingPublicTokens(holdingPublicTokens map[string]uint64) {
-	cs.holdingPubTokens = holdingPublicTokens
+	cs.HoldingPubTokens = holdingPublicTokens
 }
 
 func (cs CustodianState) GetLockedAmountCollateral() map[string]uint64 {
-	return cs.lockedAmountCollateral
+	return cs.LockedAmountCollateral
 }
 
 func (cs *CustodianState) SetLockedAmountCollateral(lockedAmountCollateral map[string]uint64) {
-	cs.lockedAmountCollateral = lockedAmountCollateral
+	cs.LockedAmountCollateral = lockedAmountCollateral
 }
 
 func (cs CustodianState) GetRemoteAddresses() map[string]string {
-	return cs.remoteAddresses
+	return cs.RemoteAddresses
 }
 
 func (cs *CustodianState) SetRemoteAddresses(remoteAddresses map[string]string) {
-	cs.remoteAddresses = remoteAddresses
+	cs.RemoteAddresses = remoteAddresses
 }
 
 func (cs CustodianState) GetFreeCollateral() uint64 {
-	return cs.freeCollateral
+	return cs.FreeCollateral
 }
 
 func (cs *CustodianState) SetFreeCollateral(amount uint64) {
-	cs.freeCollateral = amount
+	cs.FreeCollateral = amount
 }
 
 func (cs CustodianState) GetRewardAmount() map[string]uint64 {
-	return cs.rewardAmount
+	return cs.RewardAmount
 }
 
 func (cs *CustodianState) SetRewardAmount(amount map[string]uint64) {
-	cs.rewardAmount = amount
+	cs.RewardAmount = amount
 }
 
 func (cs CustodianState) GetTotalTokenCollaterals() map[string]uint64 {
-	return cs.totalTokenCollaterals
+	return cs.TotalTokenCollaterals
 }
 
 func (cs *CustodianState) SetTotalTokenCollaterals(totalTokenCollaterals map[string]uint64) {
-	cs.totalTokenCollaterals = totalTokenCollaterals
+	cs.TotalTokenCollaterals = totalTokenCollaterals
 }
 
 func (cs CustodianState) GetFreeTokenCollaterals() map[string]uint64 {
-	return cs.freeTokenCollaterals
+	return cs.FreeTokenCollaterals
 }
 
 func (cs *CustodianState) SetFreeTokenCollaterals(freeTokenCollaterals map[string]uint64) {
-	cs.freeTokenCollaterals = freeTokenCollaterals
+	cs.FreeTokenCollaterals = freeTokenCollaterals
 }
 
 func (cs CustodianState) GetLockedTokenCollaterals() map[string]map[string]uint64 {
-	return cs.lockedTokenCollaterals
+	return cs.LockedTokenCollaterals
 }
 
 func (cs *CustodianState) SetLockedTokenCollaterals(lockedTokenCollaterals map[string]map[string]uint64) {
-	cs.lockedTokenCollaterals = lockedTokenCollaterals
+	cs.LockedTokenCollaterals = lockedTokenCollaterals
 }
 
 func (cs CustodianState) IsEmptyCollaterals() bool {
-	if cs.totalCollateral > 0 {
+	if cs.TotalCollateral > 0 {
 		return false
 	}
 
-	if len(cs.totalTokenCollaterals) > 0 {
-		for _, amount := range cs.totalTokenCollaterals {
+	if len(cs.TotalTokenCollaterals) > 0 {
+		for _, amount := range cs.TotalTokenCollaterals {
 			if amount > 0 {
 				return false
 			}
@@ -130,16 +130,16 @@ func (cs *CustodianState) MarshalJSON() ([]byte, error) {
 		FreeTokenCollaterals   map[string]uint64
 		LockedTokenCollaterals map[string]map[string]uint64
 	}{
-		IncognitoAddress:       cs.incognitoAddress,
-		TotalCollateral:        cs.totalCollateral,
-		FreeCollateral:         cs.freeCollateral,
-		HoldingPubTokens:       cs.holdingPubTokens,
-		LockedAmountCollateral: cs.lockedAmountCollateral,
-		RemoteAddresses:        cs.remoteAddresses,
-		RewardAmount:           cs.rewardAmount,
-		TotalTokenCollaterals:  cs.totalTokenCollaterals,
-		FreeTokenCollaterals:   cs.freeTokenCollaterals,
-		LockedTokenCollaterals: cs.lockedTokenCollaterals,
+		IncognitoAddress:       cs.IncognitoAddress,
+		TotalCollateral:        cs.TotalCollateral,
+		FreeCollateral:         cs.FreeCollateral,
+		HoldingPubTokens:       cs.HoldingPubTokens,
+		LockedAmountCollateral: cs.LockedAmountCollateral,
+		RemoteAddresses:        cs.RemoteAddresses,
+		RewardAmount:           cs.RewardAmount,
+		TotalTokenCollaterals:  cs.TotalTokenCollaterals,
+		FreeTokenCollaterals:   cs.FreeTokenCollaterals,
+		LockedTokenCollaterals: cs.LockedTokenCollaterals,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -164,31 +164,31 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	cs.incognitoAddress = temp.IncognitoAddress
-	cs.totalCollateral = temp.TotalCollateral
-	cs.freeCollateral = temp.FreeCollateral
-	cs.holdingPubTokens = temp.HoldingPubTokens
-	cs.lockedAmountCollateral = temp.LockedAmountCollateral
-	cs.remoteAddresses = temp.RemoteAddresses
-	cs.rewardAmount = temp.RewardAmount
-	cs.totalTokenCollaterals = temp.TotalTokenCollaterals
-	cs.freeTokenCollaterals = temp.FreeTokenCollaterals
-	cs.lockedTokenCollaterals = temp.LockedTokenCollaterals
+	cs.IncognitoAddress = temp.IncognitoAddress
+	cs.TotalCollateral = temp.TotalCollateral
+	cs.FreeCollateral = temp.FreeCollateral
+	cs.HoldingPubTokens = temp.HoldingPubTokens
+	cs.LockedAmountCollateral = temp.LockedAmountCollateral
+	cs.RemoteAddresses = temp.RemoteAddresses
+	cs.RewardAmount = temp.RewardAmount
+	cs.TotalTokenCollaterals = temp.TotalTokenCollaterals
+	cs.FreeTokenCollaterals = temp.FreeTokenCollaterals
+	cs.LockedTokenCollaterals = temp.LockedTokenCollaterals
 	return nil
 }
 
 func NewCustodianState() *CustodianState {
 	return &CustodianState{
-		incognitoAddress:       "",
-		totalCollateral:        0,
-		freeCollateral:         0,
-		lockedAmountCollateral: map[string]uint64{},
-		holdingPubTokens:       map[string]uint64{},
-		remoteAddresses:        map[string]string{},
-		rewardAmount:           map[string]uint64{},
-		totalTokenCollaterals:  map[string]uint64{},
-		freeTokenCollaterals:   map[string]uint64{},
-		lockedTokenCollaterals: map[string]map[string]uint64{},
+		IncognitoAddress:       "",
+		TotalCollateral:        0,
+		FreeCollateral:         0,
+		LockedAmountCollateral: map[string]uint64{},
+		HoldingPubTokens:       map[string]uint64{},
+		RemoteAddresses:        map[string]string{},
+		RewardAmount:           map[string]uint64{},
+		TotalTokenCollaterals:  map[string]uint64{},
+		FreeTokenCollaterals:   map[string]uint64{},
+		LockedTokenCollaterals: map[string]map[string]uint64{},
 	}
 }
 
@@ -206,16 +206,16 @@ func NewCustodianStateWithValue(
 ) *CustodianState {
 
 	return &CustodianState{
-		incognitoAddress:       incognitoAddress,
-		totalCollateral:        totalCollateral,
-		freeCollateral:         freeCollateral,
-		lockedAmountCollateral: lockedAmountCollateral,
-		holdingPubTokens:       holdingPubTokens,
-		remoteAddresses:        remoteAddresses,
-		rewardAmount:           rewardAmount,
-		totalTokenCollaterals:  totalTokenCollaterals,
-		freeTokenCollaterals:   freeTokenCollaterals,
-		lockedTokenCollaterals: lockedTokenCollaterals,
+		IncognitoAddress:       incognitoAddress,
+		TotalCollateral:        totalCollateral,
+		FreeCollateral:         freeCollateral,
+		LockedAmountCollateral: lockedAmountCollateral,
+		HoldingPubTokens:       holdingPubTokens,
+		RemoteAddresses:        remoteAddresses,
+		RewardAmount:           rewardAmount,
+		TotalTokenCollaterals:  totalTokenCollaterals,
+		FreeTokenCollaterals:   freeTokenCollaterals,
+		LockedTokenCollaterals: lockedTokenCollaterals,
 	}
 }
 

@@ -9,42 +9,42 @@ import (
 )
 
 type WaitingUnshieldRequest struct {
-	unshieldID    string
-	remoteAddress string
-	amount        uint64
-	beaconHeight  uint64
+	UnshieldID    string
+	RemoteAddress string
+	Amount        uint64
+	BeaconHeight  uint64
 }
 
 func (us *WaitingUnshieldRequest) GetRemoteAddress() string {
-	return us.remoteAddress
+	return us.RemoteAddress
 }
 
 func (us *WaitingUnshieldRequest) SetRemoteAddress(remoteAddress string) {
-	us.remoteAddress = remoteAddress
+	us.RemoteAddress = remoteAddress
 }
 
 func (us *WaitingUnshieldRequest) GetAmount() uint64 {
-	return us.amount
+	return us.Amount
 }
 
 func (us *WaitingUnshieldRequest) SetAmount(amount uint64) {
-	us.amount = amount
+	us.Amount = amount
 }
 
 func (us *WaitingUnshieldRequest) GetUnshieldID() string {
-	return us.unshieldID
+	return us.UnshieldID
 }
 
 func (us *WaitingUnshieldRequest) SetUnshieldID(unshieldID string) {
-	us.unshieldID = unshieldID
+	us.UnshieldID = unshieldID
 }
 
 func (us *WaitingUnshieldRequest) GetBeaconHeight() uint64 {
-	return us.beaconHeight
+	return us.BeaconHeight
 }
 
 func (us *WaitingUnshieldRequest) SetBeaconHeight(beaconHeight uint64) {
-	us.beaconHeight = beaconHeight
+	us.BeaconHeight = beaconHeight
 }
 
 func (us WaitingUnshieldRequest) MarshalJSON() ([]byte, error) {
@@ -54,10 +54,10 @@ func (us WaitingUnshieldRequest) MarshalJSON() ([]byte, error) {
 		UnshieldID    string
 		BeaconHeight  uint64
 	}{
-		RemoteAddress: us.remoteAddress,
-		Amount:        us.amount,
-		UnshieldID:    us.unshieldID,
-		BeaconHeight:  us.beaconHeight,
+		RemoteAddress: us.RemoteAddress,
+		Amount:        us.Amount,
+		UnshieldID:    us.UnshieldID,
+		BeaconHeight:  us.BeaconHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -76,10 +76,10 @@ func (us *WaitingUnshieldRequest) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	us.remoteAddress = temp.RemoteAddress
-	us.amount = temp.Amount
-	us.unshieldID = temp.UnshieldID
-	us.beaconHeight = temp.BeaconHeight
+	us.RemoteAddress = temp.RemoteAddress
+	us.Amount = temp.Amount
+	us.UnshieldID = temp.UnshieldID
+	us.BeaconHeight = temp.BeaconHeight
 	return nil
 }
 
@@ -89,10 +89,10 @@ func NewWaitingUnshieldRequestStateWithValue(
 	unshieldID string,
 	beaconHeight uint64) *WaitingUnshieldRequest {
 	return &WaitingUnshieldRequest{
-		remoteAddress: remoteAddress,
-		amount:        amount,
-		unshieldID:    unshieldID,
-		beaconHeight:  beaconHeight,
+		RemoteAddress: remoteAddress,
+		Amount:        amount,
+		UnshieldID:    unshieldID,
+		BeaconHeight:  beaconHeight,
 	}
 }
 

@@ -9,32 +9,32 @@ import (
 )
 
 type LockedCollateralState struct {
-	totalLockedCollateralForRewards uint64            // amountInUSDT
-	lockedCollateralDetail          map[string]uint64 // custodianAddress : amountInUSDT
+	TotalLockedCollateralForRewards uint64            // amountInUSDT
+	LockedCollateralDetail          map[string]uint64 // custodianAddress : amountInUSDT
 }
 
 func (lcs LockedCollateralState) GetTotalLockedCollateralForRewards() uint64 {
-	return lcs.totalLockedCollateralForRewards
+	return lcs.TotalLockedCollateralForRewards
 }
 
 func (lcs *LockedCollateralState) SetTotalLockedCollateralForRewards(amount uint64) {
-	lcs.totalLockedCollateralForRewards = amount
+	lcs.TotalLockedCollateralForRewards = amount
 }
 
 func (lcs LockedCollateralState) GetLockedCollateralDetail() map[string]uint64 {
-	if lcs.lockedCollateralDetail == nil {
+	if lcs.LockedCollateralDetail == nil {
 		return map[string]uint64{}
 	}
-	return lcs.lockedCollateralDetail
+	return lcs.LockedCollateralDetail
 }
 
 func (lcs *LockedCollateralState) SetLockedCollateralDetail(lockedCollateralDetail map[string]uint64) {
-	lcs.lockedCollateralDetail = lockedCollateralDetail
+	lcs.LockedCollateralDetail = lockedCollateralDetail
 }
 
 func (lcs *LockedCollateralState) Reset() {
-	lcs.lockedCollateralDetail = nil
-	lcs.totalLockedCollateralForRewards = 0
+	lcs.LockedCollateralDetail = nil
+	lcs.TotalLockedCollateralForRewards = 0
 }
 
 func (lcs *LockedCollateralState) MarshalJSON() ([]byte, error) {
@@ -42,8 +42,8 @@ func (lcs *LockedCollateralState) MarshalJSON() ([]byte, error) {
 		TotalLockedCollateralForRewards uint64
 		LockedCollateralDetail          map[string]uint64
 	}{
-		TotalLockedCollateralForRewards: lcs.totalLockedCollateralForRewards,
-		LockedCollateralDetail:          lcs.lockedCollateralDetail,
+		TotalLockedCollateralForRewards: lcs.TotalLockedCollateralForRewards,
+		LockedCollateralDetail:          lcs.LockedCollateralDetail,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -60,14 +60,14 @@ func (lcs *LockedCollateralState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	lcs.totalLockedCollateralForRewards = temp.TotalLockedCollateralForRewards
-	lcs.lockedCollateralDetail = temp.LockedCollateralDetail
+	lcs.TotalLockedCollateralForRewards = temp.TotalLockedCollateralForRewards
+	lcs.LockedCollateralDetail = temp.LockedCollateralDetail
 	return nil
 }
 
 func NewLockedCollateralState() *LockedCollateralState {
 	return &LockedCollateralState{
-		lockedCollateralDetail: map[string]uint64{},
+		LockedCollateralDetail: map[string]uint64{},
 	}
 }
 
@@ -76,8 +76,8 @@ func NewLockedCollateralStateWithValue(
 	lockedCollateralDetail map[string]uint64,
 ) *LockedCollateralState {
 	return &LockedCollateralState{
-		totalLockedCollateralForRewards: totalLockedCollateralInEpoch,
-		lockedCollateralDetail:          lockedCollateralDetail,
+		TotalLockedCollateralForRewards: totalLockedCollateralInEpoch,
+		LockedCollateralDetail:          lockedCollateralDetail,
 	}
 }
 

@@ -621,7 +621,7 @@ func (p *PortalRequestMatchingRedeemProcessor) ProcessInsts(
 			MatchingCustodianDetail: updatedRedeemRequest.GetCustodians(),
 			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
 			ShardID:                 updatedRedeemRequest.ShardID(),
-			ShardHeight:             updatedRedeemRequest.ShardHeight(),
+			ShardHeight:             updatedRedeemRequest.GetShardHeight(),
 			BeaconHeight:            updatedRedeemRequest.GetBeaconHeight(),
 			RedeemerExternalAddress: updatedRedeemRequest.GetRedeemerExternalAddress(),
 		}
@@ -714,7 +714,7 @@ func CheckAndPickMoreCustodianForWaitingRedeemRequest(
 	sort.Strings(waitingRedeemKeys)
 	for _, waitingRedeemKey := range waitingRedeemKeys {
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
-		if !bc.CheckBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), shardHeights[waitingRedeem.ShardID()], waitingRedeem.ShardHeight(), portalParams.TimeOutWaitingRedeemRequest) {
+		if !bc.CheckBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), shardHeights[waitingRedeem.ShardID()], waitingRedeem.GetShardHeight(), portalParams.TimeOutWaitingRedeemRequest) {
 			continue
 		}
 
@@ -774,7 +774,7 @@ func CheckAndPickMoreCustodianForWaitingRedeemRequest(
 				shardID,
 				common.Hash{},
 				pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
-				waitingRedeem.ShardHeight(),
+				waitingRedeem.GetShardHeight(),
 				waitingRedeem.GetRedeemerExternalAddress(),
 			)
 			insts = append(insts, inst2)
@@ -871,7 +871,7 @@ func (p *PortalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 	sort.Strings(waitingRedeemKeys)
 	for _, waitingRedeemKey := range waitingRedeemKeys {
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
-		if !bc.CheckBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), shardHeights[waitingRedeem.ShardID()], waitingRedeem.ShardHeight(), portalParams.TimeOutWaitingRedeemRequest) {
+		if !bc.CheckBlockTimeIsReached(beaconHeight, waitingRedeem.GetBeaconHeight(), shardHeights[waitingRedeem.ShardID()], waitingRedeem.GetShardHeight(), portalParams.TimeOutWaitingRedeemRequest) {
 			continue
 		}
 
@@ -931,7 +931,7 @@ func (p *PortalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 				shardID,
 				common.Hash{},
 				pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
-				waitingRedeem.ShardHeight(),
+				waitingRedeem.GetShardHeight(),
 				waitingRedeem.GetRedeemerExternalAddress(),
 			)
 			insts = append(insts, inst2)
@@ -1018,7 +1018,7 @@ func (p *PortalPickMoreCustodianForRedeemProcessor) ProcessInsts(
 			MatchingCustodianDetail: updatedRedeemRequest.GetCustodians(),
 			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
 			ShardID:                 updatedRedeemRequest.ShardID(),
-			ShardHeight:             updatedRedeemRequest.ShardHeight(),
+			ShardHeight:             updatedRedeemRequest.GetShardHeight(),
 			BeaconHeight:            updatedRedeemRequest.GetBeaconHeight(),
 			RedeemerExternalAddress: updatedRedeemRequest.GetRedeemerExternalAddress(),
 		}

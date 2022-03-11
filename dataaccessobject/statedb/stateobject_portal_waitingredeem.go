@@ -9,105 +9,105 @@ import (
 )
 
 type RedeemRequest struct {
-	uniqueRedeemID        string
-	tokenID               string
-	redeemerAddress       string
-	redeemerRemoteAddress string
-	redeemAmount          uint64
-	custodians            []*MatchingRedeemCustodianDetail
-	redeemFee             uint64
-	beaconHeight          uint64
-	txReqID               common.Hash
+	UniqueRedeemID        string
+	TokenID               string
+	RedeemerAddress       string
+	RedeemerRemoteAddress string
+	RedeemAmount          uint64
+	Custodians            []*MatchingRedeemCustodianDetail
+	RedeemFee             uint64
+	BeaconHeight          uint64
+	TxReqID               common.Hash
 
-	redeemerExternalAddress string
-	shardHeight             uint64
+	RedeemerExternalAddress string
+	ShardHeight             uint64
 	shardID                 byte
 }
 
 type MatchingRedeemCustodianDetail struct {
-	incAddress    string
-	remoteAddress string
-	amount        uint64
+	IncAddress    string
+	RemoteAddress string
+	Amount        uint64
 }
 
 func (rq RedeemRequest) GetUniqueRedeemID() string {
-	return rq.uniqueRedeemID
+	return rq.UniqueRedeemID
 }
 
 func (rq *RedeemRequest) SetUniqueRedeemID(uniqueRedeemID string) {
-	rq.uniqueRedeemID = uniqueRedeemID
+	rq.UniqueRedeemID = uniqueRedeemID
 }
 
 func (rq RedeemRequest) GetTokenID() string {
-	return rq.tokenID
+	return rq.TokenID
 }
 
 func (rq *RedeemRequest) SetTokenID(tokenID string) {
-	rq.tokenID = tokenID
+	rq.TokenID = tokenID
 }
 
 func (rq RedeemRequest) GetRedeemerAddress() string {
-	return rq.redeemerAddress
+	return rq.RedeemerAddress
 }
 
 func (rq *RedeemRequest) SetRedeemerAddress(redeemerAddress string) {
-	rq.redeemerAddress = redeemerAddress
+	rq.RedeemerAddress = redeemerAddress
 }
 
 func (rq RedeemRequest) GetRedeemerRemoteAddress() string {
-	return rq.redeemerRemoteAddress
+	return rq.RedeemerRemoteAddress
 }
 
 func (rq *RedeemRequest) SetRedeemerRemoteAddress(redeemerRemoteAddress string) {
-	rq.redeemerRemoteAddress = redeemerRemoteAddress
+	rq.RedeemerRemoteAddress = redeemerRemoteAddress
 }
 
 func (rq RedeemRequest) GetRedeemAmount() uint64 {
-	return rq.redeemAmount
+	return rq.RedeemAmount
 }
 
 func (rq *RedeemRequest) SetRedeemAmount(redeemAmount uint64) {
-	rq.redeemAmount = redeemAmount
+	rq.RedeemAmount = redeemAmount
 }
 
 func (rq RedeemRequest) GetCustodians() []*MatchingRedeemCustodianDetail {
-	return rq.custodians
+	return rq.Custodians
 }
 
 func (rq *RedeemRequest) SetCustodians(custodians []*MatchingRedeemCustodianDetail) {
-	rq.custodians = custodians
+	rq.Custodians = custodians
 }
 
 func (rq RedeemRequest) GetRedeemFee() uint64 {
-	return rq.redeemFee
+	return rq.RedeemFee
 }
 
 func (rq *RedeemRequest) SetRedeemFee(redeemFee uint64) {
-	rq.redeemFee = redeemFee
+	rq.RedeemFee = redeemFee
 }
 
 func (rq RedeemRequest) GetBeaconHeight() uint64 {
-	return rq.beaconHeight
+	return rq.BeaconHeight
 }
 
 func (rq *RedeemRequest) SetBeaconHeight(beaconHeight uint64) {
-	rq.beaconHeight = beaconHeight
+	rq.BeaconHeight = beaconHeight
 }
 
 func (rq RedeemRequest) GetTxReqID() common.Hash {
-	return rq.txReqID
+	return rq.TxReqID
 }
 
 func (rq *RedeemRequest) SetTxReqID(txReqID common.Hash) {
-	rq.txReqID = txReqID
+	rq.TxReqID = txReqID
 }
 
-func (rq RedeemRequest) ShardHeight() uint64 {
-	return rq.shardHeight
+func (rq RedeemRequest) GetShardHeight() uint64 {
+	return rq.ShardHeight
 }
 
 func (rq *RedeemRequest) SetShardHeight(shardHeight uint64) {
-	rq.shardHeight = shardHeight
+	rq.ShardHeight = shardHeight
 }
 
 func (rq RedeemRequest) ShardID() byte {
@@ -119,11 +119,11 @@ func (rq *RedeemRequest) SetShardID(shardID byte) {
 }
 
 func (rq *RedeemRequest) GetRedeemerExternalAddress() string {
-	return rq.redeemerExternalAddress
+	return rq.RedeemerExternalAddress
 }
 
 func (rq *RedeemRequest) SetRedeemerExternalAddress(redeemerAddress string) {
-	rq.redeemerExternalAddress = redeemerAddress
+	rq.RedeemerExternalAddress = redeemerAddress
 }
 
 func (rq *RedeemRequest) MarshalJSON() ([]byte, error) {
@@ -141,18 +141,18 @@ func (rq *RedeemRequest) MarshalJSON() ([]byte, error) {
 		ShardHeight             uint64
 		RedeemerExternalAddress string
 	}{
-		UniqueRedeemID:          rq.uniqueRedeemID,
-		TokenID:                 rq.tokenID,
-		RedeemerAddress:         rq.redeemerAddress,
-		RedeemerRemoteAddress:   rq.redeemerRemoteAddress,
-		RedeemAmount:            rq.redeemAmount,
-		Custodians:              rq.custodians,
-		RedeemFee:               rq.redeemFee,
-		BeaconHeight:            rq.beaconHeight,
-		TxReqID:                 rq.txReqID,
+		UniqueRedeemID:          rq.UniqueRedeemID,
+		TokenID:                 rq.TokenID,
+		RedeemerAddress:         rq.RedeemerAddress,
+		RedeemerRemoteAddress:   rq.RedeemerRemoteAddress,
+		RedeemAmount:            rq.RedeemAmount,
+		Custodians:              rq.Custodians,
+		RedeemFee:               rq.RedeemFee,
+		BeaconHeight:            rq.BeaconHeight,
+		TxReqID:                 rq.TxReqID,
 		ShardID:                 rq.shardID,
-		ShardHeight:             rq.shardHeight,
-		RedeemerExternalAddress: rq.redeemerExternalAddress,
+		ShardHeight:             rq.ShardHeight,
+		RedeemerExternalAddress: rq.RedeemerExternalAddress,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -179,43 +179,43 @@ func (rq *RedeemRequest) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	rq.uniqueRedeemID = temp.UniqueRedeemID
-	rq.tokenID = temp.TokenID
-	rq.redeemerAddress = temp.RedeemerAddress
-	rq.redeemerRemoteAddress = temp.RedeemerRemoteAddress
-	rq.redeemAmount = temp.RedeemAmount
-	rq.custodians = temp.Custodians
-	rq.redeemFee = temp.RedeemFee
-	rq.beaconHeight = temp.BeaconHeight
-	rq.txReqID = temp.TxReqID
-	rq.shardHeight = temp.ShardHeight
+	rq.UniqueRedeemID = temp.UniqueRedeemID
+	rq.TokenID = temp.TokenID
+	rq.RedeemerAddress = temp.RedeemerAddress
+	rq.RedeemerRemoteAddress = temp.RedeemerRemoteAddress
+	rq.RedeemAmount = temp.RedeemAmount
+	rq.Custodians = temp.Custodians
+	rq.RedeemFee = temp.RedeemFee
+	rq.BeaconHeight = temp.BeaconHeight
+	rq.TxReqID = temp.TxReqID
+	rq.ShardHeight = temp.ShardHeight
 	rq.shardID = temp.ShardID
-	rq.redeemerExternalAddress = temp.RedeemerExternalAddress
+	rq.RedeemerExternalAddress = temp.RedeemerExternalAddress
 	return nil
 }
 
 func (mc MatchingRedeemCustodianDetail) GetIncognitoAddress() string {
-	return mc.incAddress
+	return mc.IncAddress
 }
 
 func (mc *MatchingRedeemCustodianDetail) SetIncognitoAddress(incognitoAddress string) {
-	mc.incAddress = incognitoAddress
+	mc.IncAddress = incognitoAddress
 }
 
 func (mc MatchingRedeemCustodianDetail) GetRemoteAddress() string {
-	return mc.remoteAddress
+	return mc.RemoteAddress
 }
 
 func (mc *MatchingRedeemCustodianDetail) SetRemoteAddress(remoteAddress string) {
-	mc.remoteAddress = remoteAddress
+	mc.RemoteAddress = remoteAddress
 }
 
 func (mc MatchingRedeemCustodianDetail) GetAmount() uint64 {
-	return mc.amount
+	return mc.Amount
 }
 
 func (mc *MatchingRedeemCustodianDetail) SetAmount(amount uint64) {
-	mc.amount = amount
+	mc.Amount = amount
 }
 
 func (mc MatchingRedeemCustodianDetail) MarshalJSON() ([]byte, error) {
@@ -224,9 +224,9 @@ func (mc MatchingRedeemCustodianDetail) MarshalJSON() ([]byte, error) {
 		RemoteAddress string
 		Amount        uint64
 	}{
-		IncAddress:    mc.incAddress,
-		RemoteAddress: mc.remoteAddress,
-		Amount:        mc.amount,
+		IncAddress:    mc.IncAddress,
+		RemoteAddress: mc.RemoteAddress,
+		Amount:        mc.Amount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -244,9 +244,9 @@ func (mc *MatchingRedeemCustodianDetail) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	mc.incAddress = temp.IncAddress
-	mc.remoteAddress = temp.RemoteAddress
-	mc.amount = temp.Amount
+	mc.IncAddress = temp.IncAddress
+	mc.RemoteAddress = temp.RemoteAddress
+	mc.Amount = temp.Amount
 	return nil
 }
 
@@ -256,9 +256,9 @@ func NewMatchingRedeemCustodianDetailWithValue(
 	amount uint64) *MatchingRedeemCustodianDetail {
 
 	return &MatchingRedeemCustodianDetail{
-		incAddress:    incAddress,
-		remoteAddress: remoteAddress,
-		amount:        amount,
+		IncAddress:    incAddress,
+		RemoteAddress: remoteAddress,
+		Amount:        amount,
 	}
 }
 
@@ -281,18 +281,18 @@ func NewRedeemRequestWithValue(
 	redeemerExternalAddress string) *RedeemRequest {
 
 	return &RedeemRequest{
-		uniqueRedeemID:          uniqueRedeemID,
-		tokenID:                 tokenID,
-		redeemerAddress:         redeemerAddress,
-		redeemerRemoteAddress:   redeemerRemoteAddress,
-		redeemAmount:            redeemAmount,
-		custodians:              custodians,
-		redeemFee:               redeemFee,
-		beaconHeight:            beaconHeight,
-		txReqID:                 txReqID,
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemerAddress:         redeemerAddress,
+		RedeemerRemoteAddress:   redeemerRemoteAddress,
+		RedeemAmount:            redeemAmount,
+		Custodians:              custodians,
+		RedeemFee:               redeemFee,
+		BeaconHeight:            beaconHeight,
+		TxReqID:                 txReqID,
 		shardID:                 sharID,
-		shardHeight:             shardHeight,
-		redeemerExternalAddress: redeemerExternalAddress,
+		ShardHeight:             shardHeight,
+		RedeemerExternalAddress: redeemerExternalAddress,
 	}
 }
 
