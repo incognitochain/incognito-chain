@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"path"
 	"path/filepath"
 	"sync"
@@ -68,8 +69,9 @@ func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
 		i, err := strconv.Atoi(name)
 		if err == nil {
 			if uint64(i) < lastFile {
+
 				err := os.Remove(path.Join(ff.dataDir, name))
-				fmt.Println(err)
+				log.Println("truncate file ", lastIndex, uint64(i), lastFile, err)
 			}
 		}
 	}
@@ -86,6 +88,7 @@ func (f *FlatFileManager) PasreFile(fileID uint64) (map[uint64]ReadInfo, error) 
 	f.lock.RLock()
 	defer f.lock.RUnlock()
 
+	//TODO: concert int64
 	p := path.Join(f.dataDir, strconv.Itoa(int(fileID)))
 	fd, err := os.Open(p)
 	if err != nil {
@@ -96,9 +99,12 @@ func (f *FlatFileManager) PasreFile(fileID uint64) (map[uint64]ReadInfo, error) 
 	size := 0
 	for {
 		b := make([]byte, 8)
-		n, _ := fd.ReadAt(b, offset)
+		n, err := fd.ReadAt(b, offset)
+		if err != nil && err.Error() != "EOF" {
+			return nil, err
+		}
 		var result int64
-		err := binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &result)
+		err = binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &result)
 		if err != nil || n == 0 {
 			break
 		}
@@ -169,7 +175,8 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, f
 	go func() {
 		fromFile := index / f.fileSizeLimit
 		offset := index % f.fileSizeLimit
-		for i := fromFile; i >= 0; i-- {
+
+		for i := int64(fromFile); i >= 0; i-- {
 			readInfo, err := f.PasreFile(uint64(i))
 			if err != nil {
 				e <- 1
@@ -180,9 +187,9 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, f
 				cancel()
 			}
 
-			for j := offset; j >= 0; j-- {
-				rawB := make([]byte, readInfo[j].size)
-				readInfo[uint64(j)].fd.ReadAt(rawB, int64(readInfo[uint64(j)].offset))
+			for j := int64(offset); j >= 0; j-- {
+				rawB := make([]byte, readInfo[uint64(j)].size)
+				readInfo[uint64(j)].fd.ReadAt(rawB, readInfo[uint64(j)].offset)
 
 			LOOP:
 				if !closed {

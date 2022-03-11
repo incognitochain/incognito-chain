@@ -15,7 +15,6 @@ type StateNode struct {
 	previousLink    *StateNode
 	aggregateHash   *common.Hash //!= nil, aslo mean commit from mem to disk
 	finalizedCommit bool
-	ffIndex         int64
 }
 
 func (s StateNode) GetHash() common.Hash {
@@ -85,7 +84,7 @@ func (stateDB *StateDB) DeSerializeFromStateNodeData(data []byte) (*StateNode, *
 		}
 		key, _ := common.Hash{}.NewHash(objectByte[8:40])
 
-		obj, _, err := stateDB.createStateObjectWithValue(int(objType), *key, objectByte[41:])
+		obj, err := newStateObjectWithValue(stateDB, int(objType), *key, objectByte[41:])
 		if err != nil {
 			return nil, nil, err
 		}
