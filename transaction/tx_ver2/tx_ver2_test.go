@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 	"unicode"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -358,8 +358,168 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 	})
 }
 
+func loadSampleTxs(isPrv bool) ([]metadata.Transaction, error) {
+	res := make([]metadata.Transaction, 0)
+
+	rootDataDir := "test_data"
+
+	var dataDir string
+	if isPrv {
+		dataDir = rootDataDir + "/prv"
+	} else {
+		dataDir = rootDataDir + "/token"
+	}
+
+	filePath := fmt.Sprintf("%v/txs.dat", dataDir)
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	txs := make(map[string]string)
+	err = json.Unmarshal(data, &txs)
+
+	for _, tx := range txs {
+		rawTx, _, err := base58.Base58Check{}.Decode(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		var tx metadata.Transaction
+		if isPrv {
+			tx = new(Tx)
+		} else {
+			tx = new(TxToken)
+		}
+
+		err = json.Unmarshal(rawTx, tx)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, tx)
+	}
+
+	return res, nil
+}
+
+func BenchmarkTx_CompactBytes(b *testing.B) {
+	txs, err := loadSampleTxs(true)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("LOAD TXS successfully!!!!")
+
+	minEncodingRate := 100000.0
+	maxEncodingRate := 0.0
+	totalEncodingRate := 0.0
+	minDecodingRate := 100000.0
+	maxDecodingRate := 0.0
+	totalDecodingRate := 0.0
+
+	minSizeReductionRate := 10000.0
+	maxSizeReductionRate := 0.0
+	totalReductionRate := 0.0
+	minReductionTx := ""
+
+	count := 0
+	for i := 0; i < len(txs); i++ {
+		tx := txs[i]
+		prefix := fmt.Sprintf("[i: %v, txHash: %v]", i, tx.Hash().String()[:10])
+		txV2, ok := tx.(*Tx)
+		if !ok {
+			continue
+		}
+
+		start := time.Now()
+		jsb, err := json.Marshal(txV2)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		jsbEncodingTime := time.Since(start).Seconds()
+
+		start = time.Now()
+		tmpTx := new(Tx)
+		err = json.Unmarshal(jsb, &tmpTx)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		jsbDecodingTime := time.Since(start).Seconds()
+		if tmpTx.Hash().String() != tx.Hash().String() {
+			jsb1, _ := json.Marshal(tx)
+			jsb2, _ := json.Marshal(tmpTx)
+			fmt.Println(string(jsb1))
+			fmt.Println(string(jsb2))
+			panic(fmt.Sprintf("%v expected txHash %v, got %v", prefix, tx.Hash().String(), tmpTx.Hash().String()))
+		}
+
+		start = time.Now()
+		compactBytes, err := txV2.ToCompactBytes()
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		encodingTime := time.Since(start).Seconds()
+
+		// Calculate reduction rate
+		reductionRate := 1 - float64(len(compactBytes))/float64(len(jsb))
+		if reductionRate > maxSizeReductionRate {
+			maxSizeReductionRate = reductionRate
+		}
+		if reductionRate < minSizeReductionRate {
+			minSizeReductionRate = reductionRate
+			minReductionTx = tx.Hash().String()
+		}
+		totalReductionRate += reductionRate
+
+		start = time.Now()
+		newTx := new(Tx)
+		err = newTx.FromCompactBytes(compactBytes)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		decodingTime := time.Since(start).Seconds()
+
+		encodingRate := jsbEncodingTime / encodingTime
+		totalEncodingRate += encodingRate
+		if encodingRate > maxEncodingRate {
+			maxEncodingRate = encodingRate
+		}
+		if encodingRate < minEncodingRate {
+			minEncodingRate = encodingRate
+		}
+
+		decodingRate := jsbDecodingTime / decodingTime
+		totalDecodingRate += decodingRate
+		if decodingRate > maxDecodingRate {
+			maxDecodingRate = decodingRate
+		}
+		if decodingRate < minDecodingRate {
+			minDecodingRate = decodingRate
+		}
+
+		if newTx.Hash().String() != tx.Hash().String() {
+			jsb1, _ := json.Marshal(tx)
+			jsb2, _ := json.Marshal(newTx)
+			fmt.Println(string(jsb1))
+			fmt.Println(string(jsb2))
+			panic(fmt.Sprintf("%v expected txHash %v, got %v", prefix, tx.Hash().String(), newTx.Hash().String()))
+		}
+		count++
+	}
+	fmt.Printf("minEncodingRate: %v, maxEncodingRate: %v, avgEncodingRate: %v\n", minEncodingRate, maxEncodingRate, totalEncodingRate/float64(count))
+	fmt.Printf("minDecodingRate: %v, maxDecodingRate: %v, avgDecodingRate: %v\n", minDecodingRate, maxDecodingRate, totalDecodingRate/float64(count))
+	fmt.Printf("minReductionRate: %v (%v), maxReductionRate: %v, avgReductionRate: %v\n",
+		minSizeReductionRate, minReductionTx, maxSizeReductionRate, totalReductionRate/float64(len(txs)))
+}
+
 func TestTx_FromCompactBytes(t *testing.T) {
-	encodedTxStr := "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"
+	encodedTxStr := "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"
 	encodedTx, _, err := base58.Base58Check{}.Decode(encodedTxStr)
 	if err != nil {
 		panic(err)
@@ -384,7 +544,13 @@ func TestTx_FromCompactBytes(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, tx.Hash().String(), newTx.Hash().String(), "tx hashes mismatch")
+	if newTx.Hash().String() != tx.Hash().String() {
+		jsb1, _ := json.Marshal(tx)
+		jsb2, _ := json.Marshal(newTx)
+		fmt.Println(string(jsb1))
+		fmt.Println(string(jsb2))
+		panic(fmt.Sprintf("expected txHash %v, got %v", tx.Hash().String(), newTx.Hash().String()))
+	}
 }
 
 func testTxV2DeletedProof(txv2 *Tx) {
@@ -446,7 +612,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, privateKeys []*privacy.PrivateKey, 
 	malTx := &Tx{}
 	err := malTx.Init(malFeeParams)
 	So(err, ShouldBeNil)
-	malTx.Fee = sumIn-sumOut+1111
+	malTx.Fee = sumIn - sumOut + 1111
 	malTx, err = malTx.startVerifyTx(db)
 	So(err, ShouldBeNil)
 	boolParams := make(map[string]bool)
