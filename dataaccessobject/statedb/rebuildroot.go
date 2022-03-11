@@ -30,11 +30,11 @@ func NewRebuildInfo(mode string, rebuildRoot, pivotRoot common.Hash, rebuildFFIn
 
 func NewEmptyRebuildInfo(mode string) *RebuildInfo {
 	return &RebuildInfo{
-		"",
+		mode,
 		common.EmptyRoot,
 		common.EmptyRoot,
 		0,
-		0,
+		-1,
 	}
 }
 

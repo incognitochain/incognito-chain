@@ -235,7 +235,13 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 		if rebuildMode != common.STATEDB_LITE_MODE {
 			return nil, errors.New("Must run with lite mode")
 		}
-		return NewLiteStateDB(rootDir, dbName, rebuildRootHash.String(), db)
+
+		liteState, err := NewLiteStateDB(rootDir, dbName, rebuildRootData, db)
+		if err != nil {
+			return nil, err
+		}
+		liteState.curRebuildInfo = rebuildRootData.Copy()
+		return liteState, nil
 	default:
 		return nil, errors.New("Cannot recognize statedb mode")
 	}
@@ -405,6 +411,21 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 		return nil
 	case common.STATEDB_LITE_MODE:
 		return stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
+		//finalstate is not defined (=> when init state)
+		if finalViewRebuildInfo.rebuildRootHash.IsEqual(&common.EmptyRoot) {
+			return nil
+		}
+
+		err := stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
+		if err != nil {
+			return err
+		}
+		err = stateDB.liteStateDB.flatfile.Truncate(uint64(finalViewRebuildInfo.rebuildFFIndex - 1))
+		if err != nil {
+			return err
+		}
+		return err
+
 	default:
 		return errors.New("Cannot recognized mode")
 	}
@@ -478,20 +499,23 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 		}
 
 	case common.STATEDB_LITE_MODE:
+		//fmt.Println("=======================> commit lite", len(stateDB.liteStateDB.headStateNode.stateObjects))
 		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				return common.EmptyRoot, nil, nil
+				return common.EmptyRoot, NewRebuildInfo(common.STATEDB_LITE_MODE, common.EmptyRoot, common.EmptyRoot, -1, -1), nil
 			}
 			root := *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash
-			curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, root, root, stateDB.liteStateDB.headStateNode.previousLink.ffIndex, 0)
+			curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, root, root, stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex)
+			stateDB.curRebuildInfo = curRebuildInfo.Copy()
 			return root, curRebuildInfo, nil
 		}
-		h, err := stateDB.liteStateDB.Commit()
+
+		h, newRebuildIndex, err := stateDB.liteStateDB.Commit()
 		if err != nil {
 			return common.Hash{}, nil, err
 		}
 		stateDB.liteStateDB.NewStateNode()
-		curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, h, h, stateDB.liteStateDB.headStateNode.previousLink.ffIndex, 0)
+		curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, h, h, int64(newRebuildIndex), stateDB.curRebuildInfo.pivotFFIndex)
 		stateDB.curRebuildInfo = curRebuildInfo.Copy()
 		return h, curRebuildInfo, nil
 	default:
@@ -502,22 +526,23 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 
 // Copy duplicate statedb and return new statedb instance
 func (stateDB *StateDB) Copy() *StateDB {
+	curRebuildInfo := stateDB.curRebuildInfo
+	if stateDB.curRebuildInfo == nil {
+		curRebuildInfo = nil
+	}
+
 	if stateDB.liteStateDB != nil {
 		return &StateDB{
 			mode:                stateDB.mode,
 			dbName:              stateDB.dbName,
 			liteStateDB:         stateDB.liteStateDB.Copy(),
-			curRebuildInfo:      stateDB.curRebuildInfo.Copy(),
+			curRebuildInfo:      curRebuildInfo,
 			stateObjects:        make(map[common.Hash]StateObject),
 			stateObjectsPending: make(map[common.Hash]struct{}),
 			stateObjectsDirty:   make(map[common.Hash]struct{}),
 		}
 	}
 
-	curRebuildInfo := stateDB.curRebuildInfo
-	if stateDB.curRebuildInfo == nil {
-		curRebuildInfo = nil
-	}
 	return &StateDB{
 		db:                  stateDB.db,
 		dbName:              stateDB.dbName,

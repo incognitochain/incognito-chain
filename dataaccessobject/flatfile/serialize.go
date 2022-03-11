@@ -73,11 +73,11 @@ func (ff *FlatFileManager) Truncate(lastIndex uint64) error {
 			}
 		}
 	}
-	newff, err := NewFlatFile(ff.dataDir, ff.fileSizeLimit)
-	if err != nil {
-		return nil
-	}
-	*ff = *newff
+	//newff, err := NewFlatFile(ff.dataDir, ff.fileSizeLimit)
+	//if err != nil {
+	//	return nil
+	//}
+	//*ff = *newff
 	return nil
 }
 

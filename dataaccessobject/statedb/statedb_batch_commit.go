@@ -30,8 +30,7 @@ func NewForceTrieCommitEnvironment(shardID byte, rawDB incdb.KeyValueWriter, new
 }
 
 var (
-	splitter              = []byte("-[-]-")
-	fullSyncPivotBlockKey = []byte("Full-Sync-Latest-Pivot-Block-")
+	fullSyncPivotBlockKey = []byte("LiteStateDB-Pivot-BlockHash-")
 )
 
 func GetCommitPivotKey(name string) []byte {

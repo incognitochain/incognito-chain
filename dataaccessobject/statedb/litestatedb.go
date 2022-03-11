@@ -20,8 +20,7 @@ type LiteStateDB struct {
 	stateDB       *StateDB
 }
 
-func NewLiteStateDB(rootDir string, dbName string, rebuildRoot string, db incdb.Database) (*StateDB, error) {
-	rebuildRootHash, _, rebuildRootIndex, err := getRebuildRootInfo(rebuildRoot)
+func NewLiteStateDB(rootDir string, dbName string, rebuildRoot RebuildInfo, db incdb.Database) (*StateDB, error) {
 	stateDB := &StateDB{
 		mode:                common.STATEDB_LITE_MODE,
 		stateObjects:        make(map[common.Hash]StateObject),
@@ -47,11 +46,11 @@ func NewLiteStateDB(rootDir string, dbName string, rebuildRoot string, db incdb.
 	}
 
 	//if init from empty root
-	if rebuildRoot == "" || rebuildRootHash.String() == common.EmptyRoot.String() {
+	if rebuildRoot.rebuildRootHash.String() == common.EmptyRoot.String() {
 		return stateDB, nil
 	}
 	//else rebuild
-	err = stateDB.liteStateDB.restoreStateNode(rebuildRootHash, rebuildRootIndex)
+	err = stateDB.liteStateDB.restoreStateNode(rebuildRoot)
 
 	return stateDB, err
 }
@@ -74,9 +73,9 @@ func (stateDB *LiteStateDB) Copy() *LiteStateDB {
 	}
 }
 
-func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
+func (stateDB *LiteStateDB) Commit() (common.Hash, uint64, error) {
 	if stateDB.headStateNode.aggregateHash != nil {
-		return common.Hash{}, errors.New("Cannot commit twice")
+		return common.Hash{}, 0, errors.New("Cannot commit twice")
 	}
 
 	h, err := stateDB.headStateNode.Commit()
@@ -84,17 +83,17 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 	if h != nil {
 		data, err := stateDB.headStateNode.Serialize()
 		if err != nil {
-			return common.Hash{}, err
+			return common.Hash{}, 0, err
 		}
 		ffIndex, err := stateDB.flatfile.Append(data)
 		if err != nil {
-			return common.Hash{}, err
+			return common.Hash{}, 0, err
 		}
 		stateDB.headStateNode.ffIndex = int64(ffIndex)
-		return *h, nil
+		return *h, ffIndex, nil
 	}
 
-	return common.Hash{}, err
+	return common.Hash{}, 0, err
 
 }
 
@@ -103,6 +102,7 @@ func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 	//write finalize Key Value to disk
 	stateNode := stateDB.headStateNode.previousLink //current headstatenode dont have aggregatehash, as soon as we commit to calculate agghash, we create new head
 	for {
+		//fmt.Println("stateNode", stateNode != nil)
 		if stateNode == nil {
 			break
 		}
@@ -112,7 +112,6 @@ func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 				return err
 			}
 			stateNode.previousLink = nil
-			err = StoreLatestPivotCommit(stateDB.db, stateDB.dbPrefix, fmt.Sprintf("%v-%v", stateNodeHash.String(), stateNode.ffIndex))
 			return err
 		}
 		stateNode = stateNode.previousLink
@@ -121,14 +120,14 @@ func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 	return errors.New("Cannot find finalized hash!")
 }
 
-func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex uint64) error {
+func (stateDB *LiteStateDB) restoreStateNode(rebuildInfo RebuildInfo) error {
+	root := rebuildInfo.rebuildRootHash
+	ffIndex := rebuildInfo.rebuildFFIndex
 	//get final commit
-	pivotRootHash, pivotRootIndex, err := GetLatestPivotCommitInfo(stateDB.db, stateDB.dbPrefix)
-	if err != nil {
-		return err
-	}
+	pivotRootHash := rebuildInfo.pivotRootHash
+	pivotRootIndex := rebuildInfo.pivotFFIndex
 
-	if ffIndex < uint64(pivotRootIndex) {
+	if ffIndex < pivotRootIndex {
 		return errors.New("Rebuild from root that before pivot point")
 	}
 
@@ -155,6 +154,7 @@ func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex uint64) e
 			stateNodeMap[stateNode.GetHash()] = stateNode
 			prevMap[stateNode.GetHash()] = prevHash
 
+			fmt.Println()
 			if stateNode.aggregateHash.String() == pivotRootHash.String() {
 				cancelReadStateNode()
 				goto RESTORE_SUCCESS

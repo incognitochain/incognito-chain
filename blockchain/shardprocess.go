@@ -869,19 +869,19 @@ func (shardBestState *ShardBestState) initShardBestState(
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
+	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, mode, db, *statedb.NewEmptyRebuildInfo(mode), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
+	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, mode, db, *statedb.NewEmptyRebuildInfo(mode), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
+	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, mode, db, *statedb.NewEmptyRebuildInfo(mode), nil)
 	if err != nil {
 		return err
 	}
-	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, mode, db, *statedb.NewEmptyRebuildInfo(""), nil)
+	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, mode, db, *statedb.NewEmptyRebuildInfo(mode), nil)
 	if err != nil {
 		return err
 	}
