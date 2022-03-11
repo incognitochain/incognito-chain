@@ -14,42 +14,42 @@ type ExternalFeeInfo struct {
 }
 
 type ProcessedUnshieldRequestBatch struct {
-	batchID      string
-	unshieldsID  []string
-	utxos        []*UTXO
-	externalFees map[uint64]ExternalFeeInfo // beaconHeight => fee
+	BatchID      string
+	UnshieldsID  []string
+	Utxos        []*UTXO
+	ExternalFees map[uint64]ExternalFeeInfo // beaconHeight => fee
 }
 
 func (us *ProcessedUnshieldRequestBatch) GetUTXOs() []*UTXO {
-	return us.utxos
+	return us.Utxos
 }
 
 func (us *ProcessedUnshieldRequestBatch) SetUTXOs(newUTXOs []*UTXO) {
-	us.utxos = newUTXOs
+	us.Utxos = newUTXOs
 }
 
 func (us *ProcessedUnshieldRequestBatch) GetUnshieldRequests() []string {
-	return us.unshieldsID
+	return us.UnshieldsID
 }
 
 func (us *ProcessedUnshieldRequestBatch) SetUnshieldRequests(usRequests []string) {
-	us.unshieldsID = usRequests
+	us.UnshieldsID = usRequests
 }
 
 func (us *ProcessedUnshieldRequestBatch) GetExternalFees() map[uint64]ExternalFeeInfo {
-	return us.externalFees
+	return us.ExternalFees
 }
 
 func (us *ProcessedUnshieldRequestBatch) SetExternalFees(externalFees map[uint64]ExternalFeeInfo) {
-	us.externalFees = externalFees
+	us.ExternalFees = externalFees
 }
 
 func (us *ProcessedUnshieldRequestBatch) GetBatchID() string {
-	return us.batchID
+	return us.BatchID
 }
 
 func (us *ProcessedUnshieldRequestBatch) SetBatchID(batchID string) {
-	us.batchID = batchID
+	us.BatchID = batchID
 }
 
 func (rq ProcessedUnshieldRequestBatch) MarshalJSON() ([]byte, error) {
@@ -59,10 +59,10 @@ func (rq ProcessedUnshieldRequestBatch) MarshalJSON() ([]byte, error) {
 		UTXOs        []*UTXO
 		ExternalFees map[uint64]ExternalFeeInfo
 	}{
-		BatchID:      rq.batchID,
-		UnshieldsID:  rq.unshieldsID,
-		UTXOs:        rq.utxos,
-		ExternalFees: rq.externalFees,
+		BatchID:      rq.BatchID,
+		UnshieldsID:  rq.UnshieldsID,
+		UTXOs:        rq.Utxos,
+		ExternalFees: rq.ExternalFees,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -81,10 +81,10 @@ func (rq *ProcessedUnshieldRequestBatch) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	rq.unshieldsID = temp.UnshieldsID
-	rq.utxos = temp.UTXOs
-	rq.externalFees = temp.ExternalFees
-	rq.batchID = temp.BatchID
+	rq.UnshieldsID = temp.UnshieldsID
+	rq.Utxos = temp.UTXOs
+	rq.ExternalFees = temp.ExternalFees
+	rq.BatchID = temp.BatchID
 	return nil
 }
 
@@ -94,10 +94,10 @@ func NewProcessedUnshieldRequestBatchWithValue(
 	utxosInput []*UTXO,
 	externalFees map[uint64]ExternalFeeInfo) *ProcessedUnshieldRequestBatch {
 	return &ProcessedUnshieldRequestBatch{
-		batchID:      batchID,
-		unshieldsID:  unshieldsIDInput,
-		utxos:        utxosInput,
-		externalFees: externalFees,
+		BatchID:      batchID,
+		UnshieldsID:  unshieldsIDInput,
+		Utxos:        utxosInput,
+		ExternalFees: externalFees,
 	}
 }
 

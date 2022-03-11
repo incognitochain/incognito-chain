@@ -1746,7 +1746,7 @@ func CloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[strin
 			req.GetBeaconHeight(),
 			req.GetTxReqID(),
 			req.ShardID(),
-			req.ShardHeight(),
+			req.GetShardHeight(),
 			req.GetRedeemerExternalAddress(),
 		)
 	}

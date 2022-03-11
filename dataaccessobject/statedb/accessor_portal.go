@@ -17,20 +17,20 @@ func StoreWaitingRedeemRequests(
 	stateDB *StateDB,
 	waitingRedeemReqs map[string]*RedeemRequest) error {
 	for _, waitingReq := range waitingRedeemReqs {
-		key := GenerateWaitingRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
+		key := GenerateWaitingRedeemRequestObjectKey(waitingReq.UniqueRedeemID)
 		value := NewRedeemRequestWithValue(
-			waitingReq.uniqueRedeemID,
-			waitingReq.tokenID,
-			waitingReq.redeemerAddress,
-			waitingReq.redeemerRemoteAddress,
-			waitingReq.redeemAmount,
-			waitingReq.custodians,
-			waitingReq.redeemFee,
-			waitingReq.beaconHeight,
-			waitingReq.txReqID,
+			waitingReq.UniqueRedeemID,
+			waitingReq.TokenID,
+			waitingReq.RedeemerAddress,
+			waitingReq.RedeemerRemoteAddress,
+			waitingReq.RedeemAmount,
+			waitingReq.Custodians,
+			waitingReq.RedeemFee,
+			waitingReq.BeaconHeight,
+			waitingReq.TxReqID,
 			waitingReq.shardID,
-			waitingReq.shardHeight,
-			waitingReq.redeemerExternalAddress,
+			waitingReq.ShardHeight,
+			waitingReq.RedeemerExternalAddress,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -122,20 +122,20 @@ func StoreMatchedRedeemRequests(
 	stateDB *StateDB,
 	waitingRedeemReqs map[string]*RedeemRequest) error {
 	for _, waitingReq := range waitingRedeemReqs {
-		key := GenerateMatchedRedeemRequestObjectKey(waitingReq.uniqueRedeemID)
+		key := GenerateMatchedRedeemRequestObjectKey(waitingReq.UniqueRedeemID)
 		value := NewRedeemRequestWithValue(
-			waitingReq.uniqueRedeemID,
-			waitingReq.tokenID,
-			waitingReq.redeemerAddress,
-			waitingReq.redeemerRemoteAddress,
-			waitingReq.redeemAmount,
-			waitingReq.custodians,
-			waitingReq.redeemFee,
-			waitingReq.beaconHeight,
-			waitingReq.txReqID,
+			waitingReq.UniqueRedeemID,
+			waitingReq.TokenID,
+			waitingReq.RedeemerAddress,
+			waitingReq.RedeemerRemoteAddress,
+			waitingReq.RedeemAmount,
+			waitingReq.Custodians,
+			waitingReq.RedeemFee,
+			waitingReq.BeaconHeight,
+			waitingReq.TxReqID,
 			waitingReq.shardID,
-			waitingReq.shardHeight,
-			waitingReq.redeemerExternalAddress,
+			waitingReq.ShardHeight,
+			waitingReq.RedeemerExternalAddress,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -165,18 +165,18 @@ func StoreCustodianState(
 	stateDB *StateDB,
 	custodians map[string]*CustodianState) error {
 	for _, cus := range custodians {
-		key := GenerateCustodianStateObjectKey(cus.incognitoAddress)
+		key := GenerateCustodianStateObjectKey(cus.IncognitoAddress)
 		value := NewCustodianStateWithValue(
-			cus.incognitoAddress,
-			cus.totalCollateral,
-			cus.freeCollateral,
-			cus.holdingPubTokens,
-			cus.lockedAmountCollateral,
-			cus.remoteAddresses,
-			cus.rewardAmount,
-			cus.totalTokenCollaterals,
-			cus.freeTokenCollaterals,
-			cus.lockedTokenCollaterals,
+			cus.IncognitoAddress,
+			cus.TotalCollateral,
+			cus.FreeCollateral,
+			cus.HoldingPubTokens,
+			cus.LockedAmountCollateral,
+			cus.RemoteAddresses,
+			cus.RewardAmount,
+			cus.TotalTokenCollaterals,
+			cus.FreeTokenCollaterals,
+			cus.LockedTokenCollaterals,
 		)
 		err := stateDB.SetStateObject(CustodianStateObjectType, key, value)
 		if err != nil {

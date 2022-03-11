@@ -9,9 +9,9 @@ import (
 )
 
 type ShieldingRequest struct {
-	externalTxHash string
-	incAddress     string
-	amount         uint64
+	ExternalTxHash string
+	IncAddress     string
+	Amount         uint64
 }
 
 func NewShieldingRequest() *ShieldingRequest {
@@ -24,34 +24,34 @@ func NewShieldingRequestWithValue(
 	amount uint64,
 ) *ShieldingRequest {
 	return &ShieldingRequest{
-		externalTxHash: externalTxHash,
-		incAddress:     incAddress,
-		amount:         amount,
+		ExternalTxHash: externalTxHash,
+		IncAddress:     incAddress,
+		Amount:         amount,
 	}
 }
 
 func (pr *ShieldingRequest) GetExternalTxHash() string {
-	return pr.externalTxHash
+	return pr.ExternalTxHash
 }
 
 func (pr *ShieldingRequest) SetExternalTxHash(txHash string) {
-	pr.externalTxHash = txHash
+	pr.ExternalTxHash = txHash
 }
 
 func (pr *ShieldingRequest) GetIncAddress() string {
-	return pr.incAddress
+	return pr.IncAddress
 }
 
 func (pr *ShieldingRequest) SetIncAddress(incAddress string) {
-	pr.incAddress = incAddress
+	pr.IncAddress = incAddress
 }
 
 func (pr *ShieldingRequest) GetAmount() uint64 {
-	return pr.amount
+	return pr.Amount
 }
 
 func (pr *ShieldingRequest) SetAmount(amount uint64) {
-	pr.amount = amount
+	pr.Amount = amount
 }
 
 func (pr *ShieldingRequest) MarshalJSON() ([]byte, error) {
@@ -60,9 +60,9 @@ func (pr *ShieldingRequest) MarshalJSON() ([]byte, error) {
 		IncAddress     string
 		Amount         uint64
 	}{
-		ExternalTxHash: pr.externalTxHash,
-		IncAddress:     pr.incAddress,
-		Amount:         pr.amount,
+		ExternalTxHash: pr.ExternalTxHash,
+		IncAddress:     pr.IncAddress,
+		Amount:         pr.Amount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -80,9 +80,9 @@ func (pr *ShieldingRequest) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	pr.externalTxHash = temp.ExternalTxHash
-	pr.incAddress = temp.IncAddress
-	pr.amount = temp.Amount
+	pr.ExternalTxHash = temp.ExternalTxHash
+	pr.IncAddress = temp.IncAddress
+	pr.Amount = temp.Amount
 	return nil
 }
 

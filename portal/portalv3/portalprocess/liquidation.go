@@ -1766,7 +1766,6 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 	return nil
 }
 
-
 /* =======
 Portal Liquidation Custodian Run Away Processor
 ======= */
@@ -1858,7 +1857,7 @@ func (p *PortalLiquidationCustodianRunAwayProcessor) BuildNewInsts(
 	sort.Strings(sortedMatchedRedeemReqKeys)
 	for _, redeemReqKey := range sortedMatchedRedeemReqKeys {
 		redeemReq := currentPortalState.MatchedRedeemRequests[redeemReqKey]
-		if bc.CheckBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), shardHeights[redeemReq.ShardID()], redeemReq.ShardHeight(), portalParams.TimeOutCustodianReturnPubToken) {
+		if bc.CheckBlockTimeIsReached(beaconHeight, redeemReq.GetBeaconHeight(), shardHeights[redeemReq.ShardID()], redeemReq.GetShardHeight(), portalParams.TimeOutCustodianReturnPubToken) {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.GetRedeemerAddress())
 			if err != nil {
@@ -2380,7 +2379,6 @@ func (p *PortalExpiredWaitingPortingProcessor) ProcessInsts(
 	return nil
 }
 
-
 /* =======
 Portal Liquidation Custodian Run Away Processor
 ======= */
@@ -2447,7 +2445,7 @@ func buildInstRejectRedeemRequestByLiquidationExchangeRate(
 		shardID,
 		common.Hash{},
 		pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
-		redeemReq.ShardHeight(),
+		redeemReq.GetShardHeight(),
 		redeemReq.GetRedeemerExternalAddress(),
 	)
 
@@ -2591,7 +2589,6 @@ func (p *PortalLiquidationByRatesV3Processor) ProcessInsts(
 	return nil
 }
 
-
 /* =======
 Portal Liquidation By Rates Processor
 ======= */
@@ -2697,7 +2694,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 				shardID,
 				common.Hash{},
 				pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
-				redeemReq.ShardHeight(),
+				redeemReq.GetShardHeight(),
 				redeemReq.GetRedeemerExternalAddress(),
 			)
 			insts = append(insts, inst)
