@@ -43,7 +43,7 @@ func (r RebuildInfo) GetRootHash() common.Hash {
 }
 
 func (r RebuildInfo) String() string {
-	return fmt.Sprintf("%v %v %v %v %v", r.mode, r.rebuildRootHash.String(), r.pivotRootHash.String(), r.rebuildFFIndex, r.pivotFFIndex)
+	return fmt.Sprintf("mode:%v rebuild:%v-%v pivot:%v-%v", r.mode, r.rebuildRootHash.String(), r.rebuildFFIndex, r.pivotRootHash.String(), r.pivotFFIndex)
 }
 
 func (r RebuildInfo) IsEmpty() bool {
@@ -80,7 +80,6 @@ func (r *RebuildInfo) MarshalJSON() ([]byte, error) {
 }
 
 func (r *RebuildInfo) UnmarshalJSON(byteArr []byte) (err error) {
-	if len(data) == 32 || len(data) == 0 { //legacy shard root hash (only root hash of archive mode)
 
 	if len(byteArr) == 32 || len(byteArr) == 0 { //legacy shard root hash (only root hash of archive mode)
 		r.mode = common.STATEDB_ARCHIVE_MODE

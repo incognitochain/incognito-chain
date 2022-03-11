@@ -242,7 +242,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		txDB := sBestState.GetCopiedTransactionStateDB()
 
 		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
-		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
+		Logger.log.Infof("Init Shard View shardID %+v, final height %+v, best height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight(), blockchain.ShardChain[shardID].GetBestViewHeight())
 	}
 	return nil
 }
@@ -767,6 +767,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			return errors.New("Restart shard views fail")
 		}
+		Logger.log.Info("Restore shard view", shardID, v.ShardHeight, v.Hash().String())
 	}
 
 	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
@@ -1256,6 +1257,7 @@ func (blockchain *BlockChain) getBeaconValidators(
 	err error,
 ) {
 	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, common.BeaconChainSyncID)
+	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
@@ -1263,6 +1265,8 @@ func (blockchain *BlockChain) getBeaconValidators(
 	}
 	if v := blockchain.BeaconChain.GetViewByHash(prevHash); v != nil {
 		res = v.GetCommittee()
+
+		blockchain.committeeByEpochCache.Add(key, res)
 		return res, nil
 	}
 	consensusDB, err := getBeaconConsensusStateDB(blockchain.GetBeaconChainDatabase(), prevHash)
@@ -1270,7 +1274,6 @@ func (blockchain *BlockChain) getBeaconValidators(
 		return nil, err
 	}
 	res = statedb.GetBeaconCommittee(consensusDB)
-	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
 	blockchain.committeeByEpochCache.Add(key, res)
 	return res, nil
 }
@@ -1289,9 +1292,10 @@ func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
 	} else {
 		return res, err
 	}
-
+	key := getCommitteeCacheKeyByEpoch(epoch, cID)
 	if v := blockchain.ShardChain[cID].GetViewByHash(prevHash); v != nil {
 		res = v.GetCommittee()
+		blockchain.committeeByEpochCache.Add(key, res)
 		return res, nil
 	}
 	consensusDB, err := getShardConsensusStateDB(blockchain.GetShardChainDatabase(cID), cID, prevHash)
@@ -1299,8 +1303,6 @@ func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
 		return nil, err
 	}
 	res = statedb.GetOneShardCommittee(consensusDB, cID)
-
-	key := getCommitteeCacheKeyByEpoch(epoch, cID)
 	blockchain.committeeByEpochCache.Add(key, res)
 	return res, nil
 }

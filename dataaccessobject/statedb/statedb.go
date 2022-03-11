@@ -72,7 +72,7 @@ type StateDB struct {
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
 	dbErr  error
-	logger dataaccessobject.DAOLogger
+	logger dataaccessobject.STATEDBLogger
 
 	// Measurements gathered during execution for debugging purposes
 	StateObjectReads   time.Duration
@@ -192,19 +192,21 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 				return nil, err
 			}
 		} else {
-			pivotIndex = pivotState.curRebuildInfo.pivotFFIndex
+			pivotIndex = pivotState.curRebuildInfo.rebuildFFIndex //need to rebuild from this pivot rebuild ff index
 		}
 
 		//replay state object to rebuild to expected state
-		log.Println("rebuild ", rebuildRootData.String())
+		buildTime := time.Now()
 		stateSeries, err := pivotState.GetStateObjectFromBranch(uint64(rebuildFFIndex), int(pivotIndex))
 		if err != nil {
 			return nil, err
 		}
 		newState := pivotState.Copy()
 		for i, stateObjects := range stateSeries {
-			//newStateRoot, _ := newState.IntermediateRoot(true)
-			fmt.Println("replay", i, len(stateObjects))
+			if i > 0 && i%1000 == 0 {
+				dataaccessobject.Logger.Log.Infof("DB %v Building root: %v / %v commits", dbName, i, len(stateSeries))
+			}
+			//TODO: count size of object, it size > threshold then we call commit (cap node/image)
 			for objKey, obj := range stateObjects {
 				if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return nil, err
@@ -220,7 +222,8 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 		}
 
 		//check if we have expect rebuild root
-		fmt.Println("==================> compare", newStateRoot.String(), rebuildRootHash.String())
+		dataaccessobject.Logger.Log.Infof("DB %v Build root: %v (%v commits in %v) .Expected root %v", dbName, newStateRoot, len(stateSeries),
+			time.Since(buildTime).Seconds(), rebuildRootHash)
 		if newStateRoot.String() != rebuildRootHash.String() {
 			return nil, errors.New("Cannot rebuild correct root")
 		}

@@ -216,7 +216,7 @@ func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash,
+	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash.GetRootHash(),
 		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
