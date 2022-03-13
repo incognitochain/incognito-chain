@@ -633,20 +633,28 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	err := serverObj.consensusEngine.Stop()
-	if err != nil {
-		Logger.log.Error(err)
-	}
+	go func() {
+		serverObj.wg.Add(1)
+		err := serverObj.consensusEngine.Stop()
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		serverObj.wg.Done()
+	}()
 
 	//Stop the output coin indexer
-	if blockchain.GetCoinIndexer() != nil {
-		blockchain.GetCoinIndexer().Stop()
-	}
+	go func() {
+		serverObj.wg.Add(1)
+		if blockchain.GetCoinIndexer() != nil {
+			blockchain.GetCoinIndexer().Stop()
+		}
+		serverObj.wg.Done()
+	}()
 
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
+	go serverObj.blockChain.Stop()
 	serverObj.wg.Wait()
-	serverObj.blockChain.Stop()
 	return nil
 }
 

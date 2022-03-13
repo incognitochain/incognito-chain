@@ -376,7 +376,6 @@ func (bc *BlockChain) Stop() {
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
 		for i, shardChain := range bc.ShardChain {
 			bc.ShardChain[i].insertLock.Lock()
-			defer bc.ShardChain[i].insertLock.Unlock()
 			shardBestState := shardChain.GetBestState()
 			shardID := shardBestState.ShardID
 			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
@@ -388,7 +387,6 @@ func (bc *BlockChain) Stop() {
 				}
 			}
 		}
-
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
 	}
 }
