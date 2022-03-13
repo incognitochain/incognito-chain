@@ -104,6 +104,7 @@ const (
 	BridgeAggStatusObjectType         = 70
 	BridgeAggUnifiedTokenObjectType   = 71
 	BridgeAggConvertedTokenObjectType = 72
+	BridgeAggVaultObjectType          = 73
 )
 
 // Prefix length

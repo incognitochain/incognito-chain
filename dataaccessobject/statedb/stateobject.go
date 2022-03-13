@@ -167,6 +167,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeAggConvertedObjectWithValue(db, hash, value)
 	case BridgeAggStatusObjectType:
 		return newBridgeAggStatusObjectWithValue(db, hash, value)
+	case BridgeAggVaultObjectType:
+		return newBridgeAggVaultObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -314,6 +316,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeAggUnifiedTokenObject(db, hash)
 	case BridgeAggStatusObjectType:
 		return newBridgeAggStatusObject(db, hash)
+	case BridgeAggVaultObjectType:
+		return newBridgeAggVaultObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

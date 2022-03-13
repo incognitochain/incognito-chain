@@ -1,7 +1,10 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -10,11 +13,16 @@ import (
 )
 
 type ConvertTokenToUnifiedTokenRequest struct {
-	tokenID        common.Hash
-	unifiedTokenID common.Hash
-	amount         uint64
-	receivers      map[common.Hash]privacy.OTAReceiver
+	TokenID        common.Hash                         `json:"TokenID"`
+	UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
+	Amount         uint64                              `json:"Amount"`
+	Receivers      map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
 	metadataCommon.MetadataBase
+}
+
+type AcceptedConvertTokenToUnifiedToken struct {
+	ConvertTokenToUnifiedTokenRequest
+	TxReqID common.Hash `json:"TxReqID"`
 }
 
 func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
@@ -23,14 +31,16 @@ func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
 
 func NewConvertTokenToUnifiedTokenRequestWithValue(
 	tokenID, unifiedTokenID common.Hash, amount uint64,
+	receivers map[common.Hash]privacy.OTAReceiver,
 ) *ConvertTokenToUnifiedTokenRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 	}
 	return &ConvertTokenToUnifiedTokenRequest{
-		unifiedTokenID: unifiedTokenID,
-		tokenID:        tokenID,
-		amount:         amount,
+		UnifiedTokenID: unifiedTokenID,
+		TokenID:        tokenID,
+		Amount:         amount,
+		Receivers:      receivers,
 		MetadataBase:   metadataBase,
 	}
 }
@@ -53,6 +63,40 @@ func (request *ConvertTokenToUnifiedTokenRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if request.TokenID.String() == request.UnifiedTokenID.String() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("TokenID and UnifiedTokenID cannot be the same"))
+	}
+	if len(request.Receivers) == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("Not enough receivers"))
+	}
+	tokenIDs := []common.Hash{request.UnifiedTokenID, request.TokenID}
+	for _, tokenID := range tokenIDs {
+		if receiver, found := request.Receivers[tokenID]; !found {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("Not enough receivers"))
+		} else {
+			if receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("otaReceiver shardID is different from txShardID"))
+			}
+		}
+	}
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, err)
+	}
+	if !bytes.Equal(burnedTokenID[:], request.TokenID[:]) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("Wrong request info's token id, it should be equal to tx's token id"))
+	}
+	if request.Amount == 0 || request.Amount != burnCoin.GetValue() {
+		err := fmt.Errorf("Amount is not valid metaAmount %v burntAmount %v", request.Amount, burnCoin.GetValue())
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, err)
+	}
+	if tx.GetType() != common.TxCustomTokenPrivacyType {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("Convert tx need to be custom token type"))
+	}
+	if request.TokenID == common.PRVCoinID || request.UnifiedTokenID == common.PRVCoinID {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("With tx custome token privacy, the tokenID should not be PRV, but custom token"))
+	}
+
 	return true, true, nil
 }
 
@@ -70,68 +114,17 @@ func (request *ConvertTokenToUnifiedTokenRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
-func (request *ConvertTokenToUnifiedTokenRequest) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		TokenID        common.Hash                         `json:"TokenID"`
-		UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
-		Amount         uint64                              `json:"Amount"`
-		Receivers      map[common.Hash]privacy.OTAReceiver `json:"receivers"`
-		metadataCommon.MetadataBase
-	}{
-		TokenID:        request.tokenID,
-		UnifiedTokenID: request.unifiedTokenID,
-		Amount:         request.amount,
-		Receivers:      request.receivers,
-		MetadataBase:   request.MetadataBase,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (request *ConvertTokenToUnifiedTokenRequest) UnmarshalJSON(data []byte) error {
-	temp := struct {
-		TokenID        common.Hash                         `json:"TokenID"`
-		UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
-		Amount         uint64                              `json:"Amount"`
-		Receivers      map[common.Hash]privacy.OTAReceiver `json:"receivers"`
-		metadataCommon.MetadataBase
-	}{}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-	request.tokenID = temp.TokenID
-	request.unifiedTokenID = temp.UnifiedTokenID
-	request.amount = temp.Amount
-	request.receivers = temp.Receivers
-	request.MetadataBase = temp.MetadataBase
-	return nil
-}
-
-func (request *ConvertTokenToUnifiedTokenRequest) TokenID() common.Hash {
-	return request.tokenID
-}
-
-func (request *ConvertTokenToUnifiedTokenRequest) UnifiedTokenID() common.Hash {
-	return request.unifiedTokenID
-}
-
-func (request *ConvertTokenToUnifiedTokenRequest) Amount() uint64 {
-	return request.amount
-}
-
-func (request *ConvertTokenToUnifiedTokenRequest) Receivers() map[common.Hash]privacy.OTAReceiver {
-	return request.receivers
-}
-
 func (request *ConvertTokenToUnifiedTokenRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	for _, val := range request.receivers {
+	for _, val := range request.Receivers {
 		result = append(result, metadataCommon.OTADeclaration{
 			PublicKey: val.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
 		})
 	}
 	return result
+}
+
+func (request *ConvertTokenToUnifiedTokenRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), shardID).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
+	return [][]string{content}, err
 }

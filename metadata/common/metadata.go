@@ -355,6 +355,7 @@ func ConvertPrivacyTokenToNativeToken(
 type Action struct {
 	Meta    Metadata    `json:"Meta"`
 	TxReqID common.Hash `json:"TxReqID"`
+	ShardID byte        `json:"ShardID"`
 }
 
 func NewAction() *Action {
@@ -362,11 +363,12 @@ func NewAction() *Action {
 }
 
 func NewActionWithValue(
-	meta Metadata, txReqID common.Hash,
+	meta Metadata, txReqID common.Hash, shardID byte,
 ) *Action {
 	return &Action{
 		Meta:    meta,
 		TxReqID: txReqID,
+		ShardID: shardID,
 	}
 }
 
@@ -449,12 +451,13 @@ func (i *Instruction) StringSliceWithRejectContent(rejectContent *RejectContent)
 type RejectContent struct {
 	TxReqID   common.Hash `json:"TxReqID"`
 	ErrorCode uint        `json:"ErrorCode,omitempty"`
+	Meta      Metadata    `json:"Meta"`
 }
 
 func NewRejectContent() *RejectContent { return &RejectContent{} }
 
-func NewRejectContentWithValue(txReqID common.Hash, errorCode uint) *RejectContent {
-	return &RejectContent{TxReqID: txReqID, ErrorCode: errorCode}
+func NewRejectContentWithValue(txReqID common.Hash, errorCode uint, md Metadata) *RejectContent {
+	return &RejectContent{TxReqID: txReqID, ErrorCode: errorCode, Meta: md}
 }
 
 func (r *RejectContent) String() (string, error) {

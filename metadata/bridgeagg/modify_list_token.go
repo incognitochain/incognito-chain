@@ -12,13 +12,13 @@ import (
 )
 
 type ModifyListToken struct {
-	NewListTokens map[common.Hash][]common.Hash `json:"NewListTokens"` // unifiedTokenID -> list tokenID
 	metadataCommon.MetadataBaseWithSignature
+	NewListTokens map[common.Hash][]common.Hash `json:"NewListTokens"` // unifiedTokenID -> list tokenID
 }
 
 type AcceptedModifyListToken struct {
-	NewListTokens map[common.Hash][]common.Hash `json:"NewListTokens"` // unifiedTokenID -> list tokenID
-	TxReqID       common.Hash                   `json:"TxReqID"`
+	ModifyListToken
+	TxReqID common.Hash `json:"TxReqID"`
 }
 
 func NewModifyListToken() *ModifyListToken {
@@ -29,10 +29,10 @@ func NewModifyListTokenWithValue(
 	newListTokens map[common.Hash][]common.Hash,
 ) *ModifyListToken {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metadataCommon.BridgeAggModifyListTokenMeta)
-	return &ModifyListToken{
-		NewListTokens:             newListTokens,
-		MetadataBaseWithSignature: *metadataBase,
-	}
+	request := &ModifyListToken{}
+	request.MetadataBaseWithSignature = *metadataBase
+	request.NewListTokens = newListTokens
+	return request
 }
 
 func (request *ModifyListToken) ValidateTxWithBlockChain(
@@ -63,9 +63,9 @@ func (request *ModifyListToken) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
-	if ok, err := request.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Sender is unauthorized"))
-	}
+	/*if ok, err := request.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {*/
+	/*return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Sender is unauthorized"))*/
+	/*}*/
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
@@ -75,6 +75,21 @@ func (request *ModifyListToken) ValidateSanityData(
 	if tx.GetVersion() != 2 {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Tx bridge agg modify list tokens must be version 2"))
 	}
+
+	usedTokenIDs := make(map[common.Hash]bool)
+	for unifiedTokenID, tokenIDs := range request.NewListTokens {
+		if usedTokenIDs[unifiedTokenID] {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
+		}
+		usedTokenIDs[unifiedTokenID] = true
+		for _, tokenID := range tokenIDs {
+			if usedTokenIDs[tokenID] {
+				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
+			}
+			usedTokenIDs[tokenID] = true
+		}
+	}
+
 	return true, true, nil
 }
 
@@ -83,8 +98,27 @@ func (request *ModifyListToken) ValidateMetadataByItself() bool {
 }
 
 func (request *ModifyListToken) Hash() *common.Hash {
-	rawBytes, _ := json.Marshal(&request)
-	hash := common.HashH([]byte(rawBytes))
+	record := request.MetadataBaseWithSignature.Hash().String()
+	if request.Sig != nil && len(request.Sig) != 0 {
+		record += string(request.Sig)
+	}
+	contentBytes, _ := json.Marshal(request)
+	hashParams := common.HashH(contentBytes)
+	record += hashParams.String()
+
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (request *ModifyListToken) HashWithoutSig() *common.Hash {
+	record := request.MetadataBaseWithSignature.Hash().String()
+	contentBytes, _ := json.Marshal(request)
+	hashParams := common.HashH(contentBytes)
+	record += hashParams.String()
+
+	// final hash
+	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -93,6 +127,6 @@ func (request *ModifyListToken) CalculateSize() uint64 {
 }
 
 func (request *ModifyListToken) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash()).StringSlice(metadataCommon.BridgeAggModifyListTokenMeta)
+	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), shardID).StringSlice(metadataCommon.BridgeAggModifyListTokenMeta)
 	return [][]string{content}, err
 }

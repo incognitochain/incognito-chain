@@ -31,19 +31,21 @@ func (v *Vault) Clone() *Vault {
 	return res
 }
 
-func (v *Vault) GetDiff(compareVault *Vault) (*Vault, error) {
+func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
+	vaultChange := NewVaultChange()
 	if compareVault == nil {
-		return nil, errors.New("Compare vault is nul")
+		return nil, nil, errors.New("Compare vault is nul")
 	}
 	res := v.Clone()
 	difVaultState, err := v.BridgeAggVaultState.GetDiff(&compareVault.BridgeAggVaultState)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if difVaultState != nil {
-		return res, nil
+		vaultChange.IsReserveChanged = true
+		return res, vaultChange, nil
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (v *Vault) MarshalJSON() ([]byte, error) {
@@ -72,4 +74,8 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 	v.externalTokenID = temp.ExternalTokenID
 	v.BridgeAggVaultState = temp.BridgeAggVaultState
 	return nil
+}
+
+func (v *Vault) Convert(amount uint64) {
+	v.SetReserve(v.Reserve() + amount)
 }

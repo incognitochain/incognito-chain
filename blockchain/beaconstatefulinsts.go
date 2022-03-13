@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -84,7 +85,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
-			metadataCommon.BridgeAggModifyListTokenMeta:
+			metadataCommon.BridgeAggModifyListTokenMeta,
+			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -158,6 +160,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	sort.Ints(keys)
+
+	// bridge agg actions collector
+	unshieldActions := []string{}
+	shieldActions := []string{}
+	convertActions := []string{}
+	modifyListTokensActions := []string{}
+	var sDBs map[int]*statedb.StateDB
+
 	for _, value := range keys {
 		shardID := byte(value)
 		actions := statefulActionsByShardID[shardID]
@@ -293,17 +303,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
 			case metadataCommon.BridgeAggModifyListTokenMeta:
-				sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
+				sDBs, err = blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 				if err != nil {
 					return utils.EmptyStringMatrix, err
 				}
-				insts, err := beaconBestState.bridgeAggState.BuildInstructions(
-					metaType, contentStr, shardID, sDBs,
-				)
-				if err != nil {
-					return utils.EmptyStringMatrix, err
-				}
-				instructions = append(instructions, insts...)
+				modifyListTokensActions = append(modifyListTokensActions, contentStr)
+			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
+				convertActions = append(convertActions, contentStr)
 			default:
 				continue
 			}
@@ -354,6 +360,22 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 	if len(portalInsts) > 0 {
 		instructions = append(instructions, portalInsts...)
+	}
+
+	bridgeAggEnv := bridgeagg.
+		NewStateEnvBuilder().
+		BuildConvertActions(convertActions).
+		BuildModifyListTokenActions(modifyListTokensActions).
+		BuildShieldActions(shieldActions).
+		BuildUnshieldActions(unshieldActions).
+		BuildStateDBs(sDBs).
+		Build()
+	bridgeAggInsts, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)
+	if err != nil {
+		return instructions, err
+	}
+	if len(bridgeAggInsts) > 0 {
+		instructions = append(instructions, bridgeAggInsts...)
 	}
 
 	return instructions, nil

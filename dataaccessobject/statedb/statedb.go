@@ -2545,3 +2545,14 @@ func (stateDB *StateDB) iterateWithBridgeAggConvertedTokens(prefix []byte) ([]*B
 	}
 	return res, nil
 }
+
+func (stateDB *StateDB) getBridgeAggVault(key common.Hash) (*BridgeAggVaultState, bool, error) {
+	vaultObject, err := stateDB.getStateObject(BridgeAggVaultObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if vaultObject != nil {
+		return vaultObject.GetValue().(*BridgeAggVaultState), true, nil
+	}
+	return NewBridgeAggVaultState(), false, nil
+}

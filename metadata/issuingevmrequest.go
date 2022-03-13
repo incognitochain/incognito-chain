@@ -27,6 +27,7 @@ type IssuingEVMRequest struct {
 	TxIndex    uint
 	ProofStrs  []string
 	IncTokenID common.Hash
+	NetworkdID *common.Hash `json:"NetworkdID,omitempty"`
 	MetadataBase
 }
 

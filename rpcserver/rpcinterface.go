@@ -271,6 +271,8 @@ var HttpHandler = map[string]httpHandler{
 	bridgeaggModifyListTokens:       (*HttpServer).handleCreateAndSendTxBridgeAggModifyListTokens,
 	bridgeaggState:                  (*HttpServer).handleGetBridgeAggState,
 	bridgeaggStatusModifyListTokens: (*HttpServer).handleGetBridgeAggModifyListTokenStatus,
+	bridgeaggConvert:                (*HttpServer).handleBridgeAggConvert,
+	bridgeaggStatusConvert:          (*HttpServer).handleGetBridgeAggConvertStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

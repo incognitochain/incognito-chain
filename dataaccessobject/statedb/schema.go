@@ -93,10 +93,12 @@ var (
 	pdexv3PoolPairLmLockedSharePrefix       = []byte("pdexv3-poolpair-lmlockedshare-")
 
 	// bridge agg
-	bridgeAggStatusPrefix             = []byte("bridgeagg-status-")
-	bridgeAggListTokenModifyingPrefix = []byte("bridgeagg-listtokenmodifying-")
-	bridgeAggUnifiedTokenprefix       = []byte("bridgeagg-unifiedtoken-")
-	bridgeAggConvertedTokenPrefix     = []byte("bridgeagg-convertedtoken-")
+	bridgeAggStatusPrefix                   = []byte("bridgeagg-status-")
+	bridgeAggListTokenModifyingStatusPrefix = []byte("bridgeagg-listtokenmodifyingstatus-")
+	bridgeAggConvertStatusPrefix            = []byte("bridgeagg-convertstatus-")
+	bridgeAggUnifiedTokenprefix             = []byte("bridgeagg-unifiedtoken-")
+	bridgeAggConvertedTokenPrefix           = []byte("bridgeagg-convertedtoken-")
+	bridgeAggVaultPrefix                    = []byte("bridgeagg-vault-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -841,7 +843,11 @@ func GetBridgeAggStatusPrefix(statusType []byte) []byte {
 }
 
 func BridgeAggListTokenModifyingStatusPrefix() []byte {
-	return bridgeAggListTokenModifyingPrefix
+	return bridgeAggListTokenModifyingStatusPrefix
+}
+
+func BridgeAggConvertStatusPrefix() []byte {
+	return bridgeAggConvertStatusPrefix
 }
 
 func GetBridgeAggUnifiedTokenPrefix() []byte {
@@ -851,6 +857,11 @@ func GetBridgeAggUnifiedTokenPrefix() []byte {
 
 func GetBridgeAggConvertedTokenPrefix() []byte {
 	hash := common.HashH(bridgeAggConvertedTokenPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggVaultPrefix() []byte {
+	hash := common.HashH(bridgeAggVaultPrefix)
 	return hash[:prefixHashKeyLength]
 }
 

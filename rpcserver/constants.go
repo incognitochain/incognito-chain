@@ -299,6 +299,8 @@ const (
 	bridgeaggModifyListTokens       = "bridgeagg_txModifyListTokens"
 	bridgeaggState                  = "bridgeagg_getState"
 	bridgeaggStatusModifyListTokens = "bridgeagg_getStatusModifyListTokens"
+	bridgeaggConvert                = "bridgeagg_txConvert"
+	bridgeaggStatusConvert          = "bridgeagg_getStatusConvert"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

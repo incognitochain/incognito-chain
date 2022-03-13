@@ -45,23 +45,36 @@ func (s *State) Clone() *State {
 	return res
 }
 
-func (s *State) BuildInstructions(
-	metaType int,
-	contentStr string,
-	shardID byte,
-	sDBs map[int]*statedb.StateDB,
-) ([][]string, error) {
+func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	res := [][]string{}
 	var err error
-	switch metaType {
-	case metadataCommon.BridgeAggModifyListTokenMeta:
-		res, s.unifiedTokenInfos, err = s.producer.modifyListTokens(
-			contentStr, shardID, s.unifiedTokenInfos, sDBs,
-		)
+
+	/*for _, action := range env.UnshieldActions() {*/
+
+	/*}*/
+
+	for _, action := range env.ConvertActions() {
+		inst := []string{}
+		inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs())
 		if err != nil {
 			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListToken, err)
 		}
+		res = append(res, inst)
 	}
+
+	/*for _, action := range env.ShieldActions() {*/
+
+	/*}*/
+
+	for _, action := range env.ModifyListTokensActions() {
+		inst := []string{}
+		inst, s.unifiedTokenInfos, err = s.producer.modifyListTokens(action, s.unifiedTokenInfos, env.StateDBs())
+		if err != nil {
+			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListToken, err)
+		}
+		res = append(res, inst)
+	}
+
 	return res, nil
 }
 
@@ -87,6 +100,11 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 			if err != nil {
 				return err
 			}
+		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
+			s.unifiedTokenInfos, err = s.processor.convert(*inst, s.unifiedTokenInfos, sDB)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -95,26 +113,35 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error {
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
 		if stateChange.unifiedTokenID[unifiedTokenID] {
-			Logger.log.Info("[bridgeagg] Store unifiedTokenID", unifiedTokenID)
 			err := statedb.StoreBridgeAggUnifiedToken(
 				sDB,
 				unifiedTokenID,
 				statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
 			)
-			Logger.log.Info("[bridgeagg] err", err)
 			if err != nil {
 				return err
 			}
 		}
-		for tokenID := range vaults {
-			Logger.log.Info("[bridgeagg] Store convertedTokenID", unifiedTokenID, tokenID)
-			err := statedb.StoreBridgeAggConvertedToken(
-				sDB, unifiedTokenID, tokenID,
-				statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID),
-			)
-			Logger.log.Info("[bridgeagg] err", err)
-			if err != nil {
-				return err
+		for tokenID, vault := range vaults {
+			if stateChange.vaultChange[unifiedTokenID][tokenID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
+				err := statedb.StoreBridgeAggConvertedToken(
+					sDB, unifiedTokenID, tokenID,
+					statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID),
+				)
+				if err != nil {
+					return err
+				}
+			}
+			if (stateChange.vaultChange[unifiedTokenID][tokenID].IsReserveChanged ||
+				stateChange.unifiedTokenID[unifiedTokenID]) && !vault.BridgeAggVaultState.IsEmpty() {
+				err := statedb.StoreBridgeAggVault(
+					sDB, unifiedTokenID, tokenID,
+					&vault.BridgeAggVaultState,
+				)
+				if err != nil {
+					return err
+				}
+
 			}
 		}
 	}
@@ -127,24 +154,36 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 	if compareState == nil {
 		return nil, nil, errors.New("compareState is nil")
 	}
+
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
 		if compareVaults, found := compareState.unifiedTokenInfos[unifiedTokenID]; !found {
 			res.unifiedTokenInfos[unifiedTokenID] = vaults
 			stateChange.unifiedTokenID[unifiedTokenID] = true
 		} else {
 			for tokenID, vault := range vaults {
+				if res.unifiedTokenInfos[unifiedTokenID] == nil {
+					res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
+				}
 				if compareVault, ok := compareVaults[tokenID]; !ok {
 					res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault
+					if stateChange.vaultChange[unifiedTokenID] == nil {
+						stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
+					}
+					stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{
+						IsChanged:        true,
+						IsReserveChanged: true,
+					}
 				} else {
-					temp, err := s.unifiedTokenInfos[unifiedTokenID][tokenID].GetDiff(compareVault)
+					temp, vaultChange, err := s.unifiedTokenInfos[unifiedTokenID][tokenID].GetDiff(compareVault)
 					if err != nil {
 						return nil, nil, err
 					}
 					if temp != nil {
-						if res.unifiedTokenInfos[unifiedTokenID] == nil {
-							res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
-						}
 						res.unifiedTokenInfos[unifiedTokenID][tokenID] = temp
+						if stateChange.vaultChange[unifiedTokenID] == nil {
+							stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
+						}
+						stateChange.vaultChange[unifiedTokenID][tokenID] = *vaultChange
 					}
 				}
 			}

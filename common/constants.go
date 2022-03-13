@@ -192,10 +192,10 @@ const (
 )
 
 const (
-	AcceptedStatusStr  = "accepted"
 	RejectedStatusStr  = "rejected"
+	AcceptedStatusStr  = "accepted"
+	RejectedStatusByte = byte(0)
 	AcceptedStatusByte = byte(1)
-	RejectedStatusByte = byte(2)
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
