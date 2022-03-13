@@ -216,6 +216,9 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			}
 		}
 		newStateRoot, _ := newState.IntermediateRoot(true)
+		newState.db.TrieDB().Reference(newStateRoot, common.Hash{})
+		newState.batchCommitConfig.triegc.Push(newStateRoot, -rebuildFFIndex)
+
 		if err != nil {
 			return nil, err
 		}
@@ -382,6 +385,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 
 		//if force write (stop node) or reach #commit threshold => write to disk
 		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
+		pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
 		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
 			//write the current roothash commit nodes to disk
 			rootHash := stateDB.curRebuildInfo.rebuildRootHash
@@ -402,7 +406,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 					batchCommitConfig.triegc.Push(oldRootHash, number)
 					break
 				}
-				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v, deref block %+v", stateDB.dbName, finalViewIndex, number)
+				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v,pivot %v, deref block %+v", stateDB.dbName, finalViewIndex, pivotFFIndex, number)
 				trieDB.Dereference(oldRootHash.(common.Hash))
 			}
 		}

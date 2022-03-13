@@ -88,7 +88,7 @@ func NewBlockChain(isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
-	bc.beaconViewCache, _ = lru.New(400)
+	bc.beaconViewCache, _ = lru.New(50)
 	bc.cQuitSync = make(chan struct{})
 	return bc
 }
@@ -104,8 +104,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
-	blockchain.beaconViewCache, _ = lru.New(400)
-	blockchain.committeeByEpochCache, _ = lru.New(2000)
+	blockchain.beaconViewCache, _ = lru.New(50)
+	blockchain.committeeByEpochCache, _ = lru.New(50)
 	err := wallet.InitPublicKeyBurningAddressByte()
 	if err != nil {
 		Logger.log.Error(err)
