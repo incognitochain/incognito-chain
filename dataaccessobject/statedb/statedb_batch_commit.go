@@ -79,10 +79,11 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 ) ([]map[common.Hash]StateObject, error) {
 
 	stateObjectSeries := []map[common.Hash]StateObject{}
-	if ffIndex == uint64(pivotIndex) {
-		return stateObjectSeries, nil
-	}
+
 	for {
+		if ffIndex == uint64(pivotIndex) {
+			break
+		}
 		data, err := stateDB.batchCommitConfig.flatFile.Read(ffIndex)
 		if err != nil {
 			return nil, err
@@ -101,7 +102,7 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		tmp = append(tmp, stateObjects)
 		stateObjectSeries = append(tmp, stateObjectSeries...)
 		// ffIndex = prevIndex
-		if ffIndex == 0 || ffIndex == uint64(pivotIndex) {
+		if ffIndex == 0 {
 			break
 		}
 		ffIndex = uint64(prevIndex)

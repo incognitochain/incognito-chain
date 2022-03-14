@@ -385,6 +385,7 @@ func (bc *BlockChain) Stop() {
 				if err != nil {
 					Logger.log.Error("Cannot write current stateDB to disk")
 				}
+				break
 			}
 		}
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")

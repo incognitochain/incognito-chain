@@ -165,6 +165,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
@@ -176,6 +177,8 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
 		}
@@ -505,10 +508,8 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 		}
 
 	case common.STATEDB_LITE_MODE:
-		fmt.Println("=======================> commit lite", len(stateDB.liteStateDB.headStateNode.stateObjects), stateDB.curRebuildInfo)
 		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				fmt.Println("=======================> previousLink nil", stateDB.liteStateDB.headStateNode.aggregateHash)
 				return stateDB.curRebuildInfo.rebuildRootHash, NewRebuildInfo(common.STATEDB_LITE_MODE, stateDB.curRebuildInfo.rebuildRootHash,
 					stateDB.curRebuildInfo.pivotRootHash, stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex), nil
 			}
