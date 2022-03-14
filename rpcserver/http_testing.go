@@ -71,6 +71,51 @@ func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, close
 	return arr, nil
 }
 
+func (httpServer *HttpServer) handleGetAutoEnableFeatureConfig(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return config.Param().AutoEnableFeature, nil
+}
+
+func (httpServer *HttpServer) handleSetAutoEnableFeatureConfig(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Config().Network() == config.MainnetNetwork {
+		return nil, nil
+	}
+	arrayParams := common.InterfaceSlice(params)
+	jsonStr := arrayParams[0].(string)
+
+	v := map[string]config.AutoEnableFeature{}
+	err := json.Unmarshal([]byte(jsonStr), &v)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	config.Param().AutoEnableFeature = v
+	return nil, nil
+}
+
+func (httpServer *HttpServer) handleSendFinishSync(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	miningKeyStr := arrayParams[0].(string)
+	cpk := arrayParams[1].(string)
+	sid := arrayParams[2].(float64)
+	miningKey, err := consensus_v2.GetMiningKeyFromPrivateSeed(miningKeyStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	signature, err := miningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	finishedSyncSignatures = append(finishedSyncSignatures, signature)
+	finishedSyncValidators = append(finishedSyncValidators, cpk)
+
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(sid))
+	if err := httpServer.config.Server.PushMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	return nil, nil
+}
+
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := int(arrayParams[0].(float64))
@@ -167,6 +212,11 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
 		substituteValidatorStr[shardID] = tempV
 	}
+	syncingValidatorsStr := make(map[int][]string)
+	for shardID, v := range syncingValidators {
+		tempV, _ := incognitokey.CommitteeKeyListToString(v)
+		syncingValidatorsStr[int(shardID)] = tempV
+	}
 	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
 	tempStakingTx := make(map[string]string)
@@ -189,7 +239,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
-		"syncing":          syncingValidators,
+		"syncing":          syncingValidatorsStr,
 	}, nil
 }
 
