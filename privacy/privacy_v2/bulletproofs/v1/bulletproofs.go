@@ -1,13 +1,14 @@
+//nolint:revive // skip linter for functions in this file
 // Package bulletproofs manages the creation, proving & verification of Bulletproofs.
 // This is a class of compact-sized range proof that require no trusted setup.
 package bulletproofs
 
 import (
-	"fmt"
 	"math"
 
-	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/operation/v1"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/pkg/errors"
 )
 
 // AggregatedRangeWitness contains the prover's secret data (the actual values to be proven & the generated random blinders)
@@ -36,8 +37,6 @@ type bulletproofParams struct {
 	h  []*operation.Point
 	u  *operation.Point
 	cs *operation.Point
-
-	precomps []operation.PrecomputedPoint
 }
 
 var AggParam = newBulletproofParams(privacy_util.MaxOutputCoin)
@@ -142,7 +141,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	proof.cmsValue = make([]*operation.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
 		if offset+operation.Ed25519KeySize > len(bytes) {
-			return fmt.Errorf("range-proof byte unmarshaling failed")
+			return errors.New("Range Proof unmarshaling from bytes failed")
 		}
 		proof.cmsValue[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
@@ -152,7 +151,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.a, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
@@ -161,7 +160,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset += operation.Ed25519KeySize
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.s, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
@@ -170,7 +169,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset += operation.Ed25519KeySize
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.t1, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
@@ -179,7 +178,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset += operation.Ed25519KeySize
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.t2, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
@@ -188,29 +187,31 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset += operation.Ed25519KeySize
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.tauX = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.tHat = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
 	if offset+operation.Ed25519KeySize > len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 	proof.mu = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
 
 	if offset >= len(bytes) {
-		return fmt.Errorf("range-proof byte unmarshaling failed")
+		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
 
 	proof.innerProductProof = new(InnerProductProof)
-	return proof.innerProductProof.SetBytes(bytes[offset:])
+	err = proof.innerProductProof.SetBytes(bytes[offset:])
+	// it's the last check, so we just return it
+	return err
 }
 
 func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scalar) {
@@ -228,7 +229,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof := new(AggregatedRangeProof)
 	numValue := len(wit.values)
 	if numValue > privacy_util.MaxOutputCoin {
-		return nil, fmt.Errorf("output count exceeds MaxOutputCoin")
+		return nil, errors.New("Must less than MaxOutputCoin")
 	}
 	numValuePad := roundUpPowTwo(numValue)
 	maxExp := privacy_util.MaxExp
@@ -270,22 +271,18 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	var alpha, rho *operation.Scalar
-	alpha = operation.RandomScalar()
-	rho = operation.RandomScalar()
-	mbuilder := operation.NewMultBuilder(false)
-	_, err := encodeVectors(aL, aR, aggParam.g, aggParam.h, mbuilder)
-	if err != nil {
+	if A, err := encodeVectors(aL, aR, aggParam.g, aggParam.h); err != nil {
 		return nil, err
-	}
-	mbuilder.AppendSingle(alpha, operation.HBase)
-	proof.a = mbuilder.Execute()
-
-	_, err = encodeVectors(sL, sR, aggParam.g, aggParam.h, mbuilder)
-	if err != nil {
+	} else if S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h); err != nil {
 		return nil, err
+	} else {
+		alpha = operation.RandomScalar()
+		rho = operation.RandomScalar()
+		A.Add(A, new(operation.Point).ScalarMult(operation.HBase, alpha))
+		S.Add(S, new(operation.Point).ScalarMult(operation.HBase, rho))
+		proof.a = A
+		proof.s = S
 	}
-	mbuilder.AppendSingle(rho, operation.HBase)
-	proof.s = mbuilder.Execute()
 	// challenge y, z
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
@@ -386,14 +383,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
-	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
-
-	_, err = encodeVectors(lVector, rVector, aggParam.g, HPrime, mbuilder)
+	innerProductWit.p, err = encodeVectors(lVector, rVector, aggParam.g, HPrime)
 	if err != nil {
 		return nil, err
 	}
-	mbuilder.AppendSingle(proof.tHat, uPrime)
-	innerProductWit.p = mbuilder.Execute()
+	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
+	innerProductWit.p = innerProductWit.p.Add(innerProductWit.p, new(operation.Point).ScalarMult(uPrime, proof.tHat))
 
 	proof.innerProductProof, err = innerProductWit.Prove(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if err != nil {
@@ -403,11 +398,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	return proof, nil
 }
 
-//nolint:unused // legacy function for reference
-func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
+// Verify does verification for this Bulletproof.
+// No view into chain data is needed.
+func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
-		return false, fmt.Errorf("output count exceeds MaxOutputCoin")
+		return false, errors.New("Must less than MaxOutputNumber")
 	}
 	numValuePad := roundUpPowTwo(numValue)
 	maxExp := privacy_util.MaxExp
@@ -444,11 +440,11 @@ func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
 	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, operation.PedCom.G[operation.PedersenValueIndex], x, proof.t1))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	RHS.Add(RHS, new(operation.Point).VarTimeMultiScalarMult(expVector, cmsValue))
+	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
 
 	if !operation.IsPointEqual(LHS, RHS) {
 		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 1 failed")
+		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
 	// verify eq (66)
@@ -463,7 +459,7 @@ func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
 			vectorSum[j*maxExp+i].Add(vectorSum[j*maxExp+i], new(operation.Scalar).Mul(z, yVector[j*maxExp+i]))
 		}
 	}
-	tmpHPrime := new(operation.Point).VarTimeMultiScalarMult(vectorSum, HPrime)
+	tmpHPrime := new(operation.Point).MultiScalarMult(vectorSum, HPrime)
 	tmpG := new(operation.Point).Set(aggParam.g[0])
 	for i := 1; i < N; i++ {
 		tmpG.Add(tmpG, aggParam.g[i])
@@ -476,38 +472,23 @@ func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
 	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu))
 	if !operation.IsPointEqual(P, PPrime) {
 		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 2-1 failed")
+		return false, errors.New("verify aggregated range proof statement 2-1 failed")
 	}
 
 	// verify eq (68)
 	innerProductArgValid := proof.innerProductProof.Verify(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if !innerProductArgValid {
 		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 2 failed")
+		return false, errors.New("verify aggregated range proof statement 2 failed")
 	}
 
 	return true, nil
 }
 
-// Verify this Bulletproof using an optimized algorithm.
-// No view into chain data is needed.
-func (proof AggregatedRangeProof) Verify() (bool, error) {
-	multBuilder, err := proof.BuildVerify(nil)
-	if err != nil {
-		return false, err
-	}
-	if !multBuilder.Execute().IsIdentity() {
-		Logger.Log.Errorf("Verify aggregated range proof failed")
-		return false, fmt.Errorf("bulletproofs: range proof invalid")
-	}
-	return true, nil
-}
-
-//nolint:errcheck // this function makes unchecked Append() calls since lengths are known to match
-func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation.MultiScalarMultBuilder, error) {
+func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
-		return nil, fmt.Errorf("output count exceeds MaxOutputCoin")
+		return false, errors.New("Must less than MaxOutputNumber")
 	}
 	numValuePad := roundUpPowTwo(numValue)
 	maxExp := privacy_util.MaxExp
@@ -533,30 +514,24 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 	yVector := powerVector(y, N)
 	deltaYZ, err := computeDeltaYZ(z, zSquare, yVector, N)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
+	// HPrime = H^(y^(1-i)
+	HPrime := computeHPrime(y, N, aggParam.h)
+	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
 
-	eq65Builder := operation.NewMultBuilder(true)
-	eq65Builder.WithStaticPoints(aggParam.precomps)
 	// Verify eq (65)
-	// skip error for Append() calls since lengths are known to match
-	eq65Builder.AppendSingle(xSquare, proof.t2)
-	eq65Builder.AppendSingle(x, proof.t1)
-
+	LHS := operation.PedCom.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
+	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
+	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, operation.PedCom.G[operation.PedersenValueIndex], x, proof.t1))
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	eq65Builder.Append(expVector, cmsValue)
-
-	if gval != nil {
-		eq65Builder.AppendSingle(operation.NewScalar().Sub(deltaYZ, proof.tHat), gval)
-	} else {
-		eq65Builder.SetStatic(precompPedGValIndex, operation.NewScalar().Sub(deltaYZ, proof.tHat))
+	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
+	if !operation.IsPointEqual(LHS, RHS) {
+		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
-	eq65Builder.SetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.tauX))
 
 	// Verify eq (66)
-	eq66Builder := operation.NewMultBuilder(true)
-	eq66Builder.WithStaticPoints(aggParam.precomps)
-
 	vectorSum := make([]*operation.Scalar, N)
 	zTmp := new(operation.Scalar).Set(z)
 	for j := 0; j < numValuePad; j++ {
@@ -566,18 +541,20 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 			vectorSum[j*maxExp+i].Add(vectorSum[j*maxExp+i], new(operation.Scalar).Mul(z, yVector[j*maxExp+i]))
 		}
 	}
-	// HPrime = H^(y^(1-i)
-	lazyComputeHPrime(y, N, eq66Builder)
-	eq66Builder.MulStatic(precompHIndex(N), vectorSum...)
-	for i := 0; i < N; i++ {
-		eq66Builder.SetStatic(precompGIndex+i, zNeg)
+	tmpHPrime := new(operation.Point).MultiScalarMult(vectorSum, HPrime)
+	tmpG := new(operation.Point).Set(aggParam.g[0])
+	for i := 1; i < N; i++ {
+		tmpG.Add(tmpG, aggParam.g[i])
 	}
-
-	eq66Builder.Append([]*operation.Scalar{operation.NewScalar().FromUint64(1), x}, []*operation.Point{proof.a, proof.s}) // AS^x
-	eq66Builder.SetStatic(precompUIndex, operation.NewScalar().Mul(proof.tHat, operation.HashToScalar(x.ToBytesS())))     // tHat.U'
-
-	eq66Builder.SetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.mu))
-	eq66Builder.AppendSingle(operation.NewScalar().Set(operation.ScMinusOne), proof.innerProductProof.p)
+	ASx := new(operation.Point).Add(proof.a, new(operation.Point).ScalarMult(proof.s, x))
+	P := new(operation.Point).Add(new(operation.Point).ScalarMult(tmpG, zNeg), tmpHPrime)
+	P.Add(P, ASx)
+	P.Add(P, new(operation.Point).ScalarMult(uPrime, proof.tHat))
+	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu))
+	if !operation.IsPointEqual(P, PPrime) {
+		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
+		return false, errors.New("verify aggregated range proof statement 2-1 failed")
+	}
 
 	// Verify eq (68)
 	hashCache := x.ToBytesS()
@@ -612,63 +589,208 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 		}
 	}
 
-	ippBuilder := operation.NewMultBuilder(true)
-	ippBuilder.WithStaticPoints(aggParam.precomps)
-	ippBuilder.SetStatic(precompGIndex, s...)
-
-	lazyComputeHPrime(y, N, ippBuilder)
-	ippBuilder.MulStatic(precompHIndex(N), sInverse...)
-
 	c := new(operation.Scalar).Mul(proof.innerProductProof.a, proof.innerProductProof.b)
-	ippBuilder.SetStatic(precompUIndex, operation.NewScalar().Mul(c, operation.HashToScalar(x.ToBytesS()))) // cU'
+	tmp1 := new(operation.Point).MultiScalarMult(s, aggParam.g)
+	tmp2 := new(operation.Point).MultiScalarMult(sInverse, HPrime)
+	rightHS := new(operation.Point).Add(tmp1, tmp2)
+	rightHS.Add(rightHS, new(operation.Point).ScalarMult(uPrime, c))
 
-	rhsBuilder := operation.NewMultBuilder(true)
-	rhsBuilder.Append(vSquareList, L)
-	rhsBuilder.Append(vInverseSquareList, R)
-	rhsBuilder.AppendSingle(operation.NewScalar().FromUint64(1), proof.innerProductProof.p)
+	tmp3 := new(operation.Point).MultiScalarMult(vSquareList, L)
+	tmp4 := new(operation.Point).MultiScalarMult(vInverseSquareList, R)
+	leftHS := new(operation.Point).Add(tmp3, tmp4)
+	leftHS.Add(leftHS, proof.innerProductProof.p)
 
-	// DEBUG
-	// if !operation.IsPointEqual(ippBuilder.Clone().Execute(), rhsBuilder.Clone().Execute()) {
-	// 	panic("IPP")
-	// }
-	ippBuilder.AppendWithMultiplier(rhsBuilder, operation.ScMinusOne)
+	res := operation.IsPointEqual(rightHS, leftHS)
+	if !res {
+		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		return false, errors.New("verify aggregated range proof statement 2 failed")
+	}
 
-	// perform identity checks simultaneously by multplying each one with a random scalar
-	check := eq65Builder
-	// DEBUG
-	// if !ippBuilder.Clone().Execute().IsIdentity() || !eq65Builder.Clone().Execute().IsIdentity() || !eq66Builder.Clone().Execute().IsIdentity() {
-	// 	panic("not identity")
-	// }
-	check.AppendWithMultiplier(eq66Builder, operation.RandomScalar())
-	check.AppendWithMultiplier(ippBuilder, operation.RandomScalar())
-
-	return check, nil
+	return true, nil
 }
 
 // VerifyBatch verifies a list of Bulletproofs in batched fashion.
 // It saves time by using a multi-exponent operation.
-func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error) {
-	// var check *operation.MultiScalarMultBuilder = nil
-	for _, pr := range proofs {
-		multBuilder, err := pr.BuildVerify(nil)
+func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
+	maxExp := privacy_util.MaxExp
+	baseG := operation.PedCom.G[operation.PedersenValueIndex]
+	baseH := operation.PedCom.G[operation.PedersenRandomnessIndex]
+
+	sum_tHat := new(operation.Scalar).FromUint64(0)
+	sum_tauX := new(operation.Scalar).FromUint64(0)
+	list_x_alpha := make([]*operation.Scalar, 0)
+	list_x_beta := make([]*operation.Scalar, 0)
+	list_xSquare := make([]*operation.Scalar, 0)
+	list_zSquare := make([]*operation.Scalar, 0)
+
+	list_t1 := make([]*operation.Point, 0)
+	list_t2 := make([]*operation.Point, 0)
+	list_V := make([]*operation.Point, 0)
+
+	sum_mu := new(operation.Scalar).FromUint64(0)
+	sum_absubthat := new(operation.Scalar).FromUint64(0)
+
+	list_S := make([]*operation.Point, 0)
+	list_A := make([]*operation.Point, 0)
+	list_beta := make([]*operation.Scalar, 0)
+	list_LR := make([]*operation.Point, 0)
+	list_lVector := make([]*operation.Scalar, 0)
+	list_rVector := make([]*operation.Scalar, 0)
+	list_gVector := make([]*operation.Point, 0)
+	list_hVector := make([]*operation.Point, 0)
+
+	twoNumber := new(operation.Scalar).FromUint64(2)
+	twoVectorN := powerVector(twoNumber, maxExp)
+
+	for k, proof := range proofs {
+		numValue := len(proof.cmsValue)
+		if numValue > privacy_util.MaxOutputCoin {
+			return false, errors.New("Must less than MaxOutputNumber"), k
+		}
+		numValuePad := roundUpPowTwo(numValue)
+		N := maxExp * numValuePad
+		aggParam := setAggregateParams(N)
+
+		cmsValue := proof.cmsValue
+		for i := numValue; i < numValuePad; i++ {
+			identity := new(operation.Point).Identity()
+			cmsValue = append(cmsValue, identity)
+		}
+
+		// recalculate challenge y, z, x
+		y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
+		z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
+		x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
+		zSquare := new(operation.Scalar).Mul(z, z)
+		xSquare := new(operation.Scalar).Mul(x, x)
+
+		// Random alpha and beta for batch equations check
+		alpha := operation.RandomScalar()
+		beta := operation.RandomScalar()
+		list_beta = append(list_beta, beta)
+
+		// Compute first equation check
+		yVector := powerVector(y, N)
+		deltaYZ, err := computeDeltaYZ(z, zSquare, yVector, N)
 		if err != nil {
-			return false, err
+			return false, err, k
 		}
-		if !multBuilder.Execute().IsIdentity() {
-			Logger.Log.Errorf("Verify batch aggregated range proof failed")
-			return false, fmt.Errorf("bulletproofs: batch range proof invalid")
+		sum_tHat.Add(sum_tHat, new(operation.Scalar).Mul(alpha, new(operation.Scalar).Sub(proof.tHat, deltaYZ)))
+		sum_tauX.Add(sum_tauX, new(operation.Scalar).Mul(alpha, proof.tauX))
+
+		list_x_alpha = append(list_x_alpha, new(operation.Scalar).Mul(x, alpha))
+		list_x_beta = append(list_x_beta, new(operation.Scalar).Mul(x, beta))
+		list_xSquare = append(list_xSquare, new(operation.Scalar).Mul(xSquare, alpha))
+		tmp := vectorMulScalar(powerVector(z, numValuePad), new(operation.Scalar).Mul(zSquare, alpha))
+		list_zSquare = append(list_zSquare, tmp...)
+
+		list_V = append(list_V, cmsValue...)
+		list_t1 = append(list_t1, proof.t1)
+		list_t2 = append(list_t2, proof.t2)
+
+		// Verify the second argument
+		hashCache := x.ToBytesS()
+		L := proof.innerProductProof.l
+		R := proof.innerProductProof.r
+		s := make([]*operation.Scalar, N)
+		sInverse := make([]*operation.Scalar, N)
+		logN := int(math.Log2(float64(N)))
+		vSquareList := make([]*operation.Scalar, logN)
+		vInverseSquareList := make([]*operation.Scalar, logN)
+
+		for i := 0; i < N; i++ {
+			s[i] = new(operation.Scalar).Set(proof.innerProductProof.a)
+			sInverse[i] = new(operation.Scalar).Set(proof.innerProductProof.b)
 		}
-		// if check == nil {
-		// 	check = mb
-		// } else {
-		// 	check.AppendWithMultiplier(mb, operation.RandomScalar())
-		// }
+
+		for i := range L {
+			v := generateChallenge(hashCache, []*operation.Point{L[i], R[i]})
+			hashCache = v.ToBytesS()
+			vInverse := new(operation.Scalar).Invert(v)
+			vSquareList[i] = new(operation.Scalar).Mul(v, v)
+			vInverseSquareList[i] = new(operation.Scalar).Mul(vInverse, vInverse)
+
+			for j := 0; j < N; j++ {
+				if j&int(math.Pow(2, float64(logN-i-1))) != 0 {
+					s[j] = new(operation.Scalar).Mul(s[j], v)
+					sInverse[j] = new(operation.Scalar).Mul(sInverse[j], vInverse)
+				} else {
+					s[j] = new(operation.Scalar).Mul(s[j], vInverse)
+					sInverse[j] = new(operation.Scalar).Mul(sInverse[j], v)
+				}
+			}
+		}
+
+		lVector := make([]*operation.Scalar, N)
+		rVector := make([]*operation.Scalar, N)
+
+		vectorSum := make([]*operation.Scalar, N)
+		zTmp := new(operation.Scalar).Set(z)
+		for j := 0; j < numValuePad; j++ {
+			zTmp.Mul(zTmp, z)
+			for i := 0; i < maxExp; i++ {
+				vectorSum[j*maxExp+i] = new(operation.Scalar).Mul(twoVectorN[i], zTmp)
+			}
+		}
+		yInverse := new(operation.Scalar).Invert(y)
+		yTmp := new(operation.Scalar).Set(y)
+		for j := 0; j < N; j++ {
+			yTmp.Mul(yTmp, yInverse)
+			lVector[j] = new(operation.Scalar).Add(s[j], z)
+			rVector[j] = new(operation.Scalar).Sub(sInverse[j], vectorSum[j])
+			rVector[j].Mul(rVector[j], yTmp)
+			rVector[j].Sub(rVector[j], z)
+
+			lVector[j].Mul(lVector[j], beta)
+			rVector[j].Mul(rVector[j], beta)
+		}
+
+		list_lVector = append(list_lVector, lVector...)
+		list_rVector = append(list_rVector, rVector...)
+
+		tmp1 := new(operation.Point).MultiScalarMult(vSquareList, L)
+		tmp2 := new(operation.Point).MultiScalarMult(vInverseSquareList, R)
+		list_LR = append(list_LR, new(operation.Point).Add(tmp1, tmp2))
+
+		list_gVector = append(list_gVector, aggParam.g...)
+		list_hVector = append(list_hVector, aggParam.h...)
+
+		sum_mu.Add(sum_mu, new(operation.Scalar).Mul(proof.mu, beta))
+		ab := new(operation.Scalar).Mul(proof.innerProductProof.a, proof.innerProductProof.b)
+		absubthat := new(operation.Scalar).Sub(ab, proof.tHat)
+		absubthat.Mul(absubthat, operation.HashToScalar(x.ToBytesS()))
+		sum_absubthat.Add(sum_absubthat, new(operation.Scalar).Mul(absubthat, beta))
+		list_A = append(list_A, proof.a)
+		list_S = append(list_S, proof.s)
 	}
-	// if !check.Execute().IsIdentity() {
-	// 	Logger.Log.Errorf("Verify batch aggregated range proof failed")
-	// 	return false, fmt.Errorf("bulletproofs: batch range proof invalid")
-	// }
-	return true, nil
+
+	tmp1 := new(operation.Point).MultiScalarMult(list_lVector, list_gVector)
+	tmp2 := new(operation.Point).MultiScalarMult(list_rVector, list_hVector)
+	tmp3 := new(operation.Point).ScalarMult(AggParam.u, sum_absubthat)
+	tmp4 := new(operation.Point).ScalarMult(baseH, sum_mu)
+	LHSPrime := new(operation.Point).Add(tmp1, tmp2)
+	LHSPrime.Add(LHSPrime, tmp3)
+	LHSPrime.Add(LHSPrime, tmp4)
+
+	LHS := new(operation.Point).AddPedersen(sum_tHat, baseG, sum_tauX, baseH)
+	LHSPrime.Add(LHSPrime, LHS)
+
+	tmp5 := new(operation.Point).MultiScalarMult(list_beta, list_A)
+	tmp6 := new(operation.Point).MultiScalarMult(list_x_beta, list_S)
+	RHSPrime := new(operation.Point).Add(tmp5, tmp6)
+	RHSPrime.Add(RHSPrime, new(operation.Point).MultiScalarMult(list_beta, list_LR))
+
+	part1 := new(operation.Point).MultiScalarMult(list_x_alpha, list_t1)
+	part2 := new(operation.Point).MultiScalarMult(list_xSquare, list_t2)
+	RHS := new(operation.Point).Add(part1, part2)
+	RHS.Add(RHS, new(operation.Point).MultiScalarMult(list_zSquare, list_V))
+	RHSPrime.Add(RHSPrime, RHS)
+
+	if !operation.IsPointEqual(LHSPrime, RHSPrime) {
+		Logger.Log.Errorf("batch verify aggregated range proof failed")
+		return false, errors.New("batch verify aggregated range proof failed"), -1
+	}
+	return true, nil, -1
 }
 
 // EstimateMultiRangeProofSize returns the upper bound of Bulletproof size given the number of output coins.

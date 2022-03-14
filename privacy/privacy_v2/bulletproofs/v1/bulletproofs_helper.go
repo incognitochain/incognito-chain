@@ -1,9 +1,10 @@
 package bulletproofs
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"fmt"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation/v1"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/pkg/errors"
 )
 
 // ConvertIntToBinary represents a integer number in binary
@@ -20,11 +21,12 @@ func ConvertUint64ToBinary(number uint64, n int) []*operation.Scalar {
 
 	for i := 0; i < n; i++ {
 		binary[i] = new(operation.Scalar).FromUint64(number % 2)
-		number = number / 2
+		number /= 2
 	}
 	return binary
 }
 
+//nolint:gocritic // This function uses capitalized variable name
 func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operation.Point {
 	yInverse := new(operation.Scalar).Invert(y)
 	HPrime := make([]*operation.Point, N)
@@ -36,6 +38,7 @@ func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operatio
 	return HPrime
 }
 
+//nolint:gocritic // This function uses capitalized variable name
 func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N int) (*operation.Scalar, error) {
 	oneNumber := new(operation.Scalar).FromUint64(1)
 	twoNumber := new(operation.Scalar).FromUint64(2)
@@ -67,11 +70,11 @@ func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N
 
 func innerProduct(a []*operation.Scalar, b []*operation.Scalar) (*operation.Scalar, error) {
 	if len(a) != len(b) {
-		return nil, errors.New("Incompatible sizes of a and b")
+		return nil, fmt.Errorf("incompatible sizes of a and b")
 	}
 	result := new(operation.Scalar).FromUint64(uint64(0))
 	for i := range a {
-		//res = a[i]*b[i] + res % l
+		// res = a[i]*b[i] + res % l
 		result.MulAdd(a[i], b[i], result)
 	}
 	return result, nil
@@ -79,7 +82,7 @@ func innerProduct(a []*operation.Scalar, b []*operation.Scalar) (*operation.Scal
 
 func vectorAdd(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
 	if len(a) != len(b) {
-		return nil, errors.New("Incompatible sizes of a and b")
+		return nil, fmt.Errorf("incompatible sizes of a and b")
 	}
 	result := make([]*operation.Scalar, len(a))
 	for i := range a {
@@ -88,6 +91,7 @@ func vectorAdd(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scala
 	return result, nil
 }
 
+//nolint:gocritic // This function uses capitalized variable name
 func setAggregateParams(N int) *bulletproofParams {
 	aggParam := new(bulletproofParams)
 	aggParam.g = AggParam.g[0:N]
@@ -100,21 +104,20 @@ func setAggregateParams(N int) *bulletproofParams {
 func roundUpPowTwo(v int) int {
 	if v == 0 {
 		return 1
-	} else {
-		v--
-		v |= v >> 1
-		v |= v >> 2
-		v |= v >> 4
-		v |= v >> 8
-		v |= v >> 16
-		v++
-		return v
 	}
+	v--
+	v |= v >> 1
+	v |= v >> 2
+	v |= v >> 4
+	v |= v >> 8
+	v |= v >> 16
+	v++
+	return v
 }
 
 func hadamardProduct(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
 	if len(a) != len(b) {
-		return nil, errors.New("Invalid input")
+		return nil, fmt.Errorf("invalid input")
 	}
 	result := make([]*operation.Scalar, len(a))
 	for i := 0; i < len(result); i++ {
@@ -157,7 +160,7 @@ func vectorMulScalar(v []*operation.Scalar, s *operation.Scalar) []*operation.Sc
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func encodeVectors(l []*operation.Scalar, r []*operation.Scalar, g []*operation.Point, h []*operation.Point) (*operation.Point, error) {
 	if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
-		return nil, errors.New("Invalid input")
+		return nil, fmt.Errorf("invalid input")
 	}
 	tmp1 := new(operation.Point).MultiScalarMult(l, g)
 	tmp2 := new(operation.Point).MultiScalarMult(r, h)
@@ -177,14 +180,14 @@ func newBulletproofParams(m int) *bulletproofParams {
 	csByte := []byte{}
 
 	for i := 0; i < capacity; i++ {
-		param.g[i] = operation.HashToPointFromIndex(int32(numCommitValue+i), operation.CStringBulletProof)
-		param.h[i] = operation.HashToPointFromIndex(int32(numCommitValue+i+maxOutputCoin*maxExp), operation.CStringBulletProof)
+		param.g[i] = operation.HashToPointFromIndex(int64(numCommitValue+i), operation.CStringBulletProof)
+		param.h[i] = operation.HashToPointFromIndex(int64(numCommitValue+i+maxOutputCoin*maxExp), operation.CStringBulletProof)
 		csByte = append(csByte, param.g[i].ToBytesS()...)
 		csByte = append(csByte, param.h[i].ToBytesS()...)
 	}
 
 	param.u = new(operation.Point)
-	param.u = operation.HashToPointFromIndex(int32(numCommitValue+2*maxOutputCoin*maxExp), operation.CStringBulletProof)
+	param.u = operation.HashToPointFromIndex(int64(numCommitValue+2*maxOutputCoin*maxExp), operation.CStringBulletProof)
 	csByte = append(csByte, param.u.ToBytesS()...)
 
 	param.cs = operation.HashToPoint(csByte)

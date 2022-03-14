@@ -29,7 +29,7 @@ func NewBatchTransaction(txs []metadata.Transaction) *batchTransaction {
 	return &batchTransaction{txs: txs}
 }
 
-// Add a single transcation to this batch
+// Add more transactions to this batch
 func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
 	b.txs = append(b.txs, txs...)
 }
@@ -87,7 +87,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 		if !ok {
 			Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", index)
-			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)), index
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("batch-verify payment v1 failed - #%d", index)), index
 		}
 	} else {
 		ok, err, index := aggregatedrange.VerifyBatchOld(bulletProofListVer1)
@@ -96,17 +96,14 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 		if !ok {
 			Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)
-			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)), index
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("batch-verify payment v1-old failed - #%d", index)), index
 		}
 	}
 
-	ok, err, i := bulletproofs.VerifyBatch(bulletProofListVer2)
-	if err != nil {
-		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
-	}
+	ok, err = bulletproofs.VerifyBatch(bulletProofListVer2)
 	if !ok {
-		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %d", i)
-		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 2 PAYMENT PROOF %d", i)), -1
+		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %v", err)
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("batch-verify payment v2 failed - %v", err)), -1
 	}
 	return true, nil, -1
 }

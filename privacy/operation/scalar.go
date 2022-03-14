@@ -1,219 +1,140 @@
 package operation
 
 import (
-	"crypto/subtle"
+	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 
-	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/operation/edwards25519"
 )
 
 type Scalar struct {
-	key C25519.Key
+	sc edwards25519.Scalar
 }
 
-func (sc Scalar) GetKey() C25519.Key {
-	return sc.key
+func NewScalar() *Scalar {
+	return &Scalar{*edwards25519.NewScalar()}
 }
+
+var ScZero = NewScalar()
+var ScOne = NewScalar().FromUint64(1)
+var ScMinusOne = NewScalar().Sub(ScZero, ScOne)
 
 func (sc Scalar) String() string {
-	return fmt.Sprintf("%x", sc.key[:])
+	return fmt.Sprintf("%x", sc.ToBytesS())
 }
 
 func (sc Scalar) MarshalText() []byte {
-	return []byte(fmt.Sprintf("%x", sc.key[:]))
+	return []byte(hex.EncodeToString(sc.ToBytesS()))
 }
 
 func (sc *Scalar) UnmarshalText(data []byte) (*Scalar, error) {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-
 	byteSlice, _ := hex.DecodeString(string(data))
 	if len(byteSlice) != Ed25519KeySize {
-		return nil, errors.New("Incorrect key size")
+		return nil, fmt.Errorf("invalid scalar byte size")
 	}
-	copy(sc.key[:], byteSlice)
-	return sc, nil
-}
-
-func (sc Scalar) ToBytes() [Ed25519KeySize]byte {
-	return sc.key.ToBytes()
+	return sc.FromBytesS(byteSlice), nil
 }
 
 func (sc Scalar) ToBytesS() []byte {
-	slice := sc.key.ToBytes()
-	return slice[:]
-}
-
-func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	sc.key.FromBytes(b)
-	//if !C25519.ScValid(&sc.key) {
-	//	panic("Invalid Scalar Value")
-	//}
-	return sc
+	return sc.sc.Bytes()
 }
 
 func (sc *Scalar) FromBytesS(b []byte) *Scalar {
-	//if len(b) != Ed25519KeySize {
-	//	panic("Invalid Ed25519 Key Size")
-	//}
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	var array [Ed25519KeySize]byte
-	copy(array[:], b)
-	sc.key.FromBytes(array)
-
-	//if !C25519.ScValid(&sc.key) {
-	//	panic("Invalid Scalar Value")
-	//}
+	var temp [32]byte
+	copy(temp[:], b)
+	sc.sc.SetUnreducedBytes(temp[:]) // pad & reduce the input bytes
 	return sc
 }
 
-// Should not use this if you don't know what you are doing
-func (p *Scalar) SetKeyUnsafe(a *C25519.Key) *Scalar {
-	if p == nil {
-		p = new(Scalar)
-	}
-	p.key = *a
-	return p
+func (sc Scalar) ToBytes() (result [32]byte) {
+	copy(result[:], sc.sc.Bytes())
+	return result
 }
 
-func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	sc.key = *a
-	if sc.ScalarValid() == false {
-		return nil, errors.New("Invalid key value")
-	}
-	return sc, nil
+func (sc *Scalar) FromBytes(bArr [32]byte) *Scalar {
+	sc.sc.SetUnreducedBytes(bArr[:])
+	return sc
+}
+
+// SetKey is a legacy function
+func (sc *Scalar) SetKey(a *[32]byte) (*Scalar, error) {
+	_, err := sc.sc.SetCanonicalBytes(a[:])
+	return sc, err
 }
 
 func (sc *Scalar) Set(a *Scalar) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	sc.key = a.key
+	sc.sc.Set(&a.sc)
 	return sc
 }
 
 func RandomScalar() *Scalar {
-	sc := new(Scalar)
-	key := C25519.RandomScalar()
-	sc.key = *key
-	return sc
+	b := make([]byte, 64)
+	rand.Read(b)
+	res, _ := edwards25519.NewScalar().SetUniformBytes(b)
+	return &Scalar{*res}
 }
 
 func HashToScalar(data []byte) *Scalar {
-	key := C25519.HashToScalar(data)
-	sc, error := new(Scalar).SetKey(key)
-	if error != nil {
-		return nil
-	}
+	h := common.Keccak256(data)
+	sc := NewScalar()
+	sc.sc.SetUnreducedBytes(h[:])
 	return sc
 }
 
 func (sc *Scalar) FromUint64(i uint64) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	sc.SetKey(d2h(i))
+	bn := big.NewInt(0).SetUint64(i)
+	bSlice := bn.FillBytes(make([]byte, 32))
+	var b [32]byte
+	copy(b[:], bSlice)
+	rev := Reverse(b)
+	sc.sc.SetCanonicalBytes(rev[:])
 	return sc
 }
 
 func (sc *Scalar) ToUint64Little() uint64 {
-	if sc == nil {
-		return 0
-	}
-	reversedKey := Reverse(sc.key)
-	keyBN := new(big.Int).SetBytes(reversedKey[:])
-	return keyBN.Uint64()
+	var b [32]byte
+	copy(b[:], sc.sc.Bytes())
+	rev := Reverse(b)
+	bn := big.NewInt(0).SetBytes(rev[:])
+	return bn.Uint64()
 }
 
 func (sc *Scalar) Add(a, b *Scalar) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	var res C25519.Key
-	C25519.ScAdd(&res, &a.key, &b.key)
-	sc.key = res
+	sc.sc.Add(&a.sc, &b.sc)
 	return sc
 }
 
 func (sc *Scalar) Sub(a, b *Scalar) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	var res C25519.Key
-	C25519.ScSub(&res, &a.key, &b.key)
-	sc.key = res
+	sc.sc.Subtract(&a.sc, &b.sc)
+	return sc
+}
+
+func (sc *Scalar) Negate(a *Scalar) *Scalar {
+	sc.sc.Negate(&a.sc)
 	return sc
 }
 
 func (sc *Scalar) Mul(a, b *Scalar) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	var res C25519.Key
-	C25519.ScMul(&res, &a.key, &b.key)
-	sc.key = res
+	sc.sc.Multiply(&a.sc, &b.sc)
 	return sc
 }
 
 // a*b + c % l
 func (sc *Scalar) MulAdd(a, b, c *Scalar) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-	var res C25519.Key
-	C25519.ScMulAdd(&res, &a.key, &b.key, &c.key)
-	sc.key = res
-	return sc
-}
-
-func (sc *Scalar) Exp(a *Scalar, v uint64) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-
-	var res C25519.Key
-	C25519.ScMul(&res, &a.key, &a.key)
-	for i := 0; i < int(v)-2; i++ {
-		C25519.ScMul(&res, &res, &a.key)
-	}
-
-	sc.key = res
+	sc.sc.MultiplyAdd(&a.sc, &b.sc, &c.sc)
 	return sc
 }
 
 func (sc *Scalar) ScalarValid() bool {
-	if sc == nil {
-		return false
-	}
-	return C25519.ScValid(&sc.key)
-}
-
-func (sc *Scalar) IsOne() bool {
-	s := sc.key
-	return ((int(s[0]|s[1]|s[2]|s[3]|s[4]|s[5]|s[6]|s[7]|s[8]|
-		s[9]|s[10]|s[11]|s[12]|s[13]|s[14]|s[15]|s[16]|s[17]|
-		s[18]|s[19]|s[20]|s[21]|s[22]|s[23]|s[24]|s[25]|s[26]|
-		s[27]|s[28]|s[29]|s[30]|s[31])-1)>>8)+1 == 1
+	return edwards25519.IsReduced(&sc.sc)
 }
 
 func IsScalarEqual(sc1, sc2 *Scalar) bool {
-	tmpa := sc1.ToBytesS()
-	tmpb := sc2.ToBytesS()
-
-	return subtle.ConstantTimeCompare(tmpa, tmpb) == 1
+	return sc1.sc.Equal(&sc2.sc) == 1
 }
 
 func Compare(sca, scb *Scalar) int {
@@ -233,10 +154,7 @@ func Compare(sca, scb *Scalar) int {
 }
 
 func (sc *Scalar) IsZero() bool {
-	if sc == nil {
-		return false
-	}
-	return C25519.ScIsZero(&sc.key)
+	return IsScalarEqual(sc, ScZero)
 }
 
 func CheckDuplicateScalarArray(arr []*Scalar) bool {
@@ -253,38 +171,11 @@ func CheckDuplicateScalarArray(arr []*Scalar) bool {
 }
 
 func (sc *Scalar) Invert(a *Scalar) *Scalar {
-	if sc == nil {
-		sc = new(Scalar)
-	}
-
-	var inverse_result C25519.Key
-	x := a.key
-
-	reversex := Reverse(x)
-	bigX := new(big.Int).SetBytes(reversex[:])
-
-	reverseL := Reverse(C25519.CurveOrder()) // as speed improvements it can be made constant
-	bigL := new(big.Int).SetBytes(reverseL[:])
-
-	var inverse big.Int
-	inverse.ModInverse(bigX, bigL)
-
-	inverse_bytes := inverse.Bytes()
-
-	if len(inverse_bytes) > Ed25519KeySize {
-		panic("Inverse cannot be more than Ed25519KeySize bytes in this domain")
-	}
-
-	for i, j := 0, len(inverse_bytes)-1; i < j; i, j = i+1, j-1 {
-		inverse_bytes[i], inverse_bytes[j] = inverse_bytes[j], inverse_bytes[i]
-	}
-	copy(inverse_result[:], inverse_bytes[:]) // copy the bytes  as they should be
-
-	sc.key = inverse_result
+	sc.sc.Invert(&a.sc)
 	return sc
 }
 
-func Reverse(x C25519.Key) (result C25519.Key) {
+func Reverse(x [32]byte) (result [32]byte) {
 	result = x
 	// A key is in little-endian, but the big package wants the bytes in
 	// big-endian, so Reverse them.
@@ -295,8 +186,8 @@ func Reverse(x C25519.Key) (result C25519.Key) {
 	return
 }
 
-func d2h(val uint64) *C25519.Key {
-	key := new(C25519.Key)
+func d2h(val uint64) [32]byte {
+	var key [32]byte
 	for i := 0; val > 0; i++ {
 		key[i] = byte(val & 0xFF)
 		val /= 256

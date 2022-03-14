@@ -9,10 +9,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
-
-var CurveOrder = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
 
 // Ring is the struct for a MLSAG ring. It is a matrix of public keys.
 // One of these rows is the actual coin transfer, others consist of "decoy" public keys from the chain data.
@@ -293,12 +290,8 @@ func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation
 
 // check l*KI = 0 by checking KI is a valid point
 func verifyKeyImages(keyImages []*operation.Point) bool {
-	for i := 0; i < len(keyImages); i++ {
-		if keyImages[i] == nil {
-			return false
-		}
-		lKI := new(operation.Point).ScalarMult(keyImages[i], CurveOrder)
-		if !lKI.IsIdentity() {
+	for _, ki := range keyImages {
+		if !ki.PointValid() {
 			return false
 		}
 	}

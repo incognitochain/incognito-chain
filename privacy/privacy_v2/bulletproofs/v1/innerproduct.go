@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/operation/v1"
 )
 
 type InnerProductWitness struct {
@@ -166,23 +166,20 @@ func (wit InnerProductWitness) Prove(GParam []*operation.Point, HParam []*operat
 			return nil, err
 		}
 
-		mbuilder := operation.NewMultBuilder(false)
-		_, err = encodeVectors(a[:nPrime], b[nPrime:], G[nPrime:], H[:nPrime], mbuilder)
+		L, err := encodeVectors(a[:nPrime], b[nPrime:], G[nPrime:], H[:nPrime])
 		if err != nil {
 			return nil, err
 		}
-		mbuilder.AppendSingle(cL, uParam)
-		L := mbuilder.Execute()
+		L.Add(L, new(operation.Point).ScalarMult(uParam, cL))
 		proof.l = append(proof.l, L)
 
-		_, err = encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:], mbuilder)
+		R, err := encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
 		if err != nil {
 			return nil, err
 		}
-		mbuilder.AppendSingle(cR, uParam)
-		R := mbuilder.Execute()
-		proof.r = append(proof.r, R)
 
+		R.Add(R, new(operation.Point).ScalarMult(uParam, cR))
+		proof.r = append(proof.r, R)
 		x := generateChallenge(hashCache, []*operation.Point{L, R})
 		hashCache = new(operation.Scalar).Set(x).ToBytesS()
 
@@ -228,7 +225,6 @@ func (wit InnerProductWitness) Prove(GParam []*operation.Point, HParam []*operat
 
 	return proof, nil
 }
-
 func (proof InnerProductProof) Verify(GParam []*operation.Point, HParam []*operation.Point, uParam *operation.Point, hashCache []byte) bool {
 	//var aggParam = newBulletproofParams(1)
 	p := new(operation.Point)

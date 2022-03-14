@@ -140,7 +140,7 @@ func (p *ExtendedGroupElement) FromBytes(s *Key) bool {
 	FeOne(&p.Z)
 	FeSquare(&u, &p.Y)
 	FeMul(&v, &u, &d)
-	FeSub(&u, &u, &p.Z) // y = y^2-1
+	FeSub(&u, &u, &p.Z) // u = y^2-1
 	FeAdd(&v, &v, &p.Z) // v = dy^2+1
 
 	FeSquare(&v3, &v)
@@ -197,8 +197,8 @@ func FeDivPowM1(out, u, v *FieldElement) {
 	FeMul(&t0, &t0, &v3)
 	FeMul(out, &t0, u) /* u^(m+1)v^(-(m+1)) */
 }
-func (p *ProjectiveGroupElement) FromBytes(s *Key) {
 
+func (p *ProjectiveGroupElement) FromBytes(s *Key) {
 	// the original code processes it in a different way
 	// so we do it in 2 steps
 	// first parse using the original code, convert into 32 bit form

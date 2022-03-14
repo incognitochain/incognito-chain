@@ -313,7 +313,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 		coin2 := new(PlainCoinV1)
 		err2 := coin2.UnmarshalJSON(bytesJSON)
 		assert.Equal(t, nil, err2)
-		assert.Equal(t, coin, coin2)
+		assert.Equal(t, coin.Bytes(), coin2.Bytes())
 	}
 }
 
@@ -348,7 +348,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, coin, coin2)
+		assert.Equal(t, coin.Bytes(), coin2.Bytes())
 	}
 }
 
@@ -378,7 +378,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, coin, coin2)
+		assert.Equal(t, coin.Bytes(), coin2.Bytes())
 	}
 }
 
@@ -452,7 +452,7 @@ func TestInputCoinBytesSetBytes(t *testing.T) {
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, coin, coin2)
+		assert.Equal(t, coin.Bytes(), coin2.Bytes())
 	}
 }
 
@@ -479,7 +479,7 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	err := coin2.SetBytes(coinBytes)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, coin, coin2)
+	assert.Equal(t, coin.Bytes(), coin2.Bytes())
 }
 
 func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
@@ -548,7 +548,7 @@ func TestOutputCoinBytesSetBytes(t *testing.T) {
 	err := coin2.SetBytes(coinBytes)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, coin, coin2)
+	assert.Equal(t, coin.Bytes(), coin2.Bytes())
 }
 
 func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
