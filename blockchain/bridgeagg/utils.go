@@ -23,12 +23,12 @@ func NewVaultChange() *VaultChange {
 
 type StateChange struct {
 	unifiedTokenID map[common.Hash]bool
-	vaultChange    map[common.Hash]map[common.Hash]VaultChange
+	vaultChange    map[common.Hash]map[uint]VaultChange
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
 		unifiedTokenID: make(map[common.Hash]bool),
-		vaultChange:    make(map[common.Hash]map[common.Hash]VaultChange),
+		vaultChange:    make(map[common.Hash]map[uint]VaultChange),
 	}
 }

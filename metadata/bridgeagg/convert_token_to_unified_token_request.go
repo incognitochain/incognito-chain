@@ -15,6 +15,7 @@ import (
 type ConvertTokenToUnifiedTokenRequest struct {
 	TokenID        common.Hash                         `json:"TokenID"`
 	UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
+	NetworkID      uint                                `json:"NetworkID"`
 	Amount         uint64                              `json:"Amount"`
 	Receivers      map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
 	metadataCommon.MetadataBase
@@ -30,7 +31,7 @@ func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
 }
 
 func NewConvertTokenToUnifiedTokenRequestWithValue(
-	tokenID, unifiedTokenID common.Hash, amount uint64,
+	tokenID, unifiedTokenID common.Hash, networkID uint, amount uint64,
 	receivers map[common.Hash]privacy.OTAReceiver,
 ) *ConvertTokenToUnifiedTokenRequest {
 	metadataBase := metadataCommon.MetadataBase{
@@ -39,6 +40,7 @@ func NewConvertTokenToUnifiedTokenRequestWithValue(
 	return &ConvertTokenToUnifiedTokenRequest{
 		UnifiedTokenID: unifiedTokenID,
 		TokenID:        tokenID,
+		NetworkID:      networkID,
 		Amount:         amount,
 		Receivers:      receivers,
 		MetadataBase:   metadataBase,
@@ -95,6 +97,9 @@ func (request *ConvertTokenToUnifiedTokenRequest) ValidateSanityData(
 	}
 	if request.TokenID == common.PRVCoinID || request.UnifiedTokenID == common.PRVCoinID {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("With tx custome token privacy, the tokenID should not be PRV, but custom token"))
+	}
+	if request.NetworkID == common.DefaultNetworkID {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("NetworkID is invalid"))
 	}
 
 	return true, true, nil

@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -152,6 +153,11 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return append(instructions, rejectedInst), nil, nil
 	}
 
+	incTokenID := md.IncTokenID
+	if metaType == metadataCommon.IssuingUnifiedTokenRequestMeta {
+		//TODO: get info from networkID
+	}
+
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
 	uniqTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
@@ -192,7 +198,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	token := append([]byte(prefix), tokenAddr.Bytes()...)
 	// handle case not native token.
 	if !isPRV {
-		canProcess, err := ac.CanProcessTokenPair(token, md.IncTokenID)
+		canProcess, err := ac.CanProcessTokenPair(token, incTokenID)
 		if err != nil {
 			Logger.log.Warn("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)
 			return append(instructions, rejectedInst), nil, nil
@@ -201,12 +207,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
 			return append(instructions, rejectedInst), nil, nil
 		}
-		privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
+		privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, incTokenID)
 		if err != nil {
 			Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 			return append(instructions, rejectedInst), nil, nil
 		}
-		isValid, err := statedb.CanProcessTokenPair(stateDB, token, md.IncTokenID, privacyTokenExisted)
+		isValid, err := statedb.CanProcessTokenPair(stateDB, token, incTokenID, privacyTokenExisted)
 		if err != nil {
 			Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
 			return append(instructions, rejectedInst), nil, nil
@@ -255,7 +261,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
 		return append(instructions, rejectedInst), nil, nil
 	}
-	ac.DBridgeTokenPair[md.IncTokenID.String()] = token
+	ac.DBridgeTokenPair[incTokenID.String()] = token
 
 	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes))
 	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")

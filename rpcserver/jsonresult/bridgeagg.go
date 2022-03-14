@@ -6,6 +6,6 @@ import (
 )
 
 type BridgeAggState struct {
-	BeaconTimeStamp   int64                                            `json:"BeaconTimeStamp"`
-	UnifiedTokenInfos map[common.Hash]map[common.Hash]*bridgeagg.Vault `json:"UnifiedTokenInfos"`
+	BeaconTimeStamp   int64                                     `json:"BeaconTimeStamp"`
+	UnifiedTokenInfos map[common.Hash]map[uint]*bridgeagg.Vault `json:"UnifiedTokenInfos"`
 }

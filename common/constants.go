@@ -235,3 +235,10 @@ var (
 	BurningAddressByte  []byte
 	BurningAddressByte2 []byte
 )
+
+const (
+	DefaultNetworkID = iota
+	ETHNetworkID
+	BSCNetworkID
+	PLGNetworkID
+)

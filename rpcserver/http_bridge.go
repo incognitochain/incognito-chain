@@ -184,7 +184,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingEVMReq(params interfac
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	meta, err := metadata.NewIssuingEVMRequestFromMap(data, metatype)
+	meta, err := metadata.NewIssuingEVMRequestFromMap(data, common.DefaultNetworkID, metatype)
 	if err != nil {
 		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		Logger.log.Error(rpcErr)

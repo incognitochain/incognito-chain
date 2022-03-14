@@ -11,22 +11,22 @@ import (
 )
 
 type State struct {
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault // unifiedTokenID -> tokenID -> vault
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault // unifiedTokenID -> tokenID -> vault
 	producer          stateProducer
 	processor         stateProcessor
 }
 
-func (s *State) UnifiedTokenInfos() map[common.Hash]map[common.Hash]*Vault {
+func (s *State) UnifiedTokenInfos() map[common.Hash]map[uint]*Vault {
 	return s.unifiedTokenInfos
 }
 
 func NewState() *State {
 	return &State{
-		unifiedTokenInfos: make(map[common.Hash]map[common.Hash]*Vault),
+		unifiedTokenInfos: make(map[common.Hash]map[uint]*Vault),
 	}
 }
 
-func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault) *State {
+func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[uint]*Vault) *State {
 	return &State{
 		unifiedTokenInfos: unifiedTokenInfos,
 	}
@@ -37,7 +37,7 @@ func (s *State) Clone() *State {
 	res.processor = stateProcessor{}
 	res.producer = stateProducer{}
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
+		res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 		for tokenID, vault := range vaults {
 			res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault.Clone()
 		}
@@ -122,20 +122,20 @@ func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error
 				return err
 			}
 		}
-		for tokenID, vault := range vaults {
-			if stateChange.vaultChange[unifiedTokenID][tokenID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
+		for networkID, vault := range vaults {
+			if stateChange.vaultChange[unifiedTokenID][networkID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
 				err := statedb.StoreBridgeAggConvertedToken(
-					sDB, unifiedTokenID, tokenID,
-					statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID),
+					sDB, unifiedTokenID, vault.tokenID,
+					statedb.NewBridgeAggConvertedTokenStateWithValue(vault.tokenID, networkID),
 				)
 				if err != nil {
 					return err
 				}
 			}
-			if (stateChange.vaultChange[unifiedTokenID][tokenID].IsReserveChanged ||
+			if (stateChange.vaultChange[unifiedTokenID][networkID].IsReserveChanged ||
 				stateChange.unifiedTokenID[unifiedTokenID]) && !vault.BridgeAggVaultState.IsEmpty() {
 				err := statedb.StoreBridgeAggVault(
-					sDB, unifiedTokenID, tokenID,
+					sDB, unifiedTokenID, vault.tokenID,
 					&vault.BridgeAggVaultState,
 				)
 				if err != nil {
@@ -162,12 +162,12 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 		} else {
 			for tokenID, vault := range vaults {
 				if res.unifiedTokenInfos[unifiedTokenID] == nil {
-					res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
+					res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 				}
 				if compareVault, ok := compareVaults[tokenID]; !ok {
 					res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault
 					if stateChange.vaultChange[unifiedTokenID] == nil {
-						stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
+						stateChange.vaultChange[unifiedTokenID] = make(map[uint]VaultChange)
 					}
 					stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{
 						IsChanged:        true,
@@ -181,7 +181,7 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 					if temp != nil {
 						res.unifiedTokenInfos[unifiedTokenID][tokenID] = temp
 						if stateChange.vaultChange[unifiedTokenID] == nil {
-							stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
+							stateChange.vaultChange[unifiedTokenID] = make(map[uint]VaultChange)
 						}
 						stateChange.vaultChange[unifiedTokenID][tokenID] = *vaultChange
 					}

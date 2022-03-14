@@ -9,6 +9,7 @@ import (
 const (
 	OtherError = iota
 	NotFoundTokenIDInNetwork
+	NotFoundNetworkID
 	FailToBuildModifyListToken
 )
 
@@ -18,6 +19,7 @@ var ErrCodeMessage = map[int]struct {
 }{
 	OtherError:                 {1, "Not found token id in network"},
 	NotFoundTokenIDInNetwork:   {1000, "Not found token id in network"},
+	NotFoundNetworkID:          {1001, "Not found networkID"},
 	FailToBuildModifyListToken: {1100, "Fail to build modify list token instruction"},
 }
 

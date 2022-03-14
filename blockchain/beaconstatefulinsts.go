@@ -86,7 +86,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
 			metadataCommon.BridgeAggModifyListTokenMeta,
-			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
+			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
+			metadataCommon.IssuingUnifiedTokenRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -310,6 +311,26 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				modifyListTokensActions = append(modifyListTokensActions, contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions = append(convertActions, contentStr)
+			case metadataCommon.IssuingUnifiedTokenRequestMeta:
+				var uniqTx []byte
+				var temp func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					[][]byte{},
+					utils.EmptyString,
+					utils.EmptyString,
+					temp,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+					shieldActions = append(shieldActions, contentStr)
+				}
 			default:
 				continue
 			}

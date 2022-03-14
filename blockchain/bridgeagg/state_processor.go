@@ -16,9 +16,9 @@ type stateProcessor struct {
 
 func (sp *stateProcessor) modifyListTokens(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[common.Hash]*Vault, error) {
+) (map[common.Hash]map[uint]*Vault, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -33,14 +33,14 @@ func (sp *stateProcessor) modifyListTokens(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		for k, v := range acceptedInst.NewListTokens {
-			_, found := unifiedTokenInfos[k]
+		for unifiedTokenID, vaults := range acceptedInst.NewListTokens {
+			_, found := unifiedTokenInfos[unifiedTokenID]
 			if !found {
-				unifiedTokenInfos[k] = make(map[common.Hash]*Vault)
+				unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 			}
-			for _, tokenID := range v {
-				if _, found := unifiedTokenInfos[k][tokenID]; !found {
-					unifiedTokenInfos[k][tokenID] = NewVault()
+			for _, vault := range vaults {
+				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
+					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVault()
 				}
 			}
 		}
@@ -72,9 +72,9 @@ func (sp *stateProcessor) modifyListTokens(
 
 func (sp *stateProcessor) convert(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[common.Hash]*Vault, error) {
+) (map[common.Hash]map[uint]*Vault, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -90,9 +90,9 @@ func (sp *stateProcessor) convert(
 			return unifiedTokenInfos, err
 		}
 		if vaults, found := unifiedTokenInfos[acceptedInst.UnifiedTokenID]; found {
-			if vault, found := vaults[acceptedInst.TokenID]; found {
+			if vault, found := vaults[acceptedInst.NetworkID]; found {
 				vault.Convert(acceptedInst.Amount)
-				unifiedTokenInfos[acceptedInst.UnifiedTokenID][acceptedInst.TokenID] = vault
+				unifiedTokenInfos[acceptedInst.UnifiedTokenID][acceptedInst.NetworkID] = vault
 			} else {
 				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetwork, err)
 			}

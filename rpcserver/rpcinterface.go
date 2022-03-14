@@ -271,11 +271,17 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
 	// bridgeagg method
-	bridgeaggModifyListTokens:       (*HttpServer).handleCreateAndSendTxBridgeAggModifyListTokens,
-	bridgeaggState:                  (*HttpServer).handleGetBridgeAggState,
-	bridgeaggStatusModifyListTokens: (*HttpServer).handleGetBridgeAggModifyListTokenStatus,
-	bridgeaggConvert:                (*HttpServer).handleBridgeAggConvert,
-	bridgeaggStatusConvert:          (*HttpServer).handleGetBridgeAggConvertStatus,
+	bridgeaggModifyListTokens:         (*HttpServer).handleCreateAndSendTxBridgeAggModifyListTokens,
+	bridgeaggState:                    (*HttpServer).handleGetBridgeAggState,
+	bridgeaggStatusModifyListTokens:   (*HttpServer).handleGetBridgeAggModifyListTokenStatus,
+	bridgeaggConvert:                  (*HttpServer).handleBridgeAggConvert,
+	bridgeaggStatusConvert:            (*HttpServer).handleGetBridgeAggConvertStatus,
+	bridgeaggShield:                   (*HttpServer).handleBridgeAggShield,
+	bridgeaggStatusShield:             (*HttpServer).handleGetBridgeAggShieldStatus,
+	bridgeaggUnshield:                 (*HttpServer).handleBridgeAggUnshield,
+	bridgeaggStatusUnshield:           (*HttpServer).handleGetBridgeAggUnshieldStatus,
+	bridgeaggUpdateRewardVaults:       (*HttpServer).handleBridgeAggUpdateRewardVaults,
+	bridgeaggStatusUpdateRewardVaults: (*HttpServer).handleGetBridgeAggUpdateRewardVaultsStatus,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

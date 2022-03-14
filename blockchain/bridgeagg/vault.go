@@ -4,22 +4,25 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type Vault struct {
 	statedb.BridgeAggVaultState
 	externalTokenID []byte
+	tokenID         common.Hash
 }
 
 func NewVault() *Vault {
 	return &Vault{}
 }
 
-func NewVaultWithValue(state statedb.BridgeAggVaultState, externalTokenID []byte) *Vault {
+func NewVaultWithValue(state statedb.BridgeAggVaultState, externalTokenID []byte, tokenID common.Hash) *Vault {
 	return &Vault{
 		BridgeAggVaultState: state,
 		externalTokenID:     externalTokenID,
+		tokenID:             tokenID,
 	}
 }
 
@@ -28,6 +31,7 @@ func (v *Vault) Clone() *Vault {
 		BridgeAggVaultState: *v.BridgeAggVaultState.Clone(),
 	}
 	copy(v.externalTokenID, res.externalTokenID)
+	copy(v.tokenID[:], res.tokenID[:])
 	return res
 }
 
@@ -51,10 +55,12 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 func (v *Vault) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		statedb.BridgeAggVaultState
-		ExternalTokenID []byte `json:"ExternalTokenID"`
+		ExternalTokenID []byte      `json:"ExternalTokenID"`
+		TokenID         common.Hash `json:"TokenID"`
 	}{
 		BridgeAggVaultState: v.BridgeAggVaultState,
 		ExternalTokenID:     v.externalTokenID,
+		TokenID:             v.tokenID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -65,7 +71,8 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 func (v *Vault) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		statedb.BridgeAggVaultState
-		ExternalTokenID []byte `json:"ExternalTokenID"`
+		ExternalTokenID []byte      `json:"ExternalTokenID"`
+		TokenID         common.Hash `json:"TokenID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -73,6 +80,7 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 	}
 	v.externalTokenID = temp.ExternalTokenID
 	v.BridgeAggVaultState = temp.BridgeAggVaultState
+	v.tokenID = temp.TokenID
 	return nil
 }
 

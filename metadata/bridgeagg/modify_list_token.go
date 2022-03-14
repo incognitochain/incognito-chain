@@ -13,7 +13,7 @@ import (
 
 type ModifyListToken struct {
 	metadataCommon.MetadataBaseWithSignature
-	NewListTokens map[common.Hash][]common.Hash `json:"NewListTokens"` // unifiedTokenID -> list tokenID
+	NewListTokens map[common.Hash][]statedb.BridgeAggConvertedTokenState `json:"NewListTokens"` // unifiedTokenID -> list tokenID
 }
 
 type AcceptedModifyListToken struct {
@@ -26,7 +26,7 @@ func NewModifyListToken() *ModifyListToken {
 }
 
 func NewModifyListTokenWithValue(
-	newListTokens map[common.Hash][]common.Hash,
+	newListTokens map[common.Hash][]statedb.BridgeAggConvertedTokenState,
 ) *ModifyListToken {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metadataCommon.BridgeAggModifyListTokenMeta)
 	request := &ModifyListToken{}
@@ -77,16 +77,16 @@ func (request *ModifyListToken) ValidateSanityData(
 	}
 
 	usedTokenIDs := make(map[common.Hash]bool)
-	for unifiedTokenID, tokenIDs := range request.NewListTokens {
+	for unifiedTokenID, convertTokens := range request.NewListTokens {
 		if usedTokenIDs[unifiedTokenID] {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
 		}
 		usedTokenIDs[unifiedTokenID] = true
-		for _, tokenID := range tokenIDs {
-			if usedTokenIDs[tokenID] {
+		for _, convertedToken := range convertTokens {
+			if usedTokenIDs[convertedToken.TokenID()] {
 				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
 			}
-			usedTokenIDs[tokenID] = true
+			usedTokenIDs[convertedToken.TokenID()] = true
 		}
 	}
 

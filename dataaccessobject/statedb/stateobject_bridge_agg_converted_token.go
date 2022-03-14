@@ -9,7 +9,12 @@ import (
 )
 
 type BridgeAggConvertedTokenState struct {
-	tokenID common.Hash
+	tokenID   common.Hash
+	networkID uint
+}
+
+func (state *BridgeAggConvertedTokenState) NetworkID() uint {
+	return state.networkID
 }
 
 func (state *BridgeAggConvertedTokenState) TokenID() common.Hash {
@@ -18,9 +23,11 @@ func (state *BridgeAggConvertedTokenState) TokenID() common.Hash {
 
 func (state *BridgeAggConvertedTokenState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID common.Hash `json:"TokenID"`
+		TokenID   common.Hash `json:"TokenID"`
+		NetworkID uint        `json:"NetworkID"`
 	}{
-		TokenID: state.tokenID,
+		TokenID:   state.tokenID,
+		NetworkID: state.networkID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -30,19 +37,22 @@ func (state *BridgeAggConvertedTokenState) MarshalJSON() ([]byte, error) {
 
 func (state *BridgeAggConvertedTokenState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID common.Hash `json:"TokenID"`
+		TokenID   common.Hash `json:"TokenID"`
+		NetworkID uint        `json:"NetworkID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	state.tokenID = temp.TokenID
+	state.networkID = temp.NetworkID
 	return nil
 }
 
 func (state *BridgeAggConvertedTokenState) Clone() *BridgeAggConvertedTokenState {
 	return &BridgeAggConvertedTokenState{
-		tokenID: state.tokenID,
+		tokenID:   state.tokenID,
+		networkID: state.networkID,
 	}
 }
 
@@ -50,9 +60,10 @@ func NewBridgeAggConvertedTokenState() *BridgeAggConvertedTokenState {
 	return &BridgeAggConvertedTokenState{}
 }
 
-func NewBridgeAggConvertedTokenStateWithValue(tokenID common.Hash) *BridgeAggConvertedTokenState {
+func NewBridgeAggConvertedTokenStateWithValue(tokenID common.Hash, networkID uint) *BridgeAggConvertedTokenState {
 	return &BridgeAggConvertedTokenState{
-		tokenID: tokenID,
+		tokenID:   tokenID,
+		networkID: networkID,
 	}
 }
 

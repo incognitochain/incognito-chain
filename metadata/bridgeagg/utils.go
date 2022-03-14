@@ -10,6 +10,10 @@ func IsBridgeAggMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:
 		return true
+	case metadataCommon.IssuingUnifiedTokenRequestMeta:
+		return true
+	case metadataCommon.IssuingUnifiedTokenResponseMeta:
+		return true
 	default:
 		return false
 	}

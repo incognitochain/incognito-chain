@@ -18,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -27,7 +28,7 @@ type IssuingEVMRequest struct {
 	TxIndex    uint
 	ProofStrs  []string
 	IncTokenID common.Hash
-	NetworkdID *common.Hash `json:"NetworkdID,omitempty"`
+	NetworkdID uint `json:"NetworkdID,omitempty"`
 	MetadataBase
 }
 
@@ -99,6 +100,7 @@ func NewIssuingEVMRequest(
 	txIndex uint,
 	proofStrs []string,
 	incTokenID common.Hash,
+	networkID uint,
 	metaType int,
 ) (*IssuingEVMRequest, error) {
 	metadataBase := MetadataBase{
@@ -109,6 +111,7 @@ func NewIssuingEVMRequest(
 		TxIndex:    txIndex,
 		ProofStrs:  proofStrs,
 		IncTokenID: incTokenID,
+		NetworkdID: networkID,
 	}
 	issuingEVMReq.MetadataBase = metadataBase
 	return issuingEVMReq, nil
@@ -116,6 +119,7 @@ func NewIssuingEVMRequest(
 
 func NewIssuingEVMRequestFromMap(
 	data map[string]interface{},
+	networkID uint,
 	metatype int,
 ) (*IssuingEVMRequest, error) {
 	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
@@ -136,6 +140,7 @@ func NewIssuingEVMRequestFromMap(
 		txIdx,
 		proofStrs,
 		*incTokenID,
+		networkID,
 		metatype,
 	)
 	return req, nil
@@ -160,7 +165,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingETHRequestMeta && iReq.Type != IssuingBSCRequestMeta &&
 		iReq.Type != IssuingPRVERC20RequestMeta && iReq.Type != IssuingPRVBEP20RequestMeta &&
-		iReq.Type != IssuingPLGRequestMeta {
+		iReq.Type != IssuingPLGRequestMeta && iReq.Type != metadataCommon.IssuingUnifiedTokenRequestMeta {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -220,17 +225,31 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	var protocol, host, port string
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta {
+	isETHNetwork := false
+	isBSCNetwork := false
+	IsPLGNetwork := false
+
+	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta || (iReq.NetworkdID == common.BSCNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+		isBSCNetwork = true
+	}
+	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || (iReq.NetworkdID == common.ETHNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+		isETHNetwork = true
+	}
+	if iReq.Type == IssuingPLGRequestMeta || (iReq.NetworkdID == common.PLGNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+		IsPLGNetwork = true
+	}
+
+	if isBSCNetwork {
 		evmParam := config.Param().BSCParam
 		evmParam.GetFromEnv()
 		host = evmParam.Host
-	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta {
+	} else if isETHNetwork {
 		evmParam := config.Config().GethParam
 		evmParam.GetFromEnv()
 		protocol = evmParam.Protocol
 		host = evmParam.Host
 		port = evmParam.Port
-	} else if iReq.Type == IssuingPLGRequestMeta {
+	} else if IsPLGNetwork {
 		evmParam := config.Param().PLGParam
 		evmParam.GetFromEnv()
 		host = evmParam.Host
@@ -284,7 +303,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPLGRequestMeta {
+	if isETHNetwork || IsPLGNetwork {
 		if len(val) == 0 {
 			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
 		}
