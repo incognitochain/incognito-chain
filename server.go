@@ -653,7 +653,11 @@ func (serverObj *Server) Stop() error {
 
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
-	go serverObj.blockChain.Stop()
+	go func() {
+		serverObj.wg.Add(1)
+		serverObj.blockChain.Stop()
+		serverObj.wg.Done()
+	}()
 	serverObj.wg.Wait()
 	return nil
 }
