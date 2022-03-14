@@ -1,7 +1,6 @@
 package tx_ver2
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,13 +13,12 @@ import (
 func reconstructRingCAV2(txEnv metadata.ValidationEnviroment, sumOutputsWithFee, sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB) (*mlsag.Ring, error) {
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when parsing bytes of txSigPubKey: %v", err))
 	}
 	indexes := txSigPubKey.Indexes
 	n := len(indexes)
 	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+		return nil, fmt.Errorf("cannot get ring from Indexes: Indexes is empty")
 	}
 
 	m := len(indexes[0])

@@ -88,6 +88,10 @@ func (response *UnstakingResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
+func (response *UnstakingResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(response)
+}
+
 func (response *UnstakingResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Status  string `json:"Status"`

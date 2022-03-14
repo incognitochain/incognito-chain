@@ -97,6 +97,10 @@ func (response *MintNftResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
+func (response *MintNftResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(response)
+}
+
 func (response *MintNftResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		NftID       string `json:"NftID"`

@@ -136,3 +136,7 @@ func (req *PortalReqMatchingRedeem) BuildReqActions(tx Transaction, chainRetriev
 func (req *PortalReqMatchingRedeem) CalculateSize() uint64 {
 	return calculateSize(req)
 }
+
+func (req *PortalReqMatchingRedeem) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(req)
+}

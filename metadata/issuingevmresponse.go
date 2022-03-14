@@ -77,6 +77,10 @@ func (iRes *IssuingEVMResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *IssuingEVMResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range mintData.Insts {

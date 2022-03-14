@@ -46,12 +46,6 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 		return false, utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
 	}
 
-	// verify signature
-	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	if tx.Proof != nil {
-		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	}
-	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res = verifyKey.Verify(signature, tx.Hash()[:])
 	if !res {
 		err = fmt.Errorf("Verify signature of tx %v failed", tx.Hash().String())
@@ -125,7 +119,7 @@ func (tx *Tx) CheckData(
 	txEnv := tx.GetValidationEnv()
 	tokenID := tx.GetTokenID()
 	data := txEnv.DBData()
-	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, txEnv)
+	utils.Logger.Log.Infof("[debugtxs] %v %v", tx, txEnv)
 	if txEnv.IsPrivacy() {
 		proofV1, ok := prf.(*privacy.ProofV1)
 		if !ok {
@@ -173,7 +167,7 @@ func (tx *Tx) LoadData(
 	}
 	txEnv := tx.GetValidationEnv()
 	tokenID := tx.GetTokenID()
-	utils.Logger.Log.Infof("[debugtxs] %v %v\n", tx, txEnv)
+	utils.Logger.Log.Infof("[debugtxs] %v %v", tx, txEnv)
 	if txEnv.IsPrivacy() {
 		proofV1, ok := prf.(*privacy.ProofV1)
 		if !ok {
@@ -216,7 +210,7 @@ func (tx *Tx) ValidateTxCorrectness(
 		}
 	}
 
-	utils.Logger.Log.Debugf("VALIDATING TX........\n")
+	utils.Logger.Log.Debugf("VALIDATING TX........")
 
 	var valid bool
 	var err error
@@ -268,7 +262,7 @@ func (tx Tx) checkDuplicateOutput() (bool, error) {
 		sndBytes := output.GetSNDerivator().ToBytes()
 		if _, ok := sndOutputs[sndBytes]; ok {
 			utils.Logger.Log.Errorf("Double output in tx - txId %v - index %v", tx.Hash().String(), i)
-			return false, utils.NewTransactionErr(utils.DuplicatedOutputSndError, fmt.Errorf("Duplicate output coins' snd\n"))
+			return false, utils.NewTransactionErr(utils.DuplicatedOutputSndError, fmt.Errorf("Duplicate output coins' snd"))
 		}
 		sndOutputs[sndBytes] = struct{}{}
 	}

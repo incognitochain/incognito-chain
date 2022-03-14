@@ -145,3 +145,7 @@ func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, chainRetr
 func (reqPToken *PortalRequestPTokens) CalculateSize() uint64 {
 	return calculateSize(reqPToken)
 }
+
+func (reqPToken *PortalRequestPTokens) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(reqPToken)
+}

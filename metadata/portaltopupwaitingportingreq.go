@@ -124,7 +124,7 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 	// validate amount deposit
-	if p.DepositedAmount == 0 || p.DepositedAmount != burnCoin.GetValue(){
+	if p.DepositedAmount == 0 || p.DepositedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
 	}
 	if p.DepositedAmount == 0 && p.FreeCollateralAmount == 0 {
@@ -183,4 +183,8 @@ func (p *PortalTopUpWaitingPortingRequest) BuildReqActions(
 
 func (p *PortalTopUpWaitingPortingRequest) CalculateSize() uint64 {
 	return calculateSize(p)
+}
+
+func (p *PortalTopUpWaitingPortingRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(p)
 }

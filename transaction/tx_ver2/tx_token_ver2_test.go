@@ -2,7 +2,11 @@ package tx_ver2
 
 import (
 	"bytes"
-	// "encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"time"
+
+	"encoding/json"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -89,6 +93,9 @@ func TestPrivacyV2TxToken(t *testing.T) {
 			Convey("should verify & accept transaction", func() {
 				msgCipherText = []byte("doing a transfer")
 				So(bytes.Equal(msgCipherText, tx2.GetTxNormal().GetProof().GetOutputCoins()[0].GetInfo()), ShouldBeTrue)
+				var err error
+				tx2, err = tx2.startVerifyTx(dummyDB)
+				So(err, ShouldBeNil)
 
 				isValidSanity, err := tx2.ValidateSanityData(nil, nil, nil, 0)
 				So(isValidSanity, ShouldBeTrue)
@@ -115,6 +122,151 @@ func TestPrivacyV2TxToken(t *testing.T) {
 			})
 		})
 	})
+}
+
+func BenchmarkTxToken_CompactBytes(b *testing.B) {
+	txs, err := loadSampleTxs(false)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("LOAD TXS successfully!!!!")
+
+	minEncodingRate := 100000.0
+	maxEncodingRate := 0.0
+	totalEncodingRate := 0.0
+	minDecodingRate := 100000.0
+	maxDecodingRate := 0.0
+	totalDecodingRate := 0.0
+
+	minSizeReductionRate := 10000.0
+	maxSizeReductionRate := 0.0
+	totalReductionRate := 0.0
+	minReductionTx := ""
+
+	count := 0
+	for i := 0; i < len(txs); i++ {
+		txToken := txs[i]
+		prefix := fmt.Sprintf("[i: %v, txHash: %v]", i, txToken.Hash().String()[:10])
+		txTokenV2, ok := txToken.(*TxToken)
+		if !ok {
+			continue
+		}
+
+		start := time.Now()
+		jsb, err := json.Marshal(txTokenV2)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		jsbEncodingTime := time.Since(start).Seconds()
+
+		start = time.Now()
+		tmpTx := new(TxToken)
+		err = json.Unmarshal(jsb, &tmpTx)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		jsbDecodingTime := time.Since(start).Seconds()
+		if tmpTx.Hash().String() != txToken.Hash().String() {
+			jsb1, _ := json.Marshal(txToken)
+			jsb2, _ := json.Marshal(tmpTx)
+			fmt.Println(string(jsb1))
+			fmt.Println(string(jsb2))
+			panic(fmt.Sprintf("%v expected txHash %v, got %v", prefix, txToken.Hash().String(), tmpTx.Hash().String()))
+		}
+
+		start = time.Now()
+		compactBytes, err := txTokenV2.ToCompactBytes()
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		encodingTime := time.Since(start).Seconds()
+
+		// Calculate reduction rate
+		reductionRate := 1 - float64(len(compactBytes))/float64(len(jsb))
+		if reductionRate > maxSizeReductionRate {
+			maxSizeReductionRate = reductionRate
+		}
+		if reductionRate < minSizeReductionRate {
+			minSizeReductionRate = reductionRate
+			minReductionTx = txToken.Hash().String()
+		}
+		totalReductionRate += reductionRate
+
+		start = time.Now()
+		newTx := new(TxToken)
+		err = newTx.FromCompactBytes(compactBytes)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		decodingTime := time.Since(start).Seconds()
+
+		encodingRate := jsbEncodingTime / encodingTime
+		totalEncodingRate += encodingRate
+		if encodingRate > maxEncodingRate {
+			maxEncodingRate = encodingRate
+		}
+		if encodingRate < minEncodingRate {
+			minEncodingRate = encodingRate
+		}
+
+		decodingRate := jsbDecodingTime / decodingTime
+		totalDecodingRate += decodingRate
+		if decodingRate > maxDecodingRate {
+			maxDecodingRate = decodingRate
+		}
+		if decodingRate < minDecodingRate {
+			minDecodingRate = decodingRate
+		}
+
+		if newTx.Hash().String() != txToken.Hash().String() {
+			jsb1, _ := json.Marshal(txToken)
+			jsb2, _ := json.Marshal(newTx)
+			fmt.Println(string(jsb1))
+			fmt.Println(string(jsb2))
+			panic(fmt.Sprintf("%v expected txHash %v, got %v", prefix, txToken.Hash().String(), newTx.Hash().String()))
+		}
+		count++
+	}
+	fmt.Printf("minEncodingRate: %v, maxEncodingRate: %v, avgEncodingRate: %v\n", minEncodingRate, maxEncodingRate, totalEncodingRate/float64(count))
+	fmt.Printf("minDecodingRate: %v, maxDecodingRate: %v, avgDecodingRate: %v\n", minDecodingRate, maxDecodingRate, totalDecodingRate/float64(count))
+	fmt.Printf("minReductionRate: %v (%v), maxReductionRate: %v, avgReductionRate: %v\n",
+		minSizeReductionRate, minReductionTx, maxSizeReductionRate, totalReductionRate/float64(len(txs)))
+}
+
+func TestTxToken_FromCompactBytes(t *testing.T) {
+	encodedTxStr := "136HKigSiMExEQ33MZrpGCoCheNtwAAvHZUUSyePbbevgQ6XypWby4yBe9zBeQqKxCsvcNtx5JHbvHhavVRzWmQZPfjfqXtoi5U7HZzedbjrj9LBBd9c3iepkZDRy1Fn8VSf3ynWb1GV4tFieCMz29AoNm2z334mnEhWW7yV4kYtNCWdp3uaUiNdMAnWX3WmLnX837hXsFTr43WShVjYb284Bm2pdvAUoFFu1V8utxsugerFRNYuaEKeqnmtU4V1j4zoU9Q269RBxM8NFdHHnH9cvVmf24Muh8q29AuTMuEs8qjTsCaEdjLLpqHDVYDGYZiqNT5PWWiqzUzm6kxYn7fP4NLF5d8rsWFQZ14wqgwo8zNG8hTEgL9NpAD8mn8nRoqx6ZGiPXvjk3hzyjk9U68FQrck8TWX883eeprBwxe38zDpN2No6EqeMgcut6PBe2yZe9bAQ5qFEEXQBNyCZz7XHy8WqkjkcksczASXt9CZqdTFDJQqp3nbkrZvhURE9jPK3W13pqaf2SxYePnPA5m1JjdDdia396jGSNYCnfxLx11oTr8wX2hSLYrS3Y81MejNvahaTgh7avNtFpy3svqFmvtEQbqjmi2juHc5pWs82dDTX2TAj55TzFrNxTEYS6u2U12nKpQDwyM4ZK53M3diKSbQrHfUPow5MsiujUuiN7x24H7PTakm6ifAT2p4bCZKgrzK5TwPxnG1Lf3QY9iKgPyxoaPAdUMJyuqrrVCBp1Gygrhbcr5ZyUJi5WHjWhqrcfgRVYTfzzAubGM72JUQ9jk1rVZUtd6xcMHVoeJDMwxDRZNFaDFmiX5VMh529HcGxNBYSUhS1Y3RhGBj6mHfFzKgKKposPQPLfmttNqkmNTD4yxV6chcTb4ku6e4xPF9thDdTD1iDTVR4S9ZFzJ1TA8rMRsf1NtzSdbq3trD7T1rh732uDpRnHzYQhiVNycXjMqExPojbbE2DYdzFMKLe2Wmg8E8VFHrJjwUPVNY5L8bDAJnfsu4tmWXUGX6K5GEaZfuE9catTKZHFqa5SGzkjQhGV1vophiWVp8qmXas32FWZMX66aRYDwbWmxkdHsFJuXtsBLficGoK83H4H22hcfBADmkzwLXyofduoMYuHzAcf8hd2kGrzAK9tWeEq6mzJF6VijYgE8GCKWoLpafJ2wxnvh6JhH9fU5LrZto4Nw76gpN9uQbVMJLT8bciDP5n7yECuYJy6QuBDQFrgBhVJypAxaQMGCQCAqwV7R7CHvkkPaxY8WLdLdmJT6Nmf9ueYGTUiy3shmnwR3HhqUXUunuufgdm8RreUwMR54JPSfewhw7AoABUBFJFEE6PzudM5NfoxgWBvm7rW3BjA3xg8fZQTEuBZ4tvMU5BGsbffcNz3XKrut8yujZzbkV8Ufqrpu8NGtTVmsPAX9BbmLvc5owUGbjMy185quWoCvnPfShNkhDHZRRiAqKbT2SCZ7eideHUqtfU3fUzQ1kWB7y2sCpCCRXxLvFPwy3k68UxXs3PdPXygBgLCuuTEqBuPNt5nDjTT9Rr1hhR6628Ec4KVLGW1NRLaHwyepp9DrPaSzXDaMhKEuficCQx3BkHct5BwWr8tzACxHXXZp9xMNMUAbxw6EQCMv5qe7gH9s24sgW9MkckZHJ37FRExnUZMiujW5zo2Tb7Znnf815pFyqGpCdEbpXQaM6gDoo3AwDLxicAVp9jJfAC1AirXs3qkzBQ7U1zU5JK3UcqaJMQhKtecL7fD9jiMuw8TrvC8XVjWjAbL7PCRu7gg7gL3gPt3nPzX51ViqvkZj4sbKe6CbgHrgLV4q7XND1YwG9sNkbGbGrsqm8uWKtWy4HcRXGu2gm2zcPx23y8neMxa64R5QP6cTaWceQc7EuBwK8FXjhLUfD"
+	encodedTx, _, err := base58.Base58Check{}.Decode(encodedTxStr)
+	if err != nil {
+		panic(err)
+	}
+
+	tx := new(TxToken)
+	err = json.Unmarshal(encodedTx, &tx)
+	if err != nil {
+		panic(err)
+	}
+
+	compactBytes, err := tx.ToCompactBytes()
+	if err != nil {
+		panic(err)
+	}
+
+	reductionRate := 1 - float64(len(compactBytes))/float64(len(encodedTx))
+	fmt.Printf("jsonSize: %v, compactSize: %v, reductionRate: %v\n", len(encodedTx), len(compactBytes), reductionRate)
+
+	newTx := new(TxToken)
+	err = newTx.FromCompactBytes(compactBytes)
+	if err != nil {
+		panic(err)
+	}
+	if newTx.Hash().String() != tx.Hash().String() {
+		jsb1, _ := json.Marshal(tx)
+		jsb2, _ := json.Marshal(newTx)
+		fmt.Println(string(jsb1))
+		fmt.Println(string(jsb2))
+		panic(fmt.Sprintf("expected txHash %v, got %v", tx.Hash().String(), newTx.Hash().String()))
+	}
 }
 
 func testTxTokenV2DeletedProof(txv2 *TxToken, db *statedb.StateDB) {
@@ -220,8 +372,7 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	So(isValid, ShouldBeTrue)
 
 	// now instead of changing amount, we change the OTA public key
-	theProof := txn.GetProof()
-	outs = theProof.GetOutputCoins()
+	outs = txn.GetProof().GetOutputCoins()
 	tokenOutput, ok = outs[0].(*coin.CoinV2)
 	savedCoinBytes = tokenOutput.Bytes()
 	So(ok, ShouldBeTrue)
@@ -230,12 +381,9 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	newCoin, _, err := createUniqueOTACoinCA(payInf, &fakingTokenID, db)
 	So(err, ShouldBeNil)
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
-	theProofSpecific, ok := theProof.(*privacy.ProofV2)
-	theBulletProof, ok := theProofSpecific.GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
-	cmsv := theBulletProof.GetCommitments()
-	cmsv[0] = newCoin.GetCommitment()
+	txn.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = newCoin.GetCommitment()
 	outs[0] = newCoin
-	theProof.SetOutputCoins(outs)
+	txn.GetProof().SetOutputCoins(outs)
 	txv2.SetTxNormal(txn)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
 	So(err, ShouldBeNil)
@@ -246,8 +394,8 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	// undo the tampering
 	tokenOutput.SetBytes(savedCoinBytes)
 	outs[0] = tokenOutput
-	cmsv[0] = tokenOutput.GetCommitment()
-	theProof.SetOutputCoins(outs)
+	txn.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = tokenOutput.GetCommitment()
+	txn.GetProof().SetOutputCoins(outs)
 	txv2.SetTxNormal(txn)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
 	So(err, ShouldBeNil)
@@ -281,6 +429,8 @@ func testTxTokenV2OneDoubleSpentInput(pr *tx_generic.TxTokenParams, dbCoin priva
 	tx := &TxToken{}
 	err = tx.Init(pr)
 	So(err, ShouldBeNil)
+	tx, err = tx.startVerifyTx(db)
+	So(err, ShouldBeNil)
 	isValidSanity, err := tx.ValidateSanityData(nil, nil, nil, 0)
 	So(isValidSanity, ShouldBeTrue)
 	So(err, ShouldBeNil)
@@ -298,6 +448,8 @@ func testTxTokenV2OneDoubleSpentInput(pr *tx_generic.TxTokenParams, dbCoin priva
 	pr.TokenParams.TokenInput = []coin.PlainCoin{pc}
 	tx = &TxToken{}
 	err = tx.Init(pr)
+	So(err, ShouldBeNil)
+	tx, err = tx.startVerifyTx(db)
 	So(err, ShouldBeNil)
 	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
 	So(isValidSanity, ShouldBeTrue)
@@ -427,16 +579,24 @@ func resignUnprovenTxToken(decryptingKeys []*incognitokey.KeySet, txToken *TxTok
 		err = resignUnprovenTx(decryptingKeys, txn, paramsInner, nil, true)
 		txToken.SetTxNormal(txn)
 		txToken.Tx = *txOuter
-		return err
+		if err != nil {
+			return err
+		}
 	} else {
 		paramsOuter := nonPrivacyParams
 		err := resignUnprovenTx(decryptingKeys, txOuter, paramsOuter, &txToken.TokenData, false)
 		txToken.Tx = *txOuter
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
-	// txTokenDataHash, err := txToken.TxTokenData.Hash()
-
+	temp, err := txToken.startVerifyTx(params.TransactionStateDB)
+	if err != nil {
+		return err
+	}
+	*txToken = *temp
+	return nil
 }
 
 func createTokenTransferParams(inputCoins []privacy.Coin, db *statedb.StateDB, tokenID, tokenName, symbol string, keySet *incognitokey.KeySet) (*tx_generic.TxTokenParams, *tx_generic.TokenParam, error) {

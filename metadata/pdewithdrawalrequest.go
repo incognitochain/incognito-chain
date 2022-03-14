@@ -20,7 +20,6 @@ type PDEWithdrawalRequest struct {
 	MetadataBaseWithSignature
 }
 
-
 type PDEWithdrawalRequestAction struct {
 	Meta    PDEWithdrawalRequest
 	TxReqID common.Hash
@@ -133,4 +132,8 @@ func (pc *PDEWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever C
 
 func (pc *PDEWithdrawalRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
+}
+
+func (pc *PDEWithdrawalRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(pc)
 }

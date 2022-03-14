@@ -19,7 +19,7 @@ type PortalRedeemLiquidateExchangeRatesResponse struct {
 	RedeemAmount     uint64
 	Amount           uint64
 	TokenID          string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemLiquidateExchangeRatesResponse(
@@ -84,6 +84,9 @@ func (iRes *PortalRedeemLiquidateExchangeRatesResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *PortalRedeemLiquidateExchangeRatesResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
 
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *MintData,

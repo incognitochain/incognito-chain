@@ -17,7 +17,7 @@ type PortalCustodianWithdrawResponse struct {
 	ReqTxID        common.Hash
 	PaymentAddress string
 	Amount         uint64
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom   []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalCustodianWithdrawResponse(
@@ -70,6 +70,10 @@ func (responseMeta PortalCustodianWithdrawResponse) Hash() *common.Hash {
 
 func (responseMeta *PortalCustodianWithdrawResponse) CalculateSize() uint64 {
 	return calculateSize(responseMeta)
+}
+
+func (responseMeta *PortalCustodianWithdrawResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(responseMeta)
 }
 
 func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {

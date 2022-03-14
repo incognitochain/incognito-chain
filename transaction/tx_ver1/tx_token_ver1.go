@@ -320,3 +320,11 @@ func (tx *TxToken) UnmarshalJSON(data []byte) error {
 func (tx TxToken) ListOTAHashH() []common.Hash {
 	return []common.Hash{}
 }
+
+func (tx TxToken) ToCompactBytes() ([]byte, error) {
+	return json.Marshal(tx)
+}
+
+func (tx *TxToken) FromCompactBytes(data []byte) error {
+	return json.Unmarshal(data, &tx)
+}

@@ -77,3 +77,7 @@ func (expiredPortingReq PortalExpiredWaitingPortingReq) Hash() *common.Hash {
 func (expiredPortingReq *PortalExpiredWaitingPortingReq) CalculateSize() uint64 {
 	return calculateSize(expiredPortingReq)
 }
+
+func (expiredPortingReq *PortalExpiredWaitingPortingReq) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(expiredPortingReq)
+}

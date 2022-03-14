@@ -1,5 +1,7 @@
 package utils
 
+import "github.com/incognitochain/incognito-chain/common"
+
 const (
 	// txVersion is the current latest supported transaction version.
 	CurrentTxVersion                 = 2
@@ -31,3 +33,7 @@ const (
 	MaxOutcoinQueryInterval = 10000 // 1 day worth of blocks
 	OutcoinReindexerTimeout = 90    // seconds
 )
+
+var TxInfoPlaceHolder = common.SHA256([]byte("This is for the empty tx info"))[:8]
+
+const DefaultBytesSliceSize = 500000

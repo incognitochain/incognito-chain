@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type WithdrawLiquidityRequest struct {
@@ -140,6 +140,10 @@ func (request *WithdrawLiquidityRequest) Hash() *common.Hash {
 
 func (request *WithdrawLiquidityRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
+}
+
+func (request *WithdrawLiquidityRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(request)
 }
 
 func (request *WithdrawLiquidityRequest) MarshalJSON() ([]byte, error) {

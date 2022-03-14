@@ -83,6 +83,10 @@ func (iRes *PortalUnshieldResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *PortalUnshieldResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *MintData,
 	shardID byte, tx Transaction,

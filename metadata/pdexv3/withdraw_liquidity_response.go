@@ -89,6 +89,10 @@ func (response *WithdrawLiquidityResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
+func (response *WithdrawLiquidityResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(response)
+}
+
 func (response *WithdrawLiquidityResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Status  string `json:"Status"`

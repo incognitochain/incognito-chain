@@ -67,7 +67,7 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 			res = new(privacy.ProofForConversion)
 			res.Init()
 		} else {
-			return nil, errors.New("ParseProof: TxConversion version is incorrect")
+			return nil, errors.New("parseProof: TxConversion version is incorrect")
 		}
 	default:
 		switch ver {
@@ -77,7 +77,7 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 			res = new(privacy.ProofV2)
 			res.Init()
 		default:
-			return nil, errors.New("ParseProof: Tx.Version is incorrect")
+			return nil, errors.New("parseProof: Tx.Version is incorrect")
 		}
 	}
 

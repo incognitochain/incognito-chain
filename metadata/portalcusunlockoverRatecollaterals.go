@@ -125,3 +125,7 @@ func (portalUnlockCs *PortalUnlockOverRateCollaterals) BuildReqActions(tx Transa
 func (portalUnlockCs *PortalUnlockOverRateCollaterals) CalculateSize() uint64 {
 	return calculateSize(portalUnlockCs)
 }
+
+func (portalUnlockCs *PortalUnlockOverRateCollaterals) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(portalUnlockCs)
+}

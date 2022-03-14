@@ -206,9 +206,9 @@ func (custodianDeposit PortalCustodianDepositV3) Hash() *common.Hash {
 
 func (custodianDeposit *PortalCustodianDepositV3) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalCustodianDepositActionV3{
-		Meta:             *custodianDeposit,
-		TxReqID:          *tx.Hash(),
-		ShardID:          shardID,
+		Meta:    *custodianDeposit,
+		TxReqID: *tx.Hash(),
+		ShardID: shardID,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
@@ -221,6 +221,10 @@ func (custodianDeposit *PortalCustodianDepositV3) BuildReqActions(tx Transaction
 
 func (custodianDeposit *PortalCustodianDepositV3) CalculateSize() uint64 {
 	return calculateSize(custodianDeposit)
+}
+
+func (custodianDeposit *PortalCustodianDepositV3) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(custodianDeposit)
 }
 
 // ParseInfoFromLogMap parse info from log map

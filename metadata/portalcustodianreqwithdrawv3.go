@@ -66,7 +66,7 @@ func NewPortalCustodianWithdrawRequestV3(
 	cusIncAddress string,
 	cusExternalAddress string,
 	externalTokenID string,
-	amount uint64, ) (*PortalCustodianWithdrawRequestV3, error) {
+	amount uint64) (*PortalCustodianWithdrawRequestV3, error) {
 	portalCustodianWithdrawReq := &PortalCustodianWithdrawRequestV3{
 		MetadataBase: MetadataBase{
 			Type: metaType,
@@ -129,7 +129,7 @@ func (req PortalCustodianWithdrawRequestV3) ValidateSanityData(chainRetriever Ch
 
 	// validate remote address
 	if common.Has0xPrefix(req.CustodianExternalAddress) {
-			return false, false, errors.New("custodian request withdraw v3: external tokenID shouldn't have 0x prefix")
+		return false, false, errors.New("custodian request withdraw v3: external tokenID shouldn't have 0x prefix")
 	}
 	if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, req.ExternalTokenID, req.CustodianExternalAddress); !isValid || err != nil {
 		return false, false, errors.New("custodian request withdraw v3: custodian external address is invalid")
@@ -171,4 +171,8 @@ func (req *PortalCustodianWithdrawRequestV3) BuildReqActions(tx Transaction, cha
 
 func (req *PortalCustodianWithdrawRequestV3) CalculateSize() uint64 {
 	return calculateSize(req)
+}
+
+func (req *PortalCustodianWithdrawRequestV3) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(req)
 }

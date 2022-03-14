@@ -19,7 +19,7 @@ type PortalWithdrawRewardResponse struct {
 	TokenID             common.Hash
 	RewardAmount        uint64
 	TxReqID             common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom        []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalWithdrawRewardResponse(
@@ -73,6 +73,10 @@ func (iRes PortalWithdrawRewardResponse) Hash() *common.Hash {
 
 func (iRes *PortalWithdrawRewardResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalWithdrawRewardResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes PortalWithdrawRewardResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {

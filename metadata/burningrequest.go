@@ -154,3 +154,7 @@ func (bReq *BurningRequest) BuildReqActions(tx Transaction, chainRetriever Chain
 func (bReq *BurningRequest) CalculateSize() uint64 {
 	return calculateSize(bReq)
 }
+
+func (bReq *BurningRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(bReq)
+}

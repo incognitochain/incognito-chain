@@ -66,10 +66,14 @@ func (iRes *PDECrossPoolTradeResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *PDECrossPoolTradeResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 
-	for i, inst := range mintData.Insts  {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDETradeRequest or PDECrossPoolTradeRequestMeta instruction
 			continue
 		}

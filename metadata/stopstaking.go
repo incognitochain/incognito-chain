@@ -35,8 +35,8 @@ func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) 
 	}
 	metadataBase := NewMetadataBaseWithSignature(stopStakingType)
 	return &StopAutoStakingMetadata{
-		MetadataBaseWithSignature:       *metadataBase,
-		CommitteePublicKey: committeePublicKey,
+		MetadataBaseWithSignature: *metadataBase,
+		CommitteePublicKey:        committeePublicKey,
 	}, nil
 }
 
@@ -141,4 +141,8 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) GetType() int {
 
 func (stopAutoStakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stopAutoStakingMetadata)
+}
+
+func (stopAutoStakingMetadata *StopAutoStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(stopAutoStakingMetadata)
 }

@@ -268,3 +268,7 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever Chain
 func (iReq *IssuingRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }
+
+func (iReq *IssuingRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iReq)
+}

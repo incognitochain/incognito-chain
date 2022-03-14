@@ -17,7 +17,7 @@ type PortalLiquidationCustodianDepositResponseV2 struct {
 	ReqTxID          common.Hash
 	CustodianAddrStr string
 	DepositedAmount  uint64
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalLiquidationCustodianDepositResponseV2(
@@ -74,6 +74,10 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) Hash() *common.Hash {
 
 func (iRes *PortalLiquidationCustodianDepositResponseV2) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalLiquidationCustodianDepositResponseV2) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBeforeGettingInBlock(

@@ -1,7 +1,7 @@
 package tx_generic //nolint:revive
 
 import (
-	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -75,7 +75,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		return
 	}
 	if lenCommitment == nil {
-		utils.Logger.Log.Error(errors.New("Commitments is empty"))
+		utils.Logger.Log.Error(fmt.Errorf("commitments is empty"))
 		return
 	}
 	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {
@@ -324,7 +324,7 @@ func ParseTokenID(tokenID *common.Hash) (*common.Hash, error) {
 func VerifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (bool, error) {
 	// check input transaction
 	if sig == nil || sigPubKey == nil {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an signed one"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("transaction input must be signed"))
 	}
 
 	var err error
@@ -347,12 +347,6 @@ func VerifySigNoPrivacy(sig []byte, sigPubKey []byte, hashedMessage []byte) (boo
 		return false, utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
 	}
 
-	// verify signature
-	/*utils.Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	if tx.Proof != nil {
-		utils.Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	}
-	utils.Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res := verifyKey.Verify(signature, hashedMessage)
 	return res, nil
 }

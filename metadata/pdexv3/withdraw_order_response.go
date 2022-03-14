@@ -42,8 +42,8 @@ func (md AcceptedWithdrawOrder) GetStatus() int {
 }
 
 type RejectedWithdrawOrder struct {
-	PoolPairID string              `json:"PoolPairID"`
-	OrderID    string              `json:"OrderID"`
+	PoolPairID string `json:"PoolPairID"`
+	OrderID    string `json:"OrderID"`
 }
 
 func (md RejectedWithdrawOrder) GetType() int {
@@ -124,4 +124,8 @@ func (res WithdrawOrderResponse) Hash() *common.Hash {
 
 func (res *WithdrawOrderResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(res)
+}
+
+func (res *WithdrawOrderResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(res)
 }
