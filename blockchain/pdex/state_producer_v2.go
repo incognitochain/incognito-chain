@@ -924,7 +924,9 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	for pairID, pair := range pairs {
+	pairIDs := getSortedPoolPairIDs(pairs)
+	for _, pairID := range pairIDs {
+		pair := pairs[pairID] // no need to check found sorted from poolPairs list before
 		for _, ord := range pair.orderbook.orders {
 			temp := &v2utils.MatchingOrder{ord}
 			// check if this order can be matched any further
@@ -1000,8 +1002,12 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 ) ([][]string, map[string]*PoolPairState, error) {
 	res := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	for poolPairID, poolPair := range poolPairs {
-		for accessID, orderReward := range poolPair.orderRewards {
+	poolPairIDs := getSortedPoolPairIDs(poolPairs)
+	for _, poolPairID := range poolPairIDs {
+		poolPair := poolPairs[poolPairID] // no need to check found sorted from poolPairs list before
+		accessIDs := getSortedOrderRewardAccessIDs(poolPair.orderRewards)
+		for _, accessID := range accessIDs {
+			orderReward := poolPair.orderRewards[accessID] // no need to check found sorted from poolPairs list before
 			if orderReward.withdrawnStatus == WithdrawnOrderReward {
 				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 				var shardID byte
