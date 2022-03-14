@@ -63,9 +63,9 @@ func (request *ModifyListToken) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
-	/*if ok, err := request.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {*/
-	/*return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Sender is unauthorized"))*/
-	/*}*/
+	if ok, err := request.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Sender is unauthorized"))
+	}
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
@@ -113,7 +113,7 @@ func (request *ModifyListToken) Hash() *common.Hash {
 
 func (request *ModifyListToken) HashWithoutSig() *common.Hash {
 	record := request.MetadataBaseWithSignature.Hash().String()
-	contentBytes, _ := json.Marshal(request)
+	contentBytes, _ := json.Marshal(request.NewListTokens)
 	hashParams := common.HashH(contentBytes)
 	record += hashParams.String()
 
