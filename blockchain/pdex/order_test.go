@@ -166,7 +166,7 @@ func TestAutoWithdraw(t *testing.T) {
 				DefaultFeeRateBPS: 30,
 			})
 
-			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
+			instructions, _, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
 			NoError(t, err)
 			Equal(t, expected, TestResult{instructions})
 		})

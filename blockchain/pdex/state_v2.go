@@ -394,7 +394,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, tradeInstructions...)
 
 	var matchedWithdrawInstructions [][]string
-	matchedWithdrawInstructions, s.poolPairs, err = s.producer.withdrawAllMatchedOrders(
+	sortedPairIDs := []string{}
+	matchedWithdrawInstructions, s.poolPairs, sortedPairIDs, err = s.producer.withdrawAllMatchedOrders(
 		s.poolPairs, s.params.AutoWithdrawOrderLimitAmount,
 	)
 	if err != nil {
@@ -500,7 +501,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	if env.Reward() > 0 {
 		withdrawOrderRewardInstructions := [][]string{}
 		withdrawOrderRewardInstructions, s.poolPairs, err = s.producer.withdrawPendingOrderRewards(
-			s.poolPairs, s.params.AutoWithdrawOrderRewardLimitAmount,
+			s.poolPairs, s.params.AutoWithdrawOrderRewardLimitAmount, sortedPairIDs,
 		)
 		instructions = append(instructions, withdrawOrderRewardInstructions...)
 	}

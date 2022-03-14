@@ -921,7 +921,7 @@ TransactionLoop:
 
 func (sp *stateProducerV2) withdrawAllMatchedOrders(
 	pairs map[string]*PoolPairState, limitTxsPerShard uint,
-) ([][]string, map[string]*PoolPairState, error) {
+) ([][]string, map[string]*PoolPairState, []string, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
 	pairIDs := getSortedPoolPairIDs(pairs)
@@ -994,16 +994,15 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 	}
 
 	Logger.log.Warnf("WithdrawAllMatchedOrder instructions: %v", result)
-	return result, pairs, nil
+	return result, pairs, pairIDs, nil
 }
 
 func (sp *stateProducerV2) withdrawPendingOrderRewards(
-	poolPairs map[string]*PoolPairState, limitTxsPerShard uint,
+	poolPairs map[string]*PoolPairState, limitTxsPerShard uint, sortedPairIDs []string,
 ) ([][]string, map[string]*PoolPairState, error) {
 	res := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	poolPairIDs := getSortedPoolPairIDs(poolPairs)
-	for _, poolPairID := range poolPairIDs {
+	for _, poolPairID := range sortedPairIDs {
 		poolPair := poolPairs[poolPairID] // no need to check found sorted from poolPairs list before
 		accessIDs := getSortedOrderRewardAccessIDs(poolPair.orderRewards)
 		for _, accessID := range accessIDs {
