@@ -38,7 +38,7 @@ func TestPedersenCommitAtIndex(t *testing.T) {
 			commitment := PedCom.CommitAtIndex(item.value, item.rand, item.index)
 			expectedCm := new(Point).ScalarMult(PedCom.G[item.index], item.value)
 			expectedCm.Add(expectedCm, new(Point).ScalarMult(PedCom.G[PedersenRandomnessIndex], item.rand))
-			assert.Equal(t, expectedCm, commitment)
+			assert.True(t, IsPointEqual(expectedCm, commitment))
 		}
 	}
 }
