@@ -1188,7 +1188,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	storeBlock := newFinalView.GetBlock()
-	blockchain.ShardChain[shardID].blkManager.MarkFinalized(storeBlock.GetHeight())
+	blockchain.ShardChain[shardID].blkManager.MarkFinalized(storeBlock.GetHeight(), *storeBlock.Hash())
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {

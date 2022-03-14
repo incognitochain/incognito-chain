@@ -31,6 +31,7 @@ type BlockService interface {
 	)
 	MarkFinalized(
 		height uint64,
+		hash common.Hash,
 	)
 	CheckBlockByHash(
 		hash *common.Hash,
@@ -198,7 +199,21 @@ func (blkM *BlockManager) StoreBlock(
 
 func (blkM *BlockManager) MarkFinalized(
 	blkHeight uint64,
+	blkHash common.Hash,
 ) {
+	curFinalHeight := blkM.finalHeight
+	blkM.locker.Lock()
+	for height := blkHeight; height >= curFinalHeight; height-- {
+		pHash, ok := blkM.prevHashByHash[blkHash]
+		needToRemove := blkM.hashByHeight[height]
+		for _, hash := range needToRemove {
+			delete(blkM.prevHashByHash, hash)
+		}
+		if ok {
+			blkHash = pHash
+		}
+	}
+	blkM.locker.Unlock()
 	blkM.finalHeight = blkHeight
 }
 

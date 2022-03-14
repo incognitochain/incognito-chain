@@ -165,6 +165,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
@@ -176,6 +177,8 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
 		}
@@ -216,6 +219,9 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			}
 		}
 		newStateRoot, _ := newState.IntermediateRoot(true)
+		newState.db.TrieDB().Reference(newStateRoot, common.Hash{})
+		newState.batchCommitConfig.triegc.Push(newStateRoot, -rebuildFFIndex)
+
 		if err != nil {
 			return nil, err
 		}
@@ -382,6 +388,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 
 		//if force write (stop node) or reach #commit threshold => write to disk
 		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
+		pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
 		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
 			//write the current roothash commit nodes to disk
 			rootHash := stateDB.curRebuildInfo.rebuildRootHash
@@ -402,7 +409,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 					batchCommitConfig.triegc.Push(oldRootHash, number)
 					break
 				}
-				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v, deref block %+v", stateDB.dbName, finalViewIndex, number)
+				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v,pivot %v, deref block %+v", stateDB.dbName, finalViewIndex, pivotFFIndex, number)
 				trieDB.Dereference(oldRootHash.(common.Hash))
 			}
 		}
@@ -501,10 +508,8 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 		}
 
 	case common.STATEDB_LITE_MODE:
-		fmt.Println("=======================> commit lite", len(stateDB.liteStateDB.headStateNode.stateObjects), stateDB.curRebuildInfo)
 		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				fmt.Println("=======================> previousLink nil", stateDB.liteStateDB.headStateNode.aggregateHash)
 				return stateDB.curRebuildInfo.rebuildRootHash, NewRebuildInfo(common.STATEDB_LITE_MODE, stateDB.curRebuildInfo.rebuildRootHash,
 					stateDB.curRebuildInfo.pivotRootHash, stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex), nil
 			}

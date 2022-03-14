@@ -88,7 +88,7 @@ func NewBlockChain(isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
-	bc.beaconViewCache, _ = lru.New(400)
+	bc.beaconViewCache, _ = lru.New(50)
 	bc.cQuitSync = make(chan struct{})
 	return bc
 }
@@ -104,8 +104,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
-	blockchain.beaconViewCache, _ = lru.New(400)
-	blockchain.committeeByEpochCache, _ = lru.New(2000)
+	blockchain.beaconViewCache, _ = lru.New(50)
+	blockchain.committeeByEpochCache, _ = lru.New(50)
 	err := wallet.InitPublicKeyBurningAddressByte()
 	if err != nil {
 		Logger.log.Error(err)
@@ -376,7 +376,6 @@ func (bc *BlockChain) Stop() {
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
 		for i, shardChain := range bc.ShardChain {
 			bc.ShardChain[i].insertLock.Lock()
-			defer bc.ShardChain[i].insertLock.Unlock()
 			shardBestState := shardChain.GetBestState()
 			shardID := shardBestState.ShardID
 			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
@@ -386,9 +385,9 @@ func (bc *BlockChain) Stop() {
 				if err != nil {
 					Logger.log.Error("Cannot write current stateDB to disk")
 				}
+				break
 			}
 		}
-
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
 	}
 }
