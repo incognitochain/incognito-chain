@@ -77,6 +77,7 @@ var MainnetParam = &param{
 		"PortalV3":       0,
 		"PortalV4":       4079,
 	},
+	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 10000000,
 	TxPoolVersion:              0,
 	BSCParam: bscParam{
@@ -157,6 +158,7 @@ var Testnet1Param = &param{
 		"PortalV3":       0,
 		"PortalV4":       1,
 	},
+	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{
@@ -238,6 +240,7 @@ var Tesnet2Param = &param{
 		"PortalV3":       0,
 		"PortalV4":       30225,
 	},
+	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{

@@ -285,6 +285,7 @@ func (serverObj *Server) NewServer(
 			OnBFTMsg:     serverObj.OnBFTMsg,
 			OnPeerState:  serverObj.OnPeerState,
 			OnFinishSync: serverObj.OnFinishSync,
+			OnFeatureMsg: serverObj.OnFeatureMsg,
 		},
 		BC: serverObj.blockChain,
 	}
@@ -951,6 +952,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnPeerState: serverObj.OnPeerState,
 			//
 			OnFinishSync:         serverObj.OnFinishSync,
+			OnFeatureMsg:         serverObj.OnFeatureMsg,
 			PushRawBytesToShard:  serverObj.PushRawBytesToShard,
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
@@ -975,6 +977,11 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 	if len(msg.CommitteePublicKey) > 0 {
 		serverObj.blockChain.AddFinishedSyncValidators(msg.CommitteePublicKey, msg.Signature, msg.ShardID)
 	}
+}
+
+//OnFeatureMsg handle feature message
+func (serverObj *Server) OnFeatureMsg(p *peer.PeerConn, msg *wire.MessageFeature) {
+	blockchain.DefaultFeatureStat.ReceiveMsg(msg)
 }
 
 // OnBlock is invoked when a peer receives a block message.  It

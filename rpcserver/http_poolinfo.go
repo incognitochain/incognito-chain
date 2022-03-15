@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,6 +10,11 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
+
+func (httpServer *HttpServer) hanldeGetFeatureStats(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	result := blockchain.DefaultFeatureStat.Report(httpServer.config.BlockChain.GetBeaconBestState())
+	return result, nil
+}
 
 func (httpServer *HttpServer) hanldeGetSyncStats(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	stats := httpServer.synkerService.GetSyncStats()

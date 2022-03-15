@@ -47,9 +47,10 @@ func NewStakerInfoSlashingVersion(committeePublicKey string, s *StakerInfo) *Sta
 }
 
 type StakerInfo struct {
-	rewardReceiver key.PaymentAddress
-	txStakingID    common.Hash
-	autoStaking    bool
+	rewardReceiver      key.PaymentAddress
+	txStakingID         common.Hash
+	autoStaking         bool
+	beaconConfirmHeight uint64
 }
 
 func NewStakerInfo() *StakerInfo {
@@ -60,25 +61,29 @@ func NewStakerInfoWithValue(
 	rewardReceiver key.PaymentAddress,
 	autoStaking bool,
 	txStakingID common.Hash,
+	beaconConfirmHeight uint64,
 ) *StakerInfo {
 	return &StakerInfo{
-		rewardReceiver: rewardReceiver,
-		autoStaking:    autoStaking,
-		txStakingID:    txStakingID,
+		rewardReceiver:      rewardReceiver,
+		autoStaking:         autoStaking,
+		txStakingID:         txStakingID,
+		beaconConfirmHeight: beaconConfirmHeight,
 	}
 }
 
 func (c StakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		RewardReceiver key.PaymentAddress
-		AutoStaking    bool
-		TxStakingID    common.Hash
-		ShardID        byte
-		NumberOfRound  int
+		RewardReceiver      key.PaymentAddress
+		AutoStaking         bool
+		TxStakingID         common.Hash
+		ShardID             byte
+		NumberOfRound       int
+		BeaconConfirmHeight uint64
 	}{
-		RewardReceiver: c.rewardReceiver,
-		TxStakingID:    c.txStakingID,
-		AutoStaking:    c.autoStaking,
+		RewardReceiver:      c.rewardReceiver,
+		TxStakingID:         c.txStakingID,
+		AutoStaking:         c.autoStaking,
+		BeaconConfirmHeight: c.beaconConfirmHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -88,11 +93,12 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 
 func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		RewardReceiver key.PaymentAddress
-		AutoStaking    bool
-		TxStakingID    common.Hash
-		ShardID        byte
-		NumberOfRound  int
+		RewardReceiver      key.PaymentAddress
+		AutoStaking         bool
+		TxStakingID         common.Hash
+		ShardID             byte
+		NumberOfRound       int
+		BeaconConfirmHeight uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -101,6 +107,7 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	c.txStakingID = temp.TxStakingID
 	c.rewardReceiver = temp.RewardReceiver
 	c.autoStaking = temp.AutoStaking
+	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	return nil
 }
 
@@ -126,6 +133,10 @@ func (s StakerInfo) TxStakingID() common.Hash {
 
 func (s StakerInfo) AutoStaking() bool {
 	return s.autoStaking
+}
+
+func (s StakerInfo) BeaconConfirmHeight() uint64 {
+	return s.beaconConfirmHeight
 }
 
 type StakerObject struct {
