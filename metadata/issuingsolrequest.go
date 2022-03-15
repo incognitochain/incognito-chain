@@ -241,7 +241,7 @@ func (iReq *IssuingSOLRequest) verifyAndParseSolTxSig() (*ShieldInfo, error) {
 	}
 
 	// check instruction tag (the first byte)
-	if instData[0] != SolShieldInstTag {
+	if instData[0] != SolShieldInstTag && instData[0] != SolWithdrawReqInstTag {
 		return nil, NewMetadataTxError(IssuingSolReqVerifyAndParseTxError, errors.New("Invalid shielding instruction tag"))
 	}
 
