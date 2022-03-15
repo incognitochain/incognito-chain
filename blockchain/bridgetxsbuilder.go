@@ -155,7 +155,11 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 
 	incTokenID := md.IncTokenID
 	if metaType == metadataCommon.IssuingUnifiedTokenRequestMeta {
-		//TODO: get info from networkID
+		listTxUsed, contractAddress, prefix, isTxHashIssued, incTokenID, err = beaconBestState.bridgeAggState.GetShieldInfo(ac, md)
+		if err != nil {
+			Logger.log.Warn("WARNING: Can get info from networkID: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
 	}
 
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -255,6 +259,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		TxReqID:         issuingEVMBridgeReqAction.TxReqID,
 		UniqTx:          uniqTx,
 		ExternalTokenID: token,
+		NetworkdID:      md.NetworkdID,
 	}
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {

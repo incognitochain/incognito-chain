@@ -84,6 +84,63 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (v *Vault) Convert(amount uint64) {
-	v.SetReserve(v.Reserve() + amount)
+func (v *Vault) decreaseCurrentRewardReserve(amount uint64) error {
+	temp := v.CurrentRewardReserve() - amount
+	if temp > v.CurrentRewardReserve() {
+		return errors.New("decrease out of range uint64")
+	}
+	v.SetCurrentRewardReserve(temp)
+	return nil
+}
+
+func (v *Vault) decreaseReserve(amount uint64) error {
+	temp := v.Reserve() - amount
+	if temp > v.Reserve() {
+		return errors.New("decrease out of range uint64")
+	}
+	v.SetReserve(temp)
+	return nil
+}
+
+func (v *Vault) increaseCurrentRewardReserve(amount uint64) error {
+	temp := v.CurrentRewardReserve() + amount
+	if temp < v.CurrentRewardReserve() {
+		return errors.New("increase out of range uint64")
+	}
+	v.SetCurrentRewardReserve(temp)
+	return nil
+}
+
+func (v *Vault) increaseReserve(amount uint64) error {
+	temp := v.Reserve() + amount
+	if temp < v.Reserve() {
+		return errors.New("increase out of range uint64")
+	}
+	v.SetReserve(temp)
+	return nil
+}
+
+func (v *Vault) convert(amount uint64) error {
+	return v.increaseReserve(amount)
+}
+
+func (v *Vault) shield(amount uint64) (uint64, error) {
+	var res uint64
+	actualAmount, err := CalculateRewardByAmount(v.Reserve(), v.CurrentRewardReserve(), amount, AddOperator)
+	if err != nil {
+		return 0, err
+	}
+	err = v.decreaseCurrentRewardReserve(actualAmount - amount)
+	if err != nil {
+		return 0, err
+	}
+	err = v.increaseReserve(amount)
+	if err != nil {
+		return 0, err
+	}
+	return res, nil
+}
+
+func (v *Vault) unshield(amount uint64) error {
+	return nil
 }

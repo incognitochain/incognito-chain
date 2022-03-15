@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
@@ -41,6 +42,9 @@ func (sp *stateProcessor) modifyListTokens(
 			for _, vault := range vaults {
 				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
 					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVault()
+				} else {
+					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].SetLastUpdatedRewardReserve(vault.RewardReserve)
+					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].SetCurrentRewardReserve(vault.RewardReserve)
 				}
 			}
 		}
@@ -61,13 +65,12 @@ func (sp *stateProcessor) modifyListTokens(
 		ErrorCode: errorCode,
 	}
 	contentBytes, _ := json.Marshal(modifyListTokenStatus)
-	err := statedb.TrackBridgeAggStatus(
+	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggListTokenModifyingStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)
-	return unifiedTokenInfos, err
 }
 
 func (sp *stateProcessor) convert(
@@ -91,13 +94,13 @@ func (sp *stateProcessor) convert(
 		}
 		if vaults, found := unifiedTokenInfos[acceptedInst.UnifiedTokenID]; found {
 			if vault, found := vaults[acceptedInst.NetworkID]; found {
-				vault.Convert(acceptedInst.Amount)
+				vault.convert(acceptedInst.Amount)
 				unifiedTokenInfos[acceptedInst.UnifiedTokenID][acceptedInst.NetworkID] = vault
 			} else {
-				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetwork, err)
+				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 			}
 		} else {
-			return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetwork, err)
+			return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
@@ -119,6 +122,59 @@ func (sp *stateProcessor) convert(
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggConvertStatusPrefix(),
+		txReqID.Bytes(),
+		contentBytes,
+	)
+}
+
+func (sp *stateProcessor) shield(
+	inst metadataCommon.Instruction,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	sDB *statedb.StateDB,
+) (map[common.Hash]map[uint]*Vault, error) {
+	var status byte
+	var txReqID common.Hash
+	var errorCode uint
+	switch inst.Status {
+	case common.AcceptedStatusStr:
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		acceptedInst := metadata.IssuingEVMAcceptedInst{}
+		err = json.Unmarshal(contentBytes, &acceptedInst)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		vault := unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkdID] // check available before
+		err = vault.decreaseCurrentRewardReserve(acceptedInst.Reward)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		err = vault.increaseReserve(acceptedInst.IssuingAmount - acceptedInst.Reward)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		txReqID = acceptedInst.TxReqID
+		status = common.AcceptedStatusByte
+	case common.RejectedStatusStr:
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			return unifiedTokenInfos, err
+		}
+		txReqID = rejectContent.TxReqID
+		status = common.RejectedStatusByte
+	default:
+		return unifiedTokenInfos, errors.New("Can not recognize status")
+	}
+	shieldStatus := ShieldStatus{
+		Status:    status,
+		ErrorCode: errorCode,
+	}
+	contentBytes, _ := json.Marshal(shieldStatus)
+	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggListShieldStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)

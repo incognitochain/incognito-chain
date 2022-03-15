@@ -64,7 +64,7 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		NewList map[common.Hash][]statedb.BridgeAggConvertedTokenState `json:"NewList"`
+		NewList map[common.Hash][]metadataBridgeAgg.Vault `json:"NewList"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -372,24 +372,6 @@ func (httpServer *HttpServer) handleBridgeAggUnshield(params interface{}, closeC
 	return sendCreatedTransaction(httpServer, createTxResult, false, closeChan)
 }
 
-func (httpServer *HttpServer) handleBridgeAggUpdateRewardVaults(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var res interface{}
-	data, err := httpServer.createBridgeAggModifyListTokensTransaction(params)
-	if err != nil {
-		return nil, err
-	}
-
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	res, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-	return res, nil
-}
-
 func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
@@ -422,37 +404,6 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 }
 
 func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	// read txID
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Incorrect parameter length"))
-	}
-	s, ok := arrayParams[0].(string)
-	txID, err := common.Hash{}.NewHashFromStr(s)
-	if !ok || err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Invalid TxID from parameters"))
-	}
-	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
-
-	data, err := statedb.GetBridgeAggStatus(
-		sDB,
-		statedb.BridgeAggConvertStatusPrefix(),
-		txID.Bytes(),
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	var res json.RawMessage
-	err = json.Unmarshal(data, &res)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	return res, nil
-}
-
-func (httpServer *HttpServer) handleGetBridgeAggUpdateRewardVaultsStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {

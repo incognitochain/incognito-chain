@@ -8,19 +8,25 @@ import (
 
 const (
 	OtherError = iota
-	NotFoundTokenIDInNetwork
-	NotFoundNetworkID
-	FailToBuildModifyListToken
+	NotFoundTokenIDInNetworkError
+	NotFoundNetworkIDError
+	InvalidRewardReserveError
+	CalculateShieldAmountError
+	InvalidConvertAmountError
+	FailToBuildModifyListTokenError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    uint
 	Message string
 }{
-	OtherError:                 {1, "Not found token id in network"},
-	NotFoundTokenIDInNetwork:   {1000, "Not found token id in network"},
-	NotFoundNetworkID:          {1001, "Not found networkID"},
-	FailToBuildModifyListToken: {1100, "Fail to build modify list token instruction"},
+	OtherError:                      {1, "Not found token id in network"},
+	NotFoundTokenIDInNetworkError:   {1000, "Not found token id in network"},
+	NotFoundNetworkIDError:          {1001, "Not found networkID"},
+	InvalidRewardReserveError:       {1003, "Invalid reward reserve"},
+	CalculateShieldAmountError:      {1004, "Calculate shield amount"},
+	InvalidConvertAmountError:       {1004, "Invalid convert amount"},
+	FailToBuildModifyListTokenError: {1100, "Fail to build modify list token instruction"},
 }
 
 type BridgeAggError struct {

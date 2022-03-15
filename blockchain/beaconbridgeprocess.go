@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -44,6 +45,8 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
 		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
+		case strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):

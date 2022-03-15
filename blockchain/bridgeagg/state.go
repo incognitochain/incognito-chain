@@ -5,9 +5,12 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type State struct {
@@ -57,20 +60,25 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		inst := []string{}
 		inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs())
 		if err != nil {
-			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListToken, err)
+			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 		}
 		res = append(res, inst)
 	}
 
-	/*for _, action := range env.ShieldActions() {*/
-
-	/*}*/
+	for _, action := range env.ShieldActions() {
+		inst := []string{}
+		inst, s.unifiedTokenInfos, err = s.producer.shield(action, s.unifiedTokenInfos)
+		if err != nil {
+			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+		}
+		res = append(res, inst)
+	}
 
 	for _, action := range env.ModifyListTokensActions() {
 		inst := []string{}
 		inst, s.unifiedTokenInfos, err = s.producer.modifyListTokens(action, s.unifiedTokenInfos, env.StateDBs())
 		if err != nil {
-			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListToken, err)
+			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 		}
 		res = append(res, inst)
 	}
@@ -102,6 +110,11 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 			}
 		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 			s.unifiedTokenInfos, err = s.processor.convert(*inst, s.unifiedTokenInfos, sDB)
+			if err != nil {
+				return err
+			}
+		case metadataCommon.IssuingUnifiedTokenRequestMeta:
+			s.unifiedTokenInfos, err = s.processor.shield(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
 			}
@@ -190,4 +203,47 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 		}
 	}
 	return res, stateChange, nil
+}
+
+func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.IssuingEVMRequest) (
+	[][]byte, string, string, func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error), common.Hash, error,
+) {
+	var listTxUsed [][]byte
+	var contractAddress, prefix string
+	var isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
+	var tokenID common.Hash
+
+	switch md.NetworkdID {
+	case common.ETHNetworkID:
+		listTxUsed = ac.UniqETHTxsUsed
+		contractAddress = config.Param().EthContractAddressStr
+		prefix = utils.EmptyString
+		isTxHashIssued = statedb.IsETHTxHashIssued
+	case common.BSCNetworkID:
+		listTxUsed = ac.UniqBSCTxsUsed
+		contractAddress = config.Param().BscContractAddressStr
+		prefix = common.BSCPrefix
+		isTxHashIssued = statedb.IsBSCTxHashIssued
+	case common.PLGNetworkID:
+		listTxUsed = ac.UniqPLGTxsUsed
+		contractAddress = config.Param().PlgContractAddressStr
+		prefix = common.PLGPrefix
+		isTxHashIssued = statedb.IsPLGTxHashIssued
+	case common.DefaultNetworkID:
+		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, errors.New("Cannot get info from default networkID")
+	default:
+		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, errors.New("Cannot detect networkID")
+	}
+
+	if vaults, found := s.unifiedTokenInfos[md.IncTokenID]; found {
+		if vault, found := vaults[md.NetworkdID]; found {
+			tokenID = vault.tokenID
+		} else {
+			return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Not found networkID"))
+		}
+	} else {
+		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, errors.New("Not found unifiedTokenID"))
+	}
+
+	return listTxUsed, contractAddress, prefix, isTxHashIssued, tokenID, nil
 }

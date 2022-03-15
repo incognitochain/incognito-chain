@@ -11,9 +11,14 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+type Vault struct {
+	statedb.BridgeAggConvertedTokenState
+	RewardReserve uint64 `json:"RewardReserve"`
+}
+
 type ModifyListToken struct {
 	metadataCommon.MetadataBaseWithSignature
-	NewListTokens map[common.Hash][]statedb.BridgeAggConvertedTokenState `json:"NewListTokens"` // unifiedTokenID -> list tokenID
+	NewListTokens map[common.Hash][]Vault `json:"NewListTokens"` // unifiedTokenID -> list tokenID
 }
 
 type AcceptedModifyListToken struct {
@@ -26,7 +31,7 @@ func NewModifyListToken() *ModifyListToken {
 }
 
 func NewModifyListTokenWithValue(
-	newListTokens map[common.Hash][]statedb.BridgeAggConvertedTokenState,
+	newListTokens map[common.Hash][]Vault,
 ) *ModifyListToken {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metadataCommon.BridgeAggModifyListTokenMeta)
 	request := &ModifyListToken{}
@@ -77,16 +82,16 @@ func (request *ModifyListToken) ValidateSanityData(
 	}
 
 	usedTokenIDs := make(map[common.Hash]bool)
-	for unifiedTokenID, convertTokens := range request.NewListTokens {
+	for unifiedTokenID, vaults := range request.NewListTokens {
 		if usedTokenIDs[unifiedTokenID] {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
 		}
 		usedTokenIDs[unifiedTokenID] = true
-		for _, convertedToken := range convertTokens {
-			if usedTokenIDs[convertedToken.TokenID()] {
+		for _, vault := range vaults {
+			if usedTokenIDs[vault.TokenID()] {
 				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
 			}
-			usedTokenIDs[convertedToken.TokenID()] = true
+			usedTokenIDs[vault.TokenID()] = true
 		}
 	}
 

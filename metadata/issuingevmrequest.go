@@ -46,6 +46,8 @@ type IssuingEVMAcceptedInst struct {
 	TxReqID         common.Hash `json:"txReqId"`
 	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
 	ExternalTokenID []byte      `json:"externalTokenId"`
+	NetworkdID      uint        `json:"networkID,omitempty"`
+	Reward          uint64      `json:"reward,omitempty"`
 }
 
 type GetEVMHeaderByHashRes struct {
