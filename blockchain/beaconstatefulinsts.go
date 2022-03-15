@@ -167,6 +167,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	shieldActions := []string{}
 	convertActions := []string{}
 	modifyListTokensActions := []string{}
+	updateRewardReserveActions := []string{}
 	var sDBs map[int]*statedb.StateDB
 
 	for _, value := range keys {
@@ -389,6 +390,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildModifyListTokenActions(modifyListTokensActions).
 		BuildShieldActions(shieldActions).
 		BuildUnshieldActions(unshieldActions).
+		BuildUnshieldActions(updateRewardReserveActions).
 		BuildStateDBs(sDBs).
 		Build()
 	bridgeAggInsts, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)

@@ -3,6 +3,7 @@ package bridgeagg
 import "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 type StateEnvBuilder interface {
+	BuildUpdateRewardReserveActions([]string) StateEnvBuilder
 	BuildUnshieldActions([]string) StateEnvBuilder
 	BuildShieldActions([]string) StateEnvBuilder
 	BuildConvertActions([]string) StateEnvBuilder
@@ -16,11 +17,17 @@ func NewStateEnvBuilder() StateEnvBuilder {
 }
 
 type stateEnvironment struct {
-	unshieldActions         []string
-	shieldActions           []string
-	convertActions          []string
-	modifyListTokensActions []string
-	stateDBs                map[int]*statedb.StateDB
+	updateRewardReserveActions []string
+	unshieldActions            []string
+	shieldActions              []string
+	convertActions             []string
+	modifyListTokensActions    []string
+	stateDBs                   map[int]*statedb.StateDB
+}
+
+func (env *stateEnvironment) BuildUpdateRewardReserveActions(actions []string) StateEnvBuilder {
+	env.updateRewardReserveActions = actions
+	return env
 }
 
 func (env *stateEnvironment) BuildUnshieldActions(actions []string) StateEnvBuilder {
@@ -53,11 +60,16 @@ func (env *stateEnvironment) Build() StateEnvironment {
 }
 
 type StateEnvironment interface {
+	UpdateRewardReserveActions() []string
 	UnshieldActions() []string
 	ShieldActions() []string
 	ConvertActions() []string
 	ModifyListTokensActions() []string
 	StateDBs() map[int]*statedb.StateDB
+}
+
+func (env *stateEnvironment) UpdateRewardReserveActions() []string {
+	return env.updateRewardReserveActions
 }
 
 func (env *stateEnvironment) UnshieldActions() []string {
