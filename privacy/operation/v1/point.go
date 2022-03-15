@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"time"
 
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/v1/curve25519"
 )
@@ -145,7 +144,6 @@ func (p Point) IsIdentity() bool {
 
 // does a * G where a is a scalar and G is the curve basepoint
 func (p *Point) ScalarMultBase(a *Scalar) *Point {
-	// fmt.Printf("Call mult-base\n")
 	if p == nil {
 		p = new(Point)
 	}
@@ -154,27 +152,8 @@ func (p *Point) ScalarMultBase(a *Scalar) *Point {
 	return p
 }
 
-func timeTrack(start time.Time, t *timer) {
-    elapsed := time.Since(start)
-    t.num += elapsed
-}
-
-type timer struct {
-	name string
-	num time.Duration
-}
-
-func (t *timer) Reset() { t.num = 0 }
-func (t timer) Explain(){
-	// fmt.Printf("%s took %d mus\n", t.name, t.num.Microseconds())
-}
-
-var T1 = timer{name: "Scalar-mult calls"}
-var T2 = timer{name: "Multi-scalar-mult calls"}
 
 func (p *Point) ScalarMult(pa *Point, a *Scalar) *Point {
-	defer timeTrack(time.Now(), &T1)
-	// fmt.Printf("Call mult-%s..\n", pa.Show())
 	if p == nil {
 		p = new(Point)
 	}
@@ -184,7 +163,6 @@ func (p *Point) ScalarMult(pa *Point, a *Scalar) *Point {
 }
 
 func (p *Point) MultiScalarMultCached(scalarLs []*Scalar, pointPreComputedLs [][8]C25519.CachedGroupElement) *Point {
-	// fmt.Printf("Call multi-scalar-mult-cached YES\n")
 	nSc := len(scalarLs)
 
 	if nSc != len(pointPreComputedLs) {
@@ -201,13 +179,6 @@ func (p *Point) MultiScalarMultCached(scalarLs []*Scalar, pointPreComputedLs [][
 }
 
 func (p *Point) MultiScalarMult(scalarLs []*Scalar, pointLs []*Point) *Point {
-	defer timeTrack(time.Now(), &T2)
-	pointDetails := "["
-	for _, p := range pointLs {
-		pointDetails += p.Show() + ", "
-	}
-	pointDetails += "]"
-	// fmt.Printf("Call multi-scalar-mult of %d: %s\n", len(scalarLs), pointDetails)
 	nSc := len(scalarLs)
 	nPoint := len(pointLs)
 

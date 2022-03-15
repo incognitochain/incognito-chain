@@ -21,14 +21,14 @@ func NewScalar() *Scalar {
 
 var ScZero = NewScalar()
 var ScOne = NewScalar().FromUint64(1)
-var ScMinusOne = NewScalar().Sub(ScZero, ScOne)
+var ScMinusOne = NewScalar().Negate(ScOne)
 
 func (sc Scalar) String() string {
-	return fmt.Sprintf("%x", sc.ToBytesS())
+	return hex.EncodeToString(sc.ToBytesS())
 }
 
 func (sc Scalar) MarshalText() []byte {
-	return []byte(hex.EncodeToString(sc.ToBytesS()))
+	return []byte(sc.String())
 }
 
 func (sc *Scalar) UnmarshalText(data []byte) (*Scalar, error) {

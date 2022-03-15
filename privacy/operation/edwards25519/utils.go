@@ -11,7 +11,7 @@ type PrecomputedPoint = nafLookupTable8
 //
 // Execution time depends on the inputs.
 func (v *Point) MixedVarTimeMultiScalarMult(scalars []*Scalar, points []*Point, staticScalars []*Scalar, staticPoints []PrecomputedPoint) *Point {
-	if len(scalars) != len(points) {
+	if len(scalars) != len(points) || len(staticScalars) != len(staticPoints) {
 		panic("edwards25519: called VarTimeMultiScalarMult with different size inputs")
 	}
 	checkInitialized(points...)

@@ -21,6 +21,7 @@ type PedersenCommitment struct {
 
 var GBase, HBase, RandomBase *Point
 
+// NewPedersenParams returns the generators used for Pedersen commitments
 func NewPedersenParams() PedersenCommitment {
 	var pcm PedersenCommitment
 	const capacity = 5 // fixed value = 5
@@ -49,8 +50,7 @@ func (com PedersenCommitment) CommitAll(openings []*Scalar) (*Point, error) {
 	return commitment, nil
 }
 
-// CommitAtIndex commits specific value with index and returns 34 bytes
-// g^v x h^rand
+// CommitAtIndex commits specific value with index and returns `g^v x h^rand`
 func (com PedersenCommitment) CommitAtIndex(value, rand *Scalar, index byte) *Point {
 	return new(Point).AddPedersen(value, com.G[index], rand, com.G[PedersenRandomnessIndex])
 }
