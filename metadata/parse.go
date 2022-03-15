@@ -10,28 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ParseMetadata(meta interface{}) (Metadata, error) {
-
-	if meta == nil {
+func ParseMetadata(metaInBytes json.RawMessage) (Metadata, error) {
+	if metaInBytes == nil {
 		return nil, nil
 	}
 
 	mtTemp := map[string]interface{}{}
-	metaInBytes, err := json.Marshal(meta)
+	err := json.Unmarshal(metaInBytes, &mtTemp)
 	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(metaInBytes, &mtTemp)
-	if err != nil {
-		var ok bool
-		metaInBytes, ok = meta.([]byte)
-		if !ok {
-			return nil, fmt.Errorf("metadata not regconizable")
-		}
-		err = json.Unmarshal(metaInBytes, &mtTemp)
-		if err != nil {
-			return nil, err
-		}
+		return nil, fmt.Errorf("metadata not regconizable")
 	}
 
 	var md Metadata
@@ -262,7 +249,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case metadataCommon.Pdexv3WithdrawStakingRewardResponseMeta:
 		md = &metadataPdexv3.WithdrawalStakingRewardResponse{}
 	default:
-		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
+		Logger.log.Debug("[db] parse meta err: %+v\n", metaInBytes)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
 	}
 
