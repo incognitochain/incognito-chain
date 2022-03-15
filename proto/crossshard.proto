@@ -1,0 +1,19 @@
+syntax = "proto3";
+option go_package="./proto";
+
+message ContentCrossShardTokenPrivacyDataBytes {
+    repeated bytes OutputCoin = 1;
+    bytes PropertyID = 2;
+    string PropertyName = 3;
+    string PropertySymbol = 4;
+    int32 Type = 5;
+    bool Mintable = 6;
+    uint64 Amount = 7;
+}
+
+message CrossTxBytes {
+    uint64 BlockHeight = 1;
+    bytes BlockHash = 2;
+    repeated ContentCrossShardTokenPrivacyDataBytes TokenPrivacyData = 3;
+    repeated bytes OutputCoin = 4;
+}

@@ -12,6 +12,8 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_ver1"
+	"github.com/incognitochain/incognito-chain/transaction/tx_ver2"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
 )
@@ -390,7 +392,7 @@ func (sBody *ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
 	for k, v := range sBody.CrossTransactions {
 		crossTxs := &proto.CrossTransactionTmp{}
 		for _, tx := range v {
-			txBytes, err := json.Marshal(tx)
+			txBytes, err := tx.ToCompactBytes()
 			if err != nil {
 				panic(err)
 			}
@@ -406,7 +408,7 @@ func (sBody *ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
 	}
 
 	for _, tx := range sBody.Transactions {
-		txBytes, err := json.Marshal(tx)
+		txBytes, err := serializeTxCompactBytes(tx)
 		if err != nil {
 			panic(err)
 		}
@@ -421,7 +423,7 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 		crossTxs := []CrossTransaction{}
 		for _, txBytes := range v.Data {
 			crossTx := &CrossTransaction{}
-			err := json.Unmarshal(txBytes, crossTx)
+			err := crossTx.FromCompactBytes(txBytes)
 			if err != nil {
 				panic(err)
 			}
@@ -435,16 +437,9 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 	}
 
 	for _, txBytes := range protoData.Transactions {
-		var tx metadata.Transaction
-		var parseErr error
-		var txChoice *transaction.TxChoice
-		txChoice, parseErr = transaction.DeserializeTransactionJSON(txBytes)
-		if parseErr != nil {
-			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)
-		}
-		tx = txChoice.ToTx()
-		if tx == nil {
-			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Corrupted TX")
+		tx, err := deserializeTxCompactBytes(txBytes)
+		if err != nil {
+			return err
 		}
 		sBody.Transactions = append(sBody.Transactions, tx)
 	}
@@ -781,4 +776,51 @@ func (block ShardBlock) Type() string {
 
 func (block ShardBlock) BodyHash() common.Hash {
 	return block.Body.Hash()
+}
+
+func serializeTxCompactBytes(tx metadata.Transaction) ([]byte, error) {
+	txVer := byte(tx.GetVersion())
+	if txVer >= 100 {
+		return nil, errors.Errorf("Can not handle this version %v", txVer)
+	}
+	isTxToken := byte(0)
+	if tx.GetTokenID().String() != common.PRVCoinID.String() {
+		isTxToken = 1
+	}
+	infoByte := isTxToken*100 + txVer
+	res := []byte{}
+	res = append(res, infoByte)
+	compactBytes, err := tx.ToCompactBytes()
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, compactBytes...)
+	return res, nil
+}
+
+func deserializeTxCompactBytes(compactBytes []byte) (metadata.Transaction, error) {
+	if len(compactBytes) < 1 {
+		return nil, errors.Errorf("compactBytes length is invalid %v", compactBytes)
+	}
+	infoByte := compactBytes[0]
+	isTxToken := byte(infoByte / 100)
+	txVer := byte(infoByte % 100)
+	var tx metadata.Transaction
+	var err error
+	switch txVer {
+	case transaction.TxVersion0Number, transaction.TxVersion1Number:
+		if isTxToken == 0 {
+			tx = &tx_ver1.Tx{}
+		} else {
+			tx = &tx_ver1.TxToken{}
+		}
+	case transaction.TxVersion2Number:
+		if isTxToken == 0 {
+			tx = &tx_ver2.Tx{}
+		} else {
+			tx = &tx_ver2.TxToken{}
+		}
+	}
+	err = tx.FromCompactBytes(compactBytes[1:])
+	return tx, err
 }

@@ -8,9 +8,11 @@ import (
 	"log"
 	"sort"
 
+	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -194,6 +196,51 @@ func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash(
 	return common.HashH(contentCrossShardTokenPrivacyData.Bytes())
 }
 
+func (crossTokenData ContentCrossShardTokenPrivacyData) ToProtoData() *proto.ContentCrossShardTokenPrivacyDataBytes {
+	res := &proto.ContentCrossShardTokenPrivacyDataBytes{}
+	res.PropertyID = crossTokenData.PropertyID[:]
+	res.PropertyName = crossTokenData.PropertyName
+	res.Amount = crossTokenData.Amount
+	res.Mintable = crossTokenData.Mintable
+	res.PropertySymbol = crossTokenData.PropertySymbol
+	res.Type = int32(crossTokenData.Type)
+	for _, oCoin := range crossTokenData.OutputCoin {
+		res.OutputCoin = append(res.OutputCoin, oCoin.Bytes())
+	}
+	return res
+}
+
+func (crossTokenData *ContentCrossShardTokenPrivacyData) FromProtoData(protoData *proto.ContentCrossShardTokenPrivacyDataBytes) error {
+	copy(protoData.PropertyID, crossTokenData.PropertyID[:])
+	crossTokenData.PropertyName = protoData.PropertyName
+	crossTokenData.Amount = protoData.Amount
+	crossTokenData.Mintable = protoData.Mintable
+	crossTokenData.PropertySymbol = protoData.PropertySymbol
+	crossTokenData.Type = int(protoData.Type)
+	for _, oCoinBytes := range protoData.OutputCoin {
+		oCoin, err := coin.NewCoinFromByte(oCoinBytes)
+		if err != nil {
+			return err
+		}
+		crossTokenData.OutputCoin = append(crossTokenData.OutputCoin, oCoin)
+	}
+	return nil
+}
+
+func (crossTokenData ContentCrossShardTokenPrivacyData) ToCompactBytes() ([]byte, error) {
+	protoData := crossTokenData.ToProtoData()
+	return ggproto.Marshal(protoData)
+}
+
+func (crossTokenData *ContentCrossShardTokenPrivacyData) FromCompactBytes(data []byte) error {
+	protoData := &proto.ContentCrossShardTokenPrivacyDataBytes{}
+	err := ggproto.Unmarshal(data, protoData)
+	if err != nil {
+		return err
+	}
+	return crossTokenData.FromProtoData(protoData)
+}
+
 func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) UnmarshalJSON(data []byte) error {
 	type Alias ContentCrossShardTokenPrivacyData
 	temp := &struct {
@@ -255,6 +302,57 @@ func (crossTransaction CrossTransaction) Bytes() []byte {
 		res = append(res, coins.Bytes()...)
 	}
 	return res
+}
+
+func (crossTx CrossTransaction) ToProtoData() (*proto.CrossTxBytes, error) {
+	res := &proto.CrossTxBytes{}
+	res.BlockHash = crossTx.BlockHash[:]
+	res.BlockHeight = crossTx.BlockHeight
+	for _, oCoin := range crossTx.OutputCoin {
+		res.OutputCoin = append(res.OutputCoin, oCoin.Bytes())
+	}
+	for _, tokenData := range crossTx.TokenPrivacyData {
+		res.TokenPrivacyData = append(res.TokenPrivacyData, tokenData.ToProtoData())
+	}
+	return res, nil
+}
+
+func (crossTx *CrossTransaction) FromProtoData(protoData *proto.CrossTxBytes) error {
+	copy(protoData.BlockHash, crossTx.BlockHash[:])
+	crossTx.BlockHeight = protoData.BlockHeight
+	for _, oCoinBytes := range protoData.OutputCoin {
+		oCoin, err := coin.NewCoinFromByte(oCoinBytes)
+		if err != nil {
+			return err
+		}
+		crossTx.OutputCoin = append(crossTx.OutputCoin, oCoin)
+	}
+	for _, tokenProtoData := range protoData.TokenPrivacyData {
+		tokenData := &ContentCrossShardTokenPrivacyData{}
+		err := tokenData.FromProtoData(tokenProtoData)
+		if err != nil {
+			return err
+		}
+		crossTx.TokenPrivacyData = append(crossTx.TokenPrivacyData, *tokenData)
+	}
+	return nil
+}
+
+func (crossTx CrossTransaction) ToCompactBytes() ([]byte, error) {
+	protoData, err := crossTx.ToProtoData()
+	if err != nil {
+		return nil, err
+	}
+	return ggproto.Marshal(protoData)
+}
+
+func (crossTx *CrossTransaction) FromCompactBytes(data []byte) error {
+	protoData := &proto.CrossTxBytes{}
+	err := ggproto.Unmarshal(data, protoData)
+	if err != nil {
+		return err
+	}
+	return crossTx.FromProtoData(protoData)
 }
 
 func (crossTransaction CrossTransaction) Hash() common.Hash {
