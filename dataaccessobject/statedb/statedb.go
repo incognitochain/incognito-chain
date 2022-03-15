@@ -402,15 +402,12 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 			stateDB.curRebuildInfo.pivotRootHash = rootHash
 			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
 
-			//dereference roothash before pivot point, for GC reduce memory
-			for !batchCommitConfig.triegc.Empty() {
-				oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-				if uint64(-number) >= uint64(finalViewIndex) {
-					batchCommitConfig.triegc.Push(oldRootHash, number)
-					break
-				}
-				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v,pivot %v, deref block %+v", stateDB.dbName, finalViewIndex, pivotFFIndex, number)
-				trieDB.Dereference(oldRootHash.(common.Hash))
+		//dereference roothash of finalized commit, for GC reduce memory
+		for !batchCommitConfig.triegc.Empty() {
+			oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
+			if -number >= finalViewIndex {
+				batchCommitConfig.triegc.Push(oldRootHash, number)
+				break
 			}
 		}
 		return nil

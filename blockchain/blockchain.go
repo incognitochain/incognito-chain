@@ -374,6 +374,7 @@ func (bc *BlockChain) Stop() {
 	Logger.log.Info("Blockchain Stop")
 	if config.Config().SyncMode == common.STATEDB_BATCH_COMMIT_MODE {
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
+		bc.BeaconChain.insertLock.Lock()
 		for i, shardChain := range bc.ShardChain {
 			bc.ShardChain[i].insertLock.Lock()
 			shardBestState := shardChain.GetBestState()
@@ -731,13 +732,13 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBlockByHash error %+v", shardID, err)
-			continue
+			return errors.New("RestoreShardBestState error")
 		}
 		v.BestBlock = block
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), allViews[0])
 		if err != nil {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
-			continue
+			return errors.New("RestoreShardBestState error")
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
