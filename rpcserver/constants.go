@@ -209,8 +209,8 @@ const (
 	createAndSendBurningPRVBEP20Request   = "createandsendburningprvbep20request"
 	createAndSendBurningPLGRequest        = "createandsendburningplgrequest"
 	createAndSendTxWithIssuingPLGReq      = "createandsendtxwithissuingplgreq"
-	createAndSendTxWithIssuingFantomReq   = "createandsendtxwithissuingfantomreq"
-	createAndSendBurningFantomRequest     = "createandsendburningfantomrequest"
+	createAndSendTxWithIssuingFTMReq      = "createandsendtxwithissuingftmreq"
+	createAndSendBurningFTMRequest        = "createandsendburningftmrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -359,15 +359,15 @@ const (
 	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
-	getBurnProofForDepositToSC                      = "getburnprooffordeposittosc"
-	getBurnPBSCProofForDepositToSC                  = "getburnpbscprooffordeposittosc"
-	createAndSendBurningForDepositToSCRequest       = "createandsendburningfordeposittoscrequest"
-	createAndSendBurningForDepositToSCRequestV2     = "createandsendburningfordeposittoscrequestv2"
-	createAndSendBurningPBSCForDepositToSCRequest   = "createandsendburningpbscfordeposittoscrequest"
-	getBurnPLGProofForDepositToSC                   = "getburnplgprooffordeposittosc"
-	createAndSendBurningPLGForDepositToSCRequest    = "createandsendburningplgfordeposittoscrequest"
-	createAndSendBurningFantomForDepositToSCRequest = "createandsendburningfantomfordeposittoscrequest"
-	getBurnFTMProofForDepositToSC                   = "getburnftmprooffordeposittosc"
+	getBurnProofForDepositToSC                    = "getburnprooffordeposittosc"
+	getBurnPBSCProofForDepositToSC                = "getburnpbscprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest     = "createandsendburningfordeposittoscrequest"
+	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
+	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
+	getBurnPLGProofForDepositToSC                 = "getburnplgprooffordeposittosc"
+	createAndSendBurningPLGForDepositToSCRequest  = "createandsendburningplgfordeposittoscrequest"
+	createAndSendBurningFTMForDepositToSCRequest  = "createandsendburningftmfordeposittoscrequest"
+	getBurnFTMProofForDepositToSC                 = "getburnftmprooffordeposittosc"
 
 	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"

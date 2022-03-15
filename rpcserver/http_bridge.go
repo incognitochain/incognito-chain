@@ -712,7 +712,7 @@ func (httpServer *HttpServer) handleCreateAndSendBurningPLGForDepositToSCRequest
 	return sendResult, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingFantomReq(params interface{},
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingFTMReq(params interface{},
 	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithIssuingEVMReq(params, closeChan, metadata.IssuingFantomRequestMeta)
 	if err != nil {
@@ -741,7 +741,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningFantomReq(params inter
 	)
 }
 
-func (httpServer *HttpServer) handleCreateAndSendBurningFantomRequest(params interface{},
+func (httpServer *HttpServer) handleCreateAndSendBurningFTMRequest(params interface{},
 	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithBurningFantomReq(params, closeChan)
 	if err != nil {
@@ -771,7 +771,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningFantomForDepositToSCRe
 	)
 }
 
-func (httpServer *HttpServer) handleCreateAndSendBurningFantomForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendBurningFTMForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithBurningFantomForDepositToSCReq(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
