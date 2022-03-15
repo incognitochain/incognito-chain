@@ -65,7 +65,7 @@ type IssuingEVMReqAction struct {
 type IssuingEVMAcceptedInst struct {
 	ShardID         byte        `json:"shardId"`
 	IssuingAmount   uint64      `json:"issuingAmount"`
-	ReceiverAddrStr string      `json:"receiverAddrStr"`
+	Receiver        string      `json:"receiverAddrStr"`
 	IncTokenID      common.Hash `json:"incTokenId"`
 	TxReqID         common.Hash `json:"txReqId"`
 	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
@@ -226,10 +226,15 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 		otaReceiver := new(privacy.OTAReceiver)
 		err = otaReceiver.FromString(iReq.Receiver)
 		if err != nil {
-			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
+			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
 		}
 		if !otaReceiver.IsValid() {
-			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
+			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
+		}
+		if tx.GetSenderAddrLastByte() != otaReceiver.GetShardID() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.IssuingEvmRequestValidateSanityDataError,
+				fmt.Errorf("expect receiver to be in shard %d, got %v", tx.GetSenderAddrLastByte(), otaReceiver.GetShardID()))
 		}
 		otaReceiverBytes, _ := otaReceiver.Bytes()
 
@@ -246,7 +251,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 		}
 
 		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); !isValid {
-			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
+			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
 		}
 	}
 
