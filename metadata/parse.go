@@ -18,7 +18,7 @@ func ParseMetadata(metaInBytes json.RawMessage) (Metadata, error) {
 	mtTemp := map[string]interface{}{}
 	err := json.Unmarshal(metaInBytes, &mtTemp)
 	if err != nil {
-		return nil, fmt.Errorf("metadata not regconizable")
+		return nil, fmt.Errorf("metadata not recognizable")
 	}
 
 	var md Metadata
@@ -263,7 +263,7 @@ func ParseMetadata(metaInBytes json.RawMessage) (Metadata, error) {
 
 func MdFromCompactBytes(data []byte) (Metadata, error) {
 	if len(data) < 2 {
-		return nil, fmt.Errorf("invalid metadata content")
+		return nil, nil
 	}
 
 	var err error
