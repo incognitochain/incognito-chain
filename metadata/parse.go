@@ -262,8 +262,11 @@ func ParseMetadata(metaInBytes json.RawMessage) (Metadata, error) {
 }
 
 func MdFromCompactBytes(data []byte) (Metadata, error) {
-	if len(data) < 2 {
+	if data == nil { // valid blank metadata
 		return nil, nil
+	}
+	if len(data) < 2 {
+		return nil, fmt.Errorf("invalid metadata content")
 	}
 
 	var err error
