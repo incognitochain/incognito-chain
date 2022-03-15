@@ -252,7 +252,7 @@ func (req *TradeRequest) FromCompactBytes(data []byte) error {
 		}
 	}
 
-	return fmt.Errorf("not an TradeRequest")
+	return fmt.Errorf("not a TradeRequest")
 }
 
 func (req TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
