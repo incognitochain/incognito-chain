@@ -165,6 +165,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
@@ -176,6 +177,8 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData 
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
 		}
@@ -399,15 +402,12 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 			stateDB.curRebuildInfo.pivotRootHash = rootHash
 			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
 
-			//dereference roothash before pivot point, for GC reduce memory
-			for !batchCommitConfig.triegc.Empty() {
-				oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-				if uint64(-number) >= uint64(finalViewIndex) {
-					batchCommitConfig.triegc.Push(oldRootHash, number)
-					break
-				}
-				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v,pivot %v, deref block %+v", stateDB.dbName, finalViewIndex, pivotFFIndex, number)
-				trieDB.Dereference(oldRootHash.(common.Hash))
+		//dereference roothash of finalized commit, for GC reduce memory
+		for !batchCommitConfig.triegc.Empty() {
+			oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
+			if -number >= finalViewIndex {
+				batchCommitConfig.triegc.Push(oldRootHash, number)
+				break
 			}
 		}
 		return nil
@@ -505,10 +505,8 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 		}
 
 	case common.STATEDB_LITE_MODE:
-		fmt.Println("=======================> commit lite", len(stateDB.liteStateDB.headStateNode.stateObjects), stateDB.curRebuildInfo)
 		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				fmt.Println("=======================> previousLink nil", stateDB.liteStateDB.headStateNode.aggregateHash)
 				return stateDB.curRebuildInfo.rebuildRootHash, NewRebuildInfo(common.STATEDB_LITE_MODE, stateDB.curRebuildInfo.rebuildRootHash,
 					stateDB.curRebuildInfo.pivotRootHash, stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex), nil
 			}
