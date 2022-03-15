@@ -388,7 +388,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 
 		//if force write (stop node) or reach #commit threshold => write to disk
 		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
-		pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
+		//pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
 		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
 			//write the current roothash commit nodes to disk
 			rootHash := stateDB.curRebuildInfo.rebuildRootHash
@@ -401,7 +401,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 			}
 			stateDB.curRebuildInfo.pivotRootHash = rootHash
 			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
-
+		}
 		//dereference roothash of finalized commit, for GC reduce memory
 		for !batchCommitConfig.triegc.Empty() {
 			oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
@@ -409,6 +409,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 				batchCommitConfig.triegc.Push(oldRootHash, number)
 				break
 			}
+			trieDB.Dereference(oldRootHash.(common.Hash))
 		}
 		return nil
 	case common.STATEDB_LITE_MODE:
