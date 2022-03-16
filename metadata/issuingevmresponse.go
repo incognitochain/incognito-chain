@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -78,6 +79,8 @@ func (iRes *IssuingEVMResponse) CalculateSize() uint64 {
 }
 
 func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+	prefix := fmt.Sprintf("[IssuingEVMResp]")
+
 	idx := -1
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not IssuingEVMRequest instruction
@@ -93,13 +96,13 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Errorf("%v an error occurred while parsing instruction content: %v\n", prefix, err)
 			continue
 		}
 		var issuingEVMAcceptedInst IssuingEVMAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Errorf("%v an error occurred while unmarshalling instruction content: %v\n", prefix, err)
 			continue
 		}
 
@@ -110,20 +113,44 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 
-		addressStr := issuingEVMAcceptedInst.Receiver
-		key, err := wallet.Base58CheckDeserialize(addressStr)
-		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
-			continue
-		}
-
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted || coinID.String() != issuingEVMAcceptedInst.IncTokenID.String() {
 			continue
 		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingEVMAcceptedInst.IssuingAmount); !ok {
-			continue
+
+		keyWallet, err := wallet.Base58CheckDeserialize(issuingEVMAcceptedInst.Receiver)
+		if err == nil {
+			paymentAddress := keyWallet.KeySet.PaymentAddress
+			if ok := mintCoin.CheckCoinValid(paymentAddress, iRes.SharedRandom, issuingEVMAcceptedInst.IssuingAmount); !ok {
+				Logger.log.Errorf("%v CheckCoinValid FAILED\n", prefix, err)
+				continue
+			}
+		} else {
+			otaReceiver := new(privacy.OTAReceiver)
+			err = otaReceiver.FromString(issuingEVMAcceptedInst.Receiver)
+			if err != nil || !otaReceiver.IsValid() {
+				Logger.log.Errorf("%v parse OTAReceiver error: %v\n", prefix, err)
+				continue
+			}
+			if mintCoin.GetValue() != issuingEVMAcceptedInst.IssuingAmount {
+				Logger.log.Errorf("%v expected issuingAmount %v, got %v\n",
+					prefix, issuingEVMAcceptedInst.IssuingAmount, mintCoin.GetValue())
+				continue
+			}
+			if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), mintCoin.GetPublicKey().ToBytesS()) {
+				Logger.log.Errorf("%v expected pubKey %v, got %v\n",
+					prefix, otaReceiver.PublicKey.ToBytesS(), mintCoin.GetPublicKey().ToBytesS())
+				continue
+			}
+			txRandom := mintCoin.GetTxRandom()
+			if !bytes.Equal(txRandom.Bytes(), otaReceiver.TxRandom.Bytes()) {
+				Logger.log.Errorf("%v expected txRandom %v, got %v\n",
+					prefix, otaReceiver.TxRandom.Bytes(), txRandom.Bytes())
+				continue
+			}
+
 		}
+
 		idx = i
 		break
 	}
