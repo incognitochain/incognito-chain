@@ -23,15 +23,15 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
-// DepositParams consists of parameters for creating a shielding transaction.
-// A DepositParams is valid if at least one of the following conditions hold:
+// PortalDepositParams consists of parameters for creating a portal shielding transaction.
+// A PortalDepositParams is valid if at least one of the following conditions hold:
 //	- Signature is not empty
 //		- Receiver and DepositPubKey must not be empty
 //	- Signature is empty
 //		- If Receiver is empty, it will be generated from the sender's privateKey
 //		- If DepositPrivateKey is empty, it will be derived from the DepositKeyIndex
 //		- DepositPubKey is derived from DepositPrivateKey.
-type DepositParams struct {
+type PortalDepositParams struct {
 	// TokenID is the shielding asset ID.
 	TokenID string
 
@@ -56,8 +56,8 @@ type DepositParams struct {
 	Signature string
 }
 
-// IsValid checks if a DepositParams is valid.
-func (dp DepositParams) IsValid() (bool, error) {
+// IsValid checks if a PortalDepositParams is valid.
+func (dp PortalDepositParams) IsValid() (bool, error) {
 	var err error
 
 	_, err = common.Hash{}.NewHashFromStr(dp.TokenID)
@@ -263,13 +263,13 @@ func (httpServer *HttpServer) handleCreateRawTxDepositReqWithDepositKey(params i
 	}
 	jsb, _ := json.Marshal(data)
 
-	var dp *DepositParams
+	var dp *PortalDepositParams
 	err = json.Unmarshal(jsb, &dp)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot unmarshal depositParams"))
 	}
 	if _, err = dp.IsValid(); err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid DepositParams: %v", err))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid PortalDepositParams: %v", err))
 	}
 
 	receiver, depositPubKey := dp.Receiver, dp.DepositPubKey
@@ -1089,192 +1089,4 @@ func (httpServer *HttpServer) handleGenerateDepositAddress(
 	}
 
 	return shieldingAddress, nil
-}
-
-func (httpServer *HttpServer) handleGenerateOTDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil || len(paramsArray) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
-	}
-
-	paramList, ok := paramsArray[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
-	}
-
-	type TmpParam struct {
-		PrivateKey string
-		Index      uint64
-		TokenID    string
-	}
-	var tmpParam *TmpParam
-	jsb, _ := json.Marshal(paramList)
-	err := json.Unmarshal(jsb, &tmpParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
-	}
-
-	// check is Portal token
-	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(latestBeaconHeight)
-	if !portalParamV4.IsPortalToken(tmpParam.TokenID) {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			fmt.Errorf("TokenID is not a portal token"))
-	}
-
-	w, err := wallet.Base58CheckDeserialize(tmpParam.PrivateKey)
-	if err != nil || len(w.KeySet.PrivateKey) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			fmt.Errorf("invalid privateKey %v", tmpParam.PrivateKey))
-	}
-	depositKey, err := incognitokey.GenerateOTDepositKeyFromPrivateKey(w.KeySet.PrivateKey[:], tmpParam.TokenID, tmpParam.Index)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("GenerateNextOTDepositKey encoured an error: %v", err))
-	}
-
-	type Res struct {
-		DepositKey     *incognitokey.OTDepositKey
-		DepositAddress string
-	}
-
-	// generate shielding multiSig address
-	depositPubKeyStr := base58.Base58Check{}.NewEncode(depositKey.PublicKey, 0)
-	_, depositAddress, err := portalParamV4.PortalTokens[tmpParam.TokenID].GenerateOTMultisigAddress(
-		portalParamV4.MasterPubKeys[tmpParam.TokenID], int(portalParamV4.NumRequiredSigs), depositPubKeyStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			fmt.Errorf("error when generating multisig address %v", err))
-	}
-
-	return Res{DepositKey: depositKey, DepositAddress: depositAddress}, nil
-}
-
-func (httpServer *HttpServer) handleGetNextOTDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil || len(paramsArray) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
-	}
-
-	paramList, ok := paramsArray[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
-	}
-
-	type TmpParam struct {
-		PrivateKey string
-		TokenID    string
-	}
-	var tmpParam *TmpParam
-	jsb, _ := json.Marshal(paramList)
-	err := json.Unmarshal(jsb, &tmpParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
-	}
-
-	// check is Portal token
-	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(latestBeaconHeight)
-	if !portalParamV4.IsPortalToken(tmpParam.TokenID) {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			fmt.Errorf("TokenID %v is not a portal token", tmpParam.TokenID))
-	}
-
-	depositKey, err := httpServer.blockService.GenerateNextOTDepositKey(tmpParam.PrivateKey, tmpParam.TokenID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("GenerateNextOTDepositKey encoured an error: %v", err))
-	}
-
-	type Res struct {
-		DepositKey     *incognitokey.OTDepositKey
-		DepositAddress string
-	}
-
-	// generate shielding multiSig address
-	depositPubKeyStr := base58.Base58Check{}.NewEncode(depositKey.PublicKey, 0)
-	_, depositAddress, err := portalParamV4.PortalTokens[tmpParam.TokenID].GenerateOTMultisigAddress(
-		portalParamV4.MasterPubKeys[tmpParam.TokenID], int(portalParamV4.NumRequiredSigs), depositPubKeyStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			fmt.Errorf("error when generating multisig address %v", err))
-	}
-
-	return Res{DepositKey: depositKey, DepositAddress: depositAddress}, nil
-}
-
-func (httpServer *HttpServer) handleHasOTDepositPubKeys(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil || len(paramsArray) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
-	}
-
-	paramList, ok := paramsArray[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
-	}
-
-	type TmpParam struct {
-		DepositPubKeys []string
-	}
-	var tmpParam *TmpParam
-	jsb, _ := json.Marshal(paramList)
-	err := json.Unmarshal(jsb, &tmpParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
-	}
-
-	beaconState, err := httpServer.blockService.BlockChain.GetClonedBeaconBestState()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("error while retrieving beaconBestState: %v", err))
-	}
-	portalV4StateDB := beaconState.GetBeaconFeatureStateDB()
-	res := make(map[string]bool)
-	for _, pubKeyStr := range tmpParam.DepositPubKeys {
-		pubKey, _, err := base58.Base58Check{}.Decode(pubKeyStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode depositPubKey %v, must be a base58-encoded string", pubKeyStr))
-		}
-		exists := statedb.OTDepositPubKeyExists(portalV4StateDB, pubKey)
-		res[pubKeyStr] = exists
-	}
-
-	return res, nil
-}
-
-func (httpServer *HttpServer) handleGetDepositTxsByPubKeys(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil || len(paramsArray) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
-	}
-
-	paramList, ok := paramsArray[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
-	}
-
-	type TmpParam struct {
-		DepositPubKeys []string
-	}
-	var tmpParam *TmpParam
-	jsb, _ := json.Marshal(paramList)
-	err := json.Unmarshal(jsb, &tmpParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
-	}
-
-	beaconState, err := httpServer.blockService.BlockChain.GetClonedBeaconBestState()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("error while retrieving beaconBestState: %v", err))
-	}
-	portalV4StateDB := beaconState.GetBeaconFeatureStateDB()
-	res := make(map[string][]string)
-	for _, pubKeyStr := range tmpParam.DepositPubKeys {
-		pubKey, _, err := base58.Base58Check{}.Decode(pubKeyStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode depositPubKey %v, must be a base58-encoded string", pubKeyStr))
-		}
-		txList, _ := statedb.GetShieldRequestIDsByOTDepositPubKey(portalV4StateDB, pubKey)
-		res[pubKeyStr] = txList
-	}
-
-	return res, nil
 }

@@ -229,8 +229,9 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 
 	var receiver string
 	var receivingShardID byte
+	var depositKeyBytes []byte
 	if _, err = wallet.Base58CheckDeserialize(addressStr); err != nil {
-		depositPubKeyBytes, _, _ := base58.Base58Check{}.Decode(addressStr)
+		depositKeyBytes, _, err = base58.Base58Check{}.Decode(addressStr)
 		if err != nil {
 			Logger.log.Warn("WARNING: could not decode deposit public key")
 			return append(instructions, rejectedInst), nil, nil
@@ -239,7 +240,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		_ = otaReceiver.FromString(issuingEVMBridgeReqAction.Meta.Receiver) // error has been handle at shard side
 		otaReceiverBytes, _ := otaReceiver.Bytes()
 
-		depositPubKey, err := new(operation.Point).FromBytesS(depositPubKeyBytes)
+		depositPubKey, err := new(operation.Point).FromBytesS(depositKeyBytes)
 		if err != nil {
 			Logger.log.Warn("WARNING: invalid OTDepositPubKey %v", addressStr)
 			return append(instructions, rejectedInst), nil, nil
@@ -283,6 +284,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		ShardID:         receivingShardID,
 		IssuingAmount:   amount,
 		Receiver:        receiver,
+		OTDepositKey:    depositKeyBytes,
 		IncTokenID:      md.IncTokenID,
 		TxReqID:         issuingEVMBridgeReqAction.TxReqID,
 		UniqTx:          uniqTx,

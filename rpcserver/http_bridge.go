@@ -3,15 +3,100 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
-
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
+
+// EVMDepositParams consists of parameters for creating an EVM shielding transaction.
+// An EVMDepositParams is valid if at least one of the following conditions hold:
+//	- Signature is not empty
+//		- Receiver must not be empty
+//	- Signature is empty
+//		- Either DepositPrivateKey or DepositKeyIndex must not be empty; if DepositPrivateKey is empty, it will be
+// 	derived from the DepositKeyIndex
+//		- Receiver will be generated from the sender's private key
+//		- Signature will be signed using the DepositPrivateKey
+type EVMDepositParams struct {
+	// MetadataType is the type of the shielding request.
+	MetadataType int
+
+	// BlockHash is the hash of the block where the public depositing transaction resides in.
+	BlockHash rCommon.Hash
+
+	// TxIndex is the index of the public depositing transaction in the BlockHash.
+	TxIndex uint
+
+	// TokenID is the shielding asset ID.
+	TokenID string
+
+	// ShieldingProof is a merkel proof for the shielding request.
+	ShieldingProofs []string
+
+	// DepositPrivateKey is a base58-encoded deposit privateKey used to sign the request.
+	// If set empty, it will be derived from the DepositKeyIndex.
+	DepositPrivateKey string
+
+	// DepositKeyIndex is the index of the OTDepositKey. It is used to generate DepositPrivateKey and DepositPubKey when the DepositPrivateKey is not supply.
+	DepositKeyIndex uint64
+
+	// Receiver is a base58-encoded OTAReceiver. If set empty, it will be generated from the sender's privateKey.
+	Receiver string
+
+	// Signature is a valid signature signed by the owner of the shielding asset.
+	// If Signature is not empty, Receiver must not be empty.
+	Signature string
+}
+
+// IsValid checks if a EVMDepositParams is valid.
+func (dp EVMDepositParams) IsValid() (bool, error) {
+	var err error
+	_, err = common.Hash{}.NewHashFromStr(dp.TokenID)
+	if err != nil || dp.TokenID == "" {
+		return false, fmt.Errorf("invalid tokenID %v", dp.TokenID)
+	}
+
+	if len(dp.ShieldingProofs) == 0 {
+		return false, fmt.Errorf("invalid proofs")
+	}
+
+	if dp.Signature != "" {
+		_, _, err = base58.Base58Check{}.Decode(dp.Signature)
+		if err != nil {
+			return false, fmt.Errorf("invalid signature")
+		}
+		if dp.Receiver == "" {
+			return false, fmt.Errorf("must have `Receiver`")
+		}
+	} else {
+		if dp.DepositPrivateKey != "" {
+			_, _, err = base58.Base58Check{}.Decode(dp.DepositPrivateKey)
+			if err != nil {
+				return false, fmt.Errorf("invalid DepositPrivateKey")
+			}
+		}
+	}
+
+	if dp.Receiver != "" {
+		otaReceiver := new(privacy.OTAReceiver)
+		err = otaReceiver.FromString(dp.Receiver)
+		if err != nil {
+			return false, fmt.Errorf("invalid receiver: %v", err)
+		}
+	}
+
+	return true, nil
+}
 
 func (httpServer *HttpServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	constructor := metaConstructors[createAndSendIssuingRequest]
@@ -234,6 +319,127 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateAndSendTxWithIssuingETHReq(params, closeChan)
+}
+
+func (httpServer *HttpServer) handleCreateEVMDepositTxWithDepositKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	privateKeyStr := arrayParams[0].(string)
+	w, err := wallet.Base58CheckDeserialize(privateKeyStr)
+	if err != nil || len(w.KeySet.PrivateKey[:]) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid privateKey: %v", privateKeyStr))
+	}
+	privateKey := w.KeySet.PrivateKey[:]
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("metadata param is invalid"))
+	}
+	jsb, _ := json.Marshal(data)
+
+	var dp *EVMDepositParams
+	err = json.Unmarshal(jsb, &dp)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot unmarshal depositParams"))
+	}
+	if _, err = dp.IsValid(); err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid EVMDepositParams: %v", err))
+	}
+
+	receiver := dp.Receiver
+	var sig []byte
+	if dp.Signature != "" {
+		sig, _, _ = base58.Base58Check{}.Decode(dp.Signature)
+	} else {
+		if receiver == "" {
+			otaReceiver := new(privacy.OTAReceiver)
+			err = otaReceiver.FromAddress(w.KeySet.PaymentAddress)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("generate OTAReceiver error: %v", err))
+			}
+			receiver, _ = otaReceiver.String()
+		}
+		otaReceiver := new(coin.OTAReceiver)
+		_ = otaReceiver.FromString(receiver)
+
+		var depositPrivateKey *privacy.Scalar
+		if dp.DepositPrivateKey != "" {
+			tmp, _, _ := base58.Base58Check{}.Decode(dp.DepositPrivateKey)
+			depositPrivateKey = new(privacy.Scalar).FromBytesS(tmp)
+		} else {
+			depositKey, err := incognitokey.GenerateOTDepositKeyFromPrivateKey(privateKey, dp.TokenID, dp.DepositKeyIndex)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("GenerateOTDepositKeyFromPrivateKey error: %v", err))
+			}
+			depositPrivateKey = new(privacy.Scalar).FromBytesS(depositKey.PrivateKey)
+		}
+
+		schnorrPrivateKey := new(privacy.SchnorrPrivateKey)
+		r := new(privacy.Scalar).FromUint64(0) // must use r = 0
+		schnorrPrivateKey.Set(depositPrivateKey, r)
+		metaDataBytes, _ := otaReceiver.Bytes()
+		tmpSig, err := schnorrPrivateKey.Sign(common.HashB(metaDataBytes))
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		sig = tmpSig.Bytes()
+	}
+
+	tokenID, _ := new(common.Hash).NewHashFromStr(dp.TokenID)
+
+	meta, err := metadata.NewIssuingEVMRequest(
+		dp.BlockHash,
+		dp.TxIndex,
+		dp.ShieldingProofs,
+		*tokenID,
+		receiver,
+		sig,
+		dp.MetadataType,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendEVMDepositTxWithDepositKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateEVMDepositTxWithDepositKey(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
 }
 
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -710,4 +916,190 @@ func (httpServer *HttpServer) handleCreateAndSendBurningPLGForDepositToSCRequest
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
 	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleGenerateOTDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
+	}
+
+	paramList, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	type TmpParam struct {
+		PrivateKey string
+		Index      uint64
+		TokenID    string
+	}
+	var tmpParam *TmpParam
+	jsb, _ := json.Marshal(paramList)
+	err := json.Unmarshal(jsb, &tmpParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
+	}
+
+	w, err := wallet.Base58CheckDeserialize(tmpParam.PrivateKey)
+	if err != nil || len(w.KeySet.PrivateKey) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("invalid privateKey %v", tmpParam.PrivateKey))
+	}
+	depositKey, err := incognitokey.GenerateOTDepositKeyFromPrivateKey(w.KeySet.PrivateKey[:], tmpParam.TokenID, tmpParam.Index)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("GenerateNextOTDepositKey encoured an error: %v", err))
+	}
+
+	type Res struct {
+		DepositKey     *incognitokey.OTDepositKey
+		DepositAddress string `json:"DepositAddress,omitempty"`
+	}
+
+	// check is Portal token
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(latestBeaconHeight)
+	if portalParamV4.IsPortalToken(tmpParam.TokenID) {
+		// generate shielding multiSig address
+		depositPubKeyStr := base58.Base58Check{}.NewEncode(depositKey.PublicKey, 0)
+		_, depositAddress, err := portalParamV4.PortalTokens[tmpParam.TokenID].GenerateOTMultisigAddress(
+			portalParamV4.MasterPubKeys[tmpParam.TokenID], int(portalParamV4.NumRequiredSigs), depositPubKeyStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("error when generating multisig address %v", err))
+		}
+
+		return Res{DepositKey: depositKey, DepositAddress: depositAddress}, nil
+	}
+
+	return Res{DepositKey: depositKey}, nil
+}
+
+func (httpServer *HttpServer) handleGetNextOTDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
+	}
+
+	paramList, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	type TmpParam struct {
+		PrivateKey string
+		TokenID    string
+	}
+	var tmpParam *TmpParam
+	jsb, _ := json.Marshal(paramList)
+	err := json.Unmarshal(jsb, &tmpParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
+	}
+
+	depositKey, err := httpServer.blockService.GenerateNextOTDepositKey(tmpParam.PrivateKey, tmpParam.TokenID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("GenerateNextOTDepositKey encoured an error: %v", err))
+	}
+
+	type Res struct {
+		DepositKey     *incognitokey.OTDepositKey
+		DepositAddress string
+	}
+
+	// check is Portal token
+	latestBeaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	portalParamV4 := httpServer.config.BlockChain.GetPortalParamsV4(latestBeaconHeight)
+	if portalParamV4.IsPortalToken(tmpParam.TokenID) {
+		// generate shielding multiSig address
+		depositPubKeyStr := base58.Base58Check{}.NewEncode(depositKey.PublicKey, 0)
+		_, depositAddress, err := portalParamV4.PortalTokens[tmpParam.TokenID].GenerateOTMultisigAddress(
+			portalParamV4.MasterPubKeys[tmpParam.TokenID], int(portalParamV4.NumRequiredSigs), depositPubKeyStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+				fmt.Errorf("error when generating multisig address %v", err))
+		}
+
+		return Res{DepositKey: depositKey, DepositAddress: depositAddress}, nil
+	}
+
+	return Res{DepositKey: depositKey}, nil
+}
+
+func (httpServer *HttpServer) handleHasOTDepositPubKeys(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
+	}
+
+	paramList, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	type TmpParam struct {
+		DepositPubKeys []string
+	}
+	var tmpParam *TmpParam
+	jsb, _ := json.Marshal(paramList)
+	err := json.Unmarshal(jsb, &tmpParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
+	}
+
+	beaconState, err := httpServer.blockService.BlockChain.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("error while retrieving beaconBestState: %v", err))
+	}
+	portalV4StateDB := beaconState.GetBeaconFeatureStateDB()
+	res := make(map[string]bool)
+	for _, pubKeyStr := range tmpParam.DepositPubKeys {
+		pubKey, _, err := base58.Base58Check{}.Decode(pubKeyStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode depositPubKey %v, must be a base58-encoded string", pubKeyStr))
+		}
+		exists := statedb.OTDepositPubKeyExists(portalV4StateDB, pubKey)
+		res[pubKeyStr] = exists
+	}
+
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetDepositTxsByPubKeys(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array of 1 element"))
+	}
+
+	paramList, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	type TmpParam struct {
+		DepositPubKeys []string
+	}
+	var tmpParam *TmpParam
+	jsb, _ := json.Marshal(paramList)
+	err := json.Unmarshal(jsb, &tmpParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("unmarshal parameters error: %v", err))
+	}
+
+	beaconState, err := httpServer.blockService.BlockChain.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("error while retrieving beaconBestState: %v", err))
+	}
+	featureStateDB := beaconState.GetBeaconFeatureStateDB()
+	res := make(map[string][]string)
+	for _, pubKeyStr := range tmpParam.DepositPubKeys {
+		pubKey, _, err := base58.Base58Check{}.Decode(pubKeyStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode depositPubKey %v, must be a base58-encoded string", pubKeyStr))
+		}
+		txList, _ := statedb.GetShieldRequestIDsByOTDepositPubKey(featureStateDB, pubKey)
+		res[pubKeyStr] = txList
+	}
+
+	return res, nil
 }

@@ -125,6 +125,13 @@ func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.Sta
 		return updatingInfoByTokenID, nil
 	}
 
+	if issuingEVMAcceptedInst.OTDepositKey != nil {
+		err = statedb.StoreShieldInfoByPubKey(bridgeStateDB, issuingEVMAcceptedInst.OTDepositKey, issuingEVMAcceptedInst.TxReqID.String())
+		if err != nil {
+			Logger.log.Errorf("EVM Shield Request: An error occurred while storing shielding info: %v\n", err)
+		}
+	}
+
 	if !isPRV {
 		updatingInfo, found := updatingInfoByTokenID[issuingEVMAcceptedInst.IncTokenID]
 		if found {
