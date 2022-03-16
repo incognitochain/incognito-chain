@@ -40,6 +40,7 @@ type bulletproofParams struct {
 	precomps []operation.PrecomputedPoint
 }
 
+// AggParam contains global Bulletproofs parameters `g, h, u, cs`
 var AggParam = newBulletproofParams(privacy_util.MaxOutputCoin)
 
 // ValidateSanity performs sanity checks for this proof.
@@ -59,12 +60,12 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 	return proof.innerProductProof.ValidateSanity()
 }
 
-// Init creates an allocated, blank AggregatedRangeProof object
+// Init allocates all members of an AggregatedRangeProof object
 func (proof *AggregatedRangeProof) Init() {
-	proof.a = new(operation.Point).Identity()
-	proof.s = new(operation.Point).Identity()
-	proof.t1 = new(operation.Point).Identity()
-	proof.t2 = new(operation.Point).Identity()
+	proof.a = operation.NewIdentityPoint()
+	proof.s = operation.NewIdentityPoint()
+	proof.t1 = operation.NewIdentityPoint()
+	proof.t2 = operation.NewIdentityPoint()
 	proof.tauX = new(operation.Scalar)
 	proof.tHat = new(operation.Scalar)
 	proof.mu = new(operation.Scalar)
@@ -97,7 +98,13 @@ func (proof AggregatedRangeProof) IsNil() bool {
 	return proof.innerProductProof == nil
 }
 
-// Bytes does byte-marshalling
+func (proof AggregatedRangeProof) GetCommitments() []*operation.Point { return proof.cmsValue }
+
+func (proof *AggregatedRangeProof) SetCommitments(cmsValue []*operation.Point) {
+	proof.cmsValue = cmsValue
+}
+
+// Bytes marshals the proof into a byte slice
 func (proof AggregatedRangeProof) Bytes() []byte {
 	var res []byte
 
@@ -123,13 +130,7 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	return res
 }
 
-// GetCommitments is the getter for cmsValueGetCommitments() []*operation.Point
-func (proof AggregatedRangeProof) GetCommitments() []*operation.Point { return proof.cmsValue }
-
-func (proof *AggregatedRangeProof) SetCommitments(cmsValue []*operation.Point) {
-	proof.cmsValue = cmsValue
-}
-
+// SetBytes unmarshals the proof from a byte slice
 func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
@@ -213,6 +214,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	return proof.innerProductProof.SetBytes(bytes[offset:])
 }
 
+// Set sets the values of both `wit`'s members
 func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scalar) {
 	numValue := len(values)
 	wit.values = make([]uint64, numValue)
@@ -278,14 +280,14 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 	mbuilder.AppendSingle(alpha, operation.HBase)
-	proof.a = mbuilder.Execute()
+	proof.a = mbuilder.Eval()
 
 	_, err = encodeVectors(sL, sR, aggParam.g, aggParam.h, mbuilder)
 	if err != nil {
 		return nil, err
 	}
 	mbuilder.AppendSingle(rho, operation.HBase)
-	proof.s = mbuilder.Execute()
+	proof.s = mbuilder.Eval()
 	// challenge y, z
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
@@ -393,7 +395,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 	mbuilder.AppendSingle(proof.tHat, uPrime)
-	innerProductWit.p = mbuilder.Execute()
+	innerProductWit.p = mbuilder.Eval()
 
 	proof.innerProductProof, err = innerProductWit.Prove(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if err != nil {
@@ -417,7 +419,7 @@ func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
 
 	cmsValue := proof.cmsValue
 	for i := numValue; i < numValuePad; i++ {
-		cmsValue = append(cmsValue, new(operation.Point).Identity())
+		cmsValue = append(cmsValue, operation.NewIdentityPoint())
 	}
 
 	// recalculate challenge y, z
@@ -496,14 +498,13 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if !multBuilder.Execute().IsIdentity() {
+	if !multBuilder.Eval().IsIdentity() {
 		Logger.Log.Errorf("Verify aggregated range proof failed")
 		return false, fmt.Errorf("bulletproofs: range proof invalid")
 	}
 	return true, nil
 }
 
-//nolint:errcheck // this function makes unchecked Append() calls since lengths are known to match
 func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation.MultiScalarMultBuilder, error) {
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
@@ -517,7 +518,7 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 
 	cmsValue := proof.cmsValue
 	for i := numValue; i < numValuePad; i++ {
-		cmsValue = append(cmsValue, new(operation.Point).Identity())
+		cmsValue = append(cmsValue, operation.NewIdentityPoint())
 	}
 
 	// recalculate challenge y, z
@@ -537,25 +538,24 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 	}
 
 	eq65Builder := operation.NewMultBuilder(true)
-	eq65Builder.WithStaticPoints(aggParam.precomps)
+	eq65Builder.WithStaticPoints(AggParam.precomps)
 	// Verify eq (65)
-	// skip error for Append() calls since lengths are known to match
 	eq65Builder.AppendSingle(xSquare, proof.t2)
 	eq65Builder.AppendSingle(x, proof.t1)
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	eq65Builder.Append(expVector, cmsValue)
+	eq65Builder.MustAppend(expVector, cmsValue)
 
 	if gval != nil {
 		eq65Builder.AppendSingle(operation.NewScalar().Sub(deltaYZ, proof.tHat), gval)
 	} else {
-		eq65Builder.SetStatic(precompPedGValIndex, operation.NewScalar().Sub(deltaYZ, proof.tHat))
+		eq65Builder.MustSetStatic(precompPedGValIndex, operation.NewScalar().Sub(deltaYZ, proof.tHat))
 	}
-	eq65Builder.SetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.tauX))
+	eq65Builder.MustSetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.tauX))
 
 	// Verify eq (66)
 	eq66Builder := operation.NewMultBuilder(true)
-	eq66Builder.WithStaticPoints(aggParam.precomps)
+	eq66Builder.WithStaticPoints(AggParam.precomps)
 
 	vectorSum := make([]*operation.Scalar, N)
 	zTmp := new(operation.Scalar).Set(z)
@@ -567,16 +567,16 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 		}
 	}
 	// HPrime = H^(y^(1-i)
-	lazyComputeHPrime(y, N, eq66Builder)
-	eq66Builder.MulStatic(precompHIndex(N), vectorSum...)
+	mulPowerVector(vectorSum, operation.NewScalar().Invert(y))
+	eq66Builder.MustSetStatic(precompHIndex(aggParamNMax), vectorSum...)
 	for i := 0; i < N; i++ {
-		eq66Builder.SetStatic(precompGIndex+i, zNeg)
+		eq66Builder.MustSetStatic(precompGIndex+i, zNeg)
 	}
 
-	eq66Builder.Append([]*operation.Scalar{operation.NewScalar().FromUint64(1), x}, []*operation.Point{proof.a, proof.s}) // AS^x
-	eq66Builder.SetStatic(precompUIndex, operation.NewScalar().Mul(proof.tHat, operation.HashToScalar(x.ToBytesS())))     // tHat.U'
+	eq66Builder.MustAppend([]*operation.Scalar{operation.NewScalar().FromUint64(1), x}, []*operation.Point{proof.a, proof.s}) // AS^x
+	eq66Builder.MustSetStatic(precompUIndex, operation.NewScalar().Mul(proof.tHat, operation.HashToScalar(x.ToBytesS())))     // tHat.U'
 
-	eq66Builder.SetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.mu))
+	eq66Builder.MustSetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.mu))
 	eq66Builder.AppendSingle(operation.NewScalar().Set(operation.ScMinusOne), proof.innerProductProof.p)
 
 	// Verify eq (68)
@@ -613,34 +613,35 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 	}
 
 	ippBuilder := operation.NewMultBuilder(true)
-	ippBuilder.WithStaticPoints(aggParam.precomps)
-	ippBuilder.SetStatic(precompGIndex, s...)
+	ippBuilder.WithStaticPoints(AggParam.precomps)
+	ippBuilder.MustSetStatic(precompGIndex, s...)
 
-	lazyComputeHPrime(y, N, ippBuilder)
-	ippBuilder.MulStatic(precompHIndex(N), sInverse...)
+	mulPowerVector(sInverse, operation.NewScalar().Invert(y))
+	ippBuilder.MustSetStatic(precompHIndex(aggParamNMax), sInverse...)
 
 	c := new(operation.Scalar).Mul(proof.innerProductProof.a, proof.innerProductProof.b)
-	ippBuilder.SetStatic(precompUIndex, operation.NewScalar().Mul(c, operation.HashToScalar(x.ToBytesS()))) // cU'
+	ippBuilder.MustSetStatic(precompUIndex, operation.NewScalar().Mul(c, operation.HashToScalar(x.ToBytesS()))) // cU'
 
 	rhsBuilder := operation.NewMultBuilder(true)
-	rhsBuilder.Append(vSquareList, L)
-	rhsBuilder.Append(vInverseSquareList, R)
+	rhsBuilder.MustAppend(vSquareList, L)
+	rhsBuilder.MustAppend(vInverseSquareList, R)
 	rhsBuilder.AppendSingle(operation.NewScalar().FromUint64(1), proof.innerProductProof.p)
 
-	// DEBUG
-	// if !operation.IsPointEqual(ippBuilder.Clone().Execute(), rhsBuilder.Clone().Execute()) {
-	// 	panic("IPP")
-	// }
-	ippBuilder.AppendWithMultiplier(rhsBuilder, operation.ScMinusOne)
-
+	err = ippBuilder.ConcatScaled(rhsBuilder, operation.ScMinusOne)
+	if err != nil {
+		return nil, err
+	}
 	// perform identity checks simultaneously by multplying each one with a random scalar
 	check := eq65Builder
 	// DEBUG
-	// if !ippBuilder.Clone().Execute().IsIdentity() || !eq65Builder.Clone().Execute().IsIdentity() || !eq66Builder.Clone().Execute().IsIdentity() {
-	// 	panic("not identity")
-	// }
-	check.AppendWithMultiplier(eq66Builder, operation.RandomScalar())
-	check.AppendWithMultiplier(ippBuilder, operation.RandomScalar())
+	err = check.ConcatScaled(eq66Builder, operation.RandomScalar())
+	if err != nil {
+		return nil, err
+	}
+	err = check.ConcatScaled(ippBuilder, operation.RandomScalar())
+	if err != nil {
+		return nil, err
+	}
 
 	return check, nil
 }
@@ -648,26 +649,25 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 // VerifyBatch verifies a list of Bulletproofs in batched fashion.
 // It saves time by using a multi-exponent operation.
 func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error) {
-	// var check *operation.MultiScalarMultBuilder = nil
+	var check *operation.MultiScalarMultBuilder = nil
 	for _, pr := range proofs {
 		multBuilder, err := pr.BuildVerify(nil)
 		if err != nil {
 			return false, err
 		}
-		if !multBuilder.Execute().IsIdentity() {
-			Logger.Log.Errorf("Verify batch aggregated range proof failed")
-			return false, fmt.Errorf("bulletproofs: batch range proof invalid")
+		if check == nil {
+			check = multBuilder
+		} else {
+			err := check.ConcatScaled(multBuilder, operation.RandomScalar())
+			if err != nil {
+				return false, err
+			}
 		}
-		// if check == nil {
-		// 	check = mb
-		// } else {
-		// 	check.AppendWithMultiplier(mb, operation.RandomScalar())
-		// }
 	}
-	// if !check.Execute().IsIdentity() {
-	// 	Logger.Log.Errorf("Verify batch aggregated range proof failed")
-	// 	return false, fmt.Errorf("bulletproofs: batch range proof invalid")
-	// }
+	if !check.Eval().IsIdentity() {
+		Logger.Log.Errorf("Verify batch aggregated range proof failed")
+		return false, fmt.Errorf("bulletproofs: batch range proof invalid")
+	}
 	return true, nil
 }
 

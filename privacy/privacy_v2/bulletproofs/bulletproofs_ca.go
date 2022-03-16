@@ -76,14 +76,14 @@ func (wit AggregatedRangeWitness) ProveUsingBase(gval *operation.Point) (*Aggreg
 		return nil, err
 	}
 	mbuilder.AppendSingle(alpha, operation.HBase)
-	proof.a = mbuilder.Execute()
+	proof.a = mbuilder.Eval()
 
 	_, err = encodeVectors(sL, sR, aggParam.g, aggParam.h, mbuilder)
 	if err != nil {
 		return nil, err
 	}
 	mbuilder.AppendSingle(rho, operation.HBase)
-	proof.s = mbuilder.Execute()
+	proof.s = mbuilder.Eval()
 	// challenge y, z
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
@@ -191,7 +191,7 @@ func (wit AggregatedRangeWitness) ProveUsingBase(gval *operation.Point) (*Aggreg
 		return nil, err
 	}
 	mbuilder.AppendSingle(proof.tHat, uPrime)
-	innerProductWit.p = mbuilder.Execute()
+	innerProductWit.p = mbuilder.Eval()
 
 	proof.innerProductProof, err = innerProductWit.Prove(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if err != nil {
@@ -209,7 +209,7 @@ func (proof AggregatedRangeProof) VerifyUsingBase(gval *operation.Point) (bool, 
 	if err != nil {
 		return false, err
 	}
-	if !multBuilder.Execute().IsIdentity() {
+	if !multBuilder.Eval().IsIdentity() {
 		Logger.Log.Errorf("Verify aggregated range proof failed")
 		return false, fmt.Errorf("bulletproofs: range proof invalid")
 	}

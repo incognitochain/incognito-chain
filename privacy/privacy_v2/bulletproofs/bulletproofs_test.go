@@ -375,13 +375,13 @@ func TestEncodeVectors(t *testing.T) {
 
 		mbuilder := operation.NewMultBuilder(false)
 		_, err := encodeVectors(a, b, G, H, mbuilder)
-		actualRes := mbuilder.Execute()
+		actualRes := mbuilder.Eval()
 		Equal(t, err, nil)
 		True(t, operation.IsPointEqual(expectedRes, actualRes))
 
 		mbuilder = operation.NewMultBuilder(true)
 		_, err = encodeVectors(a, b, G, H, mbuilder)
-		actualRes = mbuilder.Execute()
+		actualRes = mbuilder.Eval()
 		Equal(t, err, nil)
 		True(t, operation.IsPointEqual(expectedRes, actualRes))
 	}

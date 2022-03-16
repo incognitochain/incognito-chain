@@ -39,12 +39,11 @@ func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operatio
 }
 
 //nolint:gocritic // This function uses capitalized variable name
-func lazyComputeHPrime(y *operation.Scalar, N int, b *operation.MultiScalarMultBuilder) {
-	yInverse := new(operation.Scalar).Invert(y)
-	expyInverse := new(operation.Scalar).FromUint64(1)
-	for i := 0; i < N; i++ {
-		b.SetStatic(precompHIndex(N)+i, expyInverse) //nolint:errcheck
-		expyInverse.Mul(expyInverse, yInverse)
+func mulPowerVector(scLst []*operation.Scalar, base *operation.Scalar) {
+	pow := new(operation.Scalar).FromUint64(1)
+	for _, sc := range scLst {
+		sc.Mul(sc, pow) //nolint:errcheck
+		pow.Mul(pow, base)
 	}
 }
 
@@ -180,6 +179,10 @@ const (
 	precompGIndex
 )
 
+const (
+	aggParamNMax = privacy_util.MaxOutputCoin * privacy_util.MaxExp
+)
+
 func precompHIndex(paramN int) int {
 	return precompGIndex + paramN
 }
@@ -220,17 +223,13 @@ func newBulletproofParams(m int) *bulletproofParams {
 
 //nolint:gocritic // This function uses capitalized variable name
 func setAggregateParams(N int) *bulletproofParams {
-	aggParam := new(bulletproofParams)
-	aggParam.g = AggParam.g[0:N]
-	aggParam.h = AggParam.h[0:N]
-	aggParam.u = AggParam.u
-	aggParam.cs = AggParam.cs
-
-	aggParam.precomps = []operation.PrecomputedPoint{}
-	aggParam.precomps = append(aggParam.precomps, AggParam.precomps[:precompGIndex+N]...)
-	maxN := privacy_util.MaxOutputCoin * privacy_util.MaxExp
-	aggParam.precomps = append(aggParam.precomps, AggParam.precomps[precompHIndex(maxN):precompHIndex(maxN)+N]...)
-	return aggParam
+	return &bulletproofParams{
+		g:        AggParam.g[0:N],
+		h:        AggParam.h[0:N],
+		u:        AggParam.u,
+		cs:       AggParam.cs,
+		precomps: AggParam.precomps,
+	}
 }
 
 func generateChallenge(hashCache []byte, values []*operation.Point) *operation.Scalar {

@@ -31,7 +31,7 @@ func (proof *InnerProductProof) Init() *InnerProductProof {
 	proof.r = []*operation.Point{}
 	proof.a = new(operation.Scalar)
 	proof.b = new(operation.Scalar)
-	proof.p = new(operation.Point).Identity()
+	proof.p = operation.NewIdentityPoint()
 
 	return proof
 }
@@ -172,7 +172,7 @@ func (wit InnerProductWitness) Prove(GParam []*operation.Point, HParam []*operat
 			return nil, err
 		}
 		mbuilder.AppendSingle(cL, uParam)
-		L := mbuilder.Execute()
+		L := mbuilder.Eval()
 		proof.l = append(proof.l, L)
 
 		_, err = encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:], mbuilder)
@@ -180,7 +180,7 @@ func (wit InnerProductWitness) Prove(GParam []*operation.Point, HParam []*operat
 			return nil, err
 		}
 		mbuilder.AppendSingle(cR, uParam)
-		R := mbuilder.Execute()
+		R := mbuilder.Eval()
 		proof.r = append(proof.r, R)
 
 		x := generateChallenge(hashCache, []*operation.Point{L, R})
