@@ -1,9 +1,6 @@
 package blockstorage
 
 import (
-	"fmt"
-	"sync"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -15,23 +12,12 @@ import (
 )
 
 type BlockService interface {
-	GetBlockByHeight(
-		height uint64,
-		cID byte,
-	) (
-		[]byte,
-		error,
-	)
 	GetBlockByHash(
 		hash *common.Hash,
 		cID byte,
 	) (
 		[]byte,
 		error,
-	)
-	MarkFinalized(
-		height uint64,
-		hash common.Hash,
 	)
 	CheckBlockByHash(
 		hash *common.Hash,
@@ -52,13 +38,9 @@ type BlockInfor struct {
 }
 
 type BlockManager struct {
-	rDB            incdb.Database
-	fDB            flatfile.FlatFile
-	cacher         common.Cacher
-	locker         *sync.RWMutex
-	hashByHeight   map[uint64][]common.Hash
-	prevHashByHash map[common.Hash]common.Hash
-	finalHeight    uint64
+	rDB    incdb.Database
+	fDB    flatfile.FlatFile
+	cacher common.Cacher
 }
 
 func NewBlockService(
@@ -73,44 +55,11 @@ func NewBlockService(
 		return nil, err
 	}
 	res := &BlockManager{
-		rDB:            rawDB,
-		fDB:            flatfileManager,
-		cacher:         mCache,
-		locker:         &sync.RWMutex{},
-		hashByHeight:   map[uint64][]common.Hash{},
-		prevHashByHash: map[common.Hash]common.Hash{},
-		finalHeight:    1,
+		rDB:    rawDB,
+		fDB:    flatfileManager,
+		cacher: mCache,
 	}
 	return res, nil
-}
-
-func (blkM *BlockManager) GetBlockByHeight(
-	height uint64,
-	cID byte,
-) (
-	[]byte,
-	error,
-) {
-	blkHash := &common.Hash{}
-	var err error
-	if height <= blkM.finalHeight {
-		if cID == common.BeaconChainSyncID {
-			blkHash, err = rawdbv2.GetFinalizedBeaconBlockHashByIndex(blkM.rDB, height)
-		} else {
-			blkHash, err = rawdbv2.GetFinalizedShardBlockHashByIndex(blkM.rDB, cID, height)
-		}
-	} else {
-		if blkHashs, ok := blkM.hashByHeight[height]; ok && (len(blkHashs) > 0) {
-			blkHash = &blkHashs[0]
-			err = nil
-		} else {
-			err = errors.Errorf("Can not found blk hash for blk height %v of cID %v", cID)
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	return blkM.GetBlockByHash(blkHash, cID)
 }
 
 func (blkM *BlockManager) CheckBlockByHash(
@@ -120,7 +69,6 @@ func (blkM *BlockManager) CheckBlockByHash(
 	error,
 ) {
 	keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
-	fmt.Printf("[testFF] Get blk %v, key %v\n", hash.String(), common.HashH(keyIdx).String())
 	_, err := blkM.rDB.Get(keyIdx)
 	if err != nil {
 		return false, err
@@ -167,7 +115,6 @@ func (blkM *BlockManager) StoreBlock(
 	if err != nil {
 		return err
 	}
-	blkHeight := blkData.GetHeight()
 	blkHash := blkData.Hash()
 	if config.Config().EnableFFStorage {
 		blkIndex, err := blkM.fDB.Append(blkBytes)
@@ -189,45 +136,6 @@ func (blkM *BlockManager) StoreBlock(
 			return err
 		}
 	}
-	blkM.locker.Lock()
-	blkM.hashByHeight[blkHeight] = append(blkM.hashByHeight[blkHeight], *blkHash)
-	blkM.prevHashByHash[*blkHash] = blkData.GetPrevHash()
-	blkM.locker.Unlock()
 	blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
 	return nil
-}
-
-func (blkM *BlockManager) MarkFinalized(
-	blkHeight uint64,
-	blkHash common.Hash,
-) {
-	curFinalHeight := blkM.finalHeight
-	blkM.locker.Lock()
-	for height := blkHeight; height >= curFinalHeight; height-- {
-		pHash, ok := blkM.prevHashByHash[blkHash]
-		needToRemove := blkM.hashByHeight[height]
-		for _, hash := range needToRemove {
-			delete(blkM.prevHashByHash, hash)
-		}
-		if ok {
-			blkHash = pHash
-		}
-	}
-	blkM.locker.Unlock()
-	blkM.finalHeight = blkHeight
-}
-
-func (blkM *BlockManager) GetPrevHashByHash(
-	hash *common.Hash,
-) (
-	common.Hash,
-	error,
-) {
-	blkM.locker.RLock()
-	prevH, existed := blkM.prevHashByHash[*hash]
-	blkM.locker.RUnlock()
-	if !existed {
-		return common.Hash{}, errors.Errorf("Can not found prev Hash for non-finalize hash %v ", hash.String())
-	}
-	return prevH, nil
 }
