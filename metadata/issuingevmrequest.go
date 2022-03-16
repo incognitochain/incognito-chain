@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
@@ -63,6 +64,7 @@ type IssuingEVMAcceptedInst struct {
 	ShardID         byte        `json:"shardId"`
 	IssuingAmount   uint64      `json:"issuingAmount"`
 	Receiver        string      `json:"receiverAddrStr"`
+	OTDepositKey    []byte      `json:"OTDepositKey,omitempty"`
 	IncTokenID      common.Hash `json:"incTokenId"`
 	TxReqID         common.Hash `json:"txReqId"`
 	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
@@ -121,6 +123,8 @@ func NewIssuingEVMRequest(
 	txIndex uint,
 	proofStrs []string,
 	incTokenID common.Hash,
+	receiver string,
+	signature []byte,
 	metaType int,
 ) (*IssuingEVMRequest, error) {
 	metadataBase := MetadataBase{
@@ -131,6 +135,8 @@ func NewIssuingEVMRequest(
 		TxIndex:    txIndex,
 		ProofStrs:  proofStrs,
 		IncTokenID: incTokenID,
+		Receiver:   receiver,
+		Signature:  signature,
 	}
 	issuingEVMReq.MetadataBase = metadataBase
 	return issuingEVMReq, nil
@@ -138,7 +144,7 @@ func NewIssuingEVMRequest(
 
 func NewIssuingEVMRequestFromMap(
 	data map[string]interface{},
-	metatype int,
+	metaType int,
 ) (*IssuingEVMRequest, error) {
 	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
 	txIdx := uint(data["TxIndex"].(float64))
@@ -150,7 +156,32 @@ func NewIssuingEVMRequestFromMap(
 
 	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TokenID incorrect"))
+		return nil, NewMetadataTxError(IssuingEvmRequestNewIssuingEVMRequestFromMapError, fmt.Errorf("TokenID incorrect"))
+	}
+
+	var sig []byte
+	tmpSig, ok := data["Signature"]
+	if ok {
+		sigStr, ok := tmpSig.(string)
+		if ok {
+			sig, _, err = base58.Base58Check{}.Decode(sigStr)
+			if err != nil {
+				return nil, NewMetadataTxError(IssuingEvmRequestNewIssuingEVMRequestFromMapError, fmt.Errorf("invalid base58-encoded signature"))
+			}
+		}
+	}
+
+	tmpReceiver, ok := data["Receiver"]
+	var receiver string
+	if ok {
+		receiver, _ = tmpReceiver.(string)
+	}
+
+	if _, ok := data["MetadataType"]; ok {
+		tmpMdType, ok := data["MetadataType"].(float64)
+		if ok {
+			metaType = int(tmpMdType)
+		}
 	}
 
 	req, _ := NewIssuingEVMRequest(
@@ -158,7 +189,9 @@ func NewIssuingEVMRequestFromMap(
 		txIdx,
 		proofStrs,
 		*incTokenID,
-		metatype,
+		receiver,
+		sig,
+		metaType,
 	)
 	return req, nil
 }
