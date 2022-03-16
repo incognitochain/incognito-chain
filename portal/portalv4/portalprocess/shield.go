@@ -324,7 +324,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		depositPubKeyBytes, _, _ := base58.Base58Check{}.Decode(shieldingReqTrackData.OTDepositPubKey) // error has been checked from outer layers.
 		err = statedb.StoreShieldInfoByPubKey(stateDB, depositPubKeyBytes, shieldingReqTrackData.TxReqID.String())
 		if err != nil {
-			Logger.log.Errorf("Shield Request: An error occurred while storing shielding info: %v\n", err)
+			Logger.log.Errorf("Portal Shield Request: An error occurred while storing shielding info: %v\n", err)
 		}
 	}
 
