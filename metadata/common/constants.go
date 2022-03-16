@@ -268,11 +268,10 @@ const (
 /*)*/
 
 const (
-	StopAutoStakingAmount = 0
-	EVMConfirmationBlocks = 15
-	PLGConfirmationBlocks = 35
-	// todo: review
-	FantomConfirmationBlocks = 1
+	StopAutoStakingAmount    = 0
+	EVMConfirmationBlocks    = 15
+	PLGConfirmationBlocks    = 35
+	FantomConfirmationBlocks = 5
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
