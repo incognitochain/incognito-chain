@@ -181,7 +181,7 @@ func (httpServer *HttpServer) handleGetPortalV4Params(params interface{}, closeC
 ===== Shielding request
 */
 
-// DEPRECATED: consider using handleCreateRawTxDepositReqWithDepositKey instead.
+// DEPRECATED: consider using handleCreatePortalTxDepositReqWithDepositKey instead.
 func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
@@ -243,7 +243,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxDepositReqWithDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreatePortalTxDepositReqWithDepositKey(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("must have at lease 5 parameters"))
@@ -348,7 +348,7 @@ func (httpServer *HttpServer) handleCreateRawTxDepositReqWithDepositKey(params i
 	return result, nil
 }
 
-// DEPRECATED: consider using RPC handleCreateAndSendDepositTxWithDepositKey instead.
+// DEPRECATED: consider using RPC handleCreateAndSendPortalDepositTxWithDepositKey instead.
 func (httpServer *HttpServer) handleCreateAndSendTxWithShieldingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithShieldingReq(params, closeChan)
 	if err != nil {
@@ -366,8 +366,8 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithShieldingReq(params inter
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendDepositTxWithDepositKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxDepositReqWithDepositKey(params, closeChan)
+func (httpServer *HttpServer) handleCreateAndSendPortalDepositTxWithDepositKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreatePortalTxDepositReqWithDepositKey(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

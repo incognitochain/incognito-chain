@@ -377,12 +377,12 @@ var HttpHandler = map[string]httpHandler{
 	getPortalV4Params:                          (*HttpServer).handleGetPortalV4Params,
 	generatePortalShieldMultisigAddress:        (*HttpServer).handleGenerateShieldingMultisigAddress,
 
-	generateDepositAddress:               (*HttpServer).handleGenerateDepositAddress,
-	generateOTDepositKey:                 (*HttpServer).handleGenerateOTDepositKey,
-	getNextOTDepositKey:                  (*HttpServer).handleGetNextOTDepositKey,
-	hasOTDepositPubKeys:                  (*HttpServer).handleHasOTDepositPubKeys,
-	getDepositTxsByPubKeys:               (*HttpServer).handleGetDepositTxsByPubKeys,
-	createAndSendDepositTxWithDepositKey: (*HttpServer).handleCreateAndSendDepositTxWithDepositKey,
+	generateDepositAddress:                     (*HttpServer).handleGenerateDepositAddress,
+	generateOTDepositKey:                       (*HttpServer).handleGenerateOTDepositKey,
+	getNextOTDepositKey:                        (*HttpServer).handleGetNextOTDepositKey,
+	hasOTDepositPubKeys:                        (*HttpServer).handleHasOTDepositPubKeys,
+	getDepositTxsByPubKeys:                     (*HttpServer).handleGetDepositTxsByPubKeys,
+	createAndSendPortalDepositTxWithDepositKey: (*HttpServer).handleCreateAndSendPortalDepositTxWithDepositKey,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

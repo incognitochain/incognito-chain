@@ -404,12 +404,12 @@ const (
 	generatePortalShieldMultisigAddress        = "generateportalshieldmultisigaddress"
 
 	// more bridge
-	generateDepositAddress               = "generatedepositaddress"
-	generateOTDepositKey                 = "generateotdepositkey"
-	getNextOTDepositKey                  = "getnextotdepositkey"
-	hasOTDepositPubKeys                  = "hasotdepositpubkeys"
-	getDepositTxsByPubKeys               = "getdeposittxsbypubkeys"
-	createAndSendDepositTxWithDepositKey = "createandsenddeposittxwithdepositkey"
+	generateDepositAddress                     = "generatedepositaddress"
+	generateOTDepositKey                       = "generateotdepositkey"
+	getNextOTDepositKey                        = "getnextotdepositkey"
+	hasOTDepositPubKeys                        = "hasotdepositpubkeys"
+	getDepositTxsByPubKeys                     = "getdeposittxsbypubkeys"
+	createAndSendPortalDepositTxWithDepositKey = "createandsendportaldeposittxwithdepositkey"
 
 	// stake
 	unstake = "createunstaketransaction"
