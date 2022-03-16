@@ -24,7 +24,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 	beaconBestState.BestBlockHash = *block.Hash()
 	beaconBestState.PreviousBestBlockHash = block.GetPrevHash()
 	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize,
-		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, block.Header.Height)
+		beaconBestState.TriggeredFeature, block.Header.Height)
 	if newMaxCommitteeSize != beaconBestState.MaxShardCommitteeSize {
 		Logger.log.Infof("Beacon Height %+v, Hash %+v, found new max committee size %+v", block.Header.Height, block.Header.Hash(), newMaxCommitteeSize)
 		beaconBestState.MaxShardCommitteeSize = newMaxCommitteeSize
@@ -34,16 +34,16 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		if err != nil {
 			return err
 		}
+		if beaconBestState.BeaconHeight > config.Param().ConsensusParam.BlockProducingV3Height {
+			if err := beaconBestState.checkBlockProducingV3Config(); err != nil {
+				return err
+			}
+			if err := beaconBestState.upgradeBlockProducingV3Config(); err != nil {
+				return err
+			}
+		}
 	}
 
-	if beaconBestState.BeaconHeight > config.Param().ConsensusParam.BlockProducingV3Height {
-		if err := beaconBestState.checkBlockProducingV3Config(); err != nil {
-			return err
-		}
-		if err := beaconBestState.upgradeBlockProducingV3Config(); err != nil {
-			return err
-		}
-	}
 	if includePdexv3 {
 		beaconBestState.pdeStates = make(map[uint]pdex.State)
 		beaconViewCached, ok := blockchain.beaconViewCache.Get(beaconBestState.BestBlockHash.String())

@@ -410,6 +410,10 @@ func GetMostRecentEVMBlockHeight(protocol string, host string, port string) (*bi
 		return nil, errors.New(fmt.Sprintf("an error occured during calling eth_blockNumber: %s", getEVMBlockNumRes.RPCError.Message))
 	}
 
+	if len(getEVMBlockNumRes.Result) < 2 {
+		return nil, errors.New(fmt.Sprintf("invalid block height number eth_blockNumber: %s", getEVMBlockNumRes.Result))
+	}
+
 	blockNumber := new(big.Int)
 	_, ok := blockNumber.SetString(getEVMBlockNumRes.Result[2:], 16)
 	if !ok {
