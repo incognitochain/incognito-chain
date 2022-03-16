@@ -258,6 +258,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridgeAgg.ConvertTokenToUnifiedTokenResponse{}
 	case metadataCommon.BridgeAggModifyListTokenMeta:
 		md = &metadataBridgeAgg.ModifyListToken{}
+	case metadataCommon.IssuingUnifiedTokenRequestMeta:
+		md = &IssuingEVMRequest{}
+	case metadataCommon.IssuingUnifiedTokenResponseMeta:
+		md = &IssuingEVMResponse{}
 
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)

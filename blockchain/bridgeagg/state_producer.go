@@ -34,6 +34,7 @@ func (sp *stateProducer) modifyListTokens(
 		utils.EmptyString,
 	)
 	rejectContent := metadataCommon.NewRejectContentWithValue(action.TxReqID, 0, nil)
+
 	for unifiedTokenID, vaults := range md.NewListTokens {
 		if err := CheckTokenIDExisted(sDBs, unifiedTokenID); err != nil {
 			rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
@@ -57,11 +58,14 @@ func (sp *stateProducer) modifyListTokens(
 				return temp, unifiedTokenInfos, nil
 			}
 			if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
-				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVault()
+				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVaultWithValue(
+					*statedb.NewBridgeAggVaultState(), []byte{}, vault.TokenID(),
+				)
 			} else {
 				newRewardReserve := vault.RewardReserve
-				lastUpdatedRewardReserve := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].LastUpdatedRewardReserve()
-				currentRewardReserve := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].CurrentRewardReserve()
+				v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
+				lastUpdatedRewardReserve := v.LastUpdatedRewardReserve()
+				currentRewardReserve := v.CurrentRewardReserve()
 				if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
 					rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
 					temp, err := inst.StringSliceWithRejectContent(rejectContent)
@@ -70,8 +74,10 @@ func (sp *stateProducer) modifyListTokens(
 					}
 					return temp, unifiedTokenInfos, nil
 				}
-				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].SetLastUpdatedRewardReserve(newRewardReserve)
-				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].SetCurrentRewardReserve(newRewardReserve)
+				v.SetLastUpdatedRewardReserve(vault.RewardReserve)
+				v.SetCurrentRewardReserve(vault.RewardReserve)
+				v.tokenID = vault.TokenID()
+				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 			}
 		}
 	}
@@ -131,10 +137,11 @@ func (sp *stateProducer) convert(
 		}
 		err = vault.convert(md.Amount)
 		if err != nil {
+			Logger.log.Warnf("Invalid shield amount error: %v tx %s", err, action.TxReqID.String())
 			rejectContent.ErrorCode = ErrCodeMessage[InvalidConvertAmountError].Code
-			temp, err := inst.StringSliceWithRejectContent(rejectContent)
-			if err != nil {
-				return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(InvalidConvertAmountError, err)
+			temp, e := inst.StringSliceWithRejectContent(rejectContent)
+			if e != nil {
+				return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, e)
 			}
 			return temp, unifiedTokenInfos, nil
 
@@ -155,10 +162,14 @@ func (sp *stateProducer) convert(
 }
 
 func (sp *stateProducer) shield(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	contentStr []string, unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	res := []string{}
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	tempInst := metadataCommon.NewInstruction()
+	if err := tempInst.FromStringSlice(contentStr); err != nil {
+		return res, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
 	if err != nil {
 		return res, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
 	}
@@ -174,24 +185,25 @@ func (sp *stateProducer) shield(
 		utils.EmptyString,
 	)
 	rejectContent := metadataCommon.NewRejectContentWithValue(content.TxReqID, 0, nil)
-	vault := unifiedTokenInfos[content.IncTokenID][content.NetworkdID] // check available before
+	vault := unifiedTokenInfos[content.IncTokenID][content.NetworkID] // check available before
 	actualAmount, err := vault.shield(content.IssuingAmount)
 	if err != nil {
+		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, content.TxReqID.String())
 		rejectContent.ErrorCode = ErrCodeMessage[CalculateShieldAmountError].Code
-		temp, err := inst.StringSliceWithRejectContent(rejectContent)
-		if err != nil {
-			return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
+		temp, e := inst.StringSliceWithRejectContent(rejectContent)
+		if e != nil {
+			return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
 		}
 		return temp, unifiedTokenInfos, nil
 	}
+	unifiedTokenInfos[content.IncTokenID][content.NetworkID] = vault
 	// build instruction content
 	content.Reward = actualAmount - content.IssuingAmount
 	content.IssuingAmount = actualAmount
 
 	contentBytes, err = json.Marshal(content)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
-		return []string{}, unifiedTokenInfos, err
+		return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 	inst.Content = base64.StdEncoding.EncodeToString(contentBytes)
 	return inst.StringSlice(), unifiedTokenInfos, nil

@@ -259,7 +259,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		TxReqID:         issuingEVMBridgeReqAction.TxReqID,
 		UniqTx:          uniqTx,
 		ExternalTokenID: token,
-		NetworkdID:      md.NetworkdID,
+		NetworkID:       md.NetworkID,
 	}
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {

@@ -29,7 +29,6 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 			return nil, err
 		}
 		for _, convertToken := range convertTokens {
-
 			state, err := statedb.GetBridgeAggVault(sDB, unifiedTokenState.TokenID(), convertToken.TokenID())
 			if err != nil {
 				state = statedb.NewBridgeAggVaultState()

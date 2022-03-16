@@ -627,12 +627,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
-	// update bridge aggreator state
-	err = beaconBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, beaconBestState.featureStateDB)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
@@ -972,6 +966,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight-1 {
 		newBestState.pdeStates[pdex.AmplifierVersion] = pdex.NewStatev2()
+	}
+
+	// update bridge aggreator state
+	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	if err != nil {
+		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 
 	// Save result of BurningConfirm instruction to get proof later

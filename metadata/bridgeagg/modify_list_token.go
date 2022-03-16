@@ -3,6 +3,7 @@ package bridgeagg
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -10,11 +11,6 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
-
-type Vault struct {
-	statedb.BridgeAggConvertedTokenState
-	RewardReserve uint64 `json:"RewardReserve"`
-}
 
 type ModifyListToken struct {
 	metadataCommon.MetadataBaseWithSignature
@@ -84,12 +80,12 @@ func (request *ModifyListToken) ValidateSanityData(
 	usedTokenIDs := make(map[common.Hash]bool)
 	for unifiedTokenID, vaults := range request.NewListTokens {
 		if usedTokenIDs[unifiedTokenID] {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", unifiedTokenID.String()))
 		}
 		usedTokenIDs[unifiedTokenID] = true
 		for _, vault := range vaults {
 			if usedTokenIDs[vault.TokenID()] {
-				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Found duplicate tokenID"))
+				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", vault.TokenID().String()))
 			}
 			usedTokenIDs[vault.TokenID()] = true
 		}

@@ -64,15 +64,30 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		NewList map[common.Hash][]metadataBridgeAgg.Vault `json:"NewList"`
+		NewList map[common.Hash][]struct {
+			TokenID       common.Hash `json:"TokenID"`
+			NetworkID     uint        `json:"NetworkID"`
+			RewardReserve uint64      `json:"RewardReserve"`
+		} `json:"NewList"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+	newList := make(map[common.Hash][]metadataBridgeAgg.Vault)
+	for k, v := range mdReader.NewList {
+		for _, value := range v {
+			newList[k] = append(newList[k], metadataBridgeAgg.Vault{
+				RewardReserve: value.RewardReserve,
+				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
+					value.TokenID, value.NetworkID,
+				),
+			})
+		}
+	}
 
-	md := metadataBridgeAgg.NewModifyListTokenWithValue(mdReader.NewList)
+	md := metadataBridgeAgg.NewModifyListTokenWithValue(newList)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -334,7 +349,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	}
 
 	md, err := metadata.NewIssuingEVMRequest(
-		mdReader.BlockHash, mdReader.TxIndex, mdReader.ProofStrs, mdReader.IncTokenID, mdReader.NetworkdID,
+		mdReader.BlockHash, mdReader.TxIndex, mdReader.ProofStrs, mdReader.IncTokenID, mdReader.NetworkID,
 		metadataCommon.IssuingUnifiedTokenRequestMeta,
 	)
 
@@ -420,7 +435,7 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggConvertStatusPrefix(),
+		statedb.BridgeAggListShieldStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {

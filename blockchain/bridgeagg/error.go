@@ -20,7 +20,7 @@ var ErrCodeMessage = map[int]struct {
 	Code    uint
 	Message string
 }{
-	OtherError:                      {1, "Not found token id in network"},
+	OtherError:                      {1, "Other error"},
 	NotFoundTokenIDInNetworkError:   {1000, "Not found token id in network"},
 	NotFoundNetworkIDError:          {1001, "Not found networkID"},
 	InvalidRewardReserveError:       {1003, "Invalid reward reserve"},

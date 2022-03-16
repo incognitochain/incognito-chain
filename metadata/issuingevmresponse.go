@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -87,19 +88,27 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta) &&
 				instMetaType != strconv.Itoa(IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(IssuingPRVBEP20RequestMeta) &&
-				instMetaType != strconv.Itoa(IssuingPLGRequestMeta)) {
+				instMetaType != strconv.Itoa(IssuingPLGRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta)) {
 			continue
 		}
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
+			Logger.log.Info("[bridgeagg] 1")
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 		var issuingEVMAcceptedInst IssuingEVMAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 		if err != nil {
+			Logger.log.Info("[bridgeagg] 2")
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			continue
+		}
+
+		if instMetaType == strconv.Itoa(metadataCommon.IssuingUnifiedTokenResponseMeta) && issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
+			Logger.log.Info("[bridgeagg] 3")
+			Logger.log.Error("WARNING - VALIDATION: Wrong networkID expected not %v", common.DefaultNetworkID)
 			continue
 		}
 
@@ -107,21 +116,25 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			!bytes.Equal(iRes.UniqTx, issuingEVMAcceptedInst.UniqTx) ||
 			!bytes.Equal(iRes.ExternalTokenID, issuingEVMAcceptedInst.ExternalTokenID) ||
 			shardID != issuingEVMAcceptedInst.ShardID {
+			Logger.log.Info("[bridgeagg] 4")
 			continue
 		}
 
 		addressStr := issuingEVMAcceptedInst.ReceiverAddrStr
 		key, err := wallet.Base58CheckDeserialize(addressStr)
 		if err != nil {
+			Logger.log.Info("[bridgeagg] 5")
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil || !isMinted || coinID.String() != issuingEVMAcceptedInst.IncTokenID.String() {
+			Logger.log.Info("[bridgeagg] 6")
 			continue
 		}
 		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingEVMAcceptedInst.IssuingAmount); !ok {
+			Logger.log.Info("[bridgeagg] 7")
 			continue
 		}
 		idx = i

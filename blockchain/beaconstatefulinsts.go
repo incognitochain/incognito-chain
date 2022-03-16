@@ -164,7 +164,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	// bridge agg actions collector
 	unshieldActions := []string{}
-	shieldActions := []string{}
+	shieldActions := [][]string{}
 	convertActions := []string{}
 	modifyListTokensActions := []string{}
 	var sDBs map[int]*statedb.StateDB
@@ -329,7 +329,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
-					shieldActions = append(shieldActions, newInst[0]...)
+					shieldActions = append(shieldActions, newInst...)
 					newInst = [][]string{}
 				}
 			default:

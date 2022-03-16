@@ -41,10 +41,15 @@ func (sp *stateProcessor) modifyListTokens(
 			}
 			for _, vault := range vaults {
 				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
-					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVault()
+					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVaultWithValue(
+						*statedb.NewBridgeAggVaultState(), []byte{}, vault.TokenID(),
+					)
 				} else {
-					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].SetLastUpdatedRewardReserve(vault.RewardReserve)
-					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()].SetCurrentRewardReserve(vault.RewardReserve)
+					v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
+					v.SetLastUpdatedRewardReserve(vault.RewardReserve)
+					v.SetCurrentRewardReserve(vault.RewardReserve)
+					v.tokenID = vault.TokenID()
+					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 				}
 			}
 		}
@@ -146,15 +151,18 @@ func (sp *stateProcessor) shield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		vault := unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkdID] // check available before
+		vault := unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkID] // check available before
+		Logger.log.Info("[bridgeagg] acceptedInst.Reward:", acceptedInst.Reward)
 		err = vault.decreaseCurrentRewardReserve(acceptedInst.Reward)
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
+		Logger.log.Info("[bridgeagg] acceptedInst.IssuingAmount:", acceptedInst.IssuingAmount)
 		err = vault.increaseReserve(acceptedInst.IssuingAmount - acceptedInst.Reward)
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
+		unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkID] = vault
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
 	case common.RejectedStatusStr:

@@ -213,7 +213,7 @@ func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.Issuin
 	var isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
 	var tokenID common.Hash
 
-	switch md.NetworkdID {
+	switch md.NetworkID {
 	case common.ETHNetworkID:
 		listTxUsed = ac.UniqETHTxsUsed
 		contractAddress = config.Param().EthContractAddressStr
@@ -236,7 +236,7 @@ func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.Issuin
 	}
 
 	if vaults, found := s.unifiedTokenInfos[md.IncTokenID]; found {
-		if vault, found := vaults[md.NetworkdID]; found {
+		if vault, found := vaults[md.NetworkID]; found {
 			tokenID = vault.tokenID
 		} else {
 			return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Not found networkID"))

@@ -15,7 +15,7 @@ type BridgeAggVaultState struct {
 	currentRewardReserve     uint64
 }
 
-func (state BridgeAggVaultState) MarshalJSON() ([]byte, error) {
+func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Reserve                  uint64 `json:"Reserve"`
 		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
@@ -97,11 +97,10 @@ func (b *BridgeAggVaultState) GetDiff(compareState *BridgeAggVaultState) (*Bridg
 	if compareState == nil {
 		return nil, errors.New("compareState is nil")
 	}
-	res := b.Clone()
 	if b.reserve != compareState.reserve ||
 		b.currentRewardReserve != compareState.currentRewardReserve ||
 		b.lastUpdatedRewardReserve != compareState.lastUpdatedRewardReserve {
-		return res, nil
+		return b.Clone(), nil
 	}
 	return nil, nil
 }

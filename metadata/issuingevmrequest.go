@@ -28,7 +28,7 @@ type IssuingEVMRequest struct {
 	TxIndex    uint
 	ProofStrs  []string
 	IncTokenID common.Hash
-	NetworkdID uint `json:"NetworkdID,omitempty"`
+	NetworkID  uint `json:"NetworkID,omitempty"`
 	MetadataBase
 }
 
@@ -46,7 +46,7 @@ type IssuingEVMAcceptedInst struct {
 	TxReqID         common.Hash `json:"txReqId"`
 	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
 	ExternalTokenID []byte      `json:"externalTokenId"`
-	NetworkdID      uint        `json:"networkID,omitempty"`
+	NetworkID       uint        `json:"networkID,omitempty"`
 	Reward          uint64      `json:"reward,omitempty"`
 }
 
@@ -113,7 +113,7 @@ func NewIssuingEVMRequest(
 		TxIndex:    txIndex,
 		ProofStrs:  proofStrs,
 		IncTokenID: incTokenID,
-		NetworkdID: networkID,
+		NetworkID:  networkID,
 	}
 	issuingEVMReq.MetadataBase = metadataBase
 	return issuingEVMReq, nil
@@ -231,13 +231,13 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	isBSCNetwork := false
 	IsPLGNetwork := false
 
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta || (iReq.NetworkdID == common.BSCNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta || (iReq.NetworkID == common.BSCNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
 		isBSCNetwork = true
 	}
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || (iReq.NetworkdID == common.ETHNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || (iReq.NetworkID == common.ETHNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
 		isETHNetwork = true
 	}
-	if iReq.Type == IssuingPLGRequestMeta || (iReq.NetworkdID == common.PLGNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == IssuingPLGRequestMeta || (iReq.NetworkID == common.PLGNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
 		IsPLGNetwork = true
 	}
 
@@ -256,7 +256,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		evmParam.GetFromEnv()
 		host = evmParam.Host
 	} else {
-		return nil, errors.New("[verifyProofAndParseReceipt] invalid metatype")
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: [verifyProofAndParseReceipt] invalid metatype with the hash: %s", iReq.BlockHash.String()))
 	}
 	evmHeader, err := GetEVMHeader(iReq.BlockHash, protocol, host, port)
 	if err != nil {
