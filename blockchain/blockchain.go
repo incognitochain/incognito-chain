@@ -85,7 +85,7 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
-	bc.beaconViewCache, _ = lru.New(100)
+	bc.beaconViewCache, _ = lru.New(10)
 	bc.cQuitSync = make(chan struct{})
 	return bc
 }
@@ -101,7 +101,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
-	blockchain.beaconViewCache, _ = lru.New(100)
+	blockchain.beaconViewCache, _ = lru.New(10)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
 
 	// Initialize the chain state from the passed database.  When the db
