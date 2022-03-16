@@ -40,7 +40,7 @@ type EVMDepositParams struct {
 	// TokenID is the shielding asset ID.
 	TokenID string
 
-	// ShieldingProof is a merkel proof for the shielding request.
+	// ShieldingProofs is a proof for the shielding request.
 	ShieldingProofs []string
 
 	// DepositPrivateKey is a base58-encoded deposit privateKey used to sign the request.
