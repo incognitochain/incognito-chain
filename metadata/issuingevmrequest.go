@@ -387,6 +387,24 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	return constructedReceipt, nil
 }
 
+func (iReq *IssuingEVMRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+
+	if iReq.Receiver != "" {
+		otaReceiver := privacy.OTAReceiver{}
+		_ = otaReceiver.FromString(iReq.Receiver)
+		otaDecl := metadataCommon.OTADeclaration{
+			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+		}
+		if iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta {
+			otaDecl.TokenID = common.PRVCoinID
+		}
+		result = append(result, otaDecl)
+	}
+
+	return result
+}
+
 func ParseEVMLogData(data []byte) (map[string]interface{}, error) {
 	abiIns, err := abi.JSON(strings.NewReader(common.AbiJson))
 	if err != nil {
