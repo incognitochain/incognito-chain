@@ -284,7 +284,7 @@ func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, s
 	if err != nil {
 		return nil, 0, err
 	}
-	return shardBlock, shardBlock.Header.Height, nil
+	return shardBlock, uint64(len(shardBlockBytes)), nil
 }
 
 func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (bool, error) {
@@ -304,9 +304,9 @@ func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (bool, error
 func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.ShardBlock, uint64, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
-		shardBlk, height, err := blockchain.GetShardBlockByHashWithShardID(hash, shardID)
+		shardBlk, size, err := blockchain.GetShardBlockByHashWithShardID(hash, shardID)
 		if err == nil {
-			return shardBlk, height, nil
+			return shardBlk, size, nil
 		}
 	}
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
