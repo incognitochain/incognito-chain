@@ -7,7 +7,6 @@ import (
 
 	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/pkg/errors"
@@ -225,34 +224,26 @@ func (beaconBlock *BeaconBlock) FromProtoBeaconBlock(protoData *proto.BeaconBloc
 }
 
 func (beaconBlock *BeaconBlock) ToBytes() ([]byte, error) {
-	if config.Config().EnableFFStorage {
-		protoBlk, err := beaconBlock.ToProtoBeaconBlock()
-		if (protoBlk == nil) || (err != nil) {
-			return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
-		}
-		protoBytes, err := ggproto.Marshal(protoBlk)
-		if err != nil {
-			return nil, err
-		}
-		// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-		// protoBytesComp := c.EncodeAll(protoBytes, nil)
-		return protoBytes, nil
-	} else {
-		return json.Marshal(beaconBlock)
+	protoBlk, err := beaconBlock.ToProtoBeaconBlock()
+	if (protoBlk == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
 	}
+	protoBytes, err := ggproto.Marshal(protoBlk)
+	if err != nil {
+		return nil, err
+	}
+	return protoBytes, nil
+
 }
 
 func (beaconBlock *BeaconBlock) FromBytes(rawBytes []byte) error {
-	if config.Config().EnableFFStorage {
-		protoBlk := &proto.BeaconBlockBytes{}
-		err := ggproto.Unmarshal(rawBytes, protoBlk)
-		if err != nil {
-			return err
-		}
-		return beaconBlock.FromProtoBeaconBlock(protoBlk)
-	} else {
-		return json.Unmarshal(rawBytes, beaconBlock)
+	protoBlk := &proto.BeaconBlockBytes{}
+	err := ggproto.Unmarshal(rawBytes, protoBlk)
+	if err != nil {
+		return err
 	}
+	return beaconBlock.FromProtoBeaconBlock(protoBlk)
+
 }
 
 func (beaconBlock *BeaconBlock) GetProposer() string {

@@ -7,7 +7,6 @@ import (
 
 	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/proto"
@@ -493,41 +492,24 @@ func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) 
 }
 
 func (shardBlock *ShardBlock) FromBytes(data []byte) error {
-	if config.Config().EnableFFStorage {
-		// d, _ := zstd.NewReader(nil)
-		// rawBytes, err := d.DecodeAll(data, nil)
-		// if err != nil {
-		// 	return err
-		// }
-		protoBlk := &proto.ShardBlockBytes{}
-		err := ggproto.Unmarshal(data, protoBlk)
-		if err != nil {
-			return err
-		}
-		return shardBlock.FromProtoShardBlock(protoBlk)
-	} else {
-		// shardBlock = NewShardBlock()
-		return json.Unmarshal(data, shardBlock)
+	protoBlk := &proto.ShardBlockBytes{}
+	err := ggproto.Unmarshal(data, protoBlk)
+	if err != nil {
+		return err
 	}
+	return shardBlock.FromProtoShardBlock(protoBlk)
 }
 
 func (shardBlock *ShardBlock) ToBytes() ([]byte, error) {
-	if config.Config().EnableFFStorage {
-		protoBlk, err := shardBlock.ToProtoShardBlock()
-		if (protoBlk == nil) || (err != nil) {
-			return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf, err %v", shardBlock.Header.Height, shardBlock.Hash().String(), err)
-		}
-		protoBytes, err := ggproto.Marshal(protoBlk)
-		if err != nil {
-			return nil, err
-		}
-		return protoBytes, nil
-	} else {
-		return json.Marshal(shardBlock)
+	protoBlk, err := shardBlock.ToProtoShardBlock()
+	if (protoBlk == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert shardBlock %v - %v to protobuf, err %v", shardBlock.Header.Height, shardBlock.Hash().String(), err)
 	}
-	// c, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	// protoBytesComp := c.EncodeAll(protoBytes, nil)
-
+	protoBytes, err := ggproto.Marshal(protoBlk)
+	if err != nil {
+		return nil, err
+	}
+	return protoBytes, nil
 }
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
