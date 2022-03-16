@@ -110,7 +110,7 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 
-		addressStr := issuingEVMAcceptedInst.ReceiverAddrStr
+		addressStr := issuingEVMAcceptedInst.Receiver
 		key, err := wallet.Base58CheckDeserialize(addressStr)
 		if err != nil {
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)

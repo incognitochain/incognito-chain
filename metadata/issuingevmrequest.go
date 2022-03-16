@@ -5,12 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"strconv"
 	"strings"
@@ -187,42 +184,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, fmt.Errorf("the evm proof's receipt could not be null"))
 	}
 
-	contractAddress := config.Param().EthContractAddressStr
-	switch iReq.Type {
-	case IssuingBSCRequestMeta:
-		contractAddress = config.Param().BscContractAddressStr
-	case IssuingPLGRequestMeta:
-		contractAddress = config.Param().PlgContractAddressStr
-	case IssuingPRVERC20ResponseMeta:
-		contractAddress = config.Param().PRVERC20ContractAddressStr
-	case IssuingPRVBEP20RequestMeta:
-		contractAddress = config.Param().PRVBEP20ContractAddressStr
-	}
-
-	logMap, err := PickAndParseLogMapFromReceipt(evmReceipt, contractAddress)
-	if err != nil {
-		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, err)
-	}
-	if logMap == nil {
-		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, fmt.Errorf("cannot retrieve the log data from the shielding transaction"))
-	}
-
-	tmpAddr, ok := logMap["incognitoAddress"].(string)
-	if !ok {
-		Logger.log.Error("no incognitoAddress param found from the log map")
-		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, fmt.Errorf("the evm proof's receipt could not be null"))
-	}
-
-	_, err = wallet.Base58CheckDeserialize(tmpAddr)
-	if err == nil {
-		if iReq.Receiver != "" || iReq.Signature != nil {
-			return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, fmt.Errorf("`Receiver` and `Signature` must be empty"))
-		}
-	} else {
-		depositPubKeyBytes, _, err := base58.Base58Check{}.Decode(tmpAddr)
-		if err != nil {
-			return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid `incognitoAddress` from the log data"))
-		}
+	if iReq.Receiver != "" {
 		otaReceiver := new(privacy.OTAReceiver)
 		err = otaReceiver.FromString(iReq.Receiver)
 		if err != nil {
@@ -236,22 +198,13 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 				metadataCommon.IssuingEvmRequestValidateSanityDataError,
 				fmt.Errorf("expect receiver to be in shard %d, got %v", tx.GetSenderAddrLastByte(), otaReceiver.GetShardID()))
 		}
-		otaReceiverBytes, _ := otaReceiver.Bytes()
+	}
 
-		depositPubKey, err := new(operation.Point).FromBytesS(depositPubKeyBytes)
-		if err != nil {
-			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid OTDepositPubKey %v", tmpAddr))
-		}
-		schnorrKey := new(privacy.SchnorrPublicKey)
-		schnorrKey.Set(depositPubKey)
+	if iReq.Signature != nil {
 		schnorrSig := new(schnorr.SchnSignature)
 		err = schnorrSig.SetBytes(iReq.Signature)
 		if err != nil {
 			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid signature %v", iReq.Signature))
-		}
-
-		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); !isValid {
-			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid signature"))
 		}
 	}
 

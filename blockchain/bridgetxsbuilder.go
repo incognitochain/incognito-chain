@@ -5,6 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 	"math/big"
 	"strconv"
 
@@ -222,6 +226,46 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		Logger.log.Warn("WARNING: could not parse incognito address from bridge log map.")
 		return append(instructions, rejectedInst), nil, nil
 	}
+
+	var receiver string
+	var receivingShardID byte
+	if _, err = wallet.Base58CheckDeserialize(addressStr); err != nil {
+		depositPubKeyBytes, _, _ := base58.Base58Check{}.Decode(addressStr)
+		if err != nil {
+			Logger.log.Warn("WARNING: could not decode deposit public key")
+			return append(instructions, rejectedInst), nil, nil
+		}
+		otaReceiver := new(privacy.OTAReceiver)
+		_ = otaReceiver.FromString(issuingEVMBridgeReqAction.Meta.Receiver) // error has been handle at shard side
+		otaReceiverBytes, _ := otaReceiver.Bytes()
+
+		depositPubKey, err := new(operation.Point).FromBytesS(depositPubKeyBytes)
+		if err != nil {
+			Logger.log.Warn("WARNING: invalid OTDepositPubKey %v", addressStr)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		schnorrKey := new(privacy.SchnorrPublicKey)
+		schnorrKey.Set(depositPubKey)
+
+		schnorrSig := new(schnorr.SchnSignature)
+		_ = schnorrSig.SetBytes(issuingEVMBridgeReqAction.Meta.Signature) // error has been handle at shard side
+
+		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); !isValid {
+			Logger.log.Warn("invalid signature", issuingEVMBridgeReqAction.Meta.Signature)
+			return append(instructions, rejectedInst), nil, nil
+		}
+
+		receiver = issuingEVMBridgeReqAction.Meta.Receiver
+		receivingShardID = otaReceiver.GetShardID()
+	} else {
+		receivingShardID, err = getShardIDFromPaymentAddress(addressStr)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while getting shard id from payment address: ", err)
+			return append(instructions, rejectedInst), nil, nil
+		}
+		receiver = addressStr
+	}
+
 	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
 		Logger.log.Warn("WARNING: could not parse amount from bridge log map.")
@@ -235,16 +279,10 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		amount = amt.Uint64()
 	}
 
-	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while getting shard id from payment address: ", err)
-		return append(instructions, rejectedInst), nil, nil
-	}
-
 	issuingAcceptedInst := metadata.IssuingEVMAcceptedInst{
 		ShardID:         receivingShardID,
 		IssuingAmount:   amount,
-		ReceiverAddrStr: addressStr,
+		Receiver:        receiver,
 		IncTokenID:      md.IncTokenID,
 		TxReqID:         issuingEVMBridgeReqAction.TxReqID,
 		UniqTx:          uniqTx,
@@ -335,17 +373,8 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 
 	if shardID != issuingEVMAcceptedInst.ShardID {
-		Logger.log.Warnf("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingEVMAcceptedInst.ShardID)
+		Logger.log.Warnf("Ignore due to shardID difference, current shardID %d, receiver's shardID %d", shardID, issuingEVMAcceptedInst.ShardID)
 		return nil, nil
-	}
-	key, err := wallet.Base58CheckDeserialize(issuingEVMAcceptedInst.ReceiverAddrStr)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
-		return nil, nil
-	}
-	receiver := &privacy.PaymentInfo{
-		Amount:         issuingEVMAcceptedInst.IssuingAmount,
-		PaymentAddress: key.KeySet.PaymentAddress,
 	}
 
 	issuingEVMRes := metadata.NewIssuingEVMResponse(
@@ -354,13 +383,30 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		issuingEVMAcceptedInst.ExternalTokenID,
 		metatype,
 	)
+
 	tokenID := issuingEVMAcceptedInst.IncTokenID
 	if !isPeggedPRV && tokenID == common.PRVCoinID {
 		Logger.log.Errorf("cannot issue prv in bridge")
 		return nil, errors.New("cannot issue prv in bridge")
 	}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	txParam := transaction.TxSalaryOutputParams{
+		Amount:  issuingEVMAcceptedInst.IssuingAmount,
+		TokenID: &tokenID,
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(issuingEVMAcceptedInst.Receiver)
+	if err == nil { // receiver is a payment address
+		txParam.ReceiverAddress = &keyWallet.KeySet.PaymentAddress
+	} else { // receiver is an OTAReceiver
+		otaReceiver := new(privacy.OTAReceiver)
+		err = otaReceiver.FromString(issuingEVMAcceptedInst.Receiver)
+		if err != nil {
+			return nil, fmt.Errorf("parseOTA receiver from %v error: %v", issuingEVMAcceptedInst.Receiver, err)
+		}
+		txParam.TxRandom = &otaReceiver.TxRandom
+		txParam.PublicKey = &otaReceiver.PublicKey
+	}
+
 	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {
 			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
