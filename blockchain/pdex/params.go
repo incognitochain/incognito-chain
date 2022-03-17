@@ -133,18 +133,29 @@ func isValidPdexv3Params(
 	if params.TradingStakingPoolRewardPercent+params.TradingProtocolFeePercent > 100 {
 		return false, "Sum of trading's staking pool + protocol fee is invalid"
 	}
-	for pairID := range params.PDEXRewardPoolPairsShare {
+	rewardPoolShare := uint(0)
+	for pairID, share := range params.PDEXRewardPoolPairsShare {
 		_, isExisted := pairs[pairID]
 		if !isExisted {
 			return false, fmt.Sprintf("Pair %v is not existed", pairID)
 		}
+		rewardPoolShare += share
 	}
-	for stakingPoolID := range params.StakingPoolsShare {
+	if rewardPoolShare == 0 {
+		return false, fmt.Sprintf("TotalRewardPoolShare cannot be 0")
+	}
+	stakingPoolsShare := uint(0)
+	for stakingPoolID, share := range params.StakingPoolsShare {
 		_, err := common.Hash{}.NewHashFromStr(stakingPoolID)
 		if err != nil {
 			return false, fmt.Sprintf("%v", err)
 		}
+		stakingPoolsShare += share
 	}
+	if stakingPoolsShare == 0 {
+		return false, fmt.Sprintf("StakingPoolsShare cannot be 0")
+	}
+
 	if params.DefaultOrderTradingRewardRatioBPS > BPS {
 		return false, "Default order trading reward ratio is too high"
 	}
