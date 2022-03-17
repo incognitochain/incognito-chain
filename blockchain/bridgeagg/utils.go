@@ -43,9 +43,9 @@ func NewStateChange() *StateChange {
 	}
 }
 
-func CalculateRewardByAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
+func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 	if y == 0 {
-		return 0, nil
+		return deltaX, nil
 	}
 	k := big.NewInt(0).Mul(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(y))
 	newX := big.NewInt(0) // x'
